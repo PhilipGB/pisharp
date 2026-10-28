@@ -8,7 +8,7 @@ The Pi oracle is pinned to `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; the insta
 captured at source `b22f7e7bad940a1dd0a26d716628f6739a8a9abf`; C6 passed at
 `1ff1d67d85d4ef76995700e0e345632c9c6ec16f`. The most recent clean
 source-bound checkpoint was C7 at `d274475f25512c9568112985896a17136586a2a6`;
-the current implementation source is `472daccd`.
+the C8 checkpoint source is `5a3be74a91edac8cd8d295bb59a8c69cfc1232a2`.
 
 The frozen contract is [contract.json](../../../tools/parity/compaction_context/contract.json),
 SHA-256 `c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6`:
@@ -98,6 +98,24 @@ Raw captures remain Git-ignored under
 The later C8 source change at `472daccd` makes this C7 result historical under
 the exact-source gate; rerun C7 before final acceptance.
 
+## C8 persistence and reload
+
+C8 passed all 10 required paired cases on clean source
+`5a3be74a91edac8cd8d295bb59a8c69cfc1232a2`. Pinned Pi and PiSharp runs were
+stable across two executions per side. The comparison covers compaction usage
+and metadata, native/Pi JSONL round-trips, branch reconstruction, fork/clone,
+restart continuation, and provider requests after reload. The actual SDK
+adapters matched for OpenAI Responses, OpenAI Chat Completions, and Anthropic
+Messages. The provider comparison normalizes temporary working roots and the
+repo-root prefixes on generated documentation hints; remaining message order,
+roles, and text are compared directly. The same explicit retained-answer
+boundary is used on both sides because C3 owns cut-point selection.
+
+The compact source-bound record is
+[compaction-context-management-c8-case-results.json](compaction-context-management-c8-case-results.json).
+Raw captures remain Git-ignored under
+`artifacts/parity/20261028-c8-5a3be74a/runs/C8/differential/`.
+
 ## Local validation
 
 - C6 checkpoint runner: **10/10 passed**; focused C6 .NET filter: **85/85 passed**.
@@ -106,12 +124,16 @@ the exact-source gate; rerun C7 before final acceptance.
 - C7 checkpoint runner: **10/10 passed** at `d274475f`; focused C7 .NET filter:
   **80/80 passed**; format verification passed. Nine cases are equivalent and
   one whitespace-only-summary case is an intentional safety difference.
-- C8 focused .NET filter: **140/140 passed** at `472daccd`; the compaction-entry
-  usage round-trip regression passes; format verification passed. C8 paired
-  evidence is not yet recorded.
+- C8 focused .NET filter: **140/140 passed** at `5a3be74a`; post-reload
+  provider tests: **3/3 passed** across Responses, Chat Completions, and
+  Anthropic. The integrated C8 checkpoint passed **10/10** with
+  `sourceTreeClean=true`; format verification passed at `5a3be74a`.
 
-- Full .NET suite: **3,939 passed, 0 failed, 0 skipped**.
-- Focused compaction and provider loopback tests: **82/82 passed**.
+- Full .NET suite: **3,939 passed, 0 failed, 0 skipped** at source `472daccd`;
+  this predates the three C8 provider-after-reload tests, so the full suite must
+  be rerun at final source.
+- Focused compaction and provider loopback tests: **82/82 passed** before the C8
+  provider tests were added.
 - `dotnet format PiSharp.slnx --verify-no-changes --no-restore`: passed.
 - Warning-as-error solution build: passed with 0 warnings and 0 errors using
   `NuGetAudit=false`; the default vulnerability-audit cache is read-only here.
@@ -119,8 +141,8 @@ the exact-source gate; rerun C7 before final acceptance.
   verifier controls: 20 passed; terminal Node: 24 passed.
 - MCP conformance: no regressions against the classified baseline; three known
   scenarios remain classified.
-- Documentation paths: 156 documents and 688 references verified after the
-  receipt and compact case record were added.
+- Documentation paths: **156 documents and 694 references verified** after the
+  C8 evidence and progress updates.
 - Pinned Pi AI overflow tests: 20/20 passed. Selected pinned Pi compaction and
   queue tests: 34 passed and 1 failed. The failing test uses model ID `unknown`
   and context window 0; the pinned `shouldCompact` formula triggers while that
@@ -128,13 +150,11 @@ the exact-source gate; rerun C7 before final acceptance.
 
 ## Acceptance remains open
 
-The last source-bound result is C7 10/10 at `d274475f`, or 10/211 cases
-(4.7%). The C8 implementation change at `472daccd` means no checkpoint result
-is currently bound to the latest source; refresh C1-C7, complete C8 paired
-evidence, and then continue across the remaining 201 cases. Open work covers
-manual and automatic compaction, cut points, estimates, session persistence and
-branching, usage, CLI/RPC/TUI, extensions, failures, cancellation, and
-publication. The frozen denominator remains 22 checkpoints / 211 cases, and
+The latest source-bound result is C8 10/10 at `5a3be74a`, or 10/211 cases
+(4.7%). C1-C7 evidence predates the current source and must be refreshed. C9-C13
+and final acceptance gates remain; 201 cases still lack evidence on this source. Open work covers refreshing C1-C7, implementing/evidencing C9-C13, the remaining
+provider overflow matrix, manual and automatic compaction, cut points, estimates,
+usage surfaces, CLI/RPC/TUI, extensions, failures, cancellation, and publication. The frozen denominator remains 22 checkpoints / 211 cases, and
 full acceptance is not claimed.
 
 Also open are the complete Responses, Chat Completions, and Anthropic

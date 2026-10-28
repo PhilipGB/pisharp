@@ -535,7 +535,7 @@ sealed class ManualSummaryClient(bool failSummary, string scenario) : IChatClien
             messages = request.Select(MessageSnapshot),
             maxOutputTokens = options?.MaxOutputTokens,
         });
-        if (failSummary) throw new IOException("summary provider failed");
+        if (failSummary) throw new InvalidOperationException("summary provider failed");
         _summaryCount++;
         var summary = scenario == "manual-split-turn"
             ? _summaryCount == 1 ? "history summary" : "turn prefix summary"

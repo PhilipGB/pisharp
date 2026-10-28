@@ -13638,7 +13638,7 @@
   },
   "compaction_context_management_parity_milestone": {
     "status": "in_progress",
-    "phase": "C8_usage_persistence_implemented_pairing_in_progress",
+    "phase": "C8_paired_passed_at_5a3be74a_C1-C7_refresh_pending",
     "branch": "milestone/compaction-context-management-parity",
     "branch_base_sha": "12064420179f4119bdaf37479c7cba0f5ca40717",
     "pi_reference": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
@@ -13646,9 +13646,9 @@
     "contract_sha256": "c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6",
     "required_checkpoints": 22,
     "required_cases": 211,
-    "implementation_source_sha": "472daccd75ce3104d86d5cbbbfb0820cf3f19774",
-    "case_evidence_produced": 0,
-    "status_reason": "C7 last passed 10/10 at source d274475f. C8 source commit 472daccd adds compaction-entry usage persistence and passes focused tests, but changes production/test source; no checkpoint evidence is bound to the latest source yet. Refresh C1-C7 and complete C8 paired evidence before continuing the frozen 22-checkpoint / 211-case contract.",
+    "implementation_source_sha": "5a3be74a91edac8cd8d295bb59a8c69cfc1232a2",
+    "case_evidence_produced": 10,
+    "status_reason": "C8 passed 10/10 paired cases at clean source 5a3be74a, including persistence/reload and all three provider APIs. C1-C7 evidence predates this source and must be refreshed; implement and execute C9-C13, then complete D0, Q0, E0, CI0 and PUB0.",
     "implemented": [
       "Pi-style branch summary navigation, extension decisions, details and usage/cost persistence",
       "Cached-read and cached-write context-token fallback when provider total is missing or zero",
@@ -13663,7 +13663,7 @@
     "local_validation": {
       "dotnet_full": "3,939 passed, 0 failed, 0 skipped; full dotnet test PiSharp.slnx --no-restore passed in 6m36s.",
       "dotnet_focused": "Compaction and provider loopback tests 82/82 pass after extraction.",
-      "dotnet_format": "dotnet format PiSharp.slnx --verify-no-changes --no-restore passed at source 472daccd; workspace load emitted a non-fatal warning.",
+      "dotnet_format": "dotnet format PiSharp.slnx --verify-no-changes --no-restore passed at source 5a3be74a; workspace loading emitted a non-fatal warning.",
       "dotnet_build_warnaserror": "Passed with zero warnings/errors using NuGetAudit=false because the default vulnerability cache is read-only.",
       "terminal_python": "66/66 passed.",
       "builtin_parity_python": "27/27 passed.",
@@ -13679,15 +13679,21 @@
       "c7_dotnet_focused": "80 passed, 0 failed, 0 skipped at source d274475f; filter covers CompactionTests and RpcCompactionProcessTests.",
       "c7_paired_oracle": "10/10 required cases passed at source d274475f; nine equivalent and one intentional whitespace-only-summary safety difference. Pi and PiSharp runs were stable across two runs per side.",
       "c7_checkpoint_runner": "runner.py status passed: sourceTreeClean true, 10 required, 10 executed, 10 passed, 0 failed, 0 skipped; raw artifacts are under artifacts/parity/20261028-c7-d274475f/runs/C7/.",
-      "c8_dotnet_focused": "140 passed, 0 failed, 0 skipped at source 472daccd; C8 filter covers CompactionTests, PiJsonlSessionInterchangeTests, and CrashRecoveryProcessTests.",
-      "c8_compaction_usage_roundtrip": "New regression passed: compaction summary, boundary, token counts, and usage persist through native and Pi JSONL reload without duplicating billing."
+      "c8_dotnet_focused": "140 passed, 0 failed, 0 skipped at source 5a3be74a; CompactionTests, PiJsonlSessionInterchangeTests, and CrashRecoveryProcessTests filter.",
+      "c8_compaction_usage_roundtrip": "New regression passed: compaction summary, boundary, token counts, and usage persist through native and Pi JSONL reload without duplicating billing.",
+      "c8_provider_after_reload": "3 passed, 0 failed, 0 skipped at source 5a3be74a; loopback requests captured after reload for OpenAI Responses, OpenAI Chat Completions, and Anthropic Messages.",
+      "c8_paired_oracle": "C8 paired checkpoint passed 10/10 at source 5a3be74a against Pi b06c1f2; Pi and PiSharp each ran twice with stable observations. Provider message roles/text matched across Responses, Chat Completions, and Anthropic after documented environment-path normalization.",
+      "c8_checkpoint_runner": "runner.py passed at source 5a3be74a: sourceTreeClean true, 10 required, 10 executed, 10 passed, 0 failed, 0 skipped; artifacts under artifacts/parity/20261028-c8-5a3be74a/.",
+      "pisharpFullSolution": "Historical run at source 472daccd: 3,939 passed, 0 failed, 0 skipped; dotnet test PiSharp.slnx --no-restore. The full suite must be rerun after the three C8 provider-after-reload tests and final implementation changes.",
+      "fullDotnetSuite": "Historical run at source 472daccd: 3,939 passed, 0 failed, 0 skipped in 6m36s. Not a final-source Q0 result; rerun after implementation is complete.",
+      "focusedCompactionAndProviderTests": "Historical 82 passed, 0 failed, 0 skipped before the C8 provider-after-reload test addition; C8 filter now passes 140/140 and its three provider tests pass separately."
     },
     "open_requirements": [
-      "Finish C8 paired session persistence, reload, branching, recovery, provider-after-reload, and metadata cases; then build and execute C9-C13, D0, Q0, E0, CI0 and PUB0 adapters.",
-      "Refresh C1-C7 at the final source; current source changes invalidate prior source-bound checkpoint records under the verifier.",
-      "Complete post-compaction continuation provider-wire coverage across Responses, Chat Completions and Anthropic, including the overflow error matrix.",
-      "Classify the separate transient estimator formula and the pinned unknown-window queue-test discrepancy per required case.",
-      "Keep PR #28 open and draft; after all evidence is complete, push final source-bound evidence, verify exact-head workflows, and run the publication gate."
+      "Refresh C1-C7 at the final source; their most recent paired evidence predates 5a3be74a.",
+      "Implement and execute C9-C13, including branch summaries, usage surfaces, CLI/RPC/TUI integration, native extension lifecycle, and failure/cancellation/crash recovery.",
+      "Complete the remaining C5 provider overflow/compaction continuation matrix across Responses, Chat Completions and Anthropic.",
+      "Classify the separate transient estimator formula and pinned unknown-window queue-test discrepancy per required case.",
+      "Complete D0, Q0, E0, CI0 and PUB0; keep PR #28 open and draft until final exact-head evidence passes."
     ],
     "ci_scope_adjustment": "The managed-package parity corpus and its evidence steps run only on milestone/managed-package-lifecycle-parity because their clean-start assertions are pinned to that branch and base; verifier controls and common CI still run on this milestone.",
     "draft_pr": {
@@ -13700,6 +13706,6 @@
     "initial_exact_head_result": "Platform, MCP, and .NET checks passed. The package corpus failed on its historical branch/base assertion; its branch scope is being corrected before rerunning exact-head CI.",
     "receipt": "docs/parity/fixtures/compaction-context-management-parity-2026-10-28.md",
     "inventory": "docs/parity/fixtures/compaction-context-management-inventory.json",
-    "case_evidence_committed": 22
+    "case_evidence_committed": 32
   }
 }

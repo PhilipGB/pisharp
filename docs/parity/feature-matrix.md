@@ -1,36 +1,23 @@
 ## Active milestone — Compaction, Context Budget, Overflow and Usage Parity — 2026-10-28
 
-PR #27 merged at actual main commit `12064420179f4119bdaf37479c7cba0f5ca40717`,
-the base of this branch. Reviewed head `2f88019cd8840b2468b1957217ae361e0bab3ad6`
-passed exact-head push run 40617744882 and PR run 40617750121; its published
-evidence records 27/27 checkpoints and 240/240 cases. Pi is pinned to
-`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; the frozen compaction contract has
-22 checkpoints / 211 cases.
+PR #27 is merged at `12064420179f4119bdaf37479c7cba0f5ca40717`; its verified
+publication evidence covers 27/27 checkpoints and 240/240 cases. This branch is
+based on that merge. Pi is pinned to `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`;
+the compaction contract remains 22 checkpoints / 211 cases.
 
-Length-stop recovery is implemented with output-usage/model-cap eligibility,
-stale-model and projected-history guards, one overflow compaction, one
-continuation, and no partial-response replay. Summary generation checkpoint C7
-passed 10/10 paired cases at source
-`d274475f25512c9568112985896a17136586a2a6`: nine equivalent and one intentional
-whitespace-only-summary safety difference. The C7 compact case record binds
-the observations to raw artifact hashes under
-`artifacts/parity/20261028-c7-d274475f/`. C8 source commit `472daccd` adds
-compaction-entry usage persistence; its focused .NET filter passes 140/140 and
-format verification passes. C7 evidence is historical under the exact-source
-gate, so the current source has no paired checkpoint evidence yet. Refresh
-C1-C7 and finish C8's paired cases.
-
-The milestone remains incomplete: the last clean source-bound result was C7 at
-10/211; it must be refreshed after C8 source changes. C8-C13, D0, Q0, E0, CI0,
-PUB0 and final-source refreshes for C1-C7 are open. The three-API compaction-continuation corpus,
-transient estimator classification and most persistence, branch, accounting,
-public API, extension and lifecycle scenarios remain open. A pinned Pi queue
-test failed because its fixture model was `unknown` with context window zero
-and Pi's threshold formula compacted despite the test expecting a no-op. The
-PR #27 publication and exact-head workflow prerequisite is verified. See the
+C8 passed 10/10 paired cases at clean source
+`5a3be74a91edac8cd8d295bb59a8c69cfc1232a2`. The checkpoint covers native and
+Pi JSONL persistence, branch and fork/clone restoration, restart continuation,
+and post-reload provider requests through Responses, Chat Completions, and
+Anthropic. Its focused .NET filter passed 140/140 and post-reload provider tests
+passed 3/3. The committed C8 case record binds the normalized observations and
+raw artifact hashes. C1-C7 evidence predates this source and must be refreshed;
+C9-C13 and the final acceptance gates remain open. C8 is the only checkpoint
+currently source-bound: 10/211 cases (4.7%). PR #28 remains open and draft.
+See the
 [inventory](fixtures/compaction-context-management-inventory.json),
-[receipt](fixtures/compaction-context-management-parity-2026-10-28.md), and
-[execution ledger](execution-ledger.json).
+[receipt](fixtures/compaction-context-management-parity-2026-10-28.md),
+and [execution ledger](execution-ledger.json).
 
 ## Active milestone — Complete Managed Package Lifecycle and Resource Distribution Parity — 2026-10-27
 

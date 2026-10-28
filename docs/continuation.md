@@ -9,20 +9,20 @@ published managed-package evidence records 27/27 checkpoints and 240/240 cases.
 Pi is pinned to `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The frozen
 compaction contract remains 22 checkpoints / 211 cases.
 
-The last source-bound checkpoint C7 (`d274475f25512c9568112985896a17136586a2a6`)
-passed 10/10 paired cases, with nine equivalent cases and one intentional
-whitespace-only-summary safety difference. The paired evidence covers summary
-prompts and updates, split-turn inputs, tool serialization, file details,
-transient retries, usage, routing and reasoning. Raw captures are under
-`artifacts/parity/20261028-c7-d274475f/`, with compact hashes and source pins in
-the committed C7 case record.
+C8 passed 10/10 paired cases at source
+`5a3be74a91edac8cd8d295bb59a8c69cfc1232a2`. The observations cover native and
+Pi JSONL compaction metadata, canonical history, branch selection, fork/clone,
+restart continuation, and actual provider requests after reload for OpenAI
+Responses, Chat Completions, and Anthropic Messages. The focused C8 .NET filter
+passed 140/140, and the provider-after-reload tests passed 3/3. Pi and PiSharp
+runs were stable twice per side. Raw captures are under
+`artifacts/parity/20261028-c8-5a3be74a/`; the compact committed case record binds
+their hashes and the source pins.
 
-C8 source commit `472daccd` now persists summary usage on compaction entries;
-the focused C8 filter passes 140/140 and formatting passes. This production/test
-change makes C7 evidence historical under the source-identity gate, so no
-checkpoint currently has evidence bound to the latest source. Refresh C1-C7,
-finish C8 paired evidence, then continue with C9-C13, D0, Q0, E0, CI0 and PUB0.
-PR #28 remains open and draft.
+C1-C7 evidence predates the current source and must be refreshed. C9-C13 still
+need implementation/evidence, followed by D0, Q0, E0, CI0, and PUB0. C8 is the
+only checkpoint currently bound to this source: 10/211 cases (4.7%). PR #28
+remains open and draft.
 See the
 [inventory](parity/fixtures/compaction-context-management-inventory.json),
 [receipt](parity/fixtures/compaction-context-management-parity-2026-10-28.md),

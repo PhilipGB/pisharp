@@ -1,31 +1,20 @@
-# PiSharp capability parity
-
 ## Active milestone — Compaction, Context Budget, Overflow and Usage Parity — 2026-10-28
 
-PR #27 is merged at `12064420179f4119bdaf37479c7cba0f5ca40717`. Its reviewed
-head was `2f88019cd8840b2468b1957217ae361e0bab3ad6`; exact-head push run
-40617744882 and PR run 40617750121 succeeded, and the published evidence covers
-27/27 checkpoints and 240/240 cases. This branch is based on that actual merge
-commit. Pi is pinned to `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; the frozen
-contract remains 22 checkpoints / 211 cases.
+PR #27 is merged at `12064420179f4119bdaf37479c7cba0f5ca40717`; its verified
+publication evidence covers 27/27 checkpoints and 240/240 cases. This branch is
+based on that merge. Pi is pinned to `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`;
+the compaction contract remains 22 checkpoints / 211 cases.
 
-Checkpoint C7 passed 10/10 paired cases at implementation source
-`d274475f25512c9568112985896a17136586a2a6`. Summary prompts, prior-summary
-updates, split-turn requests, tool serialization, file details, retry behavior,
-usage, routing, and reasoning match pinned Pi. One whitespace-only summary
-case is an intentional safety difference: pinned Pi accepts it and compacts;
-PiSharp rejects it and preserves history. Raw captures are under
-`artifacts/parity/20261028-c7-d274475f/`; the compact case record pins the
-evidence hashes and source revisions. The C8 implementation commit
-`472daccd` now persists usage on compaction entries and passes its focused .NET
-filter 140/140 plus format verification. C7 evidence is historical because C8
-changed source and tests; no checkpoint is source-bound to the current head
-yet. C1-C7 require final-source refresh, and C8 still needs paired evidence.
-
-The milestone remains incomplete: the last clean source-bound result was C7 at
-10/211; that evidence must be refreshed at the current source. Continue with
-C8-C13, D0, Q0, E0, CI0 and PUB0, and refresh C1-C7 against the final source
-before acceptance. PR #28 must remain open and draft. See the
+C8 passed 10/10 paired cases at clean source
+`5a3be74a91edac8cd8d295bb59a8c69cfc1232a2`. The checkpoint covers native and
+Pi JSONL persistence, branch and fork/clone restoration, restart continuation,
+and post-reload provider requests through Responses, Chat Completions, and
+Anthropic. Its focused .NET filter passed 140/140 and post-reload provider tests
+passed 3/3. The committed C8 case record binds the normalized observations and
+raw artifact hashes. C1-C7 evidence predates this source and must be refreshed;
+C9-C13 and the final acceptance gates remain open. C8 is the only checkpoint
+currently source-bound: 10/211 cases (4.7%). PR #28 remains open and draft.
+See the
 [inventory](docs/parity/fixtures/compaction-context-management-inventory.json),
 [receipt](docs/parity/fixtures/compaction-context-management-parity-2026-10-28.md),
 and [execution ledger](docs/parity/execution-ledger.json).

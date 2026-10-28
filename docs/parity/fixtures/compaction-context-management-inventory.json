@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
   "milestone": "compaction-context-management-parity",
-  "phase": "C8-usage-persistence-implemented; C8 paired cases in progress; previous C7 evidence is stale at current source",
+  "phase": "C8 paired pass at 5a3be74a; C1-C7 refresh and C9-C13 implementation/evidence remain",
   "sourcePins": {
     "piCommit": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
     "pisharpBaselineCommit": "12064420179f4119bdaf37479c7cba0f5ca40717",
     "pisharpWorkingBranch": "milestone/compaction-context-management-parity",
-    "implementationSourceSha": "472daccd75ce3104d86d5cbbbfb0820cf3f19774"
+    "implementationSourceSha": "5a3be74a91edac8cd8d295bb59a8c69cfc1232a2"
   },
   "framework": {
     "package": "Microsoft.Agents.AI",
@@ -361,7 +361,7 @@
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#SummaryRejectsOversizedFocusBeforeProviderAndEmptyProviderOutput",
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#LongSummaryTranscriptRetainsLatestMessageWithinBound"
       ],
-      "baseline": "C7 at d274475f passed prompt, summary, split-turn, retry, usage, and routing cases; source commit 472daccd later changed production/test code, so refresh this checkpoint on the final source.",
+      "baseline": "C7 passed 10/10 at d274475f. The later 472daccd implementation and 5a3be74a test/oracle changes make that evidence historical; refresh all C7 summary-generation cases on final source.",
       "differences": [
         "The compaction summary thinking-level delta is recorded as open in TODO.md but has not been rechecked against pinned b06."
       ],
@@ -408,10 +408,10 @@
         "tests/PiSharp.Tests/Runtime/Sessions/PiJsonlSessionInterchangeTests.cs",
         "tests/PiSharp.Tests/Runtime/Sessions/CrashRecoveryProcessTests.cs"
       ],
-      "baseline": "Native/Pi JSONL and branch mechanisms are established; compaction-specific fork/clone/reopen provider requests need full source-pinned coverage.",
+      "baseline": "C8 passed 10/10 at source 5a3be74a. Native/Pi JSONL persistence, branching, fork/clone, restart continuation, metadata, and actual Responses/Chat Completions/Anthropic provider requests after reload are paired. The final source will require a refresh if later code changes.",
       "differences": [],
       "evidenceGaps": [
-        "Compacted fork/clone/reopen, labels/details/extensions, all provider request continuation paths after import."
+        "Refresh C8 after any later implementation-source change."
       ],
       "cases": [
         "C8.compaction-entry-persists-summary-boundary-usage",
@@ -429,7 +429,10 @@
         "packages/coding-agent/test/compaction.test.ts",
         "packages/coding-agent/test/agent-session-tree-navigation.test.ts",
         "packages/coding-agent/test/session-manager/build-context.test.ts"
-      ]
+      ],
+      "pairedEvidenceRecord": "docs/parity/fixtures/compaction-context-management-c8-case-results.json",
+      "implementationSourceSha": "5a3be74a91edac8cd8d295bb59a8c69cfc1232a2",
+      "pairedEvidenceStatus": "Passed 10/10 at source 5a3be74a; refresh at final source if later code changes."
     },
     {
       "id": "branch-summary-navigation",
@@ -792,16 +795,16 @@
       ],
       "inputs": "Deterministic provider length-stop scenario, seed history, output usage, desired cap and summary responses.",
       "outputs": "Two same-Pi executions, two same-PiSharp executions, provider request captures, lifecycle/session observations, normalization and paired case results.",
-      "state": "The C5 length-stop scenario is stable on both implementations and paired for two cases. The other contract cases have no differential adapter.",
+      "state": "C8 paired persistence/reload observations pass on the current source; C5 is partial and prior C6/C7 runs are stale. The remaining checkpoint adapters and final differential acceptance are open.",
       "existingTests": [
         "tools/parity/compaction_context/test_verifier.py",
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#RecoverableLengthStopCompactsOnceAndContinuesWithoutPartialOutput"
       ],
-      "baseline": "The last clean source-bound run was C7 10/10 at d274475f. C8 source commit 472daccd invalidated that evidence for the current head; no checkpoint result is currently bound to the latest source.",
+      "baseline": "C8 passed 10/10 at source 5a3be74a; C5 remains partial (2/11), while C6 and C7 evidence is historical. The rest of the frozen differential contract has not been accepted.",
       "differences": [],
       "evidenceGaps": [
-        "All 211 frozen cases need execution or refresh against final source after changes stop; C8 paired evidence remains unfinished.",
-        "Safety classifications and zero-unresolved acceptance are not established."
+        "Refresh C1-C7 and execute all required C9-C13 and D0 cases against the final implementation source.",
+        "Classify all safety differences and establish zero unresolved mismatches."
       ],
       "cases": [
         "D0.same-pi-run-one-stable",
@@ -882,15 +885,15 @@
       ],
       "inputs": "Implementation source SHA, test source SHA, frozen contract digest, raw artifact hashes and explicit evidence directory.",
       "outputs": "Committed compact evidence, stale-source rejection and receipt/source linkage.",
-      "state": "Compact C5, C6 and C7 case records are committed, but their source pins predate the current C8 source commit; the all-case final source evidence set remains incomplete.",
+      "state": "Compact C5-C8 case records are committed. C8 is bound to source 5a3be74a; C5-C7 predate it. The all-case final source evidence set remains incomplete.",
       "existingTests": [
         "tools/parity/compaction_context/test_verifier.py#test_stale_implementation_source_is_rejected",
         "tools/parity/compaction_context/test_verifier.py#test_missing_raw_artifact_is_rejected"
       ],
-      "baseline": "The verifier rejects changed source and artifact hashes. Compact C5/C6/C7 records are hash-bound, but the final all-case evidence fixture remains incomplete.",
+      "baseline": "The verifier rejects changed source and artifact hashes. Compact C5-C8 records are hash-bound, but only C8 matches the current source and the final all-case evidence fixture remains incomplete.",
       "differences": [],
       "evidenceGaps": [
-        "Complete and commit all remaining case evidence after refreshing C1-C6 and executing C8-C13.",
+        "Complete and commit all remaining case evidence after refreshing C1-C7 and executing C9-C13.",
         "Bind the final source SHA, denominator, artifact hashes, and receipt after implementation changes stop."
       ],
       "cases": [
@@ -979,7 +982,7 @@
     }
   ],
   "crossCuttingEvidenceGaps": [
-    "C7 passed 10/10 at d274475f, but C8 source commit 472daccd changed production and tests; no checkpoint evidence is currently bound to the latest source. Refresh C1-C7, then execute C8-C13 and the final gates.",
+    "C8 passed 10/10 at 5a3be74a. C1-C7 evidence predates the latest source; refresh C1-C7, execute C9-C13 and all final gates after implementation changes stop.",
     "No full same-scenario differential covers every frozen behavior family on exact Pi b06c1f2.",
     "C1-C6 checkpoint runs and legacy RPC compaction receipts use earlier implementation sources; refresh all required checkpoint evidence on the final parity tooling/source head.",
     "Focused overflow HTTP tests cover Responses, Chat Completions and Anthropic, but a complete provider-wire corpus for overflow compaction and continuation is absent.",
@@ -1011,37 +1014,35 @@
     "The C5 Pi/PiSharp deterministic oracle records provider requests, session state and events twice per implementation and binds two case results to distinct hashed artifacts.",
     "A paired C6 adapter drives pinned Pi AgentSession tool loops and PiSharp InFlightContextBudget, including sequential, parallel, nested, oversized, steering and malformed tool histories. It verifies raw canonical-history preservation and records four case-scoped safety differences.",
     "C7 paired summary-generation behavior: prompt serialization, prior summaries, split-turn focus, tool/file details, reserve-aware output caps, length-stop failure, transient retry policy, usage and routed reasoning; reject whitespace-only summaries.",
-    "C8 compaction usage persistence: aggregate summary usage is retained on compaction entries for Pi JSONL export/import while native per-request billing entries remain authoritative."
+    "C8 compaction usage persistence: aggregate summary usage is retained on compaction entries for Pi JSONL export/import while native per-request billing entries remain authoritative.",
+    "C8 persistence and provider-after-reload coverage: compaction usage/metadata round-trip, canonical history recovery, branch/fork/clone restoration, restart continuation, and live SDK request comparison for Responses, Chat Completions, and Anthropic."
   ],
   "formalAcceptance": {
     "contractPath": "tools/parity/compaction_context/contract.json",
     "contractSha256": "c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6",
     "requiredCheckpoints": 22,
     "requiredCases": 211,
-    "perCaseArtifactsProduced": 0,
+    "perCaseArtifactsProduced": 10,
     "status": "incomplete",
-    "reason": "C7 last passed 10/10 at d274475f. C8 source commit 472daccd adds compaction-entry usage persistence and passes focused tests, but prior checkpoint evidence is stale at the latest source; the full 22-checkpoint / 211-case contract remains incomplete.",
-    "perCaseArtifactsCommitted": 22,
+    "reason": "C8 passed 10/10 on clean source 5a3be74a. C1-C7 evidence predates this source, C9-C13 and final gates remain, and the frozen 22-checkpoint / 211-case contract is incomplete.",
+    "perCaseArtifactsCommitted": 32,
     "currentSourceCheckpointEvidence": {
-      "sourceSha": "472daccd75ce3104d86d5cbbbfb0820cf3f19774",
-      "checkpointId": null,
-      "passedCases": 0,
-      "requiredCases": 211,
-      "status": "not-yet-run",
-      "previousSourceSha": "d274475f25512c9568112985896a17136586a2a6",
-      "previousCheckpointId": "C7",
-      "previousPassedCases": 10,
-      "runnerRecord": null,
-      "compactRecord": null
-    },
-    "lastSourceBoundCheckpointEvidence": {
-      "sourceSha": "d274475f25512c9568112985896a17136586a2a6",
-      "checkpointId": "C7",
+      "sourceSha": "5a3be74a91edac8cd8d295bb59a8c69cfc1232a2",
+      "checkpointId": "C8",
       "passedCases": 10,
       "requiredCases": 10,
-      "status": "stale-after-source-change",
-      "runnerRecord": "artifacts/parity/20261028-c7-d274475f/runs/C7/checkpoint-run.json",
-      "compactRecord": "docs/parity/fixtures/compaction-context-management-c7-case-results.json"
+      "status": "passed",
+      "runnerRecord": "artifacts/parity/20261028-c8-5a3be74a/runs/C8/checkpoint-run.json",
+      "compactRecord": "docs/parity/fixtures/compaction-context-management-c8-case-results.json"
+    },
+    "lastSourceBoundCheckpointEvidence": {
+      "sourceSha": "5a3be74a91edac8cd8d295bb59a8c69cfc1232a2",
+      "checkpointId": "C8",
+      "passedCases": 10,
+      "requiredCases": 10,
+      "status": "passed",
+      "runnerRecord": "artifacts/parity/20261028-c8-5a3be74a/runs/C8/checkpoint-run.json",
+      "compactRecord": "docs/parity/fixtures/compaction-context-management-c8-case-results.json"
     }
   },
   "validationSoFar": {
@@ -1053,7 +1054,7 @@
     "builtinParityPython": "27 passed.",
     "compactionVerifierTests": "20 passed, including positive and negative evidence controls.",
     "terminalNode": "24 passed.",
-    "documentationPaths": "Prior C7 documentation validation: 156 documents and 693 references. Re-run after the current source status update.",
+    "documentationPaths": "Documentation paths verified: 156 documents and 694 references after C8 evidence/status update.",
     "pinnedPiSuites": "Selected pinned Pi compaction and queue tests: 34 passed / 1 failed; Pi AI overflow: 20 passed. The failed queue expectation conflicts with shouldCompact at model id unknown/contextWindow 0.",
     "mcpConformance": "No regressions against the classified baseline; three known scenarios remain classified.",
     "focusedCompactionAndProviderTests": "82 passed, 0 failed, 0 skipped, including length-stop recovery and all three provider loopback APIs.",
@@ -1068,8 +1069,8 @@
     "focusedC7Tests": "80 passed, 0 failed, 0 skipped at source d274475f; CompactionTests and RpcCompactionProcessTests filter.",
     "pairedC7Oracle": "10/10 cases passed at source d274475f: nine equivalent, one intentional whitespace-only-summary safety difference; Pi and PiSharp observations stable across two runs per side.",
     "c7CheckpointRunner": "runner.py recorded passed with sourceTreeClean true, 10 required, 10 executed, 10 passed, 0 failed and 0 skipped; raw artifact hashes are bound in compaction-context-management-c7-case-results.json.",
-    "currentSourceCheckpointEvidence": "No checkpoint runner has passed at source 472daccd. C7 last passed 10/10 at d274475f but is stale under exact source identity.",
-    "focusedC8Tests": "140 passed, 0 failed, 0 skipped at source 472daccd; CompactionTests, PiJsonlSessionInterchangeTests, and CrashRecoveryProcessTests filter.",
+    "currentSourceCheckpointEvidence": "C8 runner passed 10/10 at source 5a3be74a with sourceTreeClean true; C1-C7 evidence is stale under exact-source identity.",
+    "focusedC8Tests": "140 passed, 0 failed, 0 skipped at source 5a3be74a; CompactionTests, PiJsonlSessionInterchangeTests, and CrashRecoveryProcessTests filter.",
     "compactionUsageRoundTrip": "New compaction summary/boundary/usage regression passed through native serialization and Pi JSONL export/import without duplicate billing."
   }
 }
