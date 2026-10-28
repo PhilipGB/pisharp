@@ -585,7 +585,11 @@ def run(pi_path: Path, evidence_dir: Path) -> dict[str, Any]:
         "acceptedSafetyDifferenceCount": len(safety_differences),
         "unresolvedMismatchCount": 0,
         "safetyDifferences": list(safety_differences.values()),
-        "normalization": ["remove empty system message from provider transcript"],
+        "normalization": [
+            "remove empty system message from provider transcript",
+            "omit fixture-selected model labels except where stale-model behavior is under test",
+            "render Pi compactionSummary and branchSummary objects by their summary field",
+        ],
         "classification": "intentional-safety-difference" if safety_differences else "equivalent",
         "completedCaseIds": sorted(completed),
         "executedCaseCount": len(case_results),

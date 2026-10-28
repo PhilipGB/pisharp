@@ -27,9 +27,10 @@ const [{ createHarness }, { fauxAssistantMessage }, { createAssistantMessageEven
 
 function plainMessage(message) {
   const content = message.content;
-  const text = typeof content === "string" ? content
-    : Array.isArray(content) ? content.filter((item) => item.type === "text").map((item) => item.text).join("")
-      : "";
+  const text = message.role === "compactionSummary" || message.role === "branchSummary" ? message.summary
+    : typeof content === "string" ? content
+      : Array.isArray(content) ? content.filter((item) => item.type === "text").map((item) => item.text).join("")
+        : "";
   return { role: message.role, text };
 }
 
@@ -39,8 +40,30 @@ async function runOnce() {
   const models = scenario === "stale-old-model-overflow"
     ? [{ id: "old-model", contextWindow, maxTokens: 100 }, { id: "new-model", contextWindow: 1_000_000, maxTokens: 100 }]
     : [{ id: "faux-1", contextWindow, maxTokens: 100 }];
+  let markManualCompactionStarted = () => {};
+  const manualCompactionStarted = new Promise((resolve) => { markManualCompactionStarted = resolve; });
+  const extensionFactories = scenario === "manual-cancel" ? [
+    (pi) => {
+      pi.on("session_before_compact", async (event) => await new Promise((resolve) => {
+        event.signal.addEventListener("abort", () => resolve({ cancel: true }), { once: true });
+        markManualCompactionStarted();
+      }));
+    },
+  ] : scenario === "manual-queue-order" ? [
+    (pi) => {
+      pi.on("session_before_compact", async (event) => ({
+        compaction: {
+          summary: "manual queue summary",
+          firstKeptEntryId: event.preparation.firstKeptEntryId,
+          tokensBefore: event.preparation.tokensBefore,
+          details: {},
+        },
+      }));
+    },
+  ] : undefined;
   const harness = await createHarness({
     models,
+    extensionFactories,
     settings: { compaction: { enabled: true,
       reserveTokens: ["context-boundary-length", "silent-usage-overflow", "stale-old-model-overflow"].includes(scenario)
         ? 0 : 10_000,
@@ -51,6 +74,140 @@ async function runOnce() {
   try {
     const model = harness.getModel();
     const now = Date.parse("2100-01-01T00:00:00.000Z");
+    if (scenario.startsWith("manual-")) {
+      harness.settingsManager.applyOverrides({ compaction: { keepRecentTokens: 1 } });
+      if (["manual-eligible", "manual-failure", "manual-cancel", "manual-split-turn", "manual-queue-order"].includes(scenario)) {
+        for (const [role, text, offset] of [
+          ["user", "first", -4_000], ["assistant", "answer one", -3_000],
+          ["user", "second", -2_000], ["assistant", "answer two", -1_000],
+        ]) {
+          if (role === "user") {
+            harness.sessionManager.appendMessage({ role, content: [{ type: "text", text }], timestamp: now + offset });
+          } else {
+            const assistant = {
+              ...fauxAssistantMessage(text, { timestamp: now + offset }),
+              api: model.api,
+              provider: model.provider,
+              model: model.id,
+              usage: { input: 10, output: 2, cacheRead: 0, cacheWrite: 0, totalTokens: 12,
+                cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+            };
+            harness.sessionManager.appendMessage(assistant);
+          }
+        }
+        if (scenario === "manual-split-turn") {
+          harness.sessionManager.appendMessage({ role: "user", content: [{ type: "text", text: "current request" }],
+            timestamp: now - 500 });
+          harness.sessionManager.appendMessage({
+            ...fauxAssistantMessage("partial answer", { timestamp: now - 250, stopReason: "aborted" }),
+            api: model.api,
+            provider: model.provider,
+            model: model.id,
+            usage: { input: 10, output: 2, cacheRead: 0, cacheWrite: 0, totalTokens: 12,
+              cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+          });
+        }
+      } else {
+        harness.sessionManager.appendMessage({ role: "user", content: [{ type: "text", text: "only turn" }],
+          timestamp: now - 1_000 });
+      }
+      harness.session.agent.state.messages = harness.sessionManager.buildSessionContext().messages;
+      const summaryRequests = [];
+      const events = [];
+      let summaryResponseCount = 0;
+      let queuedPrompt;
+      const entriesBefore = harness.sessionManager.getEntries().length;
+      harness.session.subscribe((event) => events.push(event));
+      if (scenario === "manual-queue-order") {
+        harness.session.subscribe((event) => {
+          if (event.type === "compaction_end" && event.reason === "manual" && event.result) {
+            queuedPrompt = harness.session.prompt("queued after compaction");
+          }
+        });
+      }
+      harness.session.agent.streamFunction = (summaryModel, context, options) => {
+        if (scenario === "manual-queue-order") {
+          providerRequests.push({ messages: context.messages.map(plainMessage) });
+          const stream = createAssistantMessageEventStream();
+          queueMicrotask(() => stream.push({ type: "done", reason: "stop", message: {
+            ...fauxAssistantMessage("queued response"),
+            api: summaryModel.api,
+            provider: summaryModel.provider,
+            model: summaryModel.id,
+          } }));
+          return stream;
+        }
+        summaryRequests.push({
+          messages: context.messages.map(plainMessage),
+          maxTokens: options?.maxTokens ?? null,
+          customInstructions: context.customInstructions ?? null,
+        });
+        summaryResponseCount++;
+        if (scenario === "manual-failure") throw new Error("summary provider failed");
+        const stream = createAssistantMessageEventStream();
+        const summaryText = scenario === "manual-split-turn"
+          ? summaryResponseCount === 1 ? "history summary" : "turn prefix summary"
+          : "compacted history summary";
+        queueMicrotask(() => {
+          stream.push({ type: "done", reason: "stop", message: {
+            ...fauxAssistantMessage(summaryText),
+            api: summaryModel.api,
+            provider: summaryModel.provider,
+            model: summaryModel.id,
+            usage: { input: 10, output: 20, cacheRead: 30, cacheWrite: 40, totalTokens: 100,
+              cost: { input: 0.1, output: 0.2, cacheRead: 0.3, cacheWrite: 0.4, total: 1 } },
+          } });
+        });
+        return stream;
+      };
+      let result = null;
+      let error = null;
+      try {
+        if (scenario === "manual-cancel") {
+          const compactPromise = harness.session.compact();
+          await manualCompactionStarted;
+          harness.session.abortCompaction();
+          result = await compactPromise;
+        } else {
+          result = await harness.session.compact(scenario === "manual-eligible" ? "prioritize files" : undefined);
+          if (scenario === "manual-queue-order") {
+            if (!queuedPrompt) throw new Error("compaction_end did not start the queued prompt");
+            await queuedPrompt;
+          }
+        }
+      } catch (caught) {
+        error = String(caught?.message ?? caught);
+      }
+      const entries = harness.sessionManager.getEntries();
+      const firstKeptEntryIndex = result
+        ? entries.findIndex((entry) => entry.id === result.firstKeptEntryId) : null;
+      return {
+        scenario,
+        compactionSucceeded: result !== null,
+        canonicalStateUnchanged: result === null && entries.length === entriesBefore,
+        error,
+        result: result ? {
+          summary: result.summary,
+          firstKeptEntryIndex,
+          tokensBefore: result.tokensBefore,
+          estimatedTokensAfter: result.estimatedTokensAfter,
+          usage: result.usage ?? null,
+          details: result.details ?? null,
+        } : null,
+        summaryRequests,
+        compactionCount: entries.filter((entry) => entry.type === "compaction").length,
+        entries: entries.map((entry) => entry.type === "compaction"
+          ? { type: entry.type, summary: entry.summary, tokensBefore: entry.tokensBefore,
+              usage: entry.usage ?? null, details: entry.details ?? null }
+          : { type: entry.type, message: entry.type === "message" ? plainMessage(entry.message) : null }),
+        providerRequests,
+        contextMessages: harness.session.messages.map(plainMessage),
+        activeMessages: harness.sessionManager.buildSessionContext().messages.map(plainMessage),
+        events: events.map((event) => ({ type: event.type, reason: event.reason ?? null,
+          willRetry: event.willRetry ?? null, aborted: event.aborted ?? false,
+          error: event.errorMessage ?? event.error ?? null })),
+      };
+    }
     // Recovery checks compare response timestamps with the compaction boundary.
     // Keep fixture responses after that boundary even when both operations share a millisecond.
     const responseTimestampBase = now + 86_400_000;

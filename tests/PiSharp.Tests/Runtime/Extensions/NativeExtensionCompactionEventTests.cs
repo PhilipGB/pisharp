@@ -232,7 +232,8 @@ public sealed class NativeExtensionCompactionEventTests
 
             var conversation = Seed(workingDirectory);
             var originalHead = conversation.Tree.HeadId;
-            var agent = new PiAgent(new SummaryClient(), new CodingTools(workingDirectory),
+            var summaryRequests = 0;
+            var agent = new PiAgent(new SummaryClient(onRequest: () => summaryRequests++), new CodingTools(workingDirectory),
                 liveExtensionRegistration: registration);
             var run = await ConversationRun.OpenAsync(agent, conversation);
 
@@ -245,6 +246,25 @@ public sealed class NativeExtensionCompactionEventTests
             Assert.True(failed.Aborted);
             Assert.Null(failed.ErrorMessage);
             Assert.False(failed.FromExtension);
+            Assert.DoesNotContain(conversation.Tree.ActivePath(), node => node.Type == "compaction");
+
+            var captureDirectory = Environment.GetEnvironmentVariable("PISHARP_C1_MANUAL_CANCEL_CAPTURE_DIR");
+            if (!string.IsNullOrWhiteSpace(captureDirectory))
+            {
+                Directory.CreateDirectory(captureDirectory);
+                var capture = new
+                {
+                    scenario = "manual-cancel",
+                    compactionCount = conversation.Tree.ActivePath().Count(node => node.Type == "compaction"),
+                    canonicalStateUnchanged = conversation.Tree.HeadId == originalHead,
+                    summaryRequestCount = summaryRequests,
+                    abortedEventPublished = failed.Aborted,
+                    failureError = failed.ErrorMessage,
+                    directError = error.Message,
+                };
+                await File.WriteAllTextAsync(Path.Combine(captureDirectory, "manual-cancel.json"),
+                    JsonSerializer.Serialize(capture, new JsonSerializerOptions { WriteIndented = true }) + "\n");
+            }
 
             var nextResult = await run.CompactWithResultAsync(cancellationToken: CancellationToken.None)
                 .WaitAsync(TimeSpan.FromSeconds(5));

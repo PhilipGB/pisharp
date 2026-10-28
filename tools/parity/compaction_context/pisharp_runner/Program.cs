@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.Extensions.AI;
+using PiSharp.Core;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Sessions;
 
@@ -21,6 +22,111 @@ var workingDirectory = Path.Combine(Path.GetTempPath(), "pisharp-compaction-orac
 Directory.CreateDirectory(workingDirectory);
 try
 {
+    if (scenario.StartsWith("manual-", StringComparison.Ordinal))
+    {
+        var manualConversation = new ConversationSession(workingDirectory, "fixture", null);
+        manualConversation.Append(new ChatMessage(ChatRole.User, "first"));
+        if (scenario is "manual-eligible" or "manual-failure" or "manual-split-turn" or "manual-queue-order")
+        {
+            manualConversation.Append(new ChatMessage(ChatRole.Assistant, "answer one"));
+            manualConversation.Append(new ChatMessage(ChatRole.User, "second"));
+            manualConversation.Append(new ChatMessage(ChatRole.Assistant, "answer two"));
+        }
+        if (scenario == "manual-split-turn")
+        {
+            manualConversation.Append(new ChatMessage(ChatRole.User, "current request"));
+            manualConversation.Append(new ChatMessage(ChatRole.Assistant, "partial answer"));
+            manualConversation.Tree.Append("interrupted", JsonSerializer.SerializeToElement(new
+            {
+                prompt = "current request",
+                partialAssistantText = "partial answer",
+                terminalType = "turn_interrupted",
+                stopReason = "aborted",
+                errorMessage = "Request was aborted"
+            }));
+        }
+        var manualClient = new ManualSummaryClient(scenario == "manual-failure", scenario);
+        var manualAgent = new PiAgent(manualClient, new CodingTools(workingDirectory), noTools: true);
+        var manualRun = await ConversationRun.OpenAsync(manualAgent, manualConversation,
+            pricing: new ModelPricing(Input: 10_000m, Output: 10_000m, CachedInput: 10_000m, CachedWrite: 10_000m),
+            keepRecentTokens: 1);
+        var manualEvents = new List<AgentLifecycleEvent>();
+        var headBefore = manualConversation.Tree.HeadId;
+        ConversationCompactionResult? manualResult = null;
+        string? manualError = null;
+        Task? queuedRunTask = null;
+        try
+        {
+            manualResult = await manualRun.CompactWithResultAsync(
+                scenario == "manual-eligible" ? "prioritize files" : null,
+                publishEvent: item =>
+                {
+                    manualEvents.Add(item);
+                    if (scenario == "manual-queue-order" && item.Type == "compaction_end" &&
+                        item.CompactionResult is not null)
+                    {
+                        using (ExecutionContext.SuppressFlow())
+                        {
+                            queuedRunTask = Task.Run(async () =>
+                            {
+                                await foreach (var _ in manualRun.RunEventsAsync("queued after compaction")) { }
+                            });
+                        }
+                    }
+                    return Task.CompletedTask;
+                });
+            if (queuedRunTask is not null) await queuedRunTask.WaitAsync(TimeSpan.FromSeconds(10));
+        }
+        catch (Exception error)
+        {
+            manualError = error.Message;
+        }
+        var manualEntries = manualConversation.Tree.ActivePath().ToList();
+        var firstKeptEntryIndex = manualResult is null
+            ? (int?)null
+            : manualEntries.FindIndex(entry => entry.Id == manualResult.FirstKeptEntryId);
+        var manualOutput = new
+        {
+            scenario,
+            compactionSucceeded = manualResult is not null,
+            error = manualError,
+            canonicalStateUnchanged = manualResult is null && manualConversation.Tree.HeadId == headBefore,
+            result = manualResult is null ? null : new
+            {
+                summary = manualResult.Summary,
+                firstKeptEntryIndex,
+                tokensBefore = manualResult.TokensBefore,
+                estimatedTokensAfter = manualResult.EstimatedTokensAfter,
+                usage = manualResult.Usage,
+                details = manualResult.Details,
+            },
+            summaryRequests = manualClient.Requests,
+            compactionCount = manualEntries.Count(entry => entry.Type == "compaction"),
+            entries = manualEntries.Select(entry => new
+            {
+                type = entry.Type,
+                summary = entry.Type == "compaction" ? entry.Payload.GetProperty("summary").GetString() : null,
+                message = EntryMessageText(entry),
+                usage = entry.Type == "compaction" && entry.Payload.TryGetProperty("usage", out var usage)
+                    ? usage : (JsonElement?)null,
+            }),
+            contextMessages = manualConversation.ContextMessages().Select(MessageSnapshot),
+            activeMessages = manualConversation.ActiveMessages().Select(MessageSnapshot),
+            events = manualEvents.Select(item => new
+            {
+                type = item.Type,
+                reason = item.CompactionReason,
+                willRetry = item.CompactionWillRetry,
+                aborted = item.CompactionAborted,
+                error = item.Error,
+            }),
+        };
+        var manualJson = JsonSerializer.Serialize(manualOutput, new JsonSerializerOptions { WriteIndented = true });
+        if (outputPath is null) Console.WriteLine(manualJson);
+        else await File.WriteAllTextAsync(outputPath, manualJson + Environment.NewLine);
+        return;
+    }
+
     var client = new LengthStopClient(scenario, reportedInputTokens, reportedOutputTokens, alwaysLength);
     var agent = new PiAgent(client, new CodingTools(workingDirectory), noTools: true, maxOutputTokens: 100);
     var conversation = new ConversationSession(workingDirectory, "fixture", null);
@@ -94,6 +200,10 @@ static object MessageSnapshot(ChatMessage message) => new
     text = message.Text,
     contentTypes = message.Contents.Select(content => content.GetType().Name)
 };
+
+static string? EntryMessageText(ConversationNode entry) => entry.Type == "chat"
+    ? entry.Payload.GetProperty("Message").Deserialize<ChatMessage>(AIJsonUtilities.DefaultOptions)?.Text
+    : null;
 
 sealed class LengthStopClient(string scenario, long reportedInputTokens, long reportedOutputTokens,
     bool alwaysLength) : IChatClient
@@ -171,5 +281,64 @@ sealed class LengthStopClient(string scenario, long reportedInputTokens, long re
         role = message.Role.Value,
         text = message.Text,
         contentTypes = message.Contents.Select(content => content.GetType().Name)
+    };
+}
+
+sealed class ManualSummaryClient(bool failSummary, string scenario) : IChatClient
+{
+    public List<object> Requests { get; } = [];
+    public List<object> StreamingRequests { get; } = [];
+    private int _summaryCount;
+
+    public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+        CancellationToken cancellationToken = default)
+    {
+        var request = messages.ToArray();
+        Requests.Add(new
+        {
+            messages = request.Select(MessageSnapshot),
+            maxOutputTokens = options?.MaxOutputTokens,
+        });
+        if (failSummary) throw new IOException("summary provider failed");
+        _summaryCount++;
+        var summary = scenario == "manual-split-turn"
+            ? _summaryCount == 1 ? "history summary" : "turn prefix summary"
+            : "compacted history summary";
+        return Task.FromResult(new ChatResponse([new ChatMessage(ChatRole.Assistant, summary)])
+        {
+            Usage = new UsageDetails
+            {
+                InputTokenCount = 40,
+                OutputTokenCount = 20,
+                CachedInputTokenCount = 30,
+                TotalTokenCount = 100,
+                AdditionalCounts = new AdditionalPropertiesDictionary<long> { ["cacheWriteTokens"] = 40 },
+            }
+        });
+    }
+
+    public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+        ChatOptions? options = null,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        StreamingRequests.Add(messages.Select(MessageSnapshot).ToArray());
+        if (scenario == "manual-queue-order")
+        {
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "queued response")
+            {
+                FinishReason = ChatFinishReason.Stop
+            };
+        }
+        await Task.CompletedTask;
+    }
+
+    public object? GetService(Type serviceType, object? serviceKey = null) => null;
+    public void Dispose() { }
+
+    private static object MessageSnapshot(ChatMessage message) => new
+    {
+        role = message.Role.Value,
+        text = message.Text,
+        contentTypes = message.Contents.Select(content => content.GetType().Name),
     };
 }
