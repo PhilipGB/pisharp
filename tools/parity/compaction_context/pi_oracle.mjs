@@ -20,12 +20,20 @@ if (head !== PIN) throw new Error(`Pi checkout is ${head}; expected ${PIN}`);
 
 const importFromPi = (relative) => import(pathToFileURL(join(piRoot, relative)).href);
 const [{ createHarness }, { fauxAssistantMessage }, { createAssistantMessageEventStream },
+  { getModel: getPiModel, normalizeContext }, { stream: streamPiResponses },
+  { stream: streamPiCompletions }, { stream: streamPiAnthropic }, { convertToLlm },
   { compact, generateSummaryWithUsage, prepareCompaction, DEFAULT_COMPACTION_SETTINGS, estimateContextTokens, estimateProjectedContextTokens,
-    estimateTokens, shouldCompact }, { buildSessionProjection }, { SettingsManager }, { SETTINGS_DEFAULTS }] = await Promise.all([
+    estimateTokens, shouldCompact }, { buildSessionProjection }, { SessionManager, loadEntriesFromFile }, { SettingsManager }, { SETTINGS_DEFAULTS }] = await Promise.all([
   importFromPi("packages/coding-agent/test/suite/harness.ts"),
   importFromPi("packages/ai/src/providers/faux.ts"),
   importFromPi("packages/ai/src/utils/event-stream.ts"),
+  importFromPi("packages/ai/src/compat.ts"),
+  importFromPi("packages/ai/src/api/openai-responses.ts"),
+  importFromPi("packages/ai/src/api/openai-completions.ts"),
+  importFromPi("packages/ai/src/api/anthropic-messages.ts"),
+  importFromPi("packages/coding-agent/src/core/messages.ts"),
   importFromPi("packages/coding-agent/src/core/compaction/compaction.ts"),
+  importFromPi("packages/coding-agent/src/core/session-manager.ts"),
   importFromPi("packages/coding-agent/src/core/session-manager.ts"),
   importFromPi("packages/coding-agent/src/core/settings-manager.ts"),
   importFromPi("packages/coding-agent/src/core/settings-defaults.ts"),
@@ -976,11 +984,244 @@ async function runPiC7() {
   }
 }
 
+function c8Text(message) {
+  if (typeof message.content === "string") return message.content;
+  return (message.content ?? []).filter(part => part.type === "text").map(part => part.text ?? "").join("");
+}
+
+function c8Messages(messages) {
+  return convertToLlm(messages).map(message => ({ role: message.role, text: c8Text(message) }));
+}
+
+function c8ProviderResponse(api) {
+  const body = api === "openai-responses"
+    ? [
+        `data: ${JSON.stringify({ type: "response.created", response: { id: "resp_c8", object: "response", created_at: 1, model: "fixture-model", status: "in_progress", output: [] } })}`,
+        `data: ${JSON.stringify({ type: "response.output_text.delta", item_id: "msg_c8", output_index: 0, content_index: 0, delta: "continued" })}`,
+        `data: ${JSON.stringify({ type: "response.completed", response: { id: "resp_c8", object: "response", created_at: 1, model: "fixture-model", status: "completed", output: [], usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 } } })}`,
+        "data: [DONE]",
+      ].join("\n\n") + "\n\n"
+    : api === "openai-completions"
+      ? [
+          `data: ${JSON.stringify({ id: "chat_c8", object: "chat.completion.chunk", created: 1, model: "fixture-model", choices: [{ index: 0, delta: { role: "assistant", content: "continued" }, finish_reason: null }] })}`,
+          `data: ${JSON.stringify({ id: "chat_c8", object: "chat.completion.chunk", created: 1, model: "fixture-model", choices: [{ index: 0, delta: {}, finish_reason: "stop" }] })}`,
+          "data: [DONE]",
+        ].join("\n\n") + "\n\n"
+      : [
+          `event: message_start\ndata: ${JSON.stringify({ type: "message_start", message: { id: "msg_c8", type: "message", role: "assistant", model: "fixture-model", content: [], stop_reason: null, stop_sequence: null, usage: { input_tokens: 1, output_tokens: 0 } } })}`,
+          `event: content_block_start\ndata: ${JSON.stringify({ type: "content_block_start", index: 0, content_block: { type: "text", text: "" } })}`,
+          `event: content_block_delta\ndata: ${JSON.stringify({ type: "content_block_delta", index: 0, delta: { type: "text_delta", text: "continued" } })}`,
+          `event: content_block_stop\ndata: ${JSON.stringify({ type: "content_block_stop", index: 0 })}`,
+          `event: message_delta\ndata: ${JSON.stringify({ type: "message_delta", delta: { stop_reason: "end_turn", stop_sequence: null }, usage: { output_tokens: 1 } })}`,
+          `event: message_stop\ndata: ${JSON.stringify({ type: "message_stop" })}`,
+        ].join("\n\n") + "\n\n";
+  return new Response(body, { status: 200, headers: { "content-type": "text/event-stream" } });
+}
+
+function c8NormalizeJson(value, temporaryRoot) {
+  if (typeof value === "string") return value.replaceAll(temporaryRoot, "<temporary-working-directory>");
+  if (Array.isArray(value)) return value.map(item => c8NormalizeJson(item, temporaryRoot));
+  if (value && typeof value === "object")
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, c8NormalizeJson(item, temporaryRoot)]));
+  return value;
+}
+
+async function c8ObservePiApiRequest(api, messages, temporaryRoot) {
+  const provider = api === "anthropic-messages" ? "anthropic" : "openai";
+  const modelName = provider === "anthropic" ? "claude-sonnet-4-6" : "gpt-4o-mini";
+  const baseModel = getPiModel(provider, modelName);
+  if (!baseModel) throw new Error(`missing pinned Pi model fixture ${provider}/${modelName}`);
+  const model = {
+    ...baseModel,
+    api,
+    id: "fixture-model",
+    baseUrl: api === "anthropic-messages" ? "http://127.0.0.1" : "http://127.0.0.1/v1",
+  };
+  let captured;
+  const fetch = async (input, init = {}) => {
+    const request = input instanceof Request ? input.clone() : new Request(input, init);
+    const body = typeof init.body === "string" ? init.body : await request.text();
+    captured = {
+      api,
+      path: new URL(request.url).pathname,
+      request: c8NormalizeJson(JSON.parse(body), temporaryRoot),
+    };
+    return c8ProviderResponse(api);
+  };
+  const streamFunction = api === "openai-responses" ? streamPiResponses
+    : api === "openai-completions" ? streamPiCompletions : streamPiAnthropic;
+  const stream = streamFunction(model, normalizeContext({ messages }), { apiKey: "fixture-key", fetch });
+  const result = await stream.result();
+  if (!captured) throw new Error(`pinned Pi ${api} adapter did not issue a provider request: ${JSON.stringify(result)}`);
+  return captured;
+}
+
+async function runPiC8() {
+  const harness = await createHarness();
+  let continuationHarness;
+  try {
+    const sessionDir = join(harness.tempDir, "c8-sessions");
+    const manager = SessionManager.create(harness.tempDir, sessionDir, { id: "c8-primary" });
+    manager.appendMessage({ role: "user", content: "older question", timestamp: 1 });
+    manager.appendMessage(fauxAssistantMessage("older answer"));
+    manager.appendMessage({ role: "user", content: "retained question", timestamp: 3 });
+    const retainedAnswerId = manager.appendMessage(fauxAssistantMessage("retained answer"));
+    // Persistence is tested with a shared explicit boundary; cut-point selection is covered by C3.
+    const boundaryId = retainedAnswerId;
+    const boundaryMessage = "retained answer";
+    const usage = { input: 10, output: 12, cacheRead: 2, cacheWrite: 3, totalTokens: 24 };
+    const details = { owner: "c8-fixture", revision: 7 };
+    const compactionId = manager.appendCompaction("older history summary", boundaryId,
+      500, details, false, usage);
+    manager.appendLabelChange(compactionId, "compacted checkpoint");
+    manager.appendCustomEntry("c8.extension-state", { owner: "c8-fixture", revision: 7 });
+    const originalMessages = manager.getEntries().filter(entry => entry.type === "message")
+      .map(entry => c8Text(entry.message));
+    const compactedContext = c8Messages(manager.buildSessionContext().messages);
+    const sourcePath = manager.getSessionFile();
+    if (!sourcePath) throw new Error("persisted Pi session has no session path");
+
+    const reloaded = SessionManager.open(sourcePath);
+    const reloadedContext = c8Messages(reloaded.buildSessionContext().messages);
+    const entry = reloaded.getEntry(compactionId);
+    if (!entry || entry.type !== "compaction") throw new Error("reloaded compaction entry was missing");
+    const summaryBoundaryUsage = {
+      summary: entry.summary,
+      boundaryPreserved: entry.firstKeptEntryId === boundaryId,
+      boundaryMessage,
+      tokensBefore: entry.tokensBefore,
+      usageInput: entry.usage?.input ?? null,
+      usageOutput: entry.usage?.output ?? null,
+      usageCachedInput: entry.usage?.cacheRead ?? null,
+      usageCachedWrite: entry.usage?.cacheWrite ?? null,
+      usageTotal: entry.usage?.totalTokens ?? null,
+      detailsOwner: entry.details?.owner ?? null,
+      detailsRevision: entry.details?.revision ?? null,
+    };
+
+    const exportedPath = `${sourcePath}.export.jsonl`;
+    await writeFile(exportedPath, await readFile(sourcePath));
+    const jsonlReload = SessionManager.open(exportedPath);
+    const jsonlContext = c8Messages(jsonlReload.buildSessionContext().messages);
+    const jsonlEntry = jsonlReload.getEntry(compactionId);
+
+    reloaded.branch(boundaryId);
+    const beforeCompactionBranch = c8Messages(reloaded.buildSessionContext().messages);
+    reloaded.appendMessage({ role: "user", content: "alternate branch question", timestamp: 5 });
+    const alternateBranch = c8Messages(reloaded.buildSessionContext().messages);
+    reloaded.branch(compactionId);
+    reloaded.appendMessage({ role: "user", content: "after compaction question", timestamp: 6 });
+    const afterCompactionBranch = c8Messages(reloaded.buildSessionContext().messages);
+
+    const forkDir = join(harness.tempDir, "c8-fork");
+    const forked = SessionManager.forkFrom(sourcePath, join(harness.tempDir, "forked-worktree"), forkDir,
+      { id: "c8-forked" });
+    const cloned = SessionManager.inMemory(harness.tempDir, { id: "c8-clone" }, loadEntriesFromFile(sourcePath));
+    const continuationManager = SessionManager.inMemory(harness.tempDir, { id: "c8-resumed" },
+      loadEntriesFromFile(sourcePath));
+    continuationHarness = await createHarness({ sessionManager: continuationManager, initialActiveToolNames: [] });
+    continuationHarness.setResponses([fauxAssistantMessage("continued response")]);
+    const capturedRequests = [];
+    const originalStreamFunction = continuationHarness.session.agent.streamFunction;
+    continuationHarness.session.agent.streamFunction = (model, context, options) => {
+      capturedRequests.push(context.messages);
+      return originalStreamFunction(model, context, options);
+    };
+    await continuationHarness.session.prompt("continue after restart");
+    const apiRequests = await Promise.all([
+      c8ObservePiApiRequest("openai-responses", capturedRequests[0], continuationHarness.tempDir),
+      c8ObservePiApiRequest("openai-completions", capturedRequests[0], continuationHarness.tempDir),
+      c8ObservePiApiRequest("anthropic-messages", capturedRequests[0], continuationHarness.tempDir),
+    ]);
+
+    return {
+      scenario: "c8",
+      cases: {
+        "C8.compaction-entry-persists-summary-boundary-usage": summaryBoundaryUsage,
+        "C8.canonical-ancestor-messages-remain-recoverable": {
+          messages: originalMessages,
+          allFourCanonicalMessagesRemain: JSON.stringify(originalMessages) === JSON.stringify([
+            "older question", "older answer", "retained question", "retained answer",
+          ]),
+        },
+        "C8.jsonl-export-import-round-trips-compaction": {
+          summaryBoundaryUsage: jsonlEntry ? {
+            summary: jsonlEntry.summary,
+            boundaryPreserved: jsonlEntry.firstKeptEntryId === boundaryId,
+            boundaryMessage,
+            tokensBefore: jsonlEntry.tokensBefore,
+            usageInput: jsonlEntry.usage?.input ?? null,
+            usageOutput: jsonlEntry.usage?.output ?? null,
+            usageCachedInput: jsonlEntry.usage?.cacheRead ?? null,
+            usageCachedWrite: jsonlEntry.usage?.cacheWrite ?? null,
+            usageTotal: jsonlEntry.usage?.totalTokens ?? null,
+            detailsOwner: jsonlEntry.details?.owner ?? null,
+            detailsRevision: jsonlEntry.details?.revision ?? null,
+          } : null,
+          context: jsonlContext,
+        },
+        "C8.reload-restores-compacted-context-not-projection": {
+          compactedContext,
+          reloadedContext,
+          contextsMatch: JSON.stringify(compactedContext) === JSON.stringify(reloadedContext),
+          oldRawHistoryAbsentFromContext: !reloadedContext.some(message => message.text === "older question"),
+        },
+        "C8.branch-context-is-reconstructed-from-selected-path": {
+          beforeCompactionBranch,
+          alternateBranch,
+          alternateQuestionOnlyOnAlternatePath: alternateBranch.some(message => message.text === "alternate branch question") &&
+            !reloadedContext.some(message => message.text === "alternate branch question"),
+        },
+        "C8.switching-before-and-after-compaction-restores-correct-path": {
+          beforeCompactionBranch,
+          afterCompactionBranch,
+          beforeHasNoSummary: !beforeCompactionBranch.some(message => message.text.includes("compacted into")),
+          afterHasSummary: afterCompactionBranch.some(message => message.text.includes("older history summary")),
+        },
+        "C8.fork-and-clone-preserve-compacted-session": {
+          forkContext: c8Messages(forked.buildSessionContext().messages),
+          cloneContext: c8Messages(cloned.buildSessionContext().messages),
+          bothPreserveSummary: [forked, cloned].every(session =>
+            c8Messages(session.buildSessionContext().messages).some(message => message.text.includes("older history summary"))),
+        },
+        "C8.restart-recovery-keeps-provider-continuation": {
+          requests: capturedRequests.map(c8Messages),
+          requestCount: capturedRequests.length,
+          requestIncludesSummary: capturedRequests.some(request => c8Messages(request).some(message =>
+            message.text.includes("older history summary"))),
+          requestIncludesRetainedHistory: capturedRequests.some(request => c8Messages(request).some(message =>
+            message.text === "retained answer")),
+          requestIncludesNewPrompt: capturedRequests.some(request => c8Messages(request).some(message =>
+            message.text === "continue after restart")),
+        },
+        "C8.openai-responses-chat-anthropic-after-reload": {
+          requests: apiRequests,
+          providerRequestCount: apiRequests.length,
+          allAdaptersReceivedSummary: apiRequests.every(item => JSON.stringify(item.request).includes("older history summary")),
+          allAdaptersReceivedRetainedHistory: apiRequests.every(item => JSON.stringify(item.request).includes("retained answer")),
+          allAdaptersReceivedNewPrompt: apiRequests.every(item => JSON.stringify(item.request).includes("continue after restart")),
+        },
+        "C8.metadata-label-and-extension-fields-survive": {
+          label: jsonlReload.getLabel(compactionId) ?? null,
+          detailsOwner: jsonlEntry?.details?.owner ?? null,
+          detailsRevision: jsonlEntry?.details?.revision ?? null,
+          customExtension: jsonlReload.getEntries().some(item => item.type === "custom" &&
+            item.customType === "c8.extension-state" && item.data?.revision === 7),
+        },
+      },
+    };
+  } finally {
+    continuationHarness?.cleanup();
+    harness.cleanup();
+  }
+}
+
 async function runOnce() {
   if (scenario === "c3") return runC3();
   if (scenario === "c4") return runC4();
   if (scenario === "c6") return runC6();
   if (scenario === "c7") return runPiC7();
+  if (scenario === "c8") return runPiC8();
   if (scenario === "error-turn-usage") return runErrorTurnUsageOnce();
   const contextWindow = scenario === "queued-steering" ? 12_000
     : ["threshold-after-turn", "threshold-equal", "threshold-over", "disabled-setting"].includes(scenario) ? 10_000
