@@ -526,8 +526,11 @@ internal static class PiJsonlEntryCodec
             if (StringProperty(message, "thinkingLevel") is { } thinking) properties["pisharp.thinkingLevel"] = thinking;
             if (StringProperty(message, "api") is { } api) properties["pisharp.api"] = api;
             if (StringProperty(message, "stopReason") is { } stopReason) properties["pisharp.stopReason"] = stopReason;
+            if (StringProperty(message, "rawStopReason") is { } rawStopReason)
+                properties["pisharp.rawStopReason"] = rawStopReason;
             if (StringProperty(message, "errorMessage") is { } errorMessage) properties["pisharp.errorMessage"] = errorMessage;
             if (properties.Count > 0) result.AdditionalProperties = properties;
+            result.MessageId = StringProperty(message, "responseId");
         }
         return result;
     }
@@ -775,6 +778,10 @@ internal static class PiJsonlEntryCodec
             messageObject["api"] = MessageProperty(message, "pisharp.api") ?? "openai-responses";
             messageObject["stopReason"] = message.Contents.OfType<FunctionCallContent>().Any() ? "toolUse" : "stop";
             messageObject["usage"] = EmptyUsage();
+            if (message.MessageId is { Length: > 0 } responseId)
+                messageObject["responseId"] = responseId;
+            if (MessageProperty(message, "pisharp.rawStopReason") is { } rawStopReason)
+                messageObject["rawStopReason"] = rawStopReason;
         }
         if (role == "toolResult")
         {

@@ -8,6 +8,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
 from pathlib import Path
+import re
 import signal
 import shutil
 import subprocess
@@ -80,12 +81,14 @@ class InputRun:
     release_provider_after_input_index: int | None = None
     resume_session: bool = False
     reuse_workspace_previous: bool = False
+    session_fixture_jsonl: str | None = None
     expected_min_provider_requests: int = 0
     lifecycle_event_types: tuple[str, ...] = ()
     preserve_event_payloads: bool = False
     preserve_event_payload_types: tuple[str, ...] = ()
     preserve_message_update_deltas_only: bool = False
     preserve_response_data_commands: tuple[str, ...] = ()
+    preserve_session_identity: bool = False
     normalize_session_entry_ids: bool = False
     preserve_system_message_payloads: bool = False
     forbidden_lifecycle_event_types: tuple[str, ...] = ()
@@ -1325,6 +1328,310 @@ for _case_id, _runs in tuple(R6_SCENARIOS.items()):
     )
 
 
+def _r7_fixture(entries: tuple[dict[str, Any], ...], *, session_id: str = "rpc-r7-session") -> str:
+    records = [
+        {
+            "type": "session", "version": 3, "id": session_id,
+            "timestamp": "2025-01-01T00:00:00.000Z", "cwd": "/tmp",
+            "provider": "fixture", "modelId": "fixture-model", "thinkingLevel": "off",
+        },
+        *entries,
+    ]
+    if not any(entry.get("type") == "thinking_level_change" for entry in entries):
+        parent_id = entries[-1].get("id") if entries else None
+        records.append({
+            "type": "thinking_level_change", "id": "r7-thinking", "parentId": parent_id,
+            "timestamp": "2025-01-01T00:10:00.000Z", "thinkingLevel": "off",
+        })
+    return "".join(json.dumps(record, ensure_ascii=False, separators=(",", ":")) + "\n" for record in records)
+
+
+def _r7_message(entry_id: str, parent_id: str | None, role: str, text: str, *, minute: int,
+                assistant_usage: bool = True) -> dict[str, Any]:
+    message: dict[str, Any] = {
+        "role": role,
+        "content": [{"type": "text", "text": text}],
+        "timestamp": 1735689600000 + minute * 60_000,
+    }
+    if role == "assistant":
+        message.update({
+            "provider": "fixture", "model": "fixture-model", "api": "openai-completions",
+            "stopReason": "stop",
+        })
+        if assistant_usage:
+            message["usage"] = {
+                "input": 12, "output": 2, "cacheRead": 0, "cacheWrite": 0,
+                "totalTokens": 14,
+                "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "total": 0},
+            }
+    return {
+        "type": "message", "id": entry_id, "parentId": parent_id,
+        "timestamp": f"2025-01-01T00:{minute:02d}:00.000Z", "message": message,
+    }
+
+
+_R7_LINEAR = _r7_fixture((
+    _r7_message("r7-u1", None, "user", "first question", minute=1),
+    _r7_message("r7-a1", "r7-u1", "assistant", "first answer", minute=2),
+))
+_R7_BRANCHES = _r7_fixture((
+    _r7_message("r7-u1", None, "user", "root question", minute=1),
+    _r7_message("r7-a1", "r7-u1", "assistant", "first answer", minute=2),
+    _r7_message("r7-u2", "r7-a1", "user", "first branch question", minute=3),
+    _r7_message("r7-a2", "r7-u2", "assistant", "first branch answer", minute=4),
+    _r7_message("r7-u3", "r7-u1", "user", "selected branch question", minute=5),
+    _r7_message("r7-a3", "r7-u3", "assistant", "selected branch answer", minute=6),
+    {
+        "type": "label", "id": "r7-label", "parentId": "r7-a3",
+        "timestamp": "2025-01-01T00:07:00.000Z", "targetId": "r7-a3", "label": "selected",
+    },
+))
+_R7_COMPACTED = _r7_fixture((
+    _r7_message("r7-old-user", None, "user", "old question", minute=1),
+    _r7_message("r7-old-assistant", "r7-old-user", "assistant", "old answer", minute=2),
+    _r7_message("r7-kept-user", "r7-old-assistant", "user", "retained question", minute=3),
+    _r7_message("r7-edited-assistant", "r7-kept-user", "assistant", "original answer", minute=4),
+    {
+        "type": "compaction", "id": "r7-compaction", "parentId": "r7-edited-assistant",
+        "timestamp": "2025-01-01T00:05:00.000Z", "summary": "summary of old turn",
+        "firstKeptEntryId": "r7-kept-user", "tokensBefore": 1234,
+    },
+    {
+        "type": "context_edit", "id": "r7-context-edit", "parentId": "r7-compaction",
+        "timestamp": "2025-01-01T00:06:00.000Z", "targetId": "r7-edited-assistant",
+        "replacement": {"content": "edited answer"},
+    },
+))
+
+R7_SCENARIOS: dict[str, tuple[InputRun, ...]] = {}
+R7_SCENARIOS["R7.get-state-idle-schema"] = _one(
+    _line("idle-state", "get_state"), expected_ids=("idle-state",), response_only=True,
+    preserve_response_data_commands=("get_state",), preserve_session_identity=True,
+)
+R7_SCENARIOS["R7.get-state-active-stream"] = (
+    InputRun(
+        chunks=(
+            (_line("active-prompt", "prompt", message="hold the first turn"), 0.0),
+            (_line("active-queue", "prompt", message="queue while active", streamingBehavior="followUp"), 0.0),
+            (_line("active-state", "get_state"), 0.0),
+        ),
+        expected_response_ids=("active-prompt", "active-queue", "active-state"),
+        expected_response_commands=("prompt", "prompt", "get_state"),
+        expected_successes=(True, True, True), expected_data_presence=(True, True, True),
+        expected_response_dispositions=("started", "queued", None),
+        provider_steps=(FixtureProviderStep(hold_before_response=True, text="first turn"),),
+        provider_waits=((0, 1, 10.0),),
+        stdout_waits=((0, '"id":"active-prompt"', 1, 10.0),
+                      (1, '"id":"active-queue"', 1, 10.0),
+                      (2, '"id":"active-state"', 1, 10.0)),
+        release_provider_after_input_index=2, expected_min_provider_requests=1,
+        response_only=True, preserve_response_data_commands=("get_state",), preserve_session_identity=True,
+        state_expectations=(("active-state", "isStreaming", True),
+                            ("active-state", "pendingMessageCount", 1)),
+        model_context_window=65_536,
+    ),
+)
+R7_SCENARIOS["R7.get-messages-system-projection"] = (
+    InputRun(
+        chunks=(
+            (_line("system-prompt", "prompt", message="start generation of system sections"), 0.0),
+            (_line("system-messages", "get_messages"), 0.0),
+            (_line("system-abort", "abort"), 0.0),
+        ),
+        expected_response_ids=("system-prompt", "system-messages", "system-abort"),
+        expected_response_commands=("prompt", "get_messages", "abort"),
+        expected_successes=(True, True, True), expected_data_presence=(True, True, False),
+        provider_steps=(FixtureProviderStep(hold_before_response=True, text="unused response"),),
+        provider_waits=((0, 1, 10.0),),
+        stdout_waits=((0, '"id":"system-prompt"', 1, 10.0),
+                      (1, '"id":"system-messages"', 1, 10.0),
+                      (2, '"type":"agent_settled"', 1, 15.0)),
+        expected_min_provider_requests=1, response_only=True,
+        preserve_response_data_commands=("get_messages",), model_context_window=65_536,
+    ),
+)
+R7_SCENARIOS["R7.get-messages-compacted-context-edits"] = (
+    InputRun(
+        chunks=((_line("compacted-messages", "get_messages"), 0.0),),
+        expected_response_ids=("compacted-messages",), expected_successes=(True,), response_only=True,
+        preserve_response_data_commands=("get_messages",), session_fixture_jsonl=_R7_COMPACTED,
+    ),
+)
+R7_SCENARIOS["R7.get-messages-active-partial"] = (
+    InputRun(
+        chunks=(
+            (_line("partial-prompt", "prompt", message="hold a partial assistant stream"), 0.0),
+            (_line("partial-messages", "get_messages"), 0.0),
+            (_line("partial-abort", "abort"), 0.0),
+        ),
+        expected_response_ids=("partial-prompt", "partial-messages", "partial-abort"),
+        expected_response_commands=("prompt", "get_messages", "abort"),
+        expected_successes=(True, True, True), expected_data_presence=(True, True, False),
+        provider_steps=(FixtureProviderStep(text="partial-only text", hold_after_partial=True),),
+        provider_waits=((0, 1, 10.0),),
+        stdout_waits=((0, '"id":"partial-prompt"', 1, 10.0),
+                      (0, "partial-only text", 1, 10.0),
+                      (1, '"id":"partial-messages"', 1, 10.0),
+                      (2, '"type":"agent_settled"', 1, 15.0)),
+        expected_min_provider_requests=1, lifecycle_event_types=("message_update", "agent_settled"),
+        preserve_message_update_deltas_only=True, preserve_response_data_commands=("get_messages",),
+        model_context_window=65_536,
+    ),
+)
+R7_SCENARIOS["R7.get-entries-full-and-leaf"] = (
+    InputRun(
+        chunks=((_line("linear-entries", "get_entries"), 0.0),),
+        expected_response_ids=("linear-entries",), expected_successes=(True,), response_only=True,
+        preserve_response_data_commands=("get_entries",), session_fixture_jsonl=_R7_LINEAR,
+    ),
+    InputRun(
+        chunks=((_line("branch-entries", "get_entries"), 0.0),),
+        expected_response_ids=("branch-entries",), expected_successes=(True,), response_only=True,
+        preserve_response_data_commands=("get_entries",), session_fixture_jsonl=_R7_BRANCHES,
+    ),
+)
+R7_SCENARIOS["R7.get-entries-cursor-boundaries"] = (
+    InputRun(
+        chunks=((
+            _line("cursor-full", "get_entries") +
+            _line("cursor-first", "get_entries", since="r7-u1") +
+            _line("cursor-last", "get_entries", since="r7-thinking") +
+            _line("cursor-missing", "get_entries", since="missing-entry") +
+            _line("cursor-null", "get_entries", since=None) +
+            b'{"id":"cursor-number","type":"get_entries","since":7}\n' +
+            _line("cursor-recovery", "get_entries", since="r7-a1"),
+            0.0,
+        ),),
+        expected_response_ids=("cursor-full", "cursor-first", "cursor-last", "cursor-missing",
+                               "cursor-null", "cursor-number", "cursor-recovery"),
+        expected_response_commands=("get_entries",) * 7,
+        expected_successes=(True, True, True, False, False, False, True),
+        response_only=True, preserve_response_data_commands=("get_entries",),
+        preserve_response_error_text=True, session_fixture_jsonl=_R7_LINEAR,
+    ),
+)
+R7_SCENARIOS["R7.get-tree-branches-and-labels"] = (
+    InputRun(
+        chunks=((_line("branch-tree", "get_tree"), 0.0),),
+        expected_response_ids=("branch-tree",), expected_successes=(True,), response_only=True,
+        preserve_response_data_commands=("get_tree",), session_fixture_jsonl=_R7_BRANCHES,
+    ),
+)
+R7_SCENARIOS["R7.get-fork-messages-content"] = (
+    InputRun(
+        chunks=((_line("fork-messages", "get_fork_messages"), 0.0),),
+        expected_response_ids=("fork-messages",), expected_successes=(True,), response_only=True,
+        preserve_response_data_commands=("get_fork_messages",), session_fixture_jsonl=_R7_BRANCHES,
+    ),
+)
+R7_SCENARIOS["R7.get-last-assistant-text-values"] = tuple(
+    InputRun(
+        chunks=((_line(f"last-text-{name}", "get_last_assistant_text"), 0.0),),
+        expected_response_ids=(f"last-text-{name}",), expected_successes=(True,), response_only=True,
+        preserve_response_data_commands=("get_last_assistant_text",), session_fixture_jsonl=fixture,
+    )
+    for name, fixture in (
+        ("empty", _r7_fixture(())),
+        ("text", _R7_LINEAR),
+        ("tool-only", _r7_fixture((
+            _r7_message("r7-tool-user", None, "user", "call a tool", minute=1),
+            {
+                "type": "message", "id": "r7-tool-assistant", "parentId": "r7-tool-user",
+                "timestamp": "2025-01-01T00:02:00.000Z",
+                "message": {"role": "assistant", "content": [{"type": "toolCall", "id": "tool-1",
+                    "name": "fixture_tool", "arguments": {}}], "provider": "fixture",
+                    "model": "fixture-model", "api": "openai-completions", "stopReason": "toolUse"},
+            },
+        ))),
+        ("branch", _R7_BRANCHES),
+    )
+)
+R7_SCENARIOS["R7.session-read-during-provider-work"] = (
+    InputRun(
+        chunks=(
+            (_line("read-active-prompt", "prompt", message="blocked read snapshot"), 0.0),
+            (_line("read-active-queue", "prompt", message="queued read snapshot", streamingBehavior="followUp"), 0.0),
+            (_line("read-active-state", "get_state"), 0.0),
+            (_line("read-active-messages", "get_messages"), 0.0),
+            (_line("read-active-entries", "get_entries"), 0.0),
+            (_line("read-active-tree", "get_tree"), 0.0),
+            (_line("read-active-fork", "get_fork_messages"), 0.0),
+            (_line("read-active-last", "get_last_assistant_text"), 0.0),
+        ),
+        expected_response_ids=("read-active-prompt", "read-active-queue", "read-active-state",
+                               "read-active-messages", "read-active-entries", "read-active-tree",
+                               "read-active-fork", "read-active-last"),
+        expected_response_commands=("prompt", "prompt", "get_state", "get_messages", "get_entries",
+                                    "get_tree", "get_fork_messages", "get_last_assistant_text"),
+        expected_successes=(True,) * 8,
+        provider_steps=(FixtureProviderStep(hold_before_response=True, text="finish first"),),
+        provider_waits=((0, 1, 10.0),),
+        stdout_waits=tuple((index, f'"id":"{request_id}"', 1, 10.0)
+                           for index, request_id in enumerate((
+                               "read-active-prompt", "read-active-queue", "read-active-state",
+                               "read-active-messages", "read-active-entries", "read-active-tree",
+                               "read-active-fork", "read-active-last"))),
+        release_provider_after_input_index=7, expected_min_provider_requests=1,
+        response_only=True,
+        preserve_response_data_commands=("get_state", "get_messages", "get_entries", "get_tree",
+                                         "get_fork_messages", "get_last_assistant_text"),
+        normalize_session_entry_ids=True, preserve_session_identity=True,
+        state_expectations=(("read-active-state", "isStreaming", True),
+                            ("read-active-state", "pendingMessageCount", 1)),
+        model_context_window=65_536,
+    ),
+)
+R7_SCENARIOS["R7.session-read-after-reload"] = (
+    InputRun(
+        chunks=((_line("native-seed", "prompt", message="persist native session"), 0.0),),
+        expected_response_ids=("native-seed",), expected_successes=(True,),
+        provider_steps=(FixtureProviderStep(text="native persisted answer"),),
+        provider_waits=((0, 1, 10.0),),
+        stdout_waits=((0, '"id":"native-seed"', 1, 10.0),
+                      (0, '"type":"agent_settled"', 1, 15.0)),
+        expected_min_provider_requests=1, response_only=True,
+        model_context_window=65_536,
+    ),
+    InputRun(
+        chunks=((_line("native-reloaded", "get_state") + _line("native-messages", "get_messages") +
+                 _line("native-entries", "get_entries"), 0.0),),
+        expected_response_ids=("native-reloaded", "native-messages", "native-entries"),
+        expected_successes=(True, True, True), response_only=True,
+        preserve_response_data_commands=("get_state", "get_messages", "get_entries"),
+        normalize_session_entry_ids=True, preserve_session_identity=True,
+        resume_session=True, reuse_workspace_previous=True, model_context_window=65_536,
+    ),
+    InputRun(
+        chunks=((_line("jsonl-seed-state", "get_state"), 0.0),),
+        expected_response_ids=("jsonl-seed-state",), expected_successes=(True,), response_only=True,
+        preserve_response_data_commands=("get_state",), preserve_session_identity=True,
+        session_fixture_jsonl=_R7_BRANCHES, model_context_window=65_536,
+    ),
+    InputRun(
+        chunks=((_line("jsonl-reloaded", "get_state") + _line("jsonl-messages", "get_messages") +
+                 _line("jsonl-entries", "get_entries"), 0.0),),
+        expected_response_ids=("jsonl-reloaded", "jsonl-messages", "jsonl-entries"),
+        expected_successes=(True, True, True), response_only=True,
+        preserve_response_data_commands=("get_state", "get_messages", "get_entries"),
+        normalize_session_entry_ids=True, preserve_session_identity=True,
+        resume_session=True, reuse_workspace_previous=True, model_context_window=65_536,
+    ),
+)
+R7_SCENARIOS["R7.read-command-error-cursors"] = (
+    InputRun(
+        chunks=((_line("invalid-cursor", "get_entries", since="missing") +
+                 _line("valid-after-error", "get_entries", since="r7-u1") +
+                 _line("messages-after-error", "get_messages"), 0.0),),
+        expected_response_ids=("invalid-cursor", "valid-after-error", "messages-after-error"),
+        expected_response_commands=("get_entries", "get_entries", "get_messages"),
+        expected_successes=(False, True, True), response_only=True,
+        preserve_response_error_text=True,
+        preserve_response_data_commands=("get_entries", "get_messages"),
+        session_fixture_jsonl=_R7_LINEAR,
+    ),
+)
+
+
 class _FixtureProvider:
     def __init__(self, response_delays: tuple[float, ...], provider_steps: tuple[FixtureProviderStep, ...],
                  tool_gate_path: Path):
@@ -1608,13 +1915,20 @@ def _prepare_product(product: str, pi: Path, workspace: Path,
     })
     if input_run.use_rpc_tool_extension and product == "pisharp":
         environment["PISHARP_RPC_TOOL_FIXTURE"] = "true"
-    common = ["--mode", "rpc", "--provider", "fixture", "--model", "fixture-model",
+    model_arguments = [] if input_run.session_fixture_jsonl is not None else [
+        "--provider", "fixture", "--model", "fixture-model",
+    ]
+    common = ["--mode", "rpc", *model_arguments,
               "--session-dir", str(sessions), "--no-context-files", "--no-extensions", "--no-skills",
               "--no-prompt-templates", "--system-prompt", "You are a deterministic RPC fixture assistant."]
     if product == "pisharp" and (input_run.use_entry_appending_extension or input_run.use_rpc_tool_extension):
         common.remove("--no-extensions")
     if input_run.resume_session:
         common.append("--continue")
+    if input_run.session_fixture_jsonl is not None:
+        session_path = sessions / "rpc-session-fixture.jsonl"
+        session_path.write_text(input_run.session_fixture_jsonl, encoding="utf-8")
+        common.extend(("--session", str(session_path)))
     if input_run.active_tool_names:
         common.extend(("--tools", ",".join(input_run.active_tool_names)))
     elif input_run.enable_bash_tool:
@@ -1844,18 +2158,32 @@ def _execute_with_provider(product: str, pi: Path, workspace: Path, input_run: I
 def _project(value: Any, *, preserve_response_error_text: bool = False,
              preserve_state_flags: bool = False, preserve_queue_state: bool = False,
              preserve_queue_response_data: bool = False,
-             preserve_response_data_commands: tuple[str, ...] = ()) -> Any:
+             preserve_response_data_commands: tuple[str, ...] = (),
+             preserve_session_identity: bool = False,
+             session_identity_tokens: dict[str, dict[str, str]] | None = None) -> Any:
+    if session_identity_tokens is None:
+        session_identity_tokens = {"sessionId": {}, "sessionFile": {}}
     if isinstance(value, list):
         return [_project(item, preserve_response_error_text=preserve_response_error_text,
                          preserve_state_flags=preserve_state_flags,
                          preserve_queue_state=preserve_queue_state,
                          preserve_queue_response_data=preserve_queue_response_data,
-                         preserve_response_data_commands=preserve_response_data_commands) for item in value]
+                         preserve_response_data_commands=preserve_response_data_commands,
+                         preserve_session_identity=preserve_session_identity,
+                         session_identity_tokens=session_identity_tokens) for item in value]
+    if isinstance(value, str):
+        return re.sub(r"^(https?://127\.0\.0\.1:)\d+(/v1(?:/.*)?)$", r"\1<fixture-port>\2", value)
     if not isinstance(value, dict):
         return value
     result: dict[str, Any] = {}
     for key, item in value.items():
         if key in VOLATILE_FIELDS:
+            if preserve_session_identity and key in session_identity_tokens:
+                if isinstance(item, str):
+                    tokens = session_identity_tokens[key]
+                    result[key] = tokens.setdefault(item, f"{key}-{len(tokens)}")
+                else:
+                    result[key] = item
             continue
         if key == "error" and value.get("type") == "response":
             result["errorPresent"] = True
@@ -1881,13 +2209,17 @@ def _project(value: Any, *, preserve_response_error_text: bool = False,
                                            preserve_state_flags=preserve_state_flags,
                                            preserve_queue_state=preserve_queue_state,
                                            preserve_queue_response_data=preserve_queue_response_data,
-                                           preserve_response_data_commands=preserve_response_data_commands)
+                                           preserve_response_data_commands=preserve_response_data_commands,
+                                           preserve_session_identity=preserve_session_identity,
+                                           session_identity_tokens=session_identity_tokens)
             continue
         result[key] = _project(item, preserve_response_error_text=preserve_response_error_text,
                                preserve_state_flags=preserve_state_flags,
                                preserve_queue_state=preserve_queue_state,
                                preserve_queue_response_data=preserve_queue_response_data,
-                               preserve_response_data_commands=preserve_response_data_commands)
+                               preserve_response_data_commands=preserve_response_data_commands,
+                               preserve_session_identity=preserve_session_identity,
+                               session_identity_tokens=session_identity_tokens)
     if value.get("type") == "response" and "data" not in value:
         result["dataPresent"] = False
     if value.get("type") == "response" and "error" not in value:
@@ -1925,8 +2257,8 @@ def _normalize_session_entry_ids(value: Any) -> Any:
                 normalize_leaf_ids(child)
         elif isinstance(item, dict):
             for key, child in item.items():
-                if key == "leafId" and isinstance(child, str):
-                    item[key] = identities.get(child, "external-leaf")
+                if key in {"leafId", "entryId", "targetId", "firstKeptEntryId"} and isinstance(child, str):
+                    item[key] = identities.get(child, f"external-{key}")
                 else:
                     normalize_leaf_ids(child)
 
@@ -2029,6 +2361,7 @@ def _observation(run_results: list[dict[str, Any]], input_runs: tuple[InputRun, 
                     preserve_queue_state=input_run.preserve_queue_state,
                     preserve_queue_response_data=input_run.preserve_queue_response_data,
                     preserve_response_data_commands=input_run.preserve_response_data_commands,
+                    preserve_session_identity=input_run.preserve_session_identity,
                 ),
                 "stderrCompared": input_run.compare_stderr,
                 "parseFailures": result["parseFailures"],
@@ -2275,7 +2608,8 @@ def _store_observation(evidence_dir: Path, case_id: str, product_run: str,
 def run_process_case(case: dict[str, Any], *, pi: Path, evidence_dir: Path) -> dict[str, Any]:
     case_id = case["id"]
     scenarios = R1_SCENARIOS.get(case_id) or R2_SCENARIOS.get(case_id) or R3_SCENARIOS.get(case_id) or \
-        R4_SCENARIOS.get(case_id) or R5_SCENARIOS.get(case_id) or R6_SCENARIOS.get(case_id)
+        R4_SCENARIOS.get(case_id) or R5_SCENARIOS.get(case_id) or R6_SCENARIOS.get(case_id) or \
+        R7_SCENARIOS.get(case_id)
     if case_id in R2_SCENARIOS and case_id not in {
         "R2.long-command-acceptance", "R2.active-compaction-command",
     }:
@@ -2366,4 +2700,4 @@ def run_process_case(case: dict[str, Any], *, pi: Path, evidence_dir: Path) -> d
 
 def scenario_case_ids() -> set[str]:
     return (set(R1_SCENARIOS) | set(R2_SCENARIOS) | set(R3_SCENARIOS) |
-            set(R4_SCENARIOS) | set(R5_SCENARIOS) | set(R6_SCENARIOS))
+            set(R4_SCENARIOS) | set(R5_SCENARIOS) | set(R6_SCENARIOS) | set(R7_SCENARIOS))

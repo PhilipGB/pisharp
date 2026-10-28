@@ -41,7 +41,9 @@ internal sealed class RpcEventProjector
         var assistant = ProjectMessagesSnapshot(conversation, api).OfType<JsonObject>()
             .LastOrDefault(message => message["role"]?.GetValue<string>() == "assistant" &&
                 !(message["stopReason"]?.GetValue<string>() == "aborted" && IsEmptyContent(message["content"])));
-        return assistant is null ? null : ReadText(assistant["content"]);
+        if (assistant is null) return null;
+        var text = ReadText(assistant["content"]).Trim();
+        return text.Length == 0 ? null : text;
     }
 
     private static string ReadText(JsonNode? content)

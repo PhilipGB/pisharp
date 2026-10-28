@@ -197,7 +197,8 @@ internal sealed class RpcSessionCommandHandler(
 
             case "get_entries":
                 var entriesSnapshot = conversation.Snapshot();
-                var entries = RpcSessionEntryProjector.ProjectEntries(entriesSnapshot, getApi?.Invoke());
+                var systemForEntries = getSystemMessage?.Invoke();
+                var entries = RpcSessionEntryProjector.ProjectEntries(entriesSnapshot, getApi?.Invoke(), systemForEntries);
                 var index = -1;
                 if (root.TryGetProperty("since", out var since))
                 {
@@ -215,19 +216,28 @@ internal sealed class RpcSessionCommandHandler(
                     type = "response",
                     command,
                     success = true,
-                    data = new { entries = entries.Skip(index + 1).ToArray(), leafId = RpcSessionEntryProjector.ProjectLeafId(entriesSnapshot) }
+                    data = new
+                    {
+                        entries = entries.Skip(index + 1).ToArray(),
+                        leafId = RpcSessionEntryProjector.ProjectLeafId(entriesSnapshot, systemForEntries)
+                    }
                 }, cancellationToken);
                 return true;
 
             case "get_tree":
                 var treeSnapshot = conversation.Snapshot();
+                var systemForTree = getSystemMessage?.Invoke();
                 await output.EmitAsync(new
                 {
                     id,
                     type = "response",
                     command,
                     success = true,
-                    data = new { tree = RpcSessionEntryProjector.ProjectTree(treeSnapshot, getApi?.Invoke()), leafId = treeSnapshot.Tree.HeadId }
+                    data = new
+                    {
+                        tree = RpcSessionEntryProjector.ProjectTree(treeSnapshot, getApi?.Invoke(), systemForTree),
+                        leafId = RpcSessionEntryProjector.ProjectLeafId(treeSnapshot, systemForTree)
+                    }
                 }, cancellationToken);
                 return true;
 

@@ -459,7 +459,7 @@ internal sealed class RpcAssistantMessageProjector
         ["assistantMessageEvent"] = assistantMessageEvent
     };
 
-    private static JsonObject ProjectUsage(UsageRecord? usage)
+    internal static JsonObject ProjectUsage(UsageRecord? usage)
     {
         var cacheRead = usage?.CachedInputTokens ?? 0;
         var input = usage?.InputTokens ?? (usage?.InputIncludingCachedTokens is long inputIncludingCached
