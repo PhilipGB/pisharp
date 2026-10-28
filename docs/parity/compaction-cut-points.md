@@ -27,7 +27,28 @@ EOF
 
 Observed output: `{"firstKeptEntryIndex":3,"turnStartIndex":2,"isSplitTurn":true}`. This also agrees with pinned `packages/coding-agent/test/compaction.test.ts` regression #9740: persistent compaction keeps the tool call and its oversized trailing result together.
 
-Local `InFlightContextBudgetTests.OversizedActiveToolResultIsSummarizedInsteadOfKeptInTransientRequest` projects the analogous old turn + 8000-character completed read cycle with an explicitly configured 2400-token heuristic request threshold. It summarizes the completed cycle, sends one synthetic summary in the transient provider request and leaves both original call/result messages unchanged in the raw input. This remains a distinct in-flight request projection; it does not append a canonical compaction entry. Persistent split-turn behavior is now compared against current Pi in [`rpc-compact-baseline.md`](fixtures/rpc-compact-baseline.md), including an assistant boundary after the completed tool result. In-flight tool-loop and overflow compaction still need their own current-Pi process comparison.
+Local `InFlightContextBudgetTests.OversizedActiveToolResultIsSummarizedInsteadOfKeptInTransientRequest` projects the analogous old turn + 8000-character completed read cycle with an explicitly configured 2400-token heuristic request threshold. It summarizes the completed cycle, sends one synthetic summary in the transient provider request and leaves both original call/result messages unchanged in the raw input. This remains a distinct in-flight request projection; it does not append a canonical compaction entry. Persistent split-turn behavior is compared against current Pi in [`rpc-compact-baseline.md`](fixtures/rpc-compact-baseline.md), including an assistant boundary after the completed tool result.
+
+## Pinned in-flight tool continuation comparison
+
+The C6 adapter runs against pinned Pi `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` through its actual `AgentSession` harness and provider stream hook. The Pi cases execute single, sequential, parallel and nested tool calls, then capture the continuation request and durable session projection. Pi sends the full 8000-character result and allows the seeded incomplete and duplicate graphs to reach the provider hook. PiSharp's `InFlightContextBudget` leaves raw canonical history unchanged, summarizes the large result, closes sequential/parallel/nested groups before the cut, preserves steering, and rejects malformed transient continuations before their projected send.
+
+At PiSharp source `1ff1d67d85d4ef76995700e0e345632c9c6ec16f`, the C6 checkpoint passes 10/10 cases with zero unresolved mismatches. Four case-scoped safety differences cover bounded large results, summary retention of the latest outcome, and pre-send rejection of incomplete or duplicate graphs. The compact case record is [compaction-context-management-c6-case-results.json](fixtures/compaction-context-management-c6-case-results.json); raw Pi and PiSharp captures and their hashes are under the Git-ignored directory `artifacts/parity/20261028-c6-1ff1d67d/runs/C6/differential/`.
+
+This closes the current-Pi process evidence gap for the C6 tool-continuation scenarios. It does not establish equivalence for the intentional safety differences or complete the full compaction contract; provider-wire overflow cases and the other frozen checkpoints remain open.
+
+## C7 summary generation
+
+The paired C7 runner at PiSharp source
+`d274475f25512c9568112985896a17136586a2a6` passes 10/10 summary-generation
+cases. It compares the pinned system prompt and serialized transcript, prior
+summary updates, focus handling across split turns, tool-call/result content,
+file details, retry behavior, usage presence, and routed model/reasoning
+options. Pinned Pi accepts a whitespace-only first summary and appends a
+compaction; PiSharp rejects the empty result and retains canonical history.
+This is recorded as an intentional safety difference in the [C7 case
+record](fixtures/compaction-context-management-c7-case-results.json). Raw
+captures are under `artifacts/parity/20261028-c7-d274475f/runs/C7/differential/`.
 
 ## Current-main compaction cut points and defaults
 

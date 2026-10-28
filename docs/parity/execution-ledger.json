@@ -13638,7 +13638,7 @@
   },
   "compaction_context_management_parity_milestone": {
     "status": "in_progress",
-    "phase": "length_stop_recovery_implemented_partial_c5_differential_open",
+    "phase": "C7_summary_generation_verified_partial_contract_open",
     "branch": "milestone/compaction-context-management-parity",
     "branch_base_sha": "12064420179f4119bdaf37479c7cba0f5ca40717",
     "pi_reference": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
@@ -13646,38 +13646,45 @@
     "contract_sha256": "c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6",
     "required_checkpoints": 22,
     "required_cases": 211,
-    "implementation_source_sha": "b22f7e7bad940a1dd0a26d716628f6739a8a9abf",
-    "case_evidence_produced": 2,
-    "status_reason": "Two local C5 cases have paired, hash-bound Pi/PiSharp observations. The remaining 209 frozen cases are not yet adapted; no checkpoint or full parity acceptance is claimed.",
+    "implementation_source_sha": "d274475f25512c9568112985896a17136586a2a6",
+    "case_evidence_produced": 10,
+    "status_reason": "C7 passes 10/10 cases at source d274475f; it is the only current-source checkpoint. The frozen 22-checkpoint / 211-case contract remains incomplete, and C1-C6 evidence needs a final-source refresh.",
     "implemented": [
       "Pi-style branch summary navigation, extension decisions, details and usage/cost persistence",
       "Cached-read and cached-write context-token fallback when provider total is missing or zero",
       "Post-turn threshold and successful silent-overflow compaction without replay",
       "Expanded provider overflow message patterns and representative exclusion regressions",
       "Bounded length-stop recovery based on reported output usage, desired model cap, current model identity and projected history; omit partial response, compact once, continue once",
-      "Stable two-run Pi/PiSharp C5 oracle and hash-bound assertion verifier for two frozen cases"
+      "Stable two-run Pi/PiSharp C5 oracle and hash-bound assertion verifier for two frozen cases",
+      "Stable paired C6 Pi AgentSession/PiSharp in-flight tool-continuation oracle with nested-call capture, ordered group checks, canonical-history preservation, and four accepted safety differences.",
+      "C7 summary generation: pinned prompt serialization, split-turn inputs, tool and file details, reserve-aware output caps, length-stop rejection, configured transient retries, usage, routing and reasoning options; whitespace-only summaries are rejected as a safety difference."
     ],
     "local_validation": {
       "dotnet_full": "3,939 passed, 0 failed, 0 skipped; full dotnet test PiSharp.slnx --no-restore passed in 6m36s.",
       "dotnet_focused": "Compaction and provider loopback tests 82/82 pass after extraction.",
-      "dotnet_format": "dotnet format PiSharp.slnx --verify-no-changes --no-restore passed.",
+      "dotnet_format": "dotnet format PiSharp.slnx --verify-no-changes --no-restore passed at source d274475f; workspace load emitted a non-fatal warning.",
       "dotnet_build_warnaserror": "Passed with zero warnings/errors using NuGetAudit=false because the default vulnerability cache is read-only.",
       "terminal_python": "66/66 passed.",
       "builtin_parity_python": "27/27 passed.",
       "compaction_verifier_tests": "20/20 passed, including content-mutation/hash and negative controls.",
       "terminal_node": "24/24 passed.",
-      "docs": "156 documents and 688 references verified after the receipt and compact C5 case record were added.",
+      "docs": "156 documents and 693 references verified after the C7 receipt and compact case record were added.",
       "pinned_pi_suites": "Selected compaction+queue suites: 34 passed, 1 failed. The failing no-prior-usage queue test resolves model id unknown/contextWindow 0; pinned shouldCompact triggers while the test expects no-op. Pi AI overflow tests pass 20/20.",
       "paired_c5": "2/11 C5 cases pass equivalent, stable across two Pi and two PiSharp runs; remaining C5 cases are unexecuted.",
-      "mcp_conformance": "No regressions against the classified baseline; three existing 2025-11-25 scenarios remain classified."
+      "mcp_conformance": "No regressions against the classified baseline; three existing 2025-11-25 scenarios remain classified.",
+      "c6_dotnet_focused": "C6 frozen filter passed 85/85 tests at source 1ff1d67; zero failures or skips.",
+      "paired_c6": "C6 differential passed 10/10, stable across two runs per side at source 1ff1d67; four case-scoped safety differences; zero unresolved mismatches.",
+      "c6_checkpoint_runner": "runner.py status passed; sourceTreeClean true; source SHA 1ff1d67d85d4ef76995700e0e345632c9c6ec16f; all 13 unique raw/normalized artifact hashes verified.",
+      "c7_dotnet_focused": "80 passed, 0 failed, 0 skipped at source d274475f; filter covers CompactionTests and RpcCompactionProcessTests.",
+      "c7_paired_oracle": "10/10 required cases passed at source d274475f; nine equivalent and one intentional whitespace-only-summary safety difference. Pi and PiSharp runs were stable across two runs per side.",
+      "c7_checkpoint_runner": "runner.py status passed: sourceTreeClean true, 10 required, 10 executed, 10 passed, 0 failed, 0 skipped; raw artifacts are under artifacts/parity/20261028-c7-d274475f/runs/C7/."
     },
     "open_requirements": [
-      "Execute and validate the remaining 209 of 211 frozen cases; no checkpoint passes the frozen denominator yet.",
-      "Build full paired adapters for manual/automatic compaction, cut points, context estimates, tool continuation, summaries, session persistence/branching, usage, CLI/RPC/TUI, extensions and failure/cancellation.",
+      "Build and execute C8-C13, D0, Q0, E0, CI0 and PUB0, then refresh every required checkpoint report against the final source head before assembling the complete 211-case evidence set.",
+      "Refresh C1-C6 evidence at final source; their current records predate C7 source changes.",
       "Complete post-compaction continuation provider-wire coverage across Responses, Chat Completions and Anthropic, including the overflow error matrix.",
-      "Classify the separate transient estimator algorithm difference and the pinned unknown-window test discrepancy.",
-      "Adapt and execute the remaining 209 frozen cases, including provider-wire coverage and classification of the transient-estimator and unknown-window differences.",
-      "Push the source-bound evidence and docs, verify automatic exact-head push and PR workflows, then run publication verification against the current evidence directory."
+      "Classify the separate transient estimator formula and the pinned unknown-window queue-test discrepancy per required case.",
+      "Keep PR #28 open and draft; after all evidence is complete, push final source-bound evidence, verify exact-head workflows, and run the publication gate."
     ],
     "ci_scope_adjustment": "The managed-package parity corpus and its evidence steps run only on milestone/managed-package-lifecycle-parity because their clean-start assertions are pinned to that branch and base; verifier controls and common CI still run on this milestone.",
     "draft_pr": {
@@ -13690,6 +13697,6 @@
     "initial_exact_head_result": "Platform, MCP, and .NET checks passed. The package corpus failed on its historical branch/base assertion; its branch scope is being corrected before rerunning exact-head CI.",
     "receipt": "docs/parity/fixtures/compaction-context-management-parity-2026-10-28.md",
     "inventory": "docs/parity/fixtures/compaction-context-management-inventory.json",
-    "case_evidence_committed": 2
+    "case_evidence_committed": 22
   }
 }

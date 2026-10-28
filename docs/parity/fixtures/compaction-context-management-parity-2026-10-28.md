@@ -4,8 +4,10 @@
 
 This branch starts at the verified PR #27 merge `12064420179f4119bdaf37479c7cba0f5ca40717`.
 The Pi oracle is pinned to `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; the installed
-`Microsoft.Agents.AI` version is 1.21.0. The recovery implementation and paired
-oracle are pinned to source commit `b22f7e7bad940a1dd0a26d716628f6739a8a9abf`.
+`Microsoft.Agents.AI` version is 1.21.0. C5 recovery observations were first
+captured at source `b22f7e7bad940a1dd0a26d716628f6739a8a9abf`; C6 passed at
+`1ff1d67d85d4ef76995700e0e345632c9c6ec16f`. The current source-bound checkpoint
+is C7 at `d274475f25512c9568112985896a17136586a2a6`.
 
 The frozen contract is [contract.json](../../../tools/parity/compaction_context/contract.json),
 SHA-256 `c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6`:
@@ -27,6 +29,10 @@ SHA-256 `c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6`:
   failed response from outbound context, compacts once, and continues once.
   Partial output is not replayed; a repeated length stop ends with Pi's bounded
   recovery error.
+- Summary generation now matches pinned prompt serialization, split-turn
+  requests, file details, retry behavior, usage, model routing, and reasoning
+  options. It rejects length-stopped responses, uses reserve-aware output caps,
+  and retries transient provider failures using the configured retry policy.
 
 These changes have unit, CLI, extension, navigation, session interchange, and
 loopback coverage. Those tests establish implementation behavior; they do not
@@ -50,10 +56,53 @@ Git-ignored local directory
 `artifacts/parity/20261028T062543Z-c5-length-recovery/`. The committed record
 contains their paths and SHA-256 hashes; the raw captures are not in Git.
 
-The runner validated 2 of C5's 11 cases: 2 executed, 2 passed, 0 failed, and 9
-unexecuted. The full frozen denominator remains 2 of 211 paired cases.
+The runner validated 2 of C5's 11 cases at that earlier source: 2 executed, 2
+passed, 0 failed, and 9 unexecuted. These observations are historical after
+later parity-oracle changes and must be refreshed at the final source head.
+
+## C6 in-flight tool continuation
+
+The C6 adapter drives pinned Pi's actual `AgentSession` tool loop and records
+provider-hook requests and canonical session projection. Its PiSharp side calls
+the in-flight projector directly and checks the transient request separately
+from unchanged raw history. Sequential and parallel tool groups, a nested
+`executeTool` call, steering after a result, large results, incomplete graphs,
+duplicate results, and the valid post-projection history case all ran twice per
+side with stable observations.
+
+At source `1ff1d67d85d4ef76995700e0e345632c9c6ec16f`, C6 passes 10/10 required
+cases. Four accepted safety differences are classified: Pi sends the full
+large tool result while PiSharp bounds only the transient request; Pi retains
+large raw tool outputs while PiSharp's summary preserves the latest outcome;
+and Pi sends seeded incomplete or duplicate call/result graphs that PiSharp
+rejects before sending the projected continuation. The compact record is
+[compaction-context-management-c6-case-results.json](compaction-context-management-c6-case-results.json).
+The raw request/process captures remain Git-ignored under
+`artifacts/parity/20261028-c6-1ff1d67d/runs/C6/differential/`; the committed
+record binds their paths and SHA-256 hashes.
+
+## C7 summary generation
+
+The C7 runner at source
+`d274475f25512c9568112985896a17136586a2a6` passes all 10 required cases. Nine
+cases are equivalent: initial prompts, prior-summary updates, manual focus,
+split-turn requests, tool serialization, file details, transient retry, usage,
+and routed model/reasoning options. The remaining case is an intentional safety
+difference: pinned Pi accepts a whitespace-only summary and appends compaction;
+PiSharp rejects it and preserves canonical history. Length-stop behavior and
+state preservation match. The compact hash-bound record is
+[compaction-context-management-c7-case-results.json](compaction-context-management-c7-case-results.json).
+Raw captures remain Git-ignored under
+`artifacts/parity/20261028-c7-d274475f/runs/C7/differential/`.
 
 ## Local validation
+
+- C6 checkpoint runner: **10/10 passed**; focused C6 .NET filter: **85/85 passed**.
+- C6 parity Python validation: **20/20 passed**; frozen contract: 22 checkpoints
+  and 211 cases; format verification passed.
+- C7 checkpoint runner: **10/10 passed** at `d274475f`; focused C7 .NET filter:
+  **80/80 passed**; format verification passed. Nine cases are equivalent and
+  one whitespace-only-summary case is an intentional safety difference.
 
 - Full .NET suite: **3,939 passed, 0 failed, 0 skipped**.
 - Focused compaction and provider loopback tests: **82/82 passed**.
@@ -73,12 +122,14 @@ unexecuted. The full frozen denominator remains 2 of 211 paired cases.
 
 ## Acceptance remains open
 
-The verifier records 2/11 C5 cases and 2/211 overall. None of the 22 frozen
-checkpoints passes its complete denominator. The remaining 209 cases still
-need paired Pi/PiSharp adapters and evidence across manual and automatic
-compaction, cut points, context estimates, tool continuation, summaries,
-session persistence and branching, usage, CLI/RPC/TUI, extensions, failures,
-cancellation, and publication.
+The current source-bound result is C7 10/10 at `d274475f`, or 10/211 cases
+(4.7%); C7 is the only checkpoint passing at current source. C6's 10/10 result
+at `1ff1d67` is now stale after C7 source changes. Earlier C1-C5 evidence also
+needs a final-source refresh. The remaining 201 cases need adapters or refreshed
+evidence across manual and automatic compaction, cut points, estimates, session
+persistence and branching, usage, CLI/RPC/TUI, extensions, failures,
+cancellation, and publication. The frozen denominator remains 22 checkpoints /
+211 cases, and full acceptance is not claimed.
 
 Also open are the complete Responses, Chat Completions, and Anthropic
 compaction-continuation wire corpus; classification of the separate transient

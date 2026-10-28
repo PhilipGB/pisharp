@@ -9,27 +9,22 @@ published managed-package evidence records 27/27 checkpoints and 240/240 cases.
 Pi is pinned to `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The frozen
 compaction contract remains 22 checkpoints / 211 cases.
 
-Length-stop recovery checks provider finish reason, reported output usage,
-desired model output tokens, current model identity and projected history. It
-omits the failed attempt from outbound context, compacts once, and continues
-once. The paired C5 Pi/PiSharp oracle is stable across two runs per side and
-passes 2/11 C5 cases at implementation source
-`b22f7e7bad940a1dd0a26d716628f6739a8a9abf`; its verifier resolves each assertion
-from distinct, hashed observations. The compact case record is committed, with
-raw captures under `artifacts/parity/20261028T062543Z-c5-length-recovery/`.
-Focused .NET compaction/provider tests pass 82/82; the full .NET suite passes
-3,939/3,939; format and warning-as-error build pass; verifier controls 20/20;
-terminal Python 66/66; built-in parity Python 27/27; terminal Node 24/24; and
-MCP conformance has no regressions against its classified baseline.
+Current-source checkpoint C7 (`d274475f25512c9568112985896a17136586a2a6`)
+passes 10/10 paired cases, with nine equivalent cases and one intentional
+whitespace-only-summary safety difference. The paired evidence covers summary
+prompts and updates, split-turn inputs, tool serialization, file details,
+transient retries, usage, routing and reasoning. Raw captures are under
+`artifacts/parity/20261028-c7-d274475f/`, with compact hashes and source pins in
+the committed C7 case record.
 
-Acceptance is not complete: only 2/211 cases have paired artifacts, so no
-checkpoint passes. The remaining provider, budget, cut-point, tool, summary,
-session, branch, usage, public-surface, extension, failure and publication
-cases still require adapters and paired evidence. One pinned Pi queue test fails
-at this checkout with model ID `unknown` and context window `0`; its threshold
-calculation triggers compaction although the test expects a no-op. PR #27's
-exact-head CI and publication evidence are verified; a local rebuild did not
-reproduce its archived CLI binary hash. See the
+C6 passed 10/10 at `1ff1d67` but is now stale after C7 source changes. C5's
+2/11 cases and all C1-C6 evidence need a final-source refresh. C7 is currently
+the only source-bound checkpoint: 10/211 cases, with 201 cases remaining in the
+frozen contract. Focused C7 .NET tests pass 80/80, the parity Python suite
+20/20, and formatting verification passes. Continue with C8-C13, D0, Q0, E0,
+CI0 and PUB0, then rerun all required checkpoint evidence against the final
+source. PR #28 remains open and draft.
+See the
 [inventory](parity/fixtures/compaction-context-management-inventory.json),
 [receipt](parity/fixtures/compaction-context-management-parity-2026-10-28.md),
 and [execution ledger](parity/execution-ledger.json).
