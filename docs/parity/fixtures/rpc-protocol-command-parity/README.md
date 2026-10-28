@@ -1,6 +1,6 @@
 # RPC Protocol and Command Parity — frozen baseline
 
-**Status:** inventory and acceptance contract frozen before production changes in commit `ac85aa2a0f59566115eb0109cc9022dc64f4d8fe`. V1 passes all 23 verifier-control cases (one positive and 22 negative) at implementation source `736574cdf3755340ffa3b340325484a0a0f95025`. No RPC behavior case has run; the milestone remains active.
+**Status:** inventory and acceptance contract were frozen before production changes in commit `ac85aa2a0f59566115eb0109cc9022dc64f4d8fe`. V1 passes all 23 verifier-control cases. R1 passes all 11 paired JSONL transport cases at source/head `3642c9bcbcaac05d6f7735015d8563f920847837`; the milestone remains active.
 
 ## Verified base
 
@@ -30,9 +30,12 @@ Validation performed on the baseline:
 - `python3 tools/parity/rpc_protocol/verify.py contract --pi-checkout artifacts/parity/pi-ownership-oracle` — passed; Pi checkout SHA and tracked-source hashes match.
 - `PYTHONPATH=tools/parity/rpc_protocol python3 -m unittest discover -s tools/parity/rpc_protocol -p 'test_*.py' -v` — 16/16 tests passed, covering the valid control and all 22 frozen mutations.
 - `python3 tools/parity/rpc_protocol/runner.py run --checkpoint V1 ...` and `verify.py check --checkpoint V1 ...` — 23/23 passed, zero failures/skips. The local report log SHA-256 is `6a040fac6cf795a62914a89d2907c80e2243eab7e4eb00faa4519f9285c7f4f9` under ignored `artifacts/parity/rpc-protocol-command-parity/v1-736574cd/`.
+- Source-bound R1 process run: `python3 tools/parity/rpc_protocol/runner.py run --checkpoint R1 --pi-checkout artifacts/parity/pi-ownership-oracle --evidence-dir artifacts/parity/rpc-protocol-command-parity/r1-3642c9bc`, followed by `verify.py check --checkpoint R1 ...` — **11/11 passed, zero failures/skips**. Evidence is ignored under `artifacts/`; `evidence.json` SHA-256 is `ae4715854e5b519e2f18aadb53a076a6cd02c7808a84a4f98782e758eda650f2`. The source-bound build passed with zero warnings/errors.
+- R1 covers LF/CRLF framing, UTF-8 split code points, Unicode separators in strings, incremental and incomplete records, a 1 MiB valid record, malformed-JSON recovery, blank/empty input, incomplete EOF and stdout/stderr purity.
+- The process comparison found and corrected PiSharp's 1 MiB record limit and malformed-JSON response command. Exact error wording is normalized because Node and .NET JSON parsers report different text; command, id, success, data presence, and error presence/type remain checked.
 - `python3 tools/parity/rpc_protocol/runner.py list --checkpoint R8` — returned the six frozen usage-accounting cases.
 
-No production files were changed to create this baseline. The V1 verifier runner works; all remaining case runners fail closed while their process adapters are absent, so unexecuted cases cannot be reported as passing.
+V1's verifier runner and R1's process runner are source-bound. Remaining case runners fail closed until their process adapters are registered, so unexecuted cases cannot be reported as passing. The next checkpoint is R2 response semantics, including long-command and active-compaction cases.
 
 ## Known differences and limitations to revalidate
 
@@ -45,4 +48,4 @@ No production files were changed to create this baseline. The V1 verifier runner
 
 ## Next work
 
-The inventory and contract are committed before production changes, and V1's source-clean evidence runner passes 23/23. Next implement process adapters, capture repeated pinned-Pi and PiSharp process observations, and proceed through R1–R15. Final publication is PR #29, open, draft and unmerged.
+The inventory and contract are committed before production changes. V1 passes 23/23 controls and R1 passes 11/11 process cases. Continue with R2–R15, capture repeated pinned-Pi and PiSharp process observations, complete quality/source-bound evidence and exact-head CI. Final publication is PR #29, open, draft and unmerged.

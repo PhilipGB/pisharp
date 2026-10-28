@@ -12,7 +12,7 @@ See the [source-pinned inventory](parity/fixtures/compaction-context-management-
 
 ## Active milestone — Complete RPC Protocol and Command Parity — 2026-10-28
 
-PR #28 is verified merged at `646db89bd396b8089b1b9a058fa96b1489f4d0cd`; the clean milestone branch `milestone/rpc-protocol-command-parity` starts from that commit. Pi is pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Commit `ac85aa2a0f59566115eb0109cc9022dc64f4d8fe` freezes the pre-production inventory and contract: 33 commands, 24 event families, 9 extension UI methods, 24 checkpoints and 252 case IDs. The verifier unit suite passes 16/16; the source-clean V1 checkpoint passes 23/23 (one positive, 22 rejected mutations) at source `736574cdf3755340ffa3b340325484a0a0f95025`. No production code changed and no RPC process case has run. Paired process runners, behavioral corrections, remaining evidence, quality gates and PR #29 remain open.
+PR #28 is verified merged at `646db89bd396b8089b1b9a058fa96b1489f4d0cd`; the milestone branch starts from that commit and pins Pi at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The frozen inventory and contract define 33 commands, 24 event families, 9 extension UI methods, 24 checkpoints and 252 case IDs. V1 passes 23/23 verifier-control cases; R1 passes all 11 source-bound JSONL transport cases at head `3642c9bcbcaac05d6f7735015d8563f920847837`. The first production correction aligns the record-size limit and malformed-JSON response command with Pi. The verifier unit suite passes 16/16. R2–R15, remaining evidence, quality gates and draft PR #29 remain open.
 
 See the [milestone receipt](docs/parity/fixtures/rpc-protocol-command-parity/README.md), [source-pinned inventory](docs/parity/fixtures/rpc-protocol-command-parity/inventory.json), [case index](docs/parity/fixtures/rpc-protocol-command-parity/required-case-index.json), and [contract](tools/parity/rpc_protocol/contract.json).
 
@@ -590,11 +590,11 @@ The detailed entries in this section preserve earlier source/test evidence only;
 
 ## Current priority
 
-Complete the source-bound RPC contract and process-level differential corpus on `milestone/rpc-protocol-command-parity`, retaining Microsoft Agent Framework 1.21.0 as the runtime execution framework. Current inventory and contract are validated in the worktree; the next action is to commit that frozen baseline before production changes, then implement evidence runners and execute the R1/R2 transport and response cases.
+Complete the source-bound RPC contract and process-level differential corpus on `milestone/rpc-protocol-command-parity`, retaining Microsoft Agent Framework 1.21.0 as the runtime execution framework. The frozen baseline is committed; V1 and R1 pass, including 11 paired transport cases. Continue with response semantics in R2, then implement and execute the remaining checkpoints.
 
 ## Exact next action
 
-Implement and execute paired pinned-Pi/PiSharp process adapters, starting with JSONL framing and response semantics. Resolve the documented `get_messages` section projection difference and proceed through each unpassed checkpoint; keep PR #29 open, draft and unmerged.
+Implement and execute the R2 response-semantics adapters, including long-command and active-compaction cases, then proceed through the remaining checkpoints. Resolve documented projection differences from exact-pin evidence; keep PR #29 open, draft and unmerged.
 
 ## Architecture risks to reconcile before completion
 
