@@ -24,7 +24,7 @@ FILTERS = {
     "C6": "FullyQualifiedName~InFlightContextBudgetTests|FullyQualifiedName~CompactionTests|FullyQualifiedName~CompactionNestedToolCallsTests",
     "C7": "FullyQualifiedName~CompactionTests|FullyQualifiedName~RpcCompactionProcessTests",
     "C8": "FullyQualifiedName~CompactionTests|FullyQualifiedName~PiJsonlSessionInterchangeTests|FullyQualifiedName~CrashRecoveryProcessTests",
-    "C9": "FullyQualifiedName~ConversationTreeTests|FullyQualifiedName~TerminalTreePickerTests|FullyQualifiedName~NativeExtensionTreeEventTests|FullyQualifiedName~RpcSessionProcessTests",
+    "C9": "FullyQualifiedName~ConversationTreeTests|FullyQualifiedName~TerminalTreePickerTests|FullyQualifiedName~NativeExtensionTreeEventTests|FullyQualifiedName~RpcSessionProcessTests|FullyQualifiedName~TerminalPtyTests.ConversationTreeSearchSelectsAndPersistsABranchThroughLinuxPty",
     "C10": "FullyQualifiedName~CompactionTests|FullyQualifiedName~RpcSessionStatsProjectorTests",
     "C11": "FullyQualifiedName~RpcCompactionProcessTests|FullyQualifiedName~RpcSessionStatsProjectorTests",
     "C12": "FullyQualifiedName~PiSharpExtensionCompactionTests|FullyQualifiedName~NativeExtensionCompactionEventTests|FullyQualifiedName~NativeExtensionTreeEventTests",
@@ -294,6 +294,29 @@ def run_checkpoint(checkpoint_id: str, evidence_dir: Path, pi_path: Path | None)
         })
         if completed.returncode == 0:
             differential_report = verify._json(differential_dir / "c8-case-results.json")
+            differential_report["verifierCounts"] = verify.validate_case_results(
+                differential_report["cases"], checkpoint_id, differential_dir, verify_artifacts=True)
+
+    if checkpoint_id == "C9" and results and results[-1]["exitCode"] == 0:
+        differential_dir = output / "differential"
+        command = [sys.executable, "tools/parity/compaction_context/c9_oracle.py",
+                   "--pi", str(pi_path), "--evidence-dir", str(differential_dir)]
+        completed = subprocess.run(command, cwd=ROOT, capture_output=True, text=True,
+                                   env={**os.environ, "DOTNET_PROCESSOR_COUNT": "4"}, check=False)
+        stdout_path = output / f"command-{len(results) + 1}.stdout.log"
+        stderr_path = output / f"command-{len(results) + 1}.stderr.log"
+        stdout_path.write_text(completed.stdout, encoding="utf-8")
+        stderr_path.write_text(completed.stderr, encoding="utf-8")
+        results.append({
+            "argv": command,
+            "exitCode": completed.returncode,
+            "stdout": {"path": str(stdout_path.relative_to(evidence_dir)),
+                       "sha256": hashlib.sha256(completed.stdout.encode()).hexdigest()},
+            "stderr": {"path": str(stderr_path.relative_to(evidence_dir)),
+                       "sha256": hashlib.sha256(completed.stderr.encode()).hexdigest()},
+        })
+        if completed.returncode == 0:
+            differential_report = verify._json(differential_dir / "c9-case-results.json")
             differential_report["verifierCounts"] = verify.validate_case_results(
                 differential_report["cases"], checkpoint_id, differential_dir, verify_artifacts=True)
 

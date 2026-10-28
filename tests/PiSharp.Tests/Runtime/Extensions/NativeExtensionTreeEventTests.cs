@@ -103,6 +103,9 @@ public sealed class NativeExtensionTreeEventTests
             Assert.Equal(oldLeaf, summaryEntry.Payload.GetProperty("fromId").GetString());
             Assert.Contains("Summary of that exploration:", conversation.ContextMessages().Last().Text, StringComparison.Ordinal);
             Assert.Contains("generated branch summary", conversation.ContextMessages().Last().Text, StringComparison.Ordinal);
+            Assert.StartsWith("The user explored a different conversation branch before returning here.\n" +
+                "Summary of that exploration:\n\n" + "generated branch summary",
+                summaryEntry.Payload.GetProperty("summary").GetString(), StringComparison.Ordinal);
             Assert.Contains("<read-files>\nnotes.md\n</read-files>", conversation.ContextMessages().Last().Text, StringComparison.Ordinal);
             Assert.Equal("notes.md", summaryEntry.Payload.GetProperty("details").GetProperty("readFiles")[0].GetString());
             Assert.Equal("branch_summary", Assert.Single(conversation.ActiveUsage()).Source);

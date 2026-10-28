@@ -1971,6 +1971,7 @@ public sealed class TerminalPtyTests
             var inputReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var pickerOpened = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var branchSummaryPromptOpened = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var customSummaryChoiceOpened = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var branchSelected = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var stdout = Task.Run(async () =>
             {
@@ -1985,8 +1986,10 @@ public sealed class TerminalPtyTests
                         var captured = output.ToString();
                         if (captured.Contains("\u001b[?2004h", StringComparison.Ordinal)) inputReady.TrySetResult();
                         if (captured.Contains("Conversation tree", StringComparison.Ordinal)) pickerOpened.TrySetResult();
-                        if (captured.Contains("Carry context from the branch being left?", StringComparison.Ordinal))
+                        if (captured.Contains("Summarize branch?", StringComparison.Ordinal))
                             branchSummaryPromptOpened.TrySetResult();
+                        if (captured.Contains("Summarize with custom prompt", StringComparison.Ordinal))
+                            customSummaryChoiceOpened.TrySetResult();
                         if (captured.Contains($"Selected {selectedHead[..12]}", StringComparison.Ordinal)) branchSelected.TrySetResult();
                     }
                 }
@@ -2001,6 +2004,7 @@ public sealed class TerminalPtyTests
             await process.StandardInput.WriteAsync("second answer\r");
             await process.StandardInput.FlushAsync();
             await branchSummaryPromptOpened.Task.WaitAsync(timeout.Token);
+            await customSummaryChoiceOpened.Task.WaitAsync(timeout.Token);
             await process.StandardInput.WriteAsync("\r");
             await process.StandardInput.FlushAsync();
             await branchSelected.Task.WaitAsync(timeout.Token);
@@ -2013,6 +2017,9 @@ public sealed class TerminalPtyTests
             var saved = await store.LoadAsync(sessionPath);
             Assert.Equal(0, process.ExitCode);
             Assert.Contains("assistant: second answer", capturedOutput);
+            Assert.Contains("No summary", capturedOutput);
+            Assert.Contains("Summarize", capturedOutput);
+            Assert.Contains("Summarize with custom prompt", capturedOutput);
             Assert.Contains($"Selected {selectedHead[..12]}", capturedOutput);
             Assert.Equal(selectedHead, saved.Tree.HeadId);
             Assert.Contains(saved.Tree.Entries, entry => entry.Id == alternateHead);

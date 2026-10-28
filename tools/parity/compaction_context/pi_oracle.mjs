@@ -38,6 +38,8 @@ const [{ createHarness }, { fauxAssistantMessage }, { createAssistantMessageEven
   importFromPi("packages/coding-agent/src/core/settings-manager.ts"),
   importFromPi("packages/coding-agent/src/core/settings-defaults.ts"),
 ]);
+const { collectEntriesForBranchSummary, prepareBranchEntries } = await importFromPi(
+  "packages/coding-agent/src/core/compaction/branch-summarization.ts");
 
 function c6Snapshot(message) {
   const content = Array.isArray(message.content) ? message.content : [];
@@ -1216,12 +1218,274 @@ async function runPiC8() {
   }
 }
 
+const C9_SUMMARY_TEXT = "generated branch summary";
+const C9_TOOL_RESULT_SENTINEL = "TOOL RESULT MUST NOT BE DUPLICATED";
+
+function c9AppendUser(manager, content) {
+  return manager.appendMessage({ role: "user", content, timestamp: Date.now() });
+}
+
+function c9AppendAssistant(manager, content) {
+  const normalized = typeof content === "string" ? [{ type: "text", text: content }] : content;
+  return manager.appendMessage({ role: "assistant", content: normalized, timestamp: Date.now() });
+}
+
+function c9CreateFixture(manager, { includeToolCall = false } = {}) {
+  c9AppendUser(manager, "SHARED ROOT QUESTION");
+  c9AppendAssistant(manager, "SHARED ANCESTOR ANSWER");
+  const commonAncestorId = manager.getLeafId();
+  c9AppendUser(manager, "OLD BRANCH FIRST");
+  if (includeToolCall) {
+    c9AppendAssistant(manager, [{ type: "toolCall", id: "branch-read", name: "read", arguments: { path: "branch.md" } }]);
+    manager.appendMessage({ role: "toolResult", toolCallId: "branch-read", toolName: "read",
+      content: [{ type: "text", text: C9_TOOL_RESULT_SENTINEL }], isError: false, timestamp: Date.now() });
+  }
+  c9AppendUser(manager, "OLD BRANCH LAST");
+  c9AppendAssistant(manager, "OLD BRANCH FINAL");
+  const oldLeafId = manager.getLeafId();
+  manager.branch(commonAncestorId);
+  c9AppendUser(manager, "TARGET BRANCH QUESTION");
+  const targetId = c9AppendAssistant(manager, "TARGET BRANCH ANSWER");
+  manager.branch(oldLeafId);
+  return { commonAncestorId, oldLeafId, targetId };
+}
+
+function c9InstallStream(harness, { fail = false, waitForCancellation = false } = {}) {
+  const requests = [];
+  let markStarted = () => {};
+  const started = new Promise(resolve => { markStarted = resolve; });
+  harness.session.agent.streamFunction = (model, context, options) => {
+    requests.push({ systemPrompt: context.systemPrompt, text: context.messages.map(c8Text).join("\n") });
+    markStarted();
+    if (fail) throw new Error("fixture branch summary failure");
+    const stream = createAssistantMessageEventStream();
+    if (waitForCancellation) {
+      const abort = () => queueMicrotask(() => stream.push({ type: "done", reason: "aborted",
+        message: fauxAssistantMessage("", { stopReason: "aborted" }) }));
+      if (options.signal?.aborted) abort();
+      else options.signal?.addEventListener("abort", abort, { once: true });
+    } else {
+      queueMicrotask(() => stream.push({ type: "done", reason: "stop", message: {
+        ...fauxAssistantMessage(C9_SUMMARY_TEXT), api: model.api, provider: model.provider, model: model.id,
+      } }));
+    }
+    return stream;
+  };
+  return { requests, started, get requestText() { return requests.map(item => item.text).join("\n"); } };
+}
+
+async function c9NewHarness(cleanups, settings = {}) {
+  const harness = await createHarness({ settings: {
+    retry: { enabled: false },
+    branchSummary: { reserveTokens: 16_384, skipPrompt: false, ...settings.branchSummary },
+  } });
+  cleanups.push(() => harness.cleanup());
+  return harness;
+}
+
+function c9OrderedMarkers(text, markers) {
+  let position = -1;
+  const found = [];
+  for (const marker of markers) {
+    const next = text.indexOf(marker, position + 1);
+    if (next < 0) continue;
+    found.push(marker);
+    position = next;
+  }
+  return found;
+}
+
+function c9StringArray(value) {
+  return Array.isArray(value) ? value.filter(item => typeof item === "string") : [];
+}
+
+async function c9RunCustomInstructions(cleanups, replaceInstructions) {
+  const harness = await c9NewHarness(cleanups);
+  const fixture = c9CreateFixture(harness.sessionManager);
+  const capture = c9InstallStream(harness);
+  await harness.session.navigateTree(fixture.targetId, {
+    summarize: true, customInstructions: "CUSTOM BRANCH FOCUS", replaceInstructions,
+  });
+  return capture.requestText;
+}
+
+async function c9RunUncommittedNavigation(cleanups, cancellation) {
+  const harness = await c9NewHarness(cleanups);
+  const fixture = c9CreateFixture(harness.sessionManager);
+  const capture = c9InstallStream(harness, { fail: !cancellation, waitForCancellation: cancellation });
+  const beforeCount = harness.sessionManager.getEntries().length;
+  let error = null;
+  let cancelled = false;
+  const navigation = harness.session.navigateTree(fixture.targetId, { summarize: true });
+  if (cancellation) {
+    await capture.started;
+    harness.session.abortBranchSummary();
+  }
+  try {
+    await navigation;
+  } catch (failure) {
+    error = failure instanceof Error ? failure.message : String(failure);
+  }
+  if (cancellation) {
+    const result = await navigation;
+    cancelled = result.cancelled && result.aborted === true;
+  }
+  return {
+    unchanged: harness.sessionManager.getLeafId() === fixture.oldLeafId &&
+      harness.sessionManager.getEntries().length === beforeCount &&
+      !harness.sessionManager.getEntries().some(entry => entry.type === "branch_summary"),
+    cancelled,
+    error,
+  };
+}
+
+async function runPiC9() {
+  const cleanups = [];
+  try {
+    const primary = await c9NewHarness(cleanups);
+    const primaryFixture = c9CreateFixture(primary.sessionManager, { includeToolCall: true });
+    const primaryCapture = c9InstallStream(primary);
+    const collected = collectEntriesForBranchSummary(primary.sessionManager, primaryFixture.oldLeafId,
+      primaryFixture.targetId);
+    await primary.session.navigateTree(primaryFixture.targetId, { summarize: true, label: "returned-to-target" });
+    const primarySummary = primary.sessionManager.getEntries().find(entry => entry.type === "branch_summary");
+
+    const budgetHarness = await c9NewHarness(cleanups, { branchSummary: { reserveTokens: 127_988 } });
+    c9AppendUser(budgetHarness.sessionManager, "shared");
+    c9AppendAssistant(budgetHarness.sessionManager, "shared answer");
+    const budgetCommon = budgetHarness.sessionManager.getLeafId();
+    c9AppendUser(budgetHarness.sessionManager, `VERY-OLD-BUDGET-MARKER ${"x".repeat(1_000)}`);
+    budgetHarness.sessionManager.branchWithSummary(budgetHarness.sessionManager.getLeafId(), "IMPORTANT-SUMMARY-MARKER");
+    c9AppendUser(budgetHarness.sessionManager, "RECENT-BUDGET-MARKER");
+    const budgetOldLeaf = budgetHarness.sessionManager.getLeafId();
+    budgetHarness.sessionManager.branch(budgetCommon);
+    c9AppendUser(budgetHarness.sessionManager, "target");
+    const budgetTarget = c9AppendAssistant(budgetHarness.sessionManager, "target answer");
+    budgetHarness.sessionManager.branch(budgetOldLeaf);
+    const budgetCapture = c9InstallStream(budgetHarness);
+    await budgetHarness.session.navigateTree(budgetTarget, { summarize: true });
+
+    const nestedHarness = await c9NewHarness(cleanups);
+    c9AppendUser(nestedHarness.sessionManager, "shared");
+    c9AppendAssistant(nestedHarness.sessionManager, "shared answer");
+    const nestedCommon = nestedHarness.sessionManager.getLeafId();
+    c9AppendUser(nestedHarness.sessionManager, "nested branch work");
+    nestedHarness.sessionManager.branchWithSummary(nestedHarness.sessionManager.getLeafId(), "NESTED PREVIOUS SUMMARY", {
+      readFiles: ["nested-read.md", "overwritten.md"], modifiedFiles: ["nested-write.md"],
+    });
+    c9AppendAssistant(nestedHarness.sessionManager, [
+      { type: "toolCall", id: "read-fresh", name: "read", arguments: { path: "fresh-read.md" } },
+      { type: "toolCall", id: "write-fresh", name: "write", arguments: { path: "fresh-write.md" } },
+      { type: "toolCall", id: "edit-old", name: "edit", arguments: { path: "overwritten.md" } },
+    ]);
+    const nestedOldLeaf = nestedHarness.sessionManager.getLeafId();
+    nestedHarness.sessionManager.branch(nestedCommon);
+    c9AppendUser(nestedHarness.sessionManager, "target");
+    const nestedTarget = c9AppendAssistant(nestedHarness.sessionManager, "target answer");
+    nestedHarness.sessionManager.branch(nestedOldLeaf);
+    const nestedCollected = collectEntriesForBranchSummary(nestedHarness.sessionManager, nestedOldLeaf, nestedTarget);
+    const nestedPreparation = prepareBranchEntries(nestedCollected.entries);
+    const nestedCapture = c9InstallStream(nestedHarness);
+    const nestedLeafSelectedBeforeNavigate = nestedHarness.sessionManager.getLeafId() === nestedOldLeaf;
+    await nestedHarness.session.navigateTree(nestedTarget, { summarize: true });
+    const nestedSummary = nestedHarness.sessionManager.getEntries().findLast(entry => entry.type === "branch_summary");
+
+    const appendPrompt = await c9RunCustomInstructions(cleanups, false);
+    const replacePrompt = await c9RunCustomInstructions(cleanups, true);
+    const failed = await c9RunUncommittedNavigation(cleanups, false);
+    const cancelled = await c9RunUncommittedNavigation(cleanups, true);
+
+    const defaultSettings = SettingsManager.inMemory();
+    const skipSettings = SettingsManager.inMemory({ branchSummary: { skipPrompt: true } });
+    const interactiveSource = await readFile(join(piRoot, "packages/coding-agent/src/modes/interactive/interactive-mode.ts"), "utf8");
+    const hasPromptOptions = interactiveSource.includes('showExtensionSelector("Summarize branch?", [\n\t\t\t\t\t\t\t\t"No summary",\n\t\t\t\t\t\t\t\t"Summarize",\n\t\t\t\t\t\t\t\t"Summarize with custom prompt",');
+    const branchSettings = defaultSettings.getBranchSummarySettings();
+    const skipBranchSettings = skipSettings.getBranchSummarySettings();
+
+    return {
+      scenario: "c9",
+      cases: {
+        "C9.branch-diff-uses-common-ancestor-and-old-path": {
+          commonAncestorContainsSharedMarker: c9EntryText(primary.sessionManager.getEntry(collected.commonAncestorId)).includes("SHARED ANCESTOR ANSWER"),
+          oldPathEntryCount: collected.entries.length,
+          oldPathEntries: collected.entries.map(entry => ({ type: entry.type })),
+          targetBranchEntriesExcluded: collected.entries.every(entry => entry.id !== primaryFixture.targetId),
+          summaryFromIdIsOldHead: primarySummary?.type === "branch_summary" && primarySummary.fromId === primaryFixture.oldLeafId,
+        },
+        "C9.branch-entries-are-chronological-and-no-duplicate-tool-results": {
+          markerOrder: c9OrderedMarkers(primaryCapture.requestText, ["OLD BRANCH FIRST", "branch.md", "OLD BRANCH LAST", "OLD BRANCH FINAL"]),
+          toolResultDuplicated: primaryCapture.requestText.includes(C9_TOOL_RESULT_SENTINEL),
+          targetBranchIncluded: primaryCapture.requestText.includes("TARGET BRANCH"),
+        },
+        "C9.token-budget-retains-recent-summary-context": {
+          retainsRecentMessage: budgetCapture.requestText.includes("RECENT-BUDGET-MARKER"),
+          retainsImportantSummary: budgetCapture.requestText.includes("IMPORTANT-SUMMARY-MARKER"),
+          dropsOlderMessage: !budgetCapture.requestText.includes("VERY-OLD-BUDGET-MARKER"),
+          selectedOldLeafWasBranch: budgetOldLeaf !== budgetTarget,
+        },
+        "C9.nested-branch-file-operation-details-accumulate": {
+          readFiles: c9StringArray(nestedSummary?.details?.readFiles),
+          modifiedFiles: c9StringArray(nestedSummary?.details?.modifiedFiles),
+          promptIncludesNestedSummary: nestedCapture.requestText.includes("NESTED PREVIOUS SUMMARY"),
+          sourceWasOldBranch: nestedSummary?.fromId === nestedOldLeaf,
+          headWasOldBranchBeforeNavigate: nestedLeafSelectedBeforeNavigate,
+          preparedFileOps: {
+            read: [...nestedPreparation.fileOps.read], written: [...nestedPreparation.fileOps.written],
+            edited: [...nestedPreparation.fileOps.edited],
+          },
+          requestText: nestedCapture.requestText,
+        },
+        "C9.custom-instructions-append-or-replace-default": {
+          appendHasDefaultInstructions: appendPrompt.includes("Create a structured summary of this conversation branch"),
+          appendHasCustomInstructions: appendPrompt.includes("Additional focus: CUSTOM BRANCH FOCUS"),
+          replaceHasCustomInstructions: replacePrompt.includes("CUSTOM BRANCH FOCUS"),
+          replaceHasDefaultInstructions: replacePrompt.includes("Create a structured summary of this conversation branch"),
+        },
+        "C9.summary-output-has-preamble-and-file-details": {
+          summaryStartsWithPreamble: primarySummary?.type === "branch_summary" && primarySummary.summary.startsWith("The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n"),
+          summaryIncludesGeneratedText: primarySummary?.type === "branch_summary" && primarySummary.summary.includes(C9_SUMMARY_TEXT),
+          summaryIncludesReadFileDetails: primarySummary?.type === "branch_summary" && primarySummary.summary.includes("<read-files>\nbranch.md\n</read-files>"),
+          detailsReadFiles: c9StringArray(primarySummary?.details?.readFiles),
+        },
+        "C9.summary-applies-at-navigation-target-with-label": {
+          parentIsSelectedTarget: primarySummary?.type === "branch_summary" && primarySummary.parentId === primaryFixture.targetId,
+          fromIdIsAbandonedHead: primarySummary?.type === "branch_summary" && primarySummary.fromId === primaryFixture.oldLeafId,
+          label: primarySummary?.type === "branch_summary" ? primary.sessionManager.getLabel(primarySummary.id) ?? null : null,
+        },
+        "C9.cancel-or-failure-keeps-selected-head-and-history": {
+          failedUnchanged: failed.unchanged,
+          failedError: failed.error,
+          cancelledUnchanged: cancelled.unchanged,
+          cancelled: cancelled.cancelled,
+        },
+        "C9.public-navigation-prompts-and-skips-as-pinned": {
+          defaultReserveTokens: branchSettings.reserveTokens,
+          defaultPrompts: !branchSettings.skipPrompt,
+          skipPromptOverrideSuppressesPrompt: skipBranchSettings.skipPrompt,
+          promptTitle: "Summarize branch?",
+          choices: ["No summary", "Summarize", "Summarize with custom prompt"],
+          defaultChoice: "No summary",
+          sourceHasPinnedPromptOptions: hasPromptOptions,
+        },
+      },
+    };
+  } finally {
+    for (const cleanup of cleanups.reverse()) cleanup();
+  }
+}
+
+function c9EntryText(entry) {
+  if (!entry || entry.type !== "message") return "";
+  return c8Text(entry.message);
+}
+
 async function runOnce() {
   if (scenario === "c3") return runC3();
   if (scenario === "c4") return runC4();
   if (scenario === "c6") return runC6();
   if (scenario === "c7") return runPiC7();
   if (scenario === "c8") return runPiC8();
+  if (scenario === "c9") return runPiC9();
   if (scenario === "error-turn-usage") return runErrorTurnUsageOnce();
   const contextWindow = scenario === "queued-steering" ? 12_000
     : ["threshold-after-turn", "threshold-equal", "threshold-over", "disabled-setting"].includes(scenario) ? 10_000

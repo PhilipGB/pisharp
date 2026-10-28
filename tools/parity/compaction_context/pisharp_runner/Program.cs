@@ -69,6 +69,14 @@ try
         return;
     }
 
+    if (scenario == "c9")
+    {
+        var c9Json = JsonSerializer.Serialize(await C9Oracle.RunAsync(workingDirectory), new JsonSerializerOptions { WriteIndented = true });
+        if (outputPath is null) Console.WriteLine(c9Json);
+        else await File.WriteAllTextAsync(outputPath, c9Json + Environment.NewLine);
+        return;
+    }
+
     if (scenario.StartsWith("manual-", StringComparison.Ordinal))
     {
         var manualConversation = new ConversationSession(workingDirectory, "fixture", null);

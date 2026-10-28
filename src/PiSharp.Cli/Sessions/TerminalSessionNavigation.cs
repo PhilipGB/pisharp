@@ -103,14 +103,33 @@ internal sealed class TerminalSessionNavigation(ActiveProjectRuntime projectBind
 
         var branchSummarySettings = projectBinding.Settings.BranchSummary ?? new BranchSummarySettings();
         var summarize = false;
+        string? customInstructions = null;
         if (branchSummarySettings.SkipPrompt != true)
-            summarize = presentation.Editor?.ShowInlineSelectionList("Carry context from the branch being left?",
-                [
-                    new TerminalSelectionOption<bool>("no", false, "Switch branches without a summary"),
-                    new TerminalSelectionOption<bool>("yes", true, "Summarize the branch before switching")
-                ], [""], "enter select • escape/ctrl+c continue without a summary", selectedKey: "no")?.Option.Value == true;
+        {
+            while (true)
+            {
+                var choice = presentation.Editor?.ShowInlineSelectionList("Summarize branch?",
+                    [
+                        new TerminalSelectionOption<string>("no", "no", "No summary"),
+                        new TerminalSelectionOption<string>("summarize", "summarize", "Summarize"),
+                        new TerminalSelectionOption<string>("custom", "custom", "Summarize with custom prompt")
+                    ], [""], "enter select • escape/ctrl+c close", selectedKey: "no")?.Option.Value;
+                if (choice is null) return;
+                if (choice == "custom")
+                {
+                    var values = await presentation.Editor!.PromptSequenceAsync("Custom summarization instructions",
+                        [("Custom summarization instructions", null)]).ConfigureAwait(false);
+                    if (values is null) continue;
+                    customInstructions = values.FirstOrDefault();
+                    summarize = true;
+                    break;
+                }
+                summarize = choice == "summarize";
+                break;
+            }
+        }
         var navigation = await conversationBinding.Run.NavigateTreeAsync(selected.Id,
-            new ConversationTreeSelectionOptions(Summarize: summarize,
+            new ConversationTreeSelectionOptions(Summarize: summarize, CustomInstructions: customInstructions,
                 ReserveTokens: branchSummarySettings.EffectiveReserveTokens));
 
         presentation.LoadSessionTranscript();
