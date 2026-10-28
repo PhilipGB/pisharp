@@ -36,7 +36,8 @@ do not provide the frozen per-case differential records.
 - Format verification passed; warning-as-error solution build passed with zero
   warnings and errors.
 - Terminal Python: 66 passed; built-in parity Python: 27 passed; compaction
-  verifier controls: 19 passed; terminal Node: 24 passed.
+  verifier controls: 19 passed; managed-package verifier controls: 62 passed;
+  terminal Node: 24 passed.
 - Selected pinned Pi compaction, tree-navigation, branch-summary, stats and
   overflow suites: **128 passed, 12 skipped upstream**; Pi AI overflow tests:
   **20/20 passed**.
@@ -65,8 +66,15 @@ Open behavior and evidence include:
   checkpoints are marked blocked. PR #27's merged description and receipt
   report 27/27 checkpoints and 240/240 cases, but the standalone final
   publication artifact was not found in the run artifact.
-- No implementation PR for this milestone has been opened yet; exact-head CI
-  for source `4e96fa6873192e51a130c0ba5a5e4fcccddaba71` has not run.
+- Draft PR [#28](https://github.com/PhilipGB/pisharp/pull/28) is open against
+  `main` and remains unmerged. Its first hosted run on head
+  `7e55e214b9833cd27acdb512be0fe39032381c1d` passed the platform, MCP, and full
+  .NET checks, then failed when the managed-package corpus asserted its own
+  historical branch name and pre-merge base (`d969d3e`). That package corpus
+  is now scoped to `milestone/managed-package-lifecycle-parity`; verifier
+  controls and common CI remain active on this branch. The frozen compaction
+  contract remains incomplete, and exact-head checks must pass on the updated
+  PR head before this draft can advance.
 
 See the [inventory](compaction-context-management-inventory.json) and the
 [execution ledger](../execution-ledger.json) for the source ownership map and
