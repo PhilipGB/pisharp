@@ -2117,6 +2117,38 @@ public sealed class RpcModeTests
     }
 
     [Fact]
+    public async Task GetSessionStatsIncludesNativeBranchSummaryUsageAfterReload()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        session.Append(new ChatMessage(ChatRole.User, "question"));
+        session.AppendBranchSummary(session.Tree.HeadId!, "generated summary",
+            usage: new UsageRecord("fixture", "branch_summary", 20, 4, 5, 2, 31, 0.014m, CachedWriteTokens: 2));
+        var loaded = ConversationSession.Parse(session.ToJson());
+        var usage = Assert.Single(loaded.ActiveUsage());
+        var stats = SessionStatistics.Calculate(loaded);
+        Assert.Equal(usage.TotalTokens, stats.BilledTokens);
+        Assert.Equal(usage.Cost, stats.Cost);
+
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(Path.GetTempPath())), loaded);
+        var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
+        channel.Writer.TryWrite("{\"id\":\"stats\",\"type\":\"get_session_stats\"}");
+        channel.Writer.Complete();
+        await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+        using var response = JsonDocument.Parse(Assert.Single(output.Lines()));
+        var data = response.RootElement.GetProperty("data");
+        var tokens = data.GetProperty("tokens");
+        Assert.Equal(20, tokens.GetProperty("input").GetInt64());
+        Assert.Equal(4, tokens.GetProperty("output").GetInt64());
+        Assert.Equal(5, tokens.GetProperty("cacheRead").GetInt64());
+        Assert.Equal(2, tokens.GetProperty("cacheWrite").GetInt64());
+        Assert.Equal(31, tokens.GetProperty("total").GetInt64());
+        Assert.Equal(0.014m, data.GetProperty("cost").GetDecimal());
+    }
+
+    [Fact]
     public async Task CommandsAndTemplateExpansionUseSharedResourceCatalog()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-resources-" + Guid.NewGuid().ToString("N"));

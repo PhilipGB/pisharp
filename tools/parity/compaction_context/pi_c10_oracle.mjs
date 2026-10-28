@@ -87,6 +87,14 @@ projectionUsage.cost = { input: 0.008, output: 0.002, cacheRead: 0.001, cacheWri
 const projectionTotals = createUsageTotals();
 addUsageToTotals(projectionTotals, projectionUsage);
 
+const rpcBranchSummaryUsage = usage(20, 4, 5, 2, 31);
+rpcBranchSummaryUsage.cost = { input: 0.002, output: 0.003, cacheRead: 0.004, cacheWrite: 0.005, total: 0.014 };
+const rpcSummaryManager = SessionManager.inMemory("/tmp/pi-c10-rpc-summary");
+const rpcSummaryRootId = rpcSummaryManager.appendMessage({ role: "user", content: "question", timestamp: 1 });
+rpcSummaryManager.branchWithSummary(rpcSummaryRootId, "generated summary", undefined, false, rpcBranchSummaryUsage);
+const rpcSummaryEntries = rpcSummaryManager.getEntries();
+const rpcSummaryBreakdown = getUsageCostBreakdown(rpcSummaryEntries).find((entry) => entry.key === "Tools/summaries");
+
 const result = {
   cases: {
     "C10.summary-request-usage-persists-on-active-branch": {
@@ -169,6 +177,15 @@ const result = {
         cacheWrite: projectionTotals.cacheWrite,
         total: projectionTotals.input + projectionTotals.output + projectionTotals.cacheRead + projectionTotals.cacheWrite,
         cost: money(projectionTotals.cost),
+      },
+      nativeBranchSummaryRpc: {
+        summaryEntries: rpcSummaryEntries.filter((entry) => entry.type === "branch_summary").length,
+        input: rpcBranchSummaryUsage.input,
+        output: rpcBranchSummaryUsage.output,
+        cacheRead: rpcBranchSummaryUsage.cacheRead,
+        cacheWrite: rpcBranchSummaryUsage.cacheWrite,
+        total: rpcSummaryBreakdown?.tokens ?? null,
+        cost: money(rpcSummaryBreakdown?.cost ?? 0),
       },
     },
   },

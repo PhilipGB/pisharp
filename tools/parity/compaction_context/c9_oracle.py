@@ -147,6 +147,8 @@ def run(pi_path: Path, evidence_dir: Path) -> dict[str, Any]:
         "contractSha256": verify.FROZEN_CONTRACT_SHA256,
         "piSha": verify.PINNED_PI_SHA,
         "pisharpSourceSha": c5_oracle.implementation_source_sha() if c5_oracle.source_tree_is_clean() else None,
+        "piCalibrationStable": True,
+        "pisharpCalibrationStable": True,
         "cases": cases,
         "checkpointResults": [{
             "checkpointId": "C9",

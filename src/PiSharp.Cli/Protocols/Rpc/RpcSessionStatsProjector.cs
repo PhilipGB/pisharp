@@ -95,6 +95,15 @@ internal static class RpcSessionStatsProjector
         {
             if (!TryGetPiOriginalEntry(node.Payload, out original)) yield break;
         }
+        else if (node.Type == "branch_summary" && node.Payload.TryGetProperty("nativeUsage", out var nativeUsage) &&
+            nativeUsage.ValueKind == JsonValueKind.Object)
+        {
+            var record = nativeUsage.Deserialize<UsageRecord>() ??
+                throw new InvalidDataException($"Invalid branch-summary usage record at {node.Id}.");
+            yield return new SessionUsage(record.InputTokens, record.OutputTokens, record.CachedInputTokens,
+                record.CachedWriteTokens, record.TotalTokens, record.Cost);
+            yield break;
+        }
         else if (node.Type is "compaction" or "branch_summary")
         {
             if (!TryGetPiOriginalEntry(node.Payload, out original)) yield break;

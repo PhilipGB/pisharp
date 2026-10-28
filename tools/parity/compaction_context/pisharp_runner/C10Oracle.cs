@@ -111,6 +111,21 @@ internal static class C10Oracle
         var rpc = RpcSessionStatsProjector.Project(surfaceSession, null, null, null);
         var rpcTokens = rpc["tokens"]!.AsObject();
 
+        var rpcBranchSummaryUsage = CreateUsage("rpc-summary", new UsageDetails
+        {
+            InputTokenCount = 25,
+            OutputTokenCount = 4,
+            CachedInputTokenCount = 5,
+            TotalTokenCount = 31,
+            AdditionalCounts = CacheWrite(2)
+        }, new ModelPricing(100m, 750m, CachedInput: 800m, CachedWrite: 2_500m));
+        var rpcBranchSummarySession = new ConversationSession(workingDirectory, "fixture", null);
+        rpcBranchSummarySession.Append(new ChatMessage(ChatRole.User, "question"));
+        rpcBranchSummarySession.AppendBranchSummary(rpcBranchSummarySession.Tree.HeadId!, "generated summary",
+            usage: rpcBranchSummaryUsage);
+        var rpcBranchSummary = RpcSessionStatsProjector.Project(rpcBranchSummarySession, null, null, null);
+        var rpcBranchSummaryTokens = rpcBranchSummary["tokens"]!.AsObject();
+
         return new
         {
             cases = new Dictionary<string, object>
@@ -207,6 +222,16 @@ internal static class C10Oracle
                         cacheWrite = rpcTokens["cacheWrite"]!.GetValue<long>(),
                         total = rpcTokens["total"]!.GetValue<long>(),
                         cost = rpc["cost"]!.GetValue<decimal>()
+                    },
+                    nativeBranchSummaryRpc = new
+                    {
+                        summaryEntries = rpcBranchSummarySession.Tree.Entries.Count(entry => entry.Type == "branch_summary"),
+                        input = rpcBranchSummaryTokens["input"]!.GetValue<long>(),
+                        output = rpcBranchSummaryTokens["output"]!.GetValue<long>(),
+                        cacheRead = rpcBranchSummaryTokens["cacheRead"]!.GetValue<long>(),
+                        cacheWrite = rpcBranchSummaryTokens["cacheWrite"]!.GetValue<long>(),
+                        total = rpcBranchSummaryTokens["total"]!.GetValue<long>(),
+                        cost = rpcBranchSummary["cost"]!.GetValue<decimal>()
                     }
                 }
             }

@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Microsoft.Extensions.AI;
+using PiSharp.Cli.Protocols;
 using PiSharp.Extensions.Abstractions;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Extensions;
@@ -92,6 +93,7 @@ public sealed class NativeExtensionTreeEventTests
         var workingDirectory = CreateWorkingDirectory("tree-generated-summary");
         try
         {
+            var store = new ConversationStore(workingDirectory, Path.Combine(workingDirectory, "sessions"));
             var (conversation, oldLeaf, targetLeaf, rootEntry) = CreateBranchedConversation(workingDirectory);
             conversation.Tree.Select(oldLeaf);
             conversation.Append(new ChatMessage(ChatRole.Assistant,
@@ -99,8 +101,11 @@ public sealed class NativeExtensionTreeEventTests
             conversation.Append(new ChatMessage(ChatRole.Tool,
                 [new FunctionResultContent("read-branch-file", "branch file contents")]));
             oldLeaf = conversation.Tree.HeadId!;
+            var path = store.NewPath(conversation);
+            await store.SaveAsync(conversation, path);
             var client = new SummaryClient("generated branch summary");
-            var run = await OpenRunAsync(workingDirectory, conversation, new ExtensionRegistration(), chatClient: client,
+            var run = await OpenRunAsync(workingDirectory, conversation, new ExtensionRegistration(),
+                token => store.SaveAsync(conversation, path, token), path, chatClient: client,
                 reasoning: new ReasoningOptions { Effort = ReasoningEffort.High });
 
             await run.NavigateTreeAsync(targetLeaf, new ConversationTreeSelectionOptions(Summarize: true));
@@ -124,6 +129,12 @@ public sealed class NativeExtensionTreeEventTests
             Assert.Equal("notes.md", summaryEntry.Payload.GetProperty("details").GetProperty("readFiles")[0].GetString());
             Assert.Equal("branch_summary", Assert.Single(conversation.ActiveUsage()).Source);
             Assert.Equal(20, Assert.Single(conversation.ActiveUsage()).TotalTokens);
+
+            var loaded = await store.LoadAsync(path);
+            var loadedUsage = Assert.Single(loaded.ActiveUsage());
+            var rpcStats = RpcSessionStatsProjector.Project(loaded, path, null, null);
+            Assert.Equal(loadedUsage.TotalTokens, SessionStatistics.Calculate(loaded).BilledTokens);
+            Assert.Equal(loadedUsage.TotalTokens, rpcStats["tokens"]!["total"]!.GetValue<long>());
         }
         finally { Directory.Delete(workingDirectory, recursive: true); }
     }

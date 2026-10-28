@@ -27,7 +27,8 @@ FOCUSED_SURFACE_FILTER = (
     "FullyQualifiedName~RpcCompactionProcessTests|FullyQualifiedName~RpcSessionStatsProjectorTests|"
     "FullyQualifiedName~RpcEventProjectorTests|FullyQualifiedName~JsonEventModeTests|"
     "FullyQualifiedName~TerminalTreePickerTests|FullyQualifiedName~NativeExtensionCompactionEventTests|"
-    "FullyQualifiedName~NativeExtensionTreeEventTests|FullyQualifiedName~PiSharpExtensionCompactionTests"
+    "FullyQualifiedName~NativeExtensionTreeEventTests|FullyQualifiedName~PiSharpExtensionCompactionTests|"
+    "FullyQualifiedName~RpcModeTests.GetSessionStatsIncludesNativeBranchSummaryUsageAfterReload"
 )
 KNOWN_PI_SKIP_REASON = (
     "Pinned Pi marks these interactive/LLM integration cases skipped when no provider credentials are configured; "
