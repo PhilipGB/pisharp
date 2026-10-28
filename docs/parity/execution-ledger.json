@@ -13638,7 +13638,7 @@
   },
   "compaction_context_management_parity_milestone": {
     "status": "in_progress",
-    "phase": "review_correction_evidence_refresh",
+    "phase": "clean_baseline_p1_rerun",
     "branch": "milestone/compaction-context-management-parity",
     "branch_base_sha": "12064420179f4119bdaf37479c7cba0f5ca40717",
     "pi_reference": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
@@ -13648,7 +13648,7 @@
     "required_cases": 211,
     "implementation_source_sha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2",
     "case_evidence_produced": 187,
-    "status_reason": "Independent review identified native branch-summary usage omitted by RPC get_session_stats. The fix and native generation, persisted reload, imported-summary, and mixed-session regressions are committed at 41e9b7e7ebdea70b878e409204cd8b3d177144e2. Current evidence passes 18/22 checkpoints and 187/211 cases; clean P1 and exact-head publication finalizers remain.",
+    "status_reason": "Independent review found native branch-summary usage missing from RPC get_session_stats. The fix and regressions are committed at 41e9b7e7ebdea70b878e409204cd8b3d177144e2. Current canonical evidence passes 18/22 checkpoints and 187/211 cases. A successful P1 attempt wrote outside runs/P1 and is not accepted; rerun P1 in its canonical evidence path after committing these docs.",
     "implemented": [
       "Manual and automatic compaction, cut points, retained history, and queue behavior.",
       "Context-window and usage accounting without invented unknown token or cost values.",
@@ -13670,18 +13670,18 @@
       "mcp_conformance": "Build passed; no regressions against the classified baseline, with three scenarios remaining classified.",
       "pinned_pi_suites": "200 passed, 0 failed, 20 exact credential-dependent skips.",
       "paired_c1_c13": "135/135 passed: 121 equivalent, 14 intentional safety differences, 0 unresolved mismatches.",
-      "independent_d0": "9/9 passed on refreshed C1-C13 compact reports; stable Pi observations and verified artifact hashes.",
+      "independent_d0": "9/9 passed after refreshing C1-C13 compact reports; stable Pi observations and artifact hashes verified.",
       "quality_q0": "10/10 passed at implementation source 41e9b7e7ebdea70b878e409204cd8b3d177144e2.",
       "passedCheckpointCount": "18/22; 187/211 cases in passed checkpoints.",
-      "p1": "Incomplete because evidence docs were modified when its clean-tree check ran; rerun after committing refreshed docs.",
+      "p1": "Canonical runs/P1 record remains incomplete. A clean-tree P1 attempt wrote to the evidence root and is not counted; rerun in runs/P1 after committing docs.",
       "exactHeadCI": "Pending push of corrected source and evidence head.",
-      "evidenceFinalizers": "E0, CI0, and PUB0 not run for the corrected source."
+      "evidenceFinalizers": "E0, CI0, and PUB0 remain."
     },
     "open_requirements": [
-      "Commit refreshed source-bound evidence and run P1 with a clean worktree.",
-      "Refresh compact P1 and D0 records and commit the final local acceptance evidence.",
-      "Push the corrected final head and verify automatic push and pull-request workflows on that exact head.",
-      "Run E0, update PR #28 description with verified final results, run PUB0, and validate the 22/211 aggregate."
+      "Commit the refreshed source-bound docs, then rerun P1 under runs/P1 with a clean worktree.",
+      "Refresh the P1 compact record and commit current local acceptance evidence.",
+      "Push the corrected implementation and evidence; verify automatic workflows on the exact final head.",
+      "Run E0, update PR #28 description with verified results, run PUB0, and validate the 22/211 aggregate."
     ],
     "ci_scope_adjustment": "The managed-package parity corpus and its evidence steps run only on milestone/managed-package-lifecycle-parity because their clean-start assertions are pinned to that branch and base; verifier controls and common CI still run on this milestone.",
     "draft_pr": {
