@@ -31,6 +31,220 @@ const [{ createHarness }, { fauxAssistantMessage }, { createAssistantMessageEven
   importFromPi("packages/coding-agent/src/core/settings-defaults.ts"),
 ]);
 
+function c6Snapshot(message) {
+  const content = Array.isArray(message.content) ? message.content : [];
+  const resultTexts = message.role === "toolResult"
+    ? content.filter(item => item.type === "text").map(item => item.text ?? "") : [];
+  const text = typeof message.content === "string" ? message.content
+    : content.filter(item => item.type === "text").map(item => item.text ?? "").join("");
+  return {
+    role: message.role === "toolResult" ? "toolResult" : message.role,
+    text,
+    callIds: content.filter(item => item.type === "toolCall").map(item => item.id),
+    resultCallIds: message.role === "toolResult" ? [message.toolCallId] : [],
+    resultCharacters: resultTexts.reduce((sum, value) => sum + value.length, 0),
+    nestedCallIds: message.role === "toolResult" ? (message.nestedCalls?.calls ?? []).map(call => call.id) : [],
+    nestedExecutionComplete: message.role === "toolResult" ? message.nestedCalls?.complete ?? null : null,
+  };
+}
+
+function c6ToolHistory(messages) {
+  return messages.filter(message => message.callIds.length || message.resultCallIds.length);
+}
+
+function c6IsBalanced(messages) {
+  const used = new Set();
+  const pending = new Set();
+  for (const message of messages) {
+    for (const id of message.callIds) {
+      if (!id || used.has(id) || pending.has(id)) return false;
+      used.add(id);
+      pending.add(id);
+    }
+    for (const id of message.resultCallIds) {
+      if (!pending.delete(id)) return false;
+    }
+  }
+  return pending.size === 0;
+}
+
+function c6CallMessage(model, calls) {
+  return {
+    ...fauxAssistantMessage("", { stopReason: "toolUse" }),
+    content: calls.map(call => ({ type: "toolCall", id: call.id, name: call.name ?? "capture_tool",
+      arguments: call.args ?? { key: call.key } })),
+    api: model.api,
+    provider: model.provider,
+    model: model.id,
+  };
+}
+
+function c6SeedCall(harness, id) {
+  const model = harness.getModel();
+  harness.sessionManager.appendMessage({
+    ...c6CallMessage(model, [{ id, key: "dangling" }]),
+    timestamp: Date.now(),
+  });
+}
+
+function c6SeedResult(harness, callId, text) {
+  harness.sessionManager.appendMessage({
+    role: "toolResult",
+    toolCallId: callId,
+    toolName: "capture_tool",
+    content: [{ type: "text", text }],
+    isError: false,
+    timestamp: Date.now(),
+  });
+}
+
+async function runPiC6Scenario(scenario) {
+  const outputText = {
+    large: "x".repeat(8_000),
+    old: "o".repeat(8_000),
+    latest: "LATEST TOOL OUTCOME",
+    first: "first outcome",
+    second: "second outcome",
+    parallel1: "parallel first outcome",
+    parallel2: "parallel second outcome",
+    outer: "outer dispatched child",
+    child: "child completed",
+    steering: "s".repeat(8_000),
+    dangling: "dangling result",
+  };
+  const tool = {
+    name: "capture_tool",
+    label: "Capture fixture",
+    description: "Return deterministic fixture output.",
+    parameters: { type: "object", properties: { key: { type: "string" } }, required: ["key"] },
+    execute: async (_toolCallId, params) => ({
+      content: [{ type: "text", text: outputText[params.key] ?? `result for ${params.key}` }],
+      details: {},
+    }),
+  };
+  const nestedTools = (pi) => {
+    pi.registerTool({
+      name: "leaf",
+      label: "Nested leaf",
+      description: "Return the nested result.",
+      exposure: "codemode",
+      parameters: { type: "object", properties: { key: { type: "string" } }, required: ["key"] },
+      execute: async (_toolCallId, params) => ({
+        content: [{ type: "text", text: outputText[params.key] ?? "child completed" }], details: {},
+      }),
+    });
+    pi.registerTool({
+      name: "outer",
+      label: "Nested outer",
+      description: "Run a child tool and return its outcome.",
+      exposure: "model-only",
+      parameters: { type: "object", properties: {}, additionalProperties: false },
+      execute: async (_toolCallId, _params, _signal, _onUpdate, context) => {
+        const child = await context.executeTool("leaf", { key: "child" });
+        return { content: [{ type: "text", text: `outer result after ${child.result.content[0]?.text ?? "child"}` }], details: {} };
+      },
+    });
+  };
+  const harness = scenario === "nested"
+    ? await createHarness({ initialActiveToolNames: [], extensionFactories: [nestedTools] })
+    : await createHarness({ tools: [tool] });
+  if (scenario === "nested") await harness.session.bindExtensions({});
+  const requests = [];
+  const steps = scenario === "parallel" ? [
+    { calls: [{ id: "parallel-1", key: "parallel1" }, { id: "parallel-2", key: "parallel2" }] }, { text: "done" },
+  ] : scenario === "sequential" || scenario === "post-compaction" ? [
+    { calls: [{ id: "sequence-1", key: "first" }] },
+    { calls: [{ id: "sequence-2", key: "second" }] }, { text: "done" },
+  ] : scenario === "latest-outcome" ? [
+    { calls: [{ id: "old-output", key: "old" }] },
+    { calls: [{ id: "latest-output", key: "latest" }] }, { text: "done" },
+  ] : scenario === "nested" ? [
+    { calls: [{ id: "outer-call", name: "outer", args: {} }] }, { text: "done" },
+  ] : [
+    ...(scenario === "incomplete" || scenario === "duplicate" || scenario === "steering"
+      ? [] : [{ calls: [{ id: "large-1", key: scenario === "steering" ? "steering" : "large" }] }]),
+    { text: "done" },
+  ];
+
+  if (scenario === "incomplete") {
+    harness.sessionManager.appendMessage({ role: "user", content: "read pending output", timestamp: Date.now() - 2 });
+    c6SeedCall(harness, "pending-call");
+  } else if (scenario === "duplicate") {
+    harness.sessionManager.appendMessage({ role: "user", content: "continue safely", timestamp: Date.now() - 4 });
+    const model = harness.getModel();
+    harness.sessionManager.appendMessage({ ...c6CallMessage(model, [{ id: "once-only", key: "dangling" }]), timestamp: Date.now() - 3 });
+    c6SeedResult(harness, "once-only", "first result");
+    c6SeedResult(harness, "once-only", "duplicate result");
+  } else if (scenario === "steering") {
+    harness.sessionManager.appendMessage({ role: "user", content: "read the large file", timestamp: Date.now() - 4 });
+    const model = harness.getModel();
+    harness.sessionManager.appendMessage({ ...c6CallMessage(model, [{ id: "steering-tool", key: "steering" }]), timestamp: Date.now() - 3 });
+    c6SeedResult(harness, "steering-tool", outputText.steering);
+  }
+  harness.session.agent.state.messages = harness.sessionManager.buildSessionContext().messages;
+
+  let stepIndex = 0;
+  harness.session.agent.streamFunction = (model, context) => {
+    const requestMessages = context.messages.map(c6Snapshot);
+    const canonicalMessages = harness.sessionManager.buildSessionProjection().messages.map(c6Snapshot);
+    requests.push({ messages: requestMessages, canonicalMessages });
+    const step = steps[Math.min(stepIndex++, steps.length - 1)];
+    const message = step.calls
+      ? c6CallMessage(model, step.calls)
+      : { ...fauxAssistantMessage(step.text ?? "done"), api: model.api, provider: model.provider, model: model.id };
+    const stream = createAssistantMessageEventStream();
+    queueMicrotask(() => stream.push({ type: "done", reason: message.stopReason ?? "stop", message }));
+    return stream;
+  };
+
+  let error = null;
+  try {
+    await harness.session.prompt(scenario === "steering" ? "change direction" : "continue");
+  } catch (caught) {
+    error = String(caught?.message ?? caught);
+  }
+  const latestRequest = requests.at(-1) ?? { messages: [], canonicalMessages: [] };
+  const requestToolHistory = c6ToolHistory(latestRequest.messages);
+  const canonicalToolHistory = c6ToolHistory(latestRequest.canonicalMessages);
+  const calls = latestRequest.messages.flatMap(message => message.callIds);
+  const results = latestRequest.messages.flatMap(message => message.resultCallIds);
+  return {
+    scenario,
+    providerSendCount: requests.length,
+    providerRequests: requests,
+    providerCallIds: calls,
+    providerResultCallIds: results,
+    providerHistoryValid: c6IsBalanced(latestRequest.messages),
+    canonicalHistoryUnchanged: JSON.stringify(requestToolHistory) === JSON.stringify(canonicalToolHistory),
+    canonicalMessages: latestRequest.canonicalMessages,
+    projectedToolResultCharacters: latestRequest.messages.reduce((sum, message) => sum + message.resultCharacters, 0),
+    latestOutcomeRetained: latestRequest.messages.some(message => message.text.includes("LATEST TOOL OUTCOME")),
+    nestedCallIds: latestRequest.messages.flatMap(message => message.nestedCallIds),
+    nestedExecutionComplete: latestRequest.messages.filter(message => message.role === "toolResult")
+      .map(message => message.nestedExecutionComplete).find(value => value !== null) ?? null,
+    steeringPromptPreserved: latestRequest.messages.some(message => message.role === "user" && message.text === "change direction"),
+    error,
+  };
+}
+
+async function runC6() {
+  const scenarios = [
+    ["C6.transient-projection-does-not-change-canonical-history", "canonical"],
+    ["C6.single-large-current-tool-result-is-bounded", "large-result"],
+    ["C6.sequential-tool-cycles-preserve-order", "sequential"],
+    ["C6.parallel-calls-and-results-remain-matched", "parallel"],
+    ["C6.large-tool-output-summary-retains-latest-outcome", "latest-outcome"],
+    ["C6.nested-tool-call-sequence-is-closed-before-cut", "nested"],
+    ["C6.incomplete-call-graph-fails-before-provider-send", "incomplete"],
+    ["C6.duplicate-or-unmatched-results-never-replay-tools", "duplicate"],
+    ["C6.steering-after-tool-result-keeps-active-turn", "steering"],
+    ["C6.post-compaction-request-contains-valid-provider-history", "post-compaction"],
+  ];
+  const cases = {};
+  for (const [caseId, name] of scenarios) cases[caseId] = await runPiC6Scenario(name);
+  return { scenario: "c6", cases };
+}
+
 function c3CompactText(text) {
   return text.length <= 256 ? text : `${text.slice(0, 24)}<${text.length} chars>${text.slice(-24)}`;
 }
@@ -515,6 +729,7 @@ async function runErrorTurnUsageOnce() {
 async function runOnce() {
   if (scenario === "c3") return runC3();
   if (scenario === "c4") return runC4();
+  if (scenario === "c6") return runC6();
   if (scenario === "error-turn-usage") return runErrorTurnUsageOnce();
   const contextWindow = scenario === "queued-steering" ? 12_000
     : ["threshold-after-turn", "threshold-equal", "threshold-over", "disabled-setting"].includes(scenario) ? 10_000
