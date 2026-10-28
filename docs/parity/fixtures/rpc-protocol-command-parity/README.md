@@ -1,6 +1,6 @@
 # RPC Protocol and Command Parity — frozen baseline
 
-**Status:** inventory and acceptance contract were frozen before production changes in commit `ac85aa2a0f59566115eb0109cc9022dc64f4d8fe`. V1 passes all 23 verifier-control cases. R1 passes all 11 paired JSONL transport cases at source/head `3642c9bcbcaac05d6f7735015d8563f920847837`; the milestone remains active.
+**Status:** inventory and acceptance contract were frozen before production changes in commit `ac85aa2a0f59566115eb0109cc9022dc64f4d8fe`. V1 passes all 23 verifier-control cases. R1 passes 11/11 paired JSONL transport cases at source `3642c9bcbcaac05d6f7735015d8563f920847837`; R2 passes 12/12 request/response cases at source `44a360fc8bcdf36e935068127f6e39c422ec4d8d`. The milestone remains active.
 
 ## Verified base
 
@@ -31,11 +31,13 @@ Validation performed on the baseline:
 - `PYTHONPATH=tools/parity/rpc_protocol python3 -m unittest discover -s tools/parity/rpc_protocol -p 'test_*.py' -v` — 16/16 tests passed, covering the valid control and all 22 frozen mutations.
 - `python3 tools/parity/rpc_protocol/runner.py run --checkpoint V1 ...` and `verify.py check --checkpoint V1 ...` — 23/23 passed, zero failures/skips. The local report log SHA-256 is `6a040fac6cf795a62914a89d2907c80e2243eab7e4eb00faa4519f9285c7f4f9` under ignored `artifacts/parity/rpc-protocol-command-parity/v1-736574cd/`.
 - Source-bound R1 process run: `python3 tools/parity/rpc_protocol/runner.py run --checkpoint R1 --pi-checkout artifacts/parity/pi-ownership-oracle --evidence-dir artifacts/parity/rpc-protocol-command-parity/r1-3642c9bc`, followed by `verify.py check --checkpoint R1 ...` — **11/11 passed, zero failures/skips**. Evidence is ignored under `artifacts/`; `evidence.json` SHA-256 is `ae4715854e5b519e2f18aadb53a076a6cd02c7808a84a4f98782e758eda650f2`. The source-bound build passed with zero warnings/errors.
+- Source-bound R2 process run: `python3 tools/parity/rpc_protocol/runner.py run --checkpoint R2 --pi-checkout artifacts/parity/pi-ownership-oracle --evidence-dir artifacts/parity/rpc-protocol-command-parity/r2-44a360fc`, followed by `verify.py check --checkpoint R2 ...` — **12/12 passed, zero failures/skips**. Every case matched two stable pinned-Pi process runs and a separately started PiSharp process. `evidence.json` SHA-256 is `03131c5120a57e43af54c587a6581f88be1270a26447548bd4b099fc2de90f46`; the warnings-as-errors build assembly SHA-256 is `dfb90cf3e8fd3e2e25d27d801baa63e8845b7dac1429bf499a50663e39de82c3`.
+- R2 covers correlated, absent, null and non-string IDs; success/error response shapes; absent versus null arguments; invalid request shapes; unknown-command recovery; missing required fields; overlapping responses; long-command acceptance; and a command issued during active compaction. The corrections preserve explicit null IDs, Pi's invalid-request response fields, the missing-Bash-command behavior, and distinct missing/null session-name errors. Focused .NET regressions pass 4/4, Python verifier tests pass 16/16, and `dotnet format PiSharp.slnx --verify-no-changes --no-restore` passes.
 - R1 covers LF/CRLF framing, UTF-8 split code points, Unicode separators in strings, incremental and incomplete records, a 1 MiB valid record, malformed-JSON recovery, blank/empty input, incomplete EOF and stdout/stderr purity.
 - The process comparison found and corrected PiSharp's 1 MiB record limit and malformed-JSON response command. Exact error wording is normalized because Node and .NET JSON parsers report different text; command, id, success, data presence, and error presence/type remain checked.
 - `python3 tools/parity/rpc_protocol/runner.py list --checkpoint R8` — returned the six frozen usage-accounting cases.
 
-V1's verifier runner and R1's process runner are source-bound. Remaining case runners fail closed until their process adapters are registered, so unexecuted cases cannot be reported as passing. The next checkpoint is R2 response semantics, including long-command and active-compaction cases.
+V1's verifier runner and the R1/R2 process runners are source-bound. Remaining case runners fail closed until their process adapters are registered, so unexecuted cases cannot be reported as passing. The next checkpoint is R3 prompt acceptance and asynchronous lifecycle behavior.
 
 ## Known differences and limitations to revalidate
 

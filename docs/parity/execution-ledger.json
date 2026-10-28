@@ -13727,7 +13727,7 @@
   },
   "rpc_protocol_command_parity_milestone": {
     "status": "in_progress",
-    "phase": "r1_transport_complete_r2_adapters_pending",
+    "phase": "r2_response_semantics_complete_r3_pending",
     "branch": "milestone/rpc-protocol-command-parity",
     "branch_base_sha": "646db89bd396b8089b1b9a058fa96b1489f4d0cd",
     "prerequisite_pr28": {
@@ -13749,6 +13749,14 @@
     "r1_evidence_sha256": "ae4715854e5b519e2f18aadb53a076a6cd02c7808a84a4f98782e758eda650f2",
     "r1_case_result": "11/11 passed; zero failures/skips; paired process observations from two pinned-Pi runs and one PiSharp run",
     "r1_build_assembly_sha256": "be6985325ad6c582c9a8b5a2a07c051a8a4cda1d6dc9a0ba55ef85f14c2e3f10",
+    "r2_implementation_source_sha": "44a360fc8bcdf36e935068127f6e39c422ec4d8d",
+    "r2_evidence_directory": "artifacts/parity/rpc-protocol-command-parity/r2-44a360fc",
+    "r2_evidence_sha256": "03131c5120a57e43af54c587a6581f88be1270a26447548bd4b099fc2de90f46",
+    "r2_case_result": "12/12 passed; zero failures/skips; two calibrated pinned-Pi process runs and one PiSharp process run per case",
+    "r2_build_assembly_sha256": "dfb90cf3e8fd3e2e25d27d801baa63e8845b7dac1429bf499a50663e39de82c3",
+    "r2_focused_dotnet_tests": "4/4 passed; zero failures/skips",
+    "r2_verifier_unit_tests": "16/16 passed; zero failures/skips",
+    "r2_format_verification": "dotnet format PiSharp.slnx --verify-no-changes --no-restore passed",
     "contract": "tools/parity/rpc_protocol/contract.json",
     "inventory_contract_commit": "ac85aa2a0f59566115eb0109cc9022dc64f4d8fe",
     "contract_sha256": "036c369054fbb50887629666f6b25ef76d8a9fbe856d00d4a79a2cf9609f0761",
@@ -13766,14 +13774,15 @@
     "maf_package_version": "1.21.0",
     "dotnet_sdk": "10.0.113",
     "production_changes_started": true,
-    "process_case_results_produced": 11,
+    "process_case_results_produced": 23,
     "baseline_validation": {
       "contract_source_verifier": "passed",
       "contract_integrity_tests": "16/16 passed; positive control and all 22 frozen mutations are covered",
       "v1_evidence_runner": "source-clean run and independent report verification passed 23/23",
       "source_inventory_pin": "passed; selected tracked files only; unrelated upstream untracked file excluded",
       "runner_behavior": "fails closed when a process scenario adapter is not registered",
-      "r1_source_bound_process_run": "11/11 passed; independent report verification passed; record limit and malformed-JSON command corrections are included in source"
+      "r1_source_bound_process_run": "11/11 passed; independent report verification passed; record limit and malformed-JSON command corrections are included in source",
+      "r2_source_bound_process_run": "12/12 passed; independent report verification passed; response IDs/shapes, validation, long-command acceptance and active-compaction behavior are captured from two pinned-Pi runs and one PiSharp process"
     },
     "historical_mismatch_ids_to_revalidate": [
       "RPC-SYSMSG-SECTIONS",
@@ -13785,10 +13794,10 @@
       "RPC-ACTIVE-SESSION-REPLACEMENT"
     ],
     "open_requirements": [
-      "Implement actual paired Pi/PiSharp process runners for R2-R15 and capture repeated pinned-Pi baselines.",
-      "Capture two stable pinned-Pi process baselines and independent PiSharp process observations for R2-R15.",
+      "Implement actual paired Pi/PiSharp process runners for R3-R15 and capture repeated pinned-Pi baselines.",
+      "Capture two stable pinned-Pi process baselines and independent PiSharp process observations for R3-R15.",
       "Correct confirmed in-scope differences, then complete all quality, source-bound evidence, exact-head CI and draft PR publication gates."
     ],
-    "next_action": "Implement and execute R2 response-semantics process adapters, including long-command and active-compaction cases."
+    "next_action": "Implement and execute R3 prompt-acceptance and asynchronous-lifecycle process cases."
   }
 }
