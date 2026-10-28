@@ -81,6 +81,40 @@ public sealed record CompactionSettings(bool? Enabled = null, int? ReserveTokens
         return policy;
     }
 }
+
+/// <summary>Controls optional branch-summary prompting and the model-context reserve.</summary>
+public sealed record BranchSummarySettings(int? ReserveTokens = null, bool? SkipPrompt = null)
+{
+    public const int DefaultReserveTokens = AutoCompactionPolicy.DefaultReserveTokens;
+    public int EffectiveReserveTokens => ReserveTokens ?? DefaultReserveTokens;
+
+    public static BranchSummarySettings Parse(JsonElement value)
+    {
+        if (value.ValueKind != JsonValueKind.Object)
+            throw new InvalidDataException("settings.json branchSummary must be an object.");
+        int? reserve = null;
+        bool? skipPrompt = null;
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var property in value.EnumerateObject())
+        {
+            if (!seen.Add(property.Name))
+                throw new InvalidDataException($"settings.json branchSummary contains duplicate property '{property.Name}'.");
+            switch (property.Name)
+            {
+                case "reserveTokens" when property.Value.ValueKind == JsonValueKind.Number &&
+                    property.Value.TryGetInt32(out var tokens) && tokens >= 0:
+                    reserve = tokens;
+                    break;
+                case "skipPrompt" when property.Value.ValueKind is JsonValueKind.True or JsonValueKind.False:
+                    skipPrompt = property.Value.GetBoolean();
+                    break;
+                default:
+                    throw new InvalidDataException($"settings.json branchSummary.{property.Name} is invalid or unsupported.");
+            }
+        }
+        return new(reserve, skipPrompt);
+    }
+}
 public sealed record UserSettings(string? DefaultProvider = null, string? DefaultModel = null,
     string? DefaultThinkingLevel = null, IReadOnlyList<string>? DefaultTools = null, string? SessionDirectory = null,
     CompactionSettings? Compaction = null, bool? BlockImages = null, string? DefaultProjectTrust = null, bool? HideThinkingBlock = null, QuietStartupMode? QuietStartup = null, IReadOnlyList<string>? EnabledModels = null, string? ShellPath = null, string? ExternalEditor = null, string? Theme = null,
@@ -95,7 +129,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
     bool? ShowHardwareCursor = null, int? EditorPaddingX = null, int? OutputPad = null,
     int? AutocompleteMaxVisible = null, bool? ClearOnShrink = null, bool? ShowTerminalProgress = null,
     IReadOnlyList<NativeExtensionPackageSource>? NativeExtensions = null,
-    FullscreenWheelScrollSetting? FullscreenWheelScrollLines = null, string? TuiMode = null)
+    FullscreenWheelScrollSetting? FullscreenWheelScrollLines = null, string? TuiMode = null,
+    BranchSummarySettings? BranchSummary = null)
 {
     public const int DefaultHttpIdleTimeoutMs = 300_000;
     public const string DefaultMarkdownCodeBlockIndent = "  ";
@@ -132,6 +167,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         IReadOnlyDictionary<string, string>? modelThinkingLevels = null;
         IReadOnlyDictionary<string, int>? thinkingBudgets = null;
         CompactionSettings? compaction = null;
+        BranchSummarySettings? branchSummary = null;
         RetrySettings? retry = null;
         PromptDeliveryMode? steeringMode = null, followUpMode = null;
         bool? blockImages = null, autoResizeImages = null, hideThinkingBlock = null, enableSkillCommands = null,
@@ -270,6 +306,11 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             if (property.Name == "compaction")
             {
                 compaction = CompactionSettings.Parse(property.Value);
+                continue;
+            }
+            if (property.Name == "branchSummary")
+            {
+                branchSummary = BranchSummarySettings.Parse(property.Value);
                 continue;
             }
             if (property.Name == "retry")
@@ -411,13 +452,13 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             enableSkillCommands, extensions, skills, prompts, themes, shellCommandPrefix, sessionShareDestination, packages,
             npmCommand, thinkingBudgets, autoResizeImages, showHardwareCursor, editorPaddingX, outputPad,
             autocompleteMaxVisible, clearOnShrink, showTerminalProgress, nativeExtensions, fullscreenWheelScrollLines,
-            tuiMode);
+            tuiMode, branchSummary);
     }
 
     public static string GetSettingsPath(string agentDirectory, Func<string, string?> environment) =>
         Path.GetFullPath(environment("PISHARP_SETTINGS_PATH") ?? Path.Combine(agentDirectory, "settings.json"));
 
-    /// <summary>Overlay a trusted project's explicitly specified defaults; nested compaction values merge.</summary>
+    /// <summary>Overlay a trusted project's explicitly specified defaults; nested feature settings merge.</summary>
     public UserSettings Overlay(UserSettings project) => new(
         project.DefaultProvider ?? DefaultProvider,
         project.DefaultModel ?? DefaultModel,
@@ -463,7 +504,10 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         project.ShowTerminalProgress ?? ShowTerminalProgress,
         project.NativeExtensions ?? NativeExtensions,
         project.FullscreenWheelScrollLines ?? FullscreenWheelScrollLines,
-        TuiMode);
+        TuiMode,
+        project.BranchSummary is null ? BranchSummary : new BranchSummarySettings(
+            project.BranchSummary.ReserveTokens ?? BranchSummary?.ReserveTokens,
+            project.BranchSummary.SkipPrompt ?? BranchSummary?.SkipPrompt));
 
     public string? GetModelThinkingLevel(string provider, string modelId) =>
         ModelThinkingLevels?.GetValueOrDefault($"{provider}/{modelId}");

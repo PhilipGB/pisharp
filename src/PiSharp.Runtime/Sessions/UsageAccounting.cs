@@ -60,7 +60,7 @@ public sealed record UsageRecord(string Model, string Source, long InputTokens, 
             .Sum(count => count.Value) ?? 0;
         var reasoning = details.ReasoningTokenCount ?? 0;
         var reportedTotal = details.TotalTokenCount ?? 0;
-        var total = reportedTotal > 0 ? reportedTotal : input + output;
+        var total = reportedTotal > 0 ? reportedTotal : input + output + cached + cachedWrite;
         if (input < 0 || output < 0 || cached < 0 || cachedWrite < 0 || reasoning < 0 || total < 0)
             throw new InvalidDataException("Provider usage counts cannot be negative.");
         decimal? cost = null;

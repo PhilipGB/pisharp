@@ -100,12 +100,49 @@ internal sealed class PiCompactionSummarizer
 
         Only summarize information explicitly present above. Do not infer or recreate later messages.
         """;
+    private const string BranchSummaryPrompt = """
+        Create a structured summary of this conversation branch for context when returning later.
+
+        Use this EXACT format:
+
+        ## Goal
+        [What was the user trying to accomplish in this branch?]
+
+        ## Constraints & Preferences
+        - [Any constraints, preferences, or requirements mentioned]
+        - [Or "(none)" if none were mentioned]
+
+        ## Progress
+        ### Done
+        - [x] [Completed tasks/changes]
+
+        ### In Progress
+        - [ ] [Work that was started but not finished]
+
+        ### Blocked
+        - [Issues preventing progress, if any]
+
+        ## Key Decisions
+        - **[Decision]**: [Brief rationale]
+
+        ## Next Steps
+        1. [What should happen next to continue this work]
+
+        Keep each section concise. Preserve exact file paths, function names, and error messages.
+        """;
+    private const string BranchSummaryPreamble = """
+        The user explored a different conversation branch before returning here.
+        Summary of that exploration:
+
+        """;
     private readonly ChatClientAgent _summarizer;
     private readonly RoutedChatClient _routedChatClient;
+    private readonly Func<ReasoningOptions?> _getReasoning;
 
-    public PiCompactionSummarizer(RoutedChatClient client)
+    public PiCompactionSummarizer(RoutedChatClient client, Func<ReasoningOptions?> getReasoning)
     {
         _routedChatClient = client;
+        _getReasoning = getReasoning;
         _summarizer = new ChatClientAgent(_routedChatClient, new ChatClientAgentOptions
         {
             Name = "PiSharpCompaction",
@@ -120,6 +157,49 @@ internal sealed class PiCompactionSummarizer
         CancellationToken cancellationToken = default, string? previousSummary = null, bool turnPrefix = false)
     {
         if (focus?.Length > 4096) throw new ArgumentException("Compaction instructions exceed 4096 characters.", nameof(focus));
+        var transcript = BuildTranscript(messages);
+        var request = turnPrefix
+            ? $"# Conversation\n{transcript}\n\n# Instructions\n{TurnPrefixSummarizationPrompt}"
+            : $"<conversation>\n{transcript}\n</conversation>\n\n" +
+                (previousSummary is null ? "" : $"<previous-summary>\n{previousSummary}\n</previous-summary>\n\n") +
+                (previousSummary is null ? SummarizationPrompt : UpdateSummarizationPrompt) +
+                (string.IsNullOrEmpty(focus) ? "" : $"\n\nAdditional focus: {focus}");
+        return await RunSummaryAsync(request, messages, "compaction", cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<PiAgent.CompactionSummary> SummarizeBranchAsync(IReadOnlyList<ChatMessage> messages,
+        string? customInstructions, bool replaceInstructions, CancellationToken cancellationToken = default)
+    {
+        if (customInstructions?.Length > 4096)
+            throw new ArgumentException("Branch summary instructions exceed 4096 characters.", nameof(customInstructions));
+        var instructions = replaceInstructions && !string.IsNullOrEmpty(customInstructions)
+            ? customInstructions
+            : string.IsNullOrEmpty(customInstructions)
+                ? BranchSummaryPrompt
+                : $"{BranchSummaryPrompt}\n\nAdditional focus: {customInstructions}";
+        var request = $"<conversation>\n{BuildTranscript(messages)}\n</conversation>\n\n{instructions}";
+        var summary = await RunSummaryAsync(request, messages, "branch_summary", cancellationToken).ConfigureAwait(false);
+        return summary with { Text = BranchSummaryPreamble + summary.Text };
+    }
+
+    private async Task<PiAgent.CompactionSummary> RunSummaryAsync(string request, IReadOnlyList<ChatMessage> messages,
+        string usageSource, CancellationToken cancellationToken)
+    {
+        var directOptions = _routedChatClient.HasRouter ? _routedChatClient.CreateDirectRequestOptions(messages) : null;
+        var reasoning = directOptions is null ? _getReasoning() : null;
+        var requestOptions = directOptions ?? (reasoning is null ? null : new ChatOptions { Reasoning = reasoning });
+        var response = await _summarizer.RunAsync(request,
+            options: requestOptions is null ? null : new ChatClientAgentRunOptions(requestOptions),
+            cancellationToken: cancellationToken);
+        if (string.IsNullOrWhiteSpace(response.Text)) throw new InvalidDataException("Summarizer returned an empty response.");
+        var route = VirtualModelRequestHints.ReadHint(directOptions)?.Execution?.Route;
+        return new PiAgent.CompactionSummary(response.Text, response.Usage,
+            route is not null && response.Usage is { } usage
+                ? [UsageRecord.Create(route.Model.Id, usageSource, usage, route.Pricing)] : null);
+    }
+
+    private static string BuildTranscript(IReadOnlyList<ChatMessage> messages)
+    {
         // Select recent messages first so a long prefix cannot hide the latest tool outcome.
         // Render selected entries in chronological order for the summarizer.
         var excerpts = new Stack<string>();
@@ -127,8 +207,7 @@ internal sealed class PiCompactionSummarizer
         var omittedEarlier = false;
         for (var i = messages.Count - 1; i >= 0; i--)
         {
-            var message = messages[i];
-            var line = SummaryTranscriptExcerpt.SerializeForSummary(message) + Environment.NewLine + Environment.NewLine;
+            var line = SummaryTranscriptExcerpt.SerializeForSummary(messages[i]) + Environment.NewLine + Environment.NewLine;
             if (line.Length == 2 * Environment.NewLine.Length) continue;
             if (length + line.Length > 64 * 1024 - 128)
             {
@@ -142,21 +221,7 @@ internal sealed class PiCompactionSummarizer
         if (omittedEarlier)
             transcript.AppendLine("[Earlier conversation omitted from bounded summarization transcript.]");
         foreach (var line in excerpts) transcript.Append(line);
-        var request = turnPrefix
-            ? $"# Conversation\n{transcript}\n\n# Instructions\n{TurnPrefixSummarizationPrompt}"
-            : $"<conversation>\n{transcript}\n</conversation>\n\n" +
-                (previousSummary is null ? "" : $"<previous-summary>\n{previousSummary}\n</previous-summary>\n\n") +
-                (previousSummary is null ? SummarizationPrompt : UpdateSummarizationPrompt) +
-                (string.IsNullOrEmpty(focus) ? "" : $"\n\nAdditional focus: {focus}");
-        var directOptions = _routedChatClient.HasRouter ? _routedChatClient.CreateDirectRequestOptions(messages) : null;
-        var response = await _summarizer.RunAsync(request,
-            options: directOptions is null ? null : new ChatClientAgentRunOptions(directOptions),
-            cancellationToken: cancellationToken);
-        if (string.IsNullOrWhiteSpace(response.Text)) throw new InvalidDataException("Summarizer returned an empty response.");
-        var route = VirtualModelRequestHints.ReadHint(directOptions)?.Execution?.Route;
-        return new PiAgent.CompactionSummary(response.Text, response.Usage,
-            route is not null && response.Usage is { } usage
-                ? [UsageRecord.Create(route.Model.Id, "compaction", usage, route.Pricing)] : null);
+        return transcript.ToString();
     }
 
 }

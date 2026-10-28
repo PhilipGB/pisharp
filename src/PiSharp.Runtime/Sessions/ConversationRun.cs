@@ -1309,20 +1309,45 @@ public sealed partial class ConversationRun
         bool willRetry = false) =>
         _compactionCoordinator.CompactAsync(focus, cancellationToken, reason: reason, willRetry: willRetry);
 
-    /// <summary>Selection is durable in Conversation.HeadId; rebuild MAF state before the next run.</summary>
-    public async Task SelectAsync(string? id, CancellationToken cancellationToken = default)
+    /// <summary>Selects the exact entry and rebuilds MAF state before the next run.</summary>
+    public async Task SelectAsync(string? id, CancellationToken cancellationToken = default) =>
+        await NavigateTreeCoreAsync(id, new ConversationTreeSelectionOptions(), returnPromptToEditor: false,
+            cancellationToken).ConfigureAwait(false);
+
+    /// <summary>Navigates like Pi tree navigation, returning a selected user prompt for editing.</summary>
+    public Task<ConversationTreeNavigationResult> NavigateTreeAsync(string? id,
+        ConversationTreeSelectionOptions? options = null, CancellationToken cancellationToken = default) =>
+        NavigateTreeCoreAsync(id, options ?? new ConversationTreeSelectionOptions(), returnPromptToEditor: true,
+            cancellationToken);
+
+    private async Task<ConversationTreeNavigationResult> NavigateTreeCoreAsync(string? id,
+        ConversationTreeSelectionOptions options, bool returnPromptToEditor, CancellationToken cancellationToken)
     {
+        if (options.CustomInstructions?.Length > 4096)
+            throw new ArgumentException("Branch summary instructions exceed 4096 characters.", nameof(options));
+        if (options.ReserveTokens < 0)
+            throw new ArgumentOutOfRangeException(nameof(options), "Branch summary token reserve must be nonnegative.");
         await _gate.WaitAsync(cancellationToken);
         var previousGateOwner = s_currentGateOwner.Value;
         s_currentGateOwner.Value = this;
         try
         {
             var oldLeafEntryId = Conversation.Tree.HeadId;
-            if (string.Equals(id, oldLeafEntryId, StringComparison.Ordinal)) return;
+            if (string.Equals(id, oldLeafEntryId, StringComparison.Ordinal)) return new();
 
             // Validate and describe the requested path without changing the selected head.
             var oldPath = Conversation.Tree.ActivePath();
             var targetPath = id is null ? Array.Empty<ConversationNode>() : Conversation.Tree.ClonePath(id).ActivePath();
+            var selectedEntry = targetPath.LastOrDefault();
+            var navigationHeadId = id;
+            string? editorText = null;
+            if (returnPromptToEditor && selectedEntry is not null &&
+                ConversationContextProjection.ContextMessageForNode(selectedEntry) is { Role: var role } message &&
+                role == ChatRole.User)
+            {
+                navigationHeadId = selectedEntry.ParentId;
+                editorText = message.Text;
+            }
             var commonPathLength = 0;
             while (commonPathLength < oldPath.Count && commonPathLength < targetPath.Count &&
                 oldPath[commonPathLength].Id == targetPath[commonPathLength].Id)
@@ -1336,23 +1361,105 @@ public sealed partial class ConversationRun
             var beforeTreeEvent = new NativeExtensions.PiSharpExtensionSessionBeforeTreeEvent(id,
                 oldLeafEntryId, commonAncestorEntryId,
                 oldPath.Skip(commonPathLength).Select(node => new NativeExtensions.PiSharpExtensionSessionBranchEntry(
-                    node.Id, node.ParentId, node.Type, node.Timestamp)), userWantsSummary: false);
+                    node.Id, node.ParentId, node.Type, node.Timestamp)), options.Summarize);
             var decision = await DispatchSessionBeforeTreeAsync(beforeTreeEvent, cancellationToken).ConfigureAwait(false);
             if (decision?.Cancel == true)
                 throw new InvalidOperationException("Session tree navigation was cancelled by an extension.");
+
+            var customInstructions = decision?.CustomInstructions ?? options.CustomInstructions;
+            var replaceInstructions = decision?.ReplaceInstructions ?? options.ReplaceInstructions;
+            var label = decision?.Label ?? options.Label;
+            string? summaryText = null;
+            JsonElement? summaryDetails = null;
+            UsageRecord? summaryUsage = null;
+            var summaryFromExtension = false;
+            if (options.Summarize && !string.IsNullOrWhiteSpace(decision?.Summary))
+            {
+                if (decision.Summary.Length > 64 * 1024)
+                    throw new InvalidDataException("Extension branch summary exceeds 64KB.");
+                if (decision.Details is { ValueKind: JsonValueKind.Undefined })
+                    throw new InvalidDataException("Extension branch summary details must be a JSON value.");
+                if (decision.Usage is { } extensionUsage &&
+                    (extensionUsage.InputTokens < 0 || extensionUsage.OutputTokens < 0 ||
+                     extensionUsage.CachedInputTokens < 0 || extensionUsage.ReasoningTokens < 0 ||
+                     extensionUsage.TotalTokens < 0 || extensionUsage.CachedWriteTokens < 0))
+                    throw new InvalidDataException("Extension branch summary usage cannot be negative.");
+
+                summaryText = decision.Summary;
+                summaryDetails = decision.Details?.Clone();
+                if (decision.Usage is { } suppliedUsage)
+                    summaryUsage = UsageRecord.Create(CurrentModel, "branch_summary", new UsageDetails
+                    {
+                        InputTokenCount = suppliedUsage.InputTokens,
+                        OutputTokenCount = suppliedUsage.OutputTokens,
+                        CachedInputTokenCount = suppliedUsage.CachedInputTokens,
+                        ReasoningTokenCount = suppliedUsage.ReasoningTokens,
+                        TotalTokenCount = suppliedUsage.TotalTokens,
+                        AdditionalCounts = new() { ["cacheWriteTokens"] = suppliedUsage.CachedWriteTokens }
+                    }, _pricing);
+                summaryFromExtension = true;
+            }
 
             // A before-tree callback may append session state. Preserve that committed state if
             // navigation or its save fails, while restoring the prior execution on the selected
             // branch after the callback.
             var previous = Conversation.Tree.HeadId;
             var entriesBeforeSelection = Conversation.Tree.Entries.Count;
+            var selectionMutationStarted = false;
+            string? summaryEntryId = null;
             var currentModelAfterHook = Conversation.Tree.ActivePath().LastOrDefault(node => node.Type == "model_change")?.Id;
             if (currentModelAfterHook != selectedModelEntryId)
                 throw new InvalidOperationException("Branch changes the model. Select the matching model before running.");
             try
             {
-                Conversation.Tree.Select(id);
+                if (options.Summarize && summaryText is null)
+                {
+                    var summaryEntries = oldPath.Skip(commonPathLength).ToArray();
+                    var tokenBudget = _autoCompaction is { } contextPolicy
+                        ? Math.Max(0, contextPolicy.ContextWindowTokens - options.ReserveTokens)
+                        : Math.Max(0, 128_000 - options.ReserveTokens);
+                    var preparation = BranchSummaryPreparation.Prepare(summaryEntries, tokenBudget);
+                    if (preparation.Messages.Count > 0)
+                    {
+                        var summary = await _agent.SummarizeBranchAsync(preparation.Messages, customInstructions,
+                            replaceInstructions, cancellationToken).ConfigureAwait(false);
+                        summaryText = summary.Text + preparation.FileOperationsSuffix;
+                        summaryDetails = JsonSerializer.SerializeToElement(new
+                        {
+                            readFiles = preparation.ReadFiles,
+                            modifiedFiles = preparation.ModifiedFiles
+                        });
+                        summaryUsage = summary.PhysicalUsage?.FirstOrDefault() ??
+                            (summary.Usage is { } usage
+                                ? UsageRecord.Create(CurrentModel, "branch_summary", usage, _pricing)
+                                : null);
+                    }
+                }
+                entriesBeforeSelection = Conversation.Tree.Entries.Count;
+                if (Conversation.Tree.HeadId != previous)
+                    throw new InvalidOperationException("Conversation changed during tree navigation.");
+                selectionMutationStarted = true;
+                Conversation.Tree.Select(navigationHeadId);
                 Conversation.RecoverIncomplete();
+                ConversationNode? summaryEntry = null;
+                if (!string.IsNullOrWhiteSpace(summaryText))
+                {
+                    summaryEntry = Conversation.AppendBranchSummary(previous ?? "root", summaryText,
+                        summaryDetails, summaryFromExtension, summaryUsage);
+                    summaryEntryId = summaryEntry.Id;
+                }
+                if (!string.IsNullOrEmpty(label) && summaryEntry is not null)
+                    Conversation.Tree.Append("label", JsonSerializer.SerializeToElement(new
+                    {
+                        targetId = summaryEntry.Id,
+                        label
+                    }));
+                else if (!string.IsNullOrEmpty(label) && id is not null)
+                    Conversation.Tree.Append("label", JsonSerializer.SerializeToElement(new
+                    {
+                        targetId = id,
+                        label
+                    }));
                 var history = Conversation.ContextMessages();
                 var restored = await RestoreExecutionAsync(history, cancellationToken);
                 VirtualModelPhysicalContext? physicalContext = null;
@@ -1375,7 +1482,7 @@ public sealed partial class ConversationRun
                 var appendedDuringSelection = Conversation.Tree.Entries.Skip(entriesBeforeSelection).Reverse().ToArray();
                 foreach (var entry in appendedDuringSelection)
                     Conversation.Tree.RollbackAppend(entry, entry.ParentId);
-                Conversation.Tree.Select(previous);
+                if (selectionMutationStarted) Conversation.Tree.Select(previous);
                 throw;
             }
 
@@ -1386,12 +1493,14 @@ public sealed partial class ConversationRun
             try
             {
                 await DispatchSessionTreeAsync(new NativeExtensions.PiSharpExtensionSessionTreeEvent(
-                    oldLeafEntryId, Conversation.Tree.HeadId), observerCancellation.Token).ConfigureAwait(false);
+                    oldLeafEntryId, Conversation.Tree.HeadId, summaryEntryId,
+                    summaryEntryId is null ? null : summaryFromExtension), observerCancellation.Token).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (observerCancellation.IsCancellationRequested)
             {
                 // The navigation is already durable. Expire only the best-effort observer.
             }
+            return new ConversationTreeNavigationResult(editorText);
         }
         finally
         {
@@ -1446,6 +1555,7 @@ public sealed partial class ConversationRun
         BindExtensionContext();
         VirtualModelContextCoordinator? virtualContext = null;
         var physicalOverflowCompacted = false;
+        UsageRecord? latestCompletedProviderUsage = null;
         IReadOnlyList<JsonElement>? expectedProviderPrefix = null;
         var providerTurns = new ProviderTurnJournal(Conversation, () => _agent.GetHistory(_execution),
             () => virtualContext?.HasCompacted == true || physicalOverflowCompacted, () => _historyCount, onEvent);
@@ -1524,6 +1634,7 @@ public sealed partial class ConversationRun
             }
             if (item.Type == "model_request_started")
             {
+                latestCompletedProviderUsage = null;
                 lock (_runtimeStateGate)
                 {
                     // The provider request following tool execution is the natural continuation
@@ -1580,6 +1691,8 @@ public sealed partial class ConversationRun
                 }
             }
             else if (item.Type == "model_text_delta" && item.Text is not null) providerTurns.PartialAssistantText.Append(item.Text);
+            if (item.UsageSnapshot is { } providerUsageSnapshot)
+                latestCompletedProviderUsage = providerUsageSnapshot;
             onEvent?.Invoke(item);
         }
         try
@@ -1979,6 +2092,8 @@ public sealed partial class ConversationRun
             lock (_runtimeStateGate) lastTurn = CompleteProviderTurnUnsafe();
             await CompleteNativeTurnAsync(lastTurn, aborted: false, errorMessage: null).ConfigureAwait(false);
             completed = true;
+            await CompactAfterCompletedTurnAsync(cancellationToken, onEvent, latestCompletedProviderUsage)
+                .ConfigureAwait(false);
         }
         finally
         {
@@ -2074,6 +2189,99 @@ public sealed partial class ConversationRun
         if (measured is null) return AutoCompactionPolicy.Estimate(Conversation.ContextMessages(), prompt);
         var pending = (prompt.Length + 1L) / 2 + 64;
         return (int)Math.Min(int.MaxValue, measured.Value + pending);
+    }
+
+    private async Task CompactAfterCompletedTurnAsync(CancellationToken cancellationToken,
+        Action<AgentLifecycleEvent>? publish, UsageRecord? latestProviderUsage)
+    {
+        var policy = _autoCompaction;
+        var activePath = Conversation.Tree.ActivePath();
+        var latestCompactionIndex = activePath.ToList().FindLastIndex(entry => entry.Type == "compaction");
+        var hasTransientProjection = activePath.Skip(latestCompactionIndex + 1)
+            .Any(entry => entry.Type == "context_projection");
+        var silentOverflow = !hasTransientProjection && policy is { ContextWindowTokens: > 0 } &&
+            latestProviderUsage is not null &&
+            latestProviderUsage.InputTokens > policy.ContextWindowTokens;
+        var reason = silentOverflow
+            ? NativeExtensions.PiSharpExtensionCompactionReason.Overflow
+            : NativeExtensions.PiSharpExtensionCompactionReason.Threshold;
+        var reasonText = silentOverflow ? "overflow" : "threshold";
+        if (hasTransientProjection || !AutoCompactionEnabled || policy is null || policy.TriggerTokens <= 0 ||
+            (!silentOverflow && EstimateNextContext("") <= policy.TriggerTokens) ||
+            ConversationCompactionCoordinator.PreparePlan(Conversation,
+                policy.KeepRecentTokens ?? _keepRecentTokens) is null)
+            return;
+
+        publish?.Invoke(new AgentLifecycleEvent("compaction_start") { CompactionReason = reasonText });
+        ConversationCompactionResult? result = null;
+        try
+        {
+            result = await CompactCoreAsync(null, cancellationToken, reason).ConfigureAwait(false);
+            if (result is null)
+            {
+                var unavailable = "Auto-compaction failed: " + CompactionUnavailableError();
+                publish?.Invoke(new AgentLifecycleEvent("compaction_end", Error: unavailable)
+                {
+                    CompactionReason = reasonText,
+                    CompactionWillRetry = false
+                });
+                await NativeExtensionCompactionEventPublisher.PublishFailedAsync(_agent, reason,
+                    willRetry: false, aborted: false, errorMessage: unavailable, cancellationToken).ConfigureAwait(false);
+                return;
+            }
+
+            await NativeExtensionCompactionEventPublisher.PublishCompletedAsync(_agent, Conversation, result,
+                reason, willRetry: false, cancellationToken).ConfigureAwait(false);
+            publish?.Invoke(new AgentLifecycleEvent("compaction_end")
+            {
+                CompactionReason = reasonText,
+                CompactionResult = result,
+                CompactionWillRetry = false
+            });
+            publish?.Invoke(new AgentLifecycleEvent("context_compacted",
+                Text: "Automatic context summary saved; raw history retained."));
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            publish?.Invoke(new AgentLifecycleEvent("compaction_end")
+            {
+                CompactionReason = reasonText,
+                CompactionResult = result,
+                CompactionAborted = result is null,
+                CompactionWillRetry = false
+            });
+            if (result is null)
+                await NativeExtensionCompactionEventPublisher.PublishAbortedAsync(_agent, reason,
+                    _compactionCoordinator.LastCompactionFromExtension).ConfigureAwait(false);
+            throw;
+        }
+        catch (Exception error)
+        {
+            var abortedByExtension = result is null && _compactionCoordinator.LastCompactionCancelledByExtension;
+            publish?.Invoke(abortedByExtension
+                ? new AgentLifecycleEvent("compaction_end")
+                {
+                    CompactionReason = reasonText,
+                    CompactionAborted = true,
+                    CompactionWillRetry = false
+                }
+                : new AgentLifecycleEvent("compaction_end", Error: "Auto-compaction failed: " + error.Message)
+                {
+                    CompactionReason = reasonText,
+                    CompactionResult = result,
+                    CompactionWillRetry = false
+                });
+            if (result is null)
+            {
+                if (abortedByExtension)
+                    await NativeExtensionCompactionEventPublisher.PublishAbortedAsync(_agent, reason,
+                        _compactionCoordinator.LastCompactionFromExtension).ConfigureAwait(false);
+                else
+                    await NativeExtensionCompactionEventPublisher.PublishFailedWithinDeadlineAsync(_agent,
+                        reason, willRetry: false, errorMessage: "Auto-compaction failed: " + error.Message,
+                        fromExtension: _compactionCoordinator.LastCompactionFromExtension).ConfigureAwait(false);
+            }
+        }
     }
 
     private (string? MessageEntryId, IReadOnlyList<string> ToolResultEntryIds) FindTurnEntryIds(

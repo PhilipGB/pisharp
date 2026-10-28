@@ -1970,6 +1970,7 @@ public sealed class TerminalPtyTests
             var outputLock = new object();
             var inputReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var pickerOpened = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var branchSummaryPromptOpened = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var branchSelected = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var stdout = Task.Run(async () =>
             {
@@ -1984,6 +1985,8 @@ public sealed class TerminalPtyTests
                         var captured = output.ToString();
                         if (captured.Contains("\u001b[?2004h", StringComparison.Ordinal)) inputReady.TrySetResult();
                         if (captured.Contains("Conversation tree", StringComparison.Ordinal)) pickerOpened.TrySetResult();
+                        if (captured.Contains("Carry context from the branch being left?", StringComparison.Ordinal))
+                            branchSummaryPromptOpened.TrySetResult();
                         if (captured.Contains($"Selected {selectedHead[..12]}", StringComparison.Ordinal)) branchSelected.TrySetResult();
                     }
                 }
@@ -1996,6 +1999,9 @@ public sealed class TerminalPtyTests
             await process.StandardInput.FlushAsync();
             await pickerOpened.Task.WaitAsync(timeout.Token);
             await process.StandardInput.WriteAsync("second answer\r");
+            await process.StandardInput.FlushAsync();
+            await branchSummaryPromptOpened.Task.WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync("\r");
             await process.StandardInput.FlushAsync();
             await branchSelected.Task.WaitAsync(timeout.Token);
             await process.StandardInput.WriteAsync("/session\r/quit\r");

@@ -1,4 +1,3 @@
-using System.ClientModel;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.AI;
 using NativeExtensions = PiSharp.Extensions.Abstractions;
@@ -410,27 +409,43 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
 
     private static bool IsContextOverflow(Exception error)
     {
-        var status = error switch
-        {
-            ClientResultException result => result.Status,
-            HttpRequestException request => (int?)request.StatusCode,
-            _ => null
-        };
-        if (status is not (400 or 413)) return false;
         var message = error.Message;
         if (message.Contains("rate limit", StringComparison.OrdinalIgnoreCase) ||
-            message.Contains("too many requests", StringComparison.OrdinalIgnoreCase)) return false;
-        return message.Contains("context_length_exceeded", StringComparison.OrdinalIgnoreCase) ||
-            message.Contains("context length exceeded", StringComparison.OrdinalIgnoreCase) ||
-            message.Contains("prompt exceeds max length", StringComparison.OrdinalIgnoreCase) ||
-            message.Contains("exceeds the context window", StringComparison.OrdinalIgnoreCase) ||
-            message.Contains("exceeds the available context size", StringComparison.OrdinalIgnoreCase) ||
-            System.Text.RegularExpressions.Regex.IsMatch(message,
-                @"exceeds (?:the )?(?:model'?s )?maximum context length(?: of [\d,]+ tokens?|\s*\([\d,]+\))",
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100)) ||
-            System.Text.RegularExpressions.Regex.IsMatch(message,
-                @"prompt too long; exceeded (?:max )?context length",
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100));
+            message.Contains("too many requests", StringComparison.OrdinalIgnoreCase) ||
+            message.StartsWith("Throttling error:", StringComparison.OrdinalIgnoreCase) ||
+            message.StartsWith("Service unavailable:", StringComparison.OrdinalIgnoreCase)) return false;
+
+        string[] patterns =
+        [
+            @"prompt (?:is )?too long",
+            @"prompt exceeds max length",
+            @"request_too_large",
+            @"input is too long for requested model",
+            @"exceeds the context window",
+            @"exceeds (?:the )?(?:model'?s )?maximum context length(?: of [\d,]+ tokens?|\s*\([\d,]+\))",
+            @"input token count.*exceeds the maximum",
+            @"maximum prompt length is \d+",
+            @"reduce the length of the messages",
+            @"maximum context length is \d+ tokens",
+            @"exceeds (?:the )?maximum allowed input length of [\d,]+ tokens?",
+            @"input \(\d+ tokens\) is longer than the model'?s context length \(\d+ tokens\)",
+            @"exceeds the limit of \d+",
+            @"exceeds the available context size",
+            @"greater than the context length",
+            @"context window exceeds limit",
+            @"exceeded model token limit",
+            @"too large for model with \d+ maximum context length",
+            @"prompt has [\d,]+ tokens?, but the configured context size is [\d,]+ tokens?",
+            @"model_context_window_exceeded",
+            @"prompt too long; exceeded (?:max )?context length",
+            @"range of input length should be",
+            @"context[_ ]length[_ ]exceeded",
+            @"too many tokens",
+            @"token limit exceeded"
+        ];
+        return patterns.Any(pattern => System.Text.RegularExpressions.Regex.IsMatch(message, pattern,
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant,
+            TimeSpan.FromMilliseconds(100)));
     }
 
     private static string GetRouteReason(IReadOnlyList<ChatMessage> messages)

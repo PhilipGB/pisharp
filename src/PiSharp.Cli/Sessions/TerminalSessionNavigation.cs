@@ -101,9 +101,20 @@ internal sealed class TerminalSessionNavigation(ActiveProjectRuntime projectBind
             return;
         }
 
-        await conversationBinding.Run.SelectAsync(selected.Id);
+        var branchSummarySettings = projectBinding.Settings.BranchSummary ?? new BranchSummarySettings();
+        var summarize = false;
+        if (branchSummarySettings.SkipPrompt != true)
+            summarize = presentation.Editor?.ShowInlineSelectionList("Carry context from the branch being left?",
+                [
+                    new TerminalSelectionOption<bool>("no", false, "Switch branches without a summary"),
+                    new TerminalSelectionOption<bool>("yes", true, "Summarize the branch before switching")
+                ], [""], "enter select • escape/ctrl+c continue without a summary", selectedKey: "no")?.Option.Value == true;
+        var navigation = await conversationBinding.Run.NavigateTreeAsync(selected.Id,
+            new ConversationTreeSelectionOptions(Summarize: summarize,
+                ReserveTokens: branchSummarySettings.EffectiveReserveTokens));
 
         presentation.LoadSessionTranscript();
+        if (navigation.EditorText is { } draft) presentation.Editor?.Prefill(draft);
         Console.WriteLine($"Selected {selected.Id[..12]} · {selected.Type}");
     }
 

@@ -8,7 +8,7 @@ internal static class InteractiveCommandCatalog
     private static readonly IReadOnlyList<InteractiveCommandMetadata> s_builtIns = Array.AsReadOnly<InteractiveCommandMetadata>(
     [
         new("/tree", "Browse conversation history and switch to another point."),
-        new("/branch", "Start a new branch from the current conversation point."),
+        new("/branch", "Select a conversation branch; add --summarize to carry a summary of the branch you leave."),
         new("/fork", "Fork the current conversation."),
         new("/clone", "Clone the current conversation into a new session."),
         new("/new", "Start a new conversation."),

@@ -163,6 +163,78 @@ public sealed class CompactionTests
     }
 
     [Fact]
+    public async Task ProviderUsageAboveThresholdCompactsAfterCompletedTurnWithoutRetry()
+    {
+        var conversation = Seed(Path.GetTempPath());
+        var client = new PostTurnUsageClient();
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())), conversation,
+            autoCompaction: new AutoCompactionPolicy(1000, 100, KeepRecentTokens: 1));
+        var events = new List<AgentLifecycleEvent>();
+
+        await foreach (var item in run.RunEventsAsync("continue")) events.Add(item);
+
+        var compacted = Assert.Single(events, item => item.Type == "compaction_end");
+        Assert.Equal("threshold", compacted.CompactionReason);
+        Assert.False(compacted.CompactionWillRetry);
+        Assert.Equal(1, client.StreamingRequests);
+        Assert.Equal(2, client.SummaryRequests);
+        Assert.Contains(conversation.Tree.Entries, entry => entry.Type == "compaction");
+        Assert.Contains(conversation.Tree.Entries, entry => entry.Type == "chat" &&
+            ConversationMessageCodec.RestoreEntry(entry).Text == "continued response");
+    }
+
+    [Fact]
+    public async Task ProviderUsageAboveContextWindowCompactsAsOverflowWithoutRetry()
+    {
+        var conversation = Seed(Path.GetTempPath());
+        var client = new PostTurnUsageClient
+        {
+            ReportedUsage = new UsageDetails
+            {
+                InputTokenCount = 1001,
+                OutputTokenCount = 2,
+                TotalTokenCount = 1003
+            }
+        };
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())), conversation,
+            autoCompaction: new AutoCompactionPolicy(1000, 100, KeepRecentTokens: 1));
+        var events = new List<AgentLifecycleEvent>();
+
+        await foreach (var item in run.RunEventsAsync("continue")) events.Add(item);
+
+        var compacted = events.Last(item => item.Type == "compaction_end");
+        Assert.Equal("overflow", compacted.CompactionReason);
+        Assert.False(compacted.CompactionWillRetry);
+        Assert.Equal(1, client.StreamingRequests);
+        Assert.Equal(2, client.SummaryRequests);
+    }
+
+    [Fact]
+    public async Task CachedInputCountAlreadyIncludedInInputDoesNotFalseClassifySilentOverflow()
+    {
+        var conversation = Seed(Path.GetTempPath());
+        var client = new PostTurnUsageClient
+        {
+            ReportedUsage = new UsageDetails
+            {
+                InputTokenCount = 995,
+                CachedInputTokenCount = 10,
+                OutputTokenCount = 20,
+                TotalTokenCount = 1015
+            }
+        };
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())), conversation,
+            autoCompaction: new AutoCompactionPolicy(1000, 100, KeepRecentTokens: 1));
+        var events = new List<AgentLifecycleEvent>();
+
+        await foreach (var item in run.RunEventsAsync("continue")) events.Add(item);
+
+        var compacted = events.Last(item => item.Type == "compaction_end");
+        Assert.Equal("threshold", compacted.CompactionReason);
+        Assert.False(compacted.CompactionWillRetry);
+    }
+
+    [Fact]
     public async Task AutomaticCompactionUsesTheSplitTurnCoordinatorBeforeAcceptingTheNextPrompt()
     {
         var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
@@ -606,12 +678,18 @@ public sealed class CompactionTests
 
     [Theory]
     [InlineData("Your input exceeds the context window of this model", false, true)]
+    [InlineData("prompt is too long: 213462 tokens > 200000 maximum", false, true)]
+    [InlineData("413 {\"error\":{\"type\":\"request_too_large\",\"message\":\"Request exceeds the maximum size\"}}", false, true)]
     [InlineData("the request exceeds the available context size, try increasing it", false, true)]
     [InlineData("400 `prompt too long; exceeded max context length by 100918 tokens`", false, true)]
     [InlineData("400 {\"code\":\"1261\",\"message\":\"Prompt exceeds max length\"}", false, true)]
     [InlineData("400 Input length (265330) exceeds model's maximum context length (262144).", false, true)]
+    [InlineData("The input token count (1196265) exceeds the maximum number of tokens allowed (1048575)", false, true)]
+    [InlineData("Please reduce the length of the messages or completion", false, true)]
+    [InlineData("The input (100 tokens) is longer than the model's context length (90 tokens).", false, true)]
     [InlineData("400 model runner crashed", false, false)]
     [InlineData("rate limit: too many requests; context_length_exceeded", false, false)]
+    [InlineData("Throttling error: Too many tokens, please wait before trying again.", false, false)]
     [InlineData("Your input exceeds the context window of this model", true, false)]
     public async Task ProviderOverflowRetriesOnceOnlyBeforeContentWithShortenedRequest(string error, bool afterContent, bool recover)
     {
@@ -736,6 +814,21 @@ public sealed class CompactionTests
             TotalTokenCount = 0
         }, null);
         Assert.Equal(12, usage.TotalTokens);
+    }
+
+    [Fact]
+    public void UsageRecordCreateFallsBackToAllProviderContextTokenCategories()
+    {
+        var usage = UsageRecord.Create("fixture", "model", new UsageDetails
+        {
+            InputTokenCount = 2,
+            OutputTokenCount = 3,
+            CachedInputTokenCount = 5,
+            TotalTokenCount = 0,
+            AdditionalCounts = new AdditionalPropertiesDictionary<long> { ["cacheWriteTokens"] = 7 }
+        }, null);
+
+        Assert.Equal(17, usage.TotalTokens);
     }
 
     [Fact]
@@ -1188,6 +1281,45 @@ public sealed class CompactionTests
             yield return new ChatResponseUpdate(ChatRole.Assistant, "continued");
             await Task.CompletedTask;
         }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class PostTurnUsageClient : IChatClient
+    {
+        public int StreamingRequests { get; private set; }
+        public int SummaryRequests { get; private set; }
+        public UsageDetails ReportedUsage { get; init; } = new()
+        {
+            InputTokenCount = 950,
+            OutputTokenCount = 20,
+            TotalTokenCount = 970
+        };
+
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            SummaryRequests++;
+            return Task.FromResult(new ChatResponse([new ChatMessage(ChatRole.Assistant, "post-turn summary")]));
+        }
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            if (messages.Last().Text.Contains("structured context checkpoint summary", StringComparison.Ordinal))
+            {
+                SummaryRequests++;
+                yield return new ChatResponseUpdate(ChatRole.Assistant, "post-turn summary");
+            }
+            else
+            {
+                StreamingRequests++;
+                yield return new ChatResponseUpdate(ChatRole.Assistant, "continued response");
+                yield return new ChatResponseUpdate(ChatRole.Assistant, [new UsageContent(ReportedUsage)]);
+            }
+            await Task.CompletedTask;
+        }
+
         public object? GetService(Type serviceType, object? serviceKey = null) => null;
         public void Dispose() { }
     }

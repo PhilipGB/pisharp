@@ -158,7 +158,7 @@ public sealed class PiAgent
         _supportsImages = supportsImages ? 1 : 0;
         _codingTools.SetReadModelSupportsImages(supportsImages);
         _reasoning = reasoning;
-        _summarizer = new PiCompactionSummarizer(_routedChatClient);
+        _summarizer = new PiCompactionSummarizer(_routedChatClient, () => Volatile.Read(ref _reasoning));
         _toolCatalog = new AgentToolCatalog(tools, selectedTools, excludedTools, noTools, noBuiltinTools,
             extensionTools, extensionToolRegistrations, initialActiveToolNames);
         lock (_runtimeToolGate)
@@ -636,6 +636,10 @@ public sealed class PiAgent
     public Task<CompactionSummary> SummarizeAsync(IReadOnlyList<ChatMessage> messages, string? focus,
         CancellationToken cancellationToken = default, string? previousSummary = null, bool turnPrefix = false) =>
         _summarizer.SummarizeAsync(messages, focus, cancellationToken, previousSummary, turnPrefix);
+
+    public Task<CompactionSummary> SummarizeBranchAsync(IReadOnlyList<ChatMessage> messages,
+        string? customInstructions, bool replaceInstructions, CancellationToken cancellationToken = default) =>
+        _summarizer.SummarizeBranchAsync(messages, customInstructions, replaceInstructions, cancellationToken);
 
     public sealed record CompactionSummary(string Text, UsageDetails? Usage, IReadOnlyList<UsageRecord>? PhysicalUsage = null);
 

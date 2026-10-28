@@ -471,6 +471,45 @@ public sealed class ConversationSession
         Tree.Append("usage", JsonSerializer.SerializeToElement(usage));
     }
 
+    /// <summary>Appends a Pi-compatible summary for the branch that was left during tree navigation.</summary>
+    public ConversationNode AppendBranchSummary(string fromId, string summary, JsonElement? details = null,
+        bool fromExtension = false, UsageRecord? usage = null)
+    {
+        if (string.IsNullOrWhiteSpace(fromId)) throw new ArgumentException("A source branch is required.", nameof(fromId));
+        if (string.IsNullOrWhiteSpace(summary) || summary.Length > 64 * 1024)
+            throw new InvalidDataException("Branch summary must be nonempty and at most 64KB.");
+        if (details is { ValueKind: JsonValueKind.Undefined })
+            throw new ArgumentException("Branch summary details must be a JSON value when supplied.", nameof(details));
+        if (usage is not null) NativeSessionDocumentCodec.ValidateUsage(usage, Tree.HeadId ?? "new entry");
+
+        object? projectedUsage = usage is null ? null : new
+        {
+            input = usage.InputTokens,
+            output = usage.OutputTokens,
+            cacheRead = usage.CachedInputTokens,
+            cacheWrite = usage.CachedWriteTokens,
+            totalTokens = usage.TotalTokens,
+            cost = usage.Cost is null ? null : new
+            {
+                input = usage.InputCost,
+                output = usage.OutputCost,
+                cacheRead = usage.CachedInputCost,
+                cacheWrite = usage.CachedWriteCost,
+                total = usage.Cost
+            }
+        };
+        var payload = JsonSerializer.SerializeToElement(new
+        {
+            fromId,
+            summary,
+            details,
+            fromHook = fromExtension,
+            usage = projectedUsage,
+            nativeUsage = usage
+        });
+        return Tree.Append("branch_summary", payload);
+    }
+
     public IReadOnlyList<UsageRecord> ActiveUsage()
     {
         var usage = new List<UsageRecord>();

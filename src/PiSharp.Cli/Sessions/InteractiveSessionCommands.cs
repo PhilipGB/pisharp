@@ -3,7 +3,8 @@ using PiSharp.Runtime.Sessions;
 namespace PiSharp.Cli.Sessions;
 
 internal sealed class InteractiveSessionCommands(ConversationStore store, string workingDirectory, bool noSession,
-    TextWriter output, Func<Task<string?>> readConfirmation, Action loadTranscript)
+    TextWriter output, Func<Task<string?>> readConfirmation, Action loadTranscript,
+    BranchSummarySettings? branchSummarySettings = null, Action<string>? prefillPrompt = null)
 {
     public async Task<bool> TryExecuteAsync(string command, string argument, ConversationSession conversation,
         ConversationRun conversationRun, string? sessionPath)
@@ -48,11 +49,18 @@ internal sealed class InteractiveSessionCommands(ConversationStore store, string
                     output.WriteLine($"{(node.Id == conversation.Tree.HeadId ? '>' : ' ')} {node.Id[..12]} ← {node.ParentId?[..12] ?? "root"} {node.Type} {node.Timestamp:HH:mm:ss}");
                 return true;
             case "/branch":
-                var matches = conversation.Tree.Entries.Where(node => node.Id.StartsWith(argument, StringComparison.Ordinal)).ToArray();
-                if (argument.Length == 0 || matches.Length != 1) throw new ArgumentException("Specify a unique entry id prefix from /tree.");
-                await conversationRun.SelectAsync(matches[0].Id);
+                var summarizeBranch = argument.Equals("--summarize", StringComparison.Ordinal) ||
+                    argument.StartsWith("--summarize ", StringComparison.Ordinal);
+                var entryPrefix = summarizeBranch ? argument["--summarize".Length..].Trim() : argument;
+                var matches = conversation.Tree.Entries.Where(node => node.Id.StartsWith(entryPrefix, StringComparison.Ordinal)).ToArray();
+                if (entryPrefix.Length == 0 || matches.Length != 1)
+                    throw new ArgumentException("Specify a unique entry id prefix from /tree, optionally after --summarize.");
+                var navigation = await conversationRun.NavigateTreeAsync(matches[0].Id,
+                    new ConversationTreeSelectionOptions(Summarize: summarizeBranch,
+                        ReserveTokens: branchSummarySettings?.EffectiveReserveTokens ?? BranchSummarySettings.DefaultReserveTokens));
                 loadTranscript();
-                output.WriteLine($"Selected {matches[0].Id[..12]}");
+                if (navigation.EditorText is { } draft) prefillPrompt?.Invoke(draft);
+                output.WriteLine($"Selected {matches[0].Id[..12]}{(summarizeBranch ? " with a branch summary" : "")}");
                 return true;
             case "/name":
                 await conversationRun.SetSessionNameAsync(argument);

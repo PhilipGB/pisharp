@@ -67,17 +67,57 @@ public sealed record PiSharpExtensionSessionBeforeTreeEvent
     public string? OldLeafEntryId { get; }
     /// <summary>The common ancestor of the current and target paths, if one exists.</summary>
     public string? CommonAncestorEntryId { get; }
-    /// <summary>Detached entry metadata the host would summarize. This milestone does not request summaries.</summary>
+    /// <summary>Detached entry metadata the host may summarize when requested.</summary>
     public IReadOnlyList<PiSharpExtensionSessionBranchEntry> EntriesToSummarize { get; }
     /// <summary>Whether the host has requested a branch summary.</summary>
     public bool UserWantsSummary { get; }
 }
 
-/// <summary>Controls whether tree navigation proceeds.</summary>
-public sealed record PiSharpExtensionSessionBeforeTreeResult(bool Cancel = false);
+/// <summary>Controls tree navigation and may provide a branch summary.</summary>
+public sealed record PiSharpExtensionSessionBeforeTreeResult
+{
+    private readonly JsonElement? _details;
+
+    /// <summary>Creates a tree-navigation decision with optional extension-provided summary data.</summary>
+    /// <param name="Cancel">Whether the host should cancel navigation.</param>
+    /// <param name="Summary">Optional summary text to attach when the user requested a summary.</param>
+    /// <param name="Details">Optional JSON details to persist with the summary.</param>
+    /// <param name="Usage">Optional provider token usage for generating the summary.</param>
+    /// <param name="CustomInstructions">Optional summary instructions for the host summarizer.</param>
+    /// <param name="ReplaceInstructions">Whether custom instructions replace the default prompt.</param>
+    /// <param name="Label">Optional label to apply to the summary or selected entry.</param>
+    public PiSharpExtensionSessionBeforeTreeResult(bool Cancel = false, string? Summary = null,
+        JsonElement? Details = null, PiSharpExtensionCompactionUsage? Usage = null,
+        string? CustomInstructions = null, bool? ReplaceInstructions = null, string? Label = null)
+    {
+        this.Cancel = Cancel;
+        this.Summary = Summary;
+        _details = Details?.Clone();
+        this.Usage = Usage;
+        this.CustomInstructions = CustomInstructions;
+        this.ReplaceInstructions = ReplaceInstructions;
+        this.Label = Label;
+    }
+
+    /// <summary>Whether navigation should be cancelled.</summary>
+    public bool Cancel { get; }
+    /// <summary>Optional extension-generated branch summary.</summary>
+    public string? Summary { get; }
+    /// <summary>Detached extension details attached to the branch summary.</summary>
+    public JsonElement? Details => _details?.Clone();
+    /// <summary>Usage reported by the extension summary provider, if available.</summary>
+    public PiSharpExtensionCompactionUsage? Usage { get; }
+    /// <summary>Optional instructions passed to the host summarizer.</summary>
+    public string? CustomInstructions { get; }
+    /// <summary>Whether the custom instructions replace the default summary prompt.</summary>
+    public bool? ReplaceInstructions { get; }
+    /// <summary>Optional label for the summary or selected entry.</summary>
+    public string? Label { get; }
+}
 
 /// <summary>Notification that a tree navigation has been selected and persisted.</summary>
-public sealed record PiSharpExtensionSessionTreeEvent(string? OldLeafEntryId, string? NewLeafEntryId);
+public sealed record PiSharpExtensionSessionTreeEvent(string? OldLeafEntryId, string? NewLeafEntryId,
+    string? BranchSummaryEntryId = null, bool? FromExtension = null);
 
 /// <summary>Detached file-operation metadata used to explain a compaction plan.</summary>
 public sealed record PiSharpExtensionCompactionDetails
