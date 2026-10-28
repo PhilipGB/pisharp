@@ -51,6 +51,10 @@ internal static class RpcSessionMessageProjector
         {
             var message = ProjectNode(conversation, node, api);
             if (message is null) continue;
+            message.Remove("piSharpToolResult");
+            if (message["role"]?.GetValue<string>() == "user" &&
+                message["content"] is JsonValue userContent && userContent.TryGetValue<string>(out var userText))
+                message["content"] = new JsonArray(new JsonObject { ["type"] = "text", ["text"] = userText });
             if (message["role"]?.GetValue<string>() == "toolResult" && toolNames.TryGetValue(node.Id, out var toolName))
                 message["toolName"] = toolName;
             if (node.Type == "interrupted" && message["role"]?.GetValue<string>() == "assistant" &&

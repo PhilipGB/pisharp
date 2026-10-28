@@ -1,14 +1,47 @@
 using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using PiSharp.Core;
 using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Cli.Protocols;
 
 internal static class RpcSessionEntryProjector
 {
-    public static IReadOnlyList<JsonElement> ProjectEntries(ConversationSession session, string? api = null) =>
-        PiJsonlSessionInterchange.ProjectEntries(session, api);
+    public static IReadOnlyList<JsonElement> ProjectEntries(ConversationSession session, string? api = null)
+    {
+        var nodes = session.Tree.Entries;
+        var nodesById = nodes.ToDictionary(node => node.Id, StringComparer.Ordinal);
+        var hiddenIds = nodes.Where(IsInternalToolLoadout).Select(node => node.Id).ToHashSet(StringComparer.Ordinal);
+        var projectedById = PiJsonlSessionInterchange.ProjectEntries(session, api)
+            .ToDictionary(entry => entry.GetProperty("id").GetString()!, StringComparer.Ordinal);
+        var entries = new List<JsonElement>(nodes.Count - hiddenIds.Count);
+        foreach (var node in nodes)
+        {
+            if (hiddenIds.Contains(node.Id)) continue;
+            var entry = JsonNode.Parse(projectedById[node.Id].GetRawText())!.AsObject();
+            if (node.Type == "model_change") entry.Remove("endpoint");
+            var parentId = node.ParentId;
+            while (parentId is not null && hiddenIds.Contains(parentId) && nodesById.TryGetValue(parentId, out var parent))
+                parentId = parent.ParentId;
+            entry["parentId"] = parentId;
+            entries.Add(JsonSerializer.SerializeToElement(entry));
+        }
+        return entries;
+    }
+
+    public static string? ProjectLeafId(ConversationSession session)
+    {
+        var hiddenIds = session.Tree.Entries.Where(IsInternalToolLoadout).Select(node => node.Id)
+            .ToHashSet(StringComparer.Ordinal);
+        return session.Tree.ActivePath().LastOrDefault(node => !hiddenIds.Contains(node.Id))?.Id;
+    }
+
+    public static JsonElement ProjectAppendedEntry(ConversationSession session, string entryId, string? api = null) =>
+        ProjectEntries(session, api).Single(entry => entry.GetProperty("id").GetString() == entryId);
+
+    private static bool IsInternalToolLoadout(ConversationNode node) => node.Type == "tool_loadout";
 
     public static IReadOnlyList<RpcSessionTreeNode> ProjectTree(ConversationSession session, string? api = null)
     {

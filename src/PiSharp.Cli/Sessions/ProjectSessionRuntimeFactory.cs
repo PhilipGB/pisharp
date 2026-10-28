@@ -88,6 +88,12 @@ internal sealed class ProjectSessionRuntimeFactory(
             var thinking = ThinkingLevels.ValidateForModel(
                 PiJsonlSessionInterchange.GetThinkingLevel(conversation) ?? currentThinking,
                 selection.Model.Reasoning, selection.Model.ThinkingLevelMap);
+            if (!targetExists && string.Equals(arguments.Mode, "rpc", StringComparison.Ordinal))
+            {
+                conversation.SelectModel(selection.Connection.Model, selection.Connection.Endpoint?.ToString(),
+                    selection.Provider.Id);
+                conversation.AppendThinkingLevelChange(thinking);
+            }
             var chat = ProviderChatClientFactory.Create(selection, project.Settings.Retry?.Provider);
             var controller = new ModelRuntimeController(modelRuntime, () => project.Settings,
                 Environment.GetEnvironmentVariable);

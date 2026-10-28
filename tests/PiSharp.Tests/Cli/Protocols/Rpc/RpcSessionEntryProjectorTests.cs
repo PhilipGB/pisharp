@@ -37,6 +37,31 @@ public sealed class RpcSessionEntryProjectorTests
     }
 
     [Fact]
+    public void RpcEntryProjectionHidesInternalToolLoadoutAndReparentsVisibleEntries()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null, "openai");
+        session.SelectModel("fixture", "http://127.0.0.1:9/v1", "openai");
+        session.AppendThinkingLevelChange("off");
+        session.AppendToolLoadout([]);
+        using var append = session.BeginExtensionStateAppend("fixture-state",
+            JsonSerializer.SerializeToElement(new { value = "stored" }), source: null);
+        append.Commit();
+
+        var entries = RpcSessionEntryProjector.ProjectEntries(session);
+
+        Assert.Equal(["model_change", "thinking_level_change", "custom"],
+            entries.Select(entry => entry.GetProperty("type").GetString()));
+        Assert.False(entries[0].TryGetProperty("endpoint", out _));
+        var thinkingId = entries[1].GetProperty("id").GetString();
+        var extensionEntry = entries[2];
+        Assert.Equal(thinkingId, extensionEntry.GetProperty("parentId").GetString());
+        Assert.Equal(extensionEntry.GetProperty("id").GetString(), RpcSessionEntryProjector.ProjectLeafId(session));
+        var appended = RpcSessionEntryProjector.ProjectAppendedEntry(session,
+            extensionEntry.GetProperty("id").GetString()!);
+        Assert.Equal(extensionEntry.GetRawText(), appended.GetRawText());
+    }
+
+    [Fact]
     public void TreeProjectionSortsSiblingsAndAppliesTheLatestLabel()
     {
         var session = ImportSession("""

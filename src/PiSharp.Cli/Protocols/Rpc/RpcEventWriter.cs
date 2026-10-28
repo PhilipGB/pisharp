@@ -45,6 +45,7 @@ internal sealed class RpcEventWriter(JsonLineWriter output, Func<JsonObject?>? g
         string? api = null)
     {
         var projector = new RpcEventProjector();
+        projector.SetThinkingLevel(run.ThinkingLevel);
         var pendingPromptMessages = new List<AgentLifecycleEvent>();
         lock (_projectorGate)
         {
@@ -61,6 +62,7 @@ internal sealed class RpcEventWriter(JsonLineWriter output, Func<JsonObject?>? g
         {
             await foreach (var item in events)
             {
+                projector.SetThinkingLevel(run.ThinkingLevel);
                 if (observeEvent is not null) await observeEvent(item);
                 if (item.Type == "prompt_accepted")
                 {
@@ -125,7 +127,8 @@ internal sealed class RpcEventWriter(JsonLineWriter output, Func<JsonObject?>? g
                 }
                 if (item.Type == "agent_settled")
                 {
-                    if (accepted) await output.EmitAsync(new { type = "agent_settled" }, CancellationToken.None);
+                    if (accepted) await output.EmitAsync(new { type = "agent_settled", aborted = item.Aborted ?? false },
+                        CancellationToken.None);
                     continue;
                 }
                 if (item.Type == "assistant_turn_started" && turnOpen) continue;

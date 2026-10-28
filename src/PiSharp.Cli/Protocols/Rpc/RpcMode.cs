@@ -627,7 +627,14 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     {
         var run = CurrentRun;
         var controls = CreateExtensionControls();
-        var session = run.CreateExtensionSessionContext(commandInfo.SourceInfo.Path);
+        var session = run.CreateExtensionSessionContext(commandInfo.SourceInfo.Path,
+            async (entry, _) =>
+            {
+                var entryId = entry.GetProperty("id").GetString()!;
+                var projectedEntry = RpcSessionEntryProjector.ProjectAppendedEntry(run.Conversation, entryId,
+                    getApi?.Invoke());
+                await _writer.EmitAsync(new { type = "entry_appended", entry = projectedEntry }, CancellationToken.None);
+            });
         var settingsAndFlags = createSettingsFlagContext?.Invoke(commandInfo.SourceInfo.Path);
         var sendUserMessageAsync = CreateExtensionUserMessageSender();
         var sendCustomMessageAsync = CreateExtensionCustomMessageSender(commandInfo.SourceInfo.Path);

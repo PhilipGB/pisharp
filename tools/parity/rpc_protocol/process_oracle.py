@@ -9,6 +9,7 @@ import json
 import os
 from pathlib import Path
 import signal
+import shutil
 import subprocess
 import tempfile
 import threading
@@ -23,7 +24,9 @@ PI_CLI = "packages/coding-agent/src/cli.ts"
 PISHARP_DLL = ROOT / "src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll"
 TEST_EXTENSION_PROJECT = ROOT / "tests/PiSharp.Tests/PiSharp.Tests.csproj"
 TEST_EXTENSION_DLL = ROOT / "tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll"
-VOLATILE_FIELDS = {"sessionFile", "sessionId", "timestamp"}
+NATIVE_ENTRY_EXTENSION_PROJECT = ROOT / "tests/fixtures/NativeExtensionFixture/NativeExtensionFixture.csproj"
+NATIVE_ENTRY_EXTENSION_DLL = ROOT / "tests/fixtures/NativeExtensionFixture/bin/Debug/net10.0/NativeExtensionFixture.dll"
+VOLATILE_FIELDS = {"sessionFile", "sessionId", "timestamp", "durationMs"}
 
 
 class _AbsentValue:
@@ -44,6 +47,12 @@ class FixtureProviderStep:
     tool_arguments: str | None = None
     hold_after_partial: bool = False
     hold_before_response: bool = False
+    text_fragments: tuple[str, ...] = ()
+    reasoning_fragments: tuple[str, ...] = ()
+    usage_updates: tuple[tuple[int, int, int], ...] = ()
+    flush_stream_chunks: bool = False
+    stream_chunk_delay_seconds: float = 0.0
+    fail_after_partial: bool = False
 
 
 @dataclass(frozen=True)
@@ -59,6 +68,9 @@ class InputRun:
     response_only: bool = False
     provider_response_delays: tuple[float, ...] = ()
     provider_steps: tuple[FixtureProviderStep, ...] = ()
+    provider_api: str = "openai-completions"
+    reasoning: bool = False
+    retry_settings: tuple[tuple[str, Any], ...] = ()
     provider_waits: tuple[tuple[int, int, float], ...] = ()
     stdout_waits: tuple[tuple[int, str, int, float], ...] = ()
     release_tool_gate_after_input_index: int | None = None
@@ -69,6 +81,9 @@ class InputRun:
     lifecycle_event_types: tuple[str, ...] = ()
     preserve_event_payloads: bool = False
     preserve_event_payload_types: tuple[str, ...] = ()
+    preserve_message_update_deltas_only: bool = False
+    preserve_response_data_commands: tuple[str, ...] = ()
+    normalize_session_entry_ids: bool = False
     preserve_system_message_payloads: bool = False
     forbidden_lifecycle_event_types: tuple[str, ...] = ()
     minimum_lifecycle_event_counts: tuple[tuple[str, int], ...] = ()
@@ -76,8 +91,10 @@ class InputRun:
     require_assistant_error_message: bool = False
     preserve_assistant_terminal_shape: bool = False
     use_handled_extension_command: bool = False
+    use_entry_appending_extension: bool = False
     enable_bash_tool: bool = False
     compare_provider_requests: bool = False
+    compare_stderr: bool = True
     model_context_window: int = 4096
     preserve_state_flags: bool = False
     preserve_queue_state: bool = False
@@ -982,6 +999,221 @@ R4_SCENARIOS["R4.tool-finishes-before-next-request"] = (
 )
 
 
+R5_SCENARIOS: dict[str, tuple[InputRun, ...]] = {}
+R5_SCENARIOS["R5.agent-start-end-settled"] = (
+    InputRun(
+        chunks=((_line("lifecycle-prompt", "prompt", message="report the lifecycle response"), 0.0),),
+        expected_response_ids=("lifecycle-prompt",), expected_response_commands=("prompt",),
+        expected_successes=(True,), expected_data_presence=(True,), expected_error_presence=(False,),
+        expected_response_dispositions=("started",), provider_steps=(FixtureProviderStep(text="lifecycle response"),),
+        provider_waits=((0, 1, 10.0),),
+        stdout_waits=((0, '"id":"lifecycle-prompt"', 1, 10.0),
+                      (0, '"type":"agent_settled"', 1, 15.0)),
+        expected_min_provider_requests=1, compare_provider_requests=True,
+        lifecycle_event_types=("agent_start", "agent_end", "agent_settled"),
+        preserve_event_payload_types=("agent_settled",),
+        minimum_lifecycle_event_counts=(("agent_start", 1), ("agent_end", 1), ("agent_settled", 1)),
+        expected_marker_order=("response:lifecycle-prompt", "event:agent_start", "event:agent_end",
+                               "event:agent_settled"),
+    ),
+)
+R5_SCENARIOS["R5.turn-start-end"] = (
+    InputRun(
+        chunks=((_line("turn-prompt", "prompt", message="report the final turn"), 0.0),),
+        expected_response_ids=("turn-prompt",), expected_response_commands=("prompt",),
+        expected_successes=(True,), expected_data_presence=(True,), expected_error_presence=(False,),
+        expected_response_dispositions=("started",), provider_steps=(FixtureProviderStep(text="turn final"),),
+        provider_waits=((0, 1, 10.0),),
+        stdout_waits=((0, '"id":"turn-prompt"', 1, 10.0),
+                      (0, '"type":"agent_settled"', 1, 15.0)),
+        expected_min_provider_requests=1, compare_provider_requests=True,
+        lifecycle_event_types=("turn_start", "turn_end"),
+        preserve_event_payload_types=("turn_end",),
+        minimum_lifecycle_event_counts=(("turn_start", 1), ("turn_end", 1)),
+        expected_marker_order=("response:turn-prompt", "event:turn_start", "event:turn_end"),
+    ),
+)
+R5_SCENARIOS["R5.message-role-lifecycle"] = (
+    InputRun(
+        chunks=((_line("roles-prompt", "prompt", message="run the role lifecycle tool"), 0.0),),
+        expected_response_ids=("roles-prompt",), expected_response_commands=("prompt",),
+        expected_successes=(True,), expected_data_presence=(True,), expected_error_presence=(False,),
+        expected_response_dispositions=("started",), enable_bash_tool=True,
+        provider_steps=(FixtureProviderStep(tool_name="bash", tool_arguments=json.dumps({"command": "echo role-result"})),
+                        FixtureProviderStep(text_fragments=("tool result ", "received"), flush_stream_chunks=True,
+                                            stream_chunk_delay_seconds=0.05)),
+        provider_waits=((0, 1, 10.0),),
+        stdout_waits=((0, '"id":"roles-prompt"', 1, 10.0),
+                      (0, '"type":"agent_settled"', 1, 20.0)),
+        expected_min_provider_requests=2, compare_provider_requests=True,
+        lifecycle_event_types=("message_start", "message_end", "turn_end"),
+        preserve_event_payload_types=("message_start", "message_end", "turn_end"),
+        minimum_lifecycle_event_counts=(("message_start", 4), ("message_end", 4), ("turn_end", 2)),
+    ),
+)
+R5_SCENARIOS["R5.streaming-text-fragments"] = (
+    InputRun(
+        chunks=((_line("text-fragments", "prompt", message="preserve text fragments"), 0.0),),
+        expected_response_ids=("text-fragments",), expected_response_commands=("prompt",),
+        expected_successes=(True,), expected_data_presence=(True,), expected_error_presence=(False,),
+        expected_response_dispositions=("started",),
+        provider_steps=(FixtureProviderStep(text_fragments=("first ", "second"), flush_stream_chunks=True),),
+        provider_waits=((0, 1, 10.0),),
+        stdout_waits=((0, '"id":"text-fragments"', 1, 10.0),
+                      (0, '"type":"agent_settled"', 1, 15.0)),
+        expected_min_provider_requests=1, compare_provider_requests=True,
+        lifecycle_event_types=("message_start", "message_update", "message_end"),
+        preserve_message_update_deltas_only=True,
+        preserve_event_payload_types=("message_start", "message_end"),
+        minimum_lifecycle_event_counts=(("message_update", 4),),
+    ),
+)
+R5_SCENARIOS["R5.streaming-reasoning-fragments"] = (
+    InputRun(
+        chunks=((_line("reasoning-fragments", "prompt", message="preserve reasoning fragments"), 0.0),),
+        expected_response_ids=("reasoning-fragments",), expected_response_commands=("prompt",),
+        expected_successes=(True,), expected_data_presence=(True,), expected_error_presence=(False,),
+        expected_response_dispositions=("started",), reasoning=True,
+        provider_steps=(FixtureProviderStep(reasoning_fragments=("think first ", "think second"),
+                                            flush_stream_chunks=True),),
+        provider_waits=((0, 1, 10.0),),
+        stdout_waits=((0, '"id":"reasoning-fragments"', 1, 10.0),
+                      (0, '"type":"agent_settled"', 1, 15.0)),
+        expected_min_provider_requests=1, compare_provider_requests=True,
+        lifecycle_event_types=("message_start", "message_update", "message_end"),
+        preserve_message_update_deltas_only=True,
+        preserve_event_payload_types=("message_start", "message_end"),
+        minimum_lifecycle_event_counts=(("message_update", 4),),
+    ),
+)
+R5_SCENARIOS["R5.cumulative-usage-and-final-message"] = (
+    InputRun(
+        chunks=((_line("cumulative-usage", "prompt", message="report cumulative provider usage"), 0.0),),
+        expected_response_ids=("cumulative-usage",), expected_response_commands=("prompt",),
+        expected_successes=(True,), expected_data_presence=(True,), expected_error_presence=(False,),
+        expected_response_dispositions=("started",),
+        provider_steps=(FixtureProviderStep(text_fragments=("usage ", "complete"),
+                                            usage_updates=((8, 1, 9), (12, 2, 14)), flush_stream_chunks=True,
+                                            stream_chunk_delay_seconds=0.05),),
+        provider_waits=((0, 1, 10.0),),
+        stdout_waits=((0, '"id":"cumulative-usage"', 1, 10.0),
+                      (0, '"type":"agent_settled"', 1, 15.0)),
+        expected_min_provider_requests=1, compare_provider_requests=True,
+        lifecycle_event_types=("message_update", "message_end", "turn_end"),
+        preserve_event_payload_types=("message_update", "message_end", "turn_end"),
+        minimum_lifecycle_event_counts=(("message_end", 2), ("turn_end", 1)),
+    ),
+)
+R5_SCENARIOS["R5.retry-event-order"] = (
+    InputRun(
+        chunks=((_line("retry-prompt", "prompt", message="retry once then complete"), 0.0),),
+        expected_response_ids=("retry-prompt",), expected_response_commands=("prompt",),
+        expected_successes=(True,), expected_data_presence=(True,), expected_error_presence=(False,),
+        expected_response_dispositions=("started",),
+        provider_steps=(FixtureProviderStep(status_code=503, error_message="503 transient fixture"),
+                        FixtureProviderStep(text="retried successfully")),
+        retry_settings=(("enabled", True), ("maxRetries", 1), ("baseDelayMs", 1), ("maxAgentDelayMs", 1)),
+        provider_waits=((0, 1, 10.0),),
+        stdout_waits=((0, '"id":"retry-prompt"', 1, 10.0),
+                      (0, '"type":"agent_settled"', 1, 20.0)),
+        expected_min_provider_requests=2, compare_provider_requests=True,
+        lifecycle_event_types=("auto_retry_start", "auto_retry_end", "agent_end", "agent_settled"),
+        preserve_event_payload_types=("auto_retry_start", "auto_retry_end", "agent_settled"),
+        minimum_lifecycle_event_counts=(("auto_retry_start", 1), ("auto_retry_end", 1),
+                                        ("agent_end", 1), ("agent_settled", 1)),
+    ),
+)
+R5_SCENARIOS["R5.post-content-failure"] = (
+    InputRun(
+        chunks=((_line("partial-failure", "prompt", message="emit content then fail"), 0.0),),
+        expected_response_ids=("partial-failure",), expected_response_commands=("prompt",),
+        expected_successes=(True,), expected_data_presence=(True,), expected_error_presence=(False,),
+        expected_response_dispositions=("started",),
+        provider_steps=(FixtureProviderStep(text_fragments=("partial ", "content"), flush_stream_chunks=True,
+                                            fail_after_partial=True),),
+        retry_settings=(("enabled", False), ("maxRetries", 0)),
+        provider_waits=((0, 1, 10.0),),
+        stdout_waits=((0, '"id":"partial-failure"', 1, 10.0),
+                      (0, '"type":"agent_settled"', 1, 20.0)),
+        expected_min_provider_requests=1, compare_provider_requests=True,
+        # Pi's SSE parser writes implementation-specific diagnostics to stderr; retain the
+        # hashed raw streams while comparing the complete RPC error and lifecycle records.
+        compare_stderr=False,
+        lifecycle_event_types=("message_update", "message_end", "turn_end", "agent_end", "agent_settled"),
+        preserve_message_update_deltas_only=True,
+        preserve_event_payload_types=("message_end", "turn_end", "agent_end", "agent_settled"),
+        minimum_lifecycle_event_counts=(("message_update", 3), ("message_end", 1),
+                                        ("turn_end", 1), ("agent_end", 1), ("agent_settled", 1)),
+    ),
+)
+R5_SCENARIOS["R5.cancellation-lifecycle"] = (
+    InputRun(
+        chunks=(
+            (_line("cancel-lifecycle-prompt", "prompt", message="stream then cancel"), 0.0),
+            (_line("cancel-lifecycle-abort", "abort"), 0.0),
+        ),
+        expected_response_ids=("cancel-lifecycle-prompt", "cancel-lifecycle-abort"),
+        expected_response_commands=("prompt", "abort"), expected_successes=(True, True),
+        expected_data_presence=(True, False), expected_error_presence=(False, False),
+        expected_response_dispositions=("started", None),
+        provider_steps=(FixtureProviderStep(text="partial response before abort", hold_after_partial=True),),
+        provider_waits=((0, 1, 10.0),),
+        stdout_waits=((0, '"id":"cancel-lifecycle-prompt"', 1, 10.0),
+                      (0, '"partial response before abort"', 1, 10.0),
+                      (1, '"type":"agent_settled"', 1, 20.0)),
+        expected_min_provider_requests=1, compare_provider_requests=True,
+        lifecycle_event_types=("message_update", "message_end", "turn_end", "agent_end", "agent_settled"),
+        preserve_message_update_deltas_only=True,
+        preserve_event_payload_types=("message_end", "turn_end", "agent_end", "agent_settled"),
+        minimum_lifecycle_event_counts=(("message_update", 2), ("message_end", 2), ("turn_end", 1),
+                                        ("agent_end", 1), ("agent_settled", 1)),
+    ),
+)
+R5_SCENARIOS["R5.session-and-model-event-order"] = (
+    InputRun(
+        chunks=(
+            (_line("rename-session", "set_session_name", name="R5 event ordering"), 0.0),
+            (_line("set-thinking", "set_thinking_level", level="low"), 0.0),
+        ),
+        expected_response_ids=("rename-session", "set-thinking"),
+        expected_response_commands=("set_session_name", "set_thinking_level"),
+        expected_successes=(True, True), expected_data_presence=(False, False),
+        expected_error_presence=(False, False),
+        stdout_waits=((0, '"id":"rename-session"', 1, 10.0),
+                      (1, '"id":"set-thinking"', 1, 10.0)),
+        reasoning=True,
+        lifecycle_event_types=("session_info_changed", "thinking_level_changed"),
+        preserve_event_payloads=True,
+        minimum_lifecycle_event_counts=(("session_info_changed", 1), ("thinking_level_changed", 1)),
+        expected_marker_order=("event:session_info_changed", "response:rename-session",
+                               "event:thinking_level_changed", "response:set-thinking"),
+    ),
+)
+R5_SCENARIOS["R5.session-entry-event-payload"] = (
+    InputRun(
+        chunks=(
+            (_line("append-entry-command", "prompt", message="/native-fixture-state-set stored"), 0.0),
+            (_line("read-appended-entry", "get_entries"), 0.0),
+        ),
+        expected_response_ids=("append-entry-command", "read-appended-entry"),
+        expected_response_commands=("prompt", "get_entries"), expected_successes=(True, True),
+        expected_data_presence=(True, True), expected_error_presence=(False, False),
+        expected_response_dispositions=("handled", None),
+        stdout_waits=((0, '"id":"append-entry-command"', 1, 10.0),
+                      (1, '"id":"read-appended-entry"', 1, 10.0)),
+        lifecycle_event_types=("entry_appended",), preserve_event_payloads=True,
+        preserve_response_data_commands=("get_entries",), normalize_session_entry_ids=True,
+        use_entry_appending_extension=True,
+        minimum_lifecycle_event_counts=(("entry_appended", 1),),
+        expected_marker_order=("event:entry_appended", "response:append-entry-command",
+                               "response:read-appended-entry"),
+    ),
+)
+
+for _case_id, _runs in tuple(R5_SCENARIOS.items()):
+    R5_SCENARIOS[_case_id] = tuple(replace(run, model_context_window=65_536) for run in _runs)
+
+
 class _FixtureProvider:
     def __init__(self, response_delays: tuple[float, ...], provider_steps: tuple[FixtureProviderStep, ...],
                  tool_gate_path: Path):
@@ -1022,6 +1254,18 @@ class _FixtureProvider:
                         self.wfile.write(f"data: {json.dumps(partial, separators=(',', ':'))}\n\n".encode("utf-8"))
                         self.wfile.flush()
                         fixture._release_stream.wait(60)
+                        return
+                    if streaming and step.flush_stream_chunks and step.status_code < 400:
+                        self.send_response(step.status_code)
+                        self.send_header("Content-Type", "text/event-stream")
+                        self.send_header("Cache-Control", "no-cache")
+                        self.send_header("Connection", "close")
+                        self.end_headers()
+                        for chunk in fixture.response_chunks(request_index, step):
+                            self.wfile.write(chunk)
+                            self.wfile.flush()
+                            if step.stream_chunk_delay_seconds:
+                                time.sleep(step.stream_chunk_delay_seconds)
                         return
                     response = fixture.response_body(streaming, request_index, step)
                     self.send_response(step.status_code)
@@ -1110,6 +1354,8 @@ class _FixtureProvider:
             response = {"error": {"message": step.error_message or "fixture provider error"}}
             return json.dumps(response, separators=(",", ":")).encode("utf-8")
         if stream:
+            if step.text_fragments or step.reasoning_fragments or step.usage_updates or step.fail_after_partial:
+                return b"".join(self.response_chunks(request_index, step))
             if step.tool_name is not None:
                 arguments = step.tool_arguments or "{}"
                 arguments = arguments.replace("__RPC_TOOL_GATE__", str(self._tool_gate_path))
@@ -1143,6 +1389,51 @@ class _FixtureProvider:
         }
         return json.dumps(response, separators=(",", ":")).encode("utf-8")
 
+    def response_chunks(self, request_index: int, step: FixtureProviderStep) -> list[bytes]:
+        def sse(value: dict[str, Any]) -> bytes:
+            return f"data: {json.dumps(value, separators=(',', ':'))}\n\n".encode("utf-8")
+
+        def usage(value: tuple[int, int, int]) -> dict[str, Any]:
+            input_tokens, output_tokens, total_tokens = value
+            return {"prompt_tokens": input_tokens, "completion_tokens": output_tokens,
+                    "total_tokens": total_tokens}
+
+        if step.tool_name is not None:
+            arguments = (step.tool_arguments or "{}").replace("__RPC_TOOL_GATE__", str(self._tool_gate_path))
+            chunks = [
+                self.stream_chunk(request_index, {"role": "assistant", "tool_calls": [{
+                    "index": 0, "id": f"rpc-tool-{request_index}", "type": "function",
+                    "function": {"name": step.tool_name, "arguments": arguments},
+                }]}),
+                {"id": f"rpc-fixture-{request_index}", "object": "chat.completion.chunk", "created": 1,
+                 "model": "fixture-model", "choices": [{"index": 0, "delta": {}, "finish_reason": "tool_calls"}],
+                 "usage": {"prompt_tokens": 12, "completion_tokens": 2, "total_tokens": 14}},
+            ]
+            return [*(sse(chunk) for chunk in chunks), b"data: [DONE]\n\n"]
+
+        deltas: list[dict[str, Any]] = []
+        deltas.extend({"reasoning_content": value} for value in step.reasoning_fragments)
+        deltas.extend({"content": value} for value in step.text_fragments)
+        if not deltas:
+            deltas.append({"content": step.text})
+        chunks: list[dict[str, Any]] = []
+        for index, delta in enumerate(deltas):
+            if index == 0:
+                delta = {"role": "assistant", **delta}
+            chunk = self.stream_chunk(request_index, delta)
+            if index < len(step.usage_updates):
+                chunk["usage"] = usage(step.usage_updates[index])
+            chunks.append(chunk)
+        if step.fail_after_partial:
+            return [*(sse(chunk) for chunk in chunks), b"data: {malformed fixture stream\n\n"]
+        final_usage = usage(step.usage_updates[-1]) if step.usage_updates else {
+            "prompt_tokens": 12, "completion_tokens": 2, "total_tokens": 14,
+        }
+        chunks.append({"id": f"rpc-fixture-{request_index}", "object": "chat.completion.chunk", "created": 1,
+                       "model": "fixture-model", "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
+                       "usage": final_usage})
+        return [*(sse(chunk) for chunk in chunks), b"data: [DONE]\n\n"]
+
     def close(self) -> None:
         self._release_stream.set()
         self._server.shutdown()
@@ -1173,8 +1464,9 @@ def _prepare_product(product: str, pi: Path, workspace: Path,
     agent.mkdir(parents=True, exist_ok=True)
     sessions.mkdir(parents=True, exist_ok=True)
     model = {
-        "id": "fixture-model", "name": "fixture-model", "api": "openai-completions",
-        "reasoning": False, "input": ["text"], "contextWindow": input_run.model_context_window, "maxTokens": 128,
+        "id": "fixture-model", "name": "fixture-model", "api": input_run.provider_api,
+        "reasoning": input_run.reasoning, "input": ["text"],
+        "contextWindow": input_run.model_context_window, "maxTokens": 128,
         "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0},
     }
     provider: dict[str, Any] = {
@@ -1187,8 +1479,13 @@ def _prepare_product(product: str, pi: Path, workspace: Path,
         provider["apiKeyEnv"] = "PISHARP_RPC_FIXTURE_KEY"
     (agent / "models.json").write_text(json.dumps({"providers": {"fixture": provider}}) + "\n", encoding="utf-8")
     settings_path = agent / "settings.json"
+    settings = json.loads(settings_path.read_text(encoding="utf-8")) if settings_path.exists() else {}
     if provider_base_url is not None and not settings_path.exists():
-        settings_path.write_text('{"compaction":{"keepRecentTokens":1}}\n', encoding="utf-8")
+        settings["compaction"] = {"keepRecentTokens": 1}
+    if input_run.retry_settings:
+        settings["retry"] = dict(input_run.retry_settings)
+    if settings:
+        settings_path.write_text(json.dumps(settings) + "\n", encoding="utf-8")
     environment = _base_environment()
     environment.update({
         "HOME": str(agent), "PI_CODING_AGENT_DIR": str(agent), "PI_OFFLINE": "1",
@@ -1198,6 +1495,8 @@ def _prepare_product(product: str, pi: Path, workspace: Path,
     common = ["--mode", "rpc", "--provider", "fixture", "--model", "fixture-model",
               "--session-dir", str(sessions), "--no-context-files", "--no-extensions", "--no-skills",
               "--no-prompt-templates", "--system-prompt", "You are a deterministic RPC fixture assistant."]
+    if product == "pisharp" and input_run.use_entry_appending_extension:
+        common.remove("--no-extensions")
     if input_run.resume_session:
         common.append("--continue")
     if input_run.enable_bash_tool:
@@ -1205,17 +1504,53 @@ def _prepare_product(product: str, pi: Path, workspace: Path,
     else:
         common.append("--no-tools")
     extension_path: Path | None = None
-    if input_run.use_handled_extension_command:
+    if input_run.use_handled_extension_command or input_run.use_entry_appending_extension:
         if product == "pi":
             extension_path = agent / "rpc-handled-extension.ts"
-            extension_path.write_text(
-                'export default function (pi) { pi.registerCommand("fixture", '
-                '{ description: "Handle without a run", handler: async () => {} }); }\n',
-                encoding="utf-8",
-            )
+            if input_run.use_entry_appending_extension:
+                extension_path.write_text(
+                    'export default function (pi) { pi.registerCommand("native-fixture-state-set", '
+                    '{ description: "Append a deterministic session entry", handler: async (value) => '
+                    '{ pi.appendEntry("native-fixture-state", { revision: "v1", value }); '
+                    'return "v1 state saved"; } }); }\n',
+                    encoding="utf-8",
+                )
+            else:
+                extension_path.write_text(
+                    'export default function (pi) { pi.registerCommand("fixture", '
+                    '{ description: "Handle without a run", handler: async () => {} }); }\n',
+                    encoding="utf-8",
+                )
+        elif input_run.use_entry_appending_extension:
+            extension_path = None
         else:
             extension_path = TEST_EXTENSION_DLL
-        common.extend(("--extension", str(extension_path)))
+        if extension_path is not None:
+            common.extend(("--extension", str(extension_path)))
+        if product == "pisharp" and input_run.use_entry_appending_extension:
+            native_extension_root = agent / "native-extensions" / "pisharp.testextensions.nativefixture" / "1.0.0"
+            library_root = native_extension_root / "lib" / "net10.0"
+            library_root.mkdir(parents=True, exist_ok=True)
+            for source in NATIVE_ENTRY_EXTENSION_DLL.parent.iterdir():
+                if source.suffix in {".dll", ".json"} and source.is_file():
+                    shutil.copy2(source, library_root / source.name)
+            manifest = {
+                "id": "PiSharp.TestExtensions.NativeFixture",
+                "version": "1.0.0",
+                "apiVersion": 1,
+                "extensions": [{
+                    "assembly": "lib/net10.0/NativeExtensionFixture.dll",
+                    "type": "PiSharp.TestExtensions.NativeFixture.ExampleExtension",
+                }],
+            }
+            (native_extension_root / "pisharp-extension.json").write_text(
+                json.dumps(manifest) + "\n", encoding="utf-8")
+            settings["nativeExtensions"] = [{
+                "id": "PiSharp.TestExtensions.NativeFixture",
+                "version": "1.0.0",
+                "source": "rpc-fixture-native-extension.nupkg",
+            }]
+            settings_path.write_text(json.dumps(settings) + "\n", encoding="utf-8")
     if product == "pi":
         command = ["node", "--import", (pi / PI_SOURCE_RESOLVER).as_uri(), str(pi / PI_CLI), *common]
         environment["PI_CODING_AGENT_DIR"] = str(agent)
@@ -1364,12 +1699,14 @@ def _execute_with_provider(product: str, pi: Path, workspace: Path, input_run: I
 
 def _project(value: Any, *, preserve_response_error_text: bool = False,
              preserve_state_flags: bool = False, preserve_queue_state: bool = False,
-             preserve_queue_response_data: bool = False) -> Any:
+             preserve_queue_response_data: bool = False,
+             preserve_response_data_commands: tuple[str, ...] = ()) -> Any:
     if isinstance(value, list):
         return [_project(item, preserve_response_error_text=preserve_response_error_text,
                          preserve_state_flags=preserve_state_flags,
                          preserve_queue_state=preserve_queue_state,
-                         preserve_queue_response_data=preserve_queue_response_data) for item in value]
+                         preserve_queue_response_data=preserve_queue_response_data,
+                         preserve_response_data_commands=preserve_response_data_commands) for item in value]
     if not isinstance(value, dict):
         return value
     result: dict[str, Any] = {}
@@ -1395,16 +1732,62 @@ def _project(value: Any, *, preserve_response_error_text: bool = False,
                     result["state"] = state
             if preserve_queue_response_data and value.get("command") == "clear_queue" and isinstance(item, dict):
                 result["queueData"] = item
+            if value.get("command") in preserve_response_data_commands:
+                result["data"] = _project(item, preserve_response_error_text=preserve_response_error_text,
+                                           preserve_state_flags=preserve_state_flags,
+                                           preserve_queue_state=preserve_queue_state,
+                                           preserve_queue_response_data=preserve_queue_response_data,
+                                           preserve_response_data_commands=preserve_response_data_commands)
             continue
         result[key] = _project(item, preserve_response_error_text=preserve_response_error_text,
                                preserve_state_flags=preserve_state_flags,
                                preserve_queue_state=preserve_queue_state,
-                               preserve_queue_response_data=preserve_queue_response_data)
+                               preserve_queue_response_data=preserve_queue_response_data,
+                               preserve_response_data_commands=preserve_response_data_commands)
     if value.get("type") == "response" and "data" not in value:
         result["dataPresent"] = False
     if value.get("type") == "response" and "error" not in value:
         result["errorPresent"] = False
     return result
+
+
+def _normalize_session_entry_ids(value: Any) -> Any:
+    """Normalize generated session entry identifiers while preserving RPC request IDs."""
+    entries: list[dict[str, Any]] = []
+
+    def collect(item: Any) -> None:
+        if isinstance(item, list):
+            for child in item:
+                collect(child)
+        elif isinstance(item, dict):
+            if isinstance(item.get("id"), str) and "parentId" in item and isinstance(item.get("type"), str):
+                entries.append(item)
+            for child in item.values():
+                collect(child)
+
+    collect(value)
+    identities: dict[str, str] = {}
+    for entry in entries:
+        identities.setdefault(entry["id"], f"entry-{len(identities)}")
+    for entry in entries:
+        entry["id"] = identities[entry["id"]]
+        parent = entry.get("parentId")
+        if isinstance(parent, str):
+            entry["parentId"] = identities.get(parent, "external-parent")
+
+    def normalize_leaf_ids(item: Any) -> None:
+        if isinstance(item, list):
+            for child in item:
+                normalize_leaf_ids(child)
+        elif isinstance(item, dict):
+            for key, child in item.items():
+                if key == "leafId" and isinstance(child, str):
+                    item[key] = identities.get(child, "external-leaf")
+                else:
+                    normalize_leaf_ids(child)
+
+    normalize_leaf_ids(value)
+    return value
 
 
 def _event_type(record: Any) -> str | None:
@@ -1455,6 +1838,9 @@ def _observation(run_results: list[dict[str, Any]], input_runs: tuple[InputRun, 
             event_type = _event_type(record)
             if event_type in input_run.lifecycle_event_types:
                 message = record.get("message") if isinstance(record, dict) else None
+                if (event_type in ("message_start", "message_end") and isinstance(message, dict) and
+                        message.get("role") == "system" and not input_run.preserve_system_message_payloads):
+                    continue
                 if (input_run.preserve_system_message_payloads and event_type in ("message_start", "message_end")
                         and isinstance(message, dict) and message.get("role") == "system"):
                     projected.append(record)
@@ -1477,6 +1863,9 @@ def _observation(run_results: list[dict[str, Any]], input_runs: tuple[InputRun, 
                             } if message.get("role") == "assistant" else {}),
                         },
                     })
+                elif input_run.preserve_message_update_deltas_only and event_type == "message_update":
+                    projected.append({"type": event_type,
+                                      "assistantMessageEvent": record.get("assistantMessageEvent")})
                 elif input_run.preserve_event_payloads or event_type in input_run.preserve_event_payload_types:
                     projected.append(record)
                 else:
@@ -1495,15 +1884,20 @@ def _observation(run_results: list[dict[str, Any]], input_runs: tuple[InputRun, 
                     preserve_state_flags=input_run.preserve_state_flags,
                     preserve_queue_state=input_run.preserve_queue_state,
                     preserve_queue_response_data=input_run.preserve_queue_response_data,
+                    preserve_response_data_commands=input_run.preserve_response_data_commands,
                 ),
-                "stderr": result["stderr"].decode("utf-8", errors="replace"),
+                "stderrCompared": input_run.compare_stderr,
                 "parseFailures": result["parseFailures"],
         }
+        if input_run.compare_stderr:
+            projected_run["stderr"] = result["stderr"].decode("utf-8", errors="replace")
         if input_run.compare_provider_requests:
             projected_run["providerRequests"] = [
                 _canonical_provider_request(json.loads(body.decode("utf-8")))
                 for body in result["providerRequests"]
             ]
+        if input_run.normalize_session_entry_ids:
+            projected_run["records"] = _normalize_session_entry_ids(projected_run["records"])
         projected_runs.append(projected_run)
     return {"runs": projected_runs}
 
@@ -1674,6 +2068,7 @@ def _write_capture(evidence_dir: Path, case_id: str, product_run: str, run_index
 
 
 _TEST_EXTENSION_BUILD_CACHE: dict[Path, dict[str, str]] = {}
+_NATIVE_EXTENSION_BUILD_CACHE: dict[Path, dict[str, str]] = {}
 
 
 def _ensure_test_extension_fixture(evidence_dir: Path) -> dict[str, str]:
@@ -1700,6 +2095,30 @@ def _ensure_test_extension_fixture(evidence_dir: Path) -> dict[str, str]:
     return artifact
 
 
+def _ensure_native_extension_fixture(evidence_dir: Path) -> dict[str, str]:
+    key = evidence_dir.resolve()
+    cached = _NATIVE_EXTENSION_BUILD_CACHE.get(key)
+    if cached is not None:
+        return cached
+    command = ["dotnet", "build", str(NATIVE_ENTRY_EXTENSION_PROJECT), "--no-restore", "--warnaserror"]
+    completed = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
+    log = completed.stdout + completed.stderr
+    log_path = evidence_dir / "native-extension-fixture-build.log"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    log_path.write_text(log, encoding="utf-8")
+    if completed.returncode != 0:
+        raise VerificationError(f"native extension fixture build failed: {log[-4000:]}")
+    if not NATIVE_ENTRY_EXTENSION_DLL.is_file():
+        raise VerificationError(f"native extension fixture DLL is missing: {NATIVE_ENTRY_EXTENSION_DLL}")
+    artifact = {
+        "path": log_path.relative_to(evidence_dir).as_posix(),
+        "role": "fixture.native-extension.build",
+        "sha256": hashlib.sha256(log_path.read_bytes()).hexdigest(),
+    }
+    _NATIVE_EXTENSION_BUILD_CACHE[key] = artifact
+    return artifact
+
+
 def _store_observation(evidence_dir: Path, case_id: str, product_run: str,
                        observation: dict[str, Any]) -> tuple[str, str]:
     relative = (Path("observations") / case_id / f"{product_run}.json").as_posix()
@@ -1712,7 +2131,7 @@ def _store_observation(evidence_dir: Path, case_id: str, product_run: str,
 def run_process_case(case: dict[str, Any], *, pi: Path, evidence_dir: Path) -> dict[str, Any]:
     case_id = case["id"]
     scenarios = R1_SCENARIOS.get(case_id) or R2_SCENARIOS.get(case_id) or R3_SCENARIOS.get(case_id) or \
-        R4_SCENARIOS.get(case_id)
+        R4_SCENARIOS.get(case_id) or R5_SCENARIOS.get(case_id)
     if case_id in R2_SCENARIOS and case_id not in {
         "R2.long-command-acceptance", "R2.active-compaction-command",
     }:
@@ -1722,6 +2141,8 @@ def run_process_case(case: dict[str, Any], *, pi: Path, evidence_dir: Path) -> d
     artifacts: list[dict[str, str]] = []
     if any(input_run.use_handled_extension_command for input_run in scenarios):
         artifacts.append(_ensure_test_extension_fixture(evidence_dir))
+    if any(input_run.use_entry_appending_extension for input_run in scenarios):
+        artifacts.append(_ensure_native_extension_fixture(evidence_dir))
     observations: dict[str, dict[str, Any]] = {}
     failures: dict[str, list[str]] = {}
     with tempfile.TemporaryDirectory(prefix=f"rpc-{case_id.replace('.', '-')}-") as temporary:
@@ -1799,4 +2220,5 @@ def run_process_case(case: dict[str, Any], *, pi: Path, evidence_dir: Path) -> d
 
 
 def scenario_case_ids() -> set[str]:
-    return set(R1_SCENARIOS) | set(R2_SCENARIOS) | set(R3_SCENARIOS) | set(R4_SCENARIOS)
+    return (set(R1_SCENARIOS) | set(R2_SCENARIOS) | set(R3_SCENARIOS) |
+            set(R4_SCENARIOS) | set(R5_SCENARIOS))

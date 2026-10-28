@@ -215,7 +215,7 @@ internal sealed class RpcSessionCommandHandler(
                     type = "response",
                     command,
                     success = true,
-                    data = new { entries = entries.Skip(index + 1).ToArray(), leafId = entriesSnapshot.Tree.HeadId }
+                    data = new { entries = entries.Skip(index + 1).ToArray(), leafId = RpcSessionEntryProjector.ProjectLeafId(entriesSnapshot) }
                 }, cancellationToken);
                 return true;
 

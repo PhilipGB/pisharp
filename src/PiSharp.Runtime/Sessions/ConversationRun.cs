@@ -123,11 +123,12 @@ public sealed partial class ConversationRun
     }
 
     /// <summary>Creates a public, branch-aware extension session bridge for this conversation.</summary>
-    public NativeExtensions.PiSharpExtensionSessionContext CreateExtensionSessionContext(string? source = null) =>
+    public NativeExtensions.PiSharpExtensionSessionContext CreateExtensionSessionContext(string? source = null,
+        Func<JsonElement, CancellationToken, Task>? entryAppended = null) =>
         new(() => new NativeExtensions.PiSharpExtensionSessionSnapshot(Conversation.Id, Conversation.Name,
                 Conversation.Tree.HeadId, Conversation.ExtensionStateEntries()),
             (customType, data, cancellationToken) => AppendExtensionStateAsync(customType, data, source,
-                cancellationToken), SetSessionNameAsync, SetEntryLabelAsync);
+                entryAppended, cancellationToken), SetSessionNameAsync, SetEntryLabelAsync);
 
     /// <summary>Installs the host-owned callback capabilities used by extension event contexts.</summary>
     internal void SetExtensionCapabilitiesFactory(
@@ -197,7 +198,8 @@ public sealed partial class ConversationRun
     }
 
     private async Task<NativeExtensions.PiSharpExtensionSessionEntry> AppendExtensionStateAsync(string customType,
-        JsonElement data, string? source, CancellationToken cancellationToken)
+        JsonElement data, string? source, Func<JsonElement, CancellationToken, Task>? entryAppended,
+        CancellationToken cancellationToken)
     {
         var ownsGate = ReferenceEquals(s_currentGateOwner.Value, this);
         if (!ownsGate) await _gate.WaitAsync(cancellationToken);
@@ -206,6 +208,12 @@ public sealed partial class ConversationRun
             using var change = Conversation.BeginExtensionStateAppend(customType, data, source);
             if (_save is not null) await _save(cancellationToken);
             change.Commit();
+            if (entryAppended is not null)
+            {
+                var node = Conversation.Tree.Entries.Single(entry => entry.Id == change.Entry.Id);
+                var projected = JsonSerializer.SerializeToElement(PiJsonlEntryCodec.ProjectEntry(Conversation, node));
+                await entryAppended(projected, CancellationToken.None).ConfigureAwait(false);
+            }
             return change.Entry;
         }
         finally
@@ -889,7 +897,13 @@ public sealed partial class ConversationRun
                         }
                         catch (OperationCanceledException) when (settledCancellation.IsCancellationRequested) { }
                     }
-                    try { await channel.Writer.WriteAsync(new("agent_settled"), consumerClosed.Token); }
+                    try
+                    {
+                        await channel.Writer.WriteAsync(new AgentLifecycleEvent("agent_settled")
+                        {
+                            Aborted = linked.IsCancellationRequested
+                        }, consumerClosed.Token);
+                    }
                     catch (OperationCanceledException) { }
                     channel.Writer.TryComplete();
                 }

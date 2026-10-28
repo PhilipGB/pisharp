@@ -47,7 +47,10 @@ internal static class PiSessionRunProjection
                 message = ExportNativeEntry(session, node)["message"]!.DeepClone().AsObject();
 
             var role = NodeString(message["role"]);
-            if (role == "assistant")
+            if (role == "user" && message["content"] is JsonValue userContent &&
+                userContent.TryGetValue<string>(out var userText))
+                message["content"] = new JsonArray(new JsonObject { ["type"] = "text", ["text"] = userText });
+            else if (role == "assistant")
             {
                 if (!string.IsNullOrWhiteSpace(api)) message["api"] = api;
                 if (message["content"] is JsonArray content)

@@ -14,6 +14,8 @@ internal sealed class RpcEventProjector
 
     public void BeginTurn() => _assistantMessages.BeginTurn();
 
+    public void SetThinkingLevel(string? thinkingLevel) => _assistantMessages.SetThinkingLevel(thinkingLevel);
+
     public void SetSystemMessage(JsonObject? systemMessage) => _systemMessage = systemMessage?.DeepClone().AsObject();
 
     public IReadOnlyList<object> ProjectSystemMessage(JsonObject systemMessage)
@@ -135,7 +137,7 @@ internal sealed class RpcEventProjector
                 attempt = item.RetryAttempt,
                 maxAttempts = item.RetryMaxAttempts,
                 delayMs = item.RetryDelayMs,
-                errorMessage = item.Error
+                errorMessage = ProjectRetryError(item.Error)
             },
             "auto_retry_end" => ProjectRetryEnd(item),
             "compaction_start" => RpcCompactionResultProjector.ProjectStart(item.CompactionReason ?? "manual"),
@@ -322,8 +324,19 @@ internal sealed class RpcEventProjector
             ["success"] = item.RetrySuccess ?? false,
             ["attempt"] = item.RetryAttempt ?? 0
         };
-        if (item.RetryFinalError is not null) record["finalError"] = item.RetryFinalError;
+        if (item.RetryFinalError is not null) record["finalError"] = ProjectRetryError(item.RetryFinalError);
         return record;
+    }
+
+    private static string? ProjectRetryError(string? error)
+    {
+        if (error is null || !error.StartsWith("HTTP ", StringComparison.Ordinal)) return error;
+        var statusEnd = error.IndexOf(' ', 5);
+        var bodyStart = error.IndexOf("\n\n", StringComparison.Ordinal);
+        if (statusEnd < 0 || bodyStart < 0 ||
+            !int.TryParse(error.AsSpan(5, statusEnd - 5), out var status)) return error;
+        var message = error[(bodyStart + 2)..].Trim();
+        return message.Length == 0 ? error : $"{status}: {JsonSerializer.Serialize(new { message })}";
     }
 
     private static string[] ReadQueue(JsonElement payload, string propertyName) =>

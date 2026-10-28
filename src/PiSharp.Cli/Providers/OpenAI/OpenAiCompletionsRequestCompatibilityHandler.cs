@@ -11,6 +11,7 @@ internal sealed class OpenAiCompletionsRequestCompatibilityHandler : DelegatingH
     private readonly bool _supportsStore;
     private readonly bool _preserveStringUserContent;
     private readonly bool _mapDeveloperRoleToSystem;
+    private readonly bool _mapSystemRoleToDeveloper;
     private readonly bool _requiresReasoningContentOnAssistantMessages;
     private readonly string _maxTokensField;
 
@@ -22,8 +23,10 @@ internal sealed class OpenAiCompletionsRequestCompatibilityHandler : DelegatingH
         _supportsStore = ReadBoolean(model.Compatibility, "supportsStore") ??
             ReadBoolean(providerCompatibility, "supportsStore") ?? detected.SupportsStore;
         _preserveStringUserContent = providerId.Equals("azure", StringComparison.Ordinal);
-        _mapDeveloperRoleToSystem = ReadBoolean(model.Compatibility, "supportsDeveloperRole") == false ||
-            ReadBoolean(providerCompatibility, "supportsDeveloperRole") == false;
+        var supportsDeveloperRole = ReadBoolean(model.Compatibility, "supportsDeveloperRole") ??
+            ReadBoolean(providerCompatibility, "supportsDeveloperRole") ?? detected.SupportsDeveloperRole;
+        _mapDeveloperRoleToSystem = !supportsDeveloperRole;
+        _mapSystemRoleToDeveloper = model.Reasoning == true && supportsDeveloperRole;
         _requiresReasoningContentOnAssistantMessages = model.Reasoning == true &&
             ReadBoolean(model.Compatibility, "requiresReasoningContentOnAssistantMessages") == true;
         _maxTokensField = ReadString(model.Compatibility, "maxTokensField") ??
@@ -40,7 +43,8 @@ internal sealed class OpenAiCompletionsRequestCompatibilityHandler : DelegatingH
             var content = request.Content;
             var body = await content.ReadAsByteArrayAsync(cancellationToken);
             var projected = ProjectRequest(body, _model, _supportsStore, _maxTokensField,
-                _requiresReasoningContentOnAssistantMessages, _preserveStringUserContent, _mapDeveloperRoleToSystem);
+                _requiresReasoningContentOnAssistantMessages, _preserveStringUserContent, _mapDeveloperRoleToSystem,
+                _mapSystemRoleToDeveloper);
             if (!ReferenceEquals(projected, body))
             {
                 var replacement = new ByteArrayContent(projected);
@@ -59,7 +63,8 @@ internal sealed class OpenAiCompletionsRequestCompatibilityHandler : DelegatingH
 
     internal static byte[] ProjectRequest(byte[] body, ModelDescriptor model, bool supportsStore,
         string maxTokensField, bool requiresReasoningContentOnAssistantMessages = false,
-        bool preserveStringUserContent = false, bool mapDeveloperRoleToSystem = false)
+        bool preserveStringUserContent = false, bool mapDeveloperRoleToSystem = false,
+        bool mapSystemRoleToDeveloper = false)
     {
         if (JsonNode.Parse(body) is not JsonObject request) return body;
         var changed = false;
@@ -77,7 +82,12 @@ internal sealed class OpenAiCompletionsRequestCompatibilityHandler : DelegatingH
                     messageObject["content"] = null;
                     changed = true;
                 }
-                if (mapDeveloperRoleToSystem && HasStringValue(messageObject["role"], "developer"))
+                if (mapSystemRoleToDeveloper && HasStringValue(messageObject["role"], "system"))
+                {
+                    messageObject["role"] = "developer";
+                    changed = true;
+                }
+                else if (mapDeveloperRoleToSystem && HasStringValue(messageObject["role"], "developer"))
                 {
                     messageObject["role"] = "system";
                     changed = true;
@@ -133,7 +143,8 @@ internal sealed class OpenAiCompletionsRequestCompatibilityHandler : DelegatingH
         return changed ? JsonSerializer.SerializeToUtf8Bytes(request) : body;
     }
 
-    private static (bool SupportsStore, string MaxTokensField) DetectCompatibility(string providerId, Uri endpoint)
+    private static (bool SupportsStore, bool SupportsDeveloperRole, string MaxTokensField)
+        DetectCompatibility(string providerId, Uri endpoint)
     {
         var provider = providerId.ToLowerInvariant();
         var baseUrl = endpoint.ToString().ToLowerInvariant();
@@ -152,12 +163,14 @@ internal sealed class OpenAiCompletionsRequestCompatibilityHandler : DelegatingH
         var grok = provider == "xai" || Contains(baseUrl, "api.x.ai");
         var chutes = Contains(baseUrl, "chutes.ai");
         var openCode = provider == "opencode" || Contains(baseUrl, "opencode.ai");
+        var openRouter = provider == "openrouter" || Contains(baseUrl, "openrouter.ai");
 
         var nonstandard = nvidia || cerebras || grok || together || chutes || deepSeek || zai || moonshot ||
             openCode || cloudflareWorkers || cloudflareGateway || antLing;
+        var supportsDeveloperRole = !openRouter && !nonstandard;
         var maxTokensField = chutes || deepSeek || moonshot || cloudflareGateway || together || nvidia || antLing || zai
             ? "max_tokens" : "max_completion_tokens";
-        return (!nonstandard, maxTokensField);
+        return (!nonstandard, supportsDeveloperRole, maxTokensField);
     }
 
     private static bool Contains(string value, string fragment) => value.Contains(fragment, StringComparison.Ordinal);
