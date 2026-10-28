@@ -13727,7 +13727,7 @@
   },
   "rpc_protocol_command_parity_milestone": {
     "status": "in_progress",
-    "phase": "r2_response_semantics_complete_r3_pending",
+    "phase": "r2_complete_r3_pending_final_source_evidence_refresh",
     "branch": "milestone/rpc-protocol-command-parity",
     "branch_base_sha": "646db89bd396b8089b1b9a058fa96b1489f4d0cd",
     "prerequisite_pr28": {
@@ -13743,11 +13743,11 @@
     "v1_implementation_source_sha": "736574cdf3755340ffa3b340325484a0a0f95025",
     "v1_evidence_directory": "artifacts/parity/rpc-protocol-command-parity/v1-736574cd",
     "v1_control_report_sha256": "6a040fac6cf795a62914a89d2907c80e2243eab7e4eb00faa4519f9285c7f4f9",
-    "v1_case_result": "23/23 passed; 1 positive control accepted, all 22 frozen negative mutations rejected; zero failures/skips",
+    "v1_case_result": "Initial 23/23 passed at 736574cdf3755340ffa3b340325484a0a0f95025; current-head verification rejects the report as stale after later parity-tool changes; rerun after source freeze",
     "implementation_source_sha": "3642c9bcbcaac05d6f7735015d8563f920847837",
     "r1_evidence_directory": "artifacts/parity/rpc-protocol-command-parity/r1-3642c9bc",
     "r1_evidence_sha256": "ae4715854e5b519e2f18aadb53a076a6cd02c7808a84a4f98782e758eda650f2",
-    "r1_case_result": "11/11 passed; zero failures/skips; paired process observations from two pinned-Pi runs and one PiSharp run",
+    "r1_case_result": "Initial 11/11 passed at 3642c9bcbcaac05d6f7735015d8563f920847837; current-head verification rejects the report as stale after later parity-tool changes; rerun after source freeze",
     "r1_build_assembly_sha256": "be6985325ad6c582c9a8b5a2a07c051a8a4cda1d6dc9a0ba55ef85f14c2e3f10",
     "r2_implementation_source_sha": "44a360fc8bcdf36e935068127f6e39c422ec4d8d",
     "r2_evidence_directory": "artifacts/parity/rpc-protocol-command-parity/r2-44a360fc",
@@ -13778,10 +13778,11 @@
     "baseline_validation": {
       "contract_source_verifier": "passed",
       "contract_integrity_tests": "16/16 passed; positive control and all 22 frozen mutations are covered",
-      "v1_evidence_runner": "source-clean run and independent report verification passed 23/23",
+      "v1_evidence_runner": "initial source-clean run and independent report verification passed 23/23; current-head verification rejects the historical report as stale after later parity-tool changes",
       "source_inventory_pin": "passed; selected tracked files only; unrelated upstream untracked file excluded",
       "runner_behavior": "fails closed when a process scenario adapter is not registered",
-      "r1_source_bound_process_run": "11/11 passed; independent report verification passed; record limit and malformed-JSON command corrections are included in source",
+      "interim_evidence_revalidation": "Current-head verification rejects historical V1 and R1 evidence as stale after later parity-tool changes; both must be rerun after implementation and harness freeze",
+      "r1_source_bound_process_run": "initial 11/11 passed with independent report verification; current-head verification rejects the historical report as stale after later parity-tool changes; record limit and malformed-JSON command corrections are included in source",
       "r2_source_bound_process_run": "12/12 passed; independent report verification passed; response IDs/shapes, validation, long-command acceptance and active-compaction behavior are captured from two pinned-Pi runs and one PiSharp process"
     },
     "historical_mismatch_ids_to_revalidate": [
@@ -13794,6 +13795,7 @@
       "RPC-ACTIVE-SESSION-REPLACEMENT"
     ],
     "open_requirements": [
+      "Rerun V1 and R1 after production, tests and parity tooling are frozen; current-head source checks reject their historical evidence as stale.",
       "Implement actual paired Pi/PiSharp process runners for R3-R15 and capture repeated pinned-Pi baselines.",
       "Capture two stable pinned-Pi process baselines and independent PiSharp process observations for R3-R15.",
       "Correct confirmed in-scope differences, then complete all quality, source-bound evidence, exact-head CI and draft PR publication gates."
