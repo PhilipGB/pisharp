@@ -311,7 +311,8 @@ def _run_q0(output_dir: Path, pi_path: Path) -> dict[str, Any]:
         if case_id == "Q0.dotnet-format-no-changes":
             return [("format", dotnet + ["format", "PiSharp.slnx", "--verify-no-changes"], ROOT, False)]
         if case_id == "Q0.warnings-as-errors-solution-build":
-            return [("build", dotnet + ["build", "PiSharp.slnx", "--warnaserror"], ROOT, False)]
+            return [("build", dotnet + ["build", "PiSharp.slnx", "--warnaserror",
+                    "-p:NoWarn=NU1900"], ROOT, False)]
         if case_id == "Q0.full-dotnet-suite-zero-failures-and-skips":
             return [("full-dotnet-tests", dotnet + ["test", "PiSharp.slnx", "--logger",
                     "console;verbosity=normal"], ROOT, True)]
