@@ -33,6 +33,13 @@ KNOWN_PI_SKIP_REASON = (
     "Pinned Pi marks these interactive/LLM integration cases skipped when no provider credentials are configured; "
     "the skip identities are pinned and checked exactly."
 )
+REQUIRED_CI_JOBS = frozenset({
+    "macos-session-locks",
+    "macos-clipboard-contracts",
+    "windows-clipboard-contracts",
+    "managed-package-verifier",
+    "mcp-conformance",
+})
 KNOWN_PI_SKIP_IDS = frozenset({
     "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should navigate to user message and put text in editor",
     "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should navigate to non-user message without editor text",
@@ -188,6 +195,12 @@ def _vitest_json_report(path: Path) -> tuple[dict[str, int], tuple[str, ...], tu
     if counts["skipped"] != len(skipped):
         raise verify.VerificationError(f"Vitest JSON skip count does not match skip identities in {path}")
     return counts, tuple(sorted(skipped)), tuple(sorted(names))
+
+
+def _all_required_ci_jobs_pass(jobs: list[dict[str, Any]]) -> bool:
+    names = [job.get("name") for job in jobs]
+    return (set(names) == REQUIRED_CI_JOBS and len(names) == len(REQUIRED_CI_JOBS) and
+            all(job.get("conclusion") == "success" for job in jobs))
 
 
 def _case_results(checkpoint_id: str, output_dir: Path, observations: dict[str, Any],
@@ -786,8 +799,9 @@ def _run_ci0(output_dir: Path) -> dict[str, Any]:
     pull = selected.get("pull_request", {})
     push_jobs = all_jobs.get("push", [])
     pr_jobs = all_jobs.get("pull_request", [])
-    jobs_ok = bool(push_jobs and pr_jobs) and all(job.get("conclusion") == "success"
-        for job in [*push_jobs, *pr_jobs])
+    push_jobs_ok = _all_required_ci_jobs_pass(push_jobs)
+    pr_jobs_ok = _all_required_ci_jobs_pass(pr_jobs)
+    jobs_ok = push_jobs_ok and pr_jobs_ok
     no_dispatch = not any(run.get("event") == "workflow_dispatch" for run in relevant)
     checks = {
         "CI0.push-workflow-is-on-exact-final-head": {
@@ -808,7 +822,9 @@ def _run_ci0(output_dir: Path) -> dict[str, Any]:
         "CI0.every-required-job-and-case-passes": {
             "passed": jobs_ok,
             "observation": {"pushJobs": push_jobs, "pullRequestJobs": pr_jobs,
-                            "allConclusionsSuccess": jobs_ok},
+                            "requiredJobNames": sorted(REQUIRED_CI_JOBS),
+                            "pushJobsCompleteAndSuccessful": push_jobs_ok,
+                            "pullRequestJobsCompleteAndSuccessful": pr_jobs_ok},
         },
         "CI0.no-duplicate-manual-workflow-dispatch": {
             "passed": no_dispatch,

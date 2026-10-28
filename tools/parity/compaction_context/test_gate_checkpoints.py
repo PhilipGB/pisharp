@@ -57,6 +57,14 @@ class GateCheckpointHelperTests(unittest.TestCase):
         self.assertIn("PUB0", aggregate_evidence.FINAL_SOURCE_CHECKPOINTS)
         self.assertNotIn("P0", aggregate_evidence.FINAL_SOURCE_CHECKPOINTS)
 
+    def test_required_ci_jobs_are_present_and_successful(self) -> None:
+        passing = [{"name": name, "conclusion": "success"}
+                   for name in gate_checkpoints.REQUIRED_CI_JOBS]
+        self.assertTrue(gate_checkpoints._all_required_ci_jobs_pass(passing))
+        self.assertFalse(gate_checkpoints._all_required_ci_jobs_pass(passing[:-1]))
+        self.assertFalse(gate_checkpoints._all_required_ci_jobs_pass(
+            [*passing[:-1], {"name": passing[-1]["name"], "conclusion": "failure"}]))
+
 
 if __name__ == "__main__":
     unittest.main()
