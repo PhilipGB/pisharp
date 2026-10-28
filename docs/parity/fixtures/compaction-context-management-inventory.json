@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
   "milestone": "compaction-context-management-parity",
-  "phase": "implementation-source-committed; frozen case-level differential remains in progress",
+  "phase": "length-stop-recovery-implemented; 2-of-211 paired cases verified; full differential incomplete",
   "sourcePins": {
     "piCommit": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
     "pisharpBaselineCommit": "12064420179f4119bdaf37479c7cba0f5ca40717",
     "pisharpWorkingBranch": "milestone/compaction-context-management-parity",
-    "implementationSourceSha": "4e96fa6873192e51a130c0ba5a5e4fcccddaba71"
+    "implementationSourceSha": "b22f7e7bad940a1dd0a26d716628f6739a8a9abf"
   },
   "framework": {
     "package": "Microsoft.Agents.AI",
@@ -14,34 +14,8 @@
     "skillSnapshotVersion": "1.24.0",
     "decision": "Do not change framework/dependency versions without an evidenced requirement. Agent execution and tool invocation remain owned by MAF."
   },
-  "inventoryMethod": "Pi source ownership is pinned to b06c1f2. PiSharp implementation source is 4e96fa6873192e51a130c0ba5a5e4fcccddaba71. Local tests and source review are implementation evidence only; they do not substitute for frozen per-case Pi/PiSharp observations.",
+  "inventoryMethod": "Pi source ownership is pinned to b06c1f2. PiSharp implementation source is b22f7e7bad940a1dd0a26d716628f6739a8a9abf. Local tests and source review are implementation evidence only; they do not substitute for frozen per-case Pi/PiSharp observations.",
   "confirmedBaselineDifferences": [
-    {
-      "id": "branch-summary-navigation-missing",
-      "families": [
-        "branch-summary-navigation",
-        "native-extension-hooks"
-      ],
-      "status": "confirmed_missing_implementation",
-      "evidence": "Pinned Pi AgentSession.navigateTree calls generateBranchSummary and SessionManager.branchWithSummary. PiSharp ConversationRun.SelectAsync changes the leaf and dispatches tree hooks but has no summary generator/apply path; ConversationContextProjection only projects imported branch_summary entries.",
-      "requiredCases": [
-        "C9.branch-diff-uses-common-ancestor-and-old-path",
-        "C12.tree-summary-hooks-see-and-may-control-navigation"
-      ]
-    },
-    {
-      "id": "cached-token-context-fallback",
-      "families": [
-        "usage-reasoning-costs",
-        "context-budgets-estimation"
-      ],
-      "status": "implemented_locally_case_differential_open",
-      "evidence": "UsageRecord.Create now falls back to input+output+cachedRead+cachedWrite when total is absent or zero. UsageRecordCreateFallsBackToAllProviderContextTokenCategories and session interchange tests cover the calculation; the frozen paired case has not yet been generated.",
-      "requiredCases": [
-        "C4.cache-read-and-write-token-fallback",
-        "C10.fallback-context-total-includes-cache-tokens"
-      ]
-    },
     {
       "id": "heuristic-owner-and-formula-difference",
       "families": [
@@ -54,6 +28,19 @@
         "C4.image-and-large-tool-result-estimate",
         "C4.estimate-method-is-explicitly-heuristic-not-tokenizer",
         "C6.transient-projection-does-not-change-canonical-history"
+      ]
+    },
+    {
+      "id": "unknown-context-window-threshold-trigger",
+      "families": [
+        "automatic-compaction",
+        "context-budgets-estimation"
+      ],
+      "status": "pinned-source-test-fails-at-checkout; classification-open",
+      "evidence": "At b06c1f2, AgentSession._checkCompaction passes contextWindow 0 to shouldCompact, which compares contextTokens > contextWindow - reserveTokens and therefore triggers. The pinned queue test expects a no-op, but its runtime model resolves to id unknown/contextWindow 0. PiSharp AutoCompactionPolicy disables automatic compaction when the window is unknown and has dedicated regression coverage. This discrepancy needs case-level classification; it is not counted as parity.",
+      "requiredCases": [
+        "C2.unknown-window-does-not-speculate",
+        "C4.unknown-limit-is-never-invented"
       ]
     }
   ],
@@ -119,11 +106,12 @@
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#AutomaticCompactionUsesTheSplitTurnCoordinatorBeforeAcceptingTheNextPrompt",
         "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcActiveModelSelectionProcessTests.cs#RpcModelSelectionAndCycleDuringBlockedToolTurnChangeTheNextProviderRequest"
       ],
-      "baseline": "Threshold compaction runs after completed turns without replay. Known-window provider usage above the full window is classified as overflow and compacts without replay. The frozen model-routing, queued-message, stale-usage and length-stop matrix remains unverified.",
+      "baseline": "Threshold compaction and pre-prompt ordering have implementation coverage. Recoverable length-stop recovery is now implemented and paired for one C5 behavior scenario; the full frozen model-routing, queue, stale-usage and overflow matrix remains open.",
       "differences": [],
       "evidenceGaps": [
         "Frozen b06 decision matrix for physical model changes, queued follow-ups, repeated overflow, and pre/post-turn ordering.",
-        "Recoverable length-stop compaction and one bounded continuation are not implemented."
+        "The implemented recoverable length-stop path still has only two paired C5 observations; the rest of the recovery/queue/model matrix is unverified.",
+        "One exact-pin queue test currently fails because its test model is unknown/contextWindow 0; classify actual source behavior against the no-speculation contract."
       ],
       "cases": [
         "C2.threshold-after-turn-compacts-without-retry",
@@ -261,11 +249,12 @@
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#ProviderOverflowRetriesOnceOnlyBeforeContentWithShortenedRequest",
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#RepeatedProviderOverflowStopsAfterOneRecoveryAttempt"
       ],
-      "baseline": "Provider overflow matching now covers pinned generic/provider message patterns, pre-content retry and post-turn silent-overflow classification. There is no complete b06 three-API differential; recoverable length-stop continuation and the Cerebras bodyless provider-specific case remain open.",
+      "baseline": "Provider message matching, pre-content overflow retry, successful silent overflow, and length-stop compact-and-continue are implemented. The controlled b06 differential is stable for recoverable length-stop behavior and retry transcript, but only 2/11 C5 cases are verified.",
       "differences": [],
       "evidenceGaps": [
-        "Exact b06 classifier plus same-scenario Responses, Chat Completions and Anthropic request/response captures.",
-        "Recoverable length-stop and provider-specific bodyless Cerebras recovery remain incomplete."
+        "Exact b06 classifier plus same-scenario Responses, Chat Completions and Anthropic request/response captures for post-compaction continuation.",
+        "Provider-specific bodyless Cerebras overflow and complete partial-content/error matrix.",
+        "The pinned output-length behavior is paired only for the deterministic C5 length-stop/retry-transcript cases."
       ],
       "cases": [
         "C5.pre-content-context-error-recognized",
@@ -286,7 +275,10 @@
       ],
       "implementationTests": [
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#ProviderUsageAboveContextWindowCompactsAsOverflowWithoutRetry",
-        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#CachedInputCountAlreadyIncludedInInputDoesNotFalseClassifySilentOverflow"
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#CachedInputCountAlreadyIncludedInInputDoesNotFalseClassifySilentOverflow",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#RecoverableLengthStopCompactsOnceAndContinuesWithoutPartialOutput",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#RepeatedLengthStopCompactsAndRetriesOnlyOnce",
+        "tests/PiSharp.Tests/Cli/Providers/ProviderOverflowLoopbackTests.cs#RealSdkRecoversPreContentHttpOverflowWithoutReplacingCanonicalHistory"
       ]
     },
     {
@@ -662,13 +654,314 @@
         "packages/coding-agent/test/agent-session-auto-compaction-queue.test.ts",
         "packages/coding-agent/test/suite/regressions/9340-9777-auto-compaction-cancellation.test.ts"
       ]
+    },
+    {
+      "id": "prerequisite-and-clean-baseline",
+      "upstream": [
+        "GitHub PR #27 reviewed head and merge metadata",
+        "Pinned Pi git HEAD and source tree"
+      ],
+      "pisharp": [
+        "origin/main ancestry",
+        "milestone/compaction-context-management-parity branch",
+        "Microsoft.Agents.AI package reference"
+      ],
+      "inputs": "PR review SHA, workflow run IDs, merged commit, branch parent, Pi source HEAD and package assets.",
+      "outputs": "Verified PR #27 merge SHA, exact-head CI state, 27/240 package evidence, exact milestone base and Pi/MAF pins.",
+      "state": "PR #27 is merged and the new branch starts at its actual merge commit. PR #28 remains a separate open draft.",
+      "existingTests": [
+        "tools/parity/managed_packages/verify.py",
+        "tools/parity/compaction_context/verify.py"
+      ],
+      "baseline": "P0 evidence is verified from PR metadata and the ignored final evidence directory. P1 branch ancestry and pins are verified. The standalone local rebuild has a CLI DLL hash difference from archived output.",
+      "differences": [
+        "Local standalone CLI binary hash differs from the archived P0 binary; exact-head CI and committed source identity are still valid."
+      ],
+      "evidenceGaps": [
+        "No P0/P1 case artifacts are committed in the compaction evidence directory yet."
+      ],
+      "cases": [
+        "P0.reviewed-head-is-exact",
+        "P0.actual-merge-sha-is-recorded",
+        "P0.main-contains-pr-head-and-merge",
+        "P0.push-and-pr-ci-pass-on-head",
+        "P0.published-evidence-has-27-checkpoints-240-cases",
+        "P1.branch-parent-is-actual-merge",
+        "P1.pinned-pi-checkout-is-b06c1f2",
+        "P1.baseline-tree-and-package-versions-recorded",
+        "P1.worktree-starts-clean",
+        "P1.maf-installed-version-is-recorded"
+      ],
+      "pinnedPiTests": [
+        "Pinned checkout HEAD b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6"
+      ],
+      "sourceReferences": [
+        "tools/parity/compaction_context/contract.json",
+        "PR #27 merge commit 12064420179f4119bdaf37479c7cba0f5ca40717"
+      ]
+    },
+    {
+      "id": "inventory-and-verifier-contract",
+      "upstream": [
+        "tools/parity/compaction_context/contract.json frozen denominator"
+      ],
+      "pisharp": [
+        "docs/parity/fixtures/compaction-context-management-inventory.json",
+        "tools/parity/compaction_context/verify.py",
+        "tools/parity/compaction_context/test_verifier.py"
+      ],
+      "inputs": "The 22 frozen checkpoint definitions, source ownership, case IDs, expected observations and artifact metadata.",
+      "outputs": "A complete case-to-owner inventory and an evidence verifier that resolves observations from hashed raw JSON artifacts.",
+      "state": "Contract SHA remains frozen at c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6. Verifier controls reject altered pins, content mutations, invalid pointers, missing/skipped cases, stale sources and wrong-head CI assertions.",
+      "existingTests": [
+        "tools/parity/compaction_context/test_verifier.py"
+      ],
+      "baseline": "Verifier controls pass 20/20. Coverage and remaining adapter gaps are explicit; a synthetic positive control validates verifier mechanics only.",
+      "differences": [],
+      "evidenceGaps": [
+        "Verifier must still validate a full 211-case evidence set and publication artifacts."
+      ],
+      "cases": [
+        "V0.manual-and-auto-source-owners",
+        "V0.cut-point-and-retention-source-owners",
+        "V0.context-budget-and-provider-overflow-owners",
+        "V0.tool-loop-and-provider-request-owners",
+        "V0.summary-generation-and-branch-summary-owners",
+        "V0.session-jsonl-and-branch-state-owners",
+        "V0.usage-reasoning-pricing-owners",
+        "V0.cli-rpc-json-tui-owners",
+        "V0.extension-hook-owners",
+        "V0.failure-cancellation-recovery-owners",
+        "V0.observable-input-output-state-map",
+        "V0.existing-tests-mapped-by-case",
+        "V0.confirmed-differences-separated-from-unknowns",
+        "V0.every-required-behavior-has-a-case",
+        "V1.positive-control-valid-evidence-accepted",
+        "V1.negative-altered-pi-pin-rejected",
+        "V1.negative-mutated-provider-request-rejected",
+        "V1.negative-incorrect-cut-point-rejected",
+        "V1.negative-dropped-tool-call-rejected",
+        "V1.negative-duplicated-tool-call-rejected",
+        "V1.negative-wrong-branch-rejected",
+        "V1.negative-missing-usage-or-cost-rejected",
+        "V1.negative-wrong-cancellation-rejected",
+        "V1.negative-missing-case-rejected",
+        "V1.negative-skipped-case-rejected",
+        "V1.negative-stale-source-evidence-rejected",
+        "V1.negative-failed-ci-rejected",
+        "V1.negative-wrong-head-ci-rejected"
+      ],
+      "pinnedPiTests": [
+        "packages/coding-agent/src/core/compaction/",
+        "packages/coding-agent/src/core/agent-session.ts"
+      ],
+      "sourceReferences": [
+        "tools/parity/compaction_context/contract.json",
+        "tools/parity/compaction_context/verify.py"
+      ]
+    },
+    {
+      "id": "independent-differential-acceptance",
+      "upstream": [
+        "packages/coding-agent/test/suite/agent-session-compaction.test.ts",
+        "packages/ai/src/utils/overflow.ts"
+      ],
+      "pisharp": [
+        "tools/parity/compaction_context/pi_oracle.mjs",
+        "tools/parity/compaction_context/c5_oracle.py",
+        "tools/parity/compaction_context/pisharp_runner/Program.cs"
+      ],
+      "inputs": "Deterministic provider length-stop scenario, seed history, output usage, desired cap and summary responses.",
+      "outputs": "Two same-Pi executions, two same-PiSharp executions, provider request captures, lifecycle/session observations, normalization and paired case results.",
+      "state": "The C5 length-stop scenario is stable on both implementations and paired for two cases. The other contract cases have no differential adapter.",
+      "existingTests": [
+        "tools/parity/compaction_context/test_verifier.py",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#RecoverableLengthStopCompactsOnceAndContinuesWithoutPartialOutput"
+      ],
+      "baseline": "Two C5 cases pass equivalence after removing only an empty system message from Pi provider context. No other behavior family is counted.",
+      "differences": [],
+      "evidenceGaps": [
+        "209/211 case adapters remain; safety classifications and zero-unresolved acceptance are not established."
+      ],
+      "cases": [
+        "D0.same-pi-run-one-stable",
+        "D0.same-pi-run-two-stable",
+        "D0.all-scenarios-executed-against-pinned-pi-and-pisharp",
+        "D0.raw-process-provider-state-persistence-captures-exist",
+        "D0.normalization-removes-only-nonsemantic-fields",
+        "D0.independent-pisharp-observations-match-baseline",
+        "D0.every-difference-has-strict-equivalent-or-safety-classification",
+        "D0.safety-differences-have-safe-regression-evidence",
+        "D0.zero-unresolved-mismatches"
+      ],
+      "pinnedPiTests": [
+        "packages/coding-agent/test/suite/agent-session-compaction.test.ts#stops after one compact-and-retry when a second response is also truncated"
+      ],
+      "sourceReferences": [
+        "tools/parity/compaction_context/pi_oracle.mjs",
+        "tools/parity/compaction_context/c5_oracle.py"
+      ]
+    },
+    {
+      "id": "quality-and-regression-gates",
+      "upstream": [
+        "Pi pinned tests: compaction, overflow, branching and settings"
+      ],
+      "pisharp": [
+        "PiSharp.slnx",
+        "tools/parity/terminal/",
+        "tools/parity/mcp-conformance/run.mjs",
+        "tools/validate_doc_paths.py"
+      ],
+      "inputs": "Current implementation source tree, focused test filters, full solution and parity commands.",
+      "outputs": "Formatting/build/test counts, terminal and parity results, MCP conformance and documentation references.",
+      "state": "Focused .NET and Python/Node checks pass. Full solution test results are pending; one pinned queue test fails because the fixture model is unknown/contextWindow 0.",
+      "existingTests": [
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs",
+        "tests/PiSharp.Tests/Cli/Providers/ProviderOverflowLoopbackTests.cs"
+      ],
+      "baseline": "Partial local quality only; Q0 cannot pass until full .NET and every required suite is recorded.",
+      "differences": [
+        "Pinned queue test failure at unknown model/contextWindow 0; see the confirmed discrepancy record."
+      ],
+      "evidenceGaps": [
+        "Full .NET result and exact selected pinned Pi quality results must be recorded."
+      ],
+      "cases": [
+        "Q0.dotnet-format-no-changes",
+        "Q0.warnings-as-errors-solution-build",
+        "Q0.full-dotnet-suite-zero-failures-and-skips",
+        "Q0.focused-compaction-session-provider-tests",
+        "Q0.focused-rpc-tui-extension-tests",
+        "Q0.python-parity-suites",
+        "Q0.node-parity-suites",
+        "Q0.mcp-conformance",
+        "Q0.documentation-link-validation",
+        "Q0.pinned-pi-upstream-compaction-branch-overflow-tests"
+      ],
+      "pinnedPiTests": [
+        "packages/coding-agent/test/compaction.test.ts",
+        "packages/coding-agent/test/compaction-nested-calls.test.ts",
+        "packages/coding-agent/test/suite/agent-session-compaction.test.ts",
+        "packages/coding-agent/test/agent-session-auto-compaction-queue.test.ts",
+        "packages/ai/test/overflow.test.ts"
+      ],
+      "sourceReferences": [
+        "PiSharp.slnx",
+        "tools/parity/compaction_context/runner.py"
+      ]
+    },
+    {
+      "id": "committed-source-bound-evidence",
+      "upstream": [
+        "Pinned Pi source commit and source paths in each case fixture"
+      ],
+      "pisharp": [
+        "docs/parity/fixtures/",
+        "tools/parity/compaction_context/verify.py#validate_source_identity"
+      ],
+      "inputs": "Implementation source SHA, test source SHA, frozen contract digest, raw artifact hashes and explicit evidence directory.",
+      "outputs": "Committed compact evidence, stale-source rejection and receipt/source linkage.",
+      "state": "The C5 raw run is local and the source is not committed yet; no E0 case is complete.",
+      "existingTests": [
+        "tools/parity/compaction_context/test_verifier.py#test_stale_implementation_source_is_rejected",
+        "tools/parity/compaction_context/test_verifier.py#test_missing_raw_artifact_is_rejected"
+      ],
+      "baseline": "The verifier rejects changed source and artifact hashes, but the final compact evidence fixture remains to be committed.",
+      "differences": [],
+      "evidenceGaps": [
+        "Commit compact evidence for the two completed C5 cases, then bind it to the implementation SHA; 209 cases remain."
+      ],
+      "cases": [
+        "E0.committed-inventory-and-contract-are-source-pinned",
+        "E0.all-required-case-evidence-is-committed",
+        "E0.implementation-sha-has-no-later-src-or-test-changes",
+        "E0.contract-derived-denominator-matches-all-evidence",
+        "E0.explicit-current-evidence-directory-is-validated",
+        "E0.stale-evidence-is-rejected",
+        "E0.artifact-hashes-and-raw-paths-validate",
+        "E0.feature-matrix-ledger-todo-continuation-updated",
+        "E0.completion-receipt-has-final-source-shas-and-scope"
+      ],
+      "pinnedPiTests": [],
+      "sourceReferences": [
+        "tools/parity/compaction_context/verify.py",
+        "docs/parity/fixtures/compaction-context-management-parity-2026-10-28.md"
+      ]
+    },
+    {
+      "id": "exact-head-workflow-verification",
+      "upstream": [
+        "GitHub Actions push and pull-request workflows"
+      ],
+      "pisharp": [
+        ".github/workflows/",
+        "PR #28 current head/base metadata"
+      ],
+      "inputs": "Final source SHA, branch push SHA, PR base/head and required workflow/job conclusions.",
+      "outputs": "Exact-head push and PR workflow evidence with no manual duplicate dispatch.",
+      "state": "PR #28 has not yet been pushed at the final implementation source; CI0 is open.",
+      "existingTests": [
+        "tools/parity/compaction_context/verify.py#validate_evidence"
+      ],
+      "baseline": "No final-head CI claim is made.",
+      "differences": [],
+      "evidenceGaps": [
+        "Push final source/docs, capture automatic runs on the exact PR head, and verify base main and all required jobs."
+      ],
+      "cases": [
+        "CI0.push-workflow-is-on-exact-final-head",
+        "CI0.pull-request-workflow-is-on-exact-final-head",
+        "CI0.pull-request-base-is-main",
+        "CI0.every-required-job-and-case-passes",
+        "CI0.no-duplicate-manual-workflow-dispatch"
+      ],
+      "pinnedPiTests": [],
+      "sourceReferences": [
+        ".github/workflows/",
+        "tools/parity/compaction_context/contract.json"
+      ]
+    },
+    {
+      "id": "draft-pr-publication",
+      "upstream": [
+        "GitHub pull request metadata"
+      ],
+      "pisharp": [
+        "PR #28 draft description",
+        "tools/parity/compaction_context/runner.py",
+        "tools/parity/compaction_context/verify.py"
+      ],
+      "inputs": "Final source head, current evidence directory, frozen case counts and CI run IDs.",
+      "outputs": "Open draft PR against main with publication verification and recorded limitations.",
+      "state": "PR #28 remains open, draft and unmerged. Final source and 211-case publication gate are incomplete.",
+      "existingTests": [
+        "tools/parity/compaction_context/verify.py#validate_evidence"
+      ],
+      "baseline": "Publication currently has no successful 22/211 run; do not mark the PR ready or parity complete.",
+      "differences": [],
+      "evidenceGaps": [
+        "A complete all-case artifact set and current publication-verifier run are required before PUB0."
+      ],
+      "cases": [
+        "PUB0.draft-pr-is-open-and-unmerged",
+        "PUB0.pr-base-main-and-head-is-final-source",
+        "PUB0.publication-verifier-uses-current-run-directory",
+        "PUB0.all-22-checkpoints-and-211-cases-pass",
+        "PUB0.pr-description-records-verified-results-and-limitations"
+      ],
+      "pinnedPiTests": [],
+      "sourceReferences": [
+        "tools/parity/compaction_context/runner.py",
+        "tools/parity/compaction_context/verify.py"
+      ]
     }
   ],
   "crossCuttingEvidenceGaps": [
-    "No per-case PiSharp/Pi observations exist for the frozen 211-case contract; the runner is incomplete and must not be treated as a passing gate.",
-    "No complete same-scenario differential has yet run on the exact b06c1f2 pin for all behavior families.",
+    "Only two of the 211 frozen cases currently have paired Pi/PiSharp observations; the complete contract remains unverified.",
+    "No complete same-scenario differential has run on the exact b06c1f2 pin for all behavior families.",
     "Previous cut-point and RPC compaction evidence references other Pi commits and cannot establish pinned behavior.",
-    "No complete physical provider-wire corpus currently covers compaction continuation on OpenAI Responses, OpenAI Chat Completions and Anthropic Messages.",
+    "Focused pre-content HTTP overflow tests cover Responses, Chat Completions, and Anthropic, but a complete provider-wire corpus for overflow compaction and continuation is absent.",
     "CLI/TUI/RPC, session restart, branch navigation and extension behavior need case-by-case scope evidence; success in one surface is not evidence for another."
   ],
   "prerequisiteEvidence": {
@@ -678,8 +971,9 @@
     "mergedAt": "2026-10-28T02:41:42Z",
     "exactHeadPushRun": 40617744882,
     "exactHeadPullRequestRun": 40617750121,
-    "workflowStatus": "Both runs completed successfully on the reviewed head with all five required jobs green; PR base was main and PR state is merged.",
-    "publicationRecord": "PR #27 is merged at 12064420179f4119bdaf37479c7cba0f5ca40717. Its PR description and receipt report 27/27 checkpoints and 240/240 cases; exact-head push run 40617744882 and PR run 40617750121 succeeded on reviewed head 2f88019cd8840b2468b1957217ae361e0bab3ad6. The downloaded PR-run artifact 12786969371 contains 240 case records but marks draft-publication and exact-head-ci checkpoints blocked. No committed standalone final publication artifact was found, so contract checkpoint P0 remains unresolved."
+    "workflowStatus": "PR #27 is merged. Exact-head push run 40617744882 and PR run 40617750121 both succeeded on reviewed head 2f88019cd8840b2468b1957217ae361e0bab3ad6 with main as PR base; all required jobs were green.",
+    "publicationRecord": "The ignored final evidence directory artifacts/parity/managed-packages-final-a760d65-stable records 27/27 checkpoints and 240/240 cases, zero failures/skips, and successful publication checks. Its contract digest and all 1,395 artifact hashes were independently checked. The merged PR and exact-head workflows verify P0. A fresh local standalone build produced a different PiSharp CLI DLL hash from the archived build in this environment, so that rebuilt-binary identity is not reproduced locally. The PR-run ZIP artifact alone did not include the standalone publication-check command output; the current exact-head evidence directory and merge metadata supply that record.",
+    "p0Status": "passed: actual PR merge, exact-head CI, 27 checkpoints and 240 cases verified; archived binary hash rebuild caveat recorded"
   },
   "architectureConstraints": [
     "PiSharp.Cli -> PiSharp.Runtime -> PiSharp.Core",
@@ -691,28 +985,36 @@
     "Branch summary navigation with extension control, summary settings, file-operation details, usage/cost persistence and editor-return behavior.",
     "Missing-total usage fallback includes cached-read and cached-write counts.",
     "Successful post-turn provider usage above a known context window emits overflow compaction without replay; cached input is not double-counted.",
-    "Expanded provider error overflow patterns and representative exclusions with regressions."
+    "Expanded provider error overflow patterns and representative exclusions with regressions.",
+    "Recoverable length-stop response handling checks reported output tokens against the desired model output cap, request model identity, and current context projection; it omits the failed response from outbound context, compacts once, and continues once.",
+    "The C5 Pi/PiSharp deterministic oracle records provider requests, session state and events twice per implementation and binds two case results to distinct hashed artifacts."
   ],
   "formalAcceptance": {
     "contractPath": "tools/parity/compaction_context/contract.json",
     "contractSha256": "c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6",
     "requiredCheckpoints": 22,
     "requiredCases": 211,
-    "perCaseArtifactsProduced": 0,
+    "perCaseArtifactsProduced": 2,
     "status": "incomplete",
-    "reason": "The runner currently records command-level tests only and intentionally reports incomplete; no checkpoint or overall parity pass is claimed."
+    "reason": "Two local C5 cases have paired, hash-bound evidence. The other 209 required cases have not been adapted and no checkpoint can pass the frozen denominator.",
+    "perCaseArtifactsCommitted": 2
   },
   "validationSoFar": {
-    "pisharpFullSolution": "3,932 passed, 0 failed, 0 skipped; DOTNET_PROCESSOR_COUNT=4, --no-build --no-restore -m:2.",
+    "pisharpFullSolution": "3,939 passed, 0 failed, 0 skipped; dotnet test PiSharp.slnx --no-restore --logger 'console;verbosity=minimal'.",
     "focusedSilentOverflow": "3 passed, 0 failed, 0 skipped, including threshold, overflow reason, and cached-input boundary cases.",
-    "dotnetFormat": "passed with --verify-no-changes --no-restore.",
-    "warningsAsErrorsBuild": "passed with zero warnings and zero errors.",
+    "dotnetFormat": "passed --verify-no-changes --no-restore.",
+    "warningsAsErrorsBuild": "passed with zero warnings and zero errors when NuGetAudit=false; the default audit cache path is read-only and the initial default build failed with NU1900.",
     "terminalPython": "66 passed.",
     "builtinParityPython": "27 passed.",
-    "compactionVerifierTests": "19 passed, including positive and negative evidence controls.",
+    "compactionVerifierTests": "20 passed, including positive and negative evidence controls.",
     "terminalNode": "24 passed.",
-    "documentationPaths": "156 documents and 687 references verified.",
-    "pinnedPiSuites": "Coding-agent compaction, navigation, branch summary and stats: 128 passed / 12 upstream skips; Pi AI overflow: 20 passed.",
-    "mcpConformance": "No regressions against the classified baseline; three known scenarios remain classified."
+    "documentationPaths": "156 documents and 688 references verified after the receipt and compact C5 case record were added.",
+    "pinnedPiSuites": "Selected pinned Pi compaction and queue tests: 34 passed / 1 failed; Pi AI overflow: 20 passed. The failed queue expectation conflicts with shouldCompact at model id unknown/contextWindow 0.",
+    "mcpConformance": "No regressions against the classified baseline; three known scenarios remain classified.",
+    "focusedCompactionAndProviderTests": "82 passed, 0 failed, 0 skipped, including length-stop recovery and all three provider loopback APIs.",
+    "compactionVerifierControls": "20 passed, including positive/negative controls and hash-bound assertion mutation rejection.",
+    "pairedLengthStopOracle": "2/11 C5 cases; Pi and PiSharp each run twice with stable normalized observations at source b22f7e7bad940a1dd0a26d716628f6739a8a9abf. Compact case records are committed in compaction-context-management-c5-case-results.json; raw captures and hashes are under artifacts/parity/20261028T062543Z-c5-length-recovery/.",
+    "pinnedPiCompactionAndQueueTests": "34 passed / 1 failed across the two selected suites. The failure is the no-prior-usage queue test: runtime model id unknown and contextWindow 0 cause pinned shouldCompact to trigger despite the test expecting no compaction.",
+    "fullDotnetSuite": "3,939 passed, 0 failed, 0 skipped; 6m36s."
   }
 }

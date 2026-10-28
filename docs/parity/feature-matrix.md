@@ -1,26 +1,32 @@
 ## Active milestone — Compaction, Context Budget, Overflow and Usage Parity — 2026-10-28
 
-PR #27 is merged at `12064420179f4119bdaf37479c7cba0f5ca40717`; the current
-branch is based on that merge. Pi is pinned to
-`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`, and the frozen acceptance contract
-contains 22 checkpoints / 211 cases. Implementation source
-`4e96fa6873192e51a130c0ba5a5e4fcccddaba71` adds branch-summary navigation,
-extension control, branch-summary JSONL usage/cost persistence, cached-token
-fallback, provider overflow matching, and post-turn threshold and silent
-overflow compaction.
+PR #27 merged at actual main commit `12064420179f4119bdaf37479c7cba0f5ca40717`,
+the base of this branch. Reviewed head `2f88019cd8840b2468b1957217ae361e0bab3ad6`
+passed exact-head push run 40617744882 and PR run 40617750121; its published
+evidence records 27/27 checkpoints and 240/240 cases. Pi is pinned to
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; the frozen compaction contract has
+22 checkpoints / 211 cases.
 
-Local validation passes .NET 3,932/3,932 with zero skips, format, a
-warnings-as-errors build, Python parity (terminal 66/66, built-in 27/27,
-compaction verifier controls 19/19), terminal Node 24/24, docs paths 156/687,
-pinned Pi coding-agent tests 128 passed / 12 upstream skips, and Pi AI overflow
-tests 20/20. MCP conformance
-shows no regressions against its classified baseline; three known scenarios
-remain classified.
+Length-stop recovery is implemented with output-usage/model-cap eligibility,
+stale-model and projected-history guards, one overflow compaction, one
+continuation, and no partial-response replay. The two-run Pi/PiSharp oracle
+passes 2/11 C5 cases at implementation source
+`b22f7e7bad940a1dd0a26d716628f6739a8a9abf`. Its compact case record is
+committed, with raw captures retained under
+`artifacts/parity/20261028T062543Z-c5-length-recovery/`. The evidence verifier
+binds each comparison to distinct JSON artifacts and checks their hashes.
+Focused .NET compaction and provider tests pass 82/82; the full .NET suite
+passes 3,939/3,939; format and warning-as-error build pass; verifier controls
+pass 20/20; terminal Python 66/66; built-in parity Python 27/27; terminal Node
+24/24; and MCP conformance has no regressions against its classified baseline.
 
-This is not accepted as full parity. The frozen runner still lacks per-case
-adapters and emits 0/211 case artifacts. Length-stop recovery, complete
-provider-wire coverage, transient-estimator classification, and P0 publication
-evidence remain open. See the
+The milestone remains incomplete: 2/211 required cases have paired evidence,
+so none of the 22 checkpoints passes yet. The three-API compaction-continuation
+corpus, transient estimator classification and most persistence, branch,
+accounting, public API, extension and lifecycle scenarios remain open. A pinned
+Pi queue test failed because its fixture model was `unknown` with context window
+zero and Pi's threshold formula compacted despite the test expecting a no-op.
+The PR #27 publication and exact-head workflow prerequisite is verified. See the
 [inventory](fixtures/compaction-context-management-inventory.json),
 [receipt](fixtures/compaction-context-management-parity-2026-10-28.md), and
 [execution ledger](execution-ledger.json).
@@ -40,9 +46,7 @@ failures or skips. Local quality passes .NET 3,910/3,910, focused package
 docs, and 18 differential rechecks.
 Targeted regressions cover Git publication crash recovery, origin-specific
 temporary Git identities, manifest enforcement, and both mixed local/managed
-CLI extension orders with conflicting commands. PR #27 remains open, draft,
-and unmerged while automatic exact-head workflow and publication checks are
-completed. See the
+CLI extension orders with conflicting commands. PR #27 merged at `12064420179f4119bdaf37479c7cba0f5ca40717`. See the
 [parity/fixtures/managed-package-lifecycle-parity.md](fixtures/managed-package-lifecycle-parity.md)
 and [inventory](fixtures/managed-package-lifecycle-parity/inventory.json).
 
@@ -647,7 +651,7 @@ The prior Pi `main` audit was refreshed on 2026-10-01 to `395315f4841ab5a090a33b
 | Native extension message lifecycle hooks | Pinned Pi `packages/coding-agent/src/core/extensions/{types.ts,runner.ts}`, `packages/agent/src/agent.ts`, and `packages/coding-agent/src/core/agent-session.ts` | new message start/update/end; assistant update order; sequential finalized replacement and canonical persistence | detached snapshots; role preservation; failure isolation; cancellation and callback revocation; no synthetic final after provider failure | Additive Abstractions DTOs, source-owned Runtime dispatch, `ObservedChatClient`, `ConversationRun`, `DurableToolFunction`; focused deterministic lifecycle tests | In progress: start/update are notification-only; ordered end replacements validate before acceptance and become the canonical/provider/tool result. Tool-result replacements retain exactly one original call ID; pending context messages flush asynchronously during request preparation before turn notifications. Tests include missing/changed/duplicate call IDs and an incomplete async callback before continuation, plus submitted and queued user messages, assistant updates, idle custom messages, malformed content, provider failure without a final assistant message, persistence/provider context and cancellation. Pi-only stream markers and opaque-content reconstruction remain unavailable. See [the message lifecycle receipt](fixtures/native-extension-message-lifecycle-2026-10-19.md). |
 | Native extension session mutation hooks | `docs/extensions.md`; pinned Pi `packages/coding-agent/src/core/extensions/{types.ts,runner.ts}`, `agent-session-runtime.ts`, `agent-session.ts`, `session-manager.ts`, and `core/compaction/` | before-switch, before-fork, before-tree, after-tree, before-compact with canonical compaction | ordered result precedence, veto timing, callback lifetime, transactional persistence and compaction failure | `NativeExtensionSessionMutation*` SDK records, runtime dispatch, authoritative session and compaction adapters; focused RPC/runtime and external `.nupkg` coverage | Implemented: supports vetoes for replacement, fork, clone (`At`), and tree navigation, persisted tree completion observation with a bounded post-commit callback deadline, and cancellation or validated custom summaries through the existing compaction coordinator. Tree summary injection, tree instruction/label overrides, unsupported fork restore overrides, and broad event parity remain deferred. See [the bounded session-hooks receipt](fixtures/native-extension-session-hooks-2026-10-18.md). |
 | Security / settings and authentication | `docs/settings.md`, `docs/environment-variables.md`, `docs/security.md`; `packages/coding-agent/src/core/settings-manager.ts` | precedence, project trust, secrets never exported | project trust is not an OS sandbox | config/trust/security tests | In progress; user and trusted-project settings subsets load default model/provider/thinking, per-model thinking maps, tools, session directory, compaction budgets and image blocking, with user-only defaultProjectTrust with CLI/environment precedence; private user auth storage and project trust for project system prompts/context-independent AGENTS files exist. `/settings` edits the supported subset; its per-model thinking submenu selects supported levels, clears overrides, persists them and updates the active model, with Linux PTY evidence. Trusted-project editing, the broader settings schema and provider OAuth sign-in remain incomplete. Anthropic environment authentication honors `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_OAUTH_TOKEN` and `ANTHROPIC_API_KEY` before last-resort workload identity federation; SDK ambient credential resolution is disabled. |
-| Pi Packages | `docs/packages.md`; pinned `packages/coding-agent/src/core/package-manager.ts` | Install, remove, update, list, scope, trust, identity, lifecycle and resource distribution | Failure recovery, cancellation, process interruption and concurrency | Managed package store, CLI command/process tests, 15-family source inventory and pinned process corpus | Review correction source `a760d65efdbcb2192c648336b10c4dd34cd3a6e9`: local execution passes 24/27 checkpoints and 218/240 cases; exact-head push and PR workflows pass, and publication verification passes 27/27 checkpoints and 240/240 cases. The full .NET suite passes 3,910/3,910; local quality also passes focused package 118/118, architecture 7/7, Python 154/154, Node 24/24, MCP, format, build, docs and 18 differential rechecks. Regressions cover Git publication recovery, canonical-origin Git cache isolation, manifest-controlled extension selection and both mixed local/managed CLI extension orders with conflicting commands. The 15-family corpus covers npm/Git install and update, scopes, trust, identity, bulk operations, resource loading, startup/reload, failure recovery and concurrency. PR #27 remains open, draft and unmerged. See the [managed-package receipt](fixtures/managed-package-lifecycle-parity.md) and [inventory](fixtures/managed-package-lifecycle-parity/inventory.json). |
+| Pi Packages | `docs/packages.md`; pinned `packages/coding-agent/src/core/package-manager.ts` | Install, remove, update, list, scope, trust, identity, lifecycle and resource distribution | Failure recovery, cancellation, process interruption and concurrency | Managed package store, CLI command/process tests, 15-family source inventory and pinned process corpus | Review correction source `a760d65efdbcb2192c648336b10c4dd34cd3a6e9`: local execution passes 24/27 checkpoints and 218/240 cases; exact-head push and PR workflows pass, and publication verification passes 27/27 checkpoints and 240/240 cases. The full .NET suite passes 3,910/3,910; local quality also passes focused package 118/118, architecture 7/7, Python 154/154, Node 24/24, MCP, format, build, docs and 18 differential rechecks. Regressions cover Git publication recovery, canonical-origin Git cache isolation, manifest-controlled extension selection and both mixed local/managed CLI extension orders with conflicting commands. The 15-family corpus covers npm/Git install and update, scopes, trust, identity, bulk operations, resource loading, startup/reload, failure recovery and concurrency. PR #27 merged at `12064420179f4119bdaf37479c7cba0f5ca40717`. See the [managed-package receipt](fixtures/managed-package-lifecycle-parity.md) and [inventory](fixtures/managed-package-lifecycle-parity/inventory.json). |
 
 | Category / feature | Current-Pi capability boundary | PiSharp status |
 |---|---|---|

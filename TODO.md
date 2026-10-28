@@ -2,29 +2,35 @@
 
 ## Active milestone — Compaction, Context Budget, Overflow and Usage Parity — 2026-10-28
 
-PR #27 is merged at `12064420179f4119bdaf37479c7cba0f5ca40717`; this branch is
-based on that merge and pins Pi to `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
-Implementation source `4e96fa6873192e51a130c0ba5a5e4fcccddaba71` adds branch
-summary navigation and extension control, branch-summary JSONL usage/cost
-round-trip, cached-token usage fallback, provider overflow classification, and
-post-turn threshold/silent-overflow compaction. The frozen contract remains 22
-checkpoints and 211 cases.
+PR #27 is merged at `12064420179f4119bdaf37479c7cba0f5ca40717`. Its reviewed
+head was `2f88019cd8840b2468b1957217ae361e0bab3ad6`; exact-head push run
+40617744882 and PR run 40617750121 succeeded, and the published evidence covers
+27/27 checkpoints and 240/240 cases. This branch is based on that actual merge
+commit. Pi is pinned to `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; the frozen
+contract remains 22 checkpoints / 211 cases.
 
-Local quality passes: .NET **3,932/3,932** with zero failures or skips; format;
-warnings-as-errors build; terminal Python 66/66; built-in parity Python 27/27;
-compaction verifier controls 19/19; terminal Node 24/24; docs 156 documents /
-687 references; pinned Pi coding-agent suites 128 passed / 12 upstream skips,
-with Pi AI overflow tests 20/20. MCP
-conformance reports no new regressions against its classified baseline; three
-known scenarios remain classified.
+This implementation adds bounded recovery for provider length stops when
+reported output usage is below the model's desired output cap, the model still
+matches, and the failed response is in projected history. It omits the failed
+attempt from outbound context, compacts once, continues once, and does not replay
+the partial response. The paired C5 Pi/PiSharp oracle is stable across two runs
+per side and verifies 2/11 C5 cases at implementation source
+`b22f7e7bad940a1dd0a26d716628f6739a8a9abf`. The compact case record is committed;
+raw captures remain under `artifacts/parity/20261028T062543Z-c5-length-recovery/`.
+Focused .NET compaction/provider tests pass 82/82; the full .NET suite passes
+3,939/3,939; format and warning-as-error build pass; verifier controls pass
+20/20; terminal Python 66/66; built-in parity Python 27/27; terminal Node
+24/24; and MCP conformance has no regressions against its classified baseline.
 
-The milestone is still in progress. The frozen runner currently produces no
-per-case artifacts (0/211), so none of the 22 checkpoints can be claimed as
-passed. Recoverable output-length continuation, a complete three-API
-provider-wire corpus, the separate transient-estimator difference, and the
-independent PR #27 publication prerequisite remain open. The prior PR artifact
-has 240 case records but reports publication and exact-head-CI checkpoints as
-blocked. See the
+The milestone remains incomplete: 2/211 frozen cases have paired evidence, so
+none of the 22 checkpoints can yet be claimed as passed. Provider-specific
+compaction continuation across all three APIs, transient-estimator
+classification, and most persistence, branching, public-surface, lifecycle and
+failure cases still need adapters and paired evidence. One pinned Pi queue test
+failed at this checkout because its model resolved to `unknown` with a zero
+context window and Pi's threshold formula still triggered compaction. PR #27's
+exact-head CI and publication results are verified; a local standalone rebuild
+did not reproduce the archived CLI binary hash. See the
 [inventory](docs/parity/fixtures/compaction-context-management-inventory.json),
 [receipt](docs/parity/fixtures/compaction-context-management-parity-2026-10-28.md),
 and [execution ledger](docs/parity/execution-ledger.json).
@@ -42,8 +48,7 @@ verification completed all 27/27 checkpoints and 240/240 cases with zero
 failures or skips. The mixed local and managed CLI extension ordering correction
 passes both argument orders. Local quality passes the full .NET suite (3,910/3,910), focused package tests
 118/118, architecture 7/7, Python 154/154, Node 24/24, MCP, format,
-warnings-as-errors build, docs and all 18 differential rechecks. PR #27 remains
-open, draft, and unmerged. See the
+warnings-as-errors build, docs and all 18 differential rechecks. PR #27 was merged at `12064420179f4119bdaf37479c7cba0f5ca40717`. See the
 [managed-package receipt](docs/parity/fixtures/managed-package-lifecycle-parity.md)
 and [inventory](docs/parity/fixtures/managed-package-lifecycle-parity/inventory.json).
 
