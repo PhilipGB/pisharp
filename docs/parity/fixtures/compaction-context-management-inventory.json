@@ -1,0 +1,667 @@
+{
+  "schemaVersion": 1,
+  "milestone": "compaction-context-management-parity",
+  "phase": "source-pinned-baseline-before-production-changes",
+  "sourcePins": {
+    "piCommit": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "pisharpBaselineCommit": "12064420179f4119bdaf37479c7cba0f5ca40717",
+    "pisharpWorkingBranch": "milestone/compaction-context-management-parity"
+  },
+  "framework": {
+    "package": "Microsoft.Agents.AI",
+    "installedVersion": "1.21.0",
+    "skillSnapshotVersion": "1.24.0",
+    "decision": "Do not change framework/dependency versions without an evidenced requirement. Agent execution and tool invocation remain owned by MAF."
+  },
+  "inventoryMethod": "Pi source ownership is taken from the exact b06c1f2 checkout. PiSharp ownership is the current branch baseline. Existing evidence is mapped but treated as unverified until the frozen case runner executes against the pin.",
+  "confirmedBaselineDifferences": [
+    {
+      "id": "branch-summary-navigation-missing",
+      "families": [
+        "branch-summary-navigation",
+        "native-extension-hooks"
+      ],
+      "status": "confirmed_missing_implementation",
+      "evidence": "Pinned Pi AgentSession.navigateTree calls generateBranchSummary and SessionManager.branchWithSummary. PiSharp ConversationRun.SelectAsync changes the leaf and dispatches tree hooks but has no summary generator/apply path; ConversationContextProjection only projects imported branch_summary entries.",
+      "requiredCases": [
+        "C9.branch-diff-uses-common-ancestor-and-old-path",
+        "C12.tree-summary-hooks-see-and-may-control-navigation"
+      ]
+    },
+    {
+      "id": "cached-token-context-fallback",
+      "families": [
+        "usage-reasoning-costs",
+        "context-budgets-estimation"
+      ],
+      "status": "confirmed_conditional_source_difference",
+      "evidence": "Pi calculateContextTokens uses totalTokens or input+output+cacheRead+cacheWrite. PiSharp UsageRecord.Create falls back to input+output when TotalTokenCount is missing/zero. Difference only manifests when cache counts are nonzero and no positive total is supplied.",
+      "requiredCases": [
+        "C4.cache-read-and-write-token-fallback",
+        "C10.fallback-context-total-includes-cache-tokens"
+      ]
+    },
+    {
+      "id": "heuristic-owner-and-formula-difference",
+      "families": [
+        "context-budgets-estimation",
+        "tool-continuation-projection"
+      ],
+      "status": "confirmed_algorithm_difference_unclassified",
+      "evidence": "Pi estimateTokens uses per-content chars/4 plus a fixed image heuristic. PiSharp PiContextUsageEstimator uses content-specific chars/4, while AutoCompactionPolicy.Estimate serializes JSON and uses chars/2 plus 512. The latter is only used by the separate transient request budget. Do not collapse these owners or call either result tokenizer output.",
+      "requiredCases": [
+        "C4.image-and-large-tool-result-estimate",
+        "C4.estimate-method-is-explicitly-heuristic-not-tokenizer",
+        "C6.transient-projection-does-not-change-canonical-history"
+      ]
+    }
+  ],
+  "records": [
+    {
+      "id": "manual-compaction",
+      "upstream": [
+        "packages/coding-agent/src/core/agent-session.ts#AgentSession.compact",
+        "packages/coding-agent/src/core/compaction/compaction.ts#prepareCompaction,compact,generateSummaryWithUsage"
+      ],
+      "pisharp": [
+        "src/PiSharp.Runtime/Sessions/ConversationRun.cs#CompactWithResultAsync",
+        "src/PiSharp.Runtime/Sessions/ConversationCompactionCoordinator.cs#CompactAsync,PreparePlan",
+        "src/PiSharp.Cli/Protocols/Rpc/RpcCompactionCommandHandler.cs"
+      ],
+      "inputs": "Manual compact request, current selected branch, model/reserve/keep-recent settings, optional focus, extension decision, provider summary result.",
+      "outputs": "Compaction result, persisted summary/boundary/usage/details, compaction lifecycle events, restored MAF history.",
+      "state": "On success append one canonical compaction entry at the current branch head, add supplied summary usage, restore provider context, and save. On failure/cancellation restore the prior head and history.",
+      "existingTests": [
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#ManualCompactionPreservesHistoryAndRestoresShortContextAfterRestartAndBranch",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#ManualCompactionUsesPiDefaultRecentTokenBudgetWithoutAContextWindow",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcCompactionProcessTests.cs#RpcProcessUsesPiSplitTurnCompactionAndCustomInstructionsForHistoryOnly"
+      ],
+      "baseline": "Implemented with substantial unit/process coverage; pinned b06 behavior and full manual lifecycle are not yet independently compared.",
+      "differences": [],
+      "evidenceGaps": [
+        "Exact eligibility at two completed user turns, queued steering and event ordering against b06.",
+        "Failure after summary completion but before canonical publication and save failure across all public surfaces."
+      ],
+      "cases": [
+        "C1.eligible-manual-request-persists-one-entry",
+        "C1.ineligible-short-history-is-no-op",
+        "C1.custom-focus-changes-history-prompt-only",
+        "C1.recent-context-and-full-history-retained",
+        "C1.split-turn-summary-retains-interrupted-assistant",
+        "C1.summary-usage-details-persist",
+        "C1.summary-failure-rolls-back-and-reports",
+        "C1.cancellation-publishes-no-entry",
+        "C1.active-run-and-queued-follow-up-order"
+      ],
+      "pinnedPiTests": [
+        "packages/coding-agent/test/compaction.test.ts",
+        "packages/coding-agent/test/suite/agent-session-compaction.test.ts"
+      ]
+    },
+    {
+      "id": "automatic-compaction",
+      "upstream": [
+        "packages/coding-agent/src/core/agent-session.ts#AgentSession._checkCompaction,_runAutoCompaction",
+        "packages/coding-agent/src/core/compaction/compaction.ts#shouldCompact",
+        "packages/coding-agent/src/core/settings-manager.ts#getCompactionSettings"
+      ],
+      "pisharp": [
+        "src/PiSharp.Runtime/Sessions/AutoCompactionPolicy.cs",
+        "src/PiSharp.Runtime/Sessions/ConversationRun.cs#pre-prompt,post-turn,retry loop",
+        "src/PiSharp.Runtime/Sessions/ConversationCompactionCoordinator.cs"
+      ],
+      "inputs": "Successful/failed assistant usage, selected/physical model context window, reserve and keep-recent settings, prompt queue, retry/overflow state.",
+      "outputs": "No-op, threshold compaction without replay, or overflow compaction followed by one bounded continuation; lifecycle reason/willRetry.",
+      "state": "Automatic threshold may run after turn completion or before accepting next prompt; unknown windows do not trigger. Overflow attempt state resets only on the pinned lifecycle boundary.",
+      "existingTests": [
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#AutoBudgetCompactsBeforeNextPromptAndPersistsRawHistory",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#AutomaticCompactionUsesTheSplitTurnCoordinatorBeforeAcceptingTheNextPrompt",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcActiveModelSelectionProcessTests.cs#RpcModelSelectionAndCycleDuringBlockedToolTurnChangeTheNextProviderRequest"
+      ],
+      "baseline": "Implemented; model routing, queued-message interleavings and b06 pre/post-turn decisions require fresh differentials.",
+      "differences": [],
+      "evidenceGaps": [
+        "Full source-pinned decision matrix including repeated overflow, selected physical model changes, and queued follow-ups."
+      ],
+      "cases": [
+        "C2.threshold-after-turn-compacts-without-retry",
+        "C2.pre-prompt-compaction-does-not-replay-turn",
+        "C2.unknown-window-does-not-speculate",
+        "C2.disabled-setting-prevents-trigger",
+        "C2.strict-greater-than-reserve-threshold",
+        "C2.model-switch-uses-selected-window-and-overrides",
+        "C2.physical-route-change-refreshes-budget",
+        "C2.queued-steering-survives-auto-compaction",
+        "C2.overflow-retry-is-one-bounded-attempt",
+        "C2.error-turn-uses-last-valid-usage-not-stale-usage"
+      ],
+      "pinnedPiTests": [
+        "packages/coding-agent/test/suite/agent-session-compaction.test.ts",
+        "packages/coding-agent/test/agent-session-auto-compaction-queue.test.ts",
+        "packages/coding-agent/test/settings-manager-compaction.test.ts"
+      ]
+    },
+    {
+      "id": "cut-points-retention",
+      "upstream": [
+        "packages/coding-agent/src/core/compaction/compaction.ts#findCutPoint,findTurnStartIndex,prepareCompaction",
+        "packages/coding-agent/src/core/session-manager.ts#buildSessionContext,appendCompaction"
+      ],
+      "pisharp": [
+        "src/PiSharp.Runtime/Sessions/ConversationCompactionCoordinator.cs#PreparePlan",
+        "src/PiSharp.Runtime/Sessions/ConversationContextProjection.cs#CompactionContextEntries,ContextMessages",
+        "src/PiSharp.Runtime/Sessions/ConversationSession.cs#AppendCompaction"
+      ],
+      "inputs": "Ordered selected-branch entries, prior compaction boundary/summary, message estimates, keep-recent budget, tool calls/results and recovery-omission metadata.",
+      "outputs": "First kept entry ID, history and split-turn summary inputs, retained projected messages and compaction metadata.",
+      "state": "Persistent compaction updates only selected branch projection; source entries remain canonical/recoverable. Tool-call groups must remain provider-valid.",
+      "existingTests": [
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#CutAtLatestUserKeepsToolCallWithItsResult",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#RecentTokenBudgetFallsBackBeforeOversizedTrailingToolResults",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#CompactionMovesBoundaryPastClosedRecoveryOmissionSuffix",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionNestedToolCallsTests.cs"
+      ],
+      "baseline": "Implemented with exact cut-point regressions, several calibrated to earlier/current Pi rather than the requested b06 source.",
+      "differences": [],
+      "evidenceGaps": [
+        "Pinned b06 boundary matrix for oversized tails, incomplete groups, repeated compaction and interrupted recovery suffixes."
+      ],
+      "cases": [
+        "C3.user-boundary-selection",
+        "C3.assistant-boundary-split-turn",
+        "C3.tool-call-result-kept-as-one-group",
+        "C3.sequential-tool-cycles",
+        "C3.parallel-tool-batch-boundary",
+        "C3.oversized-trailing-result-falls-back-before-call",
+        "C3.never-cut-at-tool-result",
+        "C3.incomplete-assistant-and-tool-call-retained",
+        "C3.missing-tool-result-provider-projection",
+        "C3.unmatched-or-duplicate-tool-result-handling",
+        "C3.repeated-compaction-updates-prior-summary",
+        "C3.latest-compaction-controls-context",
+        "C3.recovery-omission-suffix-boundary",
+        "C3.empty-or-insufficient-history-is-no-op"
+      ],
+      "pinnedPiTests": [
+        "packages/coding-agent/test/compaction.test.ts",
+        "packages/coding-agent/test/compaction-nested-calls.test.ts"
+      ]
+    },
+    {
+      "id": "context-budgets-estimation",
+      "upstream": [
+        "packages/coding-agent/src/core/compaction/compaction.ts#calculateContextTokens,estimateContextTokens,estimateProjectedContextTokens,estimateTokens,shouldCompact",
+        "packages/coding-agent/src/core/settings-manager.ts#getCompactionSettings",
+        "packages/coding-agent/src/core/model-registry.ts#model context metadata"
+      ],
+      "pisharp": [
+        "src/PiSharp.Runtime/Sessions/PiContextUsageEstimator.cs",
+        "src/PiSharp.Runtime/Sessions/AutoCompactionPolicy.cs#Estimate,TriggerTokens",
+        "src/PiSharp.Runtime/Sessions/ConversationContextProjection.cs#ProjectContextUsageForEstimate"
+      ],
+      "inputs": "Model-specific context window and reserve, system/tool declarations, current messages, last valid provider usage, edits/compactions and selected route.",
+      "outputs": "Context token anchor or explicit heuristic estimate; automatic trigger and post-compaction effective estimate.",
+      "state": "Provider usage is trusted only when valid and not invalidated by a later edit/compaction; remaining messages are estimated. Unknown model windows remain unknown.",
+      "existingTests": [
+        "tests/PiSharp.Tests/Runtime/Sessions/PiContextUsageEstimatorTests.cs",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#AutoBudgetIsDisabledWithoutKnownContextWindowAndRejectsInvalidLimits",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#StreamingContextEstimateMatchesSerializedUtf16LengthsIncludingUnicodeAndLargeToolResults"
+      ],
+      "baseline": "Implemented, but estimation evidence is not an exact provider tokenizer contract.",
+      "differences": [
+        "Current Pi source uses per-message chars/4 and a 4,800-character image heuristic. PiSharp has a separate transient AutoCompactionPolicy estimator that serializes JSON and uses a chars/2 plus fixed overhead heuristic; the owners and use sites differ. This is an observed algorithm difference, not yet classified as acceptable or defective.",
+        "Prior RPC compact captures at Pi 2b0a123 and current Pi main are not the requested b06 oracle and used different system/tool context; their estimate deltas are not final evidence."
+      ],
+      "evidenceGaps": [
+        "Same-session/same-system/tool source-pinned b06 estimates, model-switch budget behavior, cache usage fallback, and explicit reporting of estimate provenance."
+      ],
+      "cases": [
+        "C4.model-context-window-controls-trigger",
+        "C4.reserve-and-keep-recent-defaults",
+        "C4.provider-model-override-precedence",
+        "C4.unknown-limit-is-never-invented",
+        "C4.provider-usage-anchors-current-context",
+        "C4.aborted-error-and-zero-usage-are-not-anchors",
+        "C4.messages-after-usage-are-estimated",
+        "C4.context-edit-and-compaction-invalidate-stale-usage",
+        "C4.cache-read-and-write-token-fallback",
+        "C4.system-prompt-and-tool-declaration-estimate",
+        "C4.image-and-large-tool-result-estimate",
+        "C4.estimate-method-is-explicitly-heuristic-not-tokenizer"
+      ],
+      "pinnedPiTests": [
+        "packages/coding-agent/test/compaction.test.ts",
+        "packages/coding-agent/test/settings-manager-compaction.test.ts"
+      ]
+    },
+    {
+      "id": "provider-overflow-retry",
+      "upstream": [
+        "packages/ai/src/utils/overflow.ts#isContextOverflow,isRecoverableLength",
+        "packages/coding-agent/src/core/agent-session.ts#AgentSession._checkCompaction,_runAutoCompaction,_isRetryable"
+      ],
+      "pisharp": [
+        "src/PiSharp.Runtime/Sessions/ConversationRun.cs#overflow handling",
+        "src/PiSharp.Runtime/Sessions/ObservedChatClient.cs#provider failure and stream capture",
+        "src/PiSharp.Cli/Providers/OpenAI",
+        "src/PiSharp.Cli/Providers/Anthropic"
+      ],
+      "inputs": "Provider error/status/body, stop reason, partial content, reported input/cache/output usage, selected model window and retry attempt.",
+      "outputs": "Recognized overflow, no retry, or compact-and-retry once; provider-specific request and surfaced error/event.",
+      "state": "Before-content overflow may compact and retry once. Partial-output errors cannot safely replay; a second overflow terminates. Model identity scopes stale-error checks.",
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Providers/ProviderOverflowLoopbackTests.cs",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#ProviderOverflowRetriesOnceOnlyBeforeContentWithShortenedRequest",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#RepeatedProviderOverflowStopsAfterOneRecoveryAttempt"
+      ],
+      "baseline": "Implemented and loopback-tested for several provider error forms; broad b06 x three API corpus is absent.",
+      "differences": [],
+      "evidenceGaps": [
+        "Exact b06 overflow classifier patterns and live physical request/response behavior for Responses, Chat Completions and Anthropic."
+      ],
+      "cases": [
+        "C5.pre-content-context-error-recognized",
+        "C5.provider-silent-overflow-from-reported-usage",
+        "C5.length-stop-at-context-boundary-recognized",
+        "C5.partial-content-overflow-does-not-duplicate-request",
+        "C5.recoverable-length-stop-retries-once",
+        "C5.retry-request-uses-compacted-transcript",
+        "C5.second-overflow-stops-with-clear-error",
+        "C5.stale-old-model-overflow-does-not-compact-new-model",
+        "C5.overflow-for-responses-chat-and-anthropic",
+        "C5.unknown-model-window-does-not-fabricate-capacity",
+        "C5.post-compaction-provider-continuation-succeeds"
+      ],
+      "pinnedPiTests": [
+        "packages/ai/test/overflow.test.ts",
+        "packages/coding-agent/test/suite/agent-session-compaction.test.ts"
+      ]
+    },
+    {
+      "id": "tool-continuation-projection",
+      "upstream": [
+        "packages/coding-agent/src/core/agent-session.ts#tool execution,post-turn compaction",
+        "packages/coding-agent/src/core/compaction/compaction.ts#findCutPoint"
+      ],
+      "pisharp": [
+        "src/PiSharp.Runtime/Sessions/InFlightContextBudget.cs#ProjectAsync,CompletedToolBoundary,HasBalancedToolCalls",
+        "src/PiSharp.Runtime/Sessions/ProviderTurnHistoryReconciler.cs",
+        "src/PiSharp.Runtime/Sessions/ConversationRun.cs#continuation"
+      ],
+      "inputs": "Current MAF/provider history, active turn, sequential or parallel calls, tool results, large/nested outputs and steering.",
+      "outputs": "Transient provider projection for the next request, summary request(s), tool-call/result sequence or bounded failure.",
+      "state": "Transient outbound projection must not append canonical compaction entries or remove historical records. Each non-idempotent tool side effect is settled at most once.",
+      "existingTests": [
+        "tests/PiSharp.Tests/Runtime/Sessions/InFlightContextBudgetTests.cs",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#ToolContinuationCompactsOnlyItsRequestAndPreservesCanonicalToolHistory",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#ParallelToolCallBatchCutsOnlyAfterBothResultsAndRetainsRawHistory",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionNestedToolCallsTests.cs"
+      ],
+      "baseline": "PiSharp intentionally has a distinct in-flight transient projection owner; persistent compaction evidence does not prove this path.",
+      "differences": [
+        "PiSharp has an explicit in-flight request projection; the compared Pi path primarily persists compaction entries at the agent-session decision points. Whether each PiSharp safety bound preserves equivalent provider behavior must be classified per scenario."
+      ],
+      "evidenceGaps": [
+        "Paired b06 and PiSharp tool-loop process captures across parallel/nested/multiple cycles, long results, steering and incomplete calls."
+      ],
+      "cases": [
+        "C6.transient-projection-does-not-change-canonical-history",
+        "C6.single-large-current-tool-result-is-bounded",
+        "C6.sequential-tool-cycles-preserve-order",
+        "C6.parallel-calls-and-results-remain-matched",
+        "C6.large-tool-output-summary-retains-latest-outcome",
+        "C6.nested-tool-call-sequence-is-closed-before-cut",
+        "C6.incomplete-call-graph-fails-before-provider-send",
+        "C6.duplicate-or-unmatched-results-never-replay-tools",
+        "C6.steering-after-tool-result-keeps-active-turn",
+        "C6.post-compaction-request-contains-valid-provider-history"
+      ],
+      "pinnedPiTests": [
+        "packages/coding-agent/test/compaction-nested-calls.test.ts",
+        "packages/coding-agent/test/agent-session-auto-compaction-queue.test.ts"
+      ]
+    },
+    {
+      "id": "summary-generation",
+      "upstream": [
+        "packages/coding-agent/src/core/compaction/compaction.ts#SUMMARIZATION_PROMPT,UPDATE_SUMMARIZATION_PROMPT,generateSummaryWithUsage,completeSummarization,compact",
+        "packages/coding-agent/src/core/compaction/utils.ts#serializeConversation,SUMMARIZATION_SYSTEM_PROMPT"
+      ],
+      "pisharp": [
+        "src/PiSharp.Runtime/Agents/PiCompactionSummarizer.cs#SummarizeAsync",
+        "src/PiSharp.Runtime/Sessions/SummaryTranscriptExcerpt.cs",
+        "src/PiSharp.Runtime/Agents/PiAgent.cs#CompactionSummary"
+      ],
+      "inputs": "Summarized message groups, optional prior summary, optional user focus, split-turn role, model/auth/routing/thinking settings and cancellation.",
+      "outputs": "Summary text, usage from each summary request, file-operation details, explicit error/cancel state.",
+      "state": "Summary requests are separate from canonical conversation. Split turns can require history and turn-prefix calls; only successful complete output may be published.",
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcCompactionProcessTests.cs#RpcProcessUsesPiSplitTurnCompactionAndCustomInstructionsForHistoryOnly",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#SummaryRejectsOversizedFocusBeforeProviderAndEmptyProviderOutput",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#LongSummaryTranscriptRetainsLatestMessageWithinBound"
+      ],
+      "baseline": "Implemented through MAF ChatClientAgent (Microsoft.Agents.AI 1.21.0); exact prompt serialization, retry, thinking and boundary checks remain.",
+      "differences": [
+        "The compaction summary thinking-level delta is recorded as open in TODO.md but has not been rechecked against pinned b06."
+      ],
+      "evidenceGaps": [
+        "Exact pinned prompt/request bytes, reasoning options, model routing, transient stream retries, output-length failure and complete summary usage."
+      ],
+      "cases": [
+        "C7.initial-summary-instructions-match-pinned-prompt",
+        "C7.previous-summary-is-updated-with-prior-facts-preserved",
+        "C7.manual-focus-is-excluded-from-turn-prefix-summary",
+        "C7.split-turn-uses-history-and-turn-summary-requests",
+        "C7.tool-call-result-content-is-serialized-for-summary",
+        "C7.file-operation-details-follow-summarized-history",
+        "C7.length-stop-and-empty-summary-fail-safely",
+        "C7.transient-stream-failure-obeys-retry-policy",
+        "C7.summary-usage-is-reported-only-when-supplied",
+        "C7.summary-model-routing-and-thinking-options"
+      ],
+      "pinnedPiTests": [
+        "packages/coding-agent/test/compaction.test.ts",
+        "packages/coding-agent/test/branch-summarization.test.ts",
+        "packages/coding-agent/test/compaction-summary-reasoning.test.ts"
+      ]
+    },
+    {
+      "id": "session-persistence-branches",
+      "upstream": [
+        "packages/coding-agent/src/core/session-manager.ts#appendCompaction,buildSessionContext,branch,fork",
+        "packages/coding-agent/src/core/session-manager.ts#CompactionEntry"
+      ],
+      "pisharp": [
+        "src/PiSharp.Runtime/Sessions/ConversationSession.cs#AppendCompaction,ContextMessages,Snapshot",
+        "src/PiSharp.Runtime/Sessions/PiJsonlSessionInterchange.cs",
+        "src/PiSharp.Runtime/Sessions/ConversationStore.cs",
+        "src/PiSharp.Runtime/Sessions/ConversationContextProjection.cs"
+      ],
+      "inputs": "Canonical graph, compaction entry and boundary, JSONL/native serializer, selected branch, fork/clone and restart.",
+      "outputs": "Reconstructed active provider context, exported/reloaded records, branch-specific compaction metadata and subsequent request.",
+      "state": "Canonical ancestors remain stored; each branch context is reconstructed through its own path and most recent valid compaction boundary. Transient projection is not persisted as canonical history.",
+      "existingTests": [
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#ManualCompactionPreservesHistoryAndRestoresShortContextAfterRestartAndBranch",
+        "tests/PiSharp.Tests/Runtime/Sessions/PiJsonlSessionInterchangeTests.cs",
+        "tests/PiSharp.Tests/Runtime/Sessions/CrashRecoveryProcessTests.cs"
+      ],
+      "baseline": "Native/Pi JSONL and branch mechanisms are established; compaction-specific fork/clone/reopen provider requests need full source-pinned coverage.",
+      "differences": [],
+      "evidenceGaps": [
+        "Compacted fork/clone/reopen, labels/details/extensions, all provider request continuation paths after import."
+      ],
+      "cases": [
+        "C8.compaction-entry-persists-summary-boundary-usage",
+        "C8.canonical-ancestor-messages-remain-recoverable",
+        "C8.jsonl-export-import-round-trips-compaction",
+        "C8.reload-restores-compacted-context-not-projection",
+        "C8.branch-context-is-reconstructed-from-selected-path",
+        "C8.switching-before-and-after-compaction-restores-correct-path",
+        "C8.fork-and-clone-preserve-compacted-session",
+        "C8.restart-recovery-keeps-provider-continuation",
+        "C8.openai-responses-chat-anthropic-after-reload",
+        "C8.metadata-label-and-extension-fields-survive"
+      ],
+      "pinnedPiTests": [
+        "packages/coding-agent/test/compaction.test.ts",
+        "packages/coding-agent/test/agent-session-tree-navigation.test.ts",
+        "packages/coding-agent/test/session-manager/build-context.test.ts"
+      ]
+    },
+    {
+      "id": "branch-summary-navigation",
+      "upstream": [
+        "packages/coding-agent/src/core/compaction/branch-summarization.ts#collectEntriesForBranchSummary,prepareBranchEntries,generateBranchSummary",
+        "packages/coding-agent/src/core/agent-session.ts#navigateTree",
+        "packages/coding-agent/src/core/session-manager.ts#branchWithSummary",
+        "packages/coding-agent/src/modes/interactive/interactive-mode.ts#tree picker",
+        "packages/coding-agent/src/modes/rpc/rpc-mode.ts#navigateTree"
+      ],
+      "pisharp": [
+        "src/PiSharp.Runtime/Sessions/ConversationRun.cs#SelectAsync",
+        "src/PiSharp.Runtime/Sessions/ConversationContextProjection.cs#branch_summary import/projection",
+        "src/PiSharp.Cli/Tui/Dialogs/TerminalTreePicker.cs",
+        "src/PiSharp.Cli/Protocols/Rpc/RpcSessionCommandHandler.cs#get_tree"
+      ],
+      "inputs": "Current leaf, target entry, common ancestor, abandoned branch entries, summary request choice/settings, optional instructions/label and cancellation.",
+      "outputs": "Generated branch summary and usage/file details, summary entry at navigation target, selected leaf/editor text and restored provider context.",
+      "state": "Pi summarizes abandoned entries before changing the leaf and attaches summary at target position; failure/cancel preserves the old selected state.",
+      "existingTests": [
+        "tests/PiSharp.Tests/Core/ConversationTreeTests.cs",
+        "tests/PiSharp.Tests/Cli/Tui/Dialogs/TerminalTreePickerTests.cs",
+        "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionTreeEventTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionProcessTests.cs"
+      ],
+      "baseline": "Confirmed missing feature: PiSharp SelectAsync changes the selected branch and exposes tree hooks, but has no branch-summary generation/apply path; its projection only reads/imports branch_summary entries.",
+      "differences": [
+        "Generated branch summaries during tree navigation are missing in PiSharp. Existing JSONL/projector handling of imported branch_summary entries is not equivalent to generation or application."
+      ],
+      "evidenceGaps": [
+        "All branch-summary generation, summary decision UI, file/usage metadata, application, failure/cancel, and provider context behavior."
+      ],
+      "cases": [
+        "C9.branch-diff-uses-common-ancestor-and-old-path",
+        "C9.branch-entries-are-chronological-and-no-duplicate-tool-results",
+        "C9.token-budget-retains-recent-summary-context",
+        "C9.nested-branch-file-operation-details-accumulate",
+        "C9.custom-instructions-append-or-replace-default",
+        "C9.summary-output-has-preamble-and-file-details",
+        "C9.summary-applies-at-navigation-target-with-label",
+        "C9.cancel-or-failure-keeps-selected-head-and-history",
+        "C9.public-navigation-prompts-and-skips-as-pinned"
+      ],
+      "pinnedPiTests": [
+        "packages/coding-agent/test/branch-summarization.test.ts",
+        "packages/coding-agent/test/agent-session-tree-navigation.test.ts",
+        "packages/coding-agent/test/branch-summary-extensions.test.ts"
+      ]
+    },
+    {
+      "id": "usage-reasoning-costs",
+      "upstream": [
+        "packages/coding-agent/src/core/usage-totals.ts#addUsageToTotals,getUsageCostBreakdown",
+        "packages/coding-agent/src/core/compaction/compaction.ts#calculateContextTokens,compact",
+        "packages/coding-agent/src/core/agent-session.ts#getSessionStats"
+      ],
+      "pisharp": [
+        "src/PiSharp.Runtime/Sessions/UsageAccounting.cs#UsageRecord.Create,ModelPricing.ForInput",
+        "src/PiSharp.Runtime/Sessions/CompactionUsageAccounting.cs",
+        "src/PiSharp.Runtime/Sessions/ConversationSession.cs#ActiveUsage,LatestContextUsageTokens",
+        "src/PiSharp.Cli/Protocols/Rpc/RpcSessionStatsProjector.cs",
+        "src/PiSharp.Cli/Tui/Rendering/TerminalModelStatus.cs"
+      ],
+      "inputs": "Provider UsageDetails (possibly partially unknown), summary request model/route, cache and reasoning token fields, model pricing and active branch.",
+      "outputs": "Per-request usage, compaction aggregate, context usage, billed tokens, per-session/branch totals and cost projections.",
+      "state": "Only provider-supplied counts and known rates may be reported; active-branch totals exclude inactive paths; physical summary routing retains per-model attribution.",
+      "existingTests": [
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#CompactionUsageIsPersistedAndIncludedInSessionBilling",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#UsageAccountingAppliesRequestWideModelInputPricingTiers",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionStatsProjectorTests.cs"
+      ],
+      "baseline": "Usage, reasoning, cache, pricing and session projections exist; fallback and unknown-field semantics are not fully proven.",
+      "differences": [
+        "Source-level conditional difference: Pi calculateContextTokens falls back to input+output+cacheRead+cacheWrite; UsageRecord.Create falls back to input+output when TotalTokenCount is absent/zero. This is observable when cached counts are present and requires an explicit test.",
+        "UsageRecord.Create currently maps nullable input/output/cache/reasoning fields to zero. Determine whether this loses unknown provider data on the supported provider boundaries before deciding the correction."
+      ],
+      "evidenceGaps": [
+        "Provider-specific partial usage, missing totals with cache tokens, missing costs, priced/unpriced models and per-branch reports across all visible surfaces."
+      ],
+      "cases": [
+        "C10.summary-request-usage-persists-on-active-branch",
+        "C10.fallback-context-total-includes-cache-tokens",
+        "C10.input-output-cache-read-cache-write-remain-distinct",
+        "C10.reasoning-tokens-are-preserved",
+        "C10.missing-usage-fields-remain-unknown",
+        "C10.unknown-prices-do-not-create-cost",
+        "C10.known-pricing-and-input-tiers-are-calculated",
+        "C10.split-summary-physical-model-costs-aggregate-correctly",
+        "C10.inactive-branch-usage-is-excluded-from-active-total",
+        "C10.cli-tui-and-rpc-report-canonical-session-usage"
+      ],
+      "pinnedPiTests": [
+        "packages/coding-agent/test/agent-session-stats.test.ts",
+        "packages/coding-agent/test/compaction.test.ts"
+      ]
+    },
+    {
+      "id": "public-surfaces-provider-boundaries",
+      "upstream": [
+        "packages/coding-agent/src/modes/interactive/interactive-mode.ts#/compact,tree picker,status",
+        "packages/coding-agent/src/modes/rpc/rpc-mode.ts#compact,tree navigation",
+        "packages/coding-agent/src/modes/print-mode.ts#compact/session output",
+        "packages/ai/src/api/openai-responses.ts",
+        "packages/ai/src/api/openai-completions.ts",
+        "packages/ai/src/api/anthropic-messages.ts"
+      ],
+      "pisharp": [
+        "src/PiSharp.Cli/Tui/InteractiveMode.cs#/compact",
+        "src/PiSharp.Cli/Protocols/Rpc/RpcCompactionCommandHandler.cs",
+        "src/PiSharp.Cli/Protocols/Rpc/RpcCompactionResultProjector.cs",
+        "src/PiSharp.Cli/Protocols/Json",
+        "src/PiSharp.Cli/Providers/OpenAI",
+        "src/PiSharp.Cli/Providers/Anthropic"
+      ],
+      "inputs": "CLI/TUI/RPC/JSON command, current session state, compact result/lifecycle, provider protocol and restored history.",
+      "outputs": "Commands, messages, events, state queries, JSON output, status and physical provider requests.",
+      "state": "The canonical compaction entry is separate from projected provider request; visible output reflects persisted usage/boundary, not fabricated detail.",
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcCompactionProcessTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionStatsProjectorTests.cs",
+        "tests/PiSharp.Tests/Cli/Tui/TerminalPtyTests.cs"
+      ],
+      "baseline": "RPC and TUI manual compaction are implemented; JSON-mode, provider-wide compact continuation and actual PTY public comparisons remain incomplete.",
+      "differences": [],
+      "evidenceGaps": [
+        "OpenAI Responses, Chat Completions and Anthropic request mappings after manual/automatic/overflow compaction; JSON mode and real PTY only where behavior differs."
+      ],
+      "cases": [
+        "C11.cli-manual-compact-input-and-result",
+        "C11.tui-compact-command-and-progress-status",
+        "C11.rpc-compact-request-and-result-shape",
+        "C11.rpc-event-order-and-correlation",
+        "C11.rpc-state-context-usage-after-compaction",
+        "C11.json-mode-compaction-output-contract",
+        "C11.responses-wire-request-after-compaction",
+        "C11.chat-completions-wire-request-after-compaction",
+        "C11.anthropic-messages-wire-request-after-compaction",
+        "C11.provider-history-is-valid-and-summary-not-canonical-projection"
+      ],
+      "pinnedPiTests": [
+        "packages/coding-agent/test/interactive-mode-compaction.test.ts",
+        "packages/coding-agent/test/interactive-mode-tree-navigation.test.ts",
+        "packages/coding-agent/test/agent-session-tree-navigation.test.ts"
+      ]
+    },
+    {
+      "id": "native-extension-hooks",
+      "upstream": [
+        "packages/coding-agent/src/core/agent-session.ts#session_before_compact,session_after_compact,session_before_tree,session_tree",
+        "packages/coding-agent/src/core/extensions/types.ts#SessionBeforeCompact,SessionBeforeTree"
+      ],
+      "pisharp": [
+        "src/PiSharp.Runtime/Sessions/NativeExtensionCompactionEventPublisher.cs",
+        "src/PiSharp.Extensions.Abstractions/PiSharpExtensionSessionMutationEvents.cs#compaction/tree records",
+        "src/PiSharp.Runtime/Sessions/ConversationRun.cs#dispatch callbacks"
+      ],
+      "inputs": "Manual/threshold/overflow reason, actual plan and detached branch snapshot, extension cancellation/custom result, save/restore outcome.",
+      "outputs": "Before/after events, custom summary metadata/usage, cancellation/error and user-visible lifecycle.",
+      "state": "Custom compaction is validated against captured branch/tool boundaries; hooks observe immutable snapshots; after-commit event only follows persistence.",
+      "existingTests": [
+        "tests/PiSharp.Tests/Runtime/Extensions/PiSharpExtensionCompactionTests.cs",
+        "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionCompactionEventTests.cs",
+        "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionTreeEventTests.cs"
+      ],
+      "baseline": "Compaction hooks and custom summaries exist; branch-summary hook semantics cannot be exercised until core branch summary generation/application exists.",
+      "differences": [
+        "PiSharp tree hook explicitly documents that this milestone does not request branch summaries; Pi exposes user-selected and extension-provided branch summaries."
+      ],
+      "evidenceGaps": [
+        "Direct b06 event payload/lifecycle comparisons and tree-summary extension behavior."
+      ],
+      "cases": [
+        "C12.before-compact-hook-sees-detached-real-plan",
+        "C12.hook-cancel-prevents-summary-and-persistence",
+        "C12.custom-summary-is-validated-and-persisted",
+        "C12.invalid-boundary-and-unbalanced-tools-are-rejected",
+        "C12.extension-usage-and-details-persist-with-correct-projection",
+        "C12.after-hook-fires-only-after-durable-commit",
+        "C12.manual-auto-overflow-reasons-and-will-retry-match",
+        "C12.tree-summary-hooks-see-and-may-control-navigation"
+      ],
+      "pinnedPiTests": [
+        "packages/coding-agent/test/compaction-extensions.test.ts",
+        "packages/coding-agent/test/branch-summary-extensions.test.ts",
+        "packages/coding-agent/test/suite/regressions/3688-tree-cancel-compacting.test.ts"
+      ]
+    },
+    {
+      "id": "failure-cancellation-recovery",
+      "upstream": [
+        "packages/coding-agent/src/core/agent-session.ts#compact,_runAutoCompaction,abortCompaction,navigateTree",
+        "packages/coding-agent/src/core/compaction/compaction.ts#getSummarizationFailure,completeSummarization"
+      ],
+      "pisharp": [
+        "src/PiSharp.Runtime/Sessions/ConversationCompactionCoordinator.cs#rollback",
+        "src/PiSharp.Runtime/Sessions/ConversationRun.cs#gate,restore,save,cancel",
+        "src/PiSharp.Runtime/Sessions/DurableExecution.cs",
+        "src/PiSharp.Runtime/Sessions/ConversationStore.cs"
+      ],
+      "inputs": "Cancellation/failure at summary, stream, append, persistence, provider continuation, branch replacement and process termination; uncertain tool state.",
+      "outputs": "Error/cancel result, events, persisted tree and behavior of next request.",
+      "state": "No invalid or partially published compaction; no stale-session writes; no uncertain tool replay; subsequent use recovers valid persisted context.",
+      "existingTests": [
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#AutoBudgetFailureRollsBackWithoutSendingNewPrompt",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#FailedSummaryOrCheckpointCannotReplaceModelContext",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#ToolContinuationSummaryFailureForOversizedSingleTurnDoesNotReplayTool",
+        "tests/PiSharp.Tests/Runtime/Sessions/CrashRecoveryProcessTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcCompactionProcessTests.cs#RpcProcessAbortCancelsAnInFlightCompactionAndReportsItsLifecycle"
+      ],
+      "baseline": "Several rollback/cancel/replay regressions exist; required failure-boundary matrix and process-kill evidence are incomplete.",
+      "differences": [],
+      "evidenceGaps": [
+        "Injected failure after completed summary before append, during persistence and during branch/session replacement, followed by restart/continuation."
+      ],
+      "cases": [
+        "C13.failure-before-summary-does-not-mutate-history",
+        "C13.streaming-summary-failure-keeps-canonical-tree",
+        "C13.post-summary-prepublish-failure-keeps-one-state",
+        "C13.persistence-failure-rolls-back-or-recovers-consistently",
+        "C13.provider-continuation-failure-does-not-repeat-tool",
+        "C13.stale-session-cannot-write-after-replacement",
+        "C13.branch-replacement-failure-restores-prior-session",
+        "C13.cancel-before-request-cleans-lifecycle-state",
+        "C13.cancel-during-summary-cleans-lifecycle-state",
+        "C13.process-kill-during-publication-reloads-valid-state",
+        "C13.unknown-tool-outcome-is-not-replayed",
+        "C13.next-request-recovers-after-each-failure"
+      ],
+      "pinnedPiTests": [
+        "packages/coding-agent/test/suite/agent-session-compaction.test.ts",
+        "packages/coding-agent/test/agent-session-auto-compaction-queue.test.ts",
+        "packages/coding-agent/test/suite/regressions/9340-9777-auto-compaction-cancellation.test.ts"
+      ]
+    }
+  ],
+  "crossCuttingEvidenceGaps": [
+    "No complete same-scenario differential has yet run on the exact b06c1f2 pin for all behavior families.",
+    "Previous cut-point and RPC compaction evidence references other Pi commits and cannot establish pinned behavior.",
+    "No complete physical provider-wire corpus currently covers compaction continuation on OpenAI Responses, OpenAI Chat Completions and Anthropic Messages.",
+    "CLI/TUI/RPC, session restart, branch navigation and extension behavior need case-by-case scope evidence; success in one surface is not evidence for another."
+  ],
+  "prerequisiteEvidence": {
+    "pullRequest": 27,
+    "reviewedHead": "2f88019cd8840b2468b1957217ae361e0bab3ad6",
+    "actualMergeSha": "12064420179f4119bdaf37479c7cba0f5ca40717",
+    "mergedAt": "2026-10-28T02:41:42Z",
+    "exactHeadPushRun": 40617744882,
+    "exactHeadPullRequestRun": 40617750121,
+    "workflowStatus": "Both runs completed successfully on the reviewed head with all five required jobs green; PR base was main and PR state is merged.",
+    "publicationRecord": "Merged PR description and committed receipt report 27/27 checkpoints and 240/240 cases. The downloaded PR-run artifact contains 240 case records but intentionally defers draft-publication and exact-head-ci checkpoints to the separate publication verifier; the standalone final publication working artifact is not committed. This limitation is recorded rather than treating the PR-run artifact alone as proof of those deferred checkpoints."
+  },
+  "architectureConstraints": [
+    "PiSharp.Cli -> PiSharp.Runtime -> PiSharp.Core",
+    "MAF owns agent execution and tool invocation",
+    "Runtime owns planning/coordination/usage; Sessions own durable history and recovery; CLI owns provider mappings and projections",
+    "Persistent canonical compaction and transient outbound context projection are separate behaviors."
+  ]
+}
