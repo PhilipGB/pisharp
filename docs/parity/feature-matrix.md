@@ -1,3 +1,30 @@
+## Active milestone — Compaction, Context Budget, Overflow and Usage Parity — 2026-10-28
+
+PR #27 is merged at `12064420179f4119bdaf37479c7cba0f5ca40717`; the current
+branch is based on that merge. Pi is pinned to
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`, and the frozen acceptance contract
+contains 22 checkpoints / 211 cases. Implementation source
+`4e96fa6873192e51a130c0ba5a5e4fcccddaba71` adds branch-summary navigation,
+extension control, branch-summary JSONL usage/cost persistence, cached-token
+fallback, provider overflow matching, and post-turn threshold and silent
+overflow compaction.
+
+Local validation passes .NET 3,932/3,932 with zero skips, format, a
+warnings-as-errors build, Python parity (terminal 66/66, built-in 27/27,
+compaction verifier controls 19/19), terminal Node 24/24, docs paths 156/687,
+pinned Pi coding-agent tests 128 passed / 12 upstream skips, and Pi AI overflow
+tests 20/20. MCP conformance
+shows no regressions against its classified baseline; three known scenarios
+remain classified.
+
+This is not accepted as full parity. The frozen runner still lacks per-case
+adapters and emits 0/211 case artifacts. Length-stop recovery, complete
+provider-wire coverage, transient-estimator classification, and P0 publication
+evidence remain open. See the
+[inventory](fixtures/compaction-context-management-inventory.json),
+[receipt](fixtures/compaction-context-management-parity-2026-10-28.md), and
+[execution ledger](execution-ledger.json).
+
 ## Active milestone — Complete Managed Package Lifecycle and Resource Distribution Parity — 2026-10-27
 
 PR #26 was verified merged at `d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9`;

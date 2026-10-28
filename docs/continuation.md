@@ -1,5 +1,32 @@
 # Continuation — PiSharp capability parity
 
+## Active milestone — Compaction, Context Budget, Overflow and Usage Parity — 2026-10-28
+
+PR #27 is merged at `12064420179f4119bdaf37479c7cba0f5ca40717`; this branch
+starts at that merge and Pi is pinned to `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
+Implementation source `4e96fa6873192e51a130c0ba5a5e4fcccddaba71` adds branch
+summary navigation and hooks, JSONL branch-summary usage/cost interchange,
+cached-token fallback, provider overflow matching, and completed-turn
+threshold/silent-overflow compaction. The frozen contract is still 22
+checkpoints / 211 cases.
+
+The .NET solution suite passes 3,932/3,932 with zero skips; format and
+warnings-as-errors build pass. Terminal Python passes 66/66, built-in parity
+Python 27/27, verifier controls 19/19, terminal Node 24/24, and docs paths
+156/687. Pinned Pi coding-agent suites pass 128 tests with 12 upstream skips;
+Pi AI overflow tests pass 20/20. MCP
+conformance has no new regressions against its classified baseline; three known
+scenarios remain classified.
+
+Acceptance is not complete: the compaction runner has no per-case adapters and
+currently emits 0/211 case artifacts. Recoverable output-length continuation,
+complete provider-wire coverage, and a classified transient-estimator difference
+remain open. The PR #27 run artifact has 240 case records but blocks the
+publication and exact-head-CI checkpoints; the prerequisite is therefore not
+counted as passed. See the [inventory](parity/fixtures/compaction-context-management-inventory.json),
+[receipt](parity/fixtures/compaction-context-management-parity-2026-10-28.md), and
+[execution ledger](parity/execution-ledger.json).
+
 ## Active milestone — Complete Managed Package Lifecycle and Resource Distribution Parity — 2026-10-27
 
 PR #26 was verified merged at `d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9`;

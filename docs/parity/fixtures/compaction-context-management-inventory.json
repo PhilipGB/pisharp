@@ -1,11 +1,12 @@
 {
   "schemaVersion": 1,
   "milestone": "compaction-context-management-parity",
-  "phase": "source-pinned-baseline-before-production-changes",
+  "phase": "implementation-source-committed; frozen case-level differential remains in progress",
   "sourcePins": {
     "piCommit": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
     "pisharpBaselineCommit": "12064420179f4119bdaf37479c7cba0f5ca40717",
-    "pisharpWorkingBranch": "milestone/compaction-context-management-parity"
+    "pisharpWorkingBranch": "milestone/compaction-context-management-parity",
+    "implementationSourceSha": "4e96fa6873192e51a130c0ba5a5e4fcccddaba71"
   },
   "framework": {
     "package": "Microsoft.Agents.AI",
@@ -13,7 +14,7 @@
     "skillSnapshotVersion": "1.24.0",
     "decision": "Do not change framework/dependency versions without an evidenced requirement. Agent execution and tool invocation remain owned by MAF."
   },
-  "inventoryMethod": "Pi source ownership is taken from the exact b06c1f2 checkout. PiSharp ownership is the current branch baseline. Existing evidence is mapped but treated as unverified until the frozen case runner executes against the pin.",
+  "inventoryMethod": "Pi source ownership is pinned to b06c1f2. PiSharp implementation source is 4e96fa6873192e51a130c0ba5a5e4fcccddaba71. Local tests and source review are implementation evidence only; they do not substitute for frozen per-case Pi/PiSharp observations.",
   "confirmedBaselineDifferences": [
     {
       "id": "branch-summary-navigation-missing",
@@ -34,8 +35,8 @@
         "usage-reasoning-costs",
         "context-budgets-estimation"
       ],
-      "status": "confirmed_conditional_source_difference",
-      "evidence": "Pi calculateContextTokens uses totalTokens or input+output+cacheRead+cacheWrite. PiSharp UsageRecord.Create falls back to input+output when TotalTokenCount is missing/zero. Difference only manifests when cache counts are nonzero and no positive total is supplied.",
+      "status": "implemented_locally_case_differential_open",
+      "evidence": "UsageRecord.Create now falls back to input+output+cachedRead+cachedWrite when total is absent or zero. UsageRecordCreateFallsBackToAllProviderContextTokenCategories and session interchange tests cover the calculation; the frozen paired case has not yet been generated.",
       "requiredCases": [
         "C4.cache-read-and-write-token-fallback",
         "C10.fallback-context-total-includes-cache-tokens"
@@ -118,10 +119,11 @@
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#AutomaticCompactionUsesTheSplitTurnCoordinatorBeforeAcceptingTheNextPrompt",
         "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcActiveModelSelectionProcessTests.cs#RpcModelSelectionAndCycleDuringBlockedToolTurnChangeTheNextProviderRequest"
       ],
-      "baseline": "Implemented; model routing, queued-message interleavings and b06 pre/post-turn decisions require fresh differentials.",
+      "baseline": "Threshold compaction runs after completed turns without replay. Known-window provider usage above the full window is classified as overflow and compacts without replay. The frozen model-routing, queued-message, stale-usage and length-stop matrix remains unverified.",
       "differences": [],
       "evidenceGaps": [
-        "Full source-pinned decision matrix including repeated overflow, selected physical model changes, and queued follow-ups."
+        "Frozen b06 decision matrix for physical model changes, queued follow-ups, repeated overflow, and pre/post-turn ordering.",
+        "Recoverable length-stop compaction and one bounded continuation are not implemented."
       ],
       "cases": [
         "C2.threshold-after-turn-compacts-without-retry",
@@ -139,6 +141,11 @@
         "packages/coding-agent/test/suite/agent-session-compaction.test.ts",
         "packages/coding-agent/test/agent-session-auto-compaction-queue.test.ts",
         "packages/coding-agent/test/settings-manager-compaction.test.ts"
+      ],
+      "implementationTests": [
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#ProviderUsageAboveThresholdCompactsAfterCompletedTurnWithoutRetry",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#ProviderUsageAboveContextWindowCompactsAsOverflowWithoutRetry",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#CachedInputCountAlreadyIncludedInInputDoesNotFalseClassifySilentOverflow"
       ]
     },
     {
@@ -254,10 +261,11 @@
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#ProviderOverflowRetriesOnceOnlyBeforeContentWithShortenedRequest",
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#RepeatedProviderOverflowStopsAfterOneRecoveryAttempt"
       ],
-      "baseline": "Implemented and loopback-tested for several provider error forms; broad b06 x three API corpus is absent.",
+      "baseline": "Provider overflow matching now covers pinned generic/provider message patterns, pre-content retry and post-turn silent-overflow classification. There is no complete b06 three-API differential; recoverable length-stop continuation and the Cerebras bodyless provider-specific case remain open.",
       "differences": [],
       "evidenceGaps": [
-        "Exact b06 overflow classifier patterns and live physical request/response behavior for Responses, Chat Completions and Anthropic."
+        "Exact b06 classifier plus same-scenario Responses, Chat Completions and Anthropic request/response captures.",
+        "Recoverable length-stop and provider-specific bodyless Cerebras recovery remain incomplete."
       ],
       "cases": [
         "C5.pre-content-context-error-recognized",
@@ -275,6 +283,10 @@
       "pinnedPiTests": [
         "packages/ai/test/overflow.test.ts",
         "packages/coding-agent/test/suite/agent-session-compaction.test.ts"
+      ],
+      "implementationTests": [
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#ProviderUsageAboveContextWindowCompactsAsOverflowWithoutRetry",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#CachedInputCountAlreadyIncludedInInputDoesNotFalseClassifySilentOverflow"
       ]
     },
     {
@@ -432,12 +444,10 @@
         "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionTreeEventTests.cs",
         "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionProcessTests.cs"
       ],
-      "baseline": "Confirmed missing feature: PiSharp SelectAsync changes the selected branch and exposes tree hooks, but has no branch-summary generation/apply path; its projection only reads/imports branch_summary entries.",
-      "differences": [
-        "Generated branch summaries during tree navigation are missing in PiSharp. Existing JSONL/projector handling of imported branch_summary entries is not equivalent to generation or application."
-      ],
+      "baseline": "Implemented at the public navigation path with MAF generation, editor prefill, settings, extension control, file details, usage persistence and rollback tests. Full pinned b06 case-by-case navigation evidence remains open.",
+      "differences": [],
       "evidenceGaps": [
-        "All branch-summary generation, summary decision UI, file/usage metadata, application, failure/cancel, and provider context behavior."
+        "Frozen paired observations for common-ancestor diff, nested navigation, cancellation/failure, skip-prompt settings and provider-context restoration."
       ],
       "cases": [
         "C9.branch-diff-uses-common-ancestor-and-old-path",
@@ -454,6 +464,13 @@
         "packages/coding-agent/test/branch-summarization.test.ts",
         "packages/coding-agent/test/agent-session-tree-navigation.test.ts",
         "packages/coding-agent/test/branch-summary-extensions.test.ts"
+      ],
+      "implementationTests": [
+        "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionTreeEventTests.cs#RequestedBranchSummaryFromExtensionIsAppliedPersistedAndExported",
+        "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionTreeEventTests.cs#RequestedBranchSummaryUsesMafAndPersistsItsUsage",
+        "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionTreeEventTests.cs#BranchSummaryFailureLeavesCanonicalSelectionAndPersistenceUnchanged",
+        "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionTreeEventTests.cs#BranchSummaryFileDetailsStopAtTheSelectedTokenBudget",
+        "tests/PiSharp.Tests/Cli/Sessions/InteractiveSessionBranchSummaryTests.cs#BranchCommandCanRequestAnExtensionSummary"
       ]
     },
     {
@@ -478,10 +495,9 @@
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#UsageAccountingAppliesRequestWideModelInputPricingTiers",
         "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionStatsProjectorTests.cs"
       ],
-      "baseline": "Usage, reasoning, cache, pricing and session projections exist; fallback and unknown-field semantics are not fully proven.",
+      "baseline": "Cached-token fallback is corrected and tested. Usage/reasoning/cache/pricing projections otherwise exist; unknown nullable usage fields and all visible-surface/source-pinned semantics remain unverified.",
       "differences": [
-        "Source-level conditional difference: Pi calculateContextTokens falls back to input+output+cacheRead+cacheWrite; UsageRecord.Create falls back to input+output when TotalTokenCount is absent/zero. This is observable when cached counts are present and requires an explicit test.",
-        "UsageRecord.Create currently maps nullable input/output/cache/reasoning fields to zero. Determine whether this loses unknown provider data on the supported provider boundaries before deciding the correction."
+        "UsageRecord.Create still maps missing input/output/cache/reasoning fields to zero; determine provider-boundary unknown semantics before changing this behavior."
       ],
       "evidenceGaps": [
         "Provider-specific partial usage, missing totals with cache tokens, missing costs, priced/unpriced models and per-branch reports across all visible surfaces."
@@ -501,6 +517,9 @@
       "pinnedPiTests": [
         "packages/coding-agent/test/agent-session-stats.test.ts",
         "packages/coding-agent/test/compaction.test.ts"
+      ],
+      "implementationTests": [
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#UsageRecordCreateFallsBackToAllProviderContextTokenCategories"
       ]
     },
     {
@@ -571,12 +590,10 @@
         "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionCompactionEventTests.cs",
         "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionTreeEventTests.cs"
       ],
-      "baseline": "Compaction hooks and custom summaries exist; branch-summary hook semantics cannot be exercised until core branch summary generation/application exists.",
-      "differences": [
-        "PiSharp tree hook explicitly documents that this milestone does not request branch summaries; Pi exposes user-selected and extension-provided branch summaries."
-      ],
+      "baseline": "Compaction and branch-summary extension paths now have implementation tests, including extension-provided summary/usage/details, tree veto, failure rollback and durable application. Pinned payload and lifecycle differentials remain open.",
+      "differences": [],
       "evidenceGaps": [
-        "Direct b06 event payload/lifecycle comparisons and tree-summary extension behavior."
+        "Direct b06 lifecycle payload/order comparisons for before/after compaction and tree-summary hooks."
       ],
       "cases": [
         "C12.before-compact-hook-sees-detached-real-plan",
@@ -592,6 +609,11 @@
         "packages/coding-agent/test/compaction-extensions.test.ts",
         "packages/coding-agent/test/branch-summary-extensions.test.ts",
         "packages/coding-agent/test/suite/regressions/3688-tree-cancel-compacting.test.ts"
+      ],
+      "implementationTests": [
+        "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionTreeEventTests.cs#RequestedBranchSummaryFromExtensionIsAppliedPersistedAndExported",
+        "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionTreeEventTests.cs#RequestedBranchSummaryUsesMafAndPersistsItsUsage",
+        "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionTreeEventTests.cs#BranchSummaryFailureLeavesCanonicalSelectionAndPersistenceUnchanged"
       ]
     },
     {
@@ -643,6 +665,7 @@
     }
   ],
   "crossCuttingEvidenceGaps": [
+    "No per-case PiSharp/Pi observations exist for the frozen 211-case contract; the runner is incomplete and must not be treated as a passing gate.",
     "No complete same-scenario differential has yet run on the exact b06c1f2 pin for all behavior families.",
     "Previous cut-point and RPC compaction evidence references other Pi commits and cannot establish pinned behavior.",
     "No complete physical provider-wire corpus currently covers compaction continuation on OpenAI Responses, OpenAI Chat Completions and Anthropic Messages.",
@@ -656,12 +679,40 @@
     "exactHeadPushRun": 40617744882,
     "exactHeadPullRequestRun": 40617750121,
     "workflowStatus": "Both runs completed successfully on the reviewed head with all five required jobs green; PR base was main and PR state is merged.",
-    "publicationRecord": "Merged PR description and committed receipt report 27/27 checkpoints and 240/240 cases. The downloaded PR-run artifact contains 240 case records but intentionally defers draft-publication and exact-head-ci checkpoints to the separate publication verifier; the standalone final publication working artifact is not committed. This limitation is recorded rather than treating the PR-run artifact alone as proof of those deferred checkpoints."
+    "publicationRecord": "PR #27 is merged at 12064420179f4119bdaf37479c7cba0f5ca40717. Its PR description and receipt report 27/27 checkpoints and 240/240 cases; exact-head push run 40617744882 and PR run 40617750121 succeeded on reviewed head 2f88019cd8840b2468b1957217ae361e0bab3ad6. The downloaded PR-run artifact 12786969371 contains 240 case records but marks draft-publication and exact-head-ci checkpoints blocked. No committed standalone final publication artifact was found, so contract checkpoint P0 remains unresolved."
   },
   "architectureConstraints": [
     "PiSharp.Cli -> PiSharp.Runtime -> PiSharp.Core",
     "MAF owns agent execution and tool invocation",
     "Runtime owns planning/coordination/usage; Sessions own durable history and recovery; CLI owns provider mappings and projections",
     "Persistent canonical compaction and transient outbound context projection are separate behaviors."
-  ]
+  ],
+  "implementationChanges": [
+    "Branch summary navigation with extension control, summary settings, file-operation details, usage/cost persistence and editor-return behavior.",
+    "Missing-total usage fallback includes cached-read and cached-write counts.",
+    "Successful post-turn provider usage above a known context window emits overflow compaction without replay; cached input is not double-counted.",
+    "Expanded provider error overflow patterns and representative exclusions with regressions."
+  ],
+  "formalAcceptance": {
+    "contractPath": "tools/parity/compaction_context/contract.json",
+    "contractSha256": "c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6",
+    "requiredCheckpoints": 22,
+    "requiredCases": 211,
+    "perCaseArtifactsProduced": 0,
+    "status": "incomplete",
+    "reason": "The runner currently records command-level tests only and intentionally reports incomplete; no checkpoint or overall parity pass is claimed."
+  },
+  "validationSoFar": {
+    "pisharpFullSolution": "3,932 passed, 0 failed, 0 skipped; DOTNET_PROCESSOR_COUNT=4, --no-build --no-restore -m:2.",
+    "focusedSilentOverflow": "3 passed, 0 failed, 0 skipped, including threshold, overflow reason, and cached-input boundary cases.",
+    "dotnetFormat": "passed with --verify-no-changes --no-restore.",
+    "warningsAsErrorsBuild": "passed with zero warnings and zero errors.",
+    "terminalPython": "66 passed.",
+    "builtinParityPython": "27 passed.",
+    "compactionVerifierTests": "19 passed, including positive and negative evidence controls.",
+    "terminalNode": "24 passed.",
+    "documentationPaths": "156 documents and 687 references verified.",
+    "pinnedPiSuites": "Coding-agent compaction, navigation, branch summary and stats: 128 passed / 12 upstream skips; Pi AI overflow: 20 passed.",
+    "mcpConformance": "No regressions against the classified baseline; three known scenarios remain classified."
+  }
 }

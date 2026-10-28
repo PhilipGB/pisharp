@@ -13635,5 +13635,46 @@
     "remaining_checkpoints": [],
     "publication_requirement": "Keep PR #27 open, draft and unmerged; exact-head push and PR workflows and publication evidence pass.",
     "quality_execution": "Local exact-source corpus, quality, committed-evidence, exact-head CI, CI integration, draft publication, and publication verification pass."
+  },
+  "compaction_context_management_parity_milestone": {
+    "status": "in_progress",
+    "phase": "implementation_source_committed_case_differential_open",
+    "branch": "milestone/compaction-context-management-parity",
+    "branch_base_sha": "12064420179f4119bdaf37479c7cba0f5ca40717",
+    "pi_reference": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "contract": "tools/parity/compaction_context/contract.json",
+    "contract_sha256": "c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6",
+    "required_checkpoints": 22,
+    "required_cases": 211,
+    "implementation_source_sha": "4e96fa6873192e51a130c0ba5a5e4fcccddaba71",
+    "case_evidence_produced": 0,
+    "status_reason": "The frozen runner still records command-level tests only. No checkpoint or parity completion is claimed.",
+    "implemented": [
+      "Pi-style branch summary navigation, extension decisions, details and usage/cost persistence",
+      "Cached-read and cached-write context-token fallback when provider total is missing or zero",
+      "Post-turn threshold and successful silent-overflow compaction without replay",
+      "Expanded provider overflow message patterns and representative exclusion regressions"
+    ],
+    "local_validation": {
+      "dotnet_full": "3,932 passed, 0 failed, 0 skipped",
+      "dotnet_format": "passed",
+      "dotnet_build_warnaserror": "passed with zero warnings/errors",
+      "terminal_python": "66 passed",
+      "builtin_parity_python": "27 passed",
+      "compaction_verifier_tests": "19 passed",
+      "terminal_node": "24 passed",
+      "pinned_pi_selected_suites": "Coding-agent: 128 passed, 12 upstream skips; Pi AI overflow: 20 passed",
+      "mcp_conformance": "No new regressions against the classified baseline; three known scenarios remain classified",
+      "documentation_paths": "156 documents, 687 references"
+    },
+    "open_requirements": [
+      "Implement per-case evidence adapters and execute all 211 frozen cases against pinned Pi and PiSharp",
+      "Recoverable output-length compaction continuation and complete provider-wire corpus remain open",
+      "Classify the transient-estimator formula difference with source-pinned observations",
+      "P0 publication evidence from PR #27 remains unresolved: downloaded run artifact has 240 cases but blocks publication and exact-head-CI checkpoints"
+    ],
+    "draft_pr": null,
+    "receipt": "docs/parity/fixtures/compaction-context-management-parity-2026-10-28.md",
+    "inventory": "docs/parity/fixtures/compaction-context-management-inventory.json"
   }
 }
