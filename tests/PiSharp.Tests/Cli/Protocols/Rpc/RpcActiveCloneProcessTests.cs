@@ -177,10 +177,12 @@ public sealed class RpcActiveCloneProcessTests
             var systemMessage = projectedMessages[0];
             Assert.Equal("system", systemMessage.GetProperty("role").GetString());
             Assert.Equal("", systemMessage.GetProperty("content").GetString());
-            Assert.Equal(["preamble"], systemMessage.GetProperty("sections").EnumerateObject()
+            Assert.Equal(["preamble", "tools", "rules", "docs", "skills", "cwd"], systemMessage.GetProperty("sections").EnumerateObject()
                 .Select(section => section.Name));
             Assert.Contains("You are an expert coding assistant operating inside pi",
                 systemMessage.GetProperty("sections").GetProperty("preamble").GetString());
+            Assert.Equal($"<cwd>\n{root.Replace('\\', '/')}\n</cwd>",
+                systemMessage.GetProperty("sections").GetProperty("cwd").GetString());
             Assert.True(systemMessage.GetProperty("timestamp").GetInt64() > 0);
             var tools = systemMessage.GetProperty("toolsAdded");
             Assert.Equal(["read", "bash", "edit", "write"], tools.EnumerateArray()

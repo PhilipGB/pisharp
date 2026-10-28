@@ -21,6 +21,8 @@ ROOT = Path(__file__).resolve().parents[3]
 PI_SOURCE_RESOLVER = "packages/coding-agent/src/experimental/source-resolver.ts"
 PI_CLI = "packages/coding-agent/src/cli.ts"
 PISHARP_DLL = ROOT / "src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll"
+TEST_EXTENSION_PROJECT = ROOT / "tests/PiSharp.Tests/PiSharp.Tests.csproj"
+TEST_EXTENSION_DLL = ROOT / "tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll"
 VOLATILE_FIELDS = {"sessionFile", "sessionId", "timestamp"}
 
 
@@ -33,6 +35,17 @@ _ABSENT = _AbsentValue()
 
 
 @dataclass(frozen=True)
+class FixtureProviderStep:
+    delay_seconds: float = 0.0
+    text: str = "fixture answer"
+    status_code: int = 200
+    error_message: str | None = None
+    tool_name: str | None = None
+    tool_arguments: str | None = None
+    hold_after_partial: bool = False
+
+
+@dataclass(frozen=True)
 class InputRun:
     chunks: tuple[tuple[bytes, float], ...]
     expected_response_ids: tuple[Any, ...] | None = None
@@ -40,13 +53,27 @@ class InputRun:
     expected_successes: tuple[bool, ...] | None = None
     expected_data_presence: tuple[bool, ...] | None = None
     expected_error_presence: tuple[bool, ...] | None = None
+    expected_response_dispositions: tuple[str | None, ...] | None = None
     preserve_response_error_text: bool = False
     response_only: bool = False
     provider_response_delays: tuple[float, ...] = ()
+    provider_steps: tuple[FixtureProviderStep, ...] = ()
     provider_waits: tuple[tuple[int, int, float], ...] = ()
     stdout_waits: tuple[tuple[int, str, int, float], ...] = ()
+    release_tool_gate_after_input_index: int | None = None
     expected_min_provider_requests: int = 0
     lifecycle_event_types: tuple[str, ...] = ()
+    preserve_event_payloads: bool = False
+    preserve_system_message_payloads: bool = False
+    forbidden_lifecycle_event_types: tuple[str, ...] = ()
+    minimum_lifecycle_event_counts: tuple[tuple[str, int], ...] = ()
+    assistant_terminal_stop_reason: str | None = None
+    require_assistant_error_message: bool = False
+    preserve_assistant_terminal_shape: bool = False
+    use_handled_extension_command: bool = False
+    enable_bash_tool: bool = False
+    compare_provider_requests: bool = False
+    model_context_window: int = 4096
     preserve_state_flags: bool = False
     state_flag_expectations: tuple[tuple[str, str, bool], ...] = ()
     expected_marker_order: tuple[str, ...] = ()
@@ -293,11 +320,227 @@ R2_SCENARIOS["R2.active-compaction-command"] = (
 )
 
 
+R3_SCENARIOS: dict[str, tuple[InputRun, ...]] = {}
+R3_SCENARIOS["R3.idle-prompt-started"] = (
+    InputRun(
+        chunks=((_line("idle-prompt", "prompt", message="report the fixture response"), 0.0),),
+        expected_response_ids=("idle-prompt",), expected_response_commands=("prompt",),
+        expected_successes=(True,), expected_data_presence=(True,), expected_error_presence=(False,),
+        expected_response_dispositions=("started",), provider_steps=(FixtureProviderStep(delay_seconds=0.2),),
+        provider_waits=((0, 1, 10.0),),
+        stdout_waits=((0, '"id":"idle-prompt"', 1, 10.0), (0, '"type":"agent_settled"', 1, 15.0)),
+        expected_min_provider_requests=1, compare_provider_requests=True,
+        minimum_lifecycle_event_counts=(
+            ("agent_start", 1), ("turn_start", 1), ("message_start", 2),
+            ("message_update", 1), ("message_end", 2), ("turn_end", 1), ("agent_end", 1), ("agent_settled", 1),
+        ),
+        lifecycle_event_types=("agent_start", "turn_start", "message_start", "message_update", "message_end",
+                               "turn_end", "agent_end", "agent_settled"),
+        preserve_system_message_payloads=True,
+        expected_marker_order=("response:idle-prompt", "event:agent_start", "event:agent_settled"),
+    ),
+)
+R3_SCENARIOS["R3.prompt-handled-without-run"] = (
+    InputRun(
+        chunks=((_line("handled-prompt", "prompt", message="/fixture argument"), 0.0),),
+        expected_response_ids=("handled-prompt",), expected_response_commands=("prompt",),
+        expected_successes=(True,), expected_data_presence=(True,), expected_error_presence=(False,),
+        expected_response_dispositions=("handled",), use_handled_extension_command=True,
+        lifecycle_event_types=("agent_start", "agent_settled"), preserve_event_payloads=True,
+        forbidden_lifecycle_event_types=("agent_start", "agent_settled"),
+        stdout_waits=((0, '"id":"handled-prompt"', 1, 10.0),),
+        expected_marker_order=("response:handled-prompt",),
+    ),
+)
+R3_SCENARIOS["R3.busy-prompt-default-behavior"] = (
+    InputRun(
+        chunks=(
+            (_line("busy-start", "prompt", message="start a delayed run"), 0.0),
+            (_line("busy-default", "prompt", message="submit without queue behavior"), 0.0),
+        ),
+        expected_response_ids=("busy-start", "busy-default"),
+        expected_response_commands=("prompt", "prompt"), expected_successes=(True, False),
+        expected_data_presence=(True, False), expected_error_presence=(False, True),
+        expected_response_dispositions=("started", None), preserve_response_error_text=True,
+        provider_steps=(FixtureProviderStep(delay_seconds=1.0),), provider_waits=((0, 1, 10.0),),
+        lifecycle_event_types=("agent_settled",),
+        stdout_waits=(
+            (0, '"id":"busy-start"', 1, 10.0),
+            (1, '"id":"busy-default"', 1, 10.0),
+            (1, '"type":"agent_settled"', 1, 15.0),
+        ),
+        expected_min_provider_requests=1, compare_provider_requests=True,
+        expected_marker_order=("response:busy-start", "response:busy-default", "event:agent_settled"),
+    ),
+)
+
+for behavior, case_id in (("steer", "R3.busy-prompt-explicit-steer"),
+                          ("followUp", "R3.busy-prompt-explicit-followup")):
+    prefix = "steer" if behavior == "steer" else "followup"
+    R3_SCENARIOS[case_id] = (
+        InputRun(
+            chunks=(
+                (_line(f"{prefix}-start", "prompt", message="start a delayed run"), 0.0),
+                (_line(f"{prefix}-prompt", "prompt", message=f"queue a {behavior} message",
+                       streamingBehavior=behavior), 0.0),
+                (b"", 0.0),
+            ),
+            expected_response_ids=(f"{prefix}-start", f"{prefix}-prompt"),
+            expected_response_commands=("prompt", "prompt"), expected_successes=(True, True),
+            expected_data_presence=(True, True), expected_error_presence=(False, False),
+            expected_response_dispositions=("started", "queued"),
+            provider_response_delays=(0.5, 0.0), provider_waits=((0, 1, 10.0), (2, 2, 15.0)),
+            lifecycle_event_types=("queue_update", "agent_settled"),
+            stdout_waits=(
+                (0, f'"id":"{prefix}-start"', 1, 10.0),
+                (1, f'"id":"{prefix}-prompt"', 1, 10.0),
+                (1, '"type":"queue_update"', 1, 10.0),
+                (2, '"type":"agent_settled"', 1, 20.0),
+            ),
+            expected_min_provider_requests=2, compare_provider_requests=True,
+            minimum_lifecycle_event_counts=(("queue_update", 1), ("agent_settled", 1)),
+            expected_marker_order=(f"response:{prefix}-start", "event:queue_update", f"response:{prefix}-prompt",
+                                   "event:queue_update", "event:agent_settled"),
+        ),
+    )
+
+R3_SCENARIOS["R3.prompt-during-tool-execution"] = (
+    InputRun(
+        chunks=(
+            (_line("tool-start", "prompt", message="call the fixture bash tool"), 0.0),
+            (_line("tool-followup", "prompt", message="queue a message during the tool",
+                   streamingBehavior="followUp"), 0.0),
+            (b"", 0.0),
+        ),
+        expected_response_ids=("tool-start", "tool-followup"),
+        expected_response_commands=("prompt", "prompt"), expected_successes=(True, True),
+        expected_data_presence=(True, True), expected_error_presence=(False, False),
+        expected_response_dispositions=("started", "queued"), enable_bash_tool=True,
+        provider_steps=(
+            FixtureProviderStep(tool_name="bash", tool_arguments=json.dumps({
+                "command": 'gate=__RPC_TOOL_GATE__; echo started > "$gate.started"; '
+                           'while [ ! -f "$gate.release" ]; do sleep 0.01; done; '
+                           'echo barrier-released',
+            })),
+            FixtureProviderStep(text="the tool and follow-up completed"),
+        ),
+        provider_waits=((0, 1, 10.0), (2, 2, 20.0)),
+        stdout_waits=(
+            (0, '"id":"tool-start"', 1, 10.0),
+            (0, '"type":"tool_execution_start"', 1, 15.0),
+            (1, '"id":"tool-followup"', 1, 10.0),
+            (1, '"type":"queue_update"', 1, 10.0),
+            (2, '"type":"agent_settled"', 1, 25.0),
+        ),
+        release_tool_gate_after_input_index=1, expected_min_provider_requests=3, compare_provider_requests=True,
+        lifecycle_event_types=("tool_execution_start", "tool_execution_end", "queue_update", "agent_settled"),
+        minimum_lifecycle_event_counts=(
+            ("tool_execution_start", 1), ("tool_execution_end", 1), ("queue_update", 1), ("agent_settled", 1),
+        ),
+        expected_marker_order=("response:tool-start", "event:tool_execution_start", "event:queue_update",
+                               "response:tool-followup", "event:tool_execution_end", "event:queue_update",
+                               "event:agent_settled"),
+    ),
+)
+
+R3_SCENARIOS["R3.subscribe-before-fast-completion"] = (
+    InputRun(
+        chunks=((_line("fast-prompt", "prompt", message="complete immediately"), 0.0),),
+        expected_response_ids=("fast-prompt",), expected_response_commands=("prompt",),
+        expected_successes=(True,), expected_data_presence=(True,), expected_error_presence=(False,),
+        expected_response_dispositions=("started",), provider_steps=(FixtureProviderStep(),),
+        provider_waits=((0, 1, 10.0),),
+        stdout_waits=((0, '"id":"fast-prompt"', 1, 10.0), (0, '"type":"agent_settled"', 1, 15.0)),
+        expected_min_provider_requests=1, compare_provider_requests=True,
+        lifecycle_event_types=("agent_start", "turn_start", "message_start", "message_update", "message_end",
+                               "turn_end", "agent_end", "agent_settled"),
+        minimum_lifecycle_event_counts=(
+            ("agent_start", 1), ("turn_start", 1), ("message_start", 2), ("message_update", 1),
+            ("message_end", 2), ("turn_end", 1), ("agent_end", 1), ("agent_settled", 1),
+        ),
+        expected_marker_order=("response:fast-prompt", "event:agent_start", "event:agent_settled"),
+    ),
+)
+R3_SCENARIOS["R3.acceptance-before-completion"] = (
+    InputRun(
+        chunks=(
+            (_line("accepted-prompt", "prompt", message="accept before delayed completion"), 0.0),
+            (b"", 0.0),
+        ),
+        expected_response_ids=("accepted-prompt",), expected_response_commands=("prompt",),
+        expected_successes=(True,), expected_data_presence=(True,), expected_error_presence=(False,),
+        expected_response_dispositions=("started",), provider_steps=(FixtureProviderStep(delay_seconds=1.25),),
+        provider_waits=((0, 1, 10.0),),
+        stdout_waits=((0, '"id":"accepted-prompt"', 1, 10.0), (1, '"type":"agent_settled"', 1, 15.0)),
+        expected_min_provider_requests=1, compare_provider_requests=True,
+        lifecycle_event_types=("agent_start", "agent_settled"),
+        expected_marker_order=("response:accepted-prompt", "event:agent_settled"),
+    ),
+)
+R3_SCENARIOS["R3.provider-failure-after-acceptance"] = (
+    InputRun(
+        chunks=((_line("failed-prompt", "prompt", message="provider fails after acceptance"), 0.0),),
+        expected_response_ids=("failed-prompt",), expected_response_commands=("prompt",),
+        expected_successes=(True,), expected_data_presence=(True,), expected_error_presence=(False,),
+        expected_response_dispositions=("started",), preserve_response_error_text=True,
+        provider_steps=(FixtureProviderStep(status_code=400, error_message="fixture provider rejected request"),),
+        provider_waits=((0, 1, 10.0),),
+        stdout_waits=((0, '"id":"failed-prompt"', 1, 10.0), (0, '"type":"agent_settled"', 1, 15.0)),
+        expected_min_provider_requests=1, compare_provider_requests=True,
+        lifecycle_event_types=("agent_start", "message_end", "turn_end", "agent_end", "agent_settled"),
+        assistant_terminal_stop_reason="error", require_assistant_error_message=True,
+        preserve_assistant_terminal_shape=True,
+        expected_marker_order=("response:failed-prompt", "event:agent_start", "event:message_end",
+                               "event:turn_end", "event:agent_end", "event:agent_settled"),
+    ),
+)
+R3_SCENARIOS["R3.abort-prompt-run"] = (
+    InputRun(
+        chunks=(
+            (_line("abort-prompt", "prompt", message="abort after one partial response"), 0.0),
+            (_line("abort-run", "abort"), 0.0),
+        ),
+        expected_response_ids=("abort-prompt", "abort-run"),
+        expected_response_commands=("prompt", "abort"), expected_successes=(True, True),
+        expected_data_presence=(True, False), expected_error_presence=(False, False),
+        expected_response_dispositions=("started", None),
+        provider_steps=(FixtureProviderStep(text="partial response before abort", hold_after_partial=True),),
+        provider_waits=((0, 1, 10.0),),
+        stdout_waits=(
+            (0, '"id":"abort-prompt"', 1, 10.0),
+            (0, "partial response before abort", 1, 10.0),
+            (1, '"id":"abort-run"', 1, 15.0),
+            (1, '"type":"agent_settled"', 1, 15.0),
+        ),
+        expected_min_provider_requests=1, compare_provider_requests=True,
+        minimum_lifecycle_event_counts=(
+            ("agent_start", 1), ("message_start", 2), ("message_update", 1),
+            ("message_end", 2), ("turn_end", 1), ("agent_end", 1), ("agent_settled", 1),
+        ),
+        lifecycle_event_types=("message_update", "message_end", "turn_end", "agent_end", "agent_settled"),
+        assistant_terminal_stop_reason="aborted", require_assistant_error_message=True,
+        preserve_assistant_terminal_shape=True,
+        expected_marker_order=("response:abort-prompt", "event:message_update", "event:message_end",
+                               "event:turn_end", "event:agent_end", "event:agent_settled", "response:abort-run"),
+    ),
+)
+
+for _case_id, _runs in tuple(R3_SCENARIOS.items()):
+    R3_SCENARIOS[_case_id] = tuple(replace(run, model_context_window=65_536) for run in _runs)
+
+
 class _FixtureProvider:
-    def __init__(self, response_delays: tuple[float, ...]):
+    def __init__(self, response_delays: tuple[float, ...], provider_steps: tuple[FixtureProviderStep, ...],
+                 tool_gate_path: Path):
         self._response_delays = response_delays
+        self._provider_steps = provider_steps
+        self._tool_gate_path = tool_gate_path
         self._request_count = 0
+        self._request_bodies: list[bytes] = []
         self._condition = threading.Condition()
+        self._release_stream = threading.Event()
+        self._tool_gate_path.with_suffix(".started").unlink(missing_ok=True)
+        self._tool_gate_path.with_suffix(".release").unlink(missing_ok=True)
         fixture = self
 
         class Handler(BaseHTTPRequestHandler):
@@ -307,14 +550,27 @@ class _FixtureProvider:
             def do_POST(self) -> None:
                 try:
                     length = int(self.headers.get("Content-Length", "0"))
-                    request = json.loads(self.rfile.read(length).decode("utf-8"))
-                    request_index = fixture.record_request()
-                    delay = fixture._response_delays[request_index] if request_index < len(fixture._response_delays) else 0.0
-                    if delay:
-                        time.sleep(delay)
-                    response = fixture.response_body(request.get("stream") is True, request_index)
-                    self.send_response(200)
-                    self.send_header("Content-Type", "text/event-stream" if request.get("stream") is True
+                    request_body = self.rfile.read(length)
+                    request = json.loads(request_body.decode("utf-8"))
+                    request_index = fixture.record_request(request_body)
+                    step = fixture.provider_step(request_index)
+                    if step.delay_seconds:
+                        time.sleep(step.delay_seconds)
+                    streaming = request.get("stream") is True
+                    if streaming and step.hold_after_partial:
+                        self.send_response(step.status_code)
+                        self.send_header("Content-Type", "text/event-stream")
+                        self.send_header("Cache-Control", "no-cache")
+                        self.send_header("Connection", "close")
+                        self.end_headers()
+                        partial = fixture.stream_chunk(request_index, {"role": "assistant", "content": step.text})
+                        self.wfile.write(f"data: {json.dumps(partial, separators=(',', ':'))}\n\n".encode("utf-8"))
+                        self.wfile.flush()
+                        fixture._release_stream.wait(60)
+                        return
+                    response = fixture.response_body(streaming, request_index, step)
+                    self.send_response(step.status_code)
+                    self.send_header("Content-Type", "text/event-stream" if streaming and step.status_code < 400
                                      else "application/json")
                     self.send_header("Cache-Control", "no-cache")
                     self.send_header("Connection", "close")
@@ -348,10 +604,16 @@ class _FixtureProvider:
         with self._condition:
             return list(self._errors)
 
-    def record_request(self) -> int:
+    @property
+    def request_bodies(self) -> list[bytes]:
+        with self._condition:
+            return list(self._request_bodies)
+
+    def record_request(self, body: bytes) -> int:
         with self._condition:
             index = self._request_count
             self._request_count += 1
+            self._request_bodies.append(body)
             self._condition.notify_all()
             return index
 
@@ -370,35 +632,61 @@ class _FixtureProvider:
                 self._condition.wait(remaining)
             return True
 
-    @staticmethod
-    def response_body(stream: bool, request_index: int) -> bytes:
+    def provider_step(self, request_index: int) -> FixtureProviderStep:
+        if request_index < len(self._provider_steps):
+            return self._provider_steps[request_index]
+        delay = (self._response_delays[request_index]
+                 if request_index < len(self._response_delays) else 0.0)
+        return FixtureProviderStep(delay_seconds=delay)
+
+    def stream_chunk(self, request_index: int, delta: dict[str, Any]) -> dict[str, Any]:
         response_id = f"rpc-fixture-{request_index}"
+        return {
+            "id": response_id, "object": "chat.completion.chunk", "created": 1,
+            "model": "fixture-model", "choices": [{"index": 0, "delta": delta, "finish_reason": None}],
+        }
+
+    def response_body(self, stream: bool, request_index: int, step: FixtureProviderStep) -> bytes:
+        response_id = f"rpc-fixture-{request_index}"
+        if step.status_code >= 400:
+            response = {"error": {"message": step.error_message or "fixture provider error"}}
+            return json.dumps(response, separators=(",", ":")).encode("utf-8")
         if stream:
-            chunks = [
-                {
-                    "id": response_id, "object": "chat.completion.chunk", "created": 1,
-                    "model": "fixture-model",
-                    "choices": [{"index": 0, "delta": {"role": "assistant", "content": "fixture answer"},
-                                 "finish_reason": None}],
-                },
-                {
-                    "id": response_id, "object": "chat.completion.chunk", "created": 1,
-                    "model": "fixture-model",
-                    "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
-                    "usage": {"prompt_tokens": 12, "completion_tokens": 2, "total_tokens": 14},
-                },
-            ]
+            if step.tool_name is not None:
+                arguments = step.tool_arguments or "{}"
+                arguments = arguments.replace("__RPC_TOOL_GATE__", str(self._tool_gate_path))
+                chunks = [
+                    self.stream_chunk(request_index, {"role": "assistant", "tool_calls": [{
+                        "index": 0, "id": f"rpc-tool-{request_index}", "type": "function",
+                        "function": {"name": step.tool_name, "arguments": arguments},
+                    }]}),
+                    {
+                        "id": f"rpc-fixture-{request_index}", "object": "chat.completion.chunk", "created": 1,
+                        "model": "fixture-model", "choices": [{"index": 0, "delta": {}, "finish_reason": "tool_calls"}],
+                        "usage": {"prompt_tokens": 12, "completion_tokens": 2, "total_tokens": 14},
+                    },
+                ]
+            else:
+                chunks = [
+                    self.stream_chunk(request_index, {"role": "assistant", "content": step.text}),
+                    {
+                        "id": f"rpc-fixture-{request_index}", "object": "chat.completion.chunk", "created": 1,
+                        "model": "fixture-model", "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
+                        "usage": {"prompt_tokens": 12, "completion_tokens": 2, "total_tokens": 14},
+                    },
+                ]
             body = "".join(f"data: {json.dumps(chunk, separators=(',', ':'))}\n\n" for chunk in chunks)
             return (body + "data: [DONE]\n\n").encode("utf-8")
         response = {
             "id": response_id, "object": "chat.completion", "created": 1, "model": "fixture-model",
-            "choices": [{"index": 0, "message": {"role": "assistant", "content": "fixture summary"},
+            "choices": [{"index": 0, "message": {"role": "assistant", "content": step.text},
                          "finish_reason": "stop"}],
             "usage": {"prompt_tokens": 12, "completion_tokens": 2, "total_tokens": 14},
         }
         return json.dumps(response, separators=(",", ":")).encode("utf-8")
 
     def close(self) -> None:
+        self._release_stream.set()
         self._server.shutdown()
         self._server.server_close()
         self._thread.join(timeout=5)
@@ -420,7 +708,7 @@ def _base_environment() -> dict[str, str]:
 
 
 def _prepare_product(product: str, pi: Path, workspace: Path,
-                     provider_base_url: str | None = None) -> tuple[list[str], Path, dict[str, str]]:
+                     input_run: InputRun, provider_base_url: str | None = None) -> tuple[list[str], Path, dict[str, str]]:
     product_root = workspace / product
     agent = product_root / "agent"
     sessions = product_root / "sessions"
@@ -428,7 +716,7 @@ def _prepare_product(product: str, pi: Path, workspace: Path,
     sessions.mkdir(parents=True)
     model = {
         "id": "fixture-model", "name": "fixture-model", "api": "openai-completions",
-        "reasoning": False, "input": ["text"], "contextWindow": 4096, "maxTokens": 128,
+        "reasoning": False, "input": ["text"], "contextWindow": input_run.model_context_window, "maxTokens": 128,
         "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0},
     }
     provider: dict[str, Any] = {
@@ -449,14 +737,30 @@ def _prepare_product(product: str, pi: Path, workspace: Path,
         "PISHARP_RPC_FIXTURE_KEY": "fixture-only-key",
     })
     common = ["--mode", "rpc", "--provider", "fixture", "--model", "fixture-model",
-              "--session-dir", str(sessions), "--no-extensions", "--no-skills",
-              "--no-prompt-templates", "--no-tools"]
+              "--session-dir", str(sessions), "--no-context-files", "--no-extensions", "--no-skills",
+              "--no-prompt-templates", "--system-prompt", "You are a deterministic RPC fixture assistant."]
+    if input_run.enable_bash_tool:
+        common.extend(("--tools", "bash"))
+    else:
+        common.append("--no-tools")
+    extension_path: Path | None = None
+    if input_run.use_handled_extension_command:
+        if product == "pi":
+            extension_path = agent / "rpc-handled-extension.ts"
+            extension_path.write_text(
+                'export default function (pi) { pi.registerCommand("fixture", '
+                '{ description: "Handle without a run", handler: async () => {} }); }\n',
+                encoding="utf-8",
+            )
+        else:
+            extension_path = TEST_EXTENSION_DLL
+        common.extend(("--extension", str(extension_path)))
     if product == "pi":
         command = ["node", "--import", (pi / PI_SOURCE_RESOLVER).as_uri(), str(pi / PI_CLI), *common]
         environment["PI_CODING_AGENT_DIR"] = str(agent)
-        return command, pi, environment
+        return command, workspace.parents[1], environment
     command = ["dotnet", str(PISHARP_DLL), *common, "--offline"]
-    return command, product_root, environment
+    return command, workspace.parents[1], environment
 
 
 def _read_all(stream, destination: list[bytes], condition: threading.Condition | None = None) -> None:
@@ -473,7 +777,10 @@ def _read_all(stream, destination: list[bytes], condition: threading.Condition |
 
 
 def _execute(product: str, pi: Path, workspace: Path, input_run: InputRun) -> dict[str, Any]:
-    provider = _FixtureProvider(input_run.provider_response_delays) if input_run.provider_response_delays else None
+    uses_provider = bool(input_run.provider_response_delays or input_run.provider_steps)
+    gate_path = workspace.parent.parent / "rpc-tool-gate"
+    provider = (_FixtureProvider(input_run.provider_response_delays, input_run.provider_steps, gate_path)
+                if uses_provider else None)
     try:
         return _execute_with_provider(product, pi, workspace, input_run, provider)
     finally:
@@ -484,7 +791,7 @@ def _execute(product: str, pi: Path, workspace: Path, input_run: InputRun) -> di
 def _execute_with_provider(product: str, pi: Path, workspace: Path, input_run: InputRun,
                            provider: _FixtureProvider | None) -> dict[str, Any]:
     command, cwd, environment = _prepare_product(
-        product, pi, workspace, provider.base_url if provider is not None else None,
+        product, pi, workspace, input_run, provider.base_url if provider is not None else None,
     )
     process = subprocess.Popen(
         command, cwd=cwd, env=environment, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -537,6 +844,11 @@ def _execute_with_provider(product: str, pi: Path, workspace: Path, input_run: I
                     scenario_failures.append(
                         f"stdout marker {marker!r} occurrence {occurrence} was not observed after input chunk {index}"
                     )
+            if input_run.release_tool_gate_after_input_index == index:
+                if provider is None:
+                    scenario_failures.append("tool gate release requested without a local fixture provider")
+                else:
+                    provider._tool_gate_path.with_suffix(".release").write_text("release\n", encoding="utf-8")
         try:
             process.stdin.close()
         except OSError as error:
@@ -574,6 +886,7 @@ def _execute_with_provider(product: str, pi: Path, workspace: Path, input_run: I
         "exitCode": exit_code, "timedOut": timed_out, "inputError": input_error,
         "records": lines, "parseFailures": parse_failures, "scenarioFailures": scenario_failures,
         "providerRequestCount": provider.request_count if provider is not None else 0,
+        "providerRequests": provider.request_bodies if provider is not None else [],
         "providerErrors": provider.errors if provider is not None else [],
     }
 
@@ -612,6 +925,36 @@ def _project(value: Any, *, preserve_response_error_text: bool = False,
     return result
 
 
+def _event_type(record: Any) -> str | None:
+    if not isinstance(record, dict):
+        return None
+    event_type = record.get("type")
+    if event_type == "event" and isinstance(record.get("data"), dict):
+        event_type = record["data"].get("Type", record["data"].get("type"))
+    return event_type if isinstance(event_type, str) else None
+
+
+def _canonical_provider_request(value: dict[str, Any]) -> dict[str, Any]:
+    """Compare tool arguments by their JSON value while retaining every argument field."""
+    request = json.loads(json.dumps(value))
+    for message in request.get("messages", []):
+        if not isinstance(message, dict):
+            continue
+        for tool_call in message.get("tool_calls", []):
+            if not isinstance(tool_call, dict):
+                continue
+            function = tool_call.get("function")
+            if not isinstance(function, dict):
+                continue
+            arguments = function.get("arguments")
+            if isinstance(arguments, str):
+                try:
+                    function["arguments"] = json.loads(arguments)
+                except json.JSONDecodeError:
+                    pass
+    return request
+
+
 def _observation(run_results: list[dict[str, Any]], input_runs: tuple[InputRun, ...]) -> dict[str, Any]:
     def records_for(result: dict[str, Any], input_run: InputRun) -> list[Any]:
         records = result["records"]
@@ -627,16 +970,38 @@ def _observation(run_results: list[dict[str, Any]], input_runs: tuple[InputRun, 
             if record.get("type") == "response":
                 projected.append(record)
                 continue
-            event_type = record.get("type")
-            if event_type == "event" and isinstance(record.get("data"), dict):
-                event_type = record["data"].get("Type", record["data"].get("type"))
+            event_type = _event_type(record)
             if event_type in input_run.lifecycle_event_types:
-                projected.append({"type": event_type})
+                message = record.get("message") if isinstance(record, dict) else None
+                if (input_run.preserve_system_message_payloads and event_type in ("message_start", "message_end")
+                        and isinstance(message, dict) and message.get("role") == "system"):
+                    projected.append(record)
+                elif input_run.preserve_system_message_payloads and event_type == "agent_end":
+                    messages = record.get("messages")
+                    system_message = next((item for item in messages if isinstance(item, dict)
+                                           and item.get("role") == "system"), None) \
+                        if isinstance(messages, list) else None
+                    projected.append({"type": event_type, "systemMessage": system_message})
+                elif (input_run.preserve_assistant_terminal_shape and event_type in ("message_end", "turn_end")
+                        and isinstance(message, dict)):
+                    projected.append({
+                        "type": event_type,
+                        "message": {
+                            "role": message.get("role"),
+                            **({
+                                "stopReason": message.get("stopReason"),
+                                "errorMessagePresent": isinstance(message.get("errorMessage"), str)
+                                and bool(message.get("errorMessage")),
+                            } if message.get("role") == "assistant" else {}),
+                        },
+                    })
+                else:
+                    projected.append(record if input_run.preserve_event_payloads else {"type": event_type})
         return projected
 
-    return {
-        "runs": [
-            {
+    projected_runs = []
+    for input_run, result in zip(input_runs, run_results, strict=True):
+        projected_run = {
                 "exitCode": result["exitCode"],
                 "timedOut": result["timedOut"],
                 "inputError": result["inputError"],
@@ -647,10 +1012,14 @@ def _observation(run_results: list[dict[str, Any]], input_runs: tuple[InputRun, 
                 ),
                 "stderr": result["stderr"].decode("utf-8", errors="replace"),
                 "parseFailures": result["parseFailures"],
-            }
-            for input_run, result in zip(input_runs, run_results, strict=True)
-        ]
-    }
+        }
+        if input_run.compare_provider_requests:
+            projected_run["providerRequests"] = [
+                _canonical_provider_request(json.loads(body.decode("utf-8")))
+                for body in result["providerRequests"]
+            ]
+        projected_runs.append(projected_run)
+    return {"runs": projected_runs}
 
 
 def _check_run(input_run: InputRun, result: dict[str, Any]) -> list[str]:
@@ -662,6 +1031,9 @@ def _check_run(input_run: InputRun, result: dict[str, Any]) -> list[str]:
     errors.extend(result.get("scenarioFailures", []))
     errors.extend(f"local provider error: {error}" for error in result.get("providerErrors", []))
     provider_count = result.get("providerRequestCount", 0)
+    provider_requests = result.get("providerRequests", [])
+    if provider_count != len(provider_requests):
+        errors.append(f"provider received {provider_count} requests but {len(provider_requests)} request bodies were captured")
     if provider_count < input_run.expected_min_provider_requests:
         errors.append(
             f"local provider received {provider_count} requests; expected at least "
@@ -698,6 +1070,43 @@ def _check_run(input_run: InputRun, result: dict[str, Any]) -> list[str]:
                 f"response error presence {observed_error_presence!r} differs from "
                 f"{input_run.expected_error_presence!r}"
             )
+    if input_run.expected_response_dispositions is not None:
+        observed_dispositions = tuple(
+            record.get("data", {}).get("disposition") if isinstance(record.get("data"), dict) else None
+            for record in responses
+        )
+        if observed_dispositions != input_run.expected_response_dispositions:
+            errors.append(
+                f"response dispositions {observed_dispositions!r} differ from "
+                f"{input_run.expected_response_dispositions!r}"
+            )
+    event_types = [_event_type(record) for record in result["records"]]
+    for forbidden in input_run.forbidden_lifecycle_event_types:
+        if forbidden in event_types:
+            errors.append(f"forbidden lifecycle event {forbidden!r} was emitted")
+    for event_type, minimum in input_run.minimum_lifecycle_event_counts:
+        actual = event_types.count(event_type)
+        if actual < minimum:
+            errors.append(f"lifecycle event {event_type!r} occurred {actual} times; expected at least {minimum}")
+    if input_run.assistant_terminal_stop_reason is not None or input_run.require_assistant_error_message:
+        assistant_message_ends = [record.get("message") for record in result["records"]
+                                  if _event_type(record) == "message_end" and isinstance(record, dict)
+                                  and isinstance(record.get("message"), dict)
+                                  and record["message"].get("role") == "assistant"]
+        if not assistant_message_ends:
+            errors.append("assistant message_end was not observed")
+        else:
+            terminal_message = assistant_message_ends[-1]
+            if (input_run.assistant_terminal_stop_reason is not None and
+                    terminal_message.get("stopReason") != input_run.assistant_terminal_stop_reason):
+                errors.append(
+                    f"assistant stopReason was {terminal_message.get('stopReason')!r}; expected "
+                    f"{input_run.assistant_terminal_stop_reason!r}"
+                )
+            if (input_run.require_assistant_error_message and
+                    (not isinstance(terminal_message.get("errorMessage"), str) or
+                     not terminal_message.get("errorMessage"))):
+                errors.append("assistant terminal message has no nonempty errorMessage")
     for response_id, field, expected in input_run.state_flag_expectations:
         response = next((record for record in responses if record.get("id") == response_id), None)
         data = response.get("data") if response is not None else None
@@ -712,10 +1121,9 @@ def _check_run(input_run: InputRun, result: dict[str, Any]) -> list[str]:
             if record.get("type") == "response" and isinstance(record.get("id"), str):
                 markers.append(f"response:{record['id']}")
                 continue
-            event_type = record.get("type")
-            if event_type == "event" and isinstance(record.get("data"), dict):
-                event_type = record["data"].get("Type", record["data"].get("type"))
-            if event_type in input_run.lifecycle_event_types:
+            event_type = _event_type(record)
+            if event_type is not None and (not input_run.lifecycle_event_types or
+                                           event_type in input_run.lifecycle_event_types):
                 markers.append(f"event:{event_type}")
         offset = 0
         for expected_marker in input_run.expected_marker_order:
@@ -752,17 +1160,52 @@ def _write_capture(evidence_dir: Path, case_id: str, product_run: str, run_index
         path.write_bytes(capture[stream])
         role = f"{product_run}.{stream}"
         artifacts.append({"path": relative, "role": role, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()})
+    requests_relative = (prefix / "provider-requests.jsonl").as_posix()
+    requests_path = evidence_dir / requests_relative
+    requests_path.parent.mkdir(parents=True, exist_ok=True)
+    requests_path.write_bytes(b"".join(body + b"\n" for body in capture.get("providerRequests", [])))
+    artifacts.append({"path": requests_relative, "role": f"{product_run}.provider.requests",
+                      "sha256": hashlib.sha256(requests_path.read_bytes()).hexdigest()})
     exit_relative = (prefix / "exit.json").as_posix()
     exit_path = evidence_dir / exit_relative
     exit_path.write_text(json.dumps({
         "exitCode": capture["exitCode"], "timedOut": capture["timedOut"], "inputError": capture["inputError"],
         "scenarioFailures": capture.get("scenarioFailures", []),
         "providerRequestCount": capture.get("providerRequestCount", 0),
+        "providerRequestCountMatchesCaptures": capture.get("providerRequestCount", 0) ==
+        len(capture.get("providerRequests", [])),
         "providerErrors": capture.get("providerErrors", []),
     }, sort_keys=True) + "\n", encoding="utf-8")
     artifacts.append({"path": exit_relative, "role": f"{product_run}.exit",
                       "sha256": hashlib.sha256(exit_path.read_bytes()).hexdigest()})
     return artifacts
+
+
+_TEST_EXTENSION_BUILD_CACHE: dict[Path, dict[str, str]] = {}
+
+
+def _ensure_test_extension_fixture(evidence_dir: Path) -> dict[str, str]:
+    key = evidence_dir.resolve()
+    cached = _TEST_EXTENSION_BUILD_CACHE.get(key)
+    if cached is not None:
+        return cached
+    command = ["dotnet", "build", str(TEST_EXTENSION_PROJECT), "--no-restore", "--warnaserror"]
+    completed = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
+    log = completed.stdout + completed.stderr
+    log_path = evidence_dir / "test-extension-fixture-build.log"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    log_path.write_text(log, encoding="utf-8")
+    if completed.returncode != 0:
+        raise VerificationError(f"test extension fixture build failed: {log[-4000:]}")
+    if not TEST_EXTENSION_DLL.is_file():
+        raise VerificationError(f"test extension fixture DLL is missing: {TEST_EXTENSION_DLL}")
+    artifact = {
+        "path": log_path.relative_to(evidence_dir).as_posix(),
+        "role": "fixture.build",
+        "sha256": hashlib.sha256(log_path.read_bytes()).hexdigest(),
+    }
+    _TEST_EXTENSION_BUILD_CACHE[key] = artifact
+    return artifact
 
 
 def _store_observation(evidence_dir: Path, case_id: str, product_run: str,
@@ -776,7 +1219,7 @@ def _store_observation(evidence_dir: Path, case_id: str, product_run: str,
 
 def run_process_case(case: dict[str, Any], *, pi: Path, evidence_dir: Path) -> dict[str, Any]:
     case_id = case["id"]
-    scenarios = R1_SCENARIOS.get(case_id) or R2_SCENARIOS.get(case_id)
+    scenarios = R1_SCENARIOS.get(case_id) or R2_SCENARIOS.get(case_id) or R3_SCENARIOS.get(case_id)
     if case_id in R2_SCENARIOS and case_id not in {
         "R2.long-command-acceptance", "R2.active-compaction-command",
     }:
@@ -784,6 +1227,8 @@ def run_process_case(case: dict[str, Any], *, pi: Path, evidence_dir: Path) -> d
     if scenarios is None:
         raise VerificationError(f"no process scenario adapter is registered for {case_id}")
     artifacts: list[dict[str, str]] = []
+    if any(input_run.use_handled_extension_command for input_run in scenarios):
+        artifacts.append(_ensure_test_extension_fixture(evidence_dir))
     observations: dict[str, dict[str, Any]] = {}
     failures: dict[str, list[str]] = {}
     with tempfile.TemporaryDirectory(prefix=f"rpc-{case_id.replace('.', '-')}-") as temporary:
@@ -840,4 +1285,4 @@ def run_process_case(case: dict[str, Any], *, pi: Path, evidence_dir: Path) -> d
 
 
 def scenario_case_ids() -> set[str]:
-    return set(R1_SCENARIOS) | set(R2_SCENARIOS)
+    return set(R1_SCENARIOS) | set(R2_SCENARIOS) | set(R3_SCENARIOS)

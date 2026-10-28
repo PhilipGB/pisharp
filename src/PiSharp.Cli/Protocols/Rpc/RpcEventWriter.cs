@@ -4,11 +4,12 @@ using PiSharp.Runtime.Sessions;
 namespace PiSharp.Cli.Protocols;
 
 /// <summary>Writes lifecycle events in the order required by the RPC stream.</summary>
-internal sealed class RpcEventWriter(JsonLineWriter output)
+internal sealed class RpcEventWriter(JsonLineWriter output, Func<JsonObject?>? getSystemMessage = null)
 {
     private readonly object _projectorGate = new();
     private RpcEventProjector? _activeProjector;
     private string? _activeApi;
+    private JsonObject? _lastSystemMessage;
 
     public JsonArray ProjectMessagesSnapshot(ConversationSession conversation, JsonObject? systemMessage = null)
     {
@@ -44,10 +45,12 @@ internal sealed class RpcEventWriter(JsonLineWriter output)
         string? api = null)
     {
         var projector = new RpcEventProjector();
+        var pendingPromptMessages = new List<AgentLifecycleEvent>();
         lock (_projectorGate)
         {
             _activeProjector = projector;
             _activeApi = api;
+            projector.SetSystemMessage(_lastSystemMessage);
         }
         var succeeded = false;
         var accepted = false;
@@ -75,10 +78,7 @@ internal sealed class RpcEventWriter(JsonLineWriter output)
                         turnOpen = true;
                         lock (_projectorGate) projector.BeginTurn();
                     }
-                    IReadOnlyList<object> promptRecords;
-                    lock (_projectorGate) promptRecords = projector.ProjectPrompt(item, run.Conversation);
-                    foreach (var record in promptRecords)
-                        await output.EmitAsync(record, CancellationToken.None);
+                    pendingPromptMessages.Add(item);
                     continue;
                 }
                 if (item.Type == "steering_message_accepted")
@@ -100,6 +100,29 @@ internal sealed class RpcEventWriter(JsonLineWriter output)
                     continue;
                 }
                 if (item.Type == "prompt_rejected") continue;
+                if (item.Type == "model_request_started" ||
+                    pendingPromptMessages.Count > 0 && item.Type is "turn_completed" or "turn_failed" or "turn_interrupted")
+                {
+                    JsonObject? currentSystemMessage;
+                    lock (_projectorGate) currentSystemMessage = getSystemMessage?.Invoke();
+                    if (currentSystemMessage is not null &&
+                        _lastSystemMessage?.ToJsonString() != currentSystemMessage.ToJsonString())
+                    {
+                        IReadOnlyList<object> systemRecords;
+                        lock (_projectorGate) systemRecords = projector.ProjectSystemMessage(currentSystemMessage);
+                        foreach (var record in systemRecords)
+                            await output.EmitAsync(record, CancellationToken.None);
+                        lock (_projectorGate) _lastSystemMessage = currentSystemMessage.DeepClone().AsObject();
+                    }
+                    foreach (var pendingPrompt in pendingPromptMessages)
+                    {
+                        IReadOnlyList<object> promptRecords;
+                        lock (_projectorGate) promptRecords = projector.ProjectPrompt(pendingPrompt, run.Conversation);
+                        foreach (var record in promptRecords)
+                            await output.EmitAsync(record, CancellationToken.None);
+                    }
+                    pendingPromptMessages.Clear();
+                }
                 if (item.Type == "agent_settled")
                 {
                     if (accepted) await output.EmitAsync(new { type = "agent_settled" }, CancellationToken.None);

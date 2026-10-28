@@ -65,7 +65,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     private ConversationRun CurrentRun => getCurrentRun?.Invoke() ?? run;
     private PiSharp.Runtime.Resources.ResourceCatalog? CurrentResources => getCurrentResources?.Invoke() ?? resources;
     private ExtensionRegistration? CurrentExtensions => getCurrentExtensions?.Invoke() ?? extensions;
-    private RpcEventWriter Events => _events ??= new RpcEventWriter(_writer);
+    private RpcEventWriter Events => _events ??= new RpcEventWriter(_writer, () => getSystemMessage?.Invoke());
 
     public async Task ServeAsync(CancellationToken cancellationToken = default)
     {
@@ -237,7 +237,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                                 if (promptStreamingBehavior is null)
                                 {
                                     await RespondAsync(id, type, false,
-                                        "The active run requires streamingBehavior 'steer' or 'followUp'.");
+                                        "Agent is already processing. Specify streamingBehavior ('steer' or 'followUp') to queue the message.");
                                     break;
                                 }
                                 currentRun.QueueRpcInput(promptMessage, expanded, promptStreamingBehavior == "steer",

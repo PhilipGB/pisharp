@@ -8,10 +8,21 @@ namespace PiSharp.Cli.Protocols;
 internal sealed class RpcEventProjector
 {
     private readonly RpcAssistantMessageProjector _assistantMessages = new();
+    private JsonObject? _systemMessage;
 
     public void BeginAgent() => _assistantMessages.BeginAgent();
 
     public void BeginTurn() => _assistantMessages.BeginTurn();
+
+    public void SetSystemMessage(JsonObject? systemMessage) => _systemMessage = systemMessage?.DeepClone().AsObject();
+
+    public IReadOnlyList<object> ProjectSystemMessage(JsonObject systemMessage)
+    {
+        SetSystemMessage(systemMessage);
+        var message = _systemMessage!.DeepClone();
+        return [new JsonObject { ["type"] = "message_start", ["message"] = message.DeepClone() },
+            new JsonObject { ["type"] = "message_end", ["message"] = message }];
+    }
 
     public JsonArray ProjectMessagesSnapshot(ConversationSession conversation, string? api, JsonObject? systemMessage = null)
     {
@@ -281,10 +292,13 @@ internal sealed class RpcEventProjector
     {
         var canonicalMessages = PiSessionRunProjection.ProjectRunMessages(conversation, runStartHead, api,
             terminalType, errorMessage, runEndHead);
+        var messages = _assistantMessages.ReconcileRunMessages(canonicalMessages);
+        if (_systemMessage is not null && messages.Count > 0)
+            messages.Insert(0, _systemMessage.DeepClone());
         return new JsonObject
         {
             ["type"] = "agent_end",
-            ["messages"] = _assistantMessages.ReconcileRunMessages(canonicalMessages),
+            ["messages"] = messages,
             ["willRetry"] = willRetry
         };
     }

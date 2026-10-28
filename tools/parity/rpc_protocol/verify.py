@@ -254,7 +254,8 @@ def validate_case_results(results: list[dict[str, Any]], checkpoint_id: str, evi
             available.add(relative)
             roles.add(role)
         if checkpoint_id in PROCESS_CHECKPOINTS:
-            required_roles = {f"{run}.{stream}" for run in ("pi1", "pi2", "pisharp") for stream in ("stdin", "stdout", "stderr", "exit")}
+            required_roles = {f"{run}.{stream}" for run in ("pi1", "pi2", "pisharp")
+                              for stream in ("stdin", "stdout", "stderr", "exit", "provider.requests")}
             if not required_roles.issubset(roles):
                 raise VerificationError(f"case {case_id} lacks repeated Pi/PiSharp process captures")
         assertions = result.get("assertions")

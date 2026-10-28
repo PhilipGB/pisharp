@@ -84,6 +84,7 @@ public sealed class PiAgent
         _toolTranscripts.GetValue(session, _ => new());
 
     public string SystemInstructions => GetSystemInstructionsForCurrentLoadout();
+    internal IReadOnlyDictionary<string, string> SystemMessageSections => GetSystemMessageSections();
     internal JsonElement GetSharePresentation(AgentSession session)
     {
         var loadout = GetToolLoadout(session).Snapshot;
@@ -259,6 +260,18 @@ public sealed class PiAgent
         var currentBase = GetSystemPromptOptionsForCurrentLoadout();
         var options = PiSystemPromptBuilder.ApplyChanges(runOverride.BaseOptions!, runOverride.EditedOptions!, currentBase);
         return RenderSystemPrompt(options, runOverride.AdditionalInstructions);
+    }
+
+    private IReadOnlyDictionary<string, string> GetSystemMessageSections()
+    {
+        var runOverride = Volatile.Read(ref _runSystemPromptOverride);
+        if (runOverride?.Text is not null) return new Dictionary<string, string>(StringComparer.Ordinal);
+
+        var currentBase = GetSystemPromptOptionsForCurrentLoadout();
+        var options = runOverride is null
+            ? currentBase
+            : PiSystemPromptBuilder.ApplyChanges(runOverride.BaseOptions!, runOverride.EditedOptions!, currentBase);
+        return PiSystemPromptBuilder.ProjectSections(options);
     }
 
     private string? GetAdditionalSystemInstructionsForCurrentTurn() =>

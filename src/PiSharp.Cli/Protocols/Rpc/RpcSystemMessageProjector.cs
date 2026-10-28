@@ -14,9 +14,11 @@ internal static class RpcSystemMessageProjector
         {
             ["role"] = "system",
             ["content"] = "",
-            ["sections"] = new JsonObject { ["preamble"] = agent.SystemInstructions },
+            ["sections"] = new JsonObject(),
             ["timestamp"] = timestamp
         };
+        foreach (var (name, content) in agent.SystemMessageSections)
+            message["sections"]![name] = content;
         var tools = new JsonArray();
         foreach (var function in agent.ToolDeclarations)
         {
