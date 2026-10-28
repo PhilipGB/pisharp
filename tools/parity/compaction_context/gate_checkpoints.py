@@ -73,17 +73,20 @@ def _run(name: str, command: list[str], cwd: Path, output_dir: Path,
          env: dict[str, str] | None = None) -> tuple[dict[str, Any], Path, Path]:
     logs = output_dir / "commands"
     logs.mkdir(parents=True, exist_ok=True)
-    completed = subprocess.run(command, cwd=cwd, env=env, capture_output=True, text=True, check=False)
     stdout_path = logs / f"{name}.stdout.log"
     stderr_path = logs / f"{name}.stderr.log"
-    stdout_path.write_text(completed.stdout, encoding="utf-8")
-    stderr_path.write_text(completed.stderr, encoding="utf-8")
+    with stdout_path.open("w", encoding="utf-8") as stdout_file, \
+            stderr_path.open("w", encoding="utf-8") as stderr_file:
+        completed = subprocess.run(command, cwd=cwd, env=env, stdout=stdout_file,
+                                   stderr=stderr_file, text=True, check=False)
+    stdout = stdout_path.read_text(encoding="utf-8")
+    stderr = stderr_path.read_text(encoding="utf-8")
     observation = {
         "name": name,
         "argv": command,
         "exitCode": completed.returncode,
-        "stdoutSha256": hashlib.sha256(completed.stdout.encode()).hexdigest(),
-        "stderrSha256": hashlib.sha256(completed.stderr.encode()).hexdigest(),
+        "stdoutSha256": hashlib.sha256(stdout.encode()).hexdigest(),
+        "stderrSha256": hashlib.sha256(stderr.encode()).hexdigest(),
     }
     return observation, stdout_path, stderr_path
 
