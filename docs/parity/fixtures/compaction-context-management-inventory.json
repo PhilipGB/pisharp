@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "milestone": "compaction-context-management-parity",
-  "phase": "C1-C8 passed 86/86 at source 843d0388; C9-C13 and final gates remain",
+  "phase": "C1-C8 passed at source 843d0388 (refresh required); C9 passed 9/9 at source 1deb1748; C10-C13 and final gates remain",
   "sourcePins": {
     "piCommit": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
     "pisharpBaselineCommit": "12064420179f4119bdaf37479c7cba0f5ca40717",
@@ -465,18 +465,16 @@
       ],
       "inputs": "Current leaf, target entry, common ancestor, abandoned branch entries, summary request choice/settings, optional instructions/label and cancellation.",
       "outputs": "Generated branch summary and usage/file details, summary entry at navigation target, selected leaf/editor text and restored provider context.",
-      "state": "Pi summarizes abandoned entries before changing the leaf and attaches summary at target position; failure/cancel preserves the old selected state.",
+      "state": "C9 passes all nine frozen paired cases on clean source 1deb1748. Branch summary content, target placement, file details, custom instructions, prompt choices, and failure/cancellation rollback match pinned Pi.",
       "existingTests": [
         "tests/PiSharp.Tests/Core/ConversationTreeTests.cs",
         "tests/PiSharp.Tests/Cli/Tui/Dialogs/TerminalTreePickerTests.cs",
         "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionTreeEventTests.cs",
         "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionProcessTests.cs"
       ],
-      "baseline": "Implemented at the public navigation path with MAF generation, editor prefill, settings, extension control, file details, usage persistence and rollback tests. Full pinned b06 case-by-case navigation evidence remains open.",
+      "baseline": "C9 paired Pi/PiSharp observations pass 9/9 at source 1deb174887151679db19339c5bffbe660bc2e8c5. The public terminal prompt exposes No summary, Summarize, and Summarize with custom prompt; cancellation and failed summary generation preserve the selected head and history.",
       "differences": [],
-      "evidenceGaps": [
-        "Frozen paired observations for common-ancestor diff, nested navigation, cancellation/failure, skip-prompt settings and provider-context restoration."
-      ],
+      "evidenceGaps": [],
       "cases": [
         "C9.branch-diff-uses-common-ancestor-and-old-path",
         "C9.branch-entries-are-chronological-and-no-duplicate-tool-results",
@@ -489,17 +487,18 @@
         "C9.public-navigation-prompts-and-skips-as-pinned"
       ],
       "pinnedPiTests": [
-        "packages/coding-agent/test/branch-summarization.test.ts",
-        "packages/coding-agent/test/agent-session-tree-navigation.test.ts",
-        "packages/coding-agent/test/branch-summary-extensions.test.ts"
+        "packages/coding-agent/test/interactive-mode-tree-navigation.test.ts (5/5 passed)"
       ],
       "implementationTests": [
         "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionTreeEventTests.cs#RequestedBranchSummaryFromExtensionIsAppliedPersistedAndExported",
         "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionTreeEventTests.cs#RequestedBranchSummaryUsesMafAndPersistsItsUsage",
         "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionTreeEventTests.cs#BranchSummaryFailureLeavesCanonicalSelectionAndPersistenceUnchanged",
         "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionTreeEventTests.cs#BranchSummaryFileDetailsStopAtTheSelectedTokenBudget",
-        "tests/PiSharp.Tests/Cli/Sessions/InteractiveSessionBranchSummaryTests.cs#BranchCommandCanRequestAnExtensionSummary"
-      ]
+        "tests/PiSharp.Tests/Cli/Sessions/InteractiveSessionBranchSummaryTests.cs#BranchCommandCanRequestAnExtensionSummary",
+        "tests/PiSharp.Tests/Cli/Tui/TerminalPtyTests.cs#ConversationTreeSearchSelectsAndPersistsABranchThroughLinuxPty"
+      ],
+      "pairedEvidenceRecord": "docs/parity/fixtures/compaction-context-management-c9-case-results.json",
+      "implementationSourceSha": "1deb174887151679db19339c5bffbe660bc2e8c5"
     },
     {
       "id": "usage-reasoning-costs",
@@ -996,10 +995,10 @@
     }
   ],
   "crossCuttingEvidenceGaps": [
-    "C1-C8 passed 86/86 at source 843d0388. Refresh these checkpoints after any later source changes; execute C9-C13 and final gates after implementation is complete.",
+    "C1-C8 passed 86/86 at source 843d0388; refresh these checkpoints after C9 source changes. C9 passes 9/9 at source 1deb1748; execute C10-C13 and final gates.",
     "The separate transient AutoCompactionPolicy estimator formula remains distinct from Pi estimateTokens and still needs a case-level classification.",
     "The three provider adapters have paired overflow recovery and post-reload compacted-session continuation coverage; broader provider semantics outside these cases remain open.",
-    "Branch summary navigation, usage surfaces, CLI/RPC/TUI, extension lifecycle, and failure/cancellation/crash scenarios remain in C9-C13."
+    "C10-C13 still cover usage surfaces, CLI/RPC/TUI integration, extension lifecycle, and failure/cancellation/crash scenarios."
   ],
   "prerequisiteEvidence": {
     "pullRequest": 27,
@@ -1028,69 +1027,42 @@
     "A paired C6 adapter drives pinned Pi AgentSession tool loops and PiSharp InFlightContextBudget, including sequential, parallel, nested, oversized, steering and malformed tool histories. It verifies raw canonical-history preservation and records four case-scoped safety differences.",
     "C7 paired summary-generation behavior: prompt serialization, prior summaries, split-turn focus, tool/file details, reserve-aware output caps, length-stop failure, transient retry policy, usage and routed reasoning; reject whitespace-only summaries.",
     "C8 compaction usage persistence: aggregate summary usage is retained on compaction entries for Pi JSONL export/import while native per-request billing entries remain authoritative.",
-    "C8 persistence and provider-after-reload coverage: compaction usage/metadata round-trip, canonical history recovery, branch/fork/clone restoration, restart continuation, and live SDK request comparison for Responses, Chat Completions, and Anthropic."
+    "C8 persistence and provider-after-reload coverage: compaction usage/metadata round-trip, canonical history recovery, branch/fork/clone restoration, restart continuation, and live SDK request comparison for Responses, Chat Completions, and Anthropic.",
+    "C9 branch navigation: branch-summary prompts now match Pi, including custom summarization instructions; the summary preamble and navigation result are covered by paired pinned observations."
   ],
   "formalAcceptance": {
     "contractPath": "tools/parity/compaction_context/contract.json",
     "contractSha256": "c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6",
     "requiredCheckpoints": 22,
     "requiredCases": 211,
-    "perCaseArtifactsProduced": 86,
+    "perCaseArtifactsProduced": 95,
     "status": "incomplete",
-    "reason": "C1-C8 passed 86/86 on clean source 843d0388. The frozen 22-checkpoint / 211-case contract remains incomplete; C9-C13 and final gates are still required.",
-    "perCaseArtifactsCommitted": 86,
+    "reason": "C9 passed 9/9 on clean source 1deb1748. C1-C8 passed 86/86 on earlier source 843d0388 and must be refreshed after C9 source changes; C10-C13 and final gates remain.",
+    "perCaseArtifactsCommitted": 95,
     "currentSourceCheckpointEvidence": {
-      "sourceSha": "843d0388ceca2adbe2725397c48e0e45b98cba7e",
-      "checkpointId": "C1-C8",
-      "passedCases": 86,
-      "requiredCases": 86,
+      "sourceSha": "1deb174887151679db19339c5bffbe660bc2e8c5",
+      "checkpointId": "C9",
+      "passedCases": 9,
+      "requiredCases": 9,
       "status": "passed",
       "runnerRecords": [
-        "artifacts/parity/20261028-c1-843d0388/runs/C1/checkpoint-run.json",
-        "artifacts/parity/20261028-c2-843d0388/runs/C2/checkpoint-run.json",
-        "artifacts/parity/20261028-c3-843d0388/runs/C3/checkpoint-run.json",
-        "artifacts/parity/20261028-c4-843d0388/runs/C4/checkpoint-run.json",
-        "artifacts/parity/20261028-c5-843d0388/runs/C5/checkpoint-run.json",
-        "artifacts/parity/20261028-c6-843d0388/runs/C6/checkpoint-run.json",
-        "artifacts/parity/20261028-c7-843d0388/runs/C7/checkpoint-run.json",
-        "artifacts/parity/20261028-c8-843d0388/runs/C8/checkpoint-run.json"
+        "artifacts/parity/20261028-c9-1deb1748/runs/C9/checkpoint-run.json"
       ],
       "compactRecords": [
-        "docs/parity/fixtures/compaction-context-management-c1-case-results.json",
-        "docs/parity/fixtures/compaction-context-management-c2-case-results.json",
-        "docs/parity/fixtures/compaction-context-management-c3-case-results.json",
-        "docs/parity/fixtures/compaction-context-management-c4-case-results.json",
-        "docs/parity/fixtures/compaction-context-management-c5-case-results.json",
-        "docs/parity/fixtures/compaction-context-management-c6-case-results.json",
-        "docs/parity/fixtures/compaction-context-management-c7-case-results.json",
-        "docs/parity/fixtures/compaction-context-management-c8-case-results.json"
+        "docs/parity/fixtures/compaction-context-management-c9-case-results.json"
       ]
     },
     "lastSourceBoundCheckpointEvidence": {
-      "sourceSha": "843d0388ceca2adbe2725397c48e0e45b98cba7e",
-      "checkpointId": "C1-C8",
-      "passedCases": 86,
-      "requiredCases": 86,
+      "sourceSha": "1deb174887151679db19339c5bffbe660bc2e8c5",
+      "checkpointId": "C9",
+      "passedCases": 9,
+      "requiredCases": 9,
       "status": "passed",
       "runnerRecords": [
-        "artifacts/parity/20261028-c1-843d0388/runs/C1/checkpoint-run.json",
-        "artifacts/parity/20261028-c2-843d0388/runs/C2/checkpoint-run.json",
-        "artifacts/parity/20261028-c3-843d0388/runs/C3/checkpoint-run.json",
-        "artifacts/parity/20261028-c4-843d0388/runs/C4/checkpoint-run.json",
-        "artifacts/parity/20261028-c5-843d0388/runs/C5/checkpoint-run.json",
-        "artifacts/parity/20261028-c6-843d0388/runs/C6/checkpoint-run.json",
-        "artifacts/parity/20261028-c7-843d0388/runs/C7/checkpoint-run.json",
-        "artifacts/parity/20261028-c8-843d0388/runs/C8/checkpoint-run.json"
+        "artifacts/parity/20261028-c9-1deb1748/runs/C9/checkpoint-run.json"
       ],
       "compactRecords": [
-        "docs/parity/fixtures/compaction-context-management-c1-case-results.json",
-        "docs/parity/fixtures/compaction-context-management-c2-case-results.json",
-        "docs/parity/fixtures/compaction-context-management-c3-case-results.json",
-        "docs/parity/fixtures/compaction-context-management-c4-case-results.json",
-        "docs/parity/fixtures/compaction-context-management-c5-case-results.json",
-        "docs/parity/fixtures/compaction-context-management-c6-case-results.json",
-        "docs/parity/fixtures/compaction-context-management-c7-case-results.json",
-        "docs/parity/fixtures/compaction-context-management-c8-case-results.json"
+        "docs/parity/fixtures/compaction-context-management-c9-case-results.json"
       ]
     }
   },
@@ -1118,8 +1090,12 @@
     "focusedC7Tests": "80 passed, 0 failed, 0 skipped at source d274475f; CompactionTests and RpcCompactionProcessTests filter.",
     "pairedC7Oracle": "10/10 cases passed at source d274475f: nine equivalent, one intentional whitespace-only-summary safety difference; Pi and PiSharp observations stable across two runs per side.",
     "c7CheckpointRunner": "runner.py recorded passed with sourceTreeClean true, 10 required, 10 executed, 10 passed, 0 failed and 0 skipped; raw artifact hashes are bound in compaction-context-management-c7-case-results.json.",
-    "currentSourceCheckpointEvidence": "C1-C8 passed 86/86 at source 843d0388; all eight runner records report sourceTreeClean true and zero failed/skipped cases.",
+    "currentSourceCheckpointEvidence": "C9 passed 9/9 at clean source 1deb1748; C1-C8 passed 86/86 at source 843d0388 and require refresh after C9 source changes.",
     "focusedC8Tests": "140 passed, 0 failed, 0 skipped at source 5a3be74a; CompactionTests, PiJsonlSessionInterchangeTests, and CrashRecoveryProcessTests filter.",
-    "compactionUsageRoundTrip": "New compaction summary/boundary/usage regression passed through native serialization and Pi JSONL export/import without duplicate billing."
+    "compactionUsageRoundTrip": "New compaction summary/boundary/usage regression passed through native serialization and Pi JSONL export/import without duplicate billing.",
+    "c9_dotnet_focused": "27 passed, 0 failed, 0 skipped at source 1deb1748; C9 tree navigation, native extension tree events, RPC sessions, and Linux PTY test filter.",
+    "c9_paired_oracle": "C9 passed 9/9 paired cases on clean source 1deb174887151679db19339c5bffbe660bc2e8c5; Pi and PiSharp observations were stable across two runs per side.",
+    "c9_pinned_pi_ui_test": "Pinned Pi packages/coding-agent/test/interactive-mode-tree-navigation.test.ts: 5 passed, 0 failed.",
+    "c9_checkpoint_runner": "runner.py recorded C9 passed at source 1deb1748 with sourceTreeClean true, 9 required, 9 executed, 9 passed, 0 failed/skipped; raw artifacts hash-verified."
   }
 }

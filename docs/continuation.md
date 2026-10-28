@@ -9,20 +9,15 @@ published managed-package evidence records 27/27 checkpoints and 240/240 cases.
 Pi is pinned to `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The frozen
 compaction contract remains 22 checkpoints / 211 cases.
 
-C1-C8 now pass 86/86 paired cases at clean source
-`843d0388ceca2adbe2725397c48e0e45b98cba7e`. Nine case-level safety
-differences are classified with regression evidence, including the unknown
-context-window behavior (C2/C4/C5), partial-output no-replay (C5), bounded
-transient tool-history projection (C6), and whitespace-only summary rejection
-(C7). Raw captures are under `artifacts/parity/20261028-c*-843d0388/`; compact
-case records in `docs/parity/fixtures/compaction-context-management-c*-case-results.json`
-bind their hashes and source pins.
+C1-C8 passed 86/86 at source `843d0388`; C9 passed 9/9 on clean source
+`1deb1748`. Across revisions, 95/211 cases have paired results; only C9’s
+9/211 cases are currently bound to the latest source, so C1-C8 need refreshing.
+The C9 focused .NET filter passes 27/27 and pinned Pi navigation UI tests pass
+5/5. Compact records retain source pins and raw-artifact hashes.
 
-C9-C13 still need implementation/evidence, followed by D0, Q0, E0, CI0, and
-PUB0. C1-C8 account for 86/211 cases (40.8%); 125 cases lack current-source
-evidence. The separate transient estimator formula still needs classification.
-The full .NET suite must be rerun at final source because the latest full run
-predates the three C8 provider tests. PR #28 remains open and draft.
+C10-C13 still need implementation/evidence, followed by D0, Q0, E0, CI0, and
+PUB0. The separate transient estimator formula still needs classification. The
+full .NET suite must be rerun at final source. PR #28 remains open and draft.
 See the
 [inventory](parity/fixtures/compaction-context-management-inventory.json),
 [receipt](parity/fixtures/compaction-context-management-parity-2026-10-28.md),

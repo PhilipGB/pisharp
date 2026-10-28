@@ -5,24 +5,15 @@ publication evidence covers 27/27 checkpoints and 240/240 cases. Pi is pinned
 to `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; this milestone's contract has
 22 checkpoints and 211 required cases.
 
-C1-C8 now pass **86/86 paired cases** on clean source
-`843d0388ceca2adbe2725397c48e0e45b98cba7e`. The focused .NET filters pass
-**712/712** tests across these checkpoints; C8 also passes three post-reload
-provider tests across Responses, Chat Completions, and Anthropic. Nine cases are
-classified as accepted safety differences with regression evidence. C1-C8
-covers manual/automatic compaction, cut points, context estimates, provider
-overflow/retry, in-flight tool continuation, summary generation, and persisted
-session reload. The committed compact records pin the observations and raw
-artifact hashes.
+C1-C8 passed 86/86 on source `843d0388`; C9 passed 9/9 on clean source
+`1deb1748`. Implementation has reached 9/13 checkpoints. Across revisions,
+95/211 paired cases have results, while only 9/211 are currently bound to the
+latest source; C1-C8 must be refreshed. C9’s focused .NET filter passes 27/27
+and pinned Pi navigation UI tests pass 5/5.
 
-C9-C13 and final gates D0, Q0, E0, CI0, and PUB0 remain. The transient context
-estimator formula still needs case-level classification; the unknown-window
-behavior is now classified as a safety difference in C2, C4, and C5. The full
-.NET suite result predates the three new provider tests and must be rerun for
-final acceptance. PR #28 remains open and draft. See the
-[inventory](fixtures/compaction-context-management-inventory.json),
-[receipt](fixtures/compaction-context-management-parity-2026-10-28.md),
-and [execution ledger](execution-ledger.json).
+C10-C13 and final gates D0, Q0, E0, CI0, and PUB0 remain. The transient
+estimator formula still needs case-level classification. PR #28 remains open
+and draft.
 
 ## Active milestone — Complete Managed Package Lifecycle and Resource Distribution Parity — 2026-10-27
 

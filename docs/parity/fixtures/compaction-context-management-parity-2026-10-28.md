@@ -4,10 +4,11 @@
 
 This branch starts at the verified PR #27 merge `12064420179f4119bdaf37479c7cba0f5ca40717`.
 The Pi oracle is pinned to `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; the installed
-`Microsoft.Agents.AI` version is 1.21.0. C1-C8 checkpoint evidence is now bound to clean source
-`843d0388ceca2adbe2725397c48e0e45b98cba7e`. Older C5-C7 captures remain in
-Git-ignored run folders as historical context; the current compact case records
-below bind the fresh runs.
+`Microsoft.Agents.AI` version is 1.21.0. C1-C8 passed on clean source
+`843d0388ceca2adbe2725397c48e0e45b98cba7e`; C9 now passes on clean source
+`1deb174887151679db19339c5bffbe660bc2e8c5`. C1-C8 need refreshing after the C9
+source changes. Older C5-C7 captures remain in Git-ignored run folders as
+historical context; compact case records bind the observations and raw hashes.
 
 The frozen contract is [contract.json](../../../tools/parity/compaction_context/contract.json),
 SHA-256 `c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6`:
@@ -54,6 +55,7 @@ report and its raw artifact hashes:
 - [C6 in-flight tool continuation](compaction-context-management-c6-case-results.json): 10/10; four safety differences.
 - [C7 summary generation](compaction-context-management-c7-case-results.json): 10/10; one whitespace-only-summary safety difference.
 - [C8 persistence and reload](compaction-context-management-c8-case-results.json): 10/10.
+- [C9 branch summary and navigation](compaction-context-management-c9-case-results.json): 9/9 at source `1deb1748`.
 
 C1 pairs manual eligibility, focus, retained history, split-turn summaries,
 usage/details, failure rollback, cancellation, and queued follow-up ordering.
@@ -128,7 +130,10 @@ Raw captures remain Git-ignored under
   verifier controls: 20 passed; terminal Node: 24 passed (earlier validation).
 - MCP conformance had no regressions against the classified baseline; three
   known scenarios remain classified.
-- Documentation paths: **156 documents and 699 references verified** after the C1-C8 evidence and progress update.
+- C9 focused checkpoint filter: **27/27 passed** at source `1deb1748`, including the Linux PTY tree-navigation test.
+- Pinned Pi `interactive-mode-tree-navigation.test.ts`: **5/5 passed**.
+- `dotnet format PiSharp.slnx --verify-no-changes --no-restore` passed after the C9 implementation changes.
+- Documentation paths: rerun after this C9 receipt and progress update.
 - The selected pinned Pi compaction/queue suites reported 34 passed and 1
   failing upstream test because the unknown model has context window zero. C2,
   C4, and C5 now classify the observed behavior as an intentional safety
@@ -136,14 +141,16 @@ Raw captures remain Git-ignored under
 
 ## Acceptance remains open
 
-C1-C8 pass 86/86 at source `843d0388`, or 86/211 cases (40.8%). C9-C13 and
-final acceptance gates remain; 125 required cases have no evidence on this
-source. Remaining work covers branch summaries, usage/accounting surfaces,
-CLI/RPC/TUI, native extensions, cancellation/crash recovery, independent
-acceptance, full quality, committed-source validation, exact-head CI, and
-publication. The separate transient estimator formula still needs a
-case-level classification. Unknown-window behavior is already classified as a
-safety difference in C2, C4, and C5. Full acceptance is not claimed.
+C1-C8 passed 86/86 at source `843d0388`; C9 passed 9/9 at source `1deb1748`.
+Across revisions, 95/211 cases have paired results, but only C9's 9 cases are
+bound to the latest source. Refresh C1-C8 after the C9 changes; 202 cases lack
+latest-source evidence. C10-C13 and final acceptance gates remain. Remaining
+work covers usage/accounting surfaces, CLI/RPC/TUI, native extensions,
+cancellation/crash recovery, independent acceptance, full quality,
+committed-source validation, exact-head CI, and publication. The separate
+transient estimator formula still needs a case-level classification.
+Unknown-window behavior is already classified as a safety difference in C2,
+C4, and C5. Full acceptance is not claimed.
 
 PR #28 remains open, draft, and unmerged against `main`; its final exact-head
 push and PR checks are tracked after the remaining implementation and evidence.
@@ -157,3 +164,21 @@ so that binary identity was not reproduced locally.
 See the [inventory](compaction-context-management-inventory.json) and
 [execution ledger](../execution-ledger.json) for the ownership map, current
 counts, and remaining acceptance work.
+
+
+## C9 branch-summary navigation
+
+C9 passed all nine required paired cases on clean source
+`1deb174887151679db19339c5bffbe660bc2e8c5`. The comparison covers common
+ancestor and abandoned-path selection, chronological branch-entry preparation,
+summary budget retention, nested file-operation details, append/replace custom
+instructions, summary preamble and label placement, cancellation/failure
+rollback, and public prompt defaults. The terminal prompt now matches pinned
+Pi's three choices: no summary, summarize, or summarize with a custom prompt.
+The pinned Pi `interactive-mode-tree-navigation.test.ts` passes 5/5. Focused
+PiSharp tests pass 27/27, including the Linux PTY tree-navigation test.
+
+The compact record is
+[compaction-context-management-c9-case-results.json](compaction-context-management-c9-case-results.json).
+Raw captures are Git-ignored under
+`artifacts/parity/20261028-c9-1deb1748/runs/C9/differential/`.
