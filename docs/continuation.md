@@ -1,16 +1,14 @@
 # Continuation — PiSharp capability parity
 
-## Review correction in progress — Compaction, Context Budget, Overflow and Usage Parity — 2026-10-28
+## Completed milestone — Compaction, Context Budget, Overflow and Usage Parity — 2026-10-28
 
-PR #27 is merged at `12064420179f4119bdaf37479c7cba0f5ca40717`. Pi is pinned to `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; the frozen contract has 22 checkpoints and 211 required cases.
+PR #27 is merged at `12064420179f4119bdaf37479c7cba0f5ca40717`. Pinned Pi is `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; the frozen acceptance contract defines 22 checkpoints and 211 required cases.
 
-The native branch-summary usage omission in RPC `get_session_stats` is fixed at implementation source `41e9b7e7ebdea70b878e409204cd8b3d177144e2`. Regressions cover native generation, persisted reload, imported summaries, and mixed sessions. Current refreshed evidence passes 19/22 checkpoints and 192/211 cases: C1-C13 135/135, D0 9/9, Q0 10/10, P0/P1 10/10, and V0/V1 28/28. P1 passes on the clean committed tree at evidence head `619c0d8c5803bba8815b23428b872adc77921a7c`. The paired C corpus has 121 equivalent cases, 14 intentional safety differences, and zero unresolved mismatches.
+The independent review correction fixes native branch-summary usage in RPC `get_session_stats` at implementation source `41e9b7e7ebdea70b878e409204cd8b3d177144e2`. Regressions cover native generation, persisted reload, imported summaries, mixed sessions, and exactly-once accounting. All 22/22 checkpoints and 211/211 mandatory cases pass, with zero failed, skipped, or unresolved cases. C1-C13 pass 135/135: 121 equivalent observations and 14 verified intentional safety differences. D0 passes 9/9; Q0 10/10; P0/P1 10/10; V0/V1 28/28; E0 9/9; CI0 5/5; and PUB0 5/5. Exact-head CI run IDs and final publication details are recorded in PR #28's description.
 
-E0, CI0, and PUB0 remain. The corrected implementation and evidence commits have not yet been pushed, so the existing green checks do not cover the correction. Next: push the final head, wait for automatic push and PR workflows, verify their exact-head status, run E0, update PR #28's description with verified results, then run PUB0 and aggregate the 22/211 evidence. PR #28 remains open, draft, and unmerged.
+Q0 records 3,963/3,963 .NET tests, focused compaction/session/provider 114/114, focused RPC/TUI/extension 56/56, terminal Python 66/66, compaction helper Python 27/27, built-in parity Python 27/27, and terminal Node 24/24. It records 200 pinned Pi passes and 20 exact credential-gated upstream skips. Documentation validation recorded 156 documents / 690 references. No live model endpoint was called.
 
-Q0 records 3,963/3,963 .NET tests, focused compaction/session/provider 114/114, focused RPC/TUI/extension 56/56, terminal Python 66/66, compaction helper Python 27/27, built-in parity Python 27/27, and terminal Node 24/24. It records 200 pinned Pi passes and 20 exact credential-gated skips. Q0 documentation validation recorded 156 documents / 700 references; final post-evidence path validation recorded 156 / 690.
-
-Provider-boundary tests use local loopback fixtures; no live model endpoint was called. The 20 pinned Pi skips are limited to credential-dependent interactive/LLM cases and their identities are checked. Q0 suppresses only NU1900 because the local NuGet audit cache is read-only; the exact-head CI build uses a clean cache. The managed-package corpus remains scoped to its historical milestone branch, as documented separately in the review notes.
+Limitations: the 20 credential-dependent pinned Pi interactive/LLM cases remain unverified. The managed-package parity corpus remains scoped to its historical milestone branch, as noted in the independent review. PR #28 remains open, draft, and unmerged for review.
 
 See the [source-pinned inventory](parity/fixtures/compaction-context-management-inventory.json), [compact evidence](parity/fixtures/compaction-context-management-c1-case-results.json), [case index](parity/fixtures/compaction-context-management/evidence-summary.json), and [execution ledger](parity/execution-ledger.json).
 
