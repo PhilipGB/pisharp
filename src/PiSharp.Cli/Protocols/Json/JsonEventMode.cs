@@ -39,9 +39,16 @@ public sealed class JsonEventMode(JsonLineWriter output)
             // A canceled run must still report its interruption and settlement to consumers.
             if (observeEvent is not null) await observeEvent(item);
             if (item.Type != "model_content_update")
-                await output.EmitAsync(new { type = "event", format = "pisharp", data = item }, CancellationToken.None);
+                await output.EmitAsync(new { type = "event", format = "pisharp", data = ProjectEvent(item) }, CancellationToken.None);
             if (item.Type == "agent_run_completed") succeeded = true;
         }
         return succeeded;
     }
+
+    internal static object ProjectEvent(AgentLifecycleEvent item) => item.Type switch
+    {
+        "compaction_start" => RpcCompactionResultProjector.ProjectStart(item.CompactionReason ?? "manual"),
+        "compaction_end" => RpcCompactionResultProjector.ProjectEnd(item),
+        _ => item
+    };
 }

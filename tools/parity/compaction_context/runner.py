@@ -26,7 +26,7 @@ FILTERS = {
     "C8": "FullyQualifiedName~CompactionTests|FullyQualifiedName~PiJsonlSessionInterchangeTests|FullyQualifiedName~CrashRecoveryProcessTests",
     "C9": "FullyQualifiedName~ConversationTreeTests|FullyQualifiedName~TerminalTreePickerTests|FullyQualifiedName~NativeExtensionTreeEventTests|FullyQualifiedName~RpcSessionProcessTests|FullyQualifiedName~TerminalPtyTests.ConversationTreeSearchSelectsAndPersistsABranchThroughLinuxPty",
     "C10": "FullyQualifiedName~CompactionTests|FullyQualifiedName~RpcSessionStatsProjectorTests|FullyQualifiedName~CodemodeModelTests",
-    "C11": "FullyQualifiedName~RpcCompactionProcessTests|FullyQualifiedName~RpcSessionStatsProjectorTests",
+    "C11": "FullyQualifiedName~RpcCompactionProcessTests|FullyQualifiedName~RpcSessionStatsProjectorTests|FullyQualifiedName~RpcEventProjectorTests|FullyQualifiedName~JsonEventModeTests",
     "C12": "FullyQualifiedName~PiSharpExtensionCompactionTests|FullyQualifiedName~NativeExtensionCompactionEventTests|FullyQualifiedName~NativeExtensionTreeEventTests",
     "C13": "FullyQualifiedName~CompactionTests|FullyQualifiedName~RpcCompactionProcessTests|FullyQualifiedName~CrashRecoveryProcessTests",
 }

@@ -62,10 +62,10 @@ internal static class RpcCompactionResultProjector
             usage.ReasoningTokens,
             usage.TotalTokens,
             usage.Cost is null ? null : new RpcCompactionCost(
-                usage.InputCost ?? 0,
-                usage.OutputCost ?? 0,
-                usage.CachedInputCost ?? 0,
-                usage.CachedWriteCost ?? 0,
+                usage.InputCost,
+                usage.OutputCost,
+                usage.CachedInputCost,
+                usage.CachedWriteCost,
                 usage.Cost.Value));
     }
 

@@ -14,6 +14,36 @@ namespace PiSharp.Tests;
 public sealed class JsonEventModeTests
 {
     [Fact]
+    public void CompactionLifecycleEventsUsePiResultShape()
+    {
+        var result = new ConversationCompactionResult("summary", "kept-entry", 100, 20, null,
+            new ConversationCompactionDetails([], []));
+        var start = JsonEventMode.ProjectEvent(new AgentLifecycleEvent("compaction_start")
+        {
+            CompactionReason = "manual"
+        });
+        var end = JsonEventMode.ProjectEvent(new AgentLifecycleEvent("compaction_end")
+        {
+            CompactionReason = "manual",
+            CompactionResult = result,
+            CompactionAborted = false,
+            CompactionWillRetry = false
+        });
+
+        using var startJson = JsonDocument.Parse(JsonSerializer.Serialize(start));
+        using var endJson = JsonDocument.Parse(JsonSerializer.Serialize(end));
+
+        Assert.Equal("compaction_start", startJson.RootElement.GetProperty("type").GetString());
+        Assert.Equal("manual", startJson.RootElement.GetProperty("reason").GetString());
+        Assert.Equal("compaction_end", endJson.RootElement.GetProperty("type").GetString());
+        Assert.Equal("manual", endJson.RootElement.GetProperty("reason").GetString());
+        Assert.Equal("summary", endJson.RootElement.GetProperty("result").GetProperty("summary").GetString());
+        Assert.Equal("kept-entry", endJson.RootElement.GetProperty("result").GetProperty("firstKeptEntryId").GetString());
+        Assert.False(endJson.RootElement.GetProperty("aborted").GetBoolean());
+        Assert.False(endJson.RootElement.GetProperty("willRetry").GetBoolean());
+    }
+
+    [Fact]
     public async Task JsonInitialImageFileUsesSharedDispatchProfileAndStoresNormalizedSessionImage()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-json-image-file-" + Guid.NewGuid().ToString("N"));

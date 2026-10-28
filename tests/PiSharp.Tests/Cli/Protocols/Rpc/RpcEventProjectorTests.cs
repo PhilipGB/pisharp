@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.Extensions.AI;
 using PiSharp.Cli.Protocols;
 using PiSharp.Runtime.Sessions;
 
@@ -6,6 +7,30 @@ namespace PiSharp.Tests;
 
 public sealed class RpcEventProjectorTests
 {
+    [Fact]
+    public void CompactionResultOmitsUnknownCostBreakdownComponents()
+    {
+        var usage = UsageRecord.Create("fixture", "compaction", new UsageDetails
+        {
+            InputTokenCount = 10,
+            OutputTokenCount = 5,
+            CachedInputTokenCount = null,
+            TotalTokenCount = 15,
+            AdditionalCounts = new AdditionalPropertiesDictionary<long> { ["cacheWriteTokens"] = 0 }
+        }, new ModelPricing(1m, 2m));
+        var result = new ConversationCompactionResult("summary", "kept-entry", 100, 20, usage,
+            new ConversationCompactionDetails([], []));
+
+        using var json = JsonDocument.Parse(JsonSerializer.Serialize(RpcCompactionResultProjector.Project(result)));
+        var cost = json.RootElement.GetProperty("usage").GetProperty("cost");
+
+        Assert.False(cost.TryGetProperty("input", out _));
+        Assert.Equal(0.00001m, cost.GetProperty("output").GetDecimal());
+        Assert.False(cost.TryGetProperty("cacheRead", out _));
+        Assert.Equal(0m, cost.GetProperty("cacheWrite").GetDecimal());
+        Assert.Equal(0.00002m, cost.GetProperty("total").GetDecimal());
+    }
+
     [Fact]
     public void BashInitialSnapshotHasEmptyContentAndOmitsAbsentDetails()
     {

@@ -259,9 +259,12 @@ public sealed class RpcCompactionProcessTests
                 Assert.Equal(interrupted.Id, data.GetProperty("firstKeptEntryId").GetString());
                 Assert.True(data.GetProperty("tokensBefore").GetInt32() > 0);
                 Assert.True(data.GetProperty("estimatedTokensAfter").GetInt32() > 0);
-                Assert.Equal(30, data.GetProperty("usage").GetProperty("input").GetInt64());
-                Assert.Equal(7, data.GetProperty("usage").GetProperty("output").GetInt64());
-                Assert.Equal(37, data.GetProperty("usage").GetProperty("totalTokens").GetInt64());
+                Assert.True(data.TryGetProperty("usage", out var summaryUsage), data.GetRawText());
+                Assert.False(summaryUsage.TryGetProperty("input", out _));
+                Assert.False(summaryUsage.TryGetProperty("cacheRead", out _));
+                Assert.False(summaryUsage.TryGetProperty("cacheWrite", out _));
+                Assert.Equal(7, summaryUsage.GetProperty("output").GetInt64());
+                Assert.Equal(37, summaryUsage.GetProperty("totalTokens").GetInt64());
                 Assert.True(data.GetProperty("details").ValueKind == JsonValueKind.Object);
                 Assert.Equal("current.txt", Assert.Single(data.GetProperty("details").GetProperty("readFiles").EnumerateArray()).GetString());
                 Assert.Empty(data.GetProperty("details").GetProperty("modifiedFiles").EnumerateArray());
