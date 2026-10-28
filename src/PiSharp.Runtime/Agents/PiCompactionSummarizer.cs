@@ -138,11 +138,16 @@ internal sealed class PiCompactionSummarizer
     private readonly ChatClientAgent _summarizer;
     private readonly RoutedChatClient _routedChatClient;
     private readonly Func<ReasoningOptions?> _getReasoning;
+    private readonly Func<int?> _getDesiredMaxOutputTokens;
+    private readonly ProviderRetryPolicy _retryPolicy;
 
-    public PiCompactionSummarizer(RoutedChatClient client, Func<ReasoningOptions?> getReasoning)
+    public PiCompactionSummarizer(RoutedChatClient client, Func<ReasoningOptions?> getReasoning,
+        Func<int?> getDesiredMaxOutputTokens, ProviderRetryPolicy retryPolicy)
     {
         _routedChatClient = client;
         _getReasoning = getReasoning;
+        _getDesiredMaxOutputTokens = getDesiredMaxOutputTokens;
+        _retryPolicy = retryPolicy;
         _summarizer = new ChatClientAgent(_routedChatClient, new ChatClientAgentOptions
         {
             Name = "PiSharpCompaction",
@@ -154,7 +159,8 @@ internal sealed class PiCompactionSummarizer
     }
 
     public async Task<PiAgent.CompactionSummary> SummarizeAsync(IReadOnlyList<ChatMessage> messages, string? focus,
-        CancellationToken cancellationToken = default, string? previousSummary = null, bool turnPrefix = false)
+        CancellationToken cancellationToken = default, string? previousSummary = null, bool turnPrefix = false,
+        int? reserveTokens = null)
     {
         if (focus?.Length > 4096) throw new ArgumentException("Compaction instructions exceed 4096 characters.", nameof(focus));
         var transcript = BuildTranscript(messages);
@@ -164,7 +170,8 @@ internal sealed class PiCompactionSummarizer
                 (previousSummary is null ? "" : $"<previous-summary>\n{previousSummary}\n</previous-summary>\n\n") +
                 (previousSummary is null ? SummarizationPrompt : UpdateSummarizationPrompt) +
                 (string.IsNullOrEmpty(focus) ? "" : $"\n\nAdditional focus: {focus}");
-        return await RunSummaryAsync(request, messages, "compaction", cancellationToken).ConfigureAwait(false);
+        return await RunSummaryAsync(request, messages, "compaction", cancellationToken, reserveTokens, turnPrefix)
+            .ConfigureAwait(false);
     }
 
     public async Task<PiAgent.CompactionSummary> SummarizeBranchAsync(IReadOnlyList<ChatMessage> messages,
@@ -183,14 +190,42 @@ internal sealed class PiCompactionSummarizer
     }
 
     private async Task<PiAgent.CompactionSummary> RunSummaryAsync(string request, IReadOnlyList<ChatMessage> messages,
-        string usageSource, CancellationToken cancellationToken)
+        string usageSource, CancellationToken cancellationToken, int? reserveTokens = null, bool turnPrefix = false)
     {
         var directOptions = _routedChatClient.HasRouter ? _routedChatClient.CreateDirectRequestOptions(messages) : null;
         var reasoning = directOptions is null ? _getReasoning() : null;
         var requestOptions = directOptions ?? (reasoning is null ? null : new ChatOptions { Reasoning = reasoning });
-        var response = await _summarizer.RunAsync(request,
+        var desiredOutputTokens = _getDesiredMaxOutputTokens();
+        if (desiredOutputTokens is <= 0) desiredOutputTokens = null;
+        var outputLimit = reserveTokens is { } reserve
+            ? (int)Math.Floor((turnPrefix ? 0.5 : 0.8) * reserve)
+            : desiredOutputTokens;
+        if (reserveTokens is not null && desiredOutputTokens is > 0)
+            outputLimit = Math.Min(outputLimit ?? desiredOutputTokens.Value, desiredOutputTokens.Value);
+        if (outputLimit is { } maxOutputTokens)
+        {
+            requestOptions = requestOptions?.Clone() ?? new ChatOptions();
+            requestOptions.MaxOutputTokens = maxOutputTokens;
+        }
+        var response = await RunWithRetryAsync(() => _summarizer.RunAsync(request,
             options: requestOptions is null ? null : new ChatClientAgentRunOptions(requestOptions),
-            cancellationToken: cancellationToken);
+            cancellationToken: cancellationToken), retryCount: 0).ConfigureAwait(false);
+
+        async Task<TResponse> RunWithRetryAsync<TResponse>(Func<Task<TResponse>> operation, int retryCount)
+        {
+            try
+            {
+                return await operation().ConfigureAwait(false);
+            }
+            catch (Exception error) when (_retryPolicy.CanRetry(error, retryCount, producedOutput: false))
+            {
+                await Task.Delay(_retryPolicy.Delay, cancellationToken).ConfigureAwait(false);
+                return await RunWithRetryAsync(operation, retryCount + 1).ConfigureAwait(false);
+            }
+        }
+
+        if (response.FinishReason == ChatFinishReason.Length)
+            throw new InvalidDataException("Summarization failed: generation hit the token cap and the summary is incomplete");
         if (string.IsNullOrWhiteSpace(response.Text)) throw new InvalidDataException("Summarizer returned an empty response.");
         var route = VirtualModelRequestHints.ReadHint(directOptions)?.Execution?.Route;
         return new PiAgent.CompactionSummary(response.Text, response.Usage,
@@ -207,20 +242,25 @@ internal sealed class PiCompactionSummarizer
         var omittedEarlier = false;
         for (var i = messages.Count - 1; i >= 0; i--)
         {
-            var line = SummaryTranscriptExcerpt.SerializeForSummary(messages[i]) + Environment.NewLine + Environment.NewLine;
-            if (line.Length == 2 * Environment.NewLine.Length) continue;
-            if (length + line.Length > 64 * 1024 - 128)
+            var line = SummaryTranscriptExcerpt.SerializeForSummary(messages[i]);
+            if (line.Length == 0) continue;
+            var separatorLength = excerpts.Count == 0 ? 0 : 2 * Environment.NewLine.Length;
+            if (length + separatorLength + line.Length > 64 * 1024 - 128)
             {
                 omittedEarlier = true;
                 break;
             }
             excerpts.Push(line);
-            length += line.Length;
+            length += separatorLength + line.Length;
         }
         var transcript = new System.Text.StringBuilder(length + 128);
         if (omittedEarlier)
-            transcript.AppendLine("[Earlier conversation omitted from bounded summarization transcript.]");
-        foreach (var line in excerpts) transcript.Append(line);
+            transcript.Append("[Earlier conversation omitted from bounded summarization transcript.]");
+        foreach (var line in excerpts)
+        {
+            if (transcript.Length > 0) transcript.AppendLine().AppendLine();
+            transcript.Append(line);
+        }
         return transcript.ToString();
     }
 

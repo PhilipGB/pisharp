@@ -694,6 +694,34 @@ public sealed class CompactionTests
     }
 
     [Fact]
+    public async Task SummaryRejectsLengthStoppedOutputAndRetriesTransientProviderFailure()
+    {
+        var lengthClient = new SummaryClient
+        {
+            SummaryResponses = ["incomplete summary"],
+            SummaryFinishReason = ChatFinishReason.Length
+        };
+        var lengthAgent = new PiAgent(lengthClient, new CodingTools(Path.GetTempPath()),
+            retryPolicy: ProviderRetryPolicy.None);
+        var lengthFailure = await Assert.ThrowsAsync<InvalidDataException>(() =>
+            lengthAgent.SummarizeAsync([new ChatMessage(ChatRole.User, "context")], null));
+        Assert.Equal("Summarization failed: generation hit the token cap and the summary is incomplete",
+            lengthFailure.Message);
+        Assert.Single(lengthClient.SummaryRequests);
+
+        var retryClient = new SummaryClient
+        {
+            FailSummaryNumber = 1,
+            SummaryResponses = ["unused response", "recovered summary"]
+        };
+        var retryAgent = new PiAgent(retryClient, new CodingTools(Path.GetTempPath()),
+            retryPolicy: new ProviderRetryPolicy(maxRetries: 1));
+        var summary = await retryAgent.SummarizeAsync([new ChatMessage(ChatRole.User, "context")], null);
+        Assert.Equal("recovered summary", summary.Text);
+        Assert.Equal(2, retryClient.SummaryRequests.Count);
+    }
+
+    [Fact]
     public async Task LongSummaryTranscriptRetainsLatestMessageWithinBound()
     {
         var client = new ToolLoopBudgetClient();
@@ -1454,6 +1482,7 @@ public sealed class CompactionTests
         public bool FailSummary { get; init; }
         public int? FailSummaryNumber { get; init; }
         public UsageDetails? SummaryUsage { get; init; }
+        public ChatFinishReason? SummaryFinishReason { get; init; }
         public string LastSummaryRequest { get; private set; } = "";
         public IReadOnlyList<string>? SummaryResponses { get; init; }
         public List<string> SummaryRequests { get; } = [];
@@ -1470,7 +1499,8 @@ public sealed class CompactionTests
                 : "Summary of first turn";
             return Task.FromResult(new ChatResponse([new ChatMessage(ChatRole.Assistant, summary)])
             {
-                Usage = SummaryUsage
+                Usage = SummaryUsage,
+                FinishReason = SummaryFinishReason
             });
         }
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,

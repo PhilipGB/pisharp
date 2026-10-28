@@ -20,7 +20,7 @@ if (head !== PIN) throw new Error(`Pi checkout is ${head}; expected ${PIN}`);
 
 const importFromPi = (relative) => import(pathToFileURL(join(piRoot, relative)).href);
 const [{ createHarness }, { fauxAssistantMessage }, { createAssistantMessageEventStream },
-  { prepareCompaction, DEFAULT_COMPACTION_SETTINGS, estimateContextTokens, estimateProjectedContextTokens,
+  { compact, generateSummaryWithUsage, prepareCompaction, DEFAULT_COMPACTION_SETTINGS, estimateContextTokens, estimateProjectedContextTokens,
     estimateTokens, shouldCompact }, { buildSessionProjection }, { SettingsManager }, { SETTINGS_DEFAULTS }] = await Promise.all([
   importFromPi("packages/coding-agent/test/suite/harness.ts"),
   importFromPi("packages/ai/src/providers/faux.ts"),
@@ -726,10 +726,261 @@ async function runErrorTurnUsageOnce() {
   };
 }
 
+async function runPiC7() {
+  const harness = await createHarness({
+    models: [{ id: "faux-1", contextWindow: 50_000, maxTokens: 96, reasoning: true }],
+    tools: [],
+    settings: { retry: { enabled: true, maxRetries: 1, baseDelayMs: 0, maxAgentDelayMs: 0 } },
+  });
+  const baseModel = harness.getModel();
+  const requests = [];
+  let routedHarness = null;
+  let responses = [];
+  const streamFn = (model, context, options) => {
+    const visible = context.messages.map(plainMessage);
+    requests.push({
+      modelId: model.id,
+      maxTokens: options?.maxTokens ?? null,
+      reasoning: options?.reasoning ?? null,
+      messages: visible,
+      systemPrompt: visible.find(message => message.role === "system")?.text ?? null,
+      prompt: visible.findLast(message => message.role === "user")?.text ?? null,
+    });
+    const spec = responses.length ? responses.shift() : { text: "summary" };
+    const message = {
+      ...fauxAssistantMessage(spec.text ?? "", {
+        stopReason: spec.stopReason ?? "stop",
+        errorMessage: spec.errorMessage,
+      }),
+      api: model.api,
+      provider: model.provider,
+      model: model.id,
+    };
+    if (Object.hasOwn(spec, "usage")) message.usage = spec.usage;
+    else delete message.usage;
+    const stream = createAssistantMessageEventStream();
+    queueMicrotask(() => stream.push(spec.stopReason === "error"
+      ? { type: "error", reason: "error", error: message }
+      : { type: "done", reason: spec.stopReason ?? "stop", message }));
+    return stream;
+  };
+  const user = text => ({ role: "user", content: [{ type: "text", text }], timestamp: 1 });
+  const assistant = text => ({ ...fauxAssistantMessage(text, { timestamp: 2 }), timestamp: 2 });
+  const toolCall = (id, name, args) => ({
+    ...fauxAssistantMessage("", { timestamp: 2, stopReason: "toolUse" }),
+    content: [{ type: "toolCall", id, name, arguments: args }],
+  });
+  const toolResult = (id, text) => ({
+    role: "toolResult", toolCallId: id, toolName: "read",
+    content: [{ type: "text", text }], isError: false, timestamp: 3,
+  });
+  const summary = async ({ messages = [user("open the release task"), assistant("keep the release decision")],
+    focus, previousSummary, turnPrefix = false, model = baseModel, retry }) => {
+    const before = requests.length;
+    const result = await generateSummaryWithUsage(messages, model, 100, undefined, undefined, undefined,
+      focus, previousSummary, "high", streamFn, undefined, retry, undefined, "c7-session");
+    return { request: requests[before], text: result.text, usage: result.usage ?? null,
+      usageSupplied: result.usage !== undefined, turnPrefix };
+  };
+
+  const cases = {};
+  try {
+    responses = [{ text: "initial summary", usage: { input: 10, output: 2, cacheRead: 0, cacheWrite: 0,
+      totalTokens: 12, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } } }];
+    cases["C7.initial-summary-instructions-match-pinned-prompt"] = await summary({});
+
+    responses = [{ text: "updated summary" }];
+    cases["C7.previous-summary-is-updated-with-prior-facts-preserved"] = await summary({
+      previousSummary: "Known fact: release uses branch stable.",
+    });
+
+    responses = [{ text: "focus history summary" }, { text: "focused turn summary" }];
+    const focusBefore = requests.length;
+    await compact({
+      firstKeptEntryId: "kept-entry",
+      messagesToSummarize: [user("older question"), assistant("older answer")],
+      turnPrefixMessages: [user("U".repeat(100)), toolCall("read-call", "read", { path: "current.txt" }),
+        toolResult("read-call", "R".repeat(80))],
+      isSplitTurn: true, tokensBefore: 50,
+      fileOps: { read: new Set(["current.txt"]), written: new Set(), edited: new Set() },
+      settings: { ...DEFAULT_COMPACTION_SETTINGS, reserveTokens: 100, keepRecentTokens: 10 },
+    }, baseModel, undefined, undefined, "prioritize exact file paths", undefined, "high", streamFn, undefined,
+    { enabled: false, maxRetries: 0, baseDelayMs: 0 }, undefined, "c7-focus");
+    const focusRequests = requests.slice(focusBefore);
+    cases["C7.manual-focus-is-excluded-from-turn-prefix-summary"] = {
+      historyIncludesFocus: focusRequests[0]?.prompt?.includes("prioritize exact file paths") ?? false,
+      turnPrefixExcludesFocus: !(focusRequests[1]?.prompt ?? "").includes("prioritize exact file paths"),
+      turnPrefixPrompt: focusRequests[1]?.prompt ?? null,
+    };
+
+    responses = [{ text: "history summary" }, { text: "turn prefix summary" }];
+    const splitBefore = requests.length;
+    const splitResult = await compact({
+      firstKeptEntryId: "kept-entry",
+      messagesToSummarize: [user("older question"), assistant("older answer")],
+      turnPrefixMessages: [user("U".repeat(100)), toolCall("read-call", "read", { path: "current.txt" }),
+        toolResult("read-call", "R".repeat(80))],
+      isSplitTurn: true,
+      tokensBefore: 50,
+      fileOps: { read: new Set(["current.txt"]), written: new Set(), edited: new Set() },
+      settings: { ...DEFAULT_COMPACTION_SETTINGS, reserveTokens: 100, keepRecentTokens: 10 },
+    }, baseModel, undefined, undefined, "manual focus", undefined, "high", streamFn, undefined,
+    { enabled: true, maxRetries: 1, baseDelayMs: 0, maxAgentDelayMs: 0 }, undefined, "c7-split");
+    cases["C7.split-turn-uses-history-and-turn-summary-requests"] = {
+      requests: requests.slice(splitBefore), summary: splitResult.summary,
+      summaryUsage: splitResult.summaryUsage ?? splitResult.usage ?? null,
+    };
+
+    responses = [{ text: "tool history summary" }];
+    cases["C7.tool-call-result-content-is-serialized-for-summary"] = await summary({
+      messages: [user("read the file"), toolCall("read-1", "read", { path: "plan.md" }),
+        toolResult("read-1", "Decision: ship on Friday.")],
+    });
+
+    responses = [{ text: "file history summary" }, { text: "summary" }];
+    const fileBefore = requests.length;
+    const fileResult = await compact({
+      firstKeptEntryId: "kept-entry",
+      messagesToSummarize: [user("read and update files"), toolCall("read-1", "read", { path: "plan.md" }),
+        toolResult("read-1", "plan contents"), toolCall("write-1", "write", { path: "release.md" }),
+        toolResult("write-1", "saved"), assistant("files updated")],
+      turnPrefixMessages: [user("continue")], isSplitTurn: true, tokensBefore: 50,
+      fileOps: { read: new Set(["plan.md"]), written: new Set(["release.md"]), edited: new Set() },
+      settings: { ...DEFAULT_COMPACTION_SETTINGS, reserveTokens: 100, keepRecentTokens: 10 },
+    }, baseModel, undefined, undefined, undefined, undefined, "high", streamFn, undefined,
+    { enabled: false, maxRetries: 0, baseDelayMs: 0 }, undefined, "c7-files");
+    cases["C7.file-operation-details-follow-summarized-history"] = {
+      requests: requests.slice(fileBefore), summary: fileResult.summary, details: fileResult.details ?? null,
+    };
+
+    const failureHarness = await createHarness({
+      models: [{ id: "faux-1", contextWindow: 50_000, maxTokens: 96, reasoning: true }],
+      tools: [],
+      settings: { compaction: { reserveTokens: 100, keepRecentTokens: 1 } },
+    });
+    let failureObservations;
+    try {
+      const failureModel = failureHarness.getModel();
+      const failureNow = Date.now();
+      for (const [role, text, offset] of [
+        ["user", "first history", -4_000], ["assistant", "first answer", -3_000],
+        ["user", "recent history", -2_000], ["assistant", "recent answer", -1_000],
+      ]) {
+        if (role === "user") {
+          failureHarness.sessionManager.appendMessage({ role, content: [{ type: "text", text }], timestamp: failureNow + offset });
+        } else {
+          failureHarness.sessionManager.appendMessage({
+            ...fauxAssistantMessage(text, { timestamp: failureNow + offset }),
+            api: failureModel.api, provider: failureModel.provider, model: failureModel.id,
+          });
+        }
+      }
+      failureHarness.session.agent.state.messages = failureHarness.sessionManager.buildSessionContext().messages;
+      failureHarness.session.agent.streamFunction = streamFn;
+      const lengthHead = failureHarness.sessionManager.getEntries().at(-1)?.id;
+      responses = [{ text: "partial summary", stopReason: "length" }];
+      let lengthError = null;
+      try { await failureHarness.session.compact(); }
+      catch (caught) { lengthError = String(caught?.message ?? caught); }
+      const afterLengthHead = failureHarness.sessionManager.getEntries().at(-1)?.id;
+      const length = {
+        error: lengthError,
+        compactionCount: failureHarness.sessionManager.getEntries().filter(entry => entry.type === "compaction").length,
+        canonicalStateUnchanged: lengthHead === afterLengthHead,
+      };
+      responses = [{ text: "   " }];
+      let emptyError = null;
+      let emptyResult = null;
+      try { emptyResult = await failureHarness.session.compact(); }
+      catch (caught) { emptyError = String(caught?.message ?? caught); }
+      failureObservations = {
+        length,
+        empty: {
+          error: emptyError,
+          summary: emptyResult?.summary ?? null,
+          compactionCount: failureHarness.sessionManager.getEntries().filter(entry => entry.type === "compaction").length,
+          canonicalStateUnchanged: afterLengthHead === failureHarness.sessionManager.getEntries().at(-1)?.id,
+        },
+      };
+    } finally {
+      failureHarness.cleanup();
+    }
+    cases["C7.length-stop-and-empty-summary-fail-safely"] = failureObservations;
+
+    responses = [{ text: "", stopReason: "error", errorMessage: "529 overloaded" }, { text: "retried summary" }];
+    const retryBefore = requests.length;
+    const retryResult = await summary({ retry: { enabled: true, maxRetries: 1, baseDelayMs: 0, maxAgentDelayMs: 0 } });
+    cases["C7.transient-stream-failure-obeys-retry-policy"] = {
+      attempts: requests.slice(retryBefore).length, requestSequence: requests.slice(retryBefore),
+      summary: retryResult.text,
+    };
+
+    responses = [{ text: "usage summary", usage: { input: 11, output: 3, cacheRead: 0, cacheWrite: 0,
+      totalTokens: 14, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } } }];
+    const suppliedUsage = await summary({});
+    responses = [{ text: "no usage summary" }];
+    const omittedUsage = await summary({});
+    cases["C7.summary-usage-is-reported-only-when-supplied"] = {
+      supplied: { usageSupplied: suppliedUsage.usageSupplied, usage: suppliedUsage.usage },
+      omitted: { usageSupplied: omittedUsage.usageSupplied, usage: omittedUsage.usage },
+    };
+
+    responses = [{ text: "routed summary" }];
+    routedHarness = await createHarness({
+      models: [
+        { id: "small", contextWindow: 1_000, maxTokens: 96 },
+        { id: "large", contextWindow: 50_000, maxTokens: 48, reasoning: true },
+      ],
+      tools: [],
+      settings: { compaction: { reserveTokens: 100, keepRecentTokens: 1 } },
+      extensionFactories: [
+        (pi) => pi.registerVirtualModel({
+          provider: "router", id: "auto", name: "Auto", thinkingLevels: ["high"], contextWindow: 1_000,
+          route: (_request, context) => ({ model: context.modelRegistry.find("faux", "large"), thinkingLevel: "high" }),
+        }),
+      ],
+    });
+    const routeRuntime = routedHarness.session.modelRuntime;
+    await routedHarness.session.setModel(routeRuntime.getModel("router", "auto"));
+    routedHarness.session.setThinkingLevel("high");
+    routedHarness.session.agent.streamFunction = streamFn;
+    const routeModel = routedHarness.session.model;
+    const now = Date.now();
+    for (const [role, text, offset] of [
+      ["user", "first history", -4_000], ["assistant", "first answer", -3_000],
+      ["user", "recent history", -2_000], ["assistant", "recent answer", -1_000],
+    ]) {
+      if (role === "user") {
+        routedHarness.sessionManager.appendMessage({ role, content: [{ type: "text", text }], timestamp: now + offset });
+      } else {
+        routedHarness.sessionManager.appendMessage({
+          ...fauxAssistantMessage(text, { timestamp: now + offset }),
+          api: routeModel.api, provider: routeModel.provider, model: routeModel.id,
+        });
+      }
+    }
+    routedHarness.session.agent.state.messages = routedHarness.sessionManager.buildSessionContext().messages;
+    const routeBefore = requests.length;
+    await routedHarness.session.compact();
+    const routedRequests = requests.slice(routeBefore);
+    cases["C7.summary-model-routing-and-thinking-options"] = {
+      requests: routedRequests,
+      modelId: routedRequests[0]?.modelId ?? null,
+      maxTokens: routedRequests[0]?.maxTokens ?? null,
+      reasoning: routedRequests[0]?.reasoning ?? null,
+    };
+    return { scenario: "c7", cases };
+  } finally {
+    routedHarness?.cleanup();
+    harness.cleanup();
+  }
+}
+
 async function runOnce() {
   if (scenario === "c3") return runC3();
   if (scenario === "c4") return runC4();
   if (scenario === "c6") return runC6();
+  if (scenario === "c7") return runPiC7();
   if (scenario === "error-turn-usage") return runErrorTurnUsageOnce();
   const contextWindow = scenario === "queued-steering" ? 12_000
     : ["threshold-after-turn", "threshold-equal", "threshold-over", "disabled-setting"].includes(scenario) ? 10_000

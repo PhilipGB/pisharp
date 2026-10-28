@@ -153,6 +153,13 @@ internal sealed class RoutedChatClient(MutableChatClient inner, Action<AgentLife
         var routedMessages = ObservedChatClient.FilterImagesForModel(contextMessages, blockImages: directBlockImages,
             supportsImages: route.Model.Input?.Contains("image", StringComparer.Ordinal) != false);
         var physicalOptions = NativeContextMutationRequest.Strip(contextOptions);
+        var requestedMaxOutputTokens = physicalOptions?.MaxOutputTokens;
+        if (hint?.Reason == "direct" && route.Model.MaxOutputTokens is { } modelMaxOutputTokens &&
+            (requestedMaxOutputTokens is null || requestedMaxOutputTokens > modelMaxOutputTokens))
+        {
+            physicalOptions = physicalOptions?.Clone() ?? new ChatOptions();
+            physicalOptions.MaxOutputTokens = modelMaxOutputTokens;
+        }
         return (route, routedMessages, VirtualModelRequestHints.ForPhysicalModel(physicalOptions, route));
     }
 
