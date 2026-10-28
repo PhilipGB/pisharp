@@ -43,12 +43,13 @@ internal static class ConversationContextProjection
             if (node.Type != "usage") continue;
             var usage = node.Payload.Deserialize<UsageRecord>() ??
                 throw new InvalidDataException($"Invalid usage record at {node.Id}.");
-            if (usage.Source != "model" || ContextTokens(usage) is not > 0) continue;
+            var contextTokens = ContextTokens(usage);
+            if (usage.Source != "model" || contextTokens is not > 0) continue;
             var assistantIndex = FollowingAssistantIndex(path, index);
             if (assistantIndex < 0) assistantIndex = PreviousAssistantIndex(path, index);
             if (assistantIndex < 0 || !IsUsableAssistantMessage(path, assistantIndex, path[assistantIndex],
                     ContextMessageForNode(path[assistantIndex])!)) continue;
-            usageByAssistantIndex[assistantIndex] = ContextTokens(usage);
+            usageByAssistantIndex[assistantIndex] = contextTokens.Value;
         }
 
         if (usageByAssistantIndex.Count == 0)
@@ -101,11 +102,12 @@ internal static class ConversationContextProjection
         return true;
     }
 
-    private static long ContextTokens(UsageRecord usage)
+    private static long? ContextTokens(UsageRecord usage)
     {
-        if (usage.TotalTokens > 0) return usage.TotalTokens;
-        return SaturatingAdd(SaturatingAdd(usage.InputTokens, usage.OutputTokens),
-            SaturatingAdd(usage.CachedInputTokens, usage.CachedWriteTokens));
+        if (usage.TotalTokens is > 0) return usage.TotalTokens;
+        if (usage.InputTokenCountIncludingCached is not long input || usage.OutputTokens is not long output ||
+            usage.CachedWriteTokens is not long cacheWrite) return null;
+        return SaturatingAdd(SaturatingAdd(input, output), cacheWrite);
     }
 
     private static bool TryGetPiUsageTokens(ConversationNode node, out long tokens)
@@ -117,13 +119,20 @@ internal static class ConversationContextProjection
             return false;
 
         var total = Number(usage, "totalTokens");
-        tokens = total > 0 ? total : SaturatingAdd(SaturatingAdd(Number(usage, "input"), Number(usage, "output")),
-            SaturatingAdd(Number(usage, "cacheRead"), Number(usage, "cacheWrite")));
+        if (total is > 0)
+        {
+            tokens = total.Value;
+            return true;
+        }
+        if (Number(usage, "input") is not long input || Number(usage, "output") is not long output ||
+            Number(usage, "cacheRead") is not long cacheRead || Number(usage, "cacheWrite") is not long cacheWrite)
+            return false;
+        tokens = SaturatingAdd(SaturatingAdd(input, output), SaturatingAdd(cacheRead, cacheWrite));
         return tokens > 0;
     }
 
-    private static long Number(JsonElement value, string name) =>
-        value.TryGetProperty(name, out var property) && property.TryGetInt64(out var result) && result > 0 ? result : 0;
+    private static long? Number(JsonElement value, string name) =>
+        value.TryGetProperty(name, out var property) && property.TryGetInt64(out var result) && result >= 0 ? result : null;
 
     private static long SaturatingAdd(long left, long right) => left > long.MaxValue - right ? long.MaxValue : left + right;
 

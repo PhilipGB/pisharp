@@ -201,10 +201,11 @@ internal sealed class MistralConversationsChatClient(HttpClient http, Uri endpoi
             var total = ReadInt64(usage, "total_tokens");
             var details = new UsageDetails
             {
-                InputTokenCount = prompt - cached,
+                InputTokenCount = prompt,
                 OutputTokenCount = output,
                 CachedInputTokenCount = cached,
-                TotalTokenCount = total > 0 ? total : prompt + output
+                TotalTokenCount = total > 0 ? total : prompt + output,
+                AdditionalCounts = new AdditionalPropertiesDictionary<long> { ["cacheWriteTokens"] = 0 }
             };
             updates.Add(CreateUpdate(responseId, modelId, [new UsageContent(details)]));
         }

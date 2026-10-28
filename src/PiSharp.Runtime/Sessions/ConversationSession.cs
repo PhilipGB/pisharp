@@ -482,22 +482,7 @@ public sealed class ConversationSession
             throw new ArgumentException("Branch summary details must be a JSON value when supplied.", nameof(details));
         if (usage is not null) NativeSessionDocumentCodec.ValidateUsage(usage, Tree.HeadId ?? "new entry");
 
-        object? projectedUsage = usage is null ? null : new
-        {
-            input = usage.InputTokens,
-            output = usage.OutputTokens,
-            cacheRead = usage.CachedInputTokens,
-            cacheWrite = usage.CachedWriteTokens,
-            totalTokens = usage.TotalTokens,
-            cost = usage.Cost is null ? null : new
-            {
-                input = usage.InputCost,
-                output = usage.OutputCost,
-                cacheRead = usage.CachedInputCost,
-                cacheWrite = usage.CachedWriteCost,
-                total = usage.Cost
-            }
-        };
+        object? projectedUsage = usage is null ? null : PiJsonlEntryCodec.ProjectUsage(usage);
         var payload = JsonSerializer.SerializeToElement(new
         {
             fromId,
@@ -556,22 +541,8 @@ public sealed class ConversationSession
         var persistedDetails = extensionDetails?.Clone() ?? (details is null
             ? null
             : JsonSerializer.SerializeToElement(details));
-        var projectedUsage = usage is null ? (JsonElement?)null : JsonSerializer.SerializeToElement(new
-        {
-            input = usage.InputTokens,
-            output = usage.OutputTokens,
-            cacheRead = usage.CachedInputTokens,
-            cacheWrite = usage.CachedWriteTokens,
-            totalTokens = usage.TotalTokens,
-            cost = usage.Cost is not { } total ? null : new
-            {
-                input = usage.InputCost,
-                output = usage.OutputCost,
-                cacheRead = usage.CachedInputCost,
-                cacheWrite = usage.CachedWriteCost,
-                total
-            }
-        });
+        var projectedUsage = usage is null ? (JsonElement?)null :
+            JsonSerializer.SerializeToElement(PiJsonlEntryCodec.ProjectUsage(usage));
         Tree.Append("compaction", JsonSerializer.SerializeToElement(new CompactionRecord(summary,
             retainedEntryId, tokensBefore, persistedDetails, fromExtension, projectedUsage, usage)));
     }

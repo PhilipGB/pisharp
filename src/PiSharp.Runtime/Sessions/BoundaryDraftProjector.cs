@@ -108,7 +108,7 @@ internal static class BoundaryDraftProjector
                     nativeUsage = compaction.Usage is not { } nativeCounts ? null : UsageRecord.Create(
                         session.Model, "compaction", new UsageDetails
                         {
-                            InputTokenCount = nativeCounts.InputTokens,
+                            InputTokenCount = nativeCounts.InputTokens + nativeCounts.CachedInputTokens,
                             OutputTokenCount = nativeCounts.OutputTokens,
                             CachedInputTokenCount = nativeCounts.CachedInputTokens,
                             ReasoningTokenCount = nativeCounts.ReasoningTokens,
@@ -119,7 +119,7 @@ internal static class BoundaryDraftProjector
                 if (compaction.Usage is { } counts)
                     session.AppendUsage(UsageRecord.Create(session.Model, "compaction", new UsageDetails
                     {
-                        InputTokenCount = counts.InputTokens,
+                        InputTokenCount = counts.InputTokens + counts.CachedInputTokens,
                         OutputTokenCount = counts.OutputTokens,
                         CachedInputTokenCount = counts.CachedInputTokens,
                         ReasoningTokenCount = counts.ReasoningTokens,

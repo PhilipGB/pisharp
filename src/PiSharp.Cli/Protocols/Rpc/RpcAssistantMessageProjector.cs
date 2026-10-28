@@ -412,27 +412,22 @@ internal sealed class RpcAssistantMessageProjector
 
     private static JsonObject ProjectUsage(UsageRecord? usage)
     {
-        var inputCost = usage?.InputCost ?? 0;
-        var outputCost = usage?.OutputCost ?? 0;
-        var cachedInputCost = usage?.CachedInputCost ?? 0;
-        var cachedWriteCost = usage?.CachedWriteCost ?? 0;
-        var result = new JsonObject
+        var result = new JsonObject();
+        if (usage?.InputTokens is long input) result["input"] = input;
+        if (usage?.OutputTokens is long output) result["output"] = output;
+        if (usage?.CachedInputTokens is long cacheRead) result["cacheRead"] = cacheRead;
+        if (usage?.CachedWriteTokens is long cacheWrite) result["cacheWrite"] = cacheWrite;
+        if (usage?.TotalTokens is long totalTokens) result["totalTokens"] = totalTokens;
+        if (usage?.Cost is decimal cost)
         {
-            ["input"] = usage?.InputTokens ?? 0,
-            ["output"] = usage?.OutputTokens ?? 0,
-            ["cacheRead"] = usage?.CachedInputTokens ?? 0,
-            ["cacheWrite"] = usage?.CachedWriteTokens ?? 0,
-            ["totalTokens"] = usage?.TotalTokens ?? 0,
-            ["cost"] = new JsonObject
-            {
-                ["input"] = inputCost,
-                ["output"] = outputCost,
-                ["cacheRead"] = cachedInputCost,
-                ["cacheWrite"] = cachedWriteCost,
-                ["total"] = usage?.Cost ?? 0
-            }
-        };
-        if (usage?.ReasoningTokens > 0) result["reasoning"] = usage.ReasoningTokens;
+            var costs = new JsonObject { ["total"] = cost };
+            if (usage.InputCost is decimal inputCost) costs["input"] = inputCost;
+            if (usage.OutputCost is decimal outputCost) costs["output"] = outputCost;
+            if (usage.CachedInputCost is decimal cachedInputCost) costs["cacheRead"] = cachedInputCost;
+            if (usage.CachedWriteCost is decimal cachedWriteCost) costs["cacheWrite"] = cachedWriteCost;
+            result["cost"] = costs;
+        }
+        if (usage?.ReasoningTokens is > 0) result["reasoning"] = usage.ReasoningTokens;
         return result;
     }
 

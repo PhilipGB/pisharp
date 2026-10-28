@@ -48,7 +48,7 @@ public sealed class AgentLifecycleTests
 
         Assert.Contains(events, item => item.Type == "reasoning_delta" && item.Text == "checking the context");
         var usage = Assert.Single(events, item => item.Type == "usage");
-        Assert.Equal(100, usage.InputTokens);
+        Assert.Equal(80, usage.InputTokens);
         Assert.Equal(40, usage.OutputTokens);
         Assert.Equal(20, usage.CachedInputTokens);
         Assert.Equal(12, usage.ReasoningTokens);
@@ -544,7 +544,8 @@ public sealed class AgentLifecycleTests
                     OutputTokenCount = 40,
                     CachedInputTokenCount = 20,
                     ReasoningTokenCount = 12,
-                    TotalTokenCount = 140
+                    TotalTokenCount = 140,
+                    AdditionalCounts = new AdditionalPropertiesDictionary<long> { ["cacheWriteTokens"] = 0 }
                 })]);
             await Task.CompletedTask;
         }

@@ -1402,7 +1402,7 @@ public sealed partial class ConversationRun
                 if (decision.Usage is { } suppliedUsage)
                     summaryUsage = UsageRecord.Create(CurrentModel, "branch_summary", new UsageDetails
                     {
-                        InputTokenCount = suppliedUsage.InputTokens,
+                        InputTokenCount = suppliedUsage.InputTokens + suppliedUsage.CachedInputTokens,
                         OutputTokenCount = suppliedUsage.OutputTokens,
                         CachedInputTokenCount = suppliedUsage.CachedInputTokens,
                         ReasoningTokenCount = suppliedUsage.ReasoningTokens,
@@ -2252,8 +2252,8 @@ public sealed partial class ConversationRun
         var hasTransientProjection = activePath.Skip(latestCompactionIndex + 1)
             .Any(entry => entry.Type == "context_projection");
         var silentOverflow = !hasTransientProjection && policy is { ContextWindowTokens: > 0 } &&
-            latestProviderUsage is not null &&
-            latestProviderUsage.InputTokens > policy.ContextWindowTokens;
+            latestProviderUsage?.InputTokenCountIncludingCached is long reportedInput &&
+            reportedInput > policy.ContextWindowTokens;
         var reason = silentOverflow
             ? NativeExtensions.PiSharpExtensionCompactionReason.Overflow
             : NativeExtensions.PiSharpExtensionCompactionReason.Threshold;
@@ -2472,7 +2472,8 @@ public sealed partial class ConversationRun
     }
 
     private static AgentLifecycleEvent UsageEvent(UsageRecord usage) => new("usage",
-        Text: $"{usage.TotalTokens} tokens" + (usage.Cost is null ? "" : $" · ${usage.Cost:0.######}"),
+        Text: (usage.TotalTokens is long totalTokens ? $"{totalTokens} tokens" : "token usage unavailable") +
+            (usage.Cost is null ? "" : $" · ${usage.Cost:0.######}"),
         InputTokens: usage.InputTokens, OutputTokens: usage.OutputTokens,
         CachedInputTokens: usage.CachedInputTokens, ReasoningTokens: usage.ReasoningTokens,
         TotalTokens: usage.TotalTokens, Cost: usage.Cost, CachedWriteTokens: usage.CachedWriteTokens);

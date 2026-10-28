@@ -165,7 +165,7 @@ internal sealed class ConversationCompactionCoordinator(
 
     private static UsageDetails CreateUsageDetails(NativeExtensions.PiSharpExtensionCompactionUsage usage) => new()
     {
-        InputTokenCount = usage.InputTokens,
+        InputTokenCount = usage.InputTokens + usage.CachedInputTokens,
         OutputTokenCount = usage.OutputTokens,
         CachedInputTokenCount = usage.CachedInputTokens,
         ReasoningTokenCount = usage.ReasoningTokens,

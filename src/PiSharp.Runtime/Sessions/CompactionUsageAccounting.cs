@@ -13,11 +13,16 @@ internal static class CompactionUsageAccounting
         if (records.Count == 1) return records[0];
         return new(records.Select(record => record.Model).Distinct(StringComparer.Ordinal).Count() == 1
                 ? records[0].Model : "multiple", "compaction",
-            records.Sum(record => record.InputTokens), records.Sum(record => record.OutputTokens),
-            records.Sum(record => record.CachedInputTokens), records.Sum(record => record.ReasoningTokens),
-            records.Sum(record => record.TotalTokens), records.All(record => record.Cost is not null)
-                ? records.Sum(record => record.Cost) : null, records.Sum(record => record.CachedWriteTokens))
+            UsageTokenAggregation.SumKnown(records.Select(record => record.InputTokens)),
+            UsageTokenAggregation.SumKnown(records.Select(record => record.OutputTokens)),
+            UsageTokenAggregation.SumKnown(records.Select(record => record.CachedInputTokens)),
+            UsageTokenAggregation.SumKnown(records.Select(record => record.ReasoningTokens)),
+            UsageTokenAggregation.SumKnown(records.Select(record => record.TotalTokens)), records.All(record => record.Cost is not null)
+                ? records.Sum(record => record.Cost) : null,
+            UsageTokenAggregation.SumKnown(records.Select(record => record.CachedWriteTokens)))
         {
+            InputIncludingCachedTokens = UsageTokenAggregation.SumKnown(
+                records.Select(record => record.InputTokenCountIncludingCached)),
             InputCost = records.All(record => record.InputCost is not null) ? records.Sum(record => record.InputCost) : null,
             OutputCost = records.All(record => record.OutputCost is not null) ? records.Sum(record => record.OutputCost) : null,
             CachedInputCost = records.All(record => record.CachedInputCost is not null) ? records.Sum(record => record.CachedInputCost) : null,

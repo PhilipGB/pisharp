@@ -180,7 +180,7 @@ public sealed class GoogleGenAiProviderTests
         Assert.Equal("echo", functionCall.Name);
         Assert.Equal("tool_calls", updates[^1].FinishReason?.ToString());
         var usage = Assert.Single(updates.SelectMany(update => update.Contents).OfType<UsageContent>()).Details;
-        Assert.Equal(80, usage.InputTokenCount);
+        Assert.Equal(100, usage.InputTokenCount);
         Assert.Equal(40, usage.OutputTokenCount);
         Assert.Equal(20, usage.CachedInputTokenCount);
         Assert.Equal(10, usage.ReasoningTokenCount);

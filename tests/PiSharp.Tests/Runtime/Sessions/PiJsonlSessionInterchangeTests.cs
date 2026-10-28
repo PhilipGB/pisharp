@@ -345,7 +345,7 @@ public sealed class PiJsonlSessionInterchangeTests
         var plan = Assert.IsType<ConversationSession.CompactionPlan>(session.PrepareCompaction(1));
         var usage = UsageRecord.Create("fixture-model", "compaction", new UsageDetails
         {
-            InputTokenCount = 10,
+            InputTokenCount = 12,
             OutputTokenCount = 12,
             CachedInputTokenCount = 2,
             TotalTokenCount = 24,

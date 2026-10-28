@@ -14,6 +14,21 @@ namespace PiSharp.Tests;
 public sealed class CodemodeModelTests
 {
     [Fact]
+    public void AggregatedClassifierUsageKeepsCostUnknownWhenAnyPriceIsUnknown()
+    {
+        var records = new[]
+        {
+            new UsageRecord("fixture", "classifier", 10, 2, 0, null, 12, 0.5m, CachedWriteTokens: 0),
+            new UsageRecord("fixture", "classifier", 5, 1, 0, null, 6, null, CachedWriteTokens: 0)
+        };
+
+        var aggregate = CodemodeUsageAccounting.Aggregate(records);
+
+        Assert.Equal(18, aggregate.Usage!.TotalTokenCount);
+        Assert.Null(aggregate.Cost);
+    }
+
+    [Fact]
     public async Task GuestCatalogAndClassifierAccessUseHostAuthority()
     {
         var models = new Models();
@@ -263,7 +278,7 @@ public sealed class CodemodeModelTests
             Assert.IsType<ClassifierBoolQuestion>(context.Questions["q"]);
             Calls++;
             return Task.FromResult(new ClassifierResult("fixture-api", provider, id,
-                error ? new Dictionary<string, ClassifierAnswer>() : new Dictionary<string, ClassifierAnswer> { ["q"] = new ClassifierBoolAnswer(0.8) }, error ? "error" : "stop", new UsageRecord("one", "classifier", 100, 10, 0, 0, 110, 0.0003m), ErrorMessage: error ? "provider failure" : null));
+                error ? new Dictionary<string, ClassifierAnswer>() : new Dictionary<string, ClassifierAnswer> { ["q"] = new ClassifierBoolAnswer(0.8) }, error ? "error" : "stop", new UsageRecord("one", "classifier", 100, 10, 0, 0, 110, 0.0003m, CachedWriteTokens: 0), ErrorMessage: error ? "provider failure" : null));
         }
     }
 }

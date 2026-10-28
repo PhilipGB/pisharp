@@ -68,12 +68,13 @@ internal static class BedrockRequestMapper
     public static IReadOnlyDictionary<string, long>? ReadCacheWriteCounts(TokenUsage? usage)
     {
         if (usage is null) return null;
-        var total = usage.CacheWriteInputTokens ?? 0;
+        var total = usage.CacheWriteInputTokens;
         var oneHour = usage.CacheDetails?.Where(detail => detail.Ttl == CacheTTL.ONE_HOUR)
             .Sum(detail => detail.InputTokens ?? 0) ?? 0;
-        if (total == 0 && oneHour == 0) return null;
+        if (total is null && oneHour == 0) return null;
+        total = Math.Max(total ?? 0, oneHour);
         var counts = new Dictionary<string, long>(StringComparer.Ordinal);
-        if (total > 0) counts[CacheWriteCountKey] = total;
+        counts[CacheWriteCountKey] = total.Value;
         if (oneHour > 0) counts[CacheWriteOneHourCountKey] = oneHour;
         return counts;
     }

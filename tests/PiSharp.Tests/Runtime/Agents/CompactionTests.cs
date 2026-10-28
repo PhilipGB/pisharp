@@ -471,7 +471,7 @@ public sealed class CompactionTests
     public async Task AutoBudgetPrefersLatestProviderUsageAfterCurrentCompactionBoundary()
     {
         var conversation = Seed(Path.GetTempPath());
-        conversation.AppendUsage(new UsageRecord("fixture", "model", 4300, 200, 0, 0, 4500, null));
+        conversation.AppendUsage(new UsageRecord("fixture", "model", 4300, 200, 0, 0, 4500, null, CachedWriteTokens: 0));
         var client = new SummaryClient();
         var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())), conversation,
             autoCompaction: new AutoCompactionPolicy(5000, 1000));
@@ -1042,7 +1042,9 @@ public sealed class CompactionTests
             OutputTokenCount = 2,
             TotalTokenCount = 0
         }, null);
-        Assert.Equal(12, usage.TotalTokens);
+        Assert.Equal(10, usage.InputIncludingCachedTokens);
+        Assert.Null(usage.InputTokens);
+        Assert.Null(usage.TotalTokens);
     }
 
     [Fact]
@@ -1050,7 +1052,7 @@ public sealed class CompactionTests
     {
         var usage = UsageRecord.Create("fixture", "model", new UsageDetails
         {
-            InputTokenCount = 2,
+            InputTokenCount = 7,
             OutputTokenCount = 3,
             CachedInputTokenCount = 5,
             TotalTokenCount = 0,
@@ -1058,6 +1060,94 @@ public sealed class CompactionTests
         }, null);
 
         Assert.Equal(17, usage.TotalTokens);
+    }
+
+    [Fact]
+    public void UsageRecordCreateCanFallbackWhenEveryContextCategoryIsKnown()
+    {
+        var usage = UsageRecord.Create("fixture", "model", new UsageDetails
+        {
+            InputTokenCount = 10,
+            OutputTokenCount = 2,
+            CachedInputTokenCount = 0,
+            TotalTokenCount = 0,
+            AdditionalCounts = new AdditionalPropertiesDictionary<long> { ["cacheWriteTokens"] = 0 }
+        }, null);
+
+        Assert.Equal(12, usage.TotalTokens);
+    }
+
+    [Fact]
+    public void UsageRecordCreateSeparatesCachedInputAndKeepsMissingReasoningUnknown()
+    {
+        var pricing = new ModelPricing(3m, 8m, CachedInput: 1m, CachedWrite: 4m);
+        var usage = UsageRecord.Create("fixture", "model", new UsageDetails
+        {
+            InputTokenCount = 100,
+            OutputTokenCount = 3,
+            CachedInputTokenCount = 25,
+            TotalTokenCount = 0,
+            AdditionalCounts = new AdditionalPropertiesDictionary<long> { ["cacheWriteTokens"] = 7 }
+        }, pricing);
+
+        Assert.Equal(75, usage.InputTokens);
+        Assert.Equal(25, usage.CachedInputTokens);
+        Assert.Equal(7, usage.CachedWriteTokens);
+        Assert.Equal(110, usage.TotalTokens);
+        Assert.Null(usage.ReasoningTokens);
+        Assert.Equal(0.000302m, usage.Cost);
+    }
+
+    [Fact]
+    public void UsageRecordCreateSelectsPricingTierUsingAllInputCategories()
+    {
+        var pricing = new ModelPricing(1m, 3m, CachedInput: 0.5m, CachedWrite: 2m,
+            Tiers: [new ModelPricingTier(272_000, 10m, 30m, CachedInput: 1m, CachedWrite: 5m)]);
+        var usage = UsageRecord.Create("tiered", "model", new UsageDetails
+        {
+            InputTokenCount = 260_000,
+            OutputTokenCount = 0,
+            CachedInputTokenCount = 200_000,
+            TotalTokenCount = 0,
+            AdditionalCounts = new AdditionalPropertiesDictionary<long> { ["cacheWriteTokens"] = 20_000 }
+        }, pricing);
+
+        Assert.Equal(0.9m, usage.Cost);
+    }
+
+    [Fact]
+    public void UsageRecordCreateLeavesCostUnknownWithoutModelPricing()
+    {
+        var usage = UsageRecord.Create("unpriced", "model", new UsageDetails
+        {
+            InputTokenCount = 7,
+            OutputTokenCount = 3,
+            TotalTokenCount = 10
+        }, pricing: null);
+
+        Assert.Null(usage.Cost);
+    }
+
+    [Fact]
+    public void UsageRecordCreatePreservesMissingUsageFieldsAsUnknown()
+    {
+        var usage = UsageRecord.Create("partial", "model", new UsageDetails
+        {
+            InputTokenCount = 10,
+            OutputTokenCount = null,
+            CachedInputTokenCount = null,
+            TotalTokenCount = null
+        }, pricing: null);
+
+        Assert.Null(usage.InputTokens);
+        Assert.Null(usage.OutputTokens);
+        Assert.Null(usage.CachedInputTokens);
+        Assert.Null(usage.CachedWriteTokens);
+        Assert.Null(usage.TotalTokens);
+        Assert.Null(usage.ReasoningTokens);
+        Assert.Equal(10, usage.InputIncludingCachedTokens);
+        Assert.Null(usage.Cost);
+        Assert.Null(new UsageRecord("manual", "model", 1, 1, 0, 0, 2, null).CachedWriteTokens);
     }
 
     [Fact]
@@ -1502,10 +1592,35 @@ public sealed class CompactionTests
                 : "Summary of first turn";
             return Task.FromResult(new ChatResponse([new ChatMessage(ChatRole.Assistant, summary)])
             {
-                Usage = SummaryUsage,
+                Usage = CompleteUncachedUsage(SummaryUsage),
                 FinishReason = SummaryFinishReason
             });
         }
+
+        private static UsageDetails? CompleteUncachedUsage(UsageDetails? usage)
+        {
+            if (usage is null) return null;
+            var counts = new AdditionalPropertiesDictionary<long>();
+            if (usage.AdditionalCounts is not null)
+                foreach (var count in usage.AdditionalCounts) counts[count.Key] = count.Value;
+            if (!counts.Keys.Any(key => key.Equals("cacheWriteTokens", StringComparison.OrdinalIgnoreCase) ||
+                    key.Equals("cacheWriteTokenCount", StringComparison.OrdinalIgnoreCase) ||
+                    key.Equals("cache_write_tokens", StringComparison.OrdinalIgnoreCase) ||
+                    key.Equals("cache_creation_input_tokens", StringComparison.OrdinalIgnoreCase) ||
+                    key.Equals("piMessages.cacheWrite", StringComparison.OrdinalIgnoreCase) ||
+                    key.Equals("bedrock.cacheWriteInputTokenCount", StringComparison.OrdinalIgnoreCase)))
+                counts["cacheWriteTokens"] = 0;
+            return new UsageDetails
+            {
+                InputTokenCount = usage.InputTokenCount,
+                OutputTokenCount = usage.OutputTokenCount,
+                CachedInputTokenCount = usage.CachedInputTokenCount ?? 0,
+                ReasoningTokenCount = usage.ReasoningTokenCount,
+                TotalTokenCount = usage.TotalTokenCount,
+                AdditionalCounts = counts
+            };
+        }
+
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {

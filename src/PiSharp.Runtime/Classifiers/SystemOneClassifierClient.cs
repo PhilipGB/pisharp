@@ -59,7 +59,9 @@ public sealed class SystemOneClassifierClient(HttpClient http) : IClassifierClie
                     Usage = UsageRecord.Create(model.Id, "classifier", new UsageDetails
                     {
                         InputTokenCount = Tokens(usage, "input_tokens"),
-                        OutputTokenCount = Tokens(usage, "output_tokens")
+                        OutputTokenCount = Tokens(usage, "output_tokens"),
+                        CachedInputTokenCount = 0,
+                        AdditionalCounts = new() { ["cacheWriteTokens"] = 0 }
                     }, model.Pricing)
                 };
             var answers = output.GetProperty("answers");
@@ -88,8 +90,8 @@ public sealed class SystemOneClassifierClient(HttpClient http) : IClassifierClie
         }
     }
 
-    private static long Tokens(JsonElement usage, string name) => usage.TryGetProperty(name, out var count) &&
-        count.ValueKind == JsonValueKind.Number && count.TryGetInt64(out var value) && value > 0 ? value : 0;
+    private static long? Tokens(JsonElement usage, string name) => usage.TryGetProperty(name, out var count) &&
+        count.ValueKind == JsonValueKind.Number && count.TryGetInt64(out var value) && value >= 0 ? value : null;
     private static double Number(JsonElement value, string name) => Finite(value.GetProperty(name).GetDouble());
     private static double Finite(double value) => double.IsFinite(value) ? value : throw new InvalidDataException("Invalid classifier number.");
 }

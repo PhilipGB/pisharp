@@ -33,9 +33,16 @@ public sealed record ModelPricingTier(int InputTokensAbove, decimal Input, decim
     decimal? CachedWrite = null);
 
 /// <summary>An immutable provider-usage snapshot persisted outside model context.</summary>
-public sealed record UsageRecord(string Model, string Source, long InputTokens, long OutputTokens,
-    long CachedInputTokens, long ReasoningTokens, long TotalTokens, decimal? Cost, long CachedWriteTokens = 0)
+public sealed record UsageRecord(string Model, string Source, long? InputTokens, long? OutputTokens,
+    long? CachedInputTokens, long? ReasoningTokens, long? TotalTokens, decimal? Cost, long? CachedWriteTokens = null)
 {
+    /// <summary>Input tokens including cached reads, when the provider reports that total.</summary>
+    public long? InputIncludingCachedTokens { get; init; }
+
+    [JsonIgnore]
+    public long? InputTokenCountIncludingCached => InputIncludingCachedTokens ??
+        (InputTokens is long input && CachedInputTokens is long cached ? SaturatingAdd(input, cached) : null);
+
     [JsonIgnore]
     public decimal? InputCost { get; init; }
 
@@ -50,42 +57,78 @@ public sealed record UsageRecord(string Model, string Source, long InputTokens, 
 
     public static UsageRecord Create(string model, string source, UsageDetails details, ModelPricing? pricing)
     {
-        var input = details.InputTokenCount ?? 0;
-        var output = details.OutputTokenCount ?? 0;
-        var cached = details.CachedInputTokenCount ?? 0;
-        var cachedWrite = details.AdditionalCounts?.Where(count => count.Key.Equals("cacheWriteTokens", StringComparison.OrdinalIgnoreCase) ||
+        var inputIncludingCached = details.InputTokenCount;
+        var output = details.OutputTokenCount;
+        var cached = details.CachedInputTokenCount;
+        var cachedWriteCounts = details.AdditionalCounts?.Where(count => count.Key.Equals("cacheWriteTokens", StringComparison.OrdinalIgnoreCase) ||
                 count.Key.Equals("cacheWriteTokenCount", StringComparison.OrdinalIgnoreCase) ||
                 count.Key.Equals("cache_write_tokens", StringComparison.OrdinalIgnoreCase) ||
-                count.Key.Equals("cache_creation_input_tokens", StringComparison.OrdinalIgnoreCase))
-            .Sum(count => count.Value) ?? 0;
-        var reasoning = details.ReasoningTokenCount ?? 0;
-        var reportedTotal = details.TotalTokenCount ?? 0;
-        var total = reportedTotal > 0 ? reportedTotal : input + output + cached + cachedWrite;
-        if (input < 0 || output < 0 || cached < 0 || cachedWrite < 0 || reasoning < 0 || total < 0)
+                count.Key.Equals("cache_creation_input_tokens", StringComparison.OrdinalIgnoreCase) ||
+                count.Key.Equals("piMessages.cacheWrite", StringComparison.OrdinalIgnoreCase) ||
+                count.Key.Equals("bedrock.cacheWriteInputTokenCount", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        long? cachedWrite = cachedWriteCounts is { Length: > 0 } ? cachedWriteCounts.Sum(count => count.Value) : null;
+        long? input = inputIncludingCached is long inputTotal && cached is long cacheRead
+            ? inputTotal - cacheRead : null;
+        var reasoning = details.ReasoningTokenCount;
+        var reportedTotal = details.TotalTokenCount;
+        long? total = reportedTotal is > 0 ? reportedTotal :
+            inputIncludingCached is long knownInput && output is long knownOutput && cachedWrite is long knownWrite
+                ? SaturatingAdd(SaturatingAdd(knownInput, knownOutput), knownWrite) : null;
+        if (inputIncludingCached is < 0 || input is < 0 || output is < 0 || cached is < 0 || cachedWrite is < 0 ||
+            reasoning is < 0 || reportedTotal is < 0 || total is < 0 ||
+            (inputIncludingCached is long suppliedInput && cached is long suppliedCached && suppliedCached > suppliedInput))
             throw new InvalidDataException("Provider usage counts cannot be negative.");
         decimal? cost = null;
         decimal? inputCost = null;
         decimal? outputCost = null;
         decimal? cachedInputCost = null;
         decimal? cachedWriteCost = null;
-        if (pricing is not null)
+        if (pricing is not null && inputIncludingCached is long pricedInput && output is long pricedOutput &&
+            cachedWrite is long pricedCacheWrite)
         {
-            var rates = pricing.ForInput(input);
-            var ordinaryInput = Math.Max(0, input - cached);
+            var rates = pricing.ForInput(SaturatingAdd(pricedInput, pricedCacheWrite));
             var cachedRate = rates.CachedInput ?? rates.Input;
             var cachedWriteRate = rates.CachedWrite ?? rates.Input;
-            inputCost = ordinaryInput * rates.Input / 1_000_000m;
-            cachedInputCost = cached * cachedRate / 1_000_000m;
-            cachedWriteCost = cachedWrite * cachedWriteRate / 1_000_000m;
-            outputCost = output * rates.Output / 1_000_000m;
-            cost = inputCost + cachedInputCost + cachedWriteCost + outputCost;
+            if (cached is long pricedCacheRead)
+            {
+                var ordinaryInput = pricedInput - pricedCacheRead;
+                inputCost = ordinaryInput * rates.Input / 1_000_000m;
+                cachedInputCost = pricedCacheRead * cachedRate / 1_000_000m;
+            }
+            else if (rates.CachedInput is null || rates.CachedInput == rates.Input)
+            {
+                // The total input charge is known when cached and ordinary input use the same rate,
+                // although their individual cost breakdown is not known.
+                inputCost = null;
+                cachedInputCost = null;
+            }
+            outputCost = pricedOutput * rates.Output / 1_000_000m;
+            cachedWriteCost = pricedCacheWrite * cachedWriteRate / 1_000_000m;
+            if (cached is long)
+                cost = inputCost + cachedInputCost + cachedWriteCost + outputCost;
+            else if (rates.CachedInput is null || rates.CachedInput == rates.Input)
+                cost = pricedInput * rates.Input / 1_000_000m + cachedWriteCost + outputCost;
         }
         return new UsageRecord(model, source, input, output, cached, reasoning, total, cost, cachedWrite)
         {
+            InputIncludingCachedTokens = inputIncludingCached,
             InputCost = inputCost,
             OutputCost = outputCost,
             CachedInputCost = cachedInputCost,
             CachedWriteCost = cachedWriteCost
         };
+    }
+
+    private static long SaturatingAdd(long left, long right) => left > long.MaxValue - right ? long.MaxValue : left + right;
+}
+
+internal static class UsageTokenAggregation
+{
+    public static long? SumKnown(IEnumerable<long?> counts)
+    {
+        var values = counts.ToArray();
+        return values.Length == 0 ? 0 : values.All(value => value.HasValue)
+            ? values.Sum(value => value!.Value) : null;
     }
 }

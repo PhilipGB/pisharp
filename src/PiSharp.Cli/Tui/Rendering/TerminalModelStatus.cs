@@ -27,16 +27,17 @@ internal static class TerminalModelStatus
 
         var usage = session.ActiveUsage();
         var stats = new List<string>();
-        var input = usage.Sum(item => item.InputTokens);
-        var output = usage.Sum(item => item.OutputTokens);
-        var cached = usage.Sum(item => item.CachedInputTokens);
-        var cachedWrite = usage.Sum(item => item.CachedWriteTokens);
-        if (input > 0) stats.Add("↑" + FormatTokens(input));
-        if (output > 0) stats.Add("↓" + FormatTokens(output));
-        if (cached > 0) stats.Add("R" + FormatTokens(cached));
-        if (cachedWrite > 0) stats.Add("W" + FormatTokens(cachedWrite));
-        if (cached > 0 && usage.LastOrDefault(item => item.Source == "model") is { TotalTokens: > 0 } latestUsage)
-            stats.Add("CH" + (cached * 100d / Math.Max(1, latestUsage.InputTokens + cached)).ToString("F1", CultureInfo.InvariantCulture) + "%");
+        var input = UsageTokenAggregation.SumKnown(usage.Select(item => item.InputTokens));
+        var output = UsageTokenAggregation.SumKnown(usage.Select(item => item.OutputTokens));
+        var cached = UsageTokenAggregation.SumKnown(usage.Select(item => item.CachedInputTokens));
+        var cachedWrite = UsageTokenAggregation.SumKnown(usage.Select(item => item.CachedWriteTokens));
+        if (input is > 0) stats.Add("↑" + FormatTokens(input.Value));
+        if (output is > 0) stats.Add("↓" + FormatTokens(output.Value));
+        if (cached is > 0) stats.Add("R" + FormatTokens(cached.Value));
+        if (cachedWrite is > 0) stats.Add("W" + FormatTokens(cachedWrite.Value));
+        if (cached is > 0 && usage.LastOrDefault(item => item.Source == "model") is
+            { TotalTokens: > 0, InputTokens: long latestInput } latestUsage)
+            stats.Add("CH" + (cached.Value * 100d / Math.Max(1, latestInput + cached.Value)).ToString("F1", CultureInfo.InvariantCulture) + "%");
         var cost = session.ActiveUsage().All(item => item.Cost is not null) ? usage.Sum(item => item.Cost ?? 0) : 0;
         if (cost != 0) stats.Add("$" + cost.ToString("0.000", CultureInfo.InvariantCulture));
         stats.Add(context);

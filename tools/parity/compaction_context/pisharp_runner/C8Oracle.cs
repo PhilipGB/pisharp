@@ -27,7 +27,7 @@ internal static class C8Oracle
 
         var usage = UsageRecord.Create("fixture-model", "compaction", new UsageDetails
         {
-            InputTokenCount = 10,
+            InputTokenCount = 12,
             OutputTokenCount = 12,
             CachedInputTokenCount = 2,
             TotalTokenCount = 24,

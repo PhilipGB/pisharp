@@ -69,4 +69,17 @@ public sealed class RpcSessionStatsProjectorTests
         Assert.Equal(111114, stats["tokens"]!["total"]!.GetValue<long>());
         Assert.Equal(10.1m, stats["cost"]!.GetValue<decimal>());
     }
+
+    [Fact]
+    public void KeepsSessionCostUnknownWhenAnyUsageHasNoPrice()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        session.AppendUsage(new UsageRecord("fixture", "model", 10, 2, 3, 0, 16, 0.5m, CachedWriteTokens: 1));
+        session.AppendUsage(new UsageRecord("fixture", "compaction", 5, 1, 0, null, 6, null, CachedWriteTokens: 0));
+
+        var stats = RpcSessionStatsProjector.Project(session, null, null, null);
+
+        Assert.True(stats.ContainsKey("cost"));
+        Assert.Null(stats["cost"]);
+    }
 }

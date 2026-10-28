@@ -44,13 +44,13 @@ internal static class RpcCompactionResultProjector
         [property: JsonPropertyName("details")] ConversationCompactionDetails Details);
 
     private sealed record RpcCompactionUsage(
-        [property: JsonPropertyName("input")] long Input,
-        [property: JsonPropertyName("output")] long Output,
-        [property: JsonPropertyName("cacheRead")] long CacheRead,
-        [property: JsonPropertyName("cacheWrite")] long CacheWrite,
-        [property: JsonPropertyName("reasoning"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-        long Reasoning,
-        [property: JsonPropertyName("totalTokens")] long TotalTokens,
+        [property: JsonPropertyName("input"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] long? Input,
+        [property: JsonPropertyName("output"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] long? Output,
+        [property: JsonPropertyName("cacheRead"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] long? CacheRead,
+        [property: JsonPropertyName("cacheWrite"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] long? CacheWrite,
+        [property: JsonPropertyName("reasoning"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        long? Reasoning,
+        [property: JsonPropertyName("totalTokens"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] long? TotalTokens,
         [property: JsonPropertyName("cost"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         RpcCompactionCost? Cost)
     {
@@ -70,9 +70,9 @@ internal static class RpcCompactionResultProjector
     }
 
     private sealed record RpcCompactionCost(
-        [property: JsonPropertyName("input")] decimal Input,
-        [property: JsonPropertyName("output")] decimal Output,
-        [property: JsonPropertyName("cacheRead")] decimal CacheRead,
-        [property: JsonPropertyName("cacheWrite")] decimal CacheWrite,
+        [property: JsonPropertyName("input"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] decimal? Input,
+        [property: JsonPropertyName("output"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] decimal? Output,
+        [property: JsonPropertyName("cacheRead"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] decimal? CacheRead,
+        [property: JsonPropertyName("cacheWrite"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] decimal? CacheWrite,
         [property: JsonPropertyName("total")] decimal Total);
 }

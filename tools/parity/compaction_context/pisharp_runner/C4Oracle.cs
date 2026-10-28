@@ -94,7 +94,7 @@ internal static class C4Oracle
     {
         var session = new ConversationSession(cwd, "fixture", null);
         session.Append(new ChatMessage(ChatRole.User, "previous request"));
-        session.AppendUsage(new UsageRecord("model", "model", 10, 3, 0, 0, 13, null));
+        session.AppendUsage(new UsageRecord("model", "model", 10, 3, 0, 0, 13, null, CachedWriteTokens: 0));
         session.Append(new ChatMessage(ChatRole.Assistant, "answer"));
         session.Append(new ChatMessage(ChatRole.User, "pending"));
         var usageTokens = session.LatestContextUsageTokens();
@@ -114,12 +114,12 @@ internal static class C4Oracle
     {
         var session = new ConversationSession(cwd, "fixture", null);
         session.Append(new ChatMessage(ChatRole.User, "request"));
-        session.AppendUsage(new UsageRecord("model", "model", 500, 0, 0, 0, 500, null));
+        session.AppendUsage(new UsageRecord("model", "model", 500, 0, 0, 0, 500, null, CachedWriteTokens: 0));
         session.Append(new ChatMessage(ChatRole.Assistant, "failed")
         {
             AdditionalProperties = new() { ["pisharp.stopReason"] = "error" }
         });
-        session.AppendUsage(new UsageRecord("model", "model", 0, 0, 0, 0, 0, null));
+        session.AppendUsage(new UsageRecord("model", "model", 0, 0, 0, 0, 0, null, CachedWriteTokens: 0));
         session.Append(new ChatMessage(ChatRole.Assistant, "zero usage"));
         var usageTokens = session.LatestContextUsageTokens();
         var context = session.ContextMessages();
@@ -143,7 +143,7 @@ internal static class C4Oracle
     {
         var session = new ConversationSession(cwd, "fixture", null);
         session.Append(new ChatMessage(ChatRole.User, "request"));
-        session.AppendUsage(new UsageRecord("model", "model", 90, 10, 0, 0, 100, null));
+        session.AppendUsage(new UsageRecord("model", "model", 90, 10, 0, 0, 100, null, CachedWriteTokens: 0));
         session.Append(new ChatMessage(ChatRole.Assistant, "answer"));
         session.Append(new ChatMessage(ChatRole.User, "pending one"));
         session.Append(new ChatMessage(ChatRole.User, "pending two with more text"));
@@ -158,7 +158,7 @@ internal static class C4Oracle
     {
         var edited = new ConversationSession(cwd, "fixture", null);
         edited.Append(new ChatMessage(ChatRole.User, "request"));
-        edited.AppendUsage(new UsageRecord("model", "model", 10, 3, 0, 0, 13, null));
+        edited.AppendUsage(new UsageRecord("model", "model", 10, 3, 0, 0, 13, null, CachedWriteTokens: 0));
         edited.Append(new ChatMessage(ChatRole.Assistant, "answer"));
         var assistantId = edited.Tree.HeadId!;
         edited.Tree.Append("context_edit", System.Text.Json.JsonSerializer.SerializeToElement(
@@ -167,7 +167,7 @@ internal static class C4Oracle
 
         var compacted = new ConversationSession(cwd, "fixture", null);
         compacted.Append(new ChatMessage(ChatRole.User, "old request"));
-        compacted.AppendUsage(new UsageRecord("model", "model", 10, 3, 0, 0, 13, null));
+        compacted.AppendUsage(new UsageRecord("model", "model", 10, 3, 0, 0, 13, null, CachedWriteTokens: 0));
         compacted.Append(new ChatMessage(ChatRole.Assistant, "old answer"));
         compacted.Append(new ChatMessage(ChatRole.User, "current request"));
         compacted.Append(new ChatMessage(ChatRole.Assistant, "current answer"));

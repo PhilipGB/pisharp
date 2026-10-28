@@ -137,26 +137,32 @@ internal static class PiJsonlEntryCodec
         return message;
     }
 
-    internal static JsonObject EmptyUsage() => new()
+    internal static JsonObject EmptyUsage() => new();
+
+    internal static JsonObject ProjectUsage(UsageRecord usage)
     {
-        ["input"] = 0,
-        ["output"] = 0,
-        ["cacheRead"] = 0,
-        ["cacheWrite"] = 0,
-        ["totalTokens"] = 0,
-        ["cost"] = new JsonObject { ["input"] = 0, ["output"] = 0, ["cacheRead"] = 0, ["cacheWrite"] = 0, ["total"] = 0 }
-    };
+        var value = new JsonObject();
+        if (usage.InputTokens is long input) value["input"] = input;
+        if (usage.OutputTokens is long output) value["output"] = output;
+        if (usage.CachedInputTokens is long cacheRead) value["cacheRead"] = cacheRead;
+        if (usage.CachedWriteTokens is long cacheWrite) value["cacheWrite"] = cacheWrite;
+        if (usage.TotalTokens is long totalTokens) value["totalTokens"] = totalTokens;
+        if (usage.ReasoningTokens is long reasoning && reasoning > 0) value["reasoning"] = reasoning;
+        if (usage.Cost is decimal cost)
+        {
+            var costs = new JsonObject { ["total"] = cost };
+            if (usage.InputCost is decimal inputCost) costs["input"] = inputCost;
+            if (usage.OutputCost is decimal outputCost) costs["output"] = outputCost;
+            if (usage.CachedInputCost is decimal cachedInputCost) costs["cacheRead"] = cachedInputCost;
+            if (usage.CachedWriteCost is decimal cachedWriteCost) costs["cacheWrite"] = cachedWriteCost;
+            value["cost"] = costs;
+        }
+        return value;
+    }
 
     internal static JsonObject ProjectToolUsage(UsageDetails usage, decimal? cost = null)
     {
-        var value = new JsonObject
-        {
-            ["input"] = usage.InputTokenCount ?? 0,
-            ["output"] = usage.OutputTokenCount ?? 0,
-            ["cacheRead"] = usage.CachedInputTokenCount ?? 0,
-            ["cacheWrite"] = UsageRecord.Create("tool", "tool", usage, null).CachedWriteTokens,
-            ["totalTokens"] = usage.TotalTokenCount ?? (usage.InputTokenCount ?? 0) + (usage.OutputTokenCount ?? 0)
-        };
+        var value = ProjectUsage(UsageRecord.Create("tool", "tool", usage, null));
         if (cost is not null) value["cost"] = new JsonObject { ["total"] = cost.Value };
         return value;
     }
@@ -213,26 +219,41 @@ internal static class PiJsonlEntryCodec
             !TryReadUsageCount(usage, "cacheWrite", out var cacheWrite) ||
             !TryReadUsageCount(usage, "totalTokens", out var total))
             return null;
-        if (total == 0) total = input + output + cacheRead + cacheWrite;
+        var computedTotal = input is long knownInput && output is long knownOutput &&
+            cacheRead is long knownCacheRead && cacheWrite is long knownCacheWrite
+                ? SaturatingAdd(SaturatingAdd(knownInput, knownOutput), SaturatingAdd(knownCacheRead, knownCacheWrite))
+                : (long?)null;
+        if (total is not > 0) total = computedTotal ?? total;
+        long? reasoning = null;
+        if (TryProperty(usage, "reasoning", out var reasoningValue) && reasoningValue.ValueKind != JsonValueKind.Null)
+        {
+            if (reasoningValue.ValueKind != JsonValueKind.Number || !reasoningValue.TryGetInt64(out var reasoningTokens) ||
+                reasoningTokens < 0) return null;
+            reasoning = reasoningTokens;
+        }
 
         decimal? cost = null;
         decimal? inputCost = null;
         decimal? outputCost = null;
         decimal? cachedInputCost = null;
         decimal? cachedWriteCost = null;
-        if (TryProperty(usage, "cost", out var costObject) && costObject.ValueKind == JsonValueKind.Object &&
-            TryProperty(costObject, "total", out var totalCost))
+        if (TryProperty(usage, "cost", out var costObject) && costObject.ValueKind == JsonValueKind.Object)
         {
-            if (!totalCost.TryGetDecimal(out var value) || value < 0) return null;
-            cost = value;
+            if (TryProperty(costObject, "total", out var totalCost) && totalCost.ValueKind != JsonValueKind.Null)
+            {
+                if (!totalCost.TryGetDecimal(out var value) || value < 0) return null;
+                cost = value;
+            }
             if (!TryReadOptionalCost(costObject, "input", out inputCost) ||
                 !TryReadOptionalCost(costObject, "output", out outputCost) ||
                 !TryReadOptionalCost(costObject, "cacheRead", out cachedInputCost) ||
                 !TryReadOptionalCost(costObject, "cacheWrite", out cachedWriteCost)) return null;
         }
 
-        return new UsageRecord(model, source, input, output, cacheRead, 0, total, cost, cacheWrite)
+        return new UsageRecord(model, source, input, output, cacheRead, reasoning, total, cost, cacheWrite)
         {
+            InputIncludingCachedTokens = input is long uncachedInput && cacheRead is long knownRead
+                ? SaturatingAdd(uncachedInput, knownRead) : null,
             InputCost = inputCost,
             OutputCost = outputCost,
             CachedInputCost = cachedInputCost,
@@ -243,18 +264,22 @@ internal static class PiJsonlEntryCodec
     private static bool TryReadOptionalCost(JsonElement cost, string name, out decimal? value)
     {
         value = null;
-        if (!TryProperty(cost, name, out var item)) return true;
+        if (!TryProperty(cost, name, out var item) || item.ValueKind == JsonValueKind.Null) return true;
         if (!item.TryGetDecimal(out var parsed) || parsed < 0) return false;
         value = parsed;
         return true;
     }
 
-    private static bool TryReadUsageCount(JsonElement usage, string name, out long count)
+    private static bool TryReadUsageCount(JsonElement usage, string name, out long? count)
     {
-        count = 0;
-        if (!TryProperty(usage, name, out var value)) return true;
-        return value.ValueKind == JsonValueKind.Number && value.TryGetInt64(out count) && count >= 0;
+        count = null;
+        if (!TryProperty(usage, name, out var value) || value.ValueKind == JsonValueKind.Null) return true;
+        if (value.ValueKind != JsonValueKind.Number || !value.TryGetInt64(out var parsed) || parsed < 0) return false;
+        count = parsed;
+        return true;
     }
+
+    private static long SaturatingAdd(long left, long right) => left > long.MaxValue - right ? long.MaxValue : left + right;
 
     internal static ChatMessage? ImportedContextMessage(ConversationNode node)
     {

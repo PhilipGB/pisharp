@@ -192,10 +192,10 @@ public sealed class BedrockProviderTests
         Assert.Equal("ping", Assert.IsType<string>(call.Arguments!["text"]));
         Assert.Equal("tool_calls", updates[^1].FinishReason?.ToString());
         var usage = Assert.Single(updates.SelectMany(update => update.Contents).OfType<UsageContent>()).Details;
-        Assert.Equal(40, usage.InputTokenCount);
+        Assert.Equal(45, usage.InputTokenCount);
         Assert.Equal(15, usage.OutputTokenCount);
         Assert.Equal(5, usage.CachedInputTokenCount);
-        Assert.Equal(55, usage.TotalTokenCount);
+        Assert.Equal(68, usage.TotalTokenCount);
         Assert.Equal(8, usage.AdditionalCounts!["bedrock.cacheWriteInputTokenCount"]);
         Assert.True(transport.DisposedResponse);
     }
