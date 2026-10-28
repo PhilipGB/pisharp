@@ -1,0 +1,1278 @@
+{
+  "schemaVersion": 1,
+  "milestone": "compaction-context-management-parity",
+  "pisharpSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "contractSha256": "c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6",
+  "checkpointCount": 22,
+  "requiredCaseCount": 211,
+  "generatedFrom": "tools/parity/compaction_context/contract.json",
+  "cases": [
+    {
+      "caseId": "P0.reviewed-head-is-exact",
+      "checkpointId": "P0",
+      "contractExpectedObservation": "reviewed head is exact",
+      "evidencePath": "cases/P0.reviewed-head-is-exact.json"
+    },
+    {
+      "caseId": "P0.actual-merge-sha-is-recorded",
+      "checkpointId": "P0",
+      "contractExpectedObservation": "actual merge sha is recorded",
+      "evidencePath": "cases/P0.actual-merge-sha-is-recorded.json"
+    },
+    {
+      "caseId": "P0.main-contains-pr-head-and-merge",
+      "checkpointId": "P0",
+      "contractExpectedObservation": "main contains pr head and merge",
+      "evidencePath": "cases/P0.main-contains-pr-head-and-merge.json"
+    },
+    {
+      "caseId": "P0.push-and-pr-ci-pass-on-head",
+      "checkpointId": "P0",
+      "contractExpectedObservation": "push and pr ci pass on head",
+      "evidencePath": "cases/P0.push-and-pr-ci-pass-on-head.json"
+    },
+    {
+      "caseId": "P0.published-evidence-has-27-checkpoints-240-cases",
+      "checkpointId": "P0",
+      "contractExpectedObservation": "published evidence has 27 checkpoints 240 cases",
+      "evidencePath": "cases/P0.published-evidence-has-27-checkpoints-240-cases.json"
+    },
+    {
+      "caseId": "P1.branch-parent-is-actual-merge",
+      "checkpointId": "P1",
+      "contractExpectedObservation": "branch parent is actual merge",
+      "evidencePath": "cases/P1.branch-parent-is-actual-merge.json"
+    },
+    {
+      "caseId": "P1.pinned-pi-checkout-is-b06c1f2",
+      "checkpointId": "P1",
+      "contractExpectedObservation": "pinned pi checkout is b06c1f2",
+      "evidencePath": "cases/P1.pinned-pi-checkout-is-b06c1f2.json"
+    },
+    {
+      "caseId": "P1.baseline-tree-and-package-versions-recorded",
+      "checkpointId": "P1",
+      "contractExpectedObservation": "baseline tree and package versions recorded",
+      "evidencePath": "cases/P1.baseline-tree-and-package-versions-recorded.json"
+    },
+    {
+      "caseId": "P1.worktree-starts-clean",
+      "checkpointId": "P1",
+      "contractExpectedObservation": "worktree starts clean",
+      "evidencePath": "cases/P1.worktree-starts-clean.json"
+    },
+    {
+      "caseId": "P1.maf-installed-version-is-recorded",
+      "checkpointId": "P1",
+      "contractExpectedObservation": "maf installed version is recorded",
+      "evidencePath": "cases/P1.maf-installed-version-is-recorded.json"
+    },
+    {
+      "caseId": "V0.manual-and-auto-source-owners",
+      "checkpointId": "V0",
+      "contractExpectedObservation": "manual and auto source owners",
+      "evidencePath": "cases/V0.manual-and-auto-source-owners.json"
+    },
+    {
+      "caseId": "V0.cut-point-and-retention-source-owners",
+      "checkpointId": "V0",
+      "contractExpectedObservation": "cut point and retention source owners",
+      "evidencePath": "cases/V0.cut-point-and-retention-source-owners.json"
+    },
+    {
+      "caseId": "V0.context-budget-and-provider-overflow-owners",
+      "checkpointId": "V0",
+      "contractExpectedObservation": "context budget and provider overflow owners",
+      "evidencePath": "cases/V0.context-budget-and-provider-overflow-owners.json"
+    },
+    {
+      "caseId": "V0.tool-loop-and-provider-request-owners",
+      "checkpointId": "V0",
+      "contractExpectedObservation": "tool loop and provider request owners",
+      "evidencePath": "cases/V0.tool-loop-and-provider-request-owners.json"
+    },
+    {
+      "caseId": "V0.summary-generation-and-branch-summary-owners",
+      "checkpointId": "V0",
+      "contractExpectedObservation": "summary generation and branch summary owners",
+      "evidencePath": "cases/V0.summary-generation-and-branch-summary-owners.json"
+    },
+    {
+      "caseId": "V0.session-jsonl-and-branch-state-owners",
+      "checkpointId": "V0",
+      "contractExpectedObservation": "session jsonl and branch state owners",
+      "evidencePath": "cases/V0.session-jsonl-and-branch-state-owners.json"
+    },
+    {
+      "caseId": "V0.usage-reasoning-pricing-owners",
+      "checkpointId": "V0",
+      "contractExpectedObservation": "usage reasoning pricing owners",
+      "evidencePath": "cases/V0.usage-reasoning-pricing-owners.json"
+    },
+    {
+      "caseId": "V0.cli-rpc-json-tui-owners",
+      "checkpointId": "V0",
+      "contractExpectedObservation": "cli rpc json tui owners",
+      "evidencePath": "cases/V0.cli-rpc-json-tui-owners.json"
+    },
+    {
+      "caseId": "V0.extension-hook-owners",
+      "checkpointId": "V0",
+      "contractExpectedObservation": "extension hook owners",
+      "evidencePath": "cases/V0.extension-hook-owners.json"
+    },
+    {
+      "caseId": "V0.failure-cancellation-recovery-owners",
+      "checkpointId": "V0",
+      "contractExpectedObservation": "failure cancellation recovery owners",
+      "evidencePath": "cases/V0.failure-cancellation-recovery-owners.json"
+    },
+    {
+      "caseId": "V0.observable-input-output-state-map",
+      "checkpointId": "V0",
+      "contractExpectedObservation": "observable input output state map",
+      "evidencePath": "cases/V0.observable-input-output-state-map.json"
+    },
+    {
+      "caseId": "V0.existing-tests-mapped-by-case",
+      "checkpointId": "V0",
+      "contractExpectedObservation": "existing tests mapped by case",
+      "evidencePath": "cases/V0.existing-tests-mapped-by-case.json"
+    },
+    {
+      "caseId": "V0.confirmed-differences-separated-from-unknowns",
+      "checkpointId": "V0",
+      "contractExpectedObservation": "confirmed differences separated from unknowns",
+      "evidencePath": "cases/V0.confirmed-differences-separated-from-unknowns.json"
+    },
+    {
+      "caseId": "V0.every-required-behavior-has-a-case",
+      "checkpointId": "V0",
+      "contractExpectedObservation": "every required behavior has a case",
+      "evidencePath": "cases/V0.every-required-behavior-has-a-case.json"
+    },
+    {
+      "caseId": "V1.positive-control-valid-evidence-accepted",
+      "checkpointId": "V1",
+      "contractExpectedObservation": "positive control valid evidence accepted",
+      "evidencePath": "cases/V1.positive-control-valid-evidence-accepted.json"
+    },
+    {
+      "caseId": "V1.negative-altered-pi-pin-rejected",
+      "checkpointId": "V1",
+      "contractExpectedObservation": "negative altered pi pin rejected",
+      "evidencePath": "cases/V1.negative-altered-pi-pin-rejected.json"
+    },
+    {
+      "caseId": "V1.negative-mutated-provider-request-rejected",
+      "checkpointId": "V1",
+      "contractExpectedObservation": "negative mutated provider request rejected",
+      "evidencePath": "cases/V1.negative-mutated-provider-request-rejected.json"
+    },
+    {
+      "caseId": "V1.negative-incorrect-cut-point-rejected",
+      "checkpointId": "V1",
+      "contractExpectedObservation": "negative incorrect cut point rejected",
+      "evidencePath": "cases/V1.negative-incorrect-cut-point-rejected.json"
+    },
+    {
+      "caseId": "V1.negative-dropped-tool-call-rejected",
+      "checkpointId": "V1",
+      "contractExpectedObservation": "negative dropped tool call rejected",
+      "evidencePath": "cases/V1.negative-dropped-tool-call-rejected.json"
+    },
+    {
+      "caseId": "V1.negative-duplicated-tool-call-rejected",
+      "checkpointId": "V1",
+      "contractExpectedObservation": "negative duplicated tool call rejected",
+      "evidencePath": "cases/V1.negative-duplicated-tool-call-rejected.json"
+    },
+    {
+      "caseId": "V1.negative-wrong-branch-rejected",
+      "checkpointId": "V1",
+      "contractExpectedObservation": "negative wrong branch rejected",
+      "evidencePath": "cases/V1.negative-wrong-branch-rejected.json"
+    },
+    {
+      "caseId": "V1.negative-missing-usage-or-cost-rejected",
+      "checkpointId": "V1",
+      "contractExpectedObservation": "negative missing usage or cost rejected",
+      "evidencePath": "cases/V1.negative-missing-usage-or-cost-rejected.json"
+    },
+    {
+      "caseId": "V1.negative-wrong-cancellation-rejected",
+      "checkpointId": "V1",
+      "contractExpectedObservation": "negative wrong cancellation rejected",
+      "evidencePath": "cases/V1.negative-wrong-cancellation-rejected.json"
+    },
+    {
+      "caseId": "V1.negative-missing-case-rejected",
+      "checkpointId": "V1",
+      "contractExpectedObservation": "negative missing case rejected",
+      "evidencePath": "cases/V1.negative-missing-case-rejected.json"
+    },
+    {
+      "caseId": "V1.negative-skipped-case-rejected",
+      "checkpointId": "V1",
+      "contractExpectedObservation": "negative skipped case rejected",
+      "evidencePath": "cases/V1.negative-skipped-case-rejected.json"
+    },
+    {
+      "caseId": "V1.negative-stale-source-evidence-rejected",
+      "checkpointId": "V1",
+      "contractExpectedObservation": "negative stale source evidence rejected",
+      "evidencePath": "cases/V1.negative-stale-source-evidence-rejected.json"
+    },
+    {
+      "caseId": "V1.negative-failed-ci-rejected",
+      "checkpointId": "V1",
+      "contractExpectedObservation": "negative failed ci rejected",
+      "evidencePath": "cases/V1.negative-failed-ci-rejected.json"
+    },
+    {
+      "caseId": "V1.negative-wrong-head-ci-rejected",
+      "checkpointId": "V1",
+      "contractExpectedObservation": "negative wrong head ci rejected",
+      "evidencePath": "cases/V1.negative-wrong-head-ci-rejected.json"
+    },
+    {
+      "caseId": "C1.eligible-manual-request-persists-one-entry",
+      "checkpointId": "C1",
+      "contractExpectedObservation": "eligible manual request persists one entry",
+      "evidencePath": "cases/C1.eligible-manual-request-persists-one-entry.json"
+    },
+    {
+      "caseId": "C1.ineligible-short-history-is-no-op",
+      "checkpointId": "C1",
+      "contractExpectedObservation": "ineligible short history is no op",
+      "evidencePath": "cases/C1.ineligible-short-history-is-no-op.json"
+    },
+    {
+      "caseId": "C1.custom-focus-changes-history-prompt-only",
+      "checkpointId": "C1",
+      "contractExpectedObservation": "custom focus changes history prompt only",
+      "evidencePath": "cases/C1.custom-focus-changes-history-prompt-only.json"
+    },
+    {
+      "caseId": "C1.recent-context-and-full-history-retained",
+      "checkpointId": "C1",
+      "contractExpectedObservation": "recent context and full history retained",
+      "evidencePath": "cases/C1.recent-context-and-full-history-retained.json"
+    },
+    {
+      "caseId": "C1.split-turn-summary-retains-interrupted-assistant",
+      "checkpointId": "C1",
+      "contractExpectedObservation": "split turn summary retains interrupted assistant",
+      "evidencePath": "cases/C1.split-turn-summary-retains-interrupted-assistant.json"
+    },
+    {
+      "caseId": "C1.summary-usage-details-persist",
+      "checkpointId": "C1",
+      "contractExpectedObservation": "summary usage details persist",
+      "evidencePath": "cases/C1.summary-usage-details-persist.json"
+    },
+    {
+      "caseId": "C1.summary-failure-rolls-back-and-reports",
+      "checkpointId": "C1",
+      "contractExpectedObservation": "summary failure rolls back and reports",
+      "evidencePath": "cases/C1.summary-failure-rolls-back-and-reports.json"
+    },
+    {
+      "caseId": "C1.cancellation-publishes-no-entry",
+      "checkpointId": "C1",
+      "contractExpectedObservation": "cancellation publishes no entry",
+      "evidencePath": "cases/C1.cancellation-publishes-no-entry.json"
+    },
+    {
+      "caseId": "C1.active-run-and-queued-follow-up-order",
+      "checkpointId": "C1",
+      "contractExpectedObservation": "active run and queued follow up order",
+      "evidencePath": "cases/C1.active-run-and-queued-follow-up-order.json"
+    },
+    {
+      "caseId": "C2.threshold-after-turn-compacts-without-retry",
+      "checkpointId": "C2",
+      "contractExpectedObservation": "threshold after turn compacts without retry",
+      "evidencePath": "cases/C2.threshold-after-turn-compacts-without-retry.json"
+    },
+    {
+      "caseId": "C2.pre-prompt-compaction-does-not-replay-turn",
+      "checkpointId": "C2",
+      "contractExpectedObservation": "pre prompt compaction does not replay turn",
+      "evidencePath": "cases/C2.pre-prompt-compaction-does-not-replay-turn.json"
+    },
+    {
+      "caseId": "C2.unknown-window-does-not-speculate",
+      "checkpointId": "C2",
+      "contractExpectedObservation": "unknown window does not speculate",
+      "evidencePath": "cases/C2.unknown-window-does-not-speculate.json"
+    },
+    {
+      "caseId": "C2.disabled-setting-prevents-trigger",
+      "checkpointId": "C2",
+      "contractExpectedObservation": "disabled setting prevents trigger",
+      "evidencePath": "cases/C2.disabled-setting-prevents-trigger.json"
+    },
+    {
+      "caseId": "C2.strict-greater-than-reserve-threshold",
+      "checkpointId": "C2",
+      "contractExpectedObservation": "strict greater than reserve threshold",
+      "evidencePath": "cases/C2.strict-greater-than-reserve-threshold.json"
+    },
+    {
+      "caseId": "C2.model-switch-uses-selected-window-and-overrides",
+      "checkpointId": "C2",
+      "contractExpectedObservation": "model switch uses selected window and overrides",
+      "evidencePath": "cases/C2.model-switch-uses-selected-window-and-overrides.json"
+    },
+    {
+      "caseId": "C2.physical-route-change-refreshes-budget",
+      "checkpointId": "C2",
+      "contractExpectedObservation": "physical route change refreshes budget",
+      "evidencePath": "cases/C2.physical-route-change-refreshes-budget.json"
+    },
+    {
+      "caseId": "C2.queued-steering-survives-auto-compaction",
+      "checkpointId": "C2",
+      "contractExpectedObservation": "queued steering survives auto compaction",
+      "evidencePath": "cases/C2.queued-steering-survives-auto-compaction.json"
+    },
+    {
+      "caseId": "C2.overflow-retry-is-one-bounded-attempt",
+      "checkpointId": "C2",
+      "contractExpectedObservation": "overflow retry is one bounded attempt",
+      "evidencePath": "cases/C2.overflow-retry-is-one-bounded-attempt.json"
+    },
+    {
+      "caseId": "C2.error-turn-uses-last-valid-usage-not-stale-usage",
+      "checkpointId": "C2",
+      "contractExpectedObservation": "error turn uses last valid usage not stale usage",
+      "evidencePath": "cases/C2.error-turn-uses-last-valid-usage-not-stale-usage.json"
+    },
+    {
+      "caseId": "C3.user-boundary-selection",
+      "checkpointId": "C3",
+      "contractExpectedObservation": "user boundary selection",
+      "evidencePath": "cases/C3.user-boundary-selection.json"
+    },
+    {
+      "caseId": "C3.assistant-boundary-split-turn",
+      "checkpointId": "C3",
+      "contractExpectedObservation": "assistant boundary split turn",
+      "evidencePath": "cases/C3.assistant-boundary-split-turn.json"
+    },
+    {
+      "caseId": "C3.tool-call-result-kept-as-one-group",
+      "checkpointId": "C3",
+      "contractExpectedObservation": "tool call result kept as one group",
+      "evidencePath": "cases/C3.tool-call-result-kept-as-one-group.json"
+    },
+    {
+      "caseId": "C3.sequential-tool-cycles",
+      "checkpointId": "C3",
+      "contractExpectedObservation": "sequential tool cycles",
+      "evidencePath": "cases/C3.sequential-tool-cycles.json"
+    },
+    {
+      "caseId": "C3.parallel-tool-batch-boundary",
+      "checkpointId": "C3",
+      "contractExpectedObservation": "parallel tool batch boundary",
+      "evidencePath": "cases/C3.parallel-tool-batch-boundary.json"
+    },
+    {
+      "caseId": "C3.oversized-trailing-result-falls-back-before-call",
+      "checkpointId": "C3",
+      "contractExpectedObservation": "oversized trailing result falls back before call",
+      "evidencePath": "cases/C3.oversized-trailing-result-falls-back-before-call.json"
+    },
+    {
+      "caseId": "C3.never-cut-at-tool-result",
+      "checkpointId": "C3",
+      "contractExpectedObservation": "never cut at tool result",
+      "evidencePath": "cases/C3.never-cut-at-tool-result.json"
+    },
+    {
+      "caseId": "C3.incomplete-assistant-and-tool-call-retained",
+      "checkpointId": "C3",
+      "contractExpectedObservation": "incomplete assistant and tool call retained",
+      "evidencePath": "cases/C3.incomplete-assistant-and-tool-call-retained.json"
+    },
+    {
+      "caseId": "C3.missing-tool-result-provider-projection",
+      "checkpointId": "C3",
+      "contractExpectedObservation": "missing tool result provider projection",
+      "evidencePath": "cases/C3.missing-tool-result-provider-projection.json"
+    },
+    {
+      "caseId": "C3.unmatched-or-duplicate-tool-result-handling",
+      "checkpointId": "C3",
+      "contractExpectedObservation": "unmatched or duplicate tool result handling",
+      "evidencePath": "cases/C3.unmatched-or-duplicate-tool-result-handling.json"
+    },
+    {
+      "caseId": "C3.repeated-compaction-updates-prior-summary",
+      "checkpointId": "C3",
+      "contractExpectedObservation": "repeated compaction updates prior summary",
+      "evidencePath": "cases/C3.repeated-compaction-updates-prior-summary.json"
+    },
+    {
+      "caseId": "C3.latest-compaction-controls-context",
+      "checkpointId": "C3",
+      "contractExpectedObservation": "latest compaction controls context",
+      "evidencePath": "cases/C3.latest-compaction-controls-context.json"
+    },
+    {
+      "caseId": "C3.recovery-omission-suffix-boundary",
+      "checkpointId": "C3",
+      "contractExpectedObservation": "recovery omission suffix boundary",
+      "evidencePath": "cases/C3.recovery-omission-suffix-boundary.json"
+    },
+    {
+      "caseId": "C3.empty-or-insufficient-history-is-no-op",
+      "checkpointId": "C3",
+      "contractExpectedObservation": "empty or insufficient history is no op",
+      "evidencePath": "cases/C3.empty-or-insufficient-history-is-no-op.json"
+    },
+    {
+      "caseId": "C4.model-context-window-controls-trigger",
+      "checkpointId": "C4",
+      "contractExpectedObservation": "model context window controls trigger",
+      "evidencePath": "cases/C4.model-context-window-controls-trigger.json"
+    },
+    {
+      "caseId": "C4.reserve-and-keep-recent-defaults",
+      "checkpointId": "C4",
+      "contractExpectedObservation": "reserve and keep recent defaults",
+      "evidencePath": "cases/C4.reserve-and-keep-recent-defaults.json"
+    },
+    {
+      "caseId": "C4.provider-model-override-precedence",
+      "checkpointId": "C4",
+      "contractExpectedObservation": "provider model override precedence",
+      "evidencePath": "cases/C4.provider-model-override-precedence.json"
+    },
+    {
+      "caseId": "C4.unknown-limit-is-never-invented",
+      "checkpointId": "C4",
+      "contractExpectedObservation": "unknown limit is never invented",
+      "evidencePath": "cases/C4.unknown-limit-is-never-invented.json"
+    },
+    {
+      "caseId": "C4.provider-usage-anchors-current-context",
+      "checkpointId": "C4",
+      "contractExpectedObservation": "provider usage anchors current context",
+      "evidencePath": "cases/C4.provider-usage-anchors-current-context.json"
+    },
+    {
+      "caseId": "C4.aborted-error-and-zero-usage-are-not-anchors",
+      "checkpointId": "C4",
+      "contractExpectedObservation": "aborted error and zero usage are not anchors",
+      "evidencePath": "cases/C4.aborted-error-and-zero-usage-are-not-anchors.json"
+    },
+    {
+      "caseId": "C4.messages-after-usage-are-estimated",
+      "checkpointId": "C4",
+      "contractExpectedObservation": "messages after usage are estimated",
+      "evidencePath": "cases/C4.messages-after-usage-are-estimated.json"
+    },
+    {
+      "caseId": "C4.context-edit-and-compaction-invalidate-stale-usage",
+      "checkpointId": "C4",
+      "contractExpectedObservation": "context edit and compaction invalidate stale usage",
+      "evidencePath": "cases/C4.context-edit-and-compaction-invalidate-stale-usage.json"
+    },
+    {
+      "caseId": "C4.cache-read-and-write-token-fallback",
+      "checkpointId": "C4",
+      "contractExpectedObservation": "cache read and write token fallback",
+      "evidencePath": "cases/C4.cache-read-and-write-token-fallback.json"
+    },
+    {
+      "caseId": "C4.system-prompt-and-tool-declaration-estimate",
+      "checkpointId": "C4",
+      "contractExpectedObservation": "system prompt and tool declaration estimate",
+      "evidencePath": "cases/C4.system-prompt-and-tool-declaration-estimate.json"
+    },
+    {
+      "caseId": "C4.image-and-large-tool-result-estimate",
+      "checkpointId": "C4",
+      "contractExpectedObservation": "image and large tool result estimate",
+      "evidencePath": "cases/C4.image-and-large-tool-result-estimate.json"
+    },
+    {
+      "caseId": "C4.estimate-method-is-explicitly-heuristic-not-tokenizer",
+      "checkpointId": "C4",
+      "contractExpectedObservation": "estimate method is explicitly heuristic not tokenizer",
+      "evidencePath": "cases/C4.estimate-method-is-explicitly-heuristic-not-tokenizer.json"
+    },
+    {
+      "caseId": "C5.pre-content-context-error-recognized",
+      "checkpointId": "C5",
+      "contractExpectedObservation": "pre content context error recognized",
+      "evidencePath": "cases/C5.pre-content-context-error-recognized.json"
+    },
+    {
+      "caseId": "C5.provider-silent-overflow-from-reported-usage",
+      "checkpointId": "C5",
+      "contractExpectedObservation": "provider silent overflow from reported usage",
+      "evidencePath": "cases/C5.provider-silent-overflow-from-reported-usage.json"
+    },
+    {
+      "caseId": "C5.length-stop-at-context-boundary-recognized",
+      "checkpointId": "C5",
+      "contractExpectedObservation": "length stop at context boundary recognized",
+      "evidencePath": "cases/C5.length-stop-at-context-boundary-recognized.json"
+    },
+    {
+      "caseId": "C5.partial-content-overflow-does-not-duplicate-request",
+      "checkpointId": "C5",
+      "contractExpectedObservation": "partial content overflow does not duplicate request",
+      "evidencePath": "cases/C5.partial-content-overflow-does-not-duplicate-request.json"
+    },
+    {
+      "caseId": "C5.recoverable-length-stop-retries-once",
+      "checkpointId": "C5",
+      "contractExpectedObservation": "recoverable length stop retries once",
+      "evidencePath": "cases/C5.recoverable-length-stop-retries-once.json"
+    },
+    {
+      "caseId": "C5.retry-request-uses-compacted-transcript",
+      "checkpointId": "C5",
+      "contractExpectedObservation": "retry request uses compacted transcript",
+      "evidencePath": "cases/C5.retry-request-uses-compacted-transcript.json"
+    },
+    {
+      "caseId": "C5.second-overflow-stops-with-clear-error",
+      "checkpointId": "C5",
+      "contractExpectedObservation": "second overflow stops with clear error",
+      "evidencePath": "cases/C5.second-overflow-stops-with-clear-error.json"
+    },
+    {
+      "caseId": "C5.stale-old-model-overflow-does-not-compact-new-model",
+      "checkpointId": "C5",
+      "contractExpectedObservation": "stale old model overflow does not compact new model",
+      "evidencePath": "cases/C5.stale-old-model-overflow-does-not-compact-new-model.json"
+    },
+    {
+      "caseId": "C5.overflow-for-responses-chat-and-anthropic",
+      "checkpointId": "C5",
+      "contractExpectedObservation": "overflow for responses chat and anthropic",
+      "evidencePath": "cases/C5.overflow-for-responses-chat-and-anthropic.json"
+    },
+    {
+      "caseId": "C5.unknown-model-window-does-not-fabricate-capacity",
+      "checkpointId": "C5",
+      "contractExpectedObservation": "unknown model window does not fabricate capacity",
+      "evidencePath": "cases/C5.unknown-model-window-does-not-fabricate-capacity.json"
+    },
+    {
+      "caseId": "C5.post-compaction-provider-continuation-succeeds",
+      "checkpointId": "C5",
+      "contractExpectedObservation": "post compaction provider continuation succeeds",
+      "evidencePath": "cases/C5.post-compaction-provider-continuation-succeeds.json"
+    },
+    {
+      "caseId": "C6.transient-projection-does-not-change-canonical-history",
+      "checkpointId": "C6",
+      "contractExpectedObservation": "transient projection does not change canonical history",
+      "evidencePath": "cases/C6.transient-projection-does-not-change-canonical-history.json"
+    },
+    {
+      "caseId": "C6.single-large-current-tool-result-is-bounded",
+      "checkpointId": "C6",
+      "contractExpectedObservation": "single large current tool result is bounded",
+      "evidencePath": "cases/C6.single-large-current-tool-result-is-bounded.json"
+    },
+    {
+      "caseId": "C6.sequential-tool-cycles-preserve-order",
+      "checkpointId": "C6",
+      "contractExpectedObservation": "sequential tool cycles preserve order",
+      "evidencePath": "cases/C6.sequential-tool-cycles-preserve-order.json"
+    },
+    {
+      "caseId": "C6.parallel-calls-and-results-remain-matched",
+      "checkpointId": "C6",
+      "contractExpectedObservation": "parallel calls and results remain matched",
+      "evidencePath": "cases/C6.parallel-calls-and-results-remain-matched.json"
+    },
+    {
+      "caseId": "C6.large-tool-output-summary-retains-latest-outcome",
+      "checkpointId": "C6",
+      "contractExpectedObservation": "large tool output summary retains latest outcome",
+      "evidencePath": "cases/C6.large-tool-output-summary-retains-latest-outcome.json"
+    },
+    {
+      "caseId": "C6.nested-tool-call-sequence-is-closed-before-cut",
+      "checkpointId": "C6",
+      "contractExpectedObservation": "nested tool call sequence is closed before cut",
+      "evidencePath": "cases/C6.nested-tool-call-sequence-is-closed-before-cut.json"
+    },
+    {
+      "caseId": "C6.incomplete-call-graph-fails-before-provider-send",
+      "checkpointId": "C6",
+      "contractExpectedObservation": "incomplete call graph fails before provider send",
+      "evidencePath": "cases/C6.incomplete-call-graph-fails-before-provider-send.json"
+    },
+    {
+      "caseId": "C6.duplicate-or-unmatched-results-never-replay-tools",
+      "checkpointId": "C6",
+      "contractExpectedObservation": "duplicate or unmatched results never replay tools",
+      "evidencePath": "cases/C6.duplicate-or-unmatched-results-never-replay-tools.json"
+    },
+    {
+      "caseId": "C6.steering-after-tool-result-keeps-active-turn",
+      "checkpointId": "C6",
+      "contractExpectedObservation": "steering after tool result keeps active turn",
+      "evidencePath": "cases/C6.steering-after-tool-result-keeps-active-turn.json"
+    },
+    {
+      "caseId": "C6.post-compaction-request-contains-valid-provider-history",
+      "checkpointId": "C6",
+      "contractExpectedObservation": "post compaction request contains valid provider history",
+      "evidencePath": "cases/C6.post-compaction-request-contains-valid-provider-history.json"
+    },
+    {
+      "caseId": "C7.initial-summary-instructions-match-pinned-prompt",
+      "checkpointId": "C7",
+      "contractExpectedObservation": "initial summary instructions match pinned prompt",
+      "evidencePath": "cases/C7.initial-summary-instructions-match-pinned-prompt.json"
+    },
+    {
+      "caseId": "C7.previous-summary-is-updated-with-prior-facts-preserved",
+      "checkpointId": "C7",
+      "contractExpectedObservation": "previous summary is updated with prior facts preserved",
+      "evidencePath": "cases/C7.previous-summary-is-updated-with-prior-facts-preserved.json"
+    },
+    {
+      "caseId": "C7.manual-focus-is-excluded-from-turn-prefix-summary",
+      "checkpointId": "C7",
+      "contractExpectedObservation": "manual focus is excluded from turn prefix summary",
+      "evidencePath": "cases/C7.manual-focus-is-excluded-from-turn-prefix-summary.json"
+    },
+    {
+      "caseId": "C7.split-turn-uses-history-and-turn-summary-requests",
+      "checkpointId": "C7",
+      "contractExpectedObservation": "split turn uses history and turn summary requests",
+      "evidencePath": "cases/C7.split-turn-uses-history-and-turn-summary-requests.json"
+    },
+    {
+      "caseId": "C7.tool-call-result-content-is-serialized-for-summary",
+      "checkpointId": "C7",
+      "contractExpectedObservation": "tool call result content is serialized for summary",
+      "evidencePath": "cases/C7.tool-call-result-content-is-serialized-for-summary.json"
+    },
+    {
+      "caseId": "C7.file-operation-details-follow-summarized-history",
+      "checkpointId": "C7",
+      "contractExpectedObservation": "file operation details follow summarized history",
+      "evidencePath": "cases/C7.file-operation-details-follow-summarized-history.json"
+    },
+    {
+      "caseId": "C7.length-stop-and-empty-summary-fail-safely",
+      "checkpointId": "C7",
+      "contractExpectedObservation": "length stop and empty summary fail safely",
+      "evidencePath": "cases/C7.length-stop-and-empty-summary-fail-safely.json"
+    },
+    {
+      "caseId": "C7.transient-stream-failure-obeys-retry-policy",
+      "checkpointId": "C7",
+      "contractExpectedObservation": "transient stream failure obeys retry policy",
+      "evidencePath": "cases/C7.transient-stream-failure-obeys-retry-policy.json"
+    },
+    {
+      "caseId": "C7.summary-usage-is-reported-only-when-supplied",
+      "checkpointId": "C7",
+      "contractExpectedObservation": "summary usage is reported only when supplied",
+      "evidencePath": "cases/C7.summary-usage-is-reported-only-when-supplied.json"
+    },
+    {
+      "caseId": "C7.summary-model-routing-and-thinking-options",
+      "checkpointId": "C7",
+      "contractExpectedObservation": "summary model routing and thinking options",
+      "evidencePath": "cases/C7.summary-model-routing-and-thinking-options.json"
+    },
+    {
+      "caseId": "C8.compaction-entry-persists-summary-boundary-usage",
+      "checkpointId": "C8",
+      "contractExpectedObservation": "compaction entry persists summary boundary usage",
+      "evidencePath": "cases/C8.compaction-entry-persists-summary-boundary-usage.json"
+    },
+    {
+      "caseId": "C8.canonical-ancestor-messages-remain-recoverable",
+      "checkpointId": "C8",
+      "contractExpectedObservation": "canonical ancestor messages remain recoverable",
+      "evidencePath": "cases/C8.canonical-ancestor-messages-remain-recoverable.json"
+    },
+    {
+      "caseId": "C8.jsonl-export-import-round-trips-compaction",
+      "checkpointId": "C8",
+      "contractExpectedObservation": "jsonl export import round trips compaction",
+      "evidencePath": "cases/C8.jsonl-export-import-round-trips-compaction.json"
+    },
+    {
+      "caseId": "C8.reload-restores-compacted-context-not-projection",
+      "checkpointId": "C8",
+      "contractExpectedObservation": "reload restores compacted context not projection",
+      "evidencePath": "cases/C8.reload-restores-compacted-context-not-projection.json"
+    },
+    {
+      "caseId": "C8.branch-context-is-reconstructed-from-selected-path",
+      "checkpointId": "C8",
+      "contractExpectedObservation": "branch context is reconstructed from selected path",
+      "evidencePath": "cases/C8.branch-context-is-reconstructed-from-selected-path.json"
+    },
+    {
+      "caseId": "C8.switching-before-and-after-compaction-restores-correct-path",
+      "checkpointId": "C8",
+      "contractExpectedObservation": "switching before and after compaction restores correct path",
+      "evidencePath": "cases/C8.switching-before-and-after-compaction-restores-correct-path.json"
+    },
+    {
+      "caseId": "C8.fork-and-clone-preserve-compacted-session",
+      "checkpointId": "C8",
+      "contractExpectedObservation": "fork and clone preserve compacted session",
+      "evidencePath": "cases/C8.fork-and-clone-preserve-compacted-session.json"
+    },
+    {
+      "caseId": "C8.restart-recovery-keeps-provider-continuation",
+      "checkpointId": "C8",
+      "contractExpectedObservation": "restart recovery keeps provider continuation",
+      "evidencePath": "cases/C8.restart-recovery-keeps-provider-continuation.json"
+    },
+    {
+      "caseId": "C8.openai-responses-chat-anthropic-after-reload",
+      "checkpointId": "C8",
+      "contractExpectedObservation": "openai responses chat anthropic after reload",
+      "evidencePath": "cases/C8.openai-responses-chat-anthropic-after-reload.json"
+    },
+    {
+      "caseId": "C8.metadata-label-and-extension-fields-survive",
+      "checkpointId": "C8",
+      "contractExpectedObservation": "metadata label and extension fields survive",
+      "evidencePath": "cases/C8.metadata-label-and-extension-fields-survive.json"
+    },
+    {
+      "caseId": "C9.branch-diff-uses-common-ancestor-and-old-path",
+      "checkpointId": "C9",
+      "contractExpectedObservation": "branch diff uses common ancestor and old path",
+      "evidencePath": "cases/C9.branch-diff-uses-common-ancestor-and-old-path.json"
+    },
+    {
+      "caseId": "C9.branch-entries-are-chronological-and-no-duplicate-tool-results",
+      "checkpointId": "C9",
+      "contractExpectedObservation": "branch entries are chronological and no duplicate tool results",
+      "evidencePath": "cases/C9.branch-entries-are-chronological-and-no-duplicate-tool-results.json"
+    },
+    {
+      "caseId": "C9.token-budget-retains-recent-summary-context",
+      "checkpointId": "C9",
+      "contractExpectedObservation": "token budget retains recent summary context",
+      "evidencePath": "cases/C9.token-budget-retains-recent-summary-context.json"
+    },
+    {
+      "caseId": "C9.nested-branch-file-operation-details-accumulate",
+      "checkpointId": "C9",
+      "contractExpectedObservation": "nested branch file operation details accumulate",
+      "evidencePath": "cases/C9.nested-branch-file-operation-details-accumulate.json"
+    },
+    {
+      "caseId": "C9.custom-instructions-append-or-replace-default",
+      "checkpointId": "C9",
+      "contractExpectedObservation": "custom instructions append or replace default",
+      "evidencePath": "cases/C9.custom-instructions-append-or-replace-default.json"
+    },
+    {
+      "caseId": "C9.summary-output-has-preamble-and-file-details",
+      "checkpointId": "C9",
+      "contractExpectedObservation": "summary output has preamble and file details",
+      "evidencePath": "cases/C9.summary-output-has-preamble-and-file-details.json"
+    },
+    {
+      "caseId": "C9.summary-applies-at-navigation-target-with-label",
+      "checkpointId": "C9",
+      "contractExpectedObservation": "summary applies at navigation target with label",
+      "evidencePath": "cases/C9.summary-applies-at-navigation-target-with-label.json"
+    },
+    {
+      "caseId": "C9.cancel-or-failure-keeps-selected-head-and-history",
+      "checkpointId": "C9",
+      "contractExpectedObservation": "cancel or failure keeps selected head and history",
+      "evidencePath": "cases/C9.cancel-or-failure-keeps-selected-head-and-history.json"
+    },
+    {
+      "caseId": "C9.public-navigation-prompts-and-skips-as-pinned",
+      "checkpointId": "C9",
+      "contractExpectedObservation": "public navigation prompts and skips as pinned",
+      "evidencePath": "cases/C9.public-navigation-prompts-and-skips-as-pinned.json"
+    },
+    {
+      "caseId": "C10.summary-request-usage-persists-on-active-branch",
+      "checkpointId": "C10",
+      "contractExpectedObservation": "summary request usage persists on active branch",
+      "evidencePath": "cases/C10.summary-request-usage-persists-on-active-branch.json"
+    },
+    {
+      "caseId": "C10.fallback-context-total-includes-cache-tokens",
+      "checkpointId": "C10",
+      "contractExpectedObservation": "fallback context total includes cache tokens",
+      "evidencePath": "cases/C10.fallback-context-total-includes-cache-tokens.json"
+    },
+    {
+      "caseId": "C10.input-output-cache-read-cache-write-remain-distinct",
+      "checkpointId": "C10",
+      "contractExpectedObservation": "input output cache read cache write remain distinct",
+      "evidencePath": "cases/C10.input-output-cache-read-cache-write-remain-distinct.json"
+    },
+    {
+      "caseId": "C10.reasoning-tokens-are-preserved",
+      "checkpointId": "C10",
+      "contractExpectedObservation": "reasoning tokens are preserved",
+      "evidencePath": "cases/C10.reasoning-tokens-are-preserved.json"
+    },
+    {
+      "caseId": "C10.missing-usage-fields-remain-unknown",
+      "checkpointId": "C10",
+      "contractExpectedObservation": "missing usage fields remain unknown",
+      "evidencePath": "cases/C10.missing-usage-fields-remain-unknown.json"
+    },
+    {
+      "caseId": "C10.unknown-prices-do-not-create-cost",
+      "checkpointId": "C10",
+      "contractExpectedObservation": "unknown prices do not create cost",
+      "evidencePath": "cases/C10.unknown-prices-do-not-create-cost.json"
+    },
+    {
+      "caseId": "C10.known-pricing-and-input-tiers-are-calculated",
+      "checkpointId": "C10",
+      "contractExpectedObservation": "known pricing and input tiers are calculated",
+      "evidencePath": "cases/C10.known-pricing-and-input-tiers-are-calculated.json"
+    },
+    {
+      "caseId": "C10.split-summary-physical-model-costs-aggregate-correctly",
+      "checkpointId": "C10",
+      "contractExpectedObservation": "split summary physical model costs aggregate correctly",
+      "evidencePath": "cases/C10.split-summary-physical-model-costs-aggregate-correctly.json"
+    },
+    {
+      "caseId": "C10.inactive-branch-usage-is-excluded-from-active-total",
+      "checkpointId": "C10",
+      "contractExpectedObservation": "inactive branch usage is excluded from active total",
+      "evidencePath": "cases/C10.inactive-branch-usage-is-excluded-from-active-total.json"
+    },
+    {
+      "caseId": "C10.cli-tui-and-rpc-report-canonical-session-usage",
+      "checkpointId": "C10",
+      "contractExpectedObservation": "cli tui and rpc report canonical session usage",
+      "evidencePath": "cases/C10.cli-tui-and-rpc-report-canonical-session-usage.json"
+    },
+    {
+      "caseId": "C11.cli-manual-compact-input-and-result",
+      "checkpointId": "C11",
+      "contractExpectedObservation": "cli manual compact input and result",
+      "evidencePath": "cases/C11.cli-manual-compact-input-and-result.json"
+    },
+    {
+      "caseId": "C11.tui-compact-command-and-progress-status",
+      "checkpointId": "C11",
+      "contractExpectedObservation": "tui compact command and progress status",
+      "evidencePath": "cases/C11.tui-compact-command-and-progress-status.json"
+    },
+    {
+      "caseId": "C11.rpc-compact-request-and-result-shape",
+      "checkpointId": "C11",
+      "contractExpectedObservation": "rpc compact request and result shape",
+      "evidencePath": "cases/C11.rpc-compact-request-and-result-shape.json"
+    },
+    {
+      "caseId": "C11.rpc-event-order-and-correlation",
+      "checkpointId": "C11",
+      "contractExpectedObservation": "rpc event order and correlation",
+      "evidencePath": "cases/C11.rpc-event-order-and-correlation.json"
+    },
+    {
+      "caseId": "C11.rpc-state-context-usage-after-compaction",
+      "checkpointId": "C11",
+      "contractExpectedObservation": "rpc state context usage after compaction",
+      "evidencePath": "cases/C11.rpc-state-context-usage-after-compaction.json"
+    },
+    {
+      "caseId": "C11.json-mode-compaction-output-contract",
+      "checkpointId": "C11",
+      "contractExpectedObservation": "json mode compaction output contract",
+      "evidencePath": "cases/C11.json-mode-compaction-output-contract.json"
+    },
+    {
+      "caseId": "C11.responses-wire-request-after-compaction",
+      "checkpointId": "C11",
+      "contractExpectedObservation": "responses wire request after compaction",
+      "evidencePath": "cases/C11.responses-wire-request-after-compaction.json"
+    },
+    {
+      "caseId": "C11.chat-completions-wire-request-after-compaction",
+      "checkpointId": "C11",
+      "contractExpectedObservation": "chat completions wire request after compaction",
+      "evidencePath": "cases/C11.chat-completions-wire-request-after-compaction.json"
+    },
+    {
+      "caseId": "C11.anthropic-messages-wire-request-after-compaction",
+      "checkpointId": "C11",
+      "contractExpectedObservation": "anthropic messages wire request after compaction",
+      "evidencePath": "cases/C11.anthropic-messages-wire-request-after-compaction.json"
+    },
+    {
+      "caseId": "C11.provider-history-is-valid-and-summary-not-canonical-projection",
+      "checkpointId": "C11",
+      "contractExpectedObservation": "provider history is valid and summary not canonical projection",
+      "evidencePath": "cases/C11.provider-history-is-valid-and-summary-not-canonical-projection.json"
+    },
+    {
+      "caseId": "C12.before-compact-hook-sees-detached-real-plan",
+      "checkpointId": "C12",
+      "contractExpectedObservation": "before compact hook sees detached real plan",
+      "evidencePath": "cases/C12.before-compact-hook-sees-detached-real-plan.json"
+    },
+    {
+      "caseId": "C12.hook-cancel-prevents-summary-and-persistence",
+      "checkpointId": "C12",
+      "contractExpectedObservation": "hook cancel prevents summary and persistence",
+      "evidencePath": "cases/C12.hook-cancel-prevents-summary-and-persistence.json"
+    },
+    {
+      "caseId": "C12.custom-summary-is-validated-and-persisted",
+      "checkpointId": "C12",
+      "contractExpectedObservation": "custom summary is validated and persisted",
+      "evidencePath": "cases/C12.custom-summary-is-validated-and-persisted.json"
+    },
+    {
+      "caseId": "C12.invalid-boundary-and-unbalanced-tools-are-rejected",
+      "checkpointId": "C12",
+      "contractExpectedObservation": "invalid boundary and unbalanced tools are rejected",
+      "evidencePath": "cases/C12.invalid-boundary-and-unbalanced-tools-are-rejected.json"
+    },
+    {
+      "caseId": "C12.extension-usage-and-details-persist-with-correct-projection",
+      "checkpointId": "C12",
+      "contractExpectedObservation": "extension usage and details persist with correct projection",
+      "evidencePath": "cases/C12.extension-usage-and-details-persist-with-correct-projection.json"
+    },
+    {
+      "caseId": "C12.after-hook-fires-only-after-durable-commit",
+      "checkpointId": "C12",
+      "contractExpectedObservation": "after hook fires only after durable commit",
+      "evidencePath": "cases/C12.after-hook-fires-only-after-durable-commit.json"
+    },
+    {
+      "caseId": "C12.manual-auto-overflow-reasons-and-will-retry-match",
+      "checkpointId": "C12",
+      "contractExpectedObservation": "manual auto overflow reasons and will retry match",
+      "evidencePath": "cases/C12.manual-auto-overflow-reasons-and-will-retry-match.json"
+    },
+    {
+      "caseId": "C12.tree-summary-hooks-see-and-may-control-navigation",
+      "checkpointId": "C12",
+      "contractExpectedObservation": "tree summary hooks see and may control navigation",
+      "evidencePath": "cases/C12.tree-summary-hooks-see-and-may-control-navigation.json"
+    },
+    {
+      "caseId": "C13.failure-before-summary-does-not-mutate-history",
+      "checkpointId": "C13",
+      "contractExpectedObservation": "failure before summary does not mutate history",
+      "evidencePath": "cases/C13.failure-before-summary-does-not-mutate-history.json"
+    },
+    {
+      "caseId": "C13.streaming-summary-failure-keeps-canonical-tree",
+      "checkpointId": "C13",
+      "contractExpectedObservation": "streaming summary failure keeps canonical tree",
+      "evidencePath": "cases/C13.streaming-summary-failure-keeps-canonical-tree.json"
+    },
+    {
+      "caseId": "C13.post-summary-prepublish-failure-keeps-one-state",
+      "checkpointId": "C13",
+      "contractExpectedObservation": "post summary prepublish failure keeps one state",
+      "evidencePath": "cases/C13.post-summary-prepublish-failure-keeps-one-state.json"
+    },
+    {
+      "caseId": "C13.persistence-failure-rolls-back-or-recovers-consistently",
+      "checkpointId": "C13",
+      "contractExpectedObservation": "persistence failure rolls back or recovers consistently",
+      "evidencePath": "cases/C13.persistence-failure-rolls-back-or-recovers-consistently.json"
+    },
+    {
+      "caseId": "C13.provider-continuation-failure-does-not-repeat-tool",
+      "checkpointId": "C13",
+      "contractExpectedObservation": "provider continuation failure does not repeat tool",
+      "evidencePath": "cases/C13.provider-continuation-failure-does-not-repeat-tool.json"
+    },
+    {
+      "caseId": "C13.stale-session-cannot-write-after-replacement",
+      "checkpointId": "C13",
+      "contractExpectedObservation": "stale session cannot write after replacement",
+      "evidencePath": "cases/C13.stale-session-cannot-write-after-replacement.json"
+    },
+    {
+      "caseId": "C13.branch-replacement-failure-restores-prior-session",
+      "checkpointId": "C13",
+      "contractExpectedObservation": "branch replacement failure restores prior session",
+      "evidencePath": "cases/C13.branch-replacement-failure-restores-prior-session.json"
+    },
+    {
+      "caseId": "C13.cancel-before-request-cleans-lifecycle-state",
+      "checkpointId": "C13",
+      "contractExpectedObservation": "cancel before request cleans lifecycle state",
+      "evidencePath": "cases/C13.cancel-before-request-cleans-lifecycle-state.json"
+    },
+    {
+      "caseId": "C13.cancel-during-summary-cleans-lifecycle-state",
+      "checkpointId": "C13",
+      "contractExpectedObservation": "cancel during summary cleans lifecycle state",
+      "evidencePath": "cases/C13.cancel-during-summary-cleans-lifecycle-state.json"
+    },
+    {
+      "caseId": "C13.process-kill-during-publication-reloads-valid-state",
+      "checkpointId": "C13",
+      "contractExpectedObservation": "process kill during publication reloads valid state",
+      "evidencePath": "cases/C13.process-kill-during-publication-reloads-valid-state.json"
+    },
+    {
+      "caseId": "C13.unknown-tool-outcome-is-not-replayed",
+      "checkpointId": "C13",
+      "contractExpectedObservation": "unknown tool outcome is not replayed",
+      "evidencePath": "cases/C13.unknown-tool-outcome-is-not-replayed.json"
+    },
+    {
+      "caseId": "C13.next-request-recovers-after-each-failure",
+      "checkpointId": "C13",
+      "contractExpectedObservation": "next request recovers after each failure",
+      "evidencePath": "cases/C13.next-request-recovers-after-each-failure.json"
+    },
+    {
+      "caseId": "D0.same-pi-run-one-stable",
+      "checkpointId": "D0",
+      "contractExpectedObservation": "same pi run one stable",
+      "evidencePath": "cases/D0.same-pi-run-one-stable.json"
+    },
+    {
+      "caseId": "D0.same-pi-run-two-stable",
+      "checkpointId": "D0",
+      "contractExpectedObservation": "same pi run two stable",
+      "evidencePath": "cases/D0.same-pi-run-two-stable.json"
+    },
+    {
+      "caseId": "D0.all-scenarios-executed-against-pinned-pi-and-pisharp",
+      "checkpointId": "D0",
+      "contractExpectedObservation": "all scenarios executed against pinned pi and pisharp",
+      "evidencePath": "cases/D0.all-scenarios-executed-against-pinned-pi-and-pisharp.json"
+    },
+    {
+      "caseId": "D0.raw-process-provider-state-persistence-captures-exist",
+      "checkpointId": "D0",
+      "contractExpectedObservation": "raw process provider state persistence captures exist",
+      "evidencePath": "cases/D0.raw-process-provider-state-persistence-captures-exist.json"
+    },
+    {
+      "caseId": "D0.normalization-removes-only-nonsemantic-fields",
+      "checkpointId": "D0",
+      "contractExpectedObservation": "normalization removes only nonsemantic fields",
+      "evidencePath": "cases/D0.normalization-removes-only-nonsemantic-fields.json"
+    },
+    {
+      "caseId": "D0.independent-pisharp-observations-match-baseline",
+      "checkpointId": "D0",
+      "contractExpectedObservation": "independent pisharp observations match baseline",
+      "evidencePath": "cases/D0.independent-pisharp-observations-match-baseline.json"
+    },
+    {
+      "caseId": "D0.every-difference-has-strict-equivalent-or-safety-classification",
+      "checkpointId": "D0",
+      "contractExpectedObservation": "every difference has strict equivalent or safety classification",
+      "evidencePath": "cases/D0.every-difference-has-strict-equivalent-or-safety-classification.json"
+    },
+    {
+      "caseId": "D0.safety-differences-have-safe-regression-evidence",
+      "checkpointId": "D0",
+      "contractExpectedObservation": "safety differences have safe regression evidence",
+      "evidencePath": "cases/D0.safety-differences-have-safe-regression-evidence.json"
+    },
+    {
+      "caseId": "D0.zero-unresolved-mismatches",
+      "checkpointId": "D0",
+      "contractExpectedObservation": "zero unresolved mismatches",
+      "evidencePath": "cases/D0.zero-unresolved-mismatches.json"
+    },
+    {
+      "caseId": "Q0.dotnet-format-no-changes",
+      "checkpointId": "Q0",
+      "contractExpectedObservation": "dotnet format no changes",
+      "evidencePath": "cases/Q0.dotnet-format-no-changes.json"
+    },
+    {
+      "caseId": "Q0.warnings-as-errors-solution-build",
+      "checkpointId": "Q0",
+      "contractExpectedObservation": "warnings as errors solution build",
+      "evidencePath": "cases/Q0.warnings-as-errors-solution-build.json"
+    },
+    {
+      "caseId": "Q0.full-dotnet-suite-zero-failures-and-skips",
+      "checkpointId": "Q0",
+      "contractExpectedObservation": "full dotnet suite zero failures and skips",
+      "evidencePath": "cases/Q0.full-dotnet-suite-zero-failures-and-skips.json"
+    },
+    {
+      "caseId": "Q0.focused-compaction-session-provider-tests",
+      "checkpointId": "Q0",
+      "contractExpectedObservation": "focused compaction session provider tests",
+      "evidencePath": "cases/Q0.focused-compaction-session-provider-tests.json"
+    },
+    {
+      "caseId": "Q0.focused-rpc-tui-extension-tests",
+      "checkpointId": "Q0",
+      "contractExpectedObservation": "focused rpc tui extension tests",
+      "evidencePath": "cases/Q0.focused-rpc-tui-extension-tests.json"
+    },
+    {
+      "caseId": "Q0.python-parity-suites",
+      "checkpointId": "Q0",
+      "contractExpectedObservation": "python parity suites",
+      "evidencePath": "cases/Q0.python-parity-suites.json"
+    },
+    {
+      "caseId": "Q0.node-parity-suites",
+      "checkpointId": "Q0",
+      "contractExpectedObservation": "node parity suites",
+      "evidencePath": "cases/Q0.node-parity-suites.json"
+    },
+    {
+      "caseId": "Q0.mcp-conformance",
+      "checkpointId": "Q0",
+      "contractExpectedObservation": "mcp conformance",
+      "evidencePath": "cases/Q0.mcp-conformance.json"
+    },
+    {
+      "caseId": "Q0.documentation-link-validation",
+      "checkpointId": "Q0",
+      "contractExpectedObservation": "documentation link validation",
+      "evidencePath": "cases/Q0.documentation-link-validation.json"
+    },
+    {
+      "caseId": "Q0.pinned-pi-upstream-compaction-branch-overflow-tests",
+      "checkpointId": "Q0",
+      "contractExpectedObservation": "pinned pi upstream compaction branch overflow tests",
+      "evidencePath": "cases/Q0.pinned-pi-upstream-compaction-branch-overflow-tests.json"
+    },
+    {
+      "caseId": "E0.committed-inventory-and-contract-are-source-pinned",
+      "checkpointId": "E0",
+      "contractExpectedObservation": "committed inventory and contract are source pinned",
+      "evidencePath": "cases/E0.committed-inventory-and-contract-are-source-pinned.json"
+    },
+    {
+      "caseId": "E0.all-required-case-evidence-is-committed",
+      "checkpointId": "E0",
+      "contractExpectedObservation": "all required case evidence is committed",
+      "evidencePath": "cases/E0.all-required-case-evidence-is-committed.json"
+    },
+    {
+      "caseId": "E0.implementation-sha-has-no-later-src-or-test-changes",
+      "checkpointId": "E0",
+      "contractExpectedObservation": "implementation sha has no later src or test changes",
+      "evidencePath": "cases/E0.implementation-sha-has-no-later-src-or-test-changes.json"
+    },
+    {
+      "caseId": "E0.contract-derived-denominator-matches-all-evidence",
+      "checkpointId": "E0",
+      "contractExpectedObservation": "contract derived denominator matches all evidence",
+      "evidencePath": "cases/E0.contract-derived-denominator-matches-all-evidence.json"
+    },
+    {
+      "caseId": "E0.explicit-current-evidence-directory-is-validated",
+      "checkpointId": "E0",
+      "contractExpectedObservation": "explicit current evidence directory is validated",
+      "evidencePath": "cases/E0.explicit-current-evidence-directory-is-validated.json"
+    },
+    {
+      "caseId": "E0.stale-evidence-is-rejected",
+      "checkpointId": "E0",
+      "contractExpectedObservation": "stale evidence is rejected",
+      "evidencePath": "cases/E0.stale-evidence-is-rejected.json"
+    },
+    {
+      "caseId": "E0.artifact-hashes-and-raw-paths-validate",
+      "checkpointId": "E0",
+      "contractExpectedObservation": "artifact hashes and raw paths validate",
+      "evidencePath": "cases/E0.artifact-hashes-and-raw-paths-validate.json"
+    },
+    {
+      "caseId": "E0.feature-matrix-ledger-todo-continuation-updated",
+      "checkpointId": "E0",
+      "contractExpectedObservation": "feature matrix ledger todo continuation updated",
+      "evidencePath": "cases/E0.feature-matrix-ledger-todo-continuation-updated.json"
+    },
+    {
+      "caseId": "E0.completion-receipt-has-final-source-shas-and-scope",
+      "checkpointId": "E0",
+      "contractExpectedObservation": "completion receipt has final source shas and scope",
+      "evidencePath": "cases/E0.completion-receipt-has-final-source-shas-and-scope.json"
+    },
+    {
+      "caseId": "CI0.push-workflow-is-on-exact-final-head",
+      "checkpointId": "CI0",
+      "contractExpectedObservation": "push workflow is on exact final head",
+      "evidencePath": "cases/CI0.push-workflow-is-on-exact-final-head.json"
+    },
+    {
+      "caseId": "CI0.pull-request-workflow-is-on-exact-final-head",
+      "checkpointId": "CI0",
+      "contractExpectedObservation": "pull request workflow is on exact final head",
+      "evidencePath": "cases/CI0.pull-request-workflow-is-on-exact-final-head.json"
+    },
+    {
+      "caseId": "CI0.pull-request-base-is-main",
+      "checkpointId": "CI0",
+      "contractExpectedObservation": "pull request base is main",
+      "evidencePath": "cases/CI0.pull-request-base-is-main.json"
+    },
+    {
+      "caseId": "CI0.every-required-job-and-case-passes",
+      "checkpointId": "CI0",
+      "contractExpectedObservation": "every required job and case passes",
+      "evidencePath": "cases/CI0.every-required-job-and-case-passes.json"
+    },
+    {
+      "caseId": "CI0.no-duplicate-manual-workflow-dispatch",
+      "checkpointId": "CI0",
+      "contractExpectedObservation": "no duplicate manual workflow dispatch",
+      "evidencePath": "cases/CI0.no-duplicate-manual-workflow-dispatch.json"
+    },
+    {
+      "caseId": "PUB0.draft-pr-is-open-and-unmerged",
+      "checkpointId": "PUB0",
+      "contractExpectedObservation": "draft pr is open and unmerged",
+      "evidencePath": "cases/PUB0.draft-pr-is-open-and-unmerged.json"
+    },
+    {
+      "caseId": "PUB0.pr-base-main-and-head-is-final-source",
+      "checkpointId": "PUB0",
+      "contractExpectedObservation": "pr base main and head is final source",
+      "evidencePath": "cases/PUB0.pr-base-main-and-head-is-final-source.json"
+    },
+    {
+      "caseId": "PUB0.publication-verifier-uses-current-run-directory",
+      "checkpointId": "PUB0",
+      "contractExpectedObservation": "publication verifier uses current run directory",
+      "evidencePath": "cases/PUB0.publication-verifier-uses-current-run-directory.json"
+    },
+    {
+      "caseId": "PUB0.all-22-checkpoints-and-211-cases-pass",
+      "checkpointId": "PUB0",
+      "contractExpectedObservation": "all 22 checkpoints and 211 cases pass",
+      "evidencePath": "cases/PUB0.all-22-checkpoints-and-211-cases-pass.json"
+    },
+    {
+      "caseId": "PUB0.pr-description-records-verified-results-and-limitations",
+      "checkpointId": "PUB0",
+      "contractExpectedObservation": "pr description records verified results and limitations",
+      "evidencePath": "cases/PUB0.pr-description-records-verified-results-and-limitations.json"
+    }
+  ]
+}

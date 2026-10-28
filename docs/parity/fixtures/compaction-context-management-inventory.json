@@ -1,12 +1,13 @@
 {
   "schemaVersion": 1,
   "milestone": "compaction-context-management-parity",
-  "phase": "C10 refreshed 10/10 at report source a6262c89; C11 implementation slice at 83ea0c30 passes 17/17 focused tests; refresh C1-C9; C11-C13 and final gates remain",
+  "phase": "C1-C13, D0 and Q0 pass 154/154 at final implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b; 121 equivalent cases and 14 classified safety differences, with zero unresolved mismatches. P0/P1/V0/V1, E0, CI0 and PUB0 remain for final publication.",
   "sourcePins": {
     "piCommit": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
     "pisharpBaselineCommit": "12064420179f4119bdaf37479c7cba0f5ca40717",
     "pisharpWorkingBranch": "milestone/compaction-context-management-parity",
-    "implementationSourceSha": "83ea0c300121d80b53e320f2c16fcb53253430b8"
+    "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
+    "currentEvidenceDirectory": "artifacts/parity/20261028T-final-source-7480e81d"
   },
   "framework": {
     "package": "Microsoft.Agents.AI",
@@ -22,12 +23,16 @@
         "context-budgets-estimation",
         "tool-continuation-projection"
       ],
-      "status": "confirmed_algorithm_difference_unclassified",
-      "evidence": "Pi estimateTokens uses per-content chars/4 plus a fixed image heuristic. PiSharp PiContextUsageEstimator uses content-specific chars/4, while AutoCompactionPolicy.Estimate serializes JSON and uses chars/2 plus 512. The latter is only used by the separate transient request budget. Do not collapse these owners or call either result tokenizer output.",
+      "status": "accepted_case_level_safety_difference",
+      "evidence": "Pi estimateTokens uses per-content chars/4 plus a fixed image heuristic. PiSharp PiContextUsageEstimator matches that explicit content heuristic for durable context estimates. The separate AutoCompactionPolicy.Estimate serializes transient request messages and uses chars/2 plus 64 per message plus 512; a source-linked regression proves this is more conservative than the Pi-compatible message estimate. It is used only to bound an ephemeral provider projection, which preserves canonical history. Neither estimate is tokenizer output.",
       "requiredCases": [
         "C4.image-and-large-tool-result-estimate",
         "C4.estimate-method-is-explicitly-heuristic-not-tokenizer",
         "C6.transient-projection-does-not-change-canonical-history"
+      ],
+      "evidenceRecords": [
+        "docs/parity/fixtures/compaction-context-management-c4-case-results.json",
+        "docs/parity/fixtures/compaction-context-management-c6-case-results.json"
       ]
     },
     {
@@ -44,8 +49,7 @@
       ],
       "evidenceRecords": [
         "docs/parity/fixtures/compaction-context-management-c2-case-results.json",
-        "docs/parity/fixtures/compaction-context-management-c4-case-results.json",
-        "docs/parity/fixtures/compaction-context-management-c5-case-results.json"
+        "docs/parity/fixtures/compaction-context-management-c4-case-results.json"
       ]
     },
     {
@@ -61,7 +65,10 @@
         "C6.incomplete-call-graph-fails-before-provider-send",
         "C6.duplicate-or-unmatched-results-never-replay-tools"
       ],
-      "evidenceRecord": "docs/parity/fixtures/compaction-context-management-c6-case-results.json"
+      "evidenceRecord": "docs/parity/fixtures/compaction-context-management-c6-case-results.json",
+      "evidenceRecords": [
+        "docs/parity/fixtures/compaction-context-management-c6-case-results.json"
+      ]
     }
   ],
   "records": [
@@ -84,11 +91,9 @@
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#ManualCompactionUsesPiDefaultRecentTokenBudgetWithoutAContextWindow",
         "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcCompactionProcessTests.cs#RpcProcessUsesPiSplitTurnCompactionAndCustomInstructionsForHistoryOnly"
       ],
-      "baseline": "C1 passed 9/9 at source 843d0388. Paired observations cover eligibility, focus, retained context/history, split turns, usage/details, rollback, cancellation, and queued follow-up ordering.",
+      "baseline": "C1 passes 9/9 on final implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b: 9 equivalent and 0 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c1-case-results.json; raw captures are ignored under artifacts/parity/20261028T-final-source-7480e81d/runs/C1/differential/.",
       "differences": [],
-      "evidenceGaps": [
-        "Refresh C1 after any later production, test, or parity-tool change."
-      ],
+      "evidenceGaps": [],
       "cases": [
         "C1.eligible-manual-request-persists-one-entry",
         "C1.ineligible-short-history-is-no-op",
@@ -105,7 +110,7 @@
         "packages/coding-agent/test/suite/agent-session-compaction.test.ts"
       ],
       "pairedEvidenceRecord": "docs/parity/fixtures/compaction-context-management-c1-case-results.json",
-      "implementationSourceSha": "843d0388ceca2adbe2725397c48e0e45b98cba7e"
+      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b"
     },
     {
       "id": "automatic-compaction",
@@ -127,7 +132,7 @@
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#AutomaticCompactionUsesTheSplitTurnCoordinatorBeforeAcceptingTheNextPrompt",
         "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcActiveModelSelectionProcessTests.cs#RpcModelSelectionAndCycleDuringBlockedToolTurnChangeTheNextProviderRequest"
       ],
-      "baseline": "C2 passed 10/10 at source 843d0388, including a case-scoped safety classification for unknown context windows; C5 passed all 11 overflow/retry cases at the same source.",
+      "baseline": "C2 passes 10/10 on final implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b: 9 equivalent and 1 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c2-case-results.json; raw captures are ignored under artifacts/parity/20261028T-final-source-7480e81d/runs/C2/differential/.",
       "differences": [],
       "evidenceGaps": [
         "Refresh C2 and C5 after later source changes; broader contexts/providers outside the frozen cases remain outside this checkpoint evidence."
@@ -155,7 +160,7 @@
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#CachedInputCountAlreadyIncludedInInputDoesNotFalseClassifySilentOverflow"
       ],
       "pairedEvidenceRecord": "docs/parity/fixtures/compaction-context-management-c2-case-results.json",
-      "implementationSourceSha": "843d0388ceca2adbe2725397c48e0e45b98cba7e"
+      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b"
     },
     {
       "id": "cut-points-retention",
@@ -177,11 +182,9 @@
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#CompactionMovesBoundaryPastClosedRecoveryOmissionSuffix",
         "tests/PiSharp.Tests/Runtime/Agents/CompactionNestedToolCallsTests.cs"
       ],
-      "baseline": "C3 passed 14/14 at source 843d0388; pinned cut-point and retained-history observations are stable across two runs per side.",
+      "baseline": "C3 passes 14/14 on final implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b: 14 equivalent and 0 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c3-case-results.json; raw captures are ignored under artifacts/parity/20261028T-final-source-7480e81d/runs/C3/differential/.",
       "differences": [],
-      "evidenceGaps": [
-        "Refresh C3 after later source changes."
-      ],
+      "evidenceGaps": [],
       "cases": [
         "C3.user-boundary-selection",
         "C3.assistant-boundary-split-turn",
@@ -203,7 +206,7 @@
         "packages/coding-agent/test/compaction-nested-calls.test.ts"
       ],
       "pairedEvidenceRecord": "docs/parity/fixtures/compaction-context-management-c3-case-results.json",
-      "implementationSourceSha": "843d0388ceca2adbe2725397c48e0e45b98cba7e"
+      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b"
     },
     {
       "id": "context-budgets-estimation",
@@ -223,17 +226,14 @@
       "existingTests": [
         "tests/PiSharp.Tests/Runtime/Sessions/PiContextUsageEstimatorTests.cs",
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#AutoBudgetIsDisabledWithoutKnownContextWindowAndRejectsInvalidLimits",
-        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#StreamingContextEstimateMatchesSerializedUtf16LengthsIncludingUnicodeAndLargeToolResults"
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#TransientContextEstimateIsConservativeSerializedCharacterHeuristicNotTokenizer"
       ],
-      "baseline": "C4 passed 12/12 at source 843d0388, including the unknown-limit safety classification. The separate estimator formula distinction remains documented and is not called tokenizer output.",
+      "baseline": "C4 passes 12/12 on final implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b: 11 equivalent and 1 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c4-case-results.json; raw captures are ignored under artifacts/parity/20261028T-final-source-7480e81d/runs/C4/differential/.",
       "differences": [
-        "Current Pi source uses per-message chars/4 and a 4,800-character image heuristic. PiSharp has a separate transient AutoCompactionPolicy estimator that serializes JSON and uses a chars/2 plus fixed overhead heuristic; the owners and use sites differ. This is an observed algorithm difference, not yet classified as acceptable or defective.",
+        "Current Pi source uses per-message chars/4 and a 4,800-character image heuristic. PiSharp has a separate transient AutoCompactionPolicy estimator that serializes JSON and uses chars/2 plus per-message framing and fixed overhead. This conservative overestimate is accepted only for the bounded ephemeral request projection; the canonical history and durable Pi-compatible estimate remain unchanged. C6 records both estimates and links the dedicated regression.",
         "Prior RPC compact captures at Pi 2b0a123 and current Pi main are not the requested b06 oracle and used different system/tool context; their estimate deltas are not final evidence."
       ],
-      "evidenceGaps": [
-        "Classify the separate transient AutoCompactionPolicy estimator formula difference from Pi estimateTokens.",
-        "Refresh C4 after later source changes."
-      ],
+      "evidenceGaps": [],
       "cases": [
         "C4.model-context-window-controls-trigger",
         "C4.reserve-and-keep-recent-defaults",
@@ -253,7 +253,7 @@
         "packages/coding-agent/test/settings-manager-compaction.test.ts"
       ],
       "pairedEvidenceRecord": "docs/parity/fixtures/compaction-context-management-c4-case-results.json",
-      "implementationSourceSha": "843d0388ceca2adbe2725397c48e0e45b98cba7e"
+      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b"
     },
     {
       "id": "provider-overflow-retry",
@@ -275,11 +275,9 @@
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#ProviderOverflowRetriesOnceOnlyBeforeContentWithShortenedRequest",
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#RepeatedProviderOverflowStopsAfterOneRecoveryAttempt"
       ],
-      "baseline": "C5 passed 11/11 at source 843d0388; pre-content overflow recovery is exercised through actual Responses, Chat Completions, and Anthropic SDK adapters. Two safety differences are explicit: do not replay visible partial output, and do not invent an unknown context window.",
+      "baseline": "C5 passes 11/11 on final implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b: 9 equivalent and 2 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c5-case-results.json; raw captures are ignored under artifacts/parity/20261028T-final-source-7480e81d/runs/C5/differential/.",
       "differences": [],
-      "evidenceGaps": [
-        "Refresh C5 after later source changes; retain the case-scoped safety regression evidence."
-      ],
+      "evidenceGaps": [],
       "cases": [
         "C5.pre-content-context-error-recognized",
         "C5.provider-silent-overflow-from-reported-usage",
@@ -305,7 +303,7 @@
         "tests/PiSharp.Tests/Cli/Providers/ProviderOverflowLoopbackTests.cs#RealSdkRecoversPreContentHttpOverflowWithoutReplacingCanonicalHistory"
       ],
       "pairedEvidenceRecord": "docs/parity/fixtures/compaction-context-management-c5-case-results.json",
-      "implementationSourceSha": "843d0388ceca2adbe2725397c48e0e45b98cba7e"
+      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b"
     },
     {
       "id": "tool-continuation-projection",
@@ -327,14 +325,13 @@
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#ParallelToolCallBatchCutsOnlyAfterBothResultsAndRetainsRawHistory",
         "tests/PiSharp.Tests/Runtime/Agents/CompactionNestedToolCallsTests.cs"
       ],
-      "baseline": "C6 passed 10/10 at source 843d0388. Four accepted safety differences cover bounded transient results and rejection of malformed call/result graphs while retaining canonical history.",
+      "baseline": "C6 passes 10/10 on final implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b: 5 equivalent and 5 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c6-case-results.json; raw captures are ignored under artifacts/parity/20261028T-final-source-7480e81d/runs/C6/differential/.",
       "differences": [
         "Large and latest tool results remain raw in Pi provider requests; PiSharp bounds the transient request and retains the latest outcome in its summary while leaving canonical history intact.",
-        "Pinned Pi sends seeded incomplete and duplicate call/result graphs to the provider hook; PiSharp rejects the projected continuation before send. These are accepted safety differences with per-case regression references."
+        "Pinned Pi sends seeded incomplete and duplicate call/result graphs to the provider hook; PiSharp rejects the projected continuation before send. These are accepted safety differences with per-case regression references.",
+        "Pi's persistent-context estimate is a per-content chars/4 heuristic. PiSharp's separate transient in-flight projection uses a serialized chars/2 plus framing heuristic, demonstrated to overestimate the Pi-compatible message estimate on a large Unicode tool-result fixture. It bounds only an ephemeral request and preserves canonical history; it is not reported as a tokenizer result."
       ],
-      "evidenceGaps": [
-        "Refresh C6 after later source changes."
-      ],
+      "evidenceGaps": [],
       "cases": [
         "C6.transient-projection-does-not-change-canonical-history",
         "C6.single-large-current-tool-result-is-bounded",
@@ -352,7 +349,7 @@
         "packages/coding-agent/test/agent-session-auto-compaction-queue.test.ts"
       ],
       "pairedEvidenceRecord": "docs/parity/fixtures/compaction-context-management-c6-case-results.json",
-      "implementationSourceSha": "843d0388ceca2adbe2725397c48e0e45b98cba7e",
+      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
       "pairedEvidenceStatus": "Historical C6 evidence passed 10/10 at source 1ff1d67; refresh against the final implementation source."
     },
     {
@@ -374,13 +371,11 @@
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#SummaryRejectsOversizedFocusBeforeProviderAndEmptyProviderOutput",
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#LongSummaryTranscriptRetainsLatestMessageWithinBound"
       ],
-      "baseline": "C7 passed 10/10 at source 843d0388: nine equivalent cases and one intentional whitespace-only-summary safety difference.",
+      "baseline": "C7 passes 10/10 on final implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b: 9 equivalent and 1 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c7-case-results.json; raw captures are ignored under artifacts/parity/20261028T-final-source-7480e81d/runs/C7/differential/.",
       "differences": [
         "The compaction summary thinking-level delta is recorded as open in TODO.md but has not been rechecked against pinned b06."
       ],
-      "evidenceGaps": [
-        "Refresh C7 after later source changes."
-      ],
+      "evidenceGaps": [],
       "cases": [
         "C7.initial-summary-instructions-match-pinned-prompt",
         "C7.previous-summary-is-updated-with-prior-facts-preserved",
@@ -399,7 +394,7 @@
         "packages/coding-agent/test/compaction-summary-reasoning.test.ts"
       ],
       "pairedEvidenceRecord": "docs/parity/fixtures/compaction-context-management-c7-case-results.json",
-      "implementationSourceSha": "843d0388ceca2adbe2725397c48e0e45b98cba7e",
+      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
       "pairedEvidenceStatus": "Passed 10/10 at source 843d0388; refresh after later source changes."
     },
     {
@@ -422,11 +417,9 @@
         "tests/PiSharp.Tests/Runtime/Sessions/PiJsonlSessionInterchangeTests.cs",
         "tests/PiSharp.Tests/Runtime/Sessions/CrashRecoveryProcessTests.cs"
       ],
-      "baseline": "C8 passed 10/10 at source 843d0388. Native/Pi JSONL persistence, branching, fork/clone, restart continuation, metadata, and actual Responses/Chat Completions/Anthropic provider requests after reload are paired.",
+      "baseline": "C8 passes 10/10 on final implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b: 10 equivalent and 0 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c8-case-results.json; raw captures are ignored under artifacts/parity/20261028T-final-source-7480e81d/runs/C8/differential/.",
       "differences": [],
-      "evidenceGaps": [
-        "Refresh C8 after later source changes."
-      ],
+      "evidenceGaps": [],
       "cases": [
         "C8.compaction-entry-persists-summary-boundary-usage",
         "C8.canonical-ancestor-messages-remain-recoverable",
@@ -445,7 +438,7 @@
         "packages/coding-agent/test/session-manager/build-context.test.ts"
       ],
       "pairedEvidenceRecord": "docs/parity/fixtures/compaction-context-management-c8-case-results.json",
-      "implementationSourceSha": "843d0388ceca2adbe2725397c48e0e45b98cba7e",
+      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
       "pairedEvidenceStatus": "Passed 10/10 at source 843d0388; refresh after later source changes."
     },
     {
@@ -472,7 +465,7 @@
         "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionTreeEventTests.cs",
         "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionProcessTests.cs"
       ],
-      "baseline": "C9 paired Pi/PiSharp observations pass 9/9 at source 1deb174887151679db19339c5bffbe660bc2e8c5. The public terminal prompt exposes No summary, Summarize, and Summarize with custom prompt; cancellation and failed summary generation preserve the selected head and history.",
+      "baseline": "C9 passes 9/9 on final implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b: 9 equivalent and 0 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c9-case-results.json; raw captures are ignored under artifacts/parity/20261028T-final-source-7480e81d/runs/C9/differential/.",
       "differences": [],
       "evidenceGaps": [],
       "cases": [
@@ -498,7 +491,7 @@
         "tests/PiSharp.Tests/Cli/Tui/TerminalPtyTests.cs#ConversationTreeSearchSelectsAndPersistsABranchThroughLinuxPty"
       ],
       "pairedEvidenceRecord": "docs/parity/fixtures/compaction-context-management-c9-case-results.json",
-      "implementationSourceSha": "1deb174887151679db19339c5bffbe660bc2e8c5"
+      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b"
     },
     {
       "id": "usage-reasoning-costs",
@@ -522,7 +515,7 @@
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#UsageAccountingAppliesRequestWideModelInputPricingTiers",
         "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionStatsProjectorTests.cs"
       ],
-      "baseline": "C10 passed 10/10 on clean source 2fce38db and was refreshed 10/10 at report source a6262c89. Provider usage fields, per-model compaction accounting, active-branch totals, and CLI/TUI/RPC projections have focused regression and paired evidence; C1-C9 evidence still needs refresh.",
+      "baseline": "C10 passes 10/10 on final implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b: 8 equivalent and 2 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c10-case-results.json; raw captures are ignored under artifacts/parity/20261028T-final-source-7480e81d/runs/C10/differential/.",
       "differences": [
         "Pinned Pi usage fields are required numeric values and appear as zero when source fields are absent; PiSharp preserves absent provider counts as unknown at the Microsoft.Extensions.AI boundary.",
         "Pinned Pi requires numeric pricing rates and reports a zero-rate fixture as free; PiSharp preserves missing model pricing as unknown cost."
@@ -555,7 +548,9 @@
         "tests/PiSharp.Tests/Cli/Providers/Bedrock/BedrockProviderTests.cs",
         "tests/PiSharp.Tests/Cli/Providers/Google/GoogleGenAiProviderTests.cs",
         "tests/PiSharp.Tests/Cli/Providers/Mistral/MistralProviderCompatibilityTests.cs"
-      ]
+      ],
+      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
+      "pairedEvidenceRecord": "docs/parity/fixtures/compaction-context-management-c10-case-results.json"
     },
     {
       "id": "public-surfaces-provider-boundaries",
@@ -583,11 +578,9 @@
         "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionStatsProjectorTests.cs",
         "tests/PiSharp.Tests/Cli/Tui/TerminalPtyTests.cs"
       ],
-      "baseline": "RPC/TUI manual compaction is implemented. JSON compaction result projection is now implemented at 83ea0c30; C11 paired differential evidence for JSON, CLI/TUI, RPC and provider continuation remains incomplete.",
+      "baseline": "C11 passes 10/10 on final implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b: 10 equivalent and 0 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c11-case-results.json; raw captures are ignored under artifacts/parity/20261028T-final-source-7480e81d/runs/C11/differential/.",
       "differences": [],
-      "evidenceGaps": [
-        "All ten C11 paired cases, including provider request comparisons for Responses, Chat Completions and Anthropic after compaction, plus real PTY comparison where presentation affects the contract."
-      ],
+      "evidenceGaps": [],
       "cases": [
         "C11.cli-manual-compact-input-and-result",
         "C11.tui-compact-command-and-progress-status",
@@ -604,7 +597,9 @@
         "packages/coding-agent/test/interactive-mode-compaction.test.ts",
         "packages/coding-agent/test/interactive-mode-tree-navigation.test.ts",
         "packages/coding-agent/test/agent-session-tree-navigation.test.ts"
-      ]
+      ],
+      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
+      "pairedEvidenceRecord": "docs/parity/fixtures/compaction-context-management-c11-case-results.json"
     },
     {
       "id": "native-extension-hooks",
@@ -625,11 +620,9 @@
         "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionCompactionEventTests.cs",
         "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionTreeEventTests.cs"
       ],
-      "baseline": "Compaction and branch-summary extension paths now have implementation tests, including extension-provided summary/usage/details, tree veto, failure rollback and durable application. Pinned payload and lifecycle differentials remain open.",
+      "baseline": "C12 passes 8/8 on final implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b: 7 equivalent and 1 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c12-case-results.json; raw captures are ignored under artifacts/parity/20261028T-final-source-7480e81d/runs/C12/differential/.",
       "differences": [],
-      "evidenceGaps": [
-        "Direct b06 lifecycle payload/order comparisons for before/after compaction and tree-summary hooks."
-      ],
+      "evidenceGaps": [],
       "cases": [
         "C12.before-compact-hook-sees-detached-real-plan",
         "C12.hook-cancel-prevents-summary-and-persistence",
@@ -649,7 +642,9 @@
         "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionTreeEventTests.cs#RequestedBranchSummaryFromExtensionIsAppliedPersistedAndExported",
         "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionTreeEventTests.cs#RequestedBranchSummaryUsesMafAndPersistsItsUsage",
         "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionTreeEventTests.cs#BranchSummaryFailureLeavesCanonicalSelectionAndPersistenceUnchanged"
-      ]
+      ],
+      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
+      "pairedEvidenceRecord": "docs/parity/fixtures/compaction-context-management-c12-case-results.json"
     },
     {
       "id": "failure-cancellation-recovery",
@@ -673,11 +668,9 @@
         "tests/PiSharp.Tests/Runtime/Sessions/CrashRecoveryProcessTests.cs",
         "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcCompactionProcessTests.cs#RpcProcessAbortCancelsAnInFlightCompactionAndReportsItsLifecycle"
       ],
-      "baseline": "Several rollback/cancel/replay regressions exist; required failure-boundary matrix and process-kill evidence are incomplete.",
+      "baseline": "C13 passes 12/12 on final implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b: 11 equivalent and 1 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c13-case-results.json; raw captures are ignored under artifacts/parity/20261028T-final-source-7480e81d/runs/C13/differential/.",
       "differences": [],
-      "evidenceGaps": [
-        "Injected failure after completed summary before append, during persistence and during branch/session replacement, followed by restart/continuation."
-      ],
+      "evidenceGaps": [],
       "cases": [
         "C13.failure-before-summary-does-not-mutate-history",
         "C13.streaming-summary-failure-keeps-canonical-tree",
@@ -696,7 +689,9 @@
         "packages/coding-agent/test/suite/agent-session-compaction.test.ts",
         "packages/coding-agent/test/agent-session-auto-compaction-queue.test.ts",
         "packages/coding-agent/test/suite/regressions/9340-9777-auto-compaction-cancellation.test.ts"
-      ]
+      ],
+      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
+      "pairedEvidenceRecord": "docs/parity/fixtures/compaction-context-management-c13-case-results.json"
     },
     {
       "id": "prerequisite-and-clean-baseline",
@@ -716,7 +711,7 @@
         "tools/parity/managed_packages/verify.py",
         "tools/parity/compaction_context/verify.py"
       ],
-      "baseline": "P0 evidence is verified from PR metadata and the ignored final evidence directory. P1 branch ancestry and pins are verified. The standalone local rebuild has a CLI DLL hash difference from archived output.",
+      "baseline": "P0 previously verified PR #27 merge, exact-head CI, and 27/27 checkpoints / 240/240 cases; the final source-bound P0/P1 refresh remains queued after this documentation commit.",
       "differences": [
         "Local standalone CLI binary hash differs from the archived P0 binary; exact-head CI and committed source identity are still valid."
       ],
@@ -759,7 +754,7 @@
       "existingTests": [
         "tools/parity/compaction_context/test_verifier.py"
       ],
-      "baseline": "Verifier controls pass 20/20. Coverage and remaining adapter gaps are explicit; a synthetic positive control validates verifier mechanics only.",
+      "baseline": "V0 inventory owners and case coverage are refreshed to include all 211 frozen cases; V1 controls are scoped to test_verifier.py and pass 20/20. Final P0/P1/V0/V1 reports remain to run.",
       "differences": [],
       "evidenceGaps": [
         "Verifier must still validate a full 211-case evidence set and publication artifacts."
@@ -821,12 +816,9 @@
         "tools/parity/compaction_context/test_verifier.py",
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#RecoverableLengthStopCompactsOnceAndContinuesWithoutPartialOutput"
       ],
-      "baseline": "C1-C8 pass 86/86 at source 843d0388 with nine accepted case-level safety differences and no unresolved mismatches within these checkpoints. C9-C13 and final acceptance remain open.",
+      "baseline": "C1-C13 pass 135/135 on 7480e81dcba48ca2861596789c6f39fecbc6ad2b; 121 are equivalent and 14 are explicitly classified safety differences. D0 independently passes 9/9 with two-run Pi stability, all 135 paired cases, raw artifact hashes, and zero unresolved mismatches.",
       "differences": [],
-      "evidenceGaps": [
-        "Execute the required C9-C13 and D0 cases against final source.",
-        "Classify remaining estimator differences and establish zero unresolved mismatches for the full contract."
-      ],
+      "evidenceGaps": [],
       "cases": [
         "D0.same-pi-run-one-stable",
         "D0.same-pi-run-two-stable",
@@ -844,7 +836,9 @@
       "sourceReferences": [
         "tools/parity/compaction_context/pi_oracle.mjs",
         "tools/parity/compaction_context/c5_oracle.py"
-      ]
+      ],
+      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
+      "pairedEvidenceRecord": "artifacts/parity/20261028T-final-source-7480e81d/runs/D0/d0-case-results.json"
     },
     {
       "id": "quality-and-regression-gates",
@@ -864,13 +858,11 @@
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs",
         "tests/PiSharp.Tests/Cli/Providers/ProviderOverflowLoopbackTests.cs"
       ],
-      "baseline": "Partial local quality only; Q0 cannot pass until full .NET and every required suite is recorded.",
+      "baseline": "Q0 passes 10/10 at final source: format, warnings-as-errors solution build, full .NET suite, focused suites, Python, Node, MCP, documentation paths, and pinned Pi tests. The solution build keeps warnings-as-errors and suppresses only NU1900 because the managed NuGet audit cache is read-only in this environment; exact-head CI will run its normal clean-cache build.",
       "differences": [
         "Pinned queue test failure at unknown model/contextWindow 0; see the confirmed discrepancy record."
       ],
-      "evidenceGaps": [
-        "Full .NET result and exact selected pinned Pi quality results must be recorded."
-      ],
+      "evidenceGaps": [],
       "cases": [
         "Q0.dotnet-format-no-changes",
         "Q0.warnings-as-errors-solution-build",
@@ -893,7 +885,9 @@
       "sourceReferences": [
         "PiSharp.slnx",
         "tools/parity/compaction_context/runner.py"
-      ]
+      ],
+      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
+      "pairedEvidenceRecord": "artifacts/parity/20261028T-final-source-7480e81d/runs/Q0/q0-case-results.json"
     },
     {
       "id": "committed-source-bound-evidence",
@@ -911,11 +905,10 @@
         "tools/parity/compaction_context/test_verifier.py#test_stale_implementation_source_is_rejected",
         "tools/parity/compaction_context/test_verifier.py#test_missing_raw_artifact_is_rejected"
       ],
-      "baseline": "The verifier rejects changed production, test, and parity-tool sources. Compact C1-C8 records are hash-bound at source 843d0388; the full contract evidence fixture remains incomplete.",
+      "baseline": "C1-C13, D0 and Q0 have source-bound compact records for 154 passing cases; the contract-derived 211-case index is committed with this update. E0 will validate the final committed docs and raw-artifact hashes.",
       "differences": [],
       "evidenceGaps": [
-        "Complete and commit all remaining case evidence after executing C9-C13 and final gates.",
-        "Bind the final source SHA, denominator, artifact hashes, and receipt after implementation changes stop."
+        "Run E0 on the committed final source-bound evidence directory."
       ],
       "cases": [
         "E0.committed-inventory-and-contract-are-source-pinned",
@@ -949,10 +942,10 @@
       "existingTests": [
         "tools/parity/compaction_context/verify.py#validate_evidence"
       ],
-      "baseline": "No final-head CI claim is made.",
+      "baseline": "Automatic exact-head push and PR workflows will be verified after the final docs commit and push.",
       "differences": [],
       "evidenceGaps": [
-        "Push final source/docs, capture automatic runs on the exact PR head, and verify base main and all required jobs."
+        "Push final head and record automatic push and PR CI results for that exact SHA."
       ],
       "cases": [
         "CI0.push-workflow-is-on-exact-final-head",
@@ -983,10 +976,10 @@
       "existingTests": [
         "tools/parity/compaction_context/verify.py#validate_evidence"
       ],
-      "baseline": "Publication currently has no successful 22/211 run; do not mark the PR ready or parity complete.",
+      "baseline": "PR #28 remains open and draft; final exact-head publication verification is pending.",
       "differences": [],
       "evidenceGaps": [
-        "A complete all-case artifact set and current publication-verifier run are required before PUB0."
+        "Update the PR body with final verified source/head SHAs, 22/22 and 211/211 results, and limitations; run PUB0."
       ],
       "cases": [
         "PUB0.draft-pr-is-open-and-unmerged",
@@ -1003,10 +996,10 @@
     }
   ],
   "crossCuttingEvidenceGaps": [
-    "C1-C8 passed 86/86 at source 843d0388; C9 passed 9/9 at 1deb1748; C10 was refreshed 10/10 at report source a6262c89. C11 implementation slice and 17/17 focused tests are at 83ea0c30. Refresh C1-C9 at current source, then complete C11-C13 and final gates.",
-    "The separate transient AutoCompactionPolicy estimator formula remains distinct from Pi estimateTokens and still needs a case-level classification.",
-    "The three provider adapters have paired overflow recovery and post-reload compacted-session continuation coverage; broader provider semantics outside these cases remain open.",
-    "C11-C13 still cover public usage surfaces, native extension lifecycle, and failure/cancellation/crash scenarios."
+    "C1-C13, D0, and Q0 all pass at final implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b; 154/154 current-source cases are verified.",
+    "Fourteen case-level safety differences have dedicated regression evidence; the paired corpus has zero unresolved mismatches.",
+    "The 20 credential-gated pinned-Pi integration tests are skipped with exact identities; all other selected upstream tests pass. No live model endpoint was called.",
+    "Provider behavior outside the frozen cases and broader model/provider matrices remain outside this milestone acceptance scope."
   ],
   "prerequisiteEvidence": {
     "pullRequest": 27,
@@ -1045,79 +1038,97 @@
     "contractSha256": "c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6",
     "requiredCheckpoints": 22,
     "requiredCases": 211,
-    "perCaseArtifactsProduced": 105,
-    "status": "incomplete",
-    "reason": "C10 passed 10/10 at report source a6262c89 with a clean source tree; the implementation source is 83ea0c30 and the following commit is documentation-only. Across revisions, 105/211 distinct cases have paired results; refresh C1-C9 and complete C11-C13 plus D0/Q0/E0/CI0/PUB0.",
-    "perCaseArtifactsCommitted": 105,
+    "perCaseArtifactsProduced": 154,
+    "status": "in_progress",
+    "reason": "All current-source C1-C13, D0 and Q0 checkpoints pass: 154/154 cases. The remaining 57 cases are P0, P1, V0, V1, E0, CI0 and PUB0.",
+    "perCaseArtifactsCommitted": 154,
     "currentSourceCheckpointEvidence": {
-      "sourceSha": "a6262c89d5efa64745fe49247c5c9479da4f3c32",
-      "implementationSourceSha": "83ea0c300121d80b53e320f2c16fcb53253430b8",
-      "checkpointId": "C10",
-      "passedCases": 10,
-      "requiredCases": 10,
+      "sourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
+      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
+      "checkpointIds": [
+        "C1",
+        "C2",
+        "C3",
+        "C4",
+        "C5",
+        "C6",
+        "C7",
+        "C8",
+        "C9",
+        "C10",
+        "C11",
+        "C12",
+        "C13",
+        "D0",
+        "Q0"
+      ],
+      "passedCases": 154,
+      "requiredCases": 154,
       "status": "passed",
       "runnerRecords": [
-        "artifacts/parity/20261028-c10-a6262c89-refresh/runs/C10/checkpoint-run.json"
+        "artifacts/parity/20261028T-final-source-7480e81d/runs/C1/checkpoint-run.json",
+        "artifacts/parity/20261028T-final-source-7480e81d/runs/C2/checkpoint-run.json",
+        "artifacts/parity/20261028T-final-source-7480e81d/runs/C3/checkpoint-run.json",
+        "artifacts/parity/20261028T-final-source-7480e81d/runs/C4/checkpoint-run.json",
+        "artifacts/parity/20261028T-final-source-7480e81d/runs/C5/checkpoint-run.json",
+        "artifacts/parity/20261028T-final-source-7480e81d/runs/C6/checkpoint-run.json",
+        "artifacts/parity/20261028T-final-source-7480e81d/runs/C7/checkpoint-run.json",
+        "artifacts/parity/20261028T-final-source-7480e81d/runs/C8/checkpoint-run.json",
+        "artifacts/parity/20261028T-final-source-7480e81d/runs/C9/checkpoint-run.json",
+        "artifacts/parity/20261028T-final-source-7480e81d/runs/C10/checkpoint-run.json",
+        "artifacts/parity/20261028T-final-source-7480e81d/runs/C11/checkpoint-run.json",
+        "artifacts/parity/20261028T-final-source-7480e81d/runs/C12/checkpoint-run.json",
+        "artifacts/parity/20261028T-final-source-7480e81d/runs/C13/checkpoint-run.json",
+        "artifacts/parity/20261028T-final-source-7480e81d/runs/D0/checkpoint-run.json",
+        "artifacts/parity/20261028T-final-source-7480e81d/runs/Q0/checkpoint-run.json"
       ],
       "compactRecords": [
-        "docs/parity/fixtures/compaction-context-management-c10-case-results.json"
+        "docs/parity/fixtures/compaction-context-management-c1-case-results.json",
+        "docs/parity/fixtures/compaction-context-management-c2-case-results.json",
+        "docs/parity/fixtures/compaction-context-management-c3-case-results.json",
+        "docs/parity/fixtures/compaction-context-management-c4-case-results.json",
+        "docs/parity/fixtures/compaction-context-management-c5-case-results.json",
+        "docs/parity/fixtures/compaction-context-management-c6-case-results.json",
+        "docs/parity/fixtures/compaction-context-management-c7-case-results.json",
+        "docs/parity/fixtures/compaction-context-management-c8-case-results.json",
+        "docs/parity/fixtures/compaction-context-management-c9-case-results.json",
+        "docs/parity/fixtures/compaction-context-management-c10-case-results.json",
+        "docs/parity/fixtures/compaction-context-management-c11-case-results.json",
+        "docs/parity/fixtures/compaction-context-management-c12-case-results.json",
+        "docs/parity/fixtures/compaction-context-management-c13-case-results.json",
+        "docs/parity/fixtures/compaction-context-management-d0-case-results.json",
+        "docs/parity/fixtures/compaction-context-management-q0-case-results.json"
       ],
       "documentationOnlyCommitAfterImplementation": true
     },
     "lastSourceBoundCheckpointEvidence": {
-      "sourceSha": "a6262c89d5efa64745fe49247c5c9479da4f3c32",
-      "implementationSourceSha": "83ea0c300121d80b53e320f2c16fcb53253430b8",
-      "checkpointId": "C10",
+      "sourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
+      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
+      "checkpointId": "Q0",
       "passedCases": 10,
       "requiredCases": 10,
       "status": "passed",
       "runnerRecords": [
-        "artifacts/parity/20261028-c10-a6262c89-refresh/runs/C10/checkpoint-run.json"
+        "artifacts/parity/20261028T-final-source-7480e81d/runs/Q0/checkpoint-run.json"
       ],
       "compactRecords": [
-        "docs/parity/fixtures/compaction-context-management-c10-case-results.json"
+        "docs/parity/fixtures/compaction-context-management-q0-case-results.json"
       ],
       "documentationOnlyCommitAfterImplementation": true
     }
   },
   "validationSoFar": {
-    "pisharpFullSolution": "3,939 passed, 0 failed, 0 skipped; dotnet test PiSharp.slnx --no-restore --logger 'console;verbosity=minimal'.",
-    "focusedSilentOverflow": "3 passed, 0 failed, 0 skipped, including threshold, overflow reason, and cached-input boundary cases.",
-    "dotnetFormat": "passed --verify-no-changes --no-restore.",
-    "warningsAsErrorsBuild": "passed with zero warnings and zero errors when NuGetAudit=false; the default audit cache path is read-only and the initial default build failed with NU1900.",
-    "terminalPython": "66 passed.",
-    "builtinParityPython": "27 passed.",
-    "compactionVerifierTests": "20 passed, including positive and negative evidence controls.",
-    "terminalNode": "24 passed.",
-    "documentationPaths": "Documentation paths verified: 156 documents and 699 references after the C1-C8 evidence/status update.",
-    "pinnedPiSuites": "Selected pinned Pi compaction and queue tests: 34 passed / 1 failed; Pi AI overflow: 20 passed. The failed queue expectation conflicts with shouldCompact at model id unknown/contextWindow 0.",
-    "mcpConformance": "No regressions against the classified baseline; three known scenarios remain classified.",
-    "focusedCompactionAndProviderTests": "82 passed, 0 failed, 0 skipped, including length-stop recovery and all three provider loopback APIs.",
-    "compactionVerifierControls": "20 passed, including positive/negative controls and hash-bound assertion mutation rejection.",
-    "pairedLengthStopOracle": "2/11 C5 cases; Pi and PiSharp each run twice with stable normalized observations at source b22f7e7bad940a1dd0a26d716628f6739a8a9abf. Compact case records are committed in compaction-context-management-c5-case-results.json; raw captures and hashes are under artifacts/parity/20261028T062543Z-c5-length-recovery/.",
-    "pinnedPiCompactionAndQueueTests": "34 passed / 1 failed across the two selected suites. The failure is the no-prior-usage queue test: runtime model id unknown and contextWindow 0 cause pinned shouldCompact to trigger despite the test expecting no compaction.",
-    "fullDotnetSuite": "3,939 passed, 0 failed, 0 skipped; 6m36s.",
-    "focusedC6Tests": "85 passed, 0 failed, 0 skipped with the frozen C6 C# filter at source 1ff1d67.",
-    "pairedC6Oracle": "10/10 C6 cases passed with stable pinned-Pi and PiSharp runs twice per side at source 1ff1d67; four case-scoped intentional safety differences are recorded.",
-    "c6CheckpointRunner": "runner.py recorded C6 passed: 10 required, 10 executed, 10 passed, 0 failed and 0 skipped; direct raw-artifact/hash verification passed.",
-    "compactionContract": "Frozen contract validation passed: 22 checkpoints, 211 required cases; SHA-256 c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6.",
-    "focusedC7Tests": "80 passed, 0 failed, 0 skipped at source d274475f; CompactionTests and RpcCompactionProcessTests filter.",
-    "pairedC7Oracle": "10/10 cases passed at source d274475f: nine equivalent, one intentional whitespace-only-summary safety difference; Pi and PiSharp observations stable across two runs per side.",
-    "c7CheckpointRunner": "runner.py recorded passed with sourceTreeClean true, 10 required, 10 executed, 10 passed, 0 failed and 0 skipped; raw artifact hashes are bound in compaction-context-management-c7-case-results.json.",
-    "currentSourceCheckpointEvidence": "C10 passed 10/10 at report source a6262c89, with sourceTreeClean true and raw artifacts verified. Implementation source is 83ea0c30; the following commit changed documentation only. C1-C9 evidence remains stale.",
-    "focusedC8Tests": "140 passed, 0 failed, 0 skipped at source 5a3be74a; CompactionTests, PiJsonlSessionInterchangeTests, and CrashRecoveryProcessTests filter.",
-    "compactionUsageRoundTrip": "New compaction summary/boundary/usage regression passed through native serialization and Pi JSONL export/import without duplicate billing.",
-    "c9_dotnet_focused": "27 passed, 0 failed, 0 skipped at source 1deb1748; C9 tree navigation, native extension tree events, RPC sessions, and Linux PTY test filter.",
-    "c9_paired_oracle": "C9 passed 9/9 paired cases on clean source 1deb174887151679db19339c5bffbe660bc2e8c5; Pi and PiSharp observations were stable across two runs per side.",
-    "c9_pinned_pi_ui_test": "Pinned Pi packages/coding-agent/test/interactive-mode-tree-navigation.test.ts: 5 passed, 0 failed.",
-    "c9_checkpoint_runner": "runner.py recorded C9 passed at source 1deb1748 with sourceTreeClean true, 9 required, 9 executed, 9 passed, 0 failed/skipped; raw artifacts hash-verified.",
-    "c10FocusedDotnet": "98 passed, 0 failed, 0 skipped at report source a6262c89 for CompactionTests, RpcSessionStatsProjectorTests, and CodemodeModelTests.",
-    "c10ProviderTests": "39 passed, 0 failed, 0 skipped for Pi Messages, Bedrock, Google GenAI, and Mistral provider mapping tests.",
-    "c10PairedOracle": "C10 passed 10/10 at report source a6262c89; pinned-Pi and PiSharp oracle observations were stable across two runs per side. Two intentional safety differences preserve unknown usage and unknown prices; raw artifact hashes independently validate.",
-    "c10CheckpointRunner": "runner.py recorded C10 passed at report source a6262c89: 10 required, 10 executed, 10 passed, zero failures/skips, sourceTreeClean true. Artifacts are under artifacts/parity/20261028-c10-a6262c89-refresh/runs/C10/.",
-    "c10PinnedPiTests": "Pinned Pi usage-totals and compaction suites: 35 passed, 0 failed, 2 skipped on this refresh.",
-    "c10Format": "dotnet format PiSharp.slnx --verify-no-changes passed at implementation source 83ea0c30; subsequent commit a6262c89 changed documentation only.",
-    "c11FocusedDotnet": "17 passed, 0 failed, 0 skipped at source 83ea0c30 for RpcCompactionProcessTests, RpcSessionStatsProjectorTests, RpcEventProjectorTests, and JsonEventModeTests.",
-    "c11Format": "dotnet format PiSharp.slnx --verify-no-changes passed at source 83ea0c30; workspace loading emitted a non-fatal warning."
+    "finalImplementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
+    "pairedC1ThroughC13": "135/135 passed: 121 equivalent, 14 intentional safety differences, 0 unresolved.",
+    "independentD0": "9/9 passed; 135 paired C cases, 14 safety differences, stable Pi/PiSharp observations, raw hashes verified.",
+    "qualityQ0": "10/10 passed; full .NET suite 3,959/3,959; focused compaction/session/provider 114/114; focused RPC/TUI/extension 52/52.",
+    "python": "Terminal 66/66, compaction verifier/helper tests 27/27, built-in parity suite 27/27.",
+    "node": "Terminal parity 24/24.",
+    "mcpConformance": "Build passes with --warnaserror and NU1900 suppressed for the inaccessible NuGet audit cache; conformance reports no regressions and classifies three known baseline failures.",
+    "pinnedPi": "200 passed, 0 failed, 20 credential-gated skipped; skip identities are checked exactly.",
+    "documentationPaths": "156 documents and 700 references verified.",
+    "format": "dotnet format PiSharp.slnx --verify-no-changes passed.",
+    "warningsAsErrorsBuild": "Solution build passed with 0 warnings and 0 errors; NU1900 is the only suppressed warning code because the environment NuGet audit cache is read-only. Exact-head CI runs the standard build in its clean environment.",
+    "verifierControls": "V1 is scoped to test_verifier.py; 20 positive/negative controls pass when executed directly."
   }
 }

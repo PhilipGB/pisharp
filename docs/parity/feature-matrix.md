@@ -1,19 +1,16 @@
 ## Active milestone — Compaction, Context Budget, Overflow and Usage Parity — 2026-10-28
 
-PR #27 is merged at `12064420179f4119bdaf37479c7cba0f5ca40717`; its verified
-publication evidence covers 27/27 checkpoints and 240/240 cases. Pi is pinned
-to `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; this milestone's contract has
-22 checkpoints and 211 required cases.
+PR #27 is merged at `12064420179f4119bdaf37479c7cba0f5ca40717`. Pi is pinned to `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; the frozen contract has 22 checkpoints and 211 required cases.
 
-C1-C8 passed 86/86 on source `843d0388`; C9 passed 9/9 at `1deb1748`; C10
-first passed 10/10 at `2fce38db` and was refreshed at `a6262c89`. Historical
-implementation has passed 10/13 checkpoint areas. C11 is in progress at
-`83ea0c30`; its RPC and JSON
-compaction event fixes pass the focused filter 17/17 and format verification.
-Across revisions, 105/211 distinct cases have paired results. C10 has now
-passed 10/10 at report source `a6262c89`; refresh C1-C9, complete C11-C13, and
-then pass final gates D0, Q0, E0, CI0, and PUB0. The transient estimator
-formula still needs case-level classification. PR #28 remains open and draft.
+The final implementation source is `7480e81dcba48ca2861596789c6f39fecbc6ad2b`. C1-C13 pass 135/135; D0 passes 9/9; Q0 passes 10/10, for 154/154 current-source cases. Across the paired C corpus, 121 observations are equivalent and 14 are verified intentional safety differences; there are zero unresolved mismatches.
+
+Q0 records 3,959/3,959 .NET tests, focused compaction/session/provider 114/114, focused RPC/TUI/extension 52/52, terminal Python 66/66, compaction Python 27/27, built-in parity Python 27/27, terminal Node 24/24, and 200 pinned Pi passes with 20 exact credential-dependent skips. Documentation validation reports 156 documents / 700 references.
+
+Remaining contract work is P0, P1, V0, V1, E0, CI0 and PUB0 (57 cases). Update the docs/evidence index, run the clean-baseline and verifier controls, push the final head, verify both automatic workflows on that exact SHA, then run E0 and PUB0. PR #28 must remain open, draft, and unmerged.
+
+Provider-boundary tests use local loopback fixtures; no live model endpoint was called. The pinned Pi upstream suite skips 20 credential-gated interactive/LLM tests and validates their exact names. The local NuGet audit cache is read-only; Q0 suppresses only NU1900 while keeping --warnaserror for all other warnings. The automatic CI build uses the normal clean cache.
+
+See the [source-pinned inventory](docs/parity/fixtures/compaction-context-management-inventory.json), [compact evidence](docs/parity/fixtures/compaction-context-management-c1-case-results.json), [case index](docs/parity/fixtures/compaction-context-management/evidence-summary.json), and [execution ledger](docs/parity/execution-ledger.json).
 
 ## Active milestone — Complete Managed Package Lifecycle and Resource Distribution Parity — 2026-10-27
 

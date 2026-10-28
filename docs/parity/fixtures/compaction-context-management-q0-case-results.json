@@ -1,0 +1,1347 @@
+{
+  "schemaVersion": 1,
+  "milestone": "compaction-context-management-parity",
+  "checkpointId": "Q0",
+  "contractSha256": "c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6",
+  "evidenceDirectory": "artifacts/parity/20261028T-final-source-7480e81d/runs/Q0",
+  "generatedReportSha256": "c3f0826d5095b9ad54f6627827165c08075e5e3b5e2a8ad0c95f15cd338d9ebd",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "pisharpSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
+  "sourceTreeClean": true,
+  "piCalibrationStable": false,
+  "pisharpCalibrationStable": false,
+  "pairedObservationsEqual": true,
+  "acceptedSafetyDifferenceCount": 0,
+  "normalization": [
+    "Strict gate observations are compared exactly as recorded."
+  ],
+  "safetyDifferences": [],
+  "executedCaseCount": 10,
+  "requiredCaseCount": 10,
+  "unexecutedCaseIds": [],
+  "verifierCounts": {
+    "required": 10,
+    "executed": 10,
+    "passed": 10,
+    "failed": 0,
+    "skipped": 0
+  },
+  "cases": [
+    {
+      "caseId": "Q0.dotnet-format-no-changes",
+      "contractExpectedObservation": "dotnet format no changes",
+      "classification": "strict",
+      "passed": true,
+      "normalizedExpectedSha256": "cacd862071aa889569e917f8ae44ff47bed49b9f87212ea820cb604786373105",
+      "normalizedActualSha256": "cacd862071aa889569e917f8ae44ff47bed49b9f87212ea820cb604786373105",
+      "normalizedExpectedBytes": 399,
+      "normalizedActualBytes": 399,
+      "normalizedExpected": {
+        "caseId": "Q0.dotnet-format-no-changes",
+        "commands": [
+          {
+            "name": "format",
+            "argv": [
+              "dotnet",
+              "format",
+              "PiSharp.slnx",
+              "--verify-no-changes"
+            ],
+            "exitCode": 0,
+            "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderrSha256": "239c224f01960886368326d9ef5ebdcce071dcd0996d157bef6a963fc1eaa49c",
+            "testCounts": null
+          }
+        ],
+        "allCommandsSucceeded": true,
+        "zeroFailuresAndNoUnexplainedSkips": true
+      },
+      "normalizedActual": {
+        "caseId": "Q0.dotnet-format-no-changes",
+        "commands": [
+          {
+            "name": "format",
+            "argv": [
+              "dotnet",
+              "format",
+              "PiSharp.slnx",
+              "--verify-no-changes"
+            ],
+            "exitCode": 0,
+            "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderrSha256": "239c224f01960886368326d9ef5ebdcce071dcd0996d157bef6a963fc1eaa49c",
+            "testCounts": null
+          }
+        ],
+        "allCommandsSucceeded": true,
+        "zeroFailuresAndNoUnexplainedSkips": true
+      }
+    },
+    {
+      "caseId": "Q0.warnings-as-errors-solution-build",
+      "contractExpectedObservation": "warnings as errors solution build",
+      "classification": "strict",
+      "passed": true,
+      "normalizedExpectedSha256": "f126de10a1dfa608cf74123e53e6a13e923151ea1cbec8b03ce49ee28fc8ad9b",
+      "normalizedActualSha256": "f126de10a1dfa608cf74123e53e6a13e923151ea1cbec8b03ce49ee28fc8ad9b",
+      "normalizedExpectedBytes": 419,
+      "normalizedActualBytes": 419,
+      "normalizedExpected": {
+        "caseId": "Q0.warnings-as-errors-solution-build",
+        "commands": [
+          {
+            "name": "build",
+            "argv": [
+              "dotnet",
+              "build",
+              "PiSharp.slnx",
+              "--warnaserror",
+              "-p:NoWarn=NU1900"
+            ],
+            "exitCode": 0,
+            "stdoutSha256": "2e3a51c20fc7377c8a68f08239bc10c15820143295b94cca0a9bb9bcc35c2671",
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "testCounts": null
+          }
+        ],
+        "allCommandsSucceeded": true,
+        "zeroFailuresAndNoUnexplainedSkips": true
+      },
+      "normalizedActual": {
+        "caseId": "Q0.warnings-as-errors-solution-build",
+        "commands": [
+          {
+            "name": "build",
+            "argv": [
+              "dotnet",
+              "build",
+              "PiSharp.slnx",
+              "--warnaserror",
+              "-p:NoWarn=NU1900"
+            ],
+            "exitCode": 0,
+            "stdoutSha256": "2e3a51c20fc7377c8a68f08239bc10c15820143295b94cca0a9bb9bcc35c2671",
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "testCounts": null
+          }
+        ],
+        "allCommandsSucceeded": true,
+        "zeroFailuresAndNoUnexplainedSkips": true
+      }
+    },
+    {
+      "caseId": "Q0.full-dotnet-suite-zero-failures-and-skips",
+      "contractExpectedObservation": "full dotnet suite zero failures and skips",
+      "classification": "strict",
+      "passed": true,
+      "normalizedExpectedSha256": "6b1902fb3bcea0fae0100f97add2ac16ff2a0ae4e4197c8ae0139306332da1c6",
+      "normalizedActualSha256": "6b1902fb3bcea0fae0100f97add2ac16ff2a0ae4e4197c8ae0139306332da1c6",
+      "normalizedExpectedBytes": 475,
+      "normalizedActualBytes": 475,
+      "normalizedExpected": {
+        "caseId": "Q0.full-dotnet-suite-zero-failures-and-skips",
+        "commands": [
+          {
+            "name": "full-dotnet-tests",
+            "argv": [
+              "dotnet",
+              "test",
+              "PiSharp.slnx",
+              "--logger",
+              "console;verbosity=normal"
+            ],
+            "exitCode": 0,
+            "stdoutSha256": "de99edea74208934e46abb0fa9eda0770645e0a3d10780560bf0e2cb8ab59149",
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "testCounts": {
+              "passed": 3959,
+              "failed": 0,
+              "skipped": 0
+            }
+          }
+        ],
+        "allCommandsSucceeded": true,
+        "zeroFailuresAndNoUnexplainedSkips": true
+      },
+      "normalizedActual": {
+        "caseId": "Q0.full-dotnet-suite-zero-failures-and-skips",
+        "commands": [
+          {
+            "name": "full-dotnet-tests",
+            "argv": [
+              "dotnet",
+              "test",
+              "PiSharp.slnx",
+              "--logger",
+              "console;verbosity=normal"
+            ],
+            "exitCode": 0,
+            "stdoutSha256": "de99edea74208934e46abb0fa9eda0770645e0a3d10780560bf0e2cb8ab59149",
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "testCounts": {
+              "passed": 3959,
+              "failed": 0,
+              "skipped": 0
+            }
+          }
+        ],
+        "allCommandsSucceeded": true,
+        "zeroFailuresAndNoUnexplainedSkips": true
+      }
+    },
+    {
+      "caseId": "Q0.focused-compaction-session-provider-tests",
+      "contractExpectedObservation": "focused compaction session provider tests",
+      "classification": "strict",
+      "passed": true,
+      "normalizedExpectedSha256": "e89fdb0e83591fb889747b5a3809a5602e47b3cdb113e7756992f31d481e4be6",
+      "normalizedActualSha256": "e89fdb0e83591fb889747b5a3809a5602e47b3cdb113e7756992f31d481e4be6",
+      "normalizedExpectedBytes": 716,
+      "normalizedActualBytes": 716,
+      "normalizedExpected": {
+        "caseId": "Q0.focused-compaction-session-provider-tests",
+        "commands": [
+          {
+            "name": "focused-compaction",
+            "argv": [
+              "dotnet",
+              "test",
+              "tests/PiSharp.Tests/PiSharp.Tests.csproj",
+              "--no-restore",
+              "--filter",
+              "FullyQualifiedName~CompactionTests|FullyQualifiedName~CrashRecoveryProcessTests|FullyQualifiedName~PiContextUsageEstimatorTests|FullyQualifiedName~InFlightContextBudgetTests|FullyQualifiedName~ProviderOverflowLoopbackTests"
+            ],
+            "exitCode": 0,
+            "stdoutSha256": "1f7d09357a1dfbf88fc5bc7d12f9c5ff3a886117a672e179bba1448c4bc84e44",
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "testCounts": {
+              "passed": 114,
+              "failed": 0,
+              "skipped": 0
+            }
+          }
+        ],
+        "allCommandsSucceeded": true,
+        "zeroFailuresAndNoUnexplainedSkips": true
+      },
+      "normalizedActual": {
+        "caseId": "Q0.focused-compaction-session-provider-tests",
+        "commands": [
+          {
+            "name": "focused-compaction",
+            "argv": [
+              "dotnet",
+              "test",
+              "tests/PiSharp.Tests/PiSharp.Tests.csproj",
+              "--no-restore",
+              "--filter",
+              "FullyQualifiedName~CompactionTests|FullyQualifiedName~CrashRecoveryProcessTests|FullyQualifiedName~PiContextUsageEstimatorTests|FullyQualifiedName~InFlightContextBudgetTests|FullyQualifiedName~ProviderOverflowLoopbackTests"
+            ],
+            "exitCode": 0,
+            "stdoutSha256": "1f7d09357a1dfbf88fc5bc7d12f9c5ff3a886117a672e179bba1448c4bc84e44",
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "testCounts": {
+              "passed": 114,
+              "failed": 0,
+              "skipped": 0
+            }
+          }
+        ],
+        "allCommandsSucceeded": true,
+        "zeroFailuresAndNoUnexplainedSkips": true
+      }
+    },
+    {
+      "caseId": "Q0.focused-rpc-tui-extension-tests",
+      "contractExpectedObservation": "focused rpc tui extension tests",
+      "classification": "strict",
+      "passed": true,
+      "normalizedExpectedSha256": "9ddca193f65acd85cdd80d9fce19f417f041c57a57009337a281a7dc7acff91b",
+      "normalizedActualSha256": "9ddca193f65acd85cdd80d9fce19f417f041c57a57009337a281a7dc7acff91b",
+      "normalizedExpectedBytes": 852,
+      "normalizedActualBytes": 852,
+      "normalizedExpected": {
+        "caseId": "Q0.focused-rpc-tui-extension-tests",
+        "commands": [
+          {
+            "name": "focused-surfaces",
+            "argv": [
+              "dotnet",
+              "test",
+              "tests/PiSharp.Tests/PiSharp.Tests.csproj",
+              "--no-restore",
+              "--filter",
+              "FullyQualifiedName~RpcCompactionProcessTests|FullyQualifiedName~RpcSessionStatsProjectorTests|FullyQualifiedName~RpcEventProjectorTests|FullyQualifiedName~JsonEventModeTests|FullyQualifiedName~TerminalTreePickerTests|FullyQualifiedName~NativeExtensionCompactionEventTests|FullyQualifiedName~NativeExtensionTreeEventTests|FullyQualifiedName~PiSharpExtensionCompactionTests"
+            ],
+            "exitCode": 0,
+            "stdoutSha256": "56048f20b6591a7a47ff17f392c3fbd4fc9281c7bcad3152e5aba9d12789ee52",
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "testCounts": {
+              "passed": 52,
+              "failed": 0,
+              "skipped": 0
+            }
+          }
+        ],
+        "allCommandsSucceeded": true,
+        "zeroFailuresAndNoUnexplainedSkips": true
+      },
+      "normalizedActual": {
+        "caseId": "Q0.focused-rpc-tui-extension-tests",
+        "commands": [
+          {
+            "name": "focused-surfaces",
+            "argv": [
+              "dotnet",
+              "test",
+              "tests/PiSharp.Tests/PiSharp.Tests.csproj",
+              "--no-restore",
+              "--filter",
+              "FullyQualifiedName~RpcCompactionProcessTests|FullyQualifiedName~RpcSessionStatsProjectorTests|FullyQualifiedName~RpcEventProjectorTests|FullyQualifiedName~JsonEventModeTests|FullyQualifiedName~TerminalTreePickerTests|FullyQualifiedName~NativeExtensionCompactionEventTests|FullyQualifiedName~NativeExtensionTreeEventTests|FullyQualifiedName~PiSharpExtensionCompactionTests"
+            ],
+            "exitCode": 0,
+            "stdoutSha256": "56048f20b6591a7a47ff17f392c3fbd4fc9281c7bcad3152e5aba9d12789ee52",
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "testCounts": {
+              "passed": 52,
+              "failed": 0,
+              "skipped": 0
+            }
+          }
+        ],
+        "allCommandsSucceeded": true,
+        "zeroFailuresAndNoUnexplainedSkips": true
+      }
+    },
+    {
+      "caseId": "Q0.python-parity-suites",
+      "contractExpectedObservation": "python parity suites",
+      "classification": "strict",
+      "passed": true,
+      "normalizedExpectedSha256": "35004038186dfdacf2480c8ac0495313a2ff6e0151aee286bdc0fbd4249918e7",
+      "normalizedActualSha256": "35004038186dfdacf2480c8ac0495313a2ff6e0151aee286bdc0fbd4249918e7",
+      "normalizedExpectedBytes": 1221,
+      "normalizedActualBytes": 1221,
+      "normalizedExpected": {
+        "caseId": "Q0.python-parity-suites",
+        "commands": [
+          {
+            "name": "terminal-python",
+            "argv": [
+              "/usr/bin/python3",
+              "-m",
+              "unittest",
+              "discover",
+              "-s",
+              "tools/parity/terminal",
+              "-p",
+              "test_*.py"
+            ],
+            "exitCode": 0,
+            "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderrSha256": "0fdeb57faf78c939e009af16623e149d0de3113727c20dfcfc33ed879540198f",
+            "testCounts": {
+              "passed": 66,
+              "failed": 0,
+              "skipped": 0
+            }
+          },
+          {
+            "name": "compaction-python",
+            "argv": [
+              "/usr/bin/python3",
+              "-m",
+              "unittest",
+              "discover",
+              "-s",
+              "tools/parity/compaction_context",
+              "-p",
+              "test_*.py"
+            ],
+            "exitCode": 0,
+            "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderrSha256": "a8e0e48db0758029cfe05a9c4b8cb9b0f484a61af3652ca01005b68a0089d42a",
+            "testCounts": {
+              "passed": 27,
+              "failed": 0,
+              "skipped": 0
+            }
+          },
+          {
+            "name": "builtin-tool-python",
+            "argv": [
+              "/usr/bin/python3",
+              "-m",
+              "unittest",
+              "discover",
+              "-s",
+              "tools/parity",
+              "-p",
+              "test_builtin_coding_tool_differential.py"
+            ],
+            "exitCode": 0,
+            "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderrSha256": "1f8169f5f7221c414d35b14133c5253885702bd2614215e4455f7ee2ef8a27ba",
+            "testCounts": {
+              "passed": 27,
+              "failed": 0,
+              "skipped": 0
+            }
+          }
+        ],
+        "allCommandsSucceeded": true,
+        "zeroFailuresAndNoUnexplainedSkips": true
+      },
+      "normalizedActual": {
+        "caseId": "Q0.python-parity-suites",
+        "commands": [
+          {
+            "name": "terminal-python",
+            "argv": [
+              "/usr/bin/python3",
+              "-m",
+              "unittest",
+              "discover",
+              "-s",
+              "tools/parity/terminal",
+              "-p",
+              "test_*.py"
+            ],
+            "exitCode": 0,
+            "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderrSha256": "0fdeb57faf78c939e009af16623e149d0de3113727c20dfcfc33ed879540198f",
+            "testCounts": {
+              "passed": 66,
+              "failed": 0,
+              "skipped": 0
+            }
+          },
+          {
+            "name": "compaction-python",
+            "argv": [
+              "/usr/bin/python3",
+              "-m",
+              "unittest",
+              "discover",
+              "-s",
+              "tools/parity/compaction_context",
+              "-p",
+              "test_*.py"
+            ],
+            "exitCode": 0,
+            "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderrSha256": "a8e0e48db0758029cfe05a9c4b8cb9b0f484a61af3652ca01005b68a0089d42a",
+            "testCounts": {
+              "passed": 27,
+              "failed": 0,
+              "skipped": 0
+            }
+          },
+          {
+            "name": "builtin-tool-python",
+            "argv": [
+              "/usr/bin/python3",
+              "-m",
+              "unittest",
+              "discover",
+              "-s",
+              "tools/parity",
+              "-p",
+              "test_builtin_coding_tool_differential.py"
+            ],
+            "exitCode": 0,
+            "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderrSha256": "1f8169f5f7221c414d35b14133c5253885702bd2614215e4455f7ee2ef8a27ba",
+            "testCounts": {
+              "passed": 27,
+              "failed": 0,
+              "skipped": 0
+            }
+          }
+        ],
+        "allCommandsSucceeded": true,
+        "zeroFailuresAndNoUnexplainedSkips": true
+      }
+    },
+    {
+      "caseId": "Q0.node-parity-suites",
+      "contractExpectedObservation": "node parity suites",
+      "classification": "strict",
+      "passed": true,
+      "normalizedExpectedSha256": "c82a5400afc211ab2debc4119dc135423a148cf0003fd8755be820e53eb7cd1f",
+      "normalizedActualSha256": "c82a5400afc211ab2debc4119dc135423a148cf0003fd8755be820e53eb7cd1f",
+      "normalizedExpectedBytes": 425,
+      "normalizedActualBytes": 425,
+      "normalizedExpected": {
+        "caseId": "Q0.node-parity-suites",
+        "commands": [
+          {
+            "name": "terminal-node",
+            "argv": [
+              "npm",
+              "test",
+              "--prefix",
+              "tools/parity/terminal"
+            ],
+            "exitCode": 0,
+            "stdoutSha256": "c49731068e45469f8f6ac5fb3d8195da2305bd2a7215849b8ecb3c5993c21792",
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "testCounts": {
+              "passed": 24,
+              "failed": 0,
+              "skipped": 0
+            }
+          }
+        ],
+        "allCommandsSucceeded": true,
+        "zeroFailuresAndNoUnexplainedSkips": true
+      },
+      "normalizedActual": {
+        "caseId": "Q0.node-parity-suites",
+        "commands": [
+          {
+            "name": "terminal-node",
+            "argv": [
+              "npm",
+              "test",
+              "--prefix",
+              "tools/parity/terminal"
+            ],
+            "exitCode": 0,
+            "stdoutSha256": "c49731068e45469f8f6ac5fb3d8195da2305bd2a7215849b8ecb3c5993c21792",
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "testCounts": {
+              "passed": 24,
+              "failed": 0,
+              "skipped": 0
+            }
+          }
+        ],
+        "allCommandsSucceeded": true,
+        "zeroFailuresAndNoUnexplainedSkips": true
+      }
+    },
+    {
+      "caseId": "Q0.mcp-conformance",
+      "contractExpectedObservation": "mcp conformance",
+      "classification": "strict",
+      "passed": true,
+      "normalizedExpectedSha256": "06946f17f7a080e088348371703bb6e589908f6092262c907fd282de406f3b8d",
+      "normalizedActualSha256": "06946f17f7a080e088348371703bb6e589908f6092262c907fd282de406f3b8d",
+      "normalizedExpectedBytes": 712,
+      "normalizedActualBytes": 712,
+      "normalizedExpected": {
+        "caseId": "Q0.mcp-conformance",
+        "commands": [
+          {
+            "name": "mcp-build",
+            "argv": [
+              "dotnet",
+              "build",
+              "tools/McpConformance/PiSharp.McpConformance.csproj",
+              "--warnaserror",
+              "-p:NoWarn=NU1900"
+            ],
+            "exitCode": 0,
+            "stdoutSha256": "d35c338708e737067b40a2d6589ced43d22d6bb5a4de3604aa2174741fe20aa8",
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "testCounts": null
+          },
+          {
+            "name": "mcp-run",
+            "argv": [
+              "node",
+              "tools/parity/mcp-conformance/run.mjs"
+            ],
+            "exitCode": 0,
+            "stdoutSha256": "0995e8b4eef5ef221921c9dadcf3e31ad08cfea266a3b9e3de8b73203ad674c6",
+            "stderrSha256": "62654ecb276bbf4bab5661672bb774be4c27d61079ce8ed10db72167bdd3981f",
+            "testCounts": null
+          }
+        ],
+        "allCommandsSucceeded": true,
+        "zeroFailuresAndNoUnexplainedSkips": true
+      },
+      "normalizedActual": {
+        "caseId": "Q0.mcp-conformance",
+        "commands": [
+          {
+            "name": "mcp-build",
+            "argv": [
+              "dotnet",
+              "build",
+              "tools/McpConformance/PiSharp.McpConformance.csproj",
+              "--warnaserror",
+              "-p:NoWarn=NU1900"
+            ],
+            "exitCode": 0,
+            "stdoutSha256": "d35c338708e737067b40a2d6589ced43d22d6bb5a4de3604aa2174741fe20aa8",
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "testCounts": null
+          },
+          {
+            "name": "mcp-run",
+            "argv": [
+              "node",
+              "tools/parity/mcp-conformance/run.mjs"
+            ],
+            "exitCode": 0,
+            "stdoutSha256": "0995e8b4eef5ef221921c9dadcf3e31ad08cfea266a3b9e3de8b73203ad674c6",
+            "stderrSha256": "62654ecb276bbf4bab5661672bb774be4c27d61079ce8ed10db72167bdd3981f",
+            "testCounts": null
+          }
+        ],
+        "allCommandsSucceeded": true,
+        "zeroFailuresAndNoUnexplainedSkips": true
+      }
+    },
+    {
+      "caseId": "Q0.documentation-link-validation",
+      "contractExpectedObservation": "documentation link validation",
+      "classification": "strict",
+      "passed": true,
+      "normalizedExpectedSha256": "9c847d934597c55aa2d9fbde925f8501e76e295054d4614a638779dee5732412",
+      "normalizedActualSha256": "9c847d934597c55aa2d9fbde925f8501e76e295054d4614a638779dee5732412",
+      "normalizedExpectedBytes": 411,
+      "normalizedActualBytes": 411,
+      "normalizedExpected": {
+        "caseId": "Q0.documentation-link-validation",
+        "commands": [
+          {
+            "name": "documentation-links",
+            "argv": [
+              "/usr/bin/python3",
+              "tools/validate_doc_paths.py"
+            ],
+            "exitCode": 0,
+            "stdoutSha256": "3156cd0979a7b20a438395a89953b2ced7c417a7cd7094b09138886c1bae026e",
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "testCounts": null
+          }
+        ],
+        "allCommandsSucceeded": true,
+        "zeroFailuresAndNoUnexplainedSkips": true
+      },
+      "normalizedActual": {
+        "caseId": "Q0.documentation-link-validation",
+        "commands": [
+          {
+            "name": "documentation-links",
+            "argv": [
+              "/usr/bin/python3",
+              "tools/validate_doc_paths.py"
+            ],
+            "exitCode": 0,
+            "stdoutSha256": "3156cd0979a7b20a438395a89953b2ced7c417a7cd7094b09138886c1bae026e",
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "testCounts": null
+          }
+        ],
+        "allCommandsSucceeded": true,
+        "zeroFailuresAndNoUnexplainedSkips": true
+      }
+    },
+    {
+      "caseId": "Q0.pinned-pi-upstream-compaction-branch-overflow-tests",
+      "contractExpectedObservation": "pinned pi upstream compaction branch overflow tests",
+      "classification": "strict",
+      "passed": true,
+      "normalizedExpectedSha256": "f5c8dbc5268d1daca83668b25622d0055c4cdaee8865bea32f7daf268a59b522",
+      "normalizedActualSha256": "f5c8dbc5268d1daca83668b25622d0055c4cdaee8865bea32f7daf268a59b522",
+      "normalizedExpectedBytes": 39285,
+      "normalizedActualBytes": 39285,
+      "normalizedExpected": {
+        "caseId": "Q0.pinned-pi-upstream-compaction-branch-overflow-tests",
+        "commands": [
+          {
+            "name": "pinned-pi-suites",
+            "argv": [
+              "node",
+              "/tmp/pi-c9/node_modules/vitest/vitest.mjs",
+              "--run",
+              "--reporter=json",
+              "--outputFile=/home/philip/Projects/pisharp/artifacts/parity/20261028T-final-source-7480e81d/runs/Q0/pinned-pi-q0.json",
+              "packages/ai/test/overflow.test.ts",
+              "packages/coding-agent/test/agent-session-auto-compaction-queue.test.ts",
+              "packages/coding-agent/test/agent-session-stats.test.ts",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts",
+              "packages/coding-agent/test/branch-summarization.test.ts",
+              "packages/coding-agent/test/branch-summary-extensions.test.ts",
+              "packages/coding-agent/test/compaction-extensions.test.ts",
+              "packages/coding-agent/test/compaction-nested-calls.test.ts",
+              "packages/coding-agent/test/compaction-summary-reasoning.test.ts",
+              "packages/coding-agent/test/compaction.test.ts",
+              "packages/coding-agent/test/interactive-mode-compaction.test.ts",
+              "packages/coding-agent/test/interactive-mode-tree-navigation.test.ts",
+              "packages/coding-agent/test/session-manager/build-context.test.ts",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts",
+              "packages/coding-agent/test/suite/regressions/3688-tree-cancel-compacting.test.ts",
+              "packages/coding-agent/test/suite/regressions/9340-9777-auto-compaction-cancellation.test.ts"
+            ],
+            "exitCode": 0,
+            "stdoutSha256": "ead0fa05abcab3ce434f2da38f2e2ecff519f8e2d26b5a4bd2c897e7607272cf",
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "knownSkippedTests": [
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation - branch scenarios should navigate between branches correctly",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should attach summary to correct parent when navigating to nested user message",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should attach summary to selected node when navigating to assistant message",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should create branch summary when navigating with summarize=true",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should handle abort during summarization",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should handle navigation to same position (no-op)",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should navigate to non-user message without editor text",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should navigate to user message and put text in editor",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should not create summary when navigating without summarize option",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should support custom summarization instructions",
+              "packages/coding-agent/test/compaction-extensions.test.ts :: Compaction extensions should allow extensions to cancel compaction",
+              "packages/coding-agent/test/compaction-extensions.test.ts :: Compaction extensions should allow extensions to provide custom compaction",
+              "packages/coding-agent/test/compaction-extensions.test.ts :: Compaction extensions should call multiple extensions in order",
+              "packages/coding-agent/test/compaction-extensions.test.ts :: Compaction extensions should continue with default compaction if extension throws error",
+              "packages/coding-agent/test/compaction-extensions.test.ts :: Compaction extensions should emit before_compact and compact events",
+              "packages/coding-agent/test/compaction-extensions.test.ts :: Compaction extensions should include entries in compact event after compaction is saved",
+              "packages/coding-agent/test/compaction-extensions.test.ts :: Compaction extensions should pass correct data in before_compact event",
+              "packages/coding-agent/test/compaction-extensions.test.ts :: Compaction extensions should use extension compaction even with different values",
+              "packages/coding-agent/test/compaction.test.ts :: LLM summarization should generate a compaction result for the large session",
+              "packages/coding-agent/test/compaction.test.ts :: LLM summarization should produce valid session after compaction"
+            ],
+            "testNames": [
+              "packages/ai/test/overflow.test.ts :: isContextOverflow detects DS4 configured context size errors",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow detects LiteLLM-wrapped OpenAI maximum context length errors",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow detects OpenAI-compatible parenthesized maximum context length errors",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow detects OpenRouter Poolside maximum allowed input length errors",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow detects Together AI context length errors",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow detects Xiaomi-style overflow (length stop with zero output and filled context)",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow detects explicit Ollama prompt-too-long errors",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow detects z.ai CN endpoint prompt-exceeds-max-length errors",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow detects z.ai prompt-too-long errors",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow does not recover a length stop that reached the desired output limit",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow does not treat Bedrock service unavailable as overflow",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow does not treat Bedrock throttling 'Too many tokens' as overflow",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow does not treat HTTP 429 style errors as overflow",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow does not treat generic non-overflow Ollama errors as overflow",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow does not treat generic rate limit errors as overflow",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow does not treat normal length stops with output as context overflow",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow does not treat zero-output length stops far below context as context overflow",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow only treats bodyless 400 and 413 errors as overflow for Cerebras",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow treats a length stop below the desired output limit as recoverable",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow treats zero-output length stops as recoverable without context metadata",
+              "packages/coding-agent/test/agent-session-auto-compaction-queue.test.ts :: AgentSession auto-compaction queue resume should ignore stale pre-compaction assistant usage on pre-prompt compaction checks",
+              "packages/coding-agent/test/agent-session-auto-compaction-queue.test.ts :: AgentSession auto-compaction queue resume should not compact repeatedly after overflow recovery already attempted",
+              "packages/coding-agent/test/agent-session-auto-compaction-queue.test.ts :: AgentSession auto-compaction queue resume should not trigger threshold compaction for error messages when no prior usage exists",
+              "packages/coding-agent/test/agent-session-auto-compaction-queue.test.ts :: AgentSession auto-compaction queue resume should not trigger threshold compaction for error messages when only kept pre-compaction usage exists",
+              "packages/coding-agent/test/agent-session-auto-compaction-queue.test.ts :: AgentSession auto-compaction queue resume should resume after threshold compaction when only agent-level queued messages exist",
+              "packages/coding-agent/test/agent-session-auto-compaction-queue.test.ts :: AgentSession auto-compaction queue resume should trigger threshold compaction for error messages using last successful usage",
+              "packages/coding-agent/test/agent-session-stats.test.ts :: AgentSession.getSessionStats exposes the current context usage alongside token totals",
+              "packages/coding-agent/test/agent-session-stats.test.ts :: AgentSession.getSessionStats groups tool and summary usage separately from model-attributed usage",
+              "packages/coding-agent/test/agent-session-stats.test.ts :: AgentSession.getSessionStats ignores zero-usage messages when checking for post-compaction context usage",
+              "packages/coding-agent/test/agent-session-stats.test.ts :: AgentSession.getSessionStats includes branch summary usage in session totals",
+              "packages/coding-agent/test/agent-session-stats.test.ts :: AgentSession.getSessionStats includes cache-warming usage exactly once without adding messages",
+              "packages/coding-agent/test/agent-session-stats.test.ts :: AgentSession.getSessionStats includes compaction usage in session totals",
+              "packages/coding-agent/test/agent-session-stats.test.ts :: AgentSession.getSessionStats includes tool result usage in session totals",
+              "packages/coding-agent/test/agent-session-stats.test.ts :: AgentSession.getSessionStats reports unknown current context usage immediately after compaction",
+              "packages/coding-agent/test/agent-session-stats.test.ts :: AgentSession.getSessionStats uses post-compaction usage for current context instead of stale kept usage",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation - branch scenarios should navigate between branches correctly",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should attach summary to correct parent when navigating to nested user message",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should attach summary to selected node when navigating to assistant message",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should create branch summary when navigating with summarize=true",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should handle abort during summarization",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should handle navigation to same position (no-op)",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should navigate to non-user message without editor text",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should navigate to user message and put text in editor",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should not create summary when navigating without summarize option",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should support custom summarization instructions",
+              "packages/coding-agent/test/branch-summarization.test.ts :: branch summarization clamps the branch summary output cap to the model limit",
+              "packages/coding-agent/test/branch-summarization.test.ts :: branch summarization does not override tool choice for branch summaries",
+              "packages/coding-agent/test/branch-summarization.test.ts :: branch summarization rejects length-limited branch summaries",
+              "packages/coding-agent/test/branch-summarization.test.ts :: branch summarization rejects tool calls from branch summaries",
+              "packages/coding-agent/test/branch-summary-extensions.test.ts :: Branch summary extensions persists extension-provided summary usage in session totals",
+              "packages/coding-agent/test/compaction-extensions.test.ts :: Compaction extensions should allow extensions to cancel compaction",
+              "packages/coding-agent/test/compaction-extensions.test.ts :: Compaction extensions should allow extensions to provide custom compaction",
+              "packages/coding-agent/test/compaction-extensions.test.ts :: Compaction extensions should call multiple extensions in order",
+              "packages/coding-agent/test/compaction-extensions.test.ts :: Compaction extensions should continue with default compaction if extension throws error",
+              "packages/coding-agent/test/compaction-extensions.test.ts :: Compaction extensions should emit before_compact and compact events",
+              "packages/coding-agent/test/compaction-extensions.test.ts :: Compaction extensions should include entries in compact event after compaction is saved",
+              "packages/coding-agent/test/compaction-extensions.test.ts :: Compaction extensions should pass correct data in before_compact event",
+              "packages/coding-agent/test/compaction-extensions.test.ts :: Compaction extensions should use extension compaction even with different values",
+              "packages/coding-agent/test/compaction-nested-calls.test.ts :: compaction file operations include files touched by nested calls recorded on tool results",
+              "packages/coding-agent/test/compaction-summary-reasoning.test.ts :: generateSummary reasoning options clamps compaction summary maxTokens to the model output cap",
+              "packages/coding-agent/test/compaction-summary-reasoning.test.ts :: generateSummary reasoning options does not set Anthropic refusal fallback for models without allowed fallback targets",
+              "packages/coding-agent/test/compaction-summary-reasoning.test.ts :: generateSummary reasoning options does not set reasoning for non-reasoning models",
+              "packages/coding-agent/test/compaction-summary-reasoning.test.ts :: generateSummary reasoning options does not set reasoning when thinking is off",
+              "packages/coding-agent/test/compaction-summary-reasoning.test.ts :: generateSummary reasoning options honors caller-supplied routing session and tool choice without prompt caching",
+              "packages/coding-agent/test/compaction-summary-reasoning.test.ts :: generateSummary reasoning options leaves Anthropic refusal fallback handling to pi-ai model metadata",
+              "packages/coding-agent/test/compaction-summary-reasoning.test.ts :: generateSummary reasoning options preserves the previous summary without an empty history request for a split turn",
+              "packages/coding-agent/test/compaction-summary-reasoning.test.ts :: generateSummary reasoning options preserves the string result from generateSummary",
+              "packages/coding-agent/test/compaction-summary-reasoning.test.ts :: generateSummary reasoning options rejects a length-limited history summary",
+              "packages/coding-agent/test/compaction-summary-reasoning.test.ts :: generateSummary reasoning options rejects a length-limited split-turn summary",
+              "packages/coding-agent/test/compaction-summary-reasoning.test.ts :: generateSummary reasoning options rejects tool calls from conversation summaries",
+              "packages/coding-agent/test/compaction-summary-reasoning.test.ts :: generateSummary reasoning options rejects tool calls from split-turn summaries",
+              "packages/coding-agent/test/compaction-summary-reasoning.test.ts :: generateSummary reasoning options uses fresh routing sessions without prompt caching",
+              "packages/coding-agent/test/compaction-summary-reasoning.test.ts :: generateSummary reasoning options uses the provided thinking level for reasoning-capable models",
+              "packages/coding-agent/test/compaction.test.ts :: LLM summarization should generate a compaction result for the large session",
+              "packages/coding-agent/test/compaction.test.ts :: LLM summarization should produce valid session after compaction",
+              "packages/coding-agent/test/compaction.test.ts :: Large session fixture should find cut point in large session",
+              "packages/coding-agent/test/compaction.test.ts :: Large session fixture should load session correctly",
+              "packages/coding-agent/test/compaction.test.ts :: Large session fixture should parse the large session",
+              "packages/coding-agent/test/compaction.test.ts :: Token calculation should calculate total context tokens from usage",
+              "packages/coding-agent/test/compaction.test.ts :: Token calculation should handle zero values",
+              "packages/coding-agent/test/compaction.test.ts :: buildSessionContext should handle multiple compactions (only latest matters)",
+              "packages/coding-agent/test/compaction.test.ts :: buildSessionContext should handle single compaction",
+              "packages/coding-agent/test/compaction.test.ts :: buildSessionContext should keep all messages when firstKeptEntryId is first entry",
+              "packages/coding-agent/test/compaction.test.ts :: buildSessionContext should load all messages when no compaction",
+              "packages/coding-agent/test/compaction.test.ts :: buildSessionContext should track model and thinking level changes",
+              "packages/coding-agent/test/compaction.test.ts :: estimateContextTokens uses the last non-zero assistant usage as the context anchor",
+              "packages/coding-agent/test/compaction.test.ts :: findCutPoint should budget context-visible custom message entries",
+              "packages/coding-agent/test/compaction.test.ts :: findCutPoint should fall back to the latest valid cut point before oversized trailing tool results",
+              "packages/coding-agent/test/compaction.test.ts :: findCutPoint should find cut point based on actual token differences",
+              "packages/coding-agent/test/compaction.test.ts :: findCutPoint should indicate split turn when cutting at assistant message",
+              "packages/coding-agent/test/compaction.test.ts :: findCutPoint should keep everything if all messages fit within budget",
+              "packages/coding-agent/test/compaction.test.ts :: findCutPoint should return startIndex if no valid cut points in range",
+              "packages/coding-agent/test/compaction.test.ts :: getLastAssistantUsage should find the last non-aborted assistant message usage",
+              "packages/coding-agent/test/compaction.test.ts :: getLastAssistantUsage should return undefined if no assistant messages",
+              "packages/coding-agent/test/compaction.test.ts :: getLastAssistantUsage should skip aborted messages",
+              "packages/coding-agent/test/compaction.test.ts :: getLastAssistantUsage should skip all-zero assistant usage",
+              "packages/coding-agent/test/compaction.test.ts :: prepareCompaction does not treat system messages as conversation history",
+              "packages/coding-agent/test/compaction.test.ts :: prepareCompaction with previous compaction should re-summarize previously kept messages when the recent window moves past them",
+              "packages/coding-agent/test/compaction.test.ts :: prepareCompaction with previous compaction should skip repeated compactions when kept messages still fit",
+              "packages/coding-agent/test/compaction.test.ts :: shouldCompact should return false when disabled",
+              "packages/coding-agent/test/compaction.test.ts :: shouldCompact should return true when context exceeds threshold",
+              "packages/coding-agent/test/interactive-mode-compaction.test.ts :: InteractiveMode compaction events preserves steering behavior when flushing into an active agent run",
+              "packages/coding-agent/test/interactive-mode-compaction.test.ts :: InteractiveMode compaction events renders each compaction cost after its summary",
+              "packages/coding-agent/test/interactive-mode-compaction.test.ts :: InteractiveMode compaction events renders retained entries and appends the latest summary cost at the bottom",
+              "packages/coding-agent/test/interactive-mode-compaction.test.ts :: InteractiveMode compaction events routes interactive response aborts through AgentSession",
+              "packages/coding-agent/test/interactive-mode-compaction.test.ts :: InteractiveMode compaction events updates the working state when the same agent run resumes after compaction",
+              "packages/coding-agent/test/interactive-mode-compaction.test.ts :: InteractiveMode compaction events uses the cache miss notice setting for compaction and branch summary costs",
+              "packages/coding-agent/test/interactive-mode-tree-navigation.test.ts :: InteractiveMode tree navigation availability allows navigation when compaction finishes while the dialog is open",
+              "packages/coding-agent/test/interactive-mode-tree-navigation.test.ts :: InteractiveMode tree navigation availability preserves operation UI when choosing No summary while busy",
+              "packages/coding-agent/test/interactive-mode-tree-navigation.test.ts :: InteractiveMode tree navigation availability preserves operation UI when choosing Summarize while busy",
+              "packages/coding-agent/test/interactive-mode-tree-navigation.test.ts :: InteractiveMode tree navigation availability rechecks availability after the response abort settles",
+              "packages/coding-agent/test/interactive-mode-tree-navigation.test.ts :: InteractiveMode tree navigation availability still aborts an active response before navigating",
+              "packages/coding-agent/test/session-manager/build-context.test.ts :: buildSessionContext edge cases handles orphaned entries gracefully",
+              "packages/coding-agent/test/session-manager/build-context.test.ts :: buildSessionContext edge cases uses last entry when leafId not found",
+              "packages/coding-agent/test/session-manager/build-context.test.ts :: buildSessionContext trivial cases empty entries returns empty context",
+              "packages/coding-agent/test/session-manager/build-context.test.ts :: buildSessionContext trivial cases simple conversation",
+              "packages/coding-agent/test/session-manager/build-context.test.ts :: buildSessionContext trivial cases single user message",
+              "packages/coding-agent/test/session-manager/build-context.test.ts :: buildSessionContext trivial cases tracks model from assistant message",
+              "packages/coding-agent/test/session-manager/build-context.test.ts :: buildSessionContext trivial cases tracks model from model change entry",
+              "packages/coding-agent/test/session-manager/build-context.test.ts :: buildSessionContext trivial cases tracks thinking level changes",
+              "packages/coding-agent/test/session-manager/build-context.test.ts :: buildSessionContext with branches complex tree with multiple branches and compaction",
+              "packages/coding-agent/test/session-manager/build-context.test.ts :: buildSessionContext with branches follows path to specified leaf",
+              "packages/coding-agent/test/session-manager/build-context.test.ts :: buildSessionContext with branches includes branch summary in path",
+              "packages/coding-agent/test/session-manager/build-context.test.ts :: buildSessionContext with compaction buildContextEntries returns compaction-aware entries including custom entries",
+              "packages/coding-agent/test/session-manager/build-context.test.ts :: buildSessionContext with compaction handles compaction keeping from first message",
+              "packages/coding-agent/test/session-manager/build-context.test.ts :: buildSessionContext with compaction includes summary before kept messages",
+              "packages/coding-agent/test/session-manager/build-context.test.ts :: buildSessionContext with compaction keeps settings from the full path after compaction",
+              "packages/coding-agent/test/session-manager/build-context.test.ts :: buildSessionContext with compaction multiple compactions uses latest",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides accepts zero in ordinary settings and model overrides",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides falls back to built-in defaults for missing fields",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides keeps enabled global and preserves overrides when saving the toggle",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides matches exact provider/model IDs, including IDs containing slashes",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides merges project model overrides per field before resolving fallbacks",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override keepRecentTokens reports invalid token values: \"400000\"",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override keepRecentTokens reports invalid token values: -1",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override keepRecentTokens reports invalid token values: 1.5",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override keepRecentTokens reports invalid token values: 9007199254740992",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override keepRecentTokens reports invalid token values: null",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override keepRecentTokens reports invalid token values: true",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override keepRecentTokens reports invalid token values: undefined",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override keepRecentTokens reports invalid token values: {}",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override keepRecentTokens reports non-finite runtime values: -Infinity",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override keepRecentTokens reports non-finite runtime values: Infinity",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override keepRecentTokens reports non-finite runtime values: NaN",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override reserveTokens reports invalid token values: \"400000\"",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override reserveTokens reports invalid token values: -1",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override reserveTokens reports invalid token values: 1.5",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override reserveTokens reports invalid token values: 9007199254740992",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override reserveTokens reports invalid token values: null",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override reserveTokens reports invalid token values: true",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override reserveTokens reports invalid token values: undefined",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override reserveTokens reports invalid token values: {}",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override reserveTokens reports non-finite runtime values: -Infinity",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override reserveTokens reports non-finite runtime values: Infinity",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override reserveTokens reports non-finite runtime values: NaN",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.keepRecentTokens reports invalid values even when a valid model override exists: \"400000\"",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.keepRecentTokens reports invalid values even when a valid model override exists: -1",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.keepRecentTokens reports invalid values even when a valid model override exists: 1.5",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.keepRecentTokens reports invalid values even when a valid model override exists: 9007199254740992",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.keepRecentTokens reports invalid values even when a valid model override exists: null",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.keepRecentTokens reports invalid values even when a valid model override exists: true",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.keepRecentTokens reports invalid values even when a valid model override exists: undefined",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.keepRecentTokens reports invalid values even when a valid model override exists: {}",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.keepRecentTokens reports non-finite runtime values: -Infinity",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.keepRecentTokens reports non-finite runtime values: Infinity",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.keepRecentTokens reports non-finite runtime values: NaN",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.reserveTokens reports invalid values even when a valid model override exists: \"400000\"",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.reserveTokens reports invalid values even when a valid model override exists: -1",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.reserveTokens reports invalid values even when a valid model override exists: 1.5",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.reserveTokens reports invalid values even when a valid model override exists: 9007199254740992",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.reserveTokens reports invalid values even when a valid model override exists: null",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.reserveTokens reports invalid values even when a valid model override exists: true",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.reserveTokens reports invalid values even when a valid model override exists: undefined",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.reserveTokens reports invalid values even when a valid model override exists: {}",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.reserveTokens reports non-finite runtime values: -Infinity",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.reserveTokens reports non-finite runtime values: Infinity",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.reserveTokens reports non-finite runtime values: NaN",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides reports malformed model entries: \"invalid\"",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides reports malformed model entries: 42",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides reports malformed model entries: false",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides reports malformed model entries: null",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides reports malformed model entries: undefined",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides resolves each field independently and keeps individual getters consistent",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides uses defaults without compaction settings",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization aborts an in-progress manual compaction and waits until the session is idle",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization allows a queued prompt to start when manual compaction ends",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization auto-compacts with a custom streamFn when registry auth is absent",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization cancels in-progress manual compaction when abortCompaction is called",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization checkpoints the replayed system state and folds summarized and retained system patches into it",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization compacts after an oversized tool result in the same run (model override: false)",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization compacts after an oversized tool result in the same run (model override: true)",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization compacts and resumes after a length stop below the desired output limit",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization compacts successful overflow responses without retrying",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization does not compact after a terminating tool result",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization does not compact when a length stop reaches the desired output limit",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization does not retry overflow recovery more than once",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization does not trigger threshold compaction below the threshold or when disabled",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization does not trigger threshold compaction for error messages when no prior usage exists",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization does not trigger threshold compaction when only kept pre-compaction usage exists",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization ignores stale pre-compaction assistant usage on pre-prompt checks",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization includes steering queued during compaction in the resumed assistant request",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization keeps overflow wording when a repeated length stop fills the context window",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization manually compacts using an extension-provided summary",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization manually compacts with a custom streamFn when registry auth is absent",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization manually compacts with provider-resolved bearer auth",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization notifies extensions when auto-compaction fails",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization persists usage from pi-generated manual compaction",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization resumes after threshold compaction when only agent-level queued messages exist",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization stops after one compact-and-retry when a second response is also truncated",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization throws when compacting without a model",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization throws when compacting without configured auth",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization triggers threshold compaction for error messages using the last successful usage",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization uses the standalone compaction request context",
+              "packages/coding-agent/test/suite/regressions/3688-tree-cancel-compacting.test.ts :: issue #3688 tree cancellation compaction state clears branch summary state when session_before_tree cancels navigation",
+              "packages/coding-agent/test/suite/regressions/9340-9777-auto-compaction-cancellation.test.ts :: automatic compaction cancellation regressions cancels summarization authentication",
+              "packages/coding-agent/test/suite/regressions/9340-9777-auto-compaction-cancellation.test.ts :: automatic compaction cancellation regressions cancels synchronously from compaction_start",
+              "packages/coding-agent/test/suite/regressions/9340-9777-auto-compaction-cancellation.test.ts :: automatic compaction cancellation regressions does not start post-run auto-compaction after abort",
+              "packages/coding-agent/test/suite/regressions/9340-9777-auto-compaction-cancellation.test.ts :: automatic compaction cancellation regressions reports an unrelated AbortError as a failure",
+              "packages/coding-agent/test/suite/regressions/9340-9777-auto-compaction-cancellation.test.ts :: automatic compaction cancellation regressions reports extension cancellation as aborted",
+              "packages/coding-agent/test/suite/regressions/9340-9777-auto-compaction-cancellation.test.ts :: automatic compaction cancellation regressions reports matching error text as a failure"
+            ],
+            "skipReason": "Pinned Pi marks these interactive/LLM integration cases skipped when no provider credentials are configured; the skip identities are pinned and checked exactly.",
+            "testCounts": {
+              "passed": 200,
+              "failed": 0,
+              "skipped": 20
+            }
+          }
+        ],
+        "allCommandsSucceeded": true,
+        "zeroFailuresAndNoUnexplainedSkips": true
+      },
+      "normalizedActual": {
+        "caseId": "Q0.pinned-pi-upstream-compaction-branch-overflow-tests",
+        "commands": [
+          {
+            "name": "pinned-pi-suites",
+            "argv": [
+              "node",
+              "/tmp/pi-c9/node_modules/vitest/vitest.mjs",
+              "--run",
+              "--reporter=json",
+              "--outputFile=/home/philip/Projects/pisharp/artifacts/parity/20261028T-final-source-7480e81d/runs/Q0/pinned-pi-q0.json",
+              "packages/ai/test/overflow.test.ts",
+              "packages/coding-agent/test/agent-session-auto-compaction-queue.test.ts",
+              "packages/coding-agent/test/agent-session-stats.test.ts",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts",
+              "packages/coding-agent/test/branch-summarization.test.ts",
+              "packages/coding-agent/test/branch-summary-extensions.test.ts",
+              "packages/coding-agent/test/compaction-extensions.test.ts",
+              "packages/coding-agent/test/compaction-nested-calls.test.ts",
+              "packages/coding-agent/test/compaction-summary-reasoning.test.ts",
+              "packages/coding-agent/test/compaction.test.ts",
+              "packages/coding-agent/test/interactive-mode-compaction.test.ts",
+              "packages/coding-agent/test/interactive-mode-tree-navigation.test.ts",
+              "packages/coding-agent/test/session-manager/build-context.test.ts",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts",
+              "packages/coding-agent/test/suite/regressions/3688-tree-cancel-compacting.test.ts",
+              "packages/coding-agent/test/suite/regressions/9340-9777-auto-compaction-cancellation.test.ts"
+            ],
+            "exitCode": 0,
+            "stdoutSha256": "ead0fa05abcab3ce434f2da38f2e2ecff519f8e2d26b5a4bd2c897e7607272cf",
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "knownSkippedTests": [
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation - branch scenarios should navigate between branches correctly",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should attach summary to correct parent when navigating to nested user message",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should attach summary to selected node when navigating to assistant message",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should create branch summary when navigating with summarize=true",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should handle abort during summarization",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should handle navigation to same position (no-op)",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should navigate to non-user message without editor text",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should navigate to user message and put text in editor",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should not create summary when navigating without summarize option",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should support custom summarization instructions",
+              "packages/coding-agent/test/compaction-extensions.test.ts :: Compaction extensions should allow extensions to cancel compaction",
+              "packages/coding-agent/test/compaction-extensions.test.ts :: Compaction extensions should allow extensions to provide custom compaction",
+              "packages/coding-agent/test/compaction-extensions.test.ts :: Compaction extensions should call multiple extensions in order",
+              "packages/coding-agent/test/compaction-extensions.test.ts :: Compaction extensions should continue with default compaction if extension throws error",
+              "packages/coding-agent/test/compaction-extensions.test.ts :: Compaction extensions should emit before_compact and compact events",
+              "packages/coding-agent/test/compaction-extensions.test.ts :: Compaction extensions should include entries in compact event after compaction is saved",
+              "packages/coding-agent/test/compaction-extensions.test.ts :: Compaction extensions should pass correct data in before_compact event",
+              "packages/coding-agent/test/compaction-extensions.test.ts :: Compaction extensions should use extension compaction even with different values",
+              "packages/coding-agent/test/compaction.test.ts :: LLM summarization should generate a compaction result for the large session",
+              "packages/coding-agent/test/compaction.test.ts :: LLM summarization should produce valid session after compaction"
+            ],
+            "testNames": [
+              "packages/ai/test/overflow.test.ts :: isContextOverflow detects DS4 configured context size errors",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow detects LiteLLM-wrapped OpenAI maximum context length errors",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow detects OpenAI-compatible parenthesized maximum context length errors",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow detects OpenRouter Poolside maximum allowed input length errors",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow detects Together AI context length errors",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow detects Xiaomi-style overflow (length stop with zero output and filled context)",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow detects explicit Ollama prompt-too-long errors",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow detects z.ai CN endpoint prompt-exceeds-max-length errors",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow detects z.ai prompt-too-long errors",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow does not recover a length stop that reached the desired output limit",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow does not treat Bedrock service unavailable as overflow",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow does not treat Bedrock throttling 'Too many tokens' as overflow",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow does not treat HTTP 429 style errors as overflow",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow does not treat generic non-overflow Ollama errors as overflow",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow does not treat generic rate limit errors as overflow",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow does not treat normal length stops with output as context overflow",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow does not treat zero-output length stops far below context as context overflow",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow only treats bodyless 400 and 413 errors as overflow for Cerebras",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow treats a length stop below the desired output limit as recoverable",
+              "packages/ai/test/overflow.test.ts :: isContextOverflow treats zero-output length stops as recoverable without context metadata",
+              "packages/coding-agent/test/agent-session-auto-compaction-queue.test.ts :: AgentSession auto-compaction queue resume should ignore stale pre-compaction assistant usage on pre-prompt compaction checks",
+              "packages/coding-agent/test/agent-session-auto-compaction-queue.test.ts :: AgentSession auto-compaction queue resume should not compact repeatedly after overflow recovery already attempted",
+              "packages/coding-agent/test/agent-session-auto-compaction-queue.test.ts :: AgentSession auto-compaction queue resume should not trigger threshold compaction for error messages when no prior usage exists",
+              "packages/coding-agent/test/agent-session-auto-compaction-queue.test.ts :: AgentSession auto-compaction queue resume should not trigger threshold compaction for error messages when only kept pre-compaction usage exists",
+              "packages/coding-agent/test/agent-session-auto-compaction-queue.test.ts :: AgentSession auto-compaction queue resume should resume after threshold compaction when only agent-level queued messages exist",
+              "packages/coding-agent/test/agent-session-auto-compaction-queue.test.ts :: AgentSession auto-compaction queue resume should trigger threshold compaction for error messages using last successful usage",
+              "packages/coding-agent/test/agent-session-stats.test.ts :: AgentSession.getSessionStats exposes the current context usage alongside token totals",
+              "packages/coding-agent/test/agent-session-stats.test.ts :: AgentSession.getSessionStats groups tool and summary usage separately from model-attributed usage",
+              "packages/coding-agent/test/agent-session-stats.test.ts :: AgentSession.getSessionStats ignores zero-usage messages when checking for post-compaction context usage",
+              "packages/coding-agent/test/agent-session-stats.test.ts :: AgentSession.getSessionStats includes branch summary usage in session totals",
+              "packages/coding-agent/test/agent-session-stats.test.ts :: AgentSession.getSessionStats includes cache-warming usage exactly once without adding messages",
+              "packages/coding-agent/test/agent-session-stats.test.ts :: AgentSession.getSessionStats includes compaction usage in session totals",
+              "packages/coding-agent/test/agent-session-stats.test.ts :: AgentSession.getSessionStats includes tool result usage in session totals",
+              "packages/coding-agent/test/agent-session-stats.test.ts :: AgentSession.getSessionStats reports unknown current context usage immediately after compaction",
+              "packages/coding-agent/test/agent-session-stats.test.ts :: AgentSession.getSessionStats uses post-compaction usage for current context instead of stale kept usage",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation - branch scenarios should navigate between branches correctly",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should attach summary to correct parent when navigating to nested user message",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should attach summary to selected node when navigating to assistant message",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should create branch summary when navigating with summarize=true",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should handle abort during summarization",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should handle navigation to same position (no-op)",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should navigate to non-user message without editor text",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should navigate to user message and put text in editor",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should not create summary when navigating without summarize option",
+              "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation e2e should support custom summarization instructions",
+              "packages/coding-agent/test/branch-summarization.test.ts :: branch summarization clamps the branch summary output cap to the model limit",
+              "packages/coding-agent/test/branch-summarization.test.ts :: branch summarization does not override tool choice for branch summaries",
+              "packages/coding-agent/test/branch-summarization.test.ts :: branch summarization rejects length-limited branch summaries",
+              "packages/coding-agent/test/branch-summarization.test.ts :: branch summarization rejects tool calls from branch summaries",
+              "packages/coding-agent/test/branch-summary-extensions.test.ts :: Branch summary extensions persists extension-provided summary usage in session totals",
+              "packages/coding-agent/test/compaction-extensions.test.ts :: Compaction extensions should allow extensions to cancel compaction",
+              "packages/coding-agent/test/compaction-extensions.test.ts :: Compaction extensions should allow extensions to provide custom compaction",
+              "packages/coding-agent/test/compaction-extensions.test.ts :: Compaction extensions should call multiple extensions in order",
+              "packages/coding-agent/test/compaction-extensions.test.ts :: Compaction extensions should continue with default compaction if extension throws error",
+              "packages/coding-agent/test/compaction-extensions.test.ts :: Compaction extensions should emit before_compact and compact events",
+              "packages/coding-agent/test/compaction-extensions.test.ts :: Compaction extensions should include entries in compact event after compaction is saved",
+              "packages/coding-agent/test/compaction-extensions.test.ts :: Compaction extensions should pass correct data in before_compact event",
+              "packages/coding-agent/test/compaction-extensions.test.ts :: Compaction extensions should use extension compaction even with different values",
+              "packages/coding-agent/test/compaction-nested-calls.test.ts :: compaction file operations include files touched by nested calls recorded on tool results",
+              "packages/coding-agent/test/compaction-summary-reasoning.test.ts :: generateSummary reasoning options clamps compaction summary maxTokens to the model output cap",
+              "packages/coding-agent/test/compaction-summary-reasoning.test.ts :: generateSummary reasoning options does not set Anthropic refusal fallback for models without allowed fallback targets",
+              "packages/coding-agent/test/compaction-summary-reasoning.test.ts :: generateSummary reasoning options does not set reasoning for non-reasoning models",
+              "packages/coding-agent/test/compaction-summary-reasoning.test.ts :: generateSummary reasoning options does not set reasoning when thinking is off",
+              "packages/coding-agent/test/compaction-summary-reasoning.test.ts :: generateSummary reasoning options honors caller-supplied routing session and tool choice without prompt caching",
+              "packages/coding-agent/test/compaction-summary-reasoning.test.ts :: generateSummary reasoning options leaves Anthropic refusal fallback handling to pi-ai model metadata",
+              "packages/coding-agent/test/compaction-summary-reasoning.test.ts :: generateSummary reasoning options preserves the previous summary without an empty history request for a split turn",
+              "packages/coding-agent/test/compaction-summary-reasoning.test.ts :: generateSummary reasoning options preserves the string result from generateSummary",
+              "packages/coding-agent/test/compaction-summary-reasoning.test.ts :: generateSummary reasoning options rejects a length-limited history summary",
+              "packages/coding-agent/test/compaction-summary-reasoning.test.ts :: generateSummary reasoning options rejects a length-limited split-turn summary",
+              "packages/coding-agent/test/compaction-summary-reasoning.test.ts :: generateSummary reasoning options rejects tool calls from conversation summaries",
+              "packages/coding-agent/test/compaction-summary-reasoning.test.ts :: generateSummary reasoning options rejects tool calls from split-turn summaries",
+              "packages/coding-agent/test/compaction-summary-reasoning.test.ts :: generateSummary reasoning options uses fresh routing sessions without prompt caching",
+              "packages/coding-agent/test/compaction-summary-reasoning.test.ts :: generateSummary reasoning options uses the provided thinking level for reasoning-capable models",
+              "packages/coding-agent/test/compaction.test.ts :: LLM summarization should generate a compaction result for the large session",
+              "packages/coding-agent/test/compaction.test.ts :: LLM summarization should produce valid session after compaction",
+              "packages/coding-agent/test/compaction.test.ts :: Large session fixture should find cut point in large session",
+              "packages/coding-agent/test/compaction.test.ts :: Large session fixture should load session correctly",
+              "packages/coding-agent/test/compaction.test.ts :: Large session fixture should parse the large session",
+              "packages/coding-agent/test/compaction.test.ts :: Token calculation should calculate total context tokens from usage",
+              "packages/coding-agent/test/compaction.test.ts :: Token calculation should handle zero values",
+              "packages/coding-agent/test/compaction.test.ts :: buildSessionContext should handle multiple compactions (only latest matters)",
+              "packages/coding-agent/test/compaction.test.ts :: buildSessionContext should handle single compaction",
+              "packages/coding-agent/test/compaction.test.ts :: buildSessionContext should keep all messages when firstKeptEntryId is first entry",
+              "packages/coding-agent/test/compaction.test.ts :: buildSessionContext should load all messages when no compaction",
+              "packages/coding-agent/test/compaction.test.ts :: buildSessionContext should track model and thinking level changes",
+              "packages/coding-agent/test/compaction.test.ts :: estimateContextTokens uses the last non-zero assistant usage as the context anchor",
+              "packages/coding-agent/test/compaction.test.ts :: findCutPoint should budget context-visible custom message entries",
+              "packages/coding-agent/test/compaction.test.ts :: findCutPoint should fall back to the latest valid cut point before oversized trailing tool results",
+              "packages/coding-agent/test/compaction.test.ts :: findCutPoint should find cut point based on actual token differences",
+              "packages/coding-agent/test/compaction.test.ts :: findCutPoint should indicate split turn when cutting at assistant message",
+              "packages/coding-agent/test/compaction.test.ts :: findCutPoint should keep everything if all messages fit within budget",
+              "packages/coding-agent/test/compaction.test.ts :: findCutPoint should return startIndex if no valid cut points in range",
+              "packages/coding-agent/test/compaction.test.ts :: getLastAssistantUsage should find the last non-aborted assistant message usage",
+              "packages/coding-agent/test/compaction.test.ts :: getLastAssistantUsage should return undefined if no assistant messages",
+              "packages/coding-agent/test/compaction.test.ts :: getLastAssistantUsage should skip aborted messages",
+              "packages/coding-agent/test/compaction.test.ts :: getLastAssistantUsage should skip all-zero assistant usage",
+              "packages/coding-agent/test/compaction.test.ts :: prepareCompaction does not treat system messages as conversation history",
+              "packages/coding-agent/test/compaction.test.ts :: prepareCompaction with previous compaction should re-summarize previously kept messages when the recent window moves past them",
+              "packages/coding-agent/test/compaction.test.ts :: prepareCompaction with previous compaction should skip repeated compactions when kept messages still fit",
+              "packages/coding-agent/test/compaction.test.ts :: shouldCompact should return false when disabled",
+              "packages/coding-agent/test/compaction.test.ts :: shouldCompact should return true when context exceeds threshold",
+              "packages/coding-agent/test/interactive-mode-compaction.test.ts :: InteractiveMode compaction events preserves steering behavior when flushing into an active agent run",
+              "packages/coding-agent/test/interactive-mode-compaction.test.ts :: InteractiveMode compaction events renders each compaction cost after its summary",
+              "packages/coding-agent/test/interactive-mode-compaction.test.ts :: InteractiveMode compaction events renders retained entries and appends the latest summary cost at the bottom",
+              "packages/coding-agent/test/interactive-mode-compaction.test.ts :: InteractiveMode compaction events routes interactive response aborts through AgentSession",
+              "packages/coding-agent/test/interactive-mode-compaction.test.ts :: InteractiveMode compaction events updates the working state when the same agent run resumes after compaction",
+              "packages/coding-agent/test/interactive-mode-compaction.test.ts :: InteractiveMode compaction events uses the cache miss notice setting for compaction and branch summary costs",
+              "packages/coding-agent/test/interactive-mode-tree-navigation.test.ts :: InteractiveMode tree navigation availability allows navigation when compaction finishes while the dialog is open",
+              "packages/coding-agent/test/interactive-mode-tree-navigation.test.ts :: InteractiveMode tree navigation availability preserves operation UI when choosing No summary while busy",
+              "packages/coding-agent/test/interactive-mode-tree-navigation.test.ts :: InteractiveMode tree navigation availability preserves operation UI when choosing Summarize while busy",
+              "packages/coding-agent/test/interactive-mode-tree-navigation.test.ts :: InteractiveMode tree navigation availability rechecks availability after the response abort settles",
+              "packages/coding-agent/test/interactive-mode-tree-navigation.test.ts :: InteractiveMode tree navigation availability still aborts an active response before navigating",
+              "packages/coding-agent/test/session-manager/build-context.test.ts :: buildSessionContext edge cases handles orphaned entries gracefully",
+              "packages/coding-agent/test/session-manager/build-context.test.ts :: buildSessionContext edge cases uses last entry when leafId not found",
+              "packages/coding-agent/test/session-manager/build-context.test.ts :: buildSessionContext trivial cases empty entries returns empty context",
+              "packages/coding-agent/test/session-manager/build-context.test.ts :: buildSessionContext trivial cases simple conversation",
+              "packages/coding-agent/test/session-manager/build-context.test.ts :: buildSessionContext trivial cases single user message",
+              "packages/coding-agent/test/session-manager/build-context.test.ts :: buildSessionContext trivial cases tracks model from assistant message",
+              "packages/coding-agent/test/session-manager/build-context.test.ts :: buildSessionContext trivial cases tracks model from model change entry",
+              "packages/coding-agent/test/session-manager/build-context.test.ts :: buildSessionContext trivial cases tracks thinking level changes",
+              "packages/coding-agent/test/session-manager/build-context.test.ts :: buildSessionContext with branches complex tree with multiple branches and compaction",
+              "packages/coding-agent/test/session-manager/build-context.test.ts :: buildSessionContext with branches follows path to specified leaf",
+              "packages/coding-agent/test/session-manager/build-context.test.ts :: buildSessionContext with branches includes branch summary in path",
+              "packages/coding-agent/test/session-manager/build-context.test.ts :: buildSessionContext with compaction buildContextEntries returns compaction-aware entries including custom entries",
+              "packages/coding-agent/test/session-manager/build-context.test.ts :: buildSessionContext with compaction handles compaction keeping from first message",
+              "packages/coding-agent/test/session-manager/build-context.test.ts :: buildSessionContext with compaction includes summary before kept messages",
+              "packages/coding-agent/test/session-manager/build-context.test.ts :: buildSessionContext with compaction keeps settings from the full path after compaction",
+              "packages/coding-agent/test/session-manager/build-context.test.ts :: buildSessionContext with compaction multiple compactions uses latest",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides accepts zero in ordinary settings and model overrides",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides falls back to built-in defaults for missing fields",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides keeps enabled global and preserves overrides when saving the toggle",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides matches exact provider/model IDs, including IDs containing slashes",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides merges project model overrides per field before resolving fallbacks",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override keepRecentTokens reports invalid token values: \"400000\"",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override keepRecentTokens reports invalid token values: -1",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override keepRecentTokens reports invalid token values: 1.5",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override keepRecentTokens reports invalid token values: 9007199254740992",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override keepRecentTokens reports invalid token values: null",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override keepRecentTokens reports invalid token values: true",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override keepRecentTokens reports invalid token values: undefined",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override keepRecentTokens reports invalid token values: {}",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override keepRecentTokens reports non-finite runtime values: -Infinity",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override keepRecentTokens reports non-finite runtime values: Infinity",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override keepRecentTokens reports non-finite runtime values: NaN",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override reserveTokens reports invalid token values: \"400000\"",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override reserveTokens reports invalid token values: -1",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override reserveTokens reports invalid token values: 1.5",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override reserveTokens reports invalid token values: 9007199254740992",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override reserveTokens reports invalid token values: null",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override reserveTokens reports invalid token values: true",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override reserveTokens reports invalid token values: undefined",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override reserveTokens reports invalid token values: {}",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override reserveTokens reports non-finite runtime values: -Infinity",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override reserveTokens reports non-finite runtime values: Infinity",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides model override reserveTokens reports non-finite runtime values: NaN",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.keepRecentTokens reports invalid values even when a valid model override exists: \"400000\"",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.keepRecentTokens reports invalid values even when a valid model override exists: -1",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.keepRecentTokens reports invalid values even when a valid model override exists: 1.5",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.keepRecentTokens reports invalid values even when a valid model override exists: 9007199254740992",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.keepRecentTokens reports invalid values even when a valid model override exists: null",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.keepRecentTokens reports invalid values even when a valid model override exists: true",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.keepRecentTokens reports invalid values even when a valid model override exists: undefined",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.keepRecentTokens reports invalid values even when a valid model override exists: {}",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.keepRecentTokens reports non-finite runtime values: -Infinity",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.keepRecentTokens reports non-finite runtime values: Infinity",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.keepRecentTokens reports non-finite runtime values: NaN",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.reserveTokens reports invalid values even when a valid model override exists: \"400000\"",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.reserveTokens reports invalid values even when a valid model override exists: -1",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.reserveTokens reports invalid values even when a valid model override exists: 1.5",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.reserveTokens reports invalid values even when a valid model override exists: 9007199254740992",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.reserveTokens reports invalid values even when a valid model override exists: null",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.reserveTokens reports invalid values even when a valid model override exists: true",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.reserveTokens reports invalid values even when a valid model override exists: undefined",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.reserveTokens reports invalid values even when a valid model override exists: {}",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.reserveTokens reports non-finite runtime values: -Infinity",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.reserveTokens reports non-finite runtime values: Infinity",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides ordinary compaction.reserveTokens reports non-finite runtime values: NaN",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides reports malformed model entries: \"invalid\"",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides reports malformed model entries: 42",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides reports malformed model entries: false",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides reports malformed model entries: null",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides reports malformed model entries: undefined",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides resolves each field independently and keeps individual getters consistent",
+              "packages/coding-agent/test/settings-manager-compaction.test.ts :: compaction model overrides uses defaults without compaction settings",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization aborts an in-progress manual compaction and waits until the session is idle",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization allows a queued prompt to start when manual compaction ends",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization auto-compacts with a custom streamFn when registry auth is absent",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization cancels in-progress manual compaction when abortCompaction is called",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization checkpoints the replayed system state and folds summarized and retained system patches into it",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization compacts after an oversized tool result in the same run (model override: false)",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization compacts after an oversized tool result in the same run (model override: true)",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization compacts and resumes after a length stop below the desired output limit",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization compacts successful overflow responses without retrying",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization does not compact after a terminating tool result",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization does not compact when a length stop reaches the desired output limit",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization does not retry overflow recovery more than once",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization does not trigger threshold compaction below the threshold or when disabled",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization does not trigger threshold compaction for error messages when no prior usage exists",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization does not trigger threshold compaction when only kept pre-compaction usage exists",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization ignores stale pre-compaction assistant usage on pre-prompt checks",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization includes steering queued during compaction in the resumed assistant request",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization keeps overflow wording when a repeated length stop fills the context window",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization manually compacts using an extension-provided summary",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization manually compacts with a custom streamFn when registry auth is absent",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization manually compacts with provider-resolved bearer auth",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization notifies extensions when auto-compaction fails",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization persists usage from pi-generated manual compaction",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization resumes after threshold compaction when only agent-level queued messages exist",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization stops after one compact-and-retry when a second response is also truncated",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization throws when compacting without a model",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization throws when compacting without configured auth",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization triggers threshold compaction for error messages using the last successful usage",
+              "packages/coding-agent/test/suite/agent-session-compaction.test.ts :: AgentSession compaction characterization uses the standalone compaction request context",
+              "packages/coding-agent/test/suite/regressions/3688-tree-cancel-compacting.test.ts :: issue #3688 tree cancellation compaction state clears branch summary state when session_before_tree cancels navigation",
+              "packages/coding-agent/test/suite/regressions/9340-9777-auto-compaction-cancellation.test.ts :: automatic compaction cancellation regressions cancels summarization authentication",
+              "packages/coding-agent/test/suite/regressions/9340-9777-auto-compaction-cancellation.test.ts :: automatic compaction cancellation regressions cancels synchronously from compaction_start",
+              "packages/coding-agent/test/suite/regressions/9340-9777-auto-compaction-cancellation.test.ts :: automatic compaction cancellation regressions does not start post-run auto-compaction after abort",
+              "packages/coding-agent/test/suite/regressions/9340-9777-auto-compaction-cancellation.test.ts :: automatic compaction cancellation regressions reports an unrelated AbortError as a failure",
+              "packages/coding-agent/test/suite/regressions/9340-9777-auto-compaction-cancellation.test.ts :: automatic compaction cancellation regressions reports extension cancellation as aborted",
+              "packages/coding-agent/test/suite/regressions/9340-9777-auto-compaction-cancellation.test.ts :: automatic compaction cancellation regressions reports matching error text as a failure"
+            ],
+            "skipReason": "Pinned Pi marks these interactive/LLM integration cases skipped when no provider credentials are configured; the skip identities are pinned and checked exactly.",
+            "testCounts": {
+              "passed": 200,
+              "failed": 0,
+              "skipped": 20
+            }
+          }
+        ],
+        "allCommandsSucceeded": true,
+        "zeroFailuresAndNoUnexplainedSkips": true
+      }
+    }
+  ],
+  "rawArtifacts": [
+    {
+      "path": "baseline-observations.json",
+      "sha256": "3525ed11b2b5df6d316c92d300579b83ee0020b6a0541c45decc570a81059e23"
+    },
+    {
+      "path": "commands/build.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "commands/build.stdout.log",
+      "sha256": "2e3a51c20fc7377c8a68f08239bc10c15820143295b94cca0a9bb9bcc35c2671"
+    },
+    {
+      "path": "commands/builtin-tool-python.stderr.log",
+      "sha256": "1f8169f5f7221c414d35b14133c5253885702bd2614215e4455f7ee2ef8a27ba"
+    },
+    {
+      "path": "commands/builtin-tool-python.stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "commands/compaction-python.stderr.log",
+      "sha256": "a8e0e48db0758029cfe05a9c4b8cb9b0f484a61af3652ca01005b68a0089d42a"
+    },
+    {
+      "path": "commands/compaction-python.stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "commands/documentation-links.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "commands/documentation-links.stdout.log",
+      "sha256": "3156cd0979a7b20a438395a89953b2ced7c417a7cd7094b09138886c1bae026e"
+    },
+    {
+      "path": "commands/focused-compaction.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "commands/focused-compaction.stdout.log",
+      "sha256": "1f7d09357a1dfbf88fc5bc7d12f9c5ff3a886117a672e179bba1448c4bc84e44"
+    },
+    {
+      "path": "commands/focused-surfaces.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "commands/focused-surfaces.stdout.log",
+      "sha256": "56048f20b6591a7a47ff17f392c3fbd4fc9281c7bcad3152e5aba9d12789ee52"
+    },
+    {
+      "path": "commands/format.stderr.log",
+      "sha256": "239c224f01960886368326d9ef5ebdcce071dcd0996d157bef6a963fc1eaa49c"
+    },
+    {
+      "path": "commands/format.stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "commands/full-dotnet-tests.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "commands/full-dotnet-tests.stdout.log",
+      "sha256": "de99edea74208934e46abb0fa9eda0770645e0a3d10780560bf0e2cb8ab59149"
+    },
+    {
+      "path": "commands/mcp-build.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "commands/mcp-build.stdout.log",
+      "sha256": "d35c338708e737067b40a2d6589ced43d22d6bb5a4de3604aa2174741fe20aa8"
+    },
+    {
+      "path": "commands/mcp-run.stderr.log",
+      "sha256": "62654ecb276bbf4bab5661672bb774be4c27d61079ce8ed10db72167bdd3981f"
+    },
+    {
+      "path": "commands/mcp-run.stdout.log",
+      "sha256": "0995e8b4eef5ef221921c9dadcf3e31ad08cfea266a3b9e3de8b73203ad674c6"
+    },
+    {
+      "path": "commands/pinned-pi-suites.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "commands/pinned-pi-suites.stdout.log",
+      "sha256": "ead0fa05abcab3ce434f2da38f2e2ecff519f8e2d26b5a4bd2c897e7607272cf"
+    },
+    {
+      "path": "commands/terminal-node.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "commands/terminal-node.stdout.log",
+      "sha256": "c49731068e45469f8f6ac5fb3d8195da2305bd2a7215849b8ecb3c5993c21792"
+    },
+    {
+      "path": "commands/terminal-python.stderr.log",
+      "sha256": "0fdeb57faf78c939e009af16623e149d0de3113727c20dfcfc33ed879540198f"
+    },
+    {
+      "path": "commands/terminal-python.stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "implementation-observations.json",
+      "sha256": "3525ed11b2b5df6d316c92d300579b83ee0020b6a0541c45decc570a81059e23"
+    },
+    {
+      "path": "pinned-pi-q0.json",
+      "sha256": "e75a4fca7c74a6484887922b5bf3a0c41275476a9836dd3569a1bcad7c59ef07"
+    }
+  ]
+}

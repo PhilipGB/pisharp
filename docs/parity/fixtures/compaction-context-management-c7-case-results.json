@@ -3,31 +3,28 @@
   "milestone": "compaction-context-management-parity",
   "checkpointId": "C7",
   "contractSha256": "c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6",
-  "evidenceDirectory": "artifacts/parity/20261028-c7-843d0388/runs/C7/differential",
-  "generatedReportSha256": "61705d9b6f4858c9ffec1bbe1f750889f289a0de5b382221f52572681827739d",
+  "evidenceDirectory": "artifacts/parity/20261028T-final-source-7480e81d/runs/C7/differential",
+  "generatedReportSha256": "0b3b4a70ed372a7361e954fdeda858dc53553e73e4ae89f99ac4f4969e3a9973",
   "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-  "pisharpSourceSha": "843d0388ceca2adbe2725397c48e0e45b98cba7e",
+  "pisharpSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
   "sourceTreeClean": true,
-  "piCalibrationStable": true,
-  "pisharpCalibrationStable": true,
-  "pairedObservationsEqual": false,
+  "piCalibrationStable": false,
+  "pisharpCalibrationStable": false,
+  "pairedObservationsEqual": true,
   "acceptedSafetyDifferenceCount": 1,
   "normalization": [
-    "compare summary system prompt, serialized messages, prompts, results, usage, model routing and reasoning options",
-    "omit routed modelId while comparing split-turn request content",
-    "omit modelId and maxTokens from transient retry request equality; separately verify retry count and summary result",
-    "classify whitespace-only summary rejection as an intentional safety difference"
+    "Strict gate observations are compared exactly as recorded."
   ],
   "safetyDifferences": [
     {
       "caseId": "C7.length-stop-and-empty-summary-fail-safely",
-      "reason": "Pinned Pi accepts a whitespace-only first summary and appends a compaction; PiSharp rejects it and preserves canonical history.",
+      "reason": "PiSharp rejects an empty or whitespace-only summary and leaves canonical history intact.",
       "regression": "src/PiSharp.Runtime/Agents/PiCompactionSummarizer.cs#RunSummaryAsync",
       "safetyEvidence": "pisharp-c7-observations.json"
     }
   ],
   "executedCaseCount": 10,
-  "requiredC7CaseCount": 10,
+  "requiredCaseCount": 10,
   "unexecutedCaseIds": [],
   "verifierCounts": {
     "required": 10,
@@ -45,7 +42,15 @@
       "normalizedExpectedSha256": "011375095d9493cdee59a7d5bbfd59a1fb86109550b32949ec8bc13ed0e6fd0a",
       "normalizedActualSha256": "011375095d9493cdee59a7d5bbfd59a1fb86109550b32949ec8bc13ed0e6fd0a",
       "normalizedExpectedBytes": 1365,
-      "normalizedActualBytes": 1365
+      "normalizedActualBytes": 1365,
+      "normalizedExpected": {
+        "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+        "prompt": "<conversation>\n[User]: open the release task\n\n[Assistant]: keep the release decision\n</conversation>\n\nThe messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.\n\nUse this EXACT format:\n\n## Goal\n[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned by user]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Current work]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [Ordered list of what should happen next]\n\n## Critical Context\n- [Any data, examples, or references needed to continue]\n- [Or \"(none)\" if not applicable]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+      },
+      "normalizedActual": {
+        "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+        "prompt": "<conversation>\n[User]: open the release task\n\n[Assistant]: keep the release decision\n</conversation>\n\nThe messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.\n\nUse this EXACT format:\n\n## Goal\n[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned by user]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Current work]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [Ordered list of what should happen next]\n\n## Critical Context\n- [Any data, examples, or references needed to continue]\n- [Or \"(none)\" if not applicable]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+      }
     },
     {
       "caseId": "C7.previous-summary-is-updated-with-prior-facts-preserved",
@@ -55,7 +60,15 @@
       "normalizedExpectedSha256": "d7976ca273379c9f27a9d133c0990d33098b463768bcd690b1db63d6ac83a149",
       "normalizedActualSha256": "d7976ca273379c9f27a9d133c0990d33098b463768bcd690b1db63d6ac83a149",
       "normalizedExpectedBytes": 1835,
-      "normalizedActualBytes": 1835
+      "normalizedActualBytes": 1835,
+      "normalizedExpected": {
+        "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+        "prompt": "<conversation>\n[User]: open the release task\n\n[Assistant]: keep the release decision\n</conversation>\n\n<previous-summary>\nKnown fact: release uses branch stable.\n</previous-summary>\n\nThe messages above are NEW conversation messages to incorporate into the existing summary provided in <previous-summary> tags.\n\nUpdate the existing structured summary with new information. RULES:\n- PRESERVE all existing information from the previous summary\n- ADD new progress, decisions, and context from the new messages\n- UPDATE the Progress section: move items from \"In Progress\" to \"Done\" when completed\n- UPDATE \"Next Steps\" based on what was accomplished\n- PRESERVE exact file paths, function names, and error messages\n- If something is no longer relevant, you may remove it\n\nUse this EXACT format:\n\n## Goal\n[Preserve existing goals, add new ones if the task expanded]\n\n## Constraints & Preferences\n- [Preserve existing, add new ones discovered]\n\n## Progress\n### Done\n- [x] [Include previously done items AND newly completed items]\n\n### In Progress\n- [ ] [Current work - update based on progress]\n\n### Blocked\n- [Current blockers - remove if resolved]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale] (preserve all previous, add new)\n\n## Next Steps\n1. [Update based on current state]\n\n## Critical Context\n- [Preserve important context, add new if needed]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+      },
+      "normalizedActual": {
+        "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+        "prompt": "<conversation>\n[User]: open the release task\n\n[Assistant]: keep the release decision\n</conversation>\n\n<previous-summary>\nKnown fact: release uses branch stable.\n</previous-summary>\n\nThe messages above are NEW conversation messages to incorporate into the existing summary provided in <previous-summary> tags.\n\nUpdate the existing structured summary with new information. RULES:\n- PRESERVE all existing information from the previous summary\n- ADD new progress, decisions, and context from the new messages\n- UPDATE the Progress section: move items from \"In Progress\" to \"Done\" when completed\n- UPDATE \"Next Steps\" based on what was accomplished\n- PRESERVE exact file paths, function names, and error messages\n- If something is no longer relevant, you may remove it\n\nUse this EXACT format:\n\n## Goal\n[Preserve existing goals, add new ones if the task expanded]\n\n## Constraints & Preferences\n- [Preserve existing, add new ones discovered]\n\n## Progress\n### Done\n- [x] [Include previously done items AND newly completed items]\n\n### In Progress\n- [ ] [Current work - update based on progress]\n\n### Blocked\n- [Current blockers - remove if resolved]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale] (preserve all previous, add new)\n\n## Next Steps\n1. [Update based on current state]\n\n## Critical Context\n- [Preserve important context, add new if needed]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+      }
     },
     {
       "caseId": "C7.manual-focus-is-excluded-from-turn-prefix-summary",
@@ -65,7 +78,17 @@
       "normalizedExpectedSha256": "df40351685170b5803cac2b9505f4b87092b7658def59e970dde3cba360164a6",
       "normalizedActualSha256": "df40351685170b5803cac2b9505f4b87092b7658def59e970dde3cba360164a6",
       "normalizedExpectedBytes": 1056,
-      "normalizedActualBytes": 1056
+      "normalizedActualBytes": 1056,
+      "normalizedExpected": {
+        "historyIncludesFocus": true,
+        "turnPrefixExcludesFocus": true,
+        "turnPrefixPrompt": "# Conversation\n[User]: UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU\n\n[Assistant tool calls]: read(path=\"current.txt\")\n\n[Tool result]: RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR\n\n# Instructions\nThe messages above are earlier context from an ongoing conversation. Later messages are stored separately and do not need to be reconstructed.\n\nCreate a concise checkpoint of the user's request and the progress shown above. This checkpoint will be placed before the later messages so the conversation can continue with the necessary context.\n\n## Original Request\n[What did the user ask for?]\n\n## Progress So Far\n- [Key decisions and work completed in these messages]\n\n## Context Needed to Continue\n- [Information from these messages needed to understand the later work]\n\nOnly summarize information explicitly present above. Do not infer or recreate later messages."
+      },
+      "normalizedActual": {
+        "historyIncludesFocus": true,
+        "turnPrefixExcludesFocus": true,
+        "turnPrefixPrompt": "# Conversation\n[User]: UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU\n\n[Assistant tool calls]: read(path=\"current.txt\")\n\n[Tool result]: RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR\n\n# Instructions\nThe messages above are earlier context from an ongoing conversation. Later messages are stored separately and do not need to be reconstructed.\n\nCreate a concise checkpoint of the user's request and the progress shown above. This checkpoint will be placed before the later messages so the conversation can continue with the necessary context.\n\n## Original Request\n[What did the user ask for?]\n\n## Progress So Far\n- [Key decisions and work completed in these messages]\n\n## Context Needed to Continue\n- [Information from these messages needed to understand the later work]\n\nOnly summarize information explicitly present above. Do not infer or recreate later messages."
+      }
     },
     {
       "caseId": "C7.split-turn-uses-history-and-turn-summary-requests",
@@ -75,7 +98,41 @@
       "normalizedExpectedSha256": "b1c54ed897f2342d40f78abb61594eadc13c1cfab3b1437e6eeb738d46d5af3c",
       "normalizedActualSha256": "b1c54ed897f2342d40f78abb61594eadc13c1cfab3b1437e6eeb738d46d5af3c",
       "normalizedExpectedBytes": 2916,
-      "normalizedActualBytes": 2916
+      "normalizedActualBytes": 2916,
+      "normalizedExpected": {
+        "requests": [
+          {
+            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "prompt": "<conversation>\n[User]: older question\n\n[Assistant]: older answer\n</conversation>\n\nThe messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.\n\nUse this EXACT format:\n\n## Goal\n[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned by user]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Current work]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [Ordered list of what should happen next]\n\n## Critical Context\n- [Any data, examples, or references needed to continue]\n- [Or \"(none)\" if not applicable]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages.\n\nAdditional focus: manual focus",
+            "maxTokens": 80,
+            "reasoning": "high"
+          },
+          {
+            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "prompt": "# Conversation\n[User]: UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU\n\n[Assistant tool calls]: read(path=\"current.txt\")\n\n[Tool result]: RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR\n\n# Instructions\nThe messages above are earlier context from an ongoing conversation. Later messages are stored separately and do not need to be reconstructed.\n\nCreate a concise checkpoint of the user's request and the progress shown above. This checkpoint will be placed before the later messages so the conversation can continue with the necessary context.\n\n## Original Request\n[What did the user ask for?]\n\n## Progress So Far\n- [Key decisions and work completed in these messages]\n\n## Context Needed to Continue\n- [Information from these messages needed to understand the later work]\n\nOnly summarize information explicitly present above. Do not infer or recreate later messages.",
+            "maxTokens": 50,
+            "reasoning": "high"
+          }
+        ],
+        "summary": "history summary\n\n---\n\n**Turn Context (split turn):**\n\nturn prefix summary\n\n<read-files>\ncurrent.txt\n</read-files>"
+      },
+      "normalizedActual": {
+        "requests": [
+          {
+            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "prompt": "<conversation>\n[User]: older question\n\n[Assistant]: older answer\n</conversation>\n\nThe messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.\n\nUse this EXACT format:\n\n## Goal\n[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned by user]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Current work]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [Ordered list of what should happen next]\n\n## Critical Context\n- [Any data, examples, or references needed to continue]\n- [Or \"(none)\" if not applicable]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages.\n\nAdditional focus: manual focus",
+            "maxTokens": 80,
+            "reasoning": "high"
+          },
+          {
+            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "prompt": "# Conversation\n[User]: UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU\n\n[Assistant tool calls]: read(path=\"current.txt\")\n\n[Tool result]: RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR\n\n# Instructions\nThe messages above are earlier context from an ongoing conversation. Later messages are stored separately and do not need to be reconstructed.\n\nCreate a concise checkpoint of the user's request and the progress shown above. This checkpoint will be placed before the later messages so the conversation can continue with the necessary context.\n\n## Original Request\n[What did the user ask for?]\n\n## Progress So Far\n- [Key decisions and work completed in these messages]\n\n## Context Needed to Continue\n- [Information from these messages needed to understand the later work]\n\nOnly summarize information explicitly present above. Do not infer or recreate later messages.",
+            "maxTokens": 50,
+            "reasoning": "high"
+          }
+        ],
+        "summary": "history summary\n\n---\n\n**Turn Context (split turn):**\n\nturn prefix summary\n\n<read-files>\ncurrent.txt\n</read-files>"
+      }
     },
     {
       "caseId": "C7.tool-call-result-content-is-serialized-for-summary",
@@ -85,7 +142,15 @@
       "normalizedExpectedSha256": "5f091a621c1fa6a612f9d2673cdb3bf794d35849bd9d4ab0bedd779d47411f23",
       "normalizedActualSha256": "5f091a621c1fa6a612f9d2673cdb3bf794d35849bd9d4ab0bedd779d47411f23",
       "normalizedExpectedBytes": 1409,
-      "normalizedActualBytes": 1409
+      "normalizedActualBytes": 1409,
+      "normalizedExpected": {
+        "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+        "prompt": "<conversation>\n[User]: read the file\n\n[Assistant tool calls]: read(path=\"plan.md\")\n\n[Tool result]: Decision: ship on Friday.\n</conversation>\n\nThe messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.\n\nUse this EXACT format:\n\n## Goal\n[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned by user]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Current work]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [Ordered list of what should happen next]\n\n## Critical Context\n- [Any data, examples, or references needed to continue]\n- [Or \"(none)\" if not applicable]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+      },
+      "normalizedActual": {
+        "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+        "prompt": "<conversation>\n[User]: read the file\n\n[Assistant tool calls]: read(path=\"plan.md\")\n\n[Tool result]: Decision: ship on Friday.\n</conversation>\n\nThe messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.\n\nUse this EXACT format:\n\n## Goal\n[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned by user]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Current work]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [Ordered list of what should happen next]\n\n## Critical Context\n- [Any data, examples, or references needed to continue]\n- [Or \"(none)\" if not applicable]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+      }
     },
     {
       "caseId": "C7.file-operation-details-follow-summarized-history",
@@ -95,7 +160,41 @@
       "normalizedExpectedSha256": "05551fda6a752700b06298e32d0630b29c73fc627b914822edb59682662d430b",
       "normalizedActualSha256": "05551fda6a752700b06298e32d0630b29c73fc627b914822edb59682662d430b",
       "normalizedExpectedBytes": 2845,
-      "normalizedActualBytes": 2845
+      "normalizedActualBytes": 2845,
+      "normalizedExpected": {
+        "requests": [
+          {
+            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "prompt": "<conversation>\n[User]: read and update files\n\n[Assistant tool calls]: read(path=\"plan.md\")\n\n[Tool result]: plan contents\n\n[Assistant tool calls]: write(path=\"release.md\")\n\n[Tool result]: saved\n\n[Assistant]: files updated\n</conversation>\n\nThe messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.\n\nUse this EXACT format:\n\n## Goal\n[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned by user]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Current work]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [Ordered list of what should happen next]\n\n## Critical Context\n- [Any data, examples, or references needed to continue]\n- [Or \"(none)\" if not applicable]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages.",
+            "maxTokens": 80,
+            "reasoning": "high"
+          },
+          {
+            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "prompt": "# Conversation\n[User]: continue\n\n# Instructions\nThe messages above are earlier context from an ongoing conversation. Later messages are stored separately and do not need to be reconstructed.\n\nCreate a concise checkpoint of the user's request and the progress shown above. This checkpoint will be placed before the later messages so the conversation can continue with the necessary context.\n\n## Original Request\n[What did the user ask for?]\n\n## Progress So Far\n- [Key decisions and work completed in these messages]\n\n## Context Needed to Continue\n- [Information from these messages needed to understand the later work]\n\nOnly summarize information explicitly present above. Do not infer or recreate later messages.",
+            "maxTokens": 50,
+            "reasoning": "high"
+          }
+        ],
+        "summary": "file history summary\n\n---\n\n**Turn Context (split turn):**\n\nsummary\n\n<read-files>\nplan.md\n</read-files>\n\n<modified-files>\nrelease.md\n</modified-files>"
+      },
+      "normalizedActual": {
+        "requests": [
+          {
+            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "prompt": "<conversation>\n[User]: read and update files\n\n[Assistant tool calls]: read(path=\"plan.md\")\n\n[Tool result]: plan contents\n\n[Assistant tool calls]: write(path=\"release.md\")\n\n[Tool result]: saved\n\n[Assistant]: files updated\n</conversation>\n\nThe messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.\n\nUse this EXACT format:\n\n## Goal\n[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned by user]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Current work]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [Ordered list of what should happen next]\n\n## Critical Context\n- [Any data, examples, or references needed to continue]\n- [Or \"(none)\" if not applicable]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages.",
+            "maxTokens": 80,
+            "reasoning": "high"
+          },
+          {
+            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "prompt": "# Conversation\n[User]: continue\n\n# Instructions\nThe messages above are earlier context from an ongoing conversation. Later messages are stored separately and do not need to be reconstructed.\n\nCreate a concise checkpoint of the user's request and the progress shown above. This checkpoint will be placed before the later messages so the conversation can continue with the necessary context.\n\n## Original Request\n[What did the user ask for?]\n\n## Progress So Far\n- [Key decisions and work completed in these messages]\n\n## Context Needed to Continue\n- [Information from these messages needed to understand the later work]\n\nOnly summarize information explicitly present above. Do not infer or recreate later messages.",
+            "maxTokens": 50,
+            "reasoning": "high"
+          }
+        ],
+        "summary": "file history summary\n\n---\n\n**Turn Context (split turn):**\n\nsummary\n\n<read-files>\nplan.md\n</read-files>\n\n<modified-files>\nrelease.md\n</modified-files>"
+      }
     },
     {
       "caseId": "C7.length-stop-and-empty-summary-fail-safely",
@@ -117,9 +216,7 @@
         "lengthStateUnchanged": true,
         "emptySummaryAccepted": false,
         "emptyCompactionCount": 0
-      },
-      "safetyEvidence": "pisharp-c7-observations.json",
-      "safetyRegression": "src/PiSharp.Runtime/Agents/PiCompactionSummarizer.cs#RunSummaryAsync"
+      }
     },
     {
       "caseId": "C7.transient-stream-failure-obeys-retry-policy",
@@ -129,7 +226,39 @@
       "normalizedExpectedSha256": "b36c957e78bb755a25f4db9b49f6c787198afb9a2fd8a58962f0f0fcaf28c544",
       "normalizedActualSha256": "b36c957e78bb755a25f4db9b49f6c787198afb9a2fd8a58962f0f0fcaf28c544",
       "normalizedExpectedBytes": 2825,
-      "normalizedActualBytes": 2825
+      "normalizedActualBytes": 2825,
+      "normalizedExpected": {
+        "attempts": 2,
+        "requests": [
+          {
+            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "prompt": "<conversation>\n[User]: open the release task\n\n[Assistant]: keep the release decision\n</conversation>\n\nThe messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.\n\nUse this EXACT format:\n\n## Goal\n[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned by user]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Current work]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [Ordered list of what should happen next]\n\n## Critical Context\n- [Any data, examples, or references needed to continue]\n- [Or \"(none)\" if not applicable]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages.",
+            "reasoning": "high"
+          },
+          {
+            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "prompt": "<conversation>\n[User]: open the release task\n\n[Assistant]: keep the release decision\n</conversation>\n\nThe messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.\n\nUse this EXACT format:\n\n## Goal\n[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned by user]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Current work]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [Ordered list of what should happen next]\n\n## Critical Context\n- [Any data, examples, or references needed to continue]\n- [Or \"(none)\" if not applicable]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages.",
+            "reasoning": "high"
+          }
+        ],
+        "summary": "retried summary"
+      },
+      "normalizedActual": {
+        "attempts": 2,
+        "requests": [
+          {
+            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "prompt": "<conversation>\n[User]: open the release task\n\n[Assistant]: keep the release decision\n</conversation>\n\nThe messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.\n\nUse this EXACT format:\n\n## Goal\n[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned by user]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Current work]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [Ordered list of what should happen next]\n\n## Critical Context\n- [Any data, examples, or references needed to continue]\n- [Or \"(none)\" if not applicable]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages.",
+            "reasoning": "high"
+          },
+          {
+            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "prompt": "<conversation>\n[User]: open the release task\n\n[Assistant]: keep the release decision\n</conversation>\n\nThe messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.\n\nUse this EXACT format:\n\n## Goal\n[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned by user]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Current work]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [Ordered list of what should happen next]\n\n## Critical Context\n- [Any data, examples, or references needed to continue]\n- [Or \"(none)\" if not applicable]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages.",
+            "reasoning": "high"
+          }
+        ],
+        "summary": "retried summary"
+      }
     },
     {
       "caseId": "C7.summary-usage-is-reported-only-when-supplied",
@@ -231,7 +360,7 @@
     },
     {
       "path": "pisharp-c7-run-1.stdout.log",
-      "sha256": "8122f1a142dbfe7c477a2ba086389b5ced5d10aa49017a14c7c08ff272a464e0"
+      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
     },
     {
       "path": "pisharp-c7-run-2.json",
@@ -243,7 +372,7 @@
     },
     {
       "path": "pisharp-c7-run-2.stdout.log",
-      "sha256": "8122f1a142dbfe7c477a2ba086389b5ced5d10aa49017a14c7c08ff272a464e0"
+      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
     }
   ]
 }

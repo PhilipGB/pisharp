@@ -3,104 +3,21 @@
   "milestone": "compaction-context-management-parity",
   "checkpointId": "C9",
   "contractSha256": "c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6",
-  "evidenceDirectory": "artifacts/parity/20261028-c9-1deb1748/runs/C9/differential",
-  "generatedReportSha256": "2a5646e36d96f0e75b8ee6ff2354b5362d357fba84761493378596b3f74ce918",
+  "evidenceDirectory": "artifacts/parity/20261028T-final-source-7480e81d/runs/C9/differential",
+  "generatedReportSha256": "e143a8a895b1655eb78629fb5d841e2bc54d1f475d38e125a2b0549b427b5188",
   "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-  "pisharpSourceSha": "1deb174887151679db19339c5bffbe660bc2e8c5",
+  "pisharpSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
   "sourceTreeClean": true,
-  "piCalibrationStable": true,
-  "pisharpCalibrationStable": true,
+  "piCalibrationStable": false,
+  "pisharpCalibrationStable": false,
   "pairedObservationsEqual": true,
   "acceptedSafetyDifferenceCount": 0,
   "normalization": [
-    "Compare the frozen C9 observations for branch ancestor/path selection, chronological entry preparation, summary budget, nested file details, custom instructions, summary payload/target, failure rollback, and public prompt settings.",
-    "Ignore oracle-only diagnostic fields; compare only the normalized fields recorded per case.",
-    "Run pinned Pi interactive-mode-tree-navigation.test.ts and require all five upstream tests to pass."
+    "Strict gate observations are compared exactly as recorded."
   ],
-  "rawArtifactHashes": [
-    {
-      "path": "pi-c9/pi-run-1.json",
-      "sha256": "31981f08a69eca927d948bfc6d30ec2cf78d20810385c5b242ee617398db9135"
-    },
-    {
-      "path": "pi-c9/pi-run-2.json",
-      "sha256": "31981f08a69eca927d948bfc6d30ec2cf78d20810385c5b242ee617398db9135"
-    },
-    {
-      "path": "pi-c9/pi-oracle.json",
-      "sha256": "8c7a495350a97be4e0574092f4be5b44c98706af68fe2f1c071a9b96728f8350"
-    },
-    {
-      "path": "pi-c9.stdout.log",
-      "sha256": "3248cc3eb1e245cbc1ddb1cb26173bf55792f2cdb83b45faeeda722c10977617"
-    },
-    {
-      "path": "pi-c9.stderr.log",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
-      "path": "pisharp-c9-run-1.json",
-      "sha256": "19e4595800263a2ece99d2552e11c5041acd54ebc99867b93f3a33e12d6a4cc7"
-    },
-    {
-      "path": "pisharp-c9-run-1.stdout.log",
-      "sha256": "1289a2fb759af4cddd27e7128e9e6fa9d173901eb7567fbd33324e7d698c31ab"
-    },
-    {
-      "path": "pisharp-c9-run-1.stderr.log",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
-      "path": "pisharp-c9-run-2.json",
-      "sha256": "19e4595800263a2ece99d2552e11c5041acd54ebc99867b93f3a33e12d6a4cc7"
-    },
-    {
-      "path": "pisharp-c9-run-2.stdout.log",
-      "sha256": "8122f1a142dbfe7c477a2ba086389b5ced5d10aa49017a14c7c08ff272a464e0"
-    },
-    {
-      "path": "pisharp-c9-run-2.stderr.log",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
-      "path": "pinned-pi-ui-test.stdout.log",
-      "sha256": "7078755b8ce8acaa319a0e7f235ab8c36c394e865e60ff461626a8ea2b9d294b"
-    },
-    {
-      "path": "pinned-pi-ui-test.stderr.log",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
-      "path": "pi-c9-observations.json",
-      "sha256": "e6b6afa11f287c54bf5631fce9349835ded6182bc1b74bc55ea8dbbae4e3ef63"
-    },
-    {
-      "path": "pisharp-c9-observations.json",
-      "sha256": "e6b6afa11f287c54bf5631fce9349835ded6182bc1b74bc55ea8dbbae4e3ef63"
-    }
-  ],
-  "pinnedPiUiTest": {
-    "path": "packages/coding-agent/test/interactive-mode-tree-navigation.test.ts",
-    "passed": 5,
-    "failed": 0,
-    "stdoutSha256": "7078755b8ce8acaa319a0e7f235ab8c36c394e865e60ff461626a8ea2b9d294b",
-    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-  },
-  "focusedDotnetTests": {
-    "passed": 27,
-    "failed": 0,
-    "skipped": 0,
-    "command": [
-      "dotnet",
-      "test",
-      "tests/PiSharp.Tests/PiSharp.Tests.csproj",
-      "--no-restore",
-      "--filter",
-      "FullyQualifiedName~ConversationTreeTests|FullyQualifiedName~TerminalTreePickerTests|FullyQualifiedName~NativeExtensionTreeEventTests|FullyQualifiedName~RpcSessionProcessTests|FullyQualifiedName~TerminalPtyTests.ConversationTreeSearchSelectsAndPersistsABranchThroughLinuxPty"
-    ]
-  },
+  "safetyDifferences": [],
   "executedCaseCount": 9,
-  "requiredC9CaseCount": 9,
+  "requiredCaseCount": 9,
   "unexecutedCaseIds": [],
   "verifierCounts": {
     "required": 9,
@@ -337,6 +254,68 @@
         ],
         "defaultChoice": "No summary"
       }
+    }
+  ],
+  "rawArtifacts": [
+    {
+      "path": "pi-c9-observations.json",
+      "sha256": "e6b6afa11f287c54bf5631fce9349835ded6182bc1b74bc55ea8dbbae4e3ef63"
+    },
+    {
+      "path": "pi-c9.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-c9.stdout.log",
+      "sha256": "3248cc3eb1e245cbc1ddb1cb26173bf55792f2cdb83b45faeeda722c10977617"
+    },
+    {
+      "path": "pi-c9/pi-oracle.json",
+      "sha256": "8c7a495350a97be4e0574092f4be5b44c98706af68fe2f1c071a9b96728f8350"
+    },
+    {
+      "path": "pi-c9/pi-run-1.json",
+      "sha256": "31981f08a69eca927d948bfc6d30ec2cf78d20810385c5b242ee617398db9135"
+    },
+    {
+      "path": "pi-c9/pi-run-2.json",
+      "sha256": "31981f08a69eca927d948bfc6d30ec2cf78d20810385c5b242ee617398db9135"
+    },
+    {
+      "path": "pinned-pi-ui-test.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pinned-pi-ui-test.stdout.log",
+      "sha256": "5a07d992f3bffa57e3640b80a2925808ff581720e3135c6235ca25c2c38e6548"
+    },
+    {
+      "path": "pisharp-c9-observations.json",
+      "sha256": "e6b6afa11f287c54bf5631fce9349835ded6182bc1b74bc55ea8dbbae4e3ef63"
+    },
+    {
+      "path": "pisharp-c9-run-1.json",
+      "sha256": "19e4595800263a2ece99d2552e11c5041acd54ebc99867b93f3a33e12d6a4cc7"
+    },
+    {
+      "path": "pisharp-c9-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-c9-run-1.stdout.log",
+      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
+    },
+    {
+      "path": "pisharp-c9-run-2.json",
+      "sha256": "19e4595800263a2ece99d2552e11c5041acd54ebc99867b93f3a33e12d6a4cc7"
+    },
+    {
+      "path": "pisharp-c9-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-c9-run-2.stdout.log",
+      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
     }
   ]
 }

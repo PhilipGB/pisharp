@@ -1,0 +1,357 @@
+{
+  "schemaVersion": 1,
+  "milestone": "compaction-context-management-parity",
+  "checkpointId": "C11",
+  "contractSha256": "c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6",
+  "evidenceDirectory": "artifacts/parity/20261028T-final-source-7480e81d/runs/C11/differential",
+  "generatedReportSha256": "d0ae206b6a41e70f9ae6853412d836a90fdd404b02bb0880a802e6e10232f7e6",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "pisharpSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
+  "sourceTreeClean": true,
+  "piCalibrationStable": false,
+  "pisharpCalibrationStable": false,
+  "pairedObservationsEqual": true,
+  "acceptedSafetyDifferenceCount": 0,
+  "normalization": [
+    "Strict gate observations are compared exactly as recorded."
+  ],
+  "safetyDifferences": [],
+  "executedCaseCount": 10,
+  "requiredCaseCount": 10,
+  "unexecutedCaseIds": [],
+  "verifierCounts": {
+    "required": 10,
+    "executed": 10,
+    "passed": 10,
+    "failed": 0,
+    "skipped": 0
+  },
+  "cases": [
+    {
+      "caseId": "C11.cli-manual-compact-input-and-result",
+      "contractExpectedObservation": "cli manual compact input and result",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "da886284484e15ace65ae20056923d6f70871826e54cbcb8dd7bc94228cfc409",
+      "normalizedActualSha256": "da886284484e15ace65ae20056923d6f70871826e54cbcb8dd7bc94228cfc409",
+      "normalizedExpectedBytes": 202,
+      "normalizedActualBytes": 202,
+      "normalizedExpected": {
+        "command": "/compact preserve release decisions",
+        "customInstructionsForwarded": true,
+        "succeeded": true,
+        "summary": "compacted release summary\n\n---\n\n**Turn Context (split turn):**\n\ncontinued response"
+      },
+      "normalizedActual": {
+        "command": "/compact preserve release decisions",
+        "customInstructionsForwarded": true,
+        "succeeded": true,
+        "summary": "compacted release summary\n\n---\n\n**Turn Context (split turn):**\n\ncontinued response"
+      }
+    },
+    {
+      "caseId": "C11.tui-compact-command-and-progress-status",
+      "contractExpectedObservation": "tui compact command and progress status",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "918bc473e04e17857a10f37551b1a7e1bad27bdd2e8be14220bbb16584a80c82",
+      "normalizedActualSha256": "918bc473e04e17857a10f37551b1a7e1bad27bdd2e8be14220bbb16584a80c82",
+      "normalizedExpectedBytes": 94,
+      "normalizedActualBytes": 94,
+      "normalizedExpected": {
+        "commandAccepted": true,
+        "progressStarted": true,
+        "progressCleared": true,
+        "manualReason": "manual"
+      },
+      "normalizedActual": {
+        "commandAccepted": true,
+        "progressStarted": true,
+        "progressCleared": true,
+        "manualReason": "manual"
+      }
+    },
+    {
+      "caseId": "C11.rpc-compact-request-and-result-shape",
+      "contractExpectedObservation": "rpc compact request and result shape",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "ed0d810eea96e4d69fae66403b60f1ba18a15899017b7427818dbc1f7797f859",
+      "normalizedActualSha256": "ed0d810eea96e4d69fae66403b60f1ba18a15899017b7427818dbc1f7797f859",
+      "normalizedExpectedBytes": 179,
+      "normalizedActualBytes": 179,
+      "normalizedExpected": {
+        "id": "compact-c11",
+        "command": "compact",
+        "success": true,
+        "resultFields": [
+          "details",
+          "estimatedTokensAfter",
+          "firstKeptEntryId",
+          "summary",
+          "tokensBefore",
+          "usage"
+        ],
+        "usageTotalTokens": 58
+      },
+      "normalizedActual": {
+        "id": "compact-c11",
+        "command": "compact",
+        "success": true,
+        "resultFields": [
+          "details",
+          "estimatedTokensAfter",
+          "firstKeptEntryId",
+          "summary",
+          "tokensBefore",
+          "usage"
+        ],
+        "usageTotalTokens": 58
+      }
+    },
+    {
+      "caseId": "C11.rpc-event-order-and-correlation",
+      "contractExpectedObservation": "rpc event order and correlation",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "9610a1f69b8f0753b92c49687b71545f478953809c5866dd67ee0fda18c47b5a",
+      "normalizedActualSha256": "9610a1f69b8f0753b92c49687b71545f478953809c5866dd67ee0fda18c47b5a",
+      "normalizedExpectedBytes": 123,
+      "normalizedActualBytes": 123,
+      "normalizedExpected": {
+        "eventOrder": [
+          "compaction_start",
+          "compaction_end"
+        ],
+        "responseId": "compact-c11",
+        "startReason": "manual",
+        "endReason": "manual"
+      },
+      "normalizedActual": {
+        "eventOrder": [
+          "compaction_start",
+          "compaction_end"
+        ],
+        "responseId": "compact-c11",
+        "startReason": "manual",
+        "endReason": "manual"
+      }
+    },
+    {
+      "caseId": "C11.rpc-state-context-usage-after-compaction",
+      "contractExpectedObservation": "rpc state context usage after compaction",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "c07810bf2af22f261becf366eb5d318142a6452b3fe533cbab256bc719e7bdc0",
+      "normalizedActualSha256": "c07810bf2af22f261becf366eb5d318142a6452b3fe533cbab256bc719e7bdc0",
+      "normalizedExpectedBytes": 92,
+      "normalizedActualBytes": 92,
+      "normalizedExpected": {
+        "isCompacting": false,
+        "summaryInContext": true,
+        "contextMessageCount": 2,
+        "usageTotalTokens": 58
+      },
+      "normalizedActual": {
+        "isCompacting": false,
+        "summaryInContext": true,
+        "contextMessageCount": 2,
+        "usageTotalTokens": 58
+      }
+    },
+    {
+      "caseId": "C11.json-mode-compaction-output-contract",
+      "contractExpectedObservation": "json mode compaction output contract",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "fc23e8fb181e35aebb3111b2ed992b81be1f2a1c63d8754fb04a25bf3371c49a",
+      "normalizedActualSha256": "fc23e8fb181e35aebb3111b2ed992b81be1f2a1c63d8754fb04a25bf3371c49a",
+      "normalizedExpectedBytes": 305,
+      "normalizedActualBytes": 305,
+      "normalizedExpected": {
+        "startType": "compaction_start",
+        "startReason": "threshold",
+        "endType": "compaction_end",
+        "endReason": "threshold",
+        "resultSummary": "json compacted summary\n\n---\n\n**Turn Context (split turn):**\n\njson continued response",
+        "firstKeptEntryPresent": true,
+        "aborted": false,
+        "willRetry": false,
+        "summaryRequestCount": 2
+      },
+      "normalizedActual": {
+        "startType": "compaction_start",
+        "startReason": "threshold",
+        "endType": "compaction_end",
+        "endReason": "threshold",
+        "resultSummary": "json compacted summary\n\n---\n\n**Turn Context (split turn):**\n\njson continued response",
+        "firstKeptEntryPresent": true,
+        "aborted": false,
+        "willRetry": false,
+        "summaryRequestCount": 2
+      }
+    },
+    {
+      "caseId": "C11.responses-wire-request-after-compaction",
+      "contractExpectedObservation": "responses wire request after compaction",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "7e9d2d79d47477dddc2c0556ca71ed2b27250ed7cb29572fa8804049c10c3154",
+      "normalizedActualSha256": "7e9d2d79d47477dddc2c0556ca71ed2b27250ed7cb29572fa8804049c10c3154",
+      "normalizedExpectedBytes": 163,
+      "normalizedActualBytes": 163,
+      "normalizedExpected": {
+        "api": "openai-responses",
+        "path": "/v1/responses",
+        "containsSummary": true,
+        "containsRetainedHistory": true,
+        "containsContinuation": true,
+        "containsOlderRawHistory": false
+      },
+      "normalizedActual": {
+        "api": "openai-responses",
+        "path": "/v1/responses",
+        "containsSummary": true,
+        "containsRetainedHistory": true,
+        "containsContinuation": true,
+        "containsOlderRawHistory": false
+      }
+    },
+    {
+      "caseId": "C11.chat-completions-wire-request-after-compaction",
+      "contractExpectedObservation": "chat completions wire request after compaction",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "28772712adb52a6db64f93bd71acf4ec618d49589860df1c56106c35787b6868",
+      "normalizedActualSha256": "28772712adb52a6db64f93bd71acf4ec618d49589860df1c56106c35787b6868",
+      "normalizedExpectedBytes": 172,
+      "normalizedActualBytes": 172,
+      "normalizedExpected": {
+        "api": "openai-completions",
+        "path": "/v1/chat/completions",
+        "containsSummary": true,
+        "containsRetainedHistory": true,
+        "containsContinuation": true,
+        "containsOlderRawHistory": false
+      },
+      "normalizedActual": {
+        "api": "openai-completions",
+        "path": "/v1/chat/completions",
+        "containsSummary": true,
+        "containsRetainedHistory": true,
+        "containsContinuation": true,
+        "containsOlderRawHistory": false
+      }
+    },
+    {
+      "caseId": "C11.anthropic-messages-wire-request-after-compaction",
+      "contractExpectedObservation": "anthropic messages wire request after compaction",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "23f29274b54e4cf8e6e374fcc6644771c9ef0d130c0721eb40652d1b541c4f72",
+      "normalizedActualSha256": "23f29274b54e4cf8e6e374fcc6644771c9ef0d130c0721eb40652d1b541c4f72",
+      "normalizedExpectedBytes": 164,
+      "normalizedActualBytes": 164,
+      "normalizedExpected": {
+        "api": "anthropic-messages",
+        "path": "/v1/messages",
+        "containsSummary": true,
+        "containsRetainedHistory": true,
+        "containsContinuation": true,
+        "containsOlderRawHistory": false
+      },
+      "normalizedActual": {
+        "api": "anthropic-messages",
+        "path": "/v1/messages",
+        "containsSummary": true,
+        "containsRetainedHistory": true,
+        "containsContinuation": true,
+        "containsOlderRawHistory": false
+      }
+    },
+    {
+      "caseId": "C11.provider-history-is-valid-and-summary-not-canonical-projection",
+      "contractExpectedObservation": "provider history is valid and summary not canonical projection",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "87fc3ff27cb2b7e30ef64b0b0c16942246acfe8f5ed5e5adc9de050dcf01157a",
+      "normalizedActualSha256": "87fc3ff27cb2b7e30ef64b0b0c16942246acfe8f5ed5e5adc9de050dcf01157a",
+      "normalizedExpectedBytes": 218,
+      "normalizedActualBytes": 218,
+      "normalizedExpected": {
+        "providerContextContainsSummary": true,
+        "providerContextContainsRetainedHistory": true,
+        "providerContextDropsOldHistory": true,
+        "canonicalHistoryRetainsOldEntries": true,
+        "outboundHistoryValid": true,
+        "canonicalMessageCount": 4
+      },
+      "normalizedActual": {
+        "providerContextContainsSummary": true,
+        "providerContextContainsRetainedHistory": true,
+        "providerContextDropsOldHistory": true,
+        "canonicalHistoryRetainsOldEntries": true,
+        "outboundHistoryValid": true,
+        "canonicalMessageCount": 4
+      }
+    }
+  ],
+  "rawArtifacts": [
+    {
+      "path": "pi-c11-observations.json",
+      "sha256": "574ad9071e5216131ecc843b6ba19b905f122d785eb23a6e42e6c5546b6dd18c"
+    },
+    {
+      "path": "pi-c11-run-1.json",
+      "sha256": "12cdf3659601a0bf93376825d363abeb6cf3c79bc109ed642b10dd0c522d907d"
+    },
+    {
+      "path": "pi-c11-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-c11-run-1.stdout.log",
+      "sha256": "3b8d9afa5204b333ab72a3db56c0eec699dbf7dce2b9259d4ca0458fcfcbe69a"
+    },
+    {
+      "path": "pi-c11-run-2.json",
+      "sha256": "12cdf3659601a0bf93376825d363abeb6cf3c79bc109ed642b10dd0c522d907d"
+    },
+    {
+      "path": "pi-c11-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-c11-run-2.stdout.log",
+      "sha256": "d8a8b54541e0df8a0a0e156e6cc8d5cf5895a544b512f46453ce63fd1c7948e0"
+    },
+    {
+      "path": "pisharp-c11-observations.json",
+      "sha256": "574ad9071e5216131ecc843b6ba19b905f122d785eb23a6e42e6c5546b6dd18c"
+    },
+    {
+      "path": "pisharp-c11-run-1.json",
+      "sha256": "12cdf3659601a0bf93376825d363abeb6cf3c79bc109ed642b10dd0c522d907d"
+    },
+    {
+      "path": "pisharp-c11-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-c11-run-1.stdout.log",
+      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
+    },
+    {
+      "path": "pisharp-c11-run-2.json",
+      "sha256": "12cdf3659601a0bf93376825d363abeb6cf3c79bc109ed642b10dd0c522d907d"
+    },
+    {
+      "path": "pisharp-c11-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-c11-run-2.stdout.log",
+      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
+    }
+  ]
+}
