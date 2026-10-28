@@ -332,7 +332,8 @@ def _run_q0(output_dir: Path, pi_path: Path) -> dict[str, Any]:
             return [("terminal-node", ["npm", "test", "--prefix", "tools/parity/terminal"], ROOT, True)]
         if case_id == "Q0.mcp-conformance":
             return [
-                ("mcp-build", dotnet + ["build", "tools/McpConformance/PiSharp.McpConformance.csproj", "--warnaserror"], ROOT, False),
+                ("mcp-build", dotnet + ["build", "tools/McpConformance/PiSharp.McpConformance.csproj",
+                    "--warnaserror", "-p:NoWarn=NU1900"], ROOT, False),
                 ("mcp-run", ["node", "tools/parity/mcp-conformance/run.mjs"], ROOT, False),
             ]
         if case_id == "Q0.documentation-link-validation":
