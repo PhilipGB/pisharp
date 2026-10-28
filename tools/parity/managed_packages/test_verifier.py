@@ -393,6 +393,18 @@ class ManagedPackageVerifierTests(unittest.TestCase):
         self.assertFalse(module.clone_destination_collision([first, {**second, 'stderr': second['stderr'].replace('/fixture/repo/', '/other/repo/')}]))
         self.assertFalse(module.clone_destination_collision([first, {**second, 'stderr': second['stderr'].replace('could not write config file', 'unrelated write error')}]))
 
+    def test_clone_destination_collision_accepts_observed_repository_format_one(self) -> None:
+        path = verify.ROOT / 'tools/parity/managed-package-concurrency-process-differential.py'
+        spec = importlib.util.spec_from_file_location('concurrency_format_one_collision_control', path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        first = {'exitCode': 1, 'stderr': "fatal: destination path '/tmp/fixture/repo' already exists and is not an empty directory.\nError: git clone x failed"}
+        second = {'exitCode': 1, 'stderr': "error: could not write config file /tmp/fixture/repo/.git/config: No such file or directory\nfatal: could not set 'core.repositoryformatversion' to '1'\nError: git clone x failed"}
+        self.assertTrue(module.clone_destination_collision([first, second]))
+        self.assertTrue(module.clone_destination_collision([second, first]))
+        self.assertFalse(module.clone_destination_collision([first, {**second, 'stderr': second['stderr'].replace('/fixture/repo/', '/other/repo/')}]))
+        self.assertFalse(module.clone_destination_collision([first, {**second, 'stderr': second['stderr'].replace("fatal: could not set 'core.repositoryformatversion' to '1'", 'unrelated failure')}]))
+
     def test_temporary_git_cache_paths_normalize_short_and_full_hashes(self) -> None:
         path = verify.ROOT / 'tools/parity/resource-invocation-process-differential.py'
         spec = importlib.util.spec_from_file_location('resource_cache_path_normalization_control', path)

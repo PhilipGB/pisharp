@@ -49,7 +49,7 @@ os.makedirs(os.path.dirname(marker), exist_ok=True)
 fd = os.open(marker, os.O_CREAT | os.O_APPEND | os.O_WRONLY, 0o600)
 os.write(fd, (str(os.getpid()) + "\n").encode())
 os.close(fd)
-deadline = time.monotonic() + 30
+deadline = time.monotonic() + 90
 while time.monotonic() < deadline:
     try:
         with open(marker, encoding="ascii") as stream:

@@ -13,7 +13,8 @@ def clone_destination_collision(errors: list[str]) -> bool:
                 and 'No such file or directory' in second):
             return True
         match = re.search(r"fatal: destination path '([^'\n]+)' already exists and is not an empty directory", first)
-        if match and "fatal: could not set 'core.repositoryformatversion' to '0'" in second:
+        if match and re.search(
+                r"fatal: could not set 'core\.repositoryformatversion' to '[01]'", second):
             config_path = f"{match.group(1)}/.git/config: No such file or directory"
             if (f"could not lock config file {config_path}" in second or
                     f"could not write config file {config_path}" in second):
