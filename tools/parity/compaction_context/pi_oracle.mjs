@@ -19,11 +19,200 @@ const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: piRoot, encoding:
 if (head !== PIN) throw new Error(`Pi checkout is ${head}; expected ${PIN}`);
 
 const importFromPi = (relative) => import(pathToFileURL(join(piRoot, relative)).href);
-const [{ createHarness }, { fauxAssistantMessage }, { createAssistantMessageEventStream }] = await Promise.all([
+const [{ createHarness }, { fauxAssistantMessage }, { createAssistantMessageEventStream },
+  { prepareCompaction, DEFAULT_COMPACTION_SETTINGS }, { buildSessionProjection }] = await Promise.all([
   importFromPi("packages/coding-agent/test/suite/harness.ts"),
   importFromPi("packages/ai/src/providers/faux.ts"),
   importFromPi("packages/ai/src/utils/event-stream.ts"),
+  importFromPi("packages/coding-agent/src/core/compaction/compaction.ts"),
+  importFromPi("packages/coding-agent/src/core/session-manager.ts"),
 ]);
+
+function c3CompactText(text) {
+  return text.length <= 256 ? text : `${text.slice(0, 24)}<${text.length} chars>${text.slice(-24)}`;
+}
+
+function c3Snapshot(message) {
+  const content = Array.isArray(message.content) ? message.content : [];
+  const role = message.role === "toolResult" ? "toolResult" : message.role;
+  let text;
+  if (message.role === "compactionSummary") text = message.summary;
+  else if (typeof message.content === "string") text = message.content;
+  else text = content.filter(item => item.type === "text").map(item => item.text).join("");
+  return {
+    role,
+    text: c3CompactText(text ?? ""),
+    callIds: content.filter(item => item.type === "toolCall").map(item => item.id),
+    resultCallIds: message.role === "toolResult" ? [message.toolCallId] : [],
+  };
+}
+
+function createC3Fixture() {
+  const entries = [];
+  const byId = new Map();
+  let id = 0;
+  let parentId = null;
+  const append = fields => {
+    const entry = { id: `c3-${String(id++).padStart(4, "0")}`, parentId,
+      timestamp: "2026-10-28T00:00:00.000Z", ...fields };
+    entries.push(entry);
+    byId.set(entry.id, entry);
+    parentId = entry.id;
+    return entry.id;
+  };
+  const message = value => append({ type: "message", message: value });
+  const user = text => message({ role: "user", content: text, timestamp: 1 });
+  const assistant = (text, calls = []) => message({
+    role: "assistant",
+    content: [...(text ? [{ type: "text", text }] : []), ...calls.map(call => ({
+      type: "toolCall", id: call.id, name: call.name, arguments: call.arguments,
+    }))],
+    stopReason: calls.length ? "toolUse" : "stop",
+    timestamp: 1,
+    api: "anthropic-messages",
+    provider: "anthropic",
+    model: "fixture",
+  });
+  const toolResult = (toolCallId, text) => message({
+    role: "toolResult", toolCallId, toolName: "read",
+    content: [{ type: "text", text }], isError: false, timestamp: 1,
+  });
+  const compact = (summary, firstKeptEntryId) => append({
+    type: "compaction", summary, firstKeptEntryId, tokensBefore: 100,
+  });
+  const omit = targetId => append({ type: "context_edit", targetId, replacement: null });
+  const observe = keepRecentTokens => {
+    const plan = prepareCompaction(entries, { ...DEFAULT_COMPACTION_SETTINGS, keepRecentTokens });
+    const boundary = plan ? byId.get(plan.firstKeptEntryId) : undefined;
+    const contextMessages = buildSessionProjection(entries).messages.map(c3Snapshot);
+    const metadata = boundary?.type === "message" ? c3Snapshot(boundary.message) : undefined;
+    return {
+      planExists: plan !== undefined,
+      boundaryRole: metadata?.role ?? null,
+      boundaryText: metadata?.text ?? null,
+      boundaryIndex: boundary ? entries.indexOf(boundary) : null,
+      boundaryCallIds: metadata?.callIds ?? [],
+      boundaryResultCallIds: metadata?.resultCallIds ?? [],
+      isSplitTurn: plan?.isSplitTurn ?? null,
+      previousSummary: plan?.previousSummary ?? null,
+      messagesToSummarize: plan?.messagesToSummarize.map(c3Snapshot) ?? [],
+      turnPrefixMessages: plan?.turnPrefixMessages.map(c3Snapshot) ?? [],
+      contextMessages,
+    };
+  };
+  return { entries, byId, user, assistant, toolResult, compact, omit, observe };
+}
+
+function runC3() {
+  const cases = {};
+  const add = (caseId, fixture, keepRecentTokens) => { cases[caseId] = fixture.observe(keepRecentTokens); };
+  let fixture = createC3Fixture();
+  fixture.user("older question"); fixture.assistant("older answer");
+  fixture.user("U".repeat(80)); fixture.assistant("A".repeat(80));
+  add("C3.user-boundary-selection", fixture, 30);
+
+  fixture = createC3Fixture();
+  fixture.user("older question"); fixture.assistant("older answer");
+  fixture.user("current request"); fixture.assistant("current response");
+  add("C3.assistant-boundary-split-turn", fixture, 1);
+
+  fixture = createC3Fixture();
+  fixture.user("older question"); fixture.assistant("older answer"); fixture.user("current request");
+  fixture.assistant("", [{ id: "call-1", name: "read", arguments: { path: "small.txt" } }]);
+  fixture.toolResult("call-1", "short result");
+  add("C3.tool-call-result-kept-as-one-group", fixture, 1);
+
+  fixture = createC3Fixture();
+  fixture.user("older question"); fixture.assistant("older answer"); fixture.user("current request");
+  fixture.assistant("", [{ id: "cycle-1", name: "read", arguments: {} }]);
+  fixture.toolResult("cycle-1", "first result");
+  fixture.assistant("continue after first tool cycle");
+  fixture.assistant("", [{ id: "cycle-2", name: "read", arguments: {} }]);
+  fixture.toolResult("cycle-2", "second result");
+  add("C3.sequential-tool-cycles", fixture, 1);
+
+  fixture = createC3Fixture();
+  fixture.user("older question"); fixture.assistant("older answer"); fixture.user("current request");
+  fixture.assistant("", [
+    { id: "parallel-1", name: "read", arguments: {} },
+    { id: "parallel-2", name: "read", arguments: {} },
+  ]);
+  fixture.toolResult("parallel-1", "first result"); fixture.toolResult("parallel-2", "second result");
+  add("C3.parallel-tool-batch-boundary", fixture, 1);
+
+  fixture = createC3Fixture();
+  fixture.user("old history"); fixture.assistant("old answer"); fixture.user("read the large file");
+  fixture.assistant("", [{ id: "call-1", name: "read", arguments: { path: "big.txt" } }]);
+  fixture.toolResult("call-1", "x".repeat(8000));
+  add("C3.oversized-trailing-result-falls-back-before-call", fixture, 1000);
+
+  fixture = createC3Fixture();
+  fixture.user("old history"); fixture.assistant("old answer"); fixture.user("current request");
+  fixture.assistant("A".repeat(80)); fixture.toolResult("unmatched-result", "R".repeat(2000));
+  add("C3.never-cut-at-tool-result", fixture, 100);
+
+  fixture = createC3Fixture();
+  fixture.user("old history"); fixture.assistant("old answer"); fixture.user("current request");
+  fixture.assistant("", [{ id: "incomplete-call", name: "read", arguments: { path: "pending.txt" } }]);
+  add("C3.incomplete-assistant-and-tool-call-retained", fixture, 1);
+
+  fixture = createC3Fixture();
+  fixture.user("current request");
+  fixture.assistant("", [{ id: "missing-result", name: "read", arguments: { path: "pending.txt" } }]);
+  add("C3.missing-tool-result-provider-projection", fixture, 1);
+
+  fixture = createC3Fixture();
+  fixture.user("older question"); fixture.assistant("older answer"); fixture.user("current request");
+  fixture.assistant("", [{ id: "duplicate-result", name: "read", arguments: {} }]);
+  fixture.toolResult("duplicate-result", "first result");
+  fixture.toolResult("duplicate-result", "duplicate result");
+  fixture.user("new request");
+  add("C3.unmatched-or-duplicate-tool-result-handling", fixture, 1);
+
+  fixture = createC3Fixture();
+  fixture.user("U".repeat(80)); fixture.assistant("A".repeat(80));
+  const secondUser = fixture.user("V".repeat(80)); fixture.assistant("B".repeat(80));
+  const firstPlan = prepareCompaction(fixture.entries, { ...DEFAULT_COMPACTION_SETTINGS, keepRecentTokens: 30 });
+  if (!firstPlan) throw new Error("C3 initial compaction plan missing");
+  fixture.compact("First summary", secondUser);
+  fixture.user("U".repeat(120)); fixture.assistant("A".repeat(120));
+  add("C3.repeated-compaction-updates-prior-summary", fixture, 40);
+
+  fixture = createC3Fixture();
+  fixture.user("U".repeat(80)); fixture.assistant("A".repeat(80));
+  const retainedUser = fixture.user("V".repeat(80)); fixture.assistant("B".repeat(80));
+  const firstCompactionPlan = prepareCompaction(fixture.entries, { ...DEFAULT_COMPACTION_SETTINGS, keepRecentTokens: 30 });
+  if (!firstCompactionPlan) throw new Error("C3 first compaction plan missing");
+  fixture.compact("First summary", retainedUser);
+  fixture.user("U".repeat(120)); fixture.assistant("A".repeat(120));
+  const secondCompactionPlan = prepareCompaction(fixture.entries, { ...DEFAULT_COMPACTION_SETTINGS, keepRecentTokens: 40 });
+  if (!secondCompactionPlan) throw new Error("C3 second compaction plan missing");
+  fixture.compact("Second summary", secondCompactionPlan.firstKeptEntryId);
+  const context = buildSessionProjection(fixture.entries).messages.map(c3Snapshot);
+  cases["C3.latest-compaction-controls-context"] = {
+    compactionCount: fixture.entries.filter(entry => entry.type === "compaction").length,
+    contextMessages: context,
+    latestSummaryIsSecond: context.some(message => message.role === "compactionSummary" && message.text === "Second summary"),
+    previousSummaryOmitted: context.every(message => message.text !== "First summary"),
+    retainedCurrentAnswer: context.some(message => message.text === "A".repeat(120)),
+  };
+
+  fixture = createC3Fixture();
+  fixture.user("older question"); fixture.assistant("older answer"); fixture.user("U".repeat(100));
+  const failedAssistant = fixture.assistant("", [{ id: "failed-call", name: "read", arguments: { path: "current.txt" } }]);
+  const failedResultEntry = fixture.toolResult("failed-call", "R".repeat(100));
+  fixture.omit(failedAssistant); fixture.omit(failedResultEntry);
+  add("C3.recovery-omission-suffix-boundary", fixture, 15);
+
+  const empty = createC3Fixture().observe(1);
+  fixture = createC3Fixture(); fixture.user("only one user message");
+  const oneUser = fixture.observe(1);
+  cases["C3.empty-or-insufficient-history-is-no-op"] = {
+    emptyPlanExists: empty.planExists,
+    oneUserPlanExists: oneUser.planExists,
+  };
+  return { scenario: "c3", cases };
+}
 
 function plainMessage(message) {
   const content = message.content;
@@ -161,6 +350,7 @@ async function runErrorTurnUsageOnce() {
 }
 
 async function runOnce() {
+  if (scenario === "c3") return runC3();
   if (scenario === "error-turn-usage") return runErrorTurnUsageOnce();
   const contextWindow = scenario === "queued-steering" ? 12_000
     : ["threshold-after-turn", "threshold-equal", "threshold-over", "disabled-setting"].includes(scenario) ? 10_000

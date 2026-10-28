@@ -29,6 +29,14 @@ var workingDirectory = Path.Combine(Path.GetTempPath(), "pisharp-compaction-orac
 Directory.CreateDirectory(workingDirectory);
 try
 {
+    if (scenario == "c3")
+    {
+        var c3Json = JsonSerializer.Serialize(C3Oracle.Run(workingDirectory), new JsonSerializerOptions { WriteIndented = true });
+        if (outputPath is null) Console.WriteLine(c3Json);
+        else await File.WriteAllTextAsync(outputPath, c3Json + Environment.NewLine);
+        return;
+    }
+
     if (scenario.StartsWith("manual-", StringComparison.Ordinal))
     {
         var manualConversation = new ConversationSession(workingDirectory, "fixture", null);
