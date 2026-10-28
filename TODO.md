@@ -12,7 +12,7 @@ See the [source-pinned inventory](parity/fixtures/compaction-context-management-
 
 ## Active milestone — Complete RPC Protocol and Command Parity — 2026-10-28
 
-PR #28 is verified merged at `646db89bd396b8089b1b9a058fa96b1489f4d0cd`; the clean milestone branch `milestone/rpc-protocol-command-parity` starts from that commit. Pi is pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Commit `ac85aa2a0f59566115eb0109cc9022dc64f4d8fe` freezes the pre-production inventory and contract: 33 commands, 24 event families, 9 extension UI methods, 24 checkpoints and 252 case IDs. The integrity suite passes 16/16 and covers the valid control plus all 22 frozen mutations. Production code and RPC process cases have not changed or run; the V1 evidence run, paired process runners, behavioral corrections, remaining evidence, quality gates and PR #29 remain open.
+PR #28 is verified merged at `646db89bd396b8089b1b9a058fa96b1489f4d0cd`; the clean milestone branch `milestone/rpc-protocol-command-parity` starts from that commit. Pi is pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Commit `ac85aa2a0f59566115eb0109cc9022dc64f4d8fe` freezes the pre-production inventory and contract: 33 commands, 24 event families, 9 extension UI methods, 24 checkpoints and 252 case IDs. The verifier unit suite passes 16/16; the source-clean V1 checkpoint passes 23/23 (one positive, 22 rejected mutations) at source `736574cdf3755340ffa3b340325484a0a0f95025`. No production code changed and no RPC process case has run. Paired process runners, behavioral corrections, remaining evidence, quality gates and PR #29 remain open.
 
 See the [milestone receipt](docs/parity/fixtures/rpc-protocol-command-parity/README.md), [source-pinned inventory](docs/parity/fixtures/rpc-protocol-command-parity/inventory.json), [case index](docs/parity/fixtures/rpc-protocol-command-parity/required-case-index.json), and [contract](tools/parity/rpc_protocol/contract.json).
 
@@ -594,7 +594,7 @@ Complete the source-bound RPC contract and process-level differential corpus on 
 
 ## Exact next action
 
-Run the source-clean V1 evidence checkpoint, then implement and execute paired pinned-Pi/PiSharp process adapters. Resolve the documented `get_messages` section projection difference and proceed through each unpassed checkpoint; keep PR #29 open, draft and unmerged.
+Implement and execute paired pinned-Pi/PiSharp process adapters, starting with JSONL framing and response semantics. Resolve the documented `get_messages` section projection difference and proceed through each unpassed checkpoint; keep PR #29 open, draft and unmerged.
 
 ## Architecture risks to reconcile before completion
 

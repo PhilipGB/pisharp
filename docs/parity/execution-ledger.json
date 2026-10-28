@@ -13727,7 +13727,7 @@
   },
   "rpc_protocol_command_parity_milestone": {
     "status": "in_progress",
-    "phase": "frozen_inventory_contract_committed_preproduction",
+    "phase": "v1_controls_complete_process_adapters_pending",
     "branch": "milestone/rpc-protocol-command-parity",
     "branch_base_sha": "646db89bd396b8089b1b9a058fa96b1489f4d0cd",
     "prerequisite_pr28": {
@@ -13740,6 +13740,10 @@
       "managed_package_corpus": "Its run steps are intentionally skipped outside the historical milestone branch; this is recorded and not claimed as rerun."
     },
     "pi_reference": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "v1_implementation_source_sha": "736574cdf3755340ffa3b340325484a0a0f95025",
+    "v1_evidence_directory": "artifacts/parity/rpc-protocol-command-parity/v1-736574cd",
+    "v1_control_report_sha256": "6a040fac6cf795a62914a89d2907c80e2243eab7e4eb00faa4519f9285c7f4f9",
+    "v1_case_result": "23/23 passed; 1 positive control accepted, all 22 frozen negative mutations rejected; zero failures/skips",
     "contract": "tools/parity/rpc_protocol/contract.json",
     "inventory_contract_commit": "ac85aa2a0f59566115eb0109cc9022dc64f4d8fe",
     "contract_sha256": "036c369054fbb50887629666f6b25ef76d8a9fbe856d00d4a79a2cf9609f0761",
@@ -13761,7 +13765,7 @@
     "baseline_validation": {
       "contract_source_verifier": "passed",
       "contract_integrity_tests": "16/16 passed; positive control and all 22 frozen mutations are covered",
-      "v1_evidence_runner": "implemented; source-clean end-to-end evidence run remains outstanding",
+      "v1_evidence_runner": "source-clean run and independent report verification passed 23/23",
       "source_inventory_pin": "passed; selected tracked files only; unrelated upstream untracked file excluded",
       "runner_behavior": "fail closed when no scenario adapter is registered"
     },
@@ -13775,11 +13779,10 @@
       "RPC-ACTIVE-SESSION-REPLACEMENT"
     ],
     "open_requirements": [
-      "Run the V1 controls through the source-clean evidence runner and independently verify its report.",
       "Implement actual paired Pi/PiSharp process runners for R1-R15 and capture repeated pinned-Pi baselines.",
       "Capture two stable pinned-Pi process baselines and independent PiSharp process observations for R1-R15.",
       "Correct confirmed in-scope differences, then complete all quality, source-bound evidence, exact-head CI and draft PR publication gates."
     ],
-    "next_action": "Run the source-clean V1 verifier checkpoint, then build paired Pi/PiSharp process adapters for R1-R15."
+    "next_action": "Build paired Pi/PiSharp process adapters, starting with JSONL framing and response semantics."
   }
 }
