@@ -8,6 +8,7 @@ namespace PiSharp.Cli.Protocols;
 internal sealed class RpcEventProjector
 {
     private readonly RpcAssistantMessageProjector _assistantMessages = new();
+    private readonly List<(AgentLifecycleEvent Event, ConversationSession Conversation)> _pendingToolResults = [];
     private JsonObject? _systemMessage;
 
     public void BeginAgent() => _assistantMessages.BeginAgent();
@@ -91,18 +92,22 @@ internal sealed class RpcEventProjector
 
         if (item.Type == "tool_execution_finished")
         {
-            var projected = new List<object>(3) { ProjectToolEnd(item) };
-            projected.AddRange(_assistantMessages.ProjectToolResult(item, conversation));
-            return projected;
+            if (item.ToolResultMessage is not null) _pendingToolResults.Add((item, conversation));
+            return [ProjectToolEnd(item)];
         }
 
         if (item.Type == "assistant_turn_completed" && runAccepted)
-            return [ProjectCompletedTurn(item, conversation, api)];
+        {
+            var projected = FlushPendingToolResults();
+            projected.Add(ProjectCompletedTurn(item, conversation, api));
+            return projected;
+        }
 
         if ((item.Type is "turn_failed" or "turn_interrupted") && runAccepted)
         {
             var terminalType = item.Type == "turn_interrupted" ? item.Type : "turn_failed";
-            var projected = new List<object>(_assistantMessages.FailProviderMessage(item, conversation, api));
+            var projected = FlushPendingToolResults();
+            projected.AddRange(_assistantMessages.FailProviderMessage(item, conversation, api));
             if (turnOpen && ProjectTurnEnd(conversation, turnStartHead, api, terminalType, item.Error,
                     item.TurnEndHead, _assistantMessages.LastCompletedAssistantMessage,
                     item.TurnMessage, item.TurnToolResults) is { } turnEnd)
@@ -113,13 +118,27 @@ internal sealed class RpcEventProjector
         }
 
         if (item.Type == "agent_run_completed" && runAccepted)
-            return [ProjectAgentEnd(conversation, runStartHead, api, null, null, conversation.Tree.HeadId, false)];
+        {
+            var projected = FlushPendingToolResults();
+            projected.Add(ProjectAgentEnd(conversation, runStartHead, api, null, null,
+                conversation.Tree.HeadId, false));
+            return projected;
+        }
 
         if (item.Type == "tool_execution_started") return [ProjectToolStart(item)];
         if (item.Type == "tool_execution_update") return [ProjectToolUpdate(item)];
 
         var record = ProjectOther(item, conversation, runAccepted, api);
         return record is null ? [] : [record];
+    }
+
+    private List<object> FlushPendingToolResults()
+    {
+        var projected = new List<object>(_pendingToolResults.Count * 2);
+        foreach (var (item, conversation) in _pendingToolResults)
+            projected.AddRange(_assistantMessages.ProjectToolResult(item, conversation));
+        _pendingToolResults.Clear();
+        return projected;
     }
 
     private static object? ProjectOther(AgentLifecycleEvent item, ConversationSession conversation,
@@ -209,8 +228,8 @@ internal sealed class RpcEventProjector
             ["content"] = item.OutputIsSnapshot && item.Text is null ? new JsonArray()
                 : new JsonArray(new JsonObject { ["type"] = "text", ["text"] = item.Text ?? "" })
         };
-        if (item.Details is not null || !item.OutputIsSnapshot)
-            partial["details"] = JsonSerializer.SerializeToNode(item.Details) ?? new JsonObject();
+        if (item.Details is not null)
+            partial["details"] = JsonSerializer.SerializeToNode(item.Details);
         var projected = new JsonObject
         {
             ["type"] = "tool_execution_update",
@@ -235,9 +254,11 @@ internal sealed class RpcEventProjector
             });
         var result = new JsonObject
         {
-            ["content"] = content,
-            ["details"] = JsonSerializer.SerializeToNode(item.Details) ?? new JsonObject()
+            ["content"] = content
         };
+        if (item.Details is not null)
+            result["details"] = JsonSerializer.SerializeToNode(item.Details);
+        if (item.IsError == true) result["isError"] = true;
         if (item.StructuredContent is { } structured) result["structuredContent"] = JsonNode.Parse(structured.GetRawText());
         if (item.ToolUsage is { } usage) result["usage"] = PiJsonlEntryCodec.ProjectToolUsage(usage, item.Cost);
         if (item.Terminate == true) result["terminate"] = true;

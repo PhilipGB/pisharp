@@ -48,6 +48,21 @@ public sealed class RpcEventProjectorTests
     }
 
     [Fact]
+    public void ToolExecutionProgressOmitsAbsentDetails()
+    {
+        var projector = new RpcEventProjector();
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        var projected = Assert.Single(projector.Project(new AgentLifecycleEvent("tool_execution_update",
+            Tool: "fixture", Text: "partial"), conversation, null, null, runAccepted: true, api: null));
+
+        using var json = JsonDocument.Parse(JsonSerializer.Serialize(projected));
+        var partial = json.RootElement.GetProperty("partialResult");
+
+        Assert.Equal("partial", partial.GetProperty("content")[0].GetProperty("text").GetString());
+        Assert.False(partial.TryGetProperty("details", out _));
+    }
+
+    [Fact]
     public void ProjectsRetryEventsWithPiFieldsAndOmitsAbsentFinalError()
     {
         var projector = new RpcEventProjector();
@@ -128,5 +143,34 @@ public sealed class RpcEventProjectorTests
             Assert.Equal("root/1", record.RootElement.GetProperty("toolCallId").GetString());
             Assert.Equal("root", record.RootElement.GetProperty("parentToolCallId").GetString());
         }
+    }
+
+    [Fact]
+    public void ToolExecutionEndOmitsAbsentDetails()
+    {
+        var projector = new RpcEventProjector();
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        var end = Assert.Single(projector.Project(new AgentLifecycleEvent("tool_execution_finished", Tool: "bash",
+            Text: "complete") { ToolCallId = "bash-call" }, conversation, null, null, runAccepted: true, api: null));
+
+        using var record = JsonDocument.Parse(JsonSerializer.Serialize(end));
+        var result = record.RootElement.GetProperty("result");
+
+        Assert.Equal("complete", result.GetProperty("content")[0].GetProperty("text").GetString());
+        Assert.False(result.TryGetProperty("details", out _));
+    }
+
+    [Fact]
+    public void ToolExecutionErrorMarksResultAndEventAsErrors()
+    {
+        var projector = new RpcEventProjector();
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        var end = Assert.Single(projector.Project(new AgentLifecycleEvent("tool_execution_finished", Tool: "fixture",
+            Text: "tool failed", IsError: true) { ToolCallId = "fixture-call" }, conversation, null, null,
+            runAccepted: true, api: null));
+
+        using var record = JsonDocument.Parse(JsonSerializer.Serialize(end));
+        Assert.True(record.RootElement.GetProperty("isError").GetBoolean());
+        Assert.True(record.RootElement.GetProperty("result").GetProperty("isError").GetBoolean());
     }
 }

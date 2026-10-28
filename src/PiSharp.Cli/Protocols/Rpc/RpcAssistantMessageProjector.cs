@@ -193,6 +193,13 @@ internal sealed class RpcAssistantMessageProjector
         var message = PiJsonlEntryCodec.ProjectRuntimeMessage(conversation, result,
             toolName: item.Tool, timestamp: timestamp);
         message.Remove("piSharpToolResult");
+        if (item.NestedToolCalls is { } nestedToolCalls)
+        {
+            var projectedNestedCalls = JsonSerializer.SerializeToNode(nestedToolCalls)!.AsObject();
+            if (projectedNestedCalls["calls"] is JsonArray calls)
+                foreach (var call in calls.OfType<JsonObject>()) call.Remove("parentToolCallId");
+            message["nestedCalls"] = projectedNestedCalls;
+        }
         _runMessages.Add(message.DeepClone().AsObject());
         var callId = result.Contents.OfType<FunctionResultContent>().FirstOrDefault()?.CallId;
         if (callId is not null) _toolResults[callId] = message.DeepClone().AsObject();
@@ -324,7 +331,6 @@ internal sealed class RpcAssistantMessageProjector
         ConversationSession conversation, string? api)
     {
         EnsureStarted(records, conversation, api);
-        FinishActiveContent(records, conversation, api);
         if (!_streamedToolCalls.TryGetValue(delta.Index, out var call))
         {
             call = new ActiveToolCall();

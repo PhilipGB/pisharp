@@ -45,6 +45,9 @@ class FixtureProviderStep:
     error_message: str | None = None
     tool_name: str | None = None
     tool_arguments: str | None = None
+    tool_calls: tuple[tuple[str, str], ...] = ()
+    tool_argument_fragments: tuple[str, ...] = ()
+    include_usage: bool = True
     hold_after_partial: bool = False
     hold_before_response: bool = False
     text_fragments: tuple[str, ...] = ()
@@ -93,6 +96,8 @@ class InputRun:
     use_handled_extension_command: bool = False
     use_entry_appending_extension: bool = False
     enable_bash_tool: bool = False
+    active_tool_names: tuple[str, ...] = ()
+    use_rpc_tool_extension: bool = False
     compare_provider_requests: bool = False
     compare_stderr: bool = True
     model_context_window: int = 4096
@@ -119,6 +124,12 @@ def _request(request_id: str | None, command: str = "get_state", **fields: Any) 
 
 def _line(request_id: str | None, command: str = "get_state", **fields: Any) -> bytes:
     return _request(request_id, command, **fields) + b"\n"
+
+
+def _rpc_tool_arguments(value: str, *, delay_ms: int = 0, emit_partial: bool = False,
+                        fail: bool = False) -> str:
+    return json.dumps({"value": value, "delayMs": delay_ms, "emitPartial": emit_partial, "fail": fail},
+                      separators=(",", ":"))
 
 
 def _one(payload: bytes, *, expected_ids: tuple[str | None, ...], **flags: Any) -> tuple[InputRun, ...]:
@@ -1214,6 +1225,106 @@ for _case_id, _runs in tuple(R5_SCENARIOS.items()):
     R5_SCENARIOS[_case_id] = tuple(replace(run, model_context_window=65_536) for run in _runs)
 
 
+R6_SCENARIOS: dict[str, tuple[InputRun, ...]] = {}
+
+_R6_EVENTS = (
+    "agent_start", "message_start", "message_update", "message_end", "turn_start", "turn_end",
+    "tool_execution_start", "tool_execution_update", "tool_execution_end", "agent_end", "agent_settled",
+)
+_R6_PAYLOAD_TYPES = (
+    "message_update", "message_end", "turn_end", "tool_execution_start", "tool_execution_update",
+    "tool_execution_end",
+)
+
+def _r6_case(case_id: str, message: str, provider_steps: tuple[FixtureProviderStep, ...], *,
+             tool_names: tuple[str, ...] = ("rpc_parity_tool",),
+             minimum_tool_starts: int = 1, minimum_tool_updates: int = 0,
+             minimum_tool_ends: int | None = None, preserve_assistant_terminal_shape: bool = False,
+             retry_settings: tuple[tuple[str, Any], ...] = ()) -> tuple[InputRun, ...]:
+    if minimum_tool_ends is None:
+        minimum_tool_ends = minimum_tool_starts
+    return (InputRun(
+        chunks=((_line(case_id, "prompt", message=message), 0.0),),
+        expected_response_ids=(case_id,), expected_response_commands=("prompt",),
+        expected_successes=(True,), expected_data_presence=(True,), expected_error_presence=(False,),
+        expected_response_dispositions=("started",), active_tool_names=tool_names,
+        use_rpc_tool_extension=True, provider_steps=provider_steps,
+        retry_settings=retry_settings, expected_min_provider_requests=len(provider_steps),
+        compare_provider_requests=True, lifecycle_event_types=_R6_EVENTS,
+        preserve_assistant_terminal_shape=preserve_assistant_terminal_shape,
+        preserve_event_payload_types=_R6_PAYLOAD_TYPES,
+        minimum_lifecycle_event_counts=tuple(
+            item for item in (("tool_execution_start", minimum_tool_starts),
+                              ("tool_execution_update", minimum_tool_updates),
+                              ("tool_execution_end", minimum_tool_ends)) if item[1] > 0),
+        stdout_waits=((0, '"type":"agent_settled"', 1, 25.0),),
+    ),)
+
+
+R6_SCENARIOS["R6.tool-call-start-arguments"] = _r6_case(
+    "R6.tool-call-start-arguments", "call the fixture tool",
+    (FixtureProviderStep(tool_name="rpc_parity_tool", tool_arguments=_rpc_tool_arguments("start")),
+     FixtureProviderStep(text="tool call complete")))
+R6_SCENARIOS["R6.tool-argument-fragments"] = _r6_case(
+    "R6.tool-argument-fragments", "stream the tool arguments",
+    (FixtureProviderStep(
+        tool_name="rpc_parity_tool", tool_arguments=_rpc_tool_arguments("fragmented-arguments"),
+        tool_argument_fragments=('{"value":', '"fragmented-arguments","delayMs":0,"emitPartial":false,"fail":false}'),
+        flush_stream_chunks=True, stream_chunk_delay_seconds=0.02),
+     FixtureProviderStep(text="tool argument fragments complete")))
+R6_SCENARIOS["R6.tool-call-end-authoritative"] = _r6_case(
+    "R6.tool-call-end-authoritative", "complete the streamed tool call",
+    (FixtureProviderStep(
+        tool_name="rpc_parity_tool", tool_arguments=_rpc_tool_arguments("authoritative-final-arguments"),
+        tool_argument_fragments=(' { "value" : ',
+                                 '"authoritative-final-arguments", "delayMs":0, "emitPartial":false, "fail":false } '),
+        flush_stream_chunks=True, stream_chunk_delay_seconds=0.02),
+     FixtureProviderStep(text="authoritative tool call complete")))
+R6_SCENARIOS["R6.tool-execution-start-update-end"] = _r6_case(
+    "R6.tool-execution-start-update-end", "report partial tool output",
+    (FixtureProviderStep(tool_name="rpc_parity_tool",
+                         tool_arguments=_rpc_tool_arguments("progress", delay_ms=200, emit_partial=True)),
+     FixtureProviderStep(text="tool progress completed")), minimum_tool_updates=1)
+R6_SCENARIOS["R6.sequential-tool-continuation"] = _r6_case(
+    "R6.sequential-tool-continuation", "call two tools in sequence",
+    (FixtureProviderStep(tool_name="rpc_parity_tool", tool_arguments=_rpc_tool_arguments("first")),
+     FixtureProviderStep(tool_name="rpc_parity_tool", tool_arguments=_rpc_tool_arguments("second")),
+     FixtureProviderStep(text="both sequential tools completed")), minimum_tool_starts=2)
+R6_SCENARIOS["R6.parallel-tool-continuation"] = _r6_case(
+    "R6.parallel-tool-continuation", "call two tools in parallel",
+    (FixtureProviderStep(tool_calls=(
+        ("rpc_parity_tool", _rpc_tool_arguments("parallel-fast")),
+        ("rpc_parity_tool", _rpc_tool_arguments("parallel-slow", delay_ms=200)),
+    )), FixtureProviderStep(text="both parallel tools completed")), minimum_tool_starts=2)
+R6_SCENARIOS["R6.tool-error-continuation"] = _r6_case(
+    "R6.tool-error-continuation", "continue after a tool error",
+    (FixtureProviderStep(tool_name="rpc_parity_tool", tool_arguments=_rpc_tool_arguments("failure", fail=True)),
+     FixtureProviderStep(text="tool error was reported and continued")))
+R6_SCENARIOS["R6.provider-failure-after-tool"] = _r6_case(
+    "R6.provider-failure-after-tool", "fail provider after successful tool",
+    (FixtureProviderStep(tool_name="rpc_parity_tool", tool_arguments=_rpc_tool_arguments("once")),
+     FixtureProviderStep(status_code=503, error_message="fixture provider failed after tool")),
+    preserve_assistant_terminal_shape=True, retry_settings=(("enabled", False), ("maxRetries", 0)))
+R6_SCENARIOS["R6.partial-assistant-with-tool"] = _r6_case(
+    "R6.partial-assistant-with-tool", "mix assistant text and a tool call",
+    (FixtureProviderStep(text_fragments=("assistant text before tool",),
+                         tool_name="rpc_parity_tool", tool_arguments=_rpc_tool_arguments("mixed-content"),
+                         flush_stream_chunks=True, stream_chunk_delay_seconds=0.02),
+     FixtureProviderStep(text="mixed assistant and tool call complete")))
+R6_SCENARIOS["R6.tool-call-id-and-parent-fields"] = _r6_case(
+    "R6.tool-call-id-and-parent-fields", "execute one nested tool call",
+    (FixtureProviderStep(tool_name="rpc_nested_orchestrator", tool_arguments="{}"),
+     FixtureProviderStep(text="nested tool call complete")),
+    tool_names=("rpc_parity_tool", "rpc_nested_orchestrator"), minimum_tool_starts=2)
+
+for _case_id, _runs in tuple(R6_SCENARIOS.items()):
+    R6_SCENARIOS[_case_id] = tuple(
+        replace(run, model_context_window=65_536,
+                provider_steps=tuple(replace(step, include_usage=False) for step in run.provider_steps))
+        for run in _runs
+    )
+
+
 class _FixtureProvider:
     def __init__(self, response_delays: tuple[float, ...], provider_steps: tuple[FixtureProviderStep, ...],
                  tool_gate_path: Path):
@@ -1354,31 +1465,18 @@ class _FixtureProvider:
             response = {"error": {"message": step.error_message or "fixture provider error"}}
             return json.dumps(response, separators=(",", ":")).encode("utf-8")
         if stream:
-            if step.text_fragments or step.reasoning_fragments or step.usage_updates or step.fail_after_partial:
+            if (step.text_fragments or step.reasoning_fragments or step.usage_updates or step.fail_after_partial or
+                    not step.include_usage or
+                    step.tool_name is not None or step.tool_calls):
                 return b"".join(self.response_chunks(request_index, step))
-            if step.tool_name is not None:
-                arguments = step.tool_arguments or "{}"
-                arguments = arguments.replace("__RPC_TOOL_GATE__", str(self._tool_gate_path))
-                chunks = [
-                    self.stream_chunk(request_index, {"role": "assistant", "tool_calls": [{
-                        "index": 0, "id": f"rpc-tool-{request_index}", "type": "function",
-                        "function": {"name": step.tool_name, "arguments": arguments},
-                    }]}),
-                    {
-                        "id": f"rpc-fixture-{request_index}", "object": "chat.completion.chunk", "created": 1,
-                        "model": "fixture-model", "choices": [{"index": 0, "delta": {}, "finish_reason": "tool_calls"}],
-                        "usage": {"prompt_tokens": 12, "completion_tokens": 2, "total_tokens": 14},
-                    },
-                ]
-            else:
-                chunks = [
-                    self.stream_chunk(request_index, {"role": "assistant", "content": step.text}),
-                    {
-                        "id": f"rpc-fixture-{request_index}", "object": "chat.completion.chunk", "created": 1,
-                        "model": "fixture-model", "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
-                        "usage": {"prompt_tokens": 12, "completion_tokens": 2, "total_tokens": 14},
-                    },
-                ]
+            chunks = [
+                self.stream_chunk(request_index, {"role": "assistant", "content": step.text}),
+                {
+                    "id": f"rpc-fixture-{request_index}", "object": "chat.completion.chunk", "created": 1,
+                    "model": "fixture-model", "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
+                    "usage": {"prompt_tokens": 12, "completion_tokens": 2, "total_tokens": 14},
+                },
+            ]
             body = "".join(f"data: {json.dumps(chunk, separators=(',', ':'))}\n\n" for chunk in chunks)
             return (body + "data: [DONE]\n\n").encode("utf-8")
         response = {
@@ -1398,40 +1496,56 @@ class _FixtureProvider:
             return {"prompt_tokens": input_tokens, "completion_tokens": output_tokens,
                     "total_tokens": total_tokens}
 
-        if step.tool_name is not None:
-            arguments = (step.tool_arguments or "{}").replace("__RPC_TOOL_GATE__", str(self._tool_gate_path))
-            chunks = [
-                self.stream_chunk(request_index, {"role": "assistant", "tool_calls": [{
-                    "index": 0, "id": f"rpc-tool-{request_index}", "type": "function",
-                    "function": {"name": step.tool_name, "arguments": arguments},
-                }]}),
-                {"id": f"rpc-fixture-{request_index}", "object": "chat.completion.chunk", "created": 1,
-                 "model": "fixture-model", "choices": [{"index": 0, "delta": {}, "finish_reason": "tool_calls"}],
-                 "usage": {"prompt_tokens": 12, "completion_tokens": 2, "total_tokens": 14}},
-            ]
-            return [*(sse(chunk) for chunk in chunks), b"data: [DONE]\n\n"]
+        tool_calls = list(step.tool_calls)
+        if not tool_calls and step.tool_name is not None:
+            tool_calls = [(step.tool_name, step.tool_arguments or "{}")]
 
         deltas: list[dict[str, Any]] = []
         deltas.extend({"reasoning_content": value} for value in step.reasoning_fragments)
         deltas.extend({"content": value} for value in step.text_fragments)
-        if not deltas:
-            deltas.append({"content": step.text})
+        emitted_role = False
         chunks: list[dict[str, Any]] = []
-        for index, delta in enumerate(deltas):
-            if index == 0:
+        for delta in deltas:
+            if not emitted_role:
                 delta = {"role": "assistant", **delta}
-            chunk = self.stream_chunk(request_index, delta)
+                emitted_role = True
+            chunks.append(self.stream_chunk(request_index, delta))
+        for call_index, (tool_name, tool_arguments) in enumerate(tool_calls):
+            arguments = tool_arguments.replace("__RPC_TOOL_GATE__", str(self._tool_gate_path))
+            fragments = (step.tool_argument_fragments if call_index == 0 and step.tool_argument_fragments
+                         else (arguments,))
+            for fragment_index, fragment in enumerate(fragments):
+                tool_call_delta: dict[str, Any] = {"index": call_index}
+                function_delta: dict[str, str] = {"arguments": fragment}
+                if fragment_index == 0:
+                    function_delta["name"] = tool_name
+                    tool_call_delta.update({
+                        "id": f"rpc-tool-{request_index}" if len(tool_calls) == 1
+                        else f"rpc-tool-{request_index}-{call_index}",
+                        "type": "function",
+                    })
+                tool_call_delta["function"] = function_delta
+                delta: dict[str, Any] = {"tool_calls": [tool_call_delta]}
+                if not emitted_role:
+                    delta = {"role": "assistant", **delta}
+                    emitted_role = True
+                chunks.append(self.stream_chunk(request_index, delta))
+        if not chunks:
+            chunks.append(self.stream_chunk(request_index, {"role": "assistant", "content": step.text}))
+        for index, chunk in enumerate(chunks):
             if index < len(step.usage_updates):
                 chunk["usage"] = usage(step.usage_updates[index])
-            chunks.append(chunk)
         if step.fail_after_partial:
             return [*(sse(chunk) for chunk in chunks), b"data: {malformed fixture stream\n\n"]
-        final_usage = usage(step.usage_updates[-1]) if step.usage_updates else {
-            "prompt_tokens": 12, "completion_tokens": 2, "total_tokens": 14,
-        }
-        chunks.append({"id": f"rpc-fixture-{request_index}", "object": "chat.completion.chunk", "created": 1,
-                       "model": "fixture-model", "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
-                       "usage": final_usage})
+        final_usage = usage(step.usage_updates[-1]) if step.usage_updates else (
+            {"prompt_tokens": 12, "completion_tokens": 2, "total_tokens": 14} if step.include_usage else None
+        )
+        finish = {"id": f"rpc-fixture-{request_index}", "object": "chat.completion.chunk", "created": 1,
+                  "model": "fixture-model", "choices": [{"index": 0, "delta": {},
+                                                             "finish_reason": "tool_calls" if tool_calls else "stop"}]}
+        if final_usage is not None:
+            finish["usage"] = final_usage
+        chunks.append(finish)
         return [*(sse(chunk) for chunk in chunks), b"data: [DONE]\n\n"]
 
     def close(self) -> None:
@@ -1492,22 +1606,52 @@ def _prepare_product(product: str, pi: Path, workspace: Path,
         "PISHARP_AGENT_DIR": str(agent), "PISHARP_SESSION_DIR": str(sessions),
         "PISHARP_RPC_FIXTURE_KEY": "fixture-only-key",
     })
+    if input_run.use_rpc_tool_extension and product == "pisharp":
+        environment["PISHARP_RPC_TOOL_FIXTURE"] = "true"
     common = ["--mode", "rpc", "--provider", "fixture", "--model", "fixture-model",
               "--session-dir", str(sessions), "--no-context-files", "--no-extensions", "--no-skills",
               "--no-prompt-templates", "--system-prompt", "You are a deterministic RPC fixture assistant."]
-    if product == "pisharp" and input_run.use_entry_appending_extension:
+    if product == "pisharp" and (input_run.use_entry_appending_extension or input_run.use_rpc_tool_extension):
         common.remove("--no-extensions")
     if input_run.resume_session:
         common.append("--continue")
-    if input_run.enable_bash_tool:
+    if input_run.active_tool_names:
+        common.extend(("--tools", ",".join(input_run.active_tool_names)))
+    elif input_run.enable_bash_tool:
         common.extend(("--tools", "bash"))
     else:
         common.append("--no-tools")
     extension_path: Path | None = None
-    if input_run.use_handled_extension_command or input_run.use_entry_appending_extension:
+    if (input_run.use_handled_extension_command or input_run.use_entry_appending_extension or
+            input_run.use_rpc_tool_extension):
         if product == "pi":
-            extension_path = agent / "rpc-handled-extension.ts"
-            if input_run.use_entry_appending_extension:
+            extension_path = agent / ("rpc-tool-extension.ts" if input_run.use_rpc_tool_extension
+                                      else "rpc-handled-extension.ts")
+            if input_run.use_rpc_tool_extension:
+                extension_path.write_text(
+                    'import { Type } from "@earendil-works/pi-ai";\n'
+                    'const toolArgs = Type.Object({ value: Type.String(), delayMs: Type.Integer(), '
+                    'emitPartial: Type.Boolean(), fail: Type.Boolean() }, { additionalProperties: false });\n'
+                    'export default function (pi) { pi.registerTool({ name: "rpc_parity_tool", '
+                    'label: "rpc_parity_tool", description: "Return a deterministic result for RPC parity tests.", '
+                    'parameters: toolArgs, async execute(_id, p, _signal, onUpdate) { '
+                    'if (p.emitPartial) onUpdate?.({ content: [{ type: "text", text: "partial:" + p.value }] }); '
+                    'if (p.delayMs > 0) await new Promise(resolve => setTimeout(resolve, p.delayMs)); '
+                    'if (p.fail) return { content: [{ type: "text", text: "fixture tool failed" }], '
+                    'details: {}, isError: true }; '
+                    'return { content: [{ type: "text", text: "result:" + p.value }] }; } }); '
+                    'pi.registerTool({ name: "rpc_nested_orchestrator", label: "rpc_nested_orchestrator", '
+                    'description: "Execute one nested RPC parity tool.", '
+                    'parameters: Type.Object({}, { additionalProperties: false }), '
+                    'async execute(_id, _p, signal, _onUpdate, context) { '
+                    'const outcome = await context.executeTool("rpc_parity_tool", '
+                    '{ value: "nested-child-result", delayMs: 0, emitPartial: false, fail: false }, { signal }); '
+                    'const text = (outcome.result.content || []).filter(item => item.type === "text") '
+                    '.map(item => item.text).join(""); return { content: [{ type: "text", '
+                    'text: "nested child: " + text }] }; } }); }\n',
+                    encoding="utf-8",
+                )
+            elif input_run.use_entry_appending_extension:
                 extension_path.write_text(
                     'export default function (pi) { pi.registerCommand("native-fixture-state-set", '
                     '{ description: "Append a deterministic session entry", handler: async (value) => '
@@ -2131,7 +2275,7 @@ def _store_observation(evidence_dir: Path, case_id: str, product_run: str,
 def run_process_case(case: dict[str, Any], *, pi: Path, evidence_dir: Path) -> dict[str, Any]:
     case_id = case["id"]
     scenarios = R1_SCENARIOS.get(case_id) or R2_SCENARIOS.get(case_id) or R3_SCENARIOS.get(case_id) or \
-        R4_SCENARIOS.get(case_id) or R5_SCENARIOS.get(case_id)
+        R4_SCENARIOS.get(case_id) or R5_SCENARIOS.get(case_id) or R6_SCENARIOS.get(case_id)
     if case_id in R2_SCENARIOS and case_id not in {
         "R2.long-command-acceptance", "R2.active-compaction-command",
     }:
@@ -2139,7 +2283,8 @@ def run_process_case(case: dict[str, Any], *, pi: Path, evidence_dir: Path) -> d
     if scenarios is None:
         raise VerificationError(f"no process scenario adapter is registered for {case_id}")
     artifacts: list[dict[str, str]] = []
-    if any(input_run.use_handled_extension_command for input_run in scenarios):
+    if any(input_run.use_handled_extension_command or input_run.use_rpc_tool_extension
+           for input_run in scenarios):
         artifacts.append(_ensure_test_extension_fixture(evidence_dir))
     if any(input_run.use_entry_appending_extension for input_run in scenarios):
         artifacts.append(_ensure_native_extension_fixture(evidence_dir))
@@ -2221,4 +2366,4 @@ def run_process_case(case: dict[str, Any], *, pi: Path, evidence_dir: Path) -> d
 
 def scenario_case_ids() -> set[str]:
     return (set(R1_SCENARIOS) | set(R2_SCENARIOS) | set(R3_SCENARIOS) |
-            set(R4_SCENARIOS) | set(R5_SCENARIOS))
+            set(R4_SCENARIOS) | set(R5_SCENARIOS) | set(R6_SCENARIOS))
