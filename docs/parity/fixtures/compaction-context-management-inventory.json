@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
   "milestone": "compaction-context-management-parity",
-  "phase": "C10 passed 10/10 on clean source 2fce38db; C1-C9 require refresh at current source; C11-C13 and final gates remain",
+  "phase": "C10 passed 10/10 on clean source 2fce38db; C11 implementation slice committed at 83ea0c30 with 17/17 focused tests; no paired cases bound to current source; C1-C10 refresh, C11-C13 and final gates remain",
   "sourcePins": {
     "piCommit": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
     "pisharpBaselineCommit": "12064420179f4119bdaf37479c7cba0f5ca40717",
     "pisharpWorkingBranch": "milestone/compaction-context-management-parity",
-    "implementationSourceSha": "843d0388ceca2adbe2725397c48e0e45b98cba7e"
+    "implementationSourceSha": "83ea0c300121d80b53e320f2c16fcb53253430b8"
   },
   "framework": {
     "package": "Microsoft.Agents.AI",
@@ -583,10 +583,10 @@
         "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionStatsProjectorTests.cs",
         "tests/PiSharp.Tests/Cli/Tui/TerminalPtyTests.cs"
       ],
-      "baseline": "RPC and TUI manual compaction are implemented; JSON-mode, provider-wide compact continuation and actual PTY public comparisons remain incomplete.",
+      "baseline": "RPC/TUI manual compaction is implemented. JSON compaction result projection is now implemented at 83ea0c30; C11 paired differential evidence for JSON, CLI/TUI, RPC and provider continuation remains incomplete.",
       "differences": [],
       "evidenceGaps": [
-        "OpenAI Responses, Chat Completions and Anthropic request mappings after manual/automatic/overflow compaction; JSON mode and real PTY only where behavior differs."
+        "All ten C11 paired cases, including provider request comparisons for Responses, Chat Completions and Anthropic after compaction, plus real PTY comparison where presentation affects the contract."
       ],
       "cases": [
         "C11.cli-manual-compact-input-and-result",
@@ -1003,7 +1003,7 @@
     }
   ],
   "crossCuttingEvidenceGaps": [
-    "C1-C8 passed 86/86 at source 843d0388; C9 passed 9/9 at source 1deb1748; C10 passed 10/10 at clean source 2fce38db. Refresh C1-C9 at the current source, then execute C11-C13 and final gates.",
+    "C1-C8 passed 86/86 at source 843d0388; C9 passed 9/9 at 1deb1748; C10 passed 10/10 at 2fce38db. C11 implementation slice and 17/17 focused tests are at 83ea0c30. Refresh C1-C10 at current source, then complete C11-C13 and final gates.",
     "The separate transient AutoCompactionPolicy estimator formula remains distinct from Pi estimateTokens and still needs a case-level classification.",
     "The three provider adapters have paired overflow recovery and post-reload compacted-session continuation coverage; broader provider semantics outside these cases remain open.",
     "C11-C13 still cover public usage surfaces, native extension lifecycle, and failure/cancellation/crash scenarios."
@@ -1037,7 +1037,8 @@
     "C8 compaction usage persistence: aggregate summary usage is retained on compaction entries for Pi JSONL export/import while native per-request billing entries remain authoritative.",
     "C8 persistence and provider-after-reload coverage: compaction usage/metadata round-trip, canonical history recovery, branch/fork/clone restoration, restart continuation, and live SDK request comparison for Responses, Chat Completions, and Anthropic.",
     "C9 branch navigation: branch-summary prompts now match Pi, including custom summarization instructions; the summary preamble and navigation result are covered by paired pinned observations.",
-    "C10 usage accounting preserves unknown provider counts and costs, separates uncached input from cached reads, carries cache writes and reasoning tokens, and projects canonical totals across compaction, active branch, CLI, TUI, and RPC surfaces."
+    "C10 usage accounting preserves unknown provider counts and costs, separates uncached input from cached reads, carries cache writes and reasoning tokens, and projects canonical totals across compaction, active branch, CLI, TUI, and RPC surfaces.",
+    "C11 integration slice: RPC compaction cost components remain unknown when provider usage does not supply them; JSON compaction lifecycle events expose Pi-shaped reason/result/aborted/willRetry payloads. Focused C11 .NET tests pass 17/17 at 83ea0c30; the paired C11 adapter and case evidence remain open."
   ],
   "formalAcceptance": {
     "contractPath": "tools/parity/compaction_context/contract.json",
@@ -1046,21 +1047,9 @@
     "requiredCases": 211,
     "perCaseArtifactsProduced": 105,
     "status": "incomplete",
-    "reason": "C10 passed 10/10 on clean source 2fce38db. C1-C9 evidence is bound to earlier source revisions and must be refreshed; C11-C13 and D0/Q0/E0/CI0/PUB0 remain.",
+    "reason": "C10 passed 10/10 on clean source 2fce38db. C11 implementation changes are committed at 83ea0c30 and pass 17/17 focused tests, but no paired cases are bound to this source. C1-C10 require source refresh; C11-C13 and D0/Q0/E0/CI0/PUB0 remain.",
     "perCaseArtifactsCommitted": 105,
-    "currentSourceCheckpointEvidence": {
-      "sourceSha": "2fce38dbf548fc62323412c4441f141668649b6f",
-      "checkpointId": "C10",
-      "passedCases": 10,
-      "requiredCases": 10,
-      "status": "passed",
-      "runnerRecords": [
-        "artifacts/parity/20261028-c10-2fce38db/runs/C10/checkpoint-run.json"
-      ],
-      "compactRecords": [
-        "docs/parity/fixtures/compaction-context-management-c10-case-results.json"
-      ]
-    },
+    "currentSourceCheckpointEvidence": null,
     "lastSourceBoundCheckpointEvidence": {
       "sourceSha": "2fce38dbf548fc62323412c4441f141668649b6f",
       "checkpointId": "C10",
@@ -1099,7 +1088,7 @@
     "focusedC7Tests": "80 passed, 0 failed, 0 skipped at source d274475f; CompactionTests and RpcCompactionProcessTests filter.",
     "pairedC7Oracle": "10/10 cases passed at source d274475f: nine equivalent, one intentional whitespace-only-summary safety difference; Pi and PiSharp observations stable across two runs per side.",
     "c7CheckpointRunner": "runner.py recorded passed with sourceTreeClean true, 10 required, 10 executed, 10 passed, 0 failed and 0 skipped; raw artifact hashes are bound in compaction-context-management-c7-case-results.json.",
-    "currentSourceCheckpointEvidence": "C9 passed 9/9 at clean source 1deb1748; C1-C8 passed 86/86 at source 843d0388 and require refresh after C9 source changes.",
+    "currentSourceCheckpointEvidence": "C11 implementation source 83ea0c30 passes the focused RPC/JSON filter 17/17 and format verification. No paired C11 cases are recorded at this source; last source-bound checkpoint remains C10 at 2fce38db.",
     "focusedC8Tests": "140 passed, 0 failed, 0 skipped at source 5a3be74a; CompactionTests, PiJsonlSessionInterchangeTests, and CrashRecoveryProcessTests filter.",
     "compactionUsageRoundTrip": "New compaction summary/boundary/usage regression passed through native serialization and Pi JSONL export/import without duplicate billing.",
     "c9_dotnet_focused": "27 passed, 0 failed, 0 skipped at source 1deb1748; C9 tree navigation, native extension tree events, RPC sessions, and Linux PTY test filter.",
@@ -1111,6 +1100,8 @@
     "c10PairedOracle": "C10 passed 10/10 on clean source 2fce38db; Pi and PiSharp observations were stable across two runs each. Two source-bound intentional safety differences preserve unknown usage and unknown prices.",
     "c10CheckpointRunner": "runner.py recorded C10 passed: 10 required, 10 executed, 10 passed, 0 failed/skipped; sourceTreeClean true. Raw artifacts and command logs are hash-bound under artifacts/parity/20261028-c10-2fce38db/runs/C10/.",
     "c10PinnedPiTests": "Pinned Pi usage-totals and compaction suites: 35 passed, 0 failed, 2 skipped.",
-    "c10Format": "dotnet format PiSharp.slnx --verify-no-changes --no-restore passed after C10; workspace loading emitted a non-fatal warning."
+    "c10Format": "dotnet format PiSharp.slnx --verify-no-changes --no-restore passed after C10; workspace loading emitted a non-fatal warning.",
+    "c11FocusedDotnet": "17 passed, 0 failed, 0 skipped at source 83ea0c30 for RpcCompactionProcessTests, RpcSessionStatsProjectorTests, RpcEventProjectorTests, and JsonEventModeTests.",
+    "c11Format": "dotnet format PiSharp.slnx --verify-no-changes passed at source 83ea0c30; workspace loading emitted a non-fatal warning."
   }
 }

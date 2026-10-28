@@ -10,17 +10,17 @@ Pi is pinned to `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The frozen
 compaction contract remains 22 checkpoints / 211 cases.
 
 C1-C8 passed 86/86 at source `843d0388`; C9 passed 9/9 at `1deb1748`; C10
-passed 10/10 on clean source `2fce38db`. Implementation is complete through
-10/13 checkpoints. Across revisions, 105/211 cases have paired results; only
-C10’s 10/211 cases are bound to the latest source, so C1-C9 need refreshing.
-The C10 focused .NET filter passes 98/98, provider mapping tests pass 39/39,
-and the format check passes. Its compact record documents two safety
-differences for absent usage and pricing values.
+passed 10/10 on clean source `2fce38db`. Historical implementation has passed
+10/13 checkpoint areas. C11 is in progress at source `83ea0c30`: the RPC cost
+projection and JSON compaction event output were corrected, with 17/17 focused
+.NET tests and format verification passing. These are implementation checks,
+not paired C11 case evidence.
 
-C11-C13 still need implementation/evidence, followed by D0, Q0, E0, CI0, and
-PUB0. Refresh C1-C9 at current source. The separate transient estimator
-formula still needs classification. The full .NET suite must be rerun at final
-source. PR #28 remains open and draft.
+Across revisions, 105/211 cases have paired results, but none is bound to
+current source `83ea0c30`. Refresh C1-C10, complete all ten C11 paired cases,
+then implement and execute C12-C13 and final gates D0, Q0, E0, CI0, and PUB0.
+The transient estimator formula still needs classification. Rerun the full
+.NET suite at final source. PR #28 remains open and draft.
 See the
 [inventory](parity/fixtures/compaction-context-management-inventory.json),
 [receipt](parity/fixtures/compaction-context-management-parity-2026-10-28.md),

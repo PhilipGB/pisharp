@@ -7,9 +7,11 @@ The Pi oracle is pinned to `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; the insta
 `Microsoft.Agents.AI` version is 1.21.0. C1-C8 passed on clean source
 `843d0388ceca2adbe2725397c48e0e45b98cba7e`; C9 passed on clean source
 `1deb174887151679db19339c5bffbe660bc2e8c5`; C10 passes on clean source
-`2fce38dbf548fc62323412c4441f141668649b6f`. C1-C9 need refreshing after the
-C10 source changes. Older C5-C7 captures remain in Git-ignored run folders as
-historical context; compact case records bind the observations and raw hashes.
+`2fce38dbf548fc62323412c4441f141668649b6f`. C11 implementation changes are
+committed at `83ea0c300121d80b53e320f2c16fcb53253430b8`; C1-C10 evidence must
+be refreshed at this source, and C11 paired cases are not yet produced. Older
+C5-C7 captures remain in Git-ignored run folders as historical context; compact
+case records bind the observations and raw hashes.
 
 The frozen contract is [contract.json](../../../tools/parity/compaction_context/contract.json),
 SHA-256 `c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6`:
@@ -35,6 +37,10 @@ SHA-256 `c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6`:
   requests, file details, retry behavior, usage, model routing, and reasoning
   options. It rejects length-stopped responses, uses reserve-aware output caps,
   and retries transient provider failures using the configured retry policy.
+- C11 implementation slice: RPC compaction omits unknown cost breakdowns;
+  JSON compaction lifecycle events include Pi-shaped `reason`, `result`,
+  `aborted`, and `willRetry` data. The focused C11 filter passes 17/17 at
+  `83ea0c30`; paired C11 case evidence remains outstanding.
 
 These changes have unit, CLI, extension, navigation, session interchange, and
 loopback coverage. Those tests establish implementation behavior; they do not
@@ -135,6 +141,7 @@ Raw captures remain Git-ignored under
 - C9 focused checkpoint filter: **27/27 passed** at source `1deb1748`, including the Linux PTY tree-navigation test.
 - Pinned Pi `interactive-mode-tree-navigation.test.ts`: **5/5 passed**.
 - C10 focused .NET filter: **98/98 passed** at source `2fce38db`; provider mapping tests: **39/39 passed**.
+- C11 focused .NET filter: **17/17 passed** at source `83ea0c30`; `dotnet format PiSharp.slnx --verify-no-changes` passed with a non-fatal workspace-loading warning.
 - C10 pinned Pi usage/compaction suites: **35 passed, 0 failed, 2 skipped**; C10 paired oracle: **10/10 passed**, with two intentional safety differences.
 - `dotnet format PiSharp.slnx --verify-no-changes --no-restore` passed after the C10 implementation changes.
 - Documentation paths: rerun after this C10 receipt and progress update.
@@ -147,9 +154,9 @@ Raw captures remain Git-ignored under
 
 C1-C8 passed 86/86 at source `843d0388`; C9 passed 9/9 at `1deb1748`; C10
 passed 10/10 at `2fce38db`. Across revisions, 105/211 cases have paired
-results, but only C10's 10 cases are bound to the latest source. Refresh C1-C9;
-201 cases lack latest-source evidence and 106 cases have not yet been paired.
-C11-C13 and final acceptance gates remain. Remaining work covers extension
+results, but none is bound to current source `83ea0c30`; 106 cases have not yet
+been paired. Refresh C1-C10, complete the ten C11 paired cases, then execute
+C12-C13 and final acceptance gates. Remaining work covers extension
 lifecycle and cancellation/crash recovery, independent acceptance, full
 quality, committed-source validation, exact-head CI, and publication. The
 separate transient estimator formula still needs a case-level classification.
