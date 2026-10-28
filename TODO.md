@@ -8,13 +8,13 @@ this branch is based on that merge, with Pi pinned at
 contract contains 27 checkpoints and 240 cases. At implementation source SHA
 `a760d65efdbcb2192c648336b10c4dd34cd3a6e9`, 24/27 checkpoints and 218/240
 cases pass locally with zero failures or skips. The committed-evidence
-checkpoint passes 7/7; CI integration, draft-publication, and exact-head CI
-remain pending. The mixed local and managed CLI extension ordering correction
+checkpoint passes 7/7. Exact-head push and PR workflows passed, and publication
+verification completed all 27/27 checkpoints and 240/240 cases with zero
+failures or skips. The mixed local and managed CLI extension ordering correction
 passes both argument orders. Local quality passes the full .NET suite (3,910/3,910), focused package tests
-118/118, architecture 7/7, Python 153/153, Node 24/24, MCP, format,
+118/118, architecture 7/7, Python 154/154, Node 24/24, MCP, format,
 warnings-as-errors build, docs and all 18 differential rechecks. PR #27 remains
-open, draft, and unmerged while automatic exact-head workflows and publication
-checks are completed. See the
+open, draft, and unmerged. See the
 [managed-package receipt](docs/parity/fixtures/managed-package-lifecycle-parity.md)
 and [inventory](docs/parity/fixtures/managed-package-lifecycle-parity/inventory.json).
 

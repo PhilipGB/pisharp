@@ -13594,8 +13594,8 @@
     ]
   },
   "managed_package_lifecycle_parity_milestone": {
-    "status": "in_progress",
-    "phase": "review-correction-validation",
+    "status": "complete",
+    "phase": "accepted",
     "actual_pr26_merge_sha": "d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9",
     "branch": "milestone/managed-package-lifecycle-parity",
     "branch_base_sha": "d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9",
@@ -13609,21 +13609,21 @@
     "quality_summary": "docs/parity/fixtures/managed-package-lifecycle-parity/quality-summary.json",
     "differential_summary": "docs/parity/fixtures/managed-package-lifecycle-parity/differential-summary.json",
     "required_checkpoints": 27,
-    "passed_checkpoints_current": 24,
+    "passed_checkpoints_current": 27,
     "required_cases": 240,
-    "executed_cases_current": 218,
+    "executed_cases_current": 240,
     "failed_cases": 0,
     "skipped_cases": 0,
     "case_classifications": {
-      "strict": 205,
+      "strict": 226,
       "equivalent": 2,
-      "intentional-safety-difference": 11
+      "intentional-safety-difference": 12
     },
     "local_quality": {
       "dotnet_full": "3910 passed, 0 failed, 0 skipped",
       "focused_package": "118 passed, 0 failed, 0 skipped",
       "architecture": "7 passed, 0 failed, 0 skipped",
-      "python": "153 passed across managed-package, terminal, and built-in differential suites",
+      "python": "154 passed across managed-package, terminal, and built-in differential suites",
       "node_terminal": "24 passed, 0 failed, 0 skipped",
       "mcp_conformance": "passed",
       "format": "passed",
@@ -13632,12 +13632,8 @@
       "differential_rechecks": "18 passed"
     },
     "committed_evidence_checkpoint": "passed locally, 7/7 cases",
-    "remaining_checkpoints": [
-      "ci-integration",
-      "draft-publication",
-      "exact-head-ci"
-    ],
-    "publication_requirement": "Keep PR #27 open, draft and unmerged; verify successful exact-head push and PR workflows and publication evidence for the final head.",
-    "quality_execution": "local exact-source corpus, quality and committed-evidence pass; final-head CI/publication checks remain pending"
+    "remaining_checkpoints": [],
+    "publication_requirement": "Keep PR #27 open, draft and unmerged; exact-head push and PR workflows and publication evidence pass.",
+    "quality_execution": "Local exact-source corpus, quality, committed-evidence, exact-head CI, CI integration, draft publication, and publication verification pass."
   }
 }

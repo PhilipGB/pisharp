@@ -8,15 +8,14 @@ this branch is based on that merge, and Pi remains pinned at
 contract contains 27 checkpoints and 240 cases. At implementation source SHA
 `a760d65efdbcb2192c648336b10c4dd34cd3a6e9`, local execution passes 24/27
 checkpoints and 218/240 cases with zero failures or skips. The committed-evidence
-checkpoint passes 7/7; CI integration, draft-publication, and exact-head CI
-remain pending. Local quality
-passes 3,910/3,910 .NET tests, focused package tests 118/118, architecture tests
-7/7, Python 153/153 across three suites, Node 24/24, MCP, format,
-warnings-as-errors build, docs, and all 18 differential rechecks. Regressions
+checkpoint passes 7/7. Exact-head push and PR workflows passed, and publication
+verification completed all 27/27 checkpoints and 240/240 cases with zero
+failures or skips. Local quality passes 3,910/3,910 .NET tests, focused package
+tests 118/118, architecture tests 7/7, Python 154/154 across three suites, Node
+24/24, MCP, format, warnings-as-errors build, docs, and all 18 differential rechecks. Regressions
 cover Git publication recovery, origin-specific temporary Git identities,
 manifest-controlled extensions, and both mixed local/managed CLI extension
-orders with conflicting commands. PR #27 remains open, draft, and unmerged
-while automatic exact-head workflows and publication checks are completed. The
+orders with conflicting commands. PR #27 remains open, draft, and unmerged. The
 resource distribution path also covers
 temporary npm/Git package roots through startup and reload without persisting
 invocation-only settings. See the

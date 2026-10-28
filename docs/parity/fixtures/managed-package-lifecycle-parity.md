@@ -86,8 +86,9 @@ The committed contract contains 27 checkpoints and 240 required cases. On
 implementation source `a760d65efdbcb2192c648336b10c4dd34cd3a6e9`, local
 execution passes 24/27 checkpoints and 218/240 cases, with zero failures or
 skips. The committed-evidence checkpoint passes 7/7 against the committed
-bundle. CI integration, draft-publication, and exact-head CI remain pending on
-the final documentation head. The compact
+bundle. Exact-head push and PR workflows passed, and publication verification
+completed all 27/27 checkpoints and 240/240 cases with zero failures or skips.
+PR #27 remains open, draft, and unmerged. The compact
 [case coverage](managed-package-lifecycle-parity/case-coverage.json) and
 [case results](managed-package-lifecycle-parity/case-results.json) preserve the
 core corpus and its exact required IDs and classifications.
@@ -180,13 +181,14 @@ The local quality checkpoint at implementation source SHA
 `a760d65efdbcb2192c648336b10c4dd34cd3a6e9` passed formatting, a
 warnings-as-errors build, all 3,910 .NET tests with zero failures/skips, focused
 package tests 118/118, architecture tests 7/7, managed-package Python tests
-60/60, terminal Python 66/66, built-in differential Python tests 27/27, terminal
+61/61, terminal Python 66/66, built-in differential Python tests 27/27, terminal
 Node tests 24/24, MCP conformance, documentation path validation, and all 18
 lifecycle differential rechecks. The mixed local/managed CLI extension ordering
 regression passes both argument orders and verifies conflicting command order.
 Local evidence validation passes 24/27 checkpoints and 218/240 cases,
-including the seven committed-evidence cases. CI integration,
-draft-publication, and exact-head CI remain pending. The evidence normalizer handles
+including the seven committed-evidence cases. Exact-head push and PR workflows
+and publication verification pass all 27 checkpoints and 240 mandatory cases.
+The evidence normalizer handles
 repeated checkout directory names, and the concurrency classifier accepts only
 the precise pinned-Pi clone-race error pair while requiring a safe PiSharp result.
 The [quality summary](managed-package-lifecycle-parity/quality-summary.json)
