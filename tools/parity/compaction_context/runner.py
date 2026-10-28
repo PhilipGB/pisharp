@@ -80,6 +80,19 @@ def run_checkpoint(checkpoint_id: str, evidence_dir: Path, pi_path: Path | None)
             raise verify.VerificationError(f"Pi checkout is {head}; expected {verify.PINNED_PI_SHA}")
     output = evidence_dir / "runs" / checkpoint_id
     output.mkdir(parents=True, exist_ok=True)
+    if checkpoint_id in {"P0", "P1", "V0", "V1"}:
+        if pi_path is None:
+            raise verify.VerificationError(f"checkpoint {checkpoint_id} requires --pi")
+        command = [sys.executable, "tools/parity/compaction_context/baseline_checkpoints.py",
+                   "--checkpoint", checkpoint_id, "--pi", str(pi_path), "--evidence-dir", str(output)]
+        completed = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, check=False)
+        (output / "runner.stdout.log").write_text(completed.stdout, encoding="utf-8")
+        (output / "runner.stderr.log").write_text(completed.stderr, encoding="utf-8")
+        if completed.stdout:
+            print(completed.stdout, end="")
+        if completed.stderr:
+            print(completed.stderr, file=sys.stderr, end="")
+        return completed.returncode
     commands = _commands(checkpoint_id, pi_path)
     results = []
     for index, command in enumerate(commands, start=1):
