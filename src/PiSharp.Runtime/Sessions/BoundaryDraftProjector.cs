@@ -104,7 +104,17 @@ internal static class BoundaryDraftProjector
                         cacheRead = usage.CachedInputTokens,
                         cacheWrite = usage.CachedWriteTokens,
                         totalTokens = usage.TotalTokens
-                    }
+                    },
+                    nativeUsage = compaction.Usage is not { } nativeCounts ? null : UsageRecord.Create(
+                        session.Model, "compaction", new UsageDetails
+                        {
+                            InputTokenCount = nativeCounts.InputTokens,
+                            OutputTokenCount = nativeCounts.OutputTokens,
+                            CachedInputTokenCount = nativeCounts.CachedInputTokens,
+                            ReasoningTokenCount = nativeCounts.ReasoningTokens,
+                            TotalTokenCount = nativeCounts.TotalTokens,
+                            AdditionalCounts = new() { ["cacheWriteTokens"] = nativeCounts.CachedWriteTokens }
+                        }, null)
                 }));
                 if (compaction.Usage is { } counts)
                     session.AppendUsage(UsageRecord.Create(session.Model, "compaction", new UsageDetails

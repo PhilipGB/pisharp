@@ -174,7 +174,17 @@ internal static class PiJsonlEntryCodec
         JsonElement usage;
         string model;
         string source;
-        if (node.Type == "branch_summary")
+        if (node.Type == "compaction")
+        {
+            if (TryProperty(node.Payload, "nativeUsage", out var nativeUsage) &&
+                nativeUsage.ValueKind == JsonValueKind.Object)
+                return null;
+            var entry = OriginalEntry(node) ?? node.Payload;
+            if (!TryProperty(entry, "usage", out usage) || usage.ValueKind != JsonValueKind.Object) return null;
+            model = StringProperty(entry, "model") ?? "unknown";
+            source = "compaction";
+        }
+        else if (node.Type == "branch_summary")
         {
             if (TryProperty(node.Payload, "nativeUsage", out var nativeUsage) &&
                 nativeUsage.ValueKind == JsonValueKind.Object)

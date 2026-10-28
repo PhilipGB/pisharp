@@ -545,7 +545,7 @@ public sealed class ConversationSession
 
     public void AppendCompaction(CompactionPlan plan, string summary, int? keepRecentTokens = null,
         int tokensBefore = 0, ConversationCompactionDetails? details = null, string? firstKeptEntryId = null,
-        JsonElement? extensionDetails = null, bool fromExtension = false)
+        JsonElement? extensionDetails = null, bool fromExtension = false, UsageRecord? usage = null)
     {
         if (string.IsNullOrWhiteSpace(summary) || summary.Length > 64 * 1024)
             throw new InvalidDataException("Compaction summary must be nonempty and at most 64KB.");
@@ -556,8 +556,24 @@ public sealed class ConversationSession
         var persistedDetails = extensionDetails?.Clone() ?? (details is null
             ? null
             : JsonSerializer.SerializeToElement(details));
+        var projectedUsage = usage is null ? (JsonElement?)null : JsonSerializer.SerializeToElement(new
+        {
+            input = usage.InputTokens,
+            output = usage.OutputTokens,
+            cacheRead = usage.CachedInputTokens,
+            cacheWrite = usage.CachedWriteTokens,
+            totalTokens = usage.TotalTokens,
+            cost = usage.Cost is not { } total ? null : new
+            {
+                input = usage.InputCost,
+                output = usage.OutputCost,
+                cacheRead = usage.CachedInputCost,
+                cacheWrite = usage.CachedWriteCost,
+                total
+            }
+        });
         Tree.Append("compaction", JsonSerializer.SerializeToElement(new CompactionRecord(summary,
-            retainedEntryId, tokensBefore, persistedDetails, fromExtension)));
+            retainedEntryId, tokensBefore, persistedDetails, fromExtension, projectedUsage, usage)));
     }
 
     internal void ValidateCompactionBoundary(string firstKeptEntryId)
@@ -743,7 +759,11 @@ public sealed class ConversationSession
         [property: JsonPropertyName("details"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         JsonElement? Details,
         [property: JsonPropertyName("fromHook"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-        bool FromExtension);
+        bool FromExtension,
+        [property: JsonPropertyName("usage"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        JsonElement? Usage,
+        [property: JsonPropertyName("nativeUsage"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        UsageRecord? NativeUsage);
 
     internal ConversationContextProjection.ContextUsageProjection ProjectContextUsageForEstimate() =>
         ConversationContextProjection.ProjectContextUsageForEstimate(Tree.ActivePath());

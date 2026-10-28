@@ -335,6 +335,53 @@ public sealed class PiJsonlSessionInterchangeTests
     }
 
     [Fact]
+    public void CompactionSummaryBoundaryAndUsageRoundTripThroughNativeAndPiJsonl()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "fixture-model", null, "fixture");
+        session.Append(new ChatMessage(ChatRole.User, "older question"));
+        session.Append(new ChatMessage(ChatRole.Assistant, "older answer"));
+        session.Append(new ChatMessage(ChatRole.User, "retained question"));
+        session.Append(new ChatMessage(ChatRole.Assistant, "retained answer"));
+        var plan = Assert.IsType<ConversationSession.CompactionPlan>(session.PrepareCompaction(1));
+        var usage = UsageRecord.Create("fixture-model", "compaction", new UsageDetails
+        {
+            InputTokenCount = 10,
+            OutputTokenCount = 12,
+            CachedInputTokenCount = 2,
+            TotalTokenCount = 24,
+            AdditionalCounts = new() { ["cacheWriteTokens"] = 3 }
+        }, new ModelPricing(Input: 2m, Output: 8m, CachedInput: 1m, CachedWrite: 3m));
+
+        session.AppendCompaction(plan, "older history summary", 1, tokensBefore: 500, usage: usage);
+        session.AppendUsage(usage);
+
+        var compacted = Assert.Single(session.Tree.ActivePath(), entry => entry.Type == "compaction");
+        Assert.Equal(plan.FirstKeptEntryId, compacted.Payload.GetProperty("firstKeptEntryId").GetString());
+        Assert.Equal("older history summary", compacted.Payload.GetProperty("summary").GetString());
+        Assert.Equal(500, compacted.Payload.GetProperty("tokensBefore").GetInt32());
+        Assert.Equal(24, compacted.Payload.GetProperty("usage").GetProperty("totalTokens").GetInt64());
+        Assert.Equal(24, Assert.Single(session.ActiveUsage(), record => record.Source == "compaction").TotalTokens);
+
+        var exported = PiJsonlSessionInterchange.Export(session);
+        using var compactEntry = JsonDocument.Parse(exported.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Single(line => line.Contains("\"type\":\"compaction\"", StringComparison.Ordinal)));
+        Assert.Equal(plan.FirstKeptEntryId, compactEntry.RootElement.GetProperty("firstKeptEntryId").GetString());
+        Assert.Equal(24, compactEntry.RootElement.GetProperty("usage").GetProperty("totalTokens").GetInt64());
+
+        var nativeReloaded = ConversationSession.Parse(session.ToJson());
+        Assert.Equal(24, Assert.Single(nativeReloaded.ActiveUsage(), record => record.Source == "compaction").TotalTokens);
+        var imported = PiJsonlSessionInterchange.Import(exported);
+        var importedCompaction = Assert.Single(imported.Tree.ActivePath(), entry => entry.Type == "compaction");
+        Assert.Equal("older history summary", importedCompaction.Payload.GetProperty("summary").GetString());
+        Assert.Equal(plan.FirstKeptEntryId, importedCompaction.Payload.GetProperty("firstKeptEntryId").GetString());
+        Assert.Equal(24, importedCompaction.Payload.GetProperty("piOriginalEntry").GetProperty("usage")
+            .GetProperty("totalTokens").GetInt64());
+        Assert.Equal(24, Assert.Single(imported.ActiveUsage(), record => record.Source == "compaction").TotalTokens);
+        Assert.Equal(session.ContextMessages().Select(message => message.Text),
+            imported.ContextMessages().Select(message => message.Text));
+    }
+
+    [Fact]
     public void PinnedV3ContextFixtureRoundTripsItsSelectedBranchThroughNativeAndPiJsonl()
     {
         var fixturePath = Path.Combine(FindRepositoryRoot(), "docs", "parity", "fixtures", "session-v3-branch.jsonl");

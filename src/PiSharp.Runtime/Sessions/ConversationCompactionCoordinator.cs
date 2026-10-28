@@ -97,10 +97,10 @@ internal sealed class ConversationCompactionCoordinator(
             {
                 if (conversation.Tree.HeadId != previousHead)
                     throw new InvalidOperationException("Conversation changed during compaction.");
-                conversation.AppendCompaction(plan, summaryText, keepRecentTokens, compactionTokensBefore,
-                    resultDetails, firstKeptEntryId, customCompaction?.Details, LastCompactionFromExtension);
                 var usageRecords = CompactionUsageAccounting.Records(summary, conversation.Model, getPricing());
                 var usage = CompactionUsageAccounting.Aggregate(usageRecords);
+                conversation.AppendCompaction(plan, summaryText, keepRecentTokens, compactionTokensBefore,
+                    resultDetails, firstKeptEntryId, customCompaction?.Details, LastCompactionFromExtension, usage);
                 foreach (var record in usageRecords) conversation.AppendUsage(record);
                 var messages = conversation.ContextMessages();
                 var restored = adoptExecutionHistory ? await restoreHistory(messages, cancellationToken) : null;
