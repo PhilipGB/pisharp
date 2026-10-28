@@ -37,7 +37,7 @@ def usage_observation(run: dict[str, Any], side: str) -> dict[str, Any]:
             "cost": usage["cost"]["total"],
         }
     return {
-        "inputTokens": usage["InputTokens"] - usage["CachedInputTokens"],
+        "inputTokens": usage["InputTokens"],
         "outputTokens": usage["OutputTokens"],
         "cachedInputTokens": usage["CachedInputTokens"],
         "cachedWriteTokens": usage["CachedWriteTokens"],
