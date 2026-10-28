@@ -1,6 +1,6 @@
 # RPC Protocol and Command Parity — frozen baseline
 
-**Status:** inventory and acceptance contract were frozen before production changes in commit `ac85aa2a0f59566115eb0109cc9022dc64f4d8fe`. R2 (12/12 at `44a360fc`), R3 (10/10 at `cfa79eeb`) and R4 (12/12 at `413ebc6e`) are stale after later source or parity-tool changes. R5 passed 11/11 at `8e7e16f3`; this is the current source-bound process checkpoint. V1 and R1–R4 need final source-bound reruns after the implementation and harness are frozen. The milestone remains active.
+**Status:** inventory and acceptance contract were frozen before production changes in commit `ac85aa2a0f59566115eb0109cc9022dc64f4d8fe`. R2 (12/12 at `44a360fc`), R3 (10/10 at `cfa79eeb`), R4 (12/12 at `413ebc6e`) and R5 (11/11 at `8e7e16f3`) are historical passes and stale after later source or parity-tool changes. R6 passed 10/10 at `1e1adde9b99d938620d0814e4de8ef4006c6c55c` and is the current source-bound process checkpoint. V1 and R1–R5 need final source-bound reruns after the implementation and harness are frozen. R7–R15, final quality and publication gates remain open.
 
 ## Verified base
 
@@ -38,7 +38,7 @@ Validation performed on the baseline:
 - The process comparison found and corrected PiSharp's 1 MiB record limit and malformed-JSON response command. Exact error wording is normalized because Node and .NET JSON parsers report different text; command, id, success, data presence, and error presence/type remain checked.
 - `python3 tools/parity/rpc_protocol/runner.py list --checkpoint R8` — returned the six frozen usage-accounting cases.
 
-R5 source-bound evidence: [compact case results](r5-case-results.json) record 11/11 cases passing at `8e7e16f37e420645fc852cb8cef8bf0ba761778d`; raw captures and the full manifest remain under the ignored evidence directory. The frozen runners fail closed for unregistered cases. R1–R4 and V1 need final source-bound reruns after remaining process adapters and implementation changes are frozen. The next checkpoint is R6 tool lifecycle.
+R5 source-bound evidence: [compact case results](r5-case-results.json) record 11/11 cases passing at `8e7e16f37e420645fc852cb8cef8bf0ba761778d`; this report is now stale after the R6 source changes. R6 source-bound evidence: [compact case results](r6-case-results.json) record 10/10 passing at `1e1adde9b99d938620d0814e4de8ef4006c6c55c`, zero failures or skips, and matching two stable pinned-Pi processes with an independent PiSharp process per case. The evidence report SHA-256 is `092f05afe6fede2ad8d561883f65717d09d47e104a7bf15a855855404266eb1c`; independent verification also passed 10/10. Focused RPC projector tests pass 9/9 and the warnings-as-errors CLI build passes. Raw captures and the full manifest remain under the ignored evidence directory. The frozen runners fail closed for unregistered cases. V1 and R1–R5 need final source-bound reruns; continue with R7–R15, then complete quality and publication gates.
 
 ## Known differences and limitations to revalidate
 
@@ -51,4 +51,4 @@ R5 source-bound evidence: [compact case results](r5-case-results.json) record 11
 
 ## Next work
 
-The inventory and contract are committed before production changes. R5 passes 11/11 at source `8e7e16f3`; R1–R4 and V1 have historical passes but their reports are stale. Continue with R6–R15, capture repeated pinned-Pi and PiSharp process observations, then rerun stale checkpoints and complete quality/source-bound evidence and exact-head CI. Final publication is PR #29, open, draft and unmerged.
+The inventory and contract are committed before production changes. R6 passes 10/10 at source `1e1adde9`; R1–R5 and V1 have historical passes but their reports are stale. Continue with R7–R15, capture repeated pinned-Pi and PiSharp process observations, then rerun stale checkpoints and complete quality/source-bound evidence and exact-head CI. Final publication is PR #29, open, draft and unmerged.

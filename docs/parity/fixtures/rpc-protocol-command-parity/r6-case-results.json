@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "milestone": "rpc-protocol-command-parity",
+  "checkpointId": "R6",
+  "contractSha256": "036c369054fbb50887629666f6b25ef76d8a9fbe856d00d4a79a2cf9609f0761",
+  "evidenceDirectory": "artifacts/parity/rpc-protocol-command-parity/r6-1e1adde9",
+  "evidenceJsonSha256": "092f05afe6fede2ad8d561883f65717d09d47e104a7bf15a855855404266eb1c",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "evidenceHeadSha": "1e1adde9b99d938620d0814e4de8ef4006c6c55c",
+  "implementationSourceSha": "1e1adde9b99d938620d0814e4de8ef4006c6c55c",
+  "sourceTreeClean": true,
+  "status": "passed",
+  "executedCaseCount": 10,
+  "requiredCaseCount": 10,
+  "verifierCounts": {
+    "required": 10,
+    "executed": 10,
+    "passed": 10,
+    "failed": 0,
+    "skipped": 0
+  },
+  "build": {
+    "command": "dotnet build src/PiSharp.Cli/PiSharp.Cli.csproj --no-restore --warnaserror",
+    "exitCode": 0,
+    "assemblySha256": "57b0660c462d87d18eb11066876ea400114f82b050e9d2dd6baa331627c1b428",
+    "logPath": "pisharp-build.log",
+    "logSha256": "96be1a212abff08e1365361d5e2f4fcdd8726e3ce831fedfc8c9504a144212f3"
+  },
+  "comparison": "Each case matched two stable pinned-Pi processes and an independent PiSharp process.",
+  "cases": [
+    {
+      "caseId": "R6.tool-call-start-arguments",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R6.tool-argument-fragments",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R6.tool-call-end-authoritative",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R6.tool-execution-start-update-end",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R6.sequential-tool-continuation",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R6.parallel-tool-continuation",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R6.tool-error-continuation",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R6.provider-failure-after-tool",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R6.partial-assistant-with-tool",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R6.tool-call-id-and-parent-fields",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    }
+  ]
+}
