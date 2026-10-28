@@ -302,7 +302,8 @@ def _run_q0(output_dir: Path, pi_path: Path) -> dict[str, Any]:
         if case_id == "Q0.warnings-as-errors-solution-build":
             return [("build", dotnet + ["build", "PiSharp.slnx", "--warnaserror"], ROOT, False)]
         if case_id == "Q0.full-dotnet-suite-zero-failures-and-skips":
-            return [("full-dotnet-tests", dotnet + ["test", "PiSharp.slnx"], ROOT, True)]
+            return [("full-dotnet-tests", dotnet + ["test", "PiSharp.slnx", "--logger",
+                    "console;verbosity=normal"], ROOT, True)]
         if case_id == "Q0.focused-compaction-session-provider-tests":
             return [("focused-compaction", dotnet + ["test", "tests/PiSharp.Tests/PiSharp.Tests.csproj",
                     "--no-restore", "--filter", FOCUSED_COMPACTION_FILTER], ROOT, True)]
