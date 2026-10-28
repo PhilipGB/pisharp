@@ -56,6 +56,7 @@ public sealed partial class ManagedResourcePackageStore
             }
             else if (TryParseNpmSource(target.Package.Source, out var npm) && !IsExactNpmVersion(npm.Version))
             {
+                await RecoverNpmUpdateAsync(target.NpmInstallRoot, cancellationToken);
                 if (!await HasNpmPackageAsync(target.NpmInstallRoot, npm, cancellationToken))
                 {
                     await InstallAsync(target.WorkingDirectory, target.NpmInstallRoot, target.Package.Source, npm,
@@ -139,6 +140,7 @@ public sealed partial class ManagedResourcePackageStore
             cancellationToken.ThrowIfCancellationRequested();
             if (!ManagedGitSource.TryParse(package.Source, out var git)) continue;
             var packageRoot = GetGitPackageRoot(installRoot, git);
+            await RecoverInterruptedGitPublicationAsync(installRoot, packageRoot, cancellationToken);
             if (!Directory.Exists(packageRoot))
             {
                 if (offline) continue;
@@ -171,7 +173,7 @@ public sealed partial class ManagedResourcePackageStore
 
     private async Task AcquireGitAsync(string workingDirectory, string packageRoot, ManagedGitSource source,
         string gitInstallRoot, bool reconcileExisting, CancellationToken cancellationToken,
-        TextWriter? standardOutput = null, TextWriter? standardError = null)
+        TextWriter? standardOutput = null, TextWriter? standardError = null, bool temporarySource = false)
     {
         var rootKey = Path.GetFullPath(packageRoot);
         var installLock = s_installLocks.GetOrAdd(rootKey, _ => new SemaphoreSlim(1, 1));
@@ -180,12 +182,23 @@ public sealed partial class ManagedResourcePackageStore
         string? backup = null;
         try
         {
+            await using var processInstallLock = await AcquireProcessInstallLockAsync(gitInstallRoot, cancellationToken);
+            RecoverInterruptedGitPublication(packageRoot);
             var existed = Directory.Exists(packageRoot);
             if (existed && !reconcileExisting) return;
             await EnsureGitIgnoreAsync(gitInstallRoot, cancellationToken);
             Directory.CreateDirectory(Path.GetDirectoryName(packageRoot)!);
             stage = packageRoot + ".pisharp-stage-" + Guid.NewGuid().ToString("N");
-            var branch = existed && source.Ref is null
+            var repository = source.Repository;
+            if (existed && reconcileExisting && !temporarySource)
+            {
+                var existingRemote = await RunGitAsync(packageRoot,
+                    ["-C", packageRoot, "remote", "get-url", "origin"], cancellationToken,
+                    throwOnFailure: false);
+                if (existingRemote.ExitCode == 0 && !string.IsNullOrWhiteSpace(existingRemote.StandardOutput))
+                    repository = existingRemote.StandardOutput.Trim();
+            }
+            var branch = existed && source.Ref is null && !temporarySource
                 ? await GetCurrentBranchAsync(packageRoot, cancellationToken)
                 : null;
             var cloneArguments = new List<string> { "clone" };
@@ -195,7 +208,7 @@ public sealed partial class ManagedResourcePackageStore
                 cloneArguments.Add("--branch");
                 cloneArguments.Add(branch);
             }
-            cloneArguments.Add(source.Repository);
+            cloneArguments.Add(repository);
             cloneArguments.Add(stage);
             await RunGitAsync(workingDirectory, cloneArguments, cancellationToken,
                 standardOutput: standardOutput, standardError: standardError,
@@ -211,10 +224,15 @@ public sealed partial class ManagedResourcePackageStore
             }
 
             var stagedHead = (await RunGitAsync(stage, ["-C", stage, "rev-parse", "HEAD"], cancellationToken)).StandardOutput.Trim();
+            if (temporarySource)
+                await WriteTemporaryGitMetadataAsync(stage, source, stagedHead, cancellationToken);
             if (existed)
             {
                 var existingHead = await TryGetHeadAsync(packageRoot, cancellationToken);
-                if (existingHead is not null && existingHead == stagedHead && !HasMissingGitDependencies(packageRoot)) return;
+                var existingMetadataMatches = !temporarySource ||
+                    await HasMatchingTemporaryGitMetadataAsync(packageRoot, source, existingHead, cancellationToken);
+                if (existingHead is not null && existingHead == stagedHead && existingMetadataMatches &&
+                    !HasMissingGitDependencies(packageRoot)) return;
             }
 
             if (File.Exists(Path.Combine(stage, "package.json")))
@@ -234,6 +252,7 @@ public sealed partial class ManagedResourcePackageStore
             {
                 backup = packageRoot + ".pisharp-backup-" + Guid.NewGuid().ToString("N");
                 Directory.Move(packageRoot, backup);
+                GitPublicationMovedForTesting?.Invoke();
             }
             try
             {
@@ -266,6 +285,80 @@ public sealed partial class ManagedResourcePackageStore
             }
             installLock.Release();
         }
+    }
+
+    private async Task RecoverInterruptedGitPublicationAsync(string gitInstallRoot, string packageRoot,
+        CancellationToken cancellationToken)
+    {
+        var rootKey = Path.GetFullPath(packageRoot);
+        var installLock = s_installLocks.GetOrAdd(rootKey, _ => new SemaphoreSlim(1, 1));
+        await installLock.WaitAsync(cancellationToken);
+        try
+        {
+            await using var processInstallLock = await AcquireProcessInstallLockAsync(gitInstallRoot, cancellationToken);
+            RecoverInterruptedGitPublication(packageRoot);
+        }
+        finally { installLock.Release(); }
+    }
+
+    private static void RecoverInterruptedGitPublication(string packageRoot)
+    {
+        var parent = Path.GetDirectoryName(packageRoot);
+        if (parent is null || !Directory.Exists(parent)) return;
+        var name = Path.GetFileName(packageRoot);
+        var backupPrefix = name + ".pisharp-backup-";
+        var stagePrefix = name + ".pisharp-stage-";
+        var siblings = Directory.EnumerateDirectories(parent).ToArray();
+        var backups = siblings.Where(path => Path.GetFileName(path).StartsWith(backupPrefix, StringComparison.Ordinal)).ToArray();
+        var stages = siblings.Where(path => Path.GetFileName(path).StartsWith(stagePrefix, StringComparison.Ordinal)).ToArray();
+        if (!Directory.Exists(packageRoot) && backups.Length > 0)
+        {
+            var restore = backups.OrderByDescending(path => Directory.GetLastWriteTimeUtc(path))
+                .ThenByDescending(path => path, StringComparer.Ordinal).First();
+            Directory.Move(restore, packageRoot);
+            backups = backups.Where(path => !string.Equals(path, restore, StringComparison.Ordinal)).ToArray();
+        }
+        foreach (var backup in backups) DeleteDirectory(backup);
+        foreach (var stage in stages) DeleteDirectory(stage);
+    }
+
+    private async Task WriteTemporaryGitMetadataAsync(string packageRoot, ManagedGitSource source,
+        string head, CancellationToken cancellationToken)
+    {
+        var origin = await RunGitAsync(packageRoot, ["-C", packageRoot, "remote", "get-url", "origin"], cancellationToken);
+        await SetGitMetadataAsync(packageRoot, "pisharp.source-identity", source.Identity, cancellationToken);
+        await SetGitMetadataAsync(packageRoot, "pisharp.source-repository", source.Repository, cancellationToken);
+        await SetGitMetadataAsync(packageRoot, "pisharp.source-ref", source.Ref ?? "", cancellationToken);
+        await SetGitMetadataAsync(packageRoot, "pisharp.source-origin", origin.StandardOutput.Trim(), cancellationToken);
+        await SetGitMetadataAsync(packageRoot, "pisharp.source-head", head, cancellationToken);
+    }
+
+    private async Task<bool> HasMatchingTemporaryGitMetadataAsync(string packageRoot, ManagedGitSource source,
+        string? currentHead, CancellationToken cancellationToken)
+    {
+        if (currentHead is null) return false;
+        var identity = await GetGitMetadataAsync(packageRoot, "pisharp.source-identity", cancellationToken);
+        var repository = await GetGitMetadataAsync(packageRoot, "pisharp.source-repository", cancellationToken);
+        var reference = await GetGitMetadataAsync(packageRoot, "pisharp.source-ref", cancellationToken);
+        var recordedOrigin = await GetGitMetadataAsync(packageRoot, "pisharp.source-origin", cancellationToken);
+        var head = await GetGitMetadataAsync(packageRoot, "pisharp.source-head", cancellationToken);
+        var origin = await RunGitAsync(packageRoot, ["-C", packageRoot, "remote", "get-url", "origin"],
+            cancellationToken, throwOnFailure: false);
+        return identity == source.Identity && repository == source.Repository &&
+            reference == (source.Ref ?? "") && head == currentHead && origin.ExitCode == 0 &&
+            recordedOrigin == origin.StandardOutput.Trim();
+    }
+
+    private async Task SetGitMetadataAsync(string packageRoot, string key, string value,
+        CancellationToken cancellationToken) =>
+        _ = await RunGitAsync(packageRoot, ["-C", packageRoot, "config", "--local", key, value], cancellationToken);
+
+    private async Task<string?> GetGitMetadataAsync(string packageRoot, string key,
+        CancellationToken cancellationToken)
+    {
+        var result = await RunGitAsync(packageRoot, ["-C", packageRoot, "config", "--local", "--get", key],
+            cancellationToken, throwOnFailure: false);
+        return result.ExitCode == 0 ? result.StandardOutput.TrimEnd('\r', '\n') : null;
     }
 
     private async Task<string?> GetCurrentBranchAsync(string packageRoot, CancellationToken cancellationToken)
@@ -304,21 +397,106 @@ public sealed partial class ManagedResourcePackageStore
     private async Task UpdateNpmAsync(string workingDirectory, string installRoot, string source, NpmPackageSpec spec,
         CancellationToken cancellationToken, TextWriter? standardOutput, TextWriter? standardError)
     {
-        var installLock = s_installLocks.GetOrAdd(Path.GetFullPath(installRoot), _ => new SemaphoreSlim(1, 1));
+        var rootKey = Path.GetFullPath(installRoot);
+        var installLock = s_installLocks.GetOrAdd(rootKey, _ => new SemaphoreSlim(1, 1));
         await installLock.WaitAsync(cancellationToken);
+        string? stageRoot = null;
+        string? backupRoot = null;
         try
         {
+            await using var processInstallLock = await AcquireProcessInstallLockAsync(rootKey, cancellationToken);
+            RecoverInterruptedNpmUpdate(rootKey);
+            stageRoot = rootKey + ".pisharp-update-stage-" + Guid.NewGuid().ToString("N");
+            backupRoot = rootKey + ".pisharp-update-backup-" + Guid.NewGuid().ToString("N");
+            CopyDirectory(rootKey, stageRoot);
             var installSpec = spec.Version is null ? spec.Name + "@latest" : spec.InstallSpec;
             var (exitCode, output, errorOutput) = await RunNpmAsync(workingDirectory,
-                GetNpmInstallArguments(installSpec, installRoot),
+                GetNpmInstallArguments(installSpec, stageRoot),
                 _processEnvironmentOverrides, cancellationToken, standardOutput, standardError);
             if (exitCode != 0)
             {
                 var details = string.IsNullOrWhiteSpace(errorOutput) ? output.Trim() : errorOutput.Trim();
                 throw new IOException($"npm update failed for '{source}' (exit {exitCode}). {details}");
             }
+            cancellationToken.ThrowIfCancellationRequested();
+            Directory.Move(rootKey, backupRoot);
+            try
+            {
+                NpmPublicationMovedForTesting?.Invoke();
+                Directory.Move(stageRoot, rootKey);
+                stageRoot = null;
+            }
+            catch
+            {
+                if (Directory.Exists(backupRoot) && !Directory.Exists(rootKey)) Directory.Move(backupRoot, rootKey);
+                backupRoot = null;
+                throw;
+            }
+            Directory.Delete(backupRoot, recursive: true);
+            backupRoot = null;
         }
-        finally { installLock.Release(); }
+        finally
+        {
+            if (stageRoot is not null) TryDeleteDirectory(stageRoot);
+            if (backupRoot is not null && Directory.Exists(rootKey)) TryDeleteDirectory(backupRoot);
+            installLock.Release();
+        }
+    }
+
+    private static void RecoverInterruptedNpmUpdate(string installRoot)
+    {
+        var parent = Path.GetDirectoryName(installRoot)!;
+        if (!Directory.Exists(parent)) return;
+        var name = Path.GetFileName(installRoot);
+        var backups = Directory.GetDirectories(parent, name + ".pisharp-update-backup-*");
+        if (!Directory.Exists(installRoot) && backups.Length > 0)
+        {
+            var restore = backups.OrderBy(path => path, StringComparer.Ordinal).Last();
+            Directory.Move(restore, installRoot);
+            backups = backups.Where(path => !string.Equals(path, restore, StringComparison.Ordinal)).ToArray();
+        }
+        foreach (var backup in backups) TryDeleteDirectory(backup);
+        foreach (var stage in Directory.GetDirectories(parent, name + ".pisharp-update-stage-*"))
+            TryDeleteDirectory(stage);
+    }
+
+    private static void CopyDirectory(string source, string destination)
+    {
+        var sourceInfo = new DirectoryInfo(source);
+        if (sourceInfo.LinkTarget is { } directoryLink)
+        {
+            Directory.CreateSymbolicLink(destination, directoryLink);
+            return;
+        }
+
+        Directory.CreateDirectory(destination);
+        foreach (var entry in sourceInfo.EnumerateFileSystemInfos())
+        {
+            var target = Path.Combine(destination, entry.Name);
+            if (entry.LinkTarget is { } linkTarget)
+            {
+                if (entry is DirectoryInfo) Directory.CreateSymbolicLink(target, linkTarget);
+                else File.CreateSymbolicLink(target, linkTarget);
+            }
+            else if (entry is DirectoryInfo)
+            {
+                CopyDirectory(entry.FullName, target);
+            }
+            else
+            {
+                File.Copy(entry.FullName, target, overwrite: false);
+            }
+        }
+    }
+
+    private static void TryDeleteDirectory(string path)
+    {
+        try
+        {
+            if (Directory.Exists(path)) Directory.Delete(path, recursive: true);
+        }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
     }
 
     private async Task<bool> HasNpmPackageAsync(string installRoot, NpmPackageSpec spec, CancellationToken cancellationToken)

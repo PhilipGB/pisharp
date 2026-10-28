@@ -14,6 +14,16 @@ namespace PiSharp.Tests;
 [Collection("Managed npm subprocesses")]
 public sealed class ManagedResourcePackageStoreTests
 {
+    [Theory]
+    [InlineData("npm:range-package", "npm:range-package")]
+    [InlineData("npm:range-package@^1.2.0", "npm:range-package")]
+    [InlineData("npm:range-package@file:/tmp/range-package-1.0.0.tgz", "npm:range-package")]
+    [InlineData("npm:@fixture/range-package@2.0.0", "npm:@fixture/range-package")]
+    public void ManagedNpmIdentityIgnoresVersionAndInstallSource(string source, string expectedIdentity)
+    {
+        Assert.Equal(expectedIdentity, ManagedResourcePackageStore.GetManagedPackageIdentity(source));
+    }
+
     [Fact]
     public async Task LocalTarballsLoadResourcesAndNativeExtensionOncePerStartupAndReload()
     {
@@ -153,6 +163,96 @@ public sealed class ManagedResourcePackageStoreTests
     }
 
     [Fact]
+    public async Task KilledNpmPublicationRecoversPreviousResourcesOffline()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        await using var fixture = new ManagedNpmFixture();
+        fixture.Create();
+        var packageRoot = Path.Combine(fixture.AgentDirectory, "npm", "node_modules", "recovery-package");
+        Directory.CreateDirectory(packageRoot);
+        await File.WriteAllTextAsync(Path.Combine(packageRoot, "package.json"),
+            "{\"name\":\"recovery-package\",\"version\":\"1.0.0\"}");
+        await File.WriteAllTextAsync(Path.Combine(packageRoot, "resource.txt"), "previous version");
+        var script = Path.Combine(fixture.Root, "fake-npm.sh");
+        await File.WriteAllTextAsync(script, "#!/bin/sh\nif [ \"$1\" = outdated ]; then echo '{\"recovery-package\":{\"current\":\"1.0.0\",\"wanted\":\"2.0.0\"}}'; exit 1; fi\nprintf '{\"name\":\"recovery-package\",\"version\":\"2.0.0\"}' > \"$4/node_modules/recovery-package/package.json\"\nprintf 'new version' > \"$4/node_modules/recovery-package/resource.txt\"\n");
+        File.SetUnixFileMode(script, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        var marker = Path.Combine(fixture.Root, "publication-moved");
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "PiSharp.slnx")))
+            directory = directory.Parent;
+        Assert.NotNull(directory);
+        var start = new ProcessStartInfo("dotnet") { WorkingDirectory = directory.FullName };
+        foreach (var argument in new[] { "test", "tests/PiSharp.Tests/PiSharp.Tests.csproj", "--no-build", "--no-restore",
+                     "--filter", "FullyQualifiedName~NpmPublicationCrashChild" }) start.ArgumentList.Add(argument);
+        start.Environment["PISHARP_TEST_NPM_CRASH_ROOT"] = fixture.Root;
+        start.Environment["DOTNET_PROCESSOR_COUNT"] = "2";
+        using var process = Process.Start(start)!;
+        try
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+            while (!File.Exists(marker) && !process.HasExited) await Task.Delay(50, timeout.Token);
+            Assert.True(File.Exists(marker), "Updater exited before the publication boundary.");
+            Assert.False(Directory.Exists(Path.Combine(fixture.AgentDirectory, "npm")));
+            var stage = Assert.Single(Directory.EnumerateDirectories(fixture.AgentDirectory, "npm.pisharp-update-stage-*"));
+            Assert.Equal("new version", await File.ReadAllTextAsync(
+                Path.Combine(stage, "node_modules", "recovery-package", "resource.txt")));
+            process.Kill(entireProcessTree: true);
+            await process.WaitForExitAsync(timeout.Token);
+            var store = new ManagedResourcePackageStore(fixture.AgentDirectory);
+            var roots = await store.ResolveAsync(fixture.ProjectDirectory, trusted: true,
+                userPackages: [new("npm:recovery-package")], offline: true);
+            Assert.Equal("previous version", await File.ReadAllTextAsync(Path.Combine(Assert.Single(roots).Path, "resource.txt")));
+            Assert.False(Directory.EnumerateDirectories(fixture.AgentDirectory, "npm.pisharp-update-*").Any());
+        }
+        finally
+        {
+            if (!process.HasExited) { process.Kill(entireProcessTree: true); await process.WaitForExitAsync(); }
+        }
+    }
+
+    [Fact]
+    public async Task NpmPublicationCrashChild()
+    {
+        var root = Environment.GetEnvironmentVariable("PISHARP_TEST_NPM_CRASH_ROOT");
+        if (string.IsNullOrEmpty(root)) return;
+        var store = new ManagedResourcePackageStore(Path.Combine(root, "agent"));
+        store.ConfigureNpmCommand([Path.Combine(root, "fake-npm.sh")]);
+        store.NpmPublicationMovedForTesting = () =>
+        {
+            File.WriteAllText(Path.Combine(root, "publication-moved"), "ready");
+            Thread.Sleep(Timeout.Infinite);
+        };
+        await store.UpdateAsync(Path.Combine(root, "project"), trusted: true,
+            userPackages: [new("npm:recovery-package")]);
+        Assert.Fail("The parent should terminate the updater at the publication boundary.");
+    }
+
+    [Fact]
+    public async Task OfflineStartupRestoresInterruptedNpmPublication()
+    {
+        await using var fixture = new ManagedNpmFixture();
+        fixture.Create();
+        var installRoot = Path.Combine(fixture.AgentDirectory, "npm");
+        var backupRoot = installRoot + ".pisharp-update-backup-test";
+        var stageRoot = installRoot + ".pisharp-update-stage-test";
+        var packageRoot = Path.Combine(backupRoot, "node_modules", "recovery-package");
+        Directory.CreateDirectory(packageRoot);
+        await File.WriteAllTextAsync(Path.Combine(packageRoot, "package.json"),
+            "{\"name\":\"recovery-package\",\"version\":\"1.0.0\"}");
+        await File.WriteAllTextAsync(Path.Combine(packageRoot, "resource.txt"), "previous version");
+        Directory.CreateDirectory(stageRoot);
+        var store = new ManagedResourcePackageStore(fixture.AgentDirectory);
+
+        var roots = await store.ResolveAsync(fixture.ProjectDirectory, trusted: true,
+            userPackages: [new("npm:recovery-package")], offline: true);
+
+        var root = Assert.Single(roots);
+        Assert.Equal("previous version", await File.ReadAllTextAsync(Path.Combine(root.Path, "resource.txt")));
+        Assert.False(Directory.Exists(backupRoot));
+        Assert.False(Directory.Exists(stageRoot));
+    }
+
+    [Fact]
     public async Task OfflineAndUntrustedResolutionDoNotInstallMissingPackages()
     {
         await using var fixture = new ManagedNpmFixture();
@@ -247,6 +347,7 @@ public sealed class ManagedResourcePackageStoreTests
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => install);
         Assert.True(await WaitForProcessExitAsync(pid), "The npm lifecycle process remained alive after cancellation.");
         Assert.Equal(pid.ToString(), await File.ReadAllTextAsync(pidPath));
+        Assert.False(Directory.Exists(Path.Combine(fixture.AgentDirectory, "npm", "node_modules", "slow-package")));
     }
 
     [Theory]
@@ -356,10 +457,14 @@ public sealed class ManagedResourcePackageStoreTests
         var logPath = Path.Combine(fixture.Root, "alternate-manager-argv.log");
         var shim = Path.Combine(fixture.Root, "alternate-manager-wrapper");
         var response = manager == "pnpm"
-            ? JsonSerializer.Serialize(new
+            ? JsonSerializer.Serialize(new[]
             {
-                dependencies = new Dictionary<string, object>
-                { ["alternate-legacy-control"] = new { path = packagePath } }
+                new
+                {
+                    path = Path.GetDirectoryName(packagePath),
+                    dependencies = new Dictionary<string, object>
+                    { ["alternate-legacy-control"] = new { path = packagePath } }
+                }
             })
             : globalBin;
         var lookup = manager == "pnpm"
@@ -388,6 +493,60 @@ public sealed class ManagedResourcePackageStoreTests
         await store.RemoveAsync(fixture.ProjectDirectory, "npm:alternate-legacy-control", "user");
         Assert.True(File.Exists(Path.Combine(packagePath, "package.json")));
         Assert.Equal(expected, File.ReadAllText(logPath).Split('\0', StringSplitOptions.RemoveEmptyEntries));
+    }
+
+    [Fact]
+    public async Task MalformedPnpmGlobalListsDoNotFallThroughToRootLookup()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        await using var fixture = new ManagedNpmFixture();
+        fixture.Create();
+        var packageName = "malformed-pnpm-control";
+        var globalRoot = Path.Combine(fixture.Root, "pnpm-root");
+        var globalPackage = Path.Combine(globalRoot, packageName);
+        Directory.CreateDirectory(globalPackage);
+        await File.WriteAllTextAsync(Path.Combine(globalPackage, "package.json"),
+            JsonSerializer.Serialize(new { name = packageName, version = "1.0.0" }));
+
+        var logPath = Path.Combine(fixture.Root, "pnpm-argv.log");
+        var shim = Path.Combine(fixture.Root, "pnpm-wrapper");
+        await File.WriteAllTextAsync(shim,
+            "#!/bin/sh\nprintf '%s\\0' \"$@\" >> \"$PISHARP_TEST_NPM_ARGV\"\nshift 4\n" +
+            "if [ \"$1\" = list ]; then printf '%s\\n' \"$PISHARP_TEST_MANAGER_RESPONSE\"; exit 0; fi\n" +
+            "if [ \"$1\" = root ]; then printf '%s\\n' \"$PISHARP_TEST_GLOBAL_ROOT\"; exit 0; fi\n" +
+            "exit 1\n");
+        File.SetUnixFileMode(shim, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        var environment = new Dictionary<string, string?>
+        {
+            ["PISHARP_TEST_NPM_ARGV"] = logPath,
+            ["PISHARP_TEST_GLOBAL_ROOT"] = globalRoot
+        };
+        var store = new ManagedResourcePackageStore(fixture.AgentDirectory, environment);
+        store.ConfigureNpmCommand([shim, "exec", "node@20", "--", "pnpm"]);
+        var malformedOutputs = new[]
+        {
+            "not json",
+            "{}",
+            JsonSerializer.Serialize(new
+            {
+                dependencies = new Dictionary<string, object>
+                { [packageName] = new { path = globalPackage } }
+            })
+        };
+
+        foreach (var malformedOutput in malformedOutputs)
+        {
+            environment["PISHARP_TEST_MANAGER_RESPONSE"] = malformedOutput;
+            File.Delete(logPath);
+            var roots = await store.ResolveAsync(fixture.ProjectDirectory, trusted: false,
+                userPackages: [new("npm:" + packageName)], offline: true);
+
+            Assert.Empty(roots);
+            Assert.True(File.Exists(Path.Combine(globalPackage, "package.json")));
+            Assert.Equal(
+                new[] { "exec", "node@20", "--", "pnpm", "list", "-g", "--depth", "0", "--json" },
+                File.ReadAllText(logPath).Split('\0', StringSplitOptions.RemoveEmptyEntries));
+        }
     }
 
     [Fact]

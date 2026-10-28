@@ -1,6 +1,28 @@
 # Continuation — PiSharp capability parity
 
-## Active milestone — Complete Multimodal User Input and Image Parity — 2026-10-25
+## Active milestone — Complete Managed Package Lifecycle and Resource Distribution Parity — 2026-10-27
+
+PR #26 was verified merged at `d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9`;
+this branch is based on that merge, and Pi remains pinned at
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The machine-verifiable acceptance
+contract contains 27 checkpoints and 240 cases. At implementation source SHA
+`a760d65efdbcb2192c648336b10c4dd34cd3a6e9`, local execution passes 24/27
+checkpoints and 218/240 cases with zero failures or skips. The committed-evidence
+checkpoint passes 7/7. Exact-head push and PR workflows passed, and publication
+verification completed all 27/27 checkpoints and 240/240 cases with zero
+failures or skips. Local quality passes 3,910/3,910 .NET tests, focused package
+tests 118/118, architecture tests 7/7, Python 154/154 across three suites, Node
+24/24, MCP, format, warnings-as-errors build, docs, and all 18 differential rechecks. Regressions
+cover Git publication recovery, origin-specific temporary Git identities,
+manifest-controlled extensions, and both mixed local/managed CLI extension
+orders with conflicting commands. PR #27 remains open, draft, and unmerged. The
+resource distribution path also covers
+temporary npm/Git package roots through startup and reload without persisting
+invocation-only settings. See the
+[receipt](parity/fixtures/managed-package-lifecycle-parity.md) and
+[inventory](parity/fixtures/managed-package-lifecycle-parity/inventory.json).
+
+## Completed prerequisite — Complete Multimodal User Input and Image Parity — 2026-10-25
 
 PR #25 is merged at `897bc5778f87ed09ea42e48b260479ee6a6a218c`; the working
 branch `milestone/multimodal-user-input-image-parity` is based on that commit.
@@ -51,8 +73,9 @@ clipboard oracle; its local differential passes 4/4. Exact-head push and PR
 runs `40201444374` and `40201446454` passed on this implementation head,
 including all 3,886 .NET tests, pinned differentials, platform clipboard jobs
 and MCP conformance.
-Broader format, limits and resource-bound cases remain. Draft PR #26 stays
-open, draft and unmerged. See the [receipt](parity/fixtures/multimodal-user-input-image-parity-2026-10-25.md)
+Broader format, limits and resource-bound cases remain. PR #26 was subsequently
+merged at `d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9`; this managed-package
+milestone is based on that verified merge. See the [receipt](parity/fixtures/multimodal-user-input-image-parity-2026-10-25.md)
 and [inventory](parity/fixtures/multimodal-user-input-image-parity-inventory-2026-10-25.json).
 
 ## Previous milestone — Complete Model Selection, Thinking and Configuration Parity — 2026-10-24

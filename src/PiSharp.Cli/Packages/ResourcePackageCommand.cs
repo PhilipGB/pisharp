@@ -21,8 +21,16 @@ internal static class ResourcePackageCommand
     {
         var parsed = Parse(args);
         if (parsed is null) return false;
-        Environment.ExitCode = await RunAsync(parsed, agentDirectory, workingDirectory, input, output, error,
-            interactive, cancellationToken);
+        try
+        {
+            Environment.ExitCode = await RunAsync(parsed, agentDirectory, workingDirectory, input, output, error,
+                interactive, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            error.WriteLine("Interrupted.");
+            Environment.ExitCode = 130;
+        }
         return true;
     }
 
@@ -229,6 +237,10 @@ internal static class ResourcePackageCommand
             var userSettingsPath = UserSettings.GetSettingsPath(agent, environment);
             var projectSettingsPath = Path.Combine(cwd, ".pi", "settings.json");
 
+            await using var packageMutationLease = await AcquirePackageMutationLeaseAsync(agent, cwd,
+                parsed.Action, parsed.Local, trusted,
+                projectSettings is not null || File.Exists(projectSettingsPath), cancellationToken);
+
             switch (parsed.Action)
             {
                 case ActionKind.List:
@@ -357,15 +369,57 @@ internal static class ResourcePackageCommand
                     return 1;
             }
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            return await FailAsync(error, "Package command canceled.");
+            await error.WriteLineAsync("Interrupted.");
+            return 130;
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException or ArgumentException or
                                            UnauthorizedAccessException or System.ComponentModel.Win32Exception or
                                            System.Text.Json.JsonException)
         {
             return await FailAsync(error, exception is ExtensionStartupFailure ? exception.Message : $"Error: {exception.Message}");
+        }
+    }
+
+    private static async Task<PackageMutationLease> AcquirePackageMutationLeaseAsync(string agentDirectory,
+        string workingDirectory, ActionKind action, bool local, bool trusted, bool hasProjectSettings,
+        CancellationToken cancellationToken)
+    {
+        var roots = new List<string>();
+        if (action is ActionKind.Install or ActionKind.Remove)
+            roots.Add(local ? Path.Combine(workingDirectory, ".pi") : agentDirectory);
+        else if (action == ActionKind.Update)
+        {
+            roots.Add(agentDirectory);
+            if (trusted && hasProjectSettings) roots.Add(Path.Combine(workingDirectory, ".pi"));
+        }
+
+        var leases = new List<FileStream>(roots.Count);
+        try
+        {
+            foreach (var root in roots.Distinct(OperatingSystem.IsWindows()
+                         ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal))
+            {
+                var path = Path.Combine(root, ".managed-package-mutation.lock");
+                leases.Add(await AuthFileLock.AcquireAsync(path, cancellationToken));
+            }
+            return new PackageMutationLease(leases);
+        }
+        catch
+        {
+            for (var index = leases.Count - 1; index >= 0; index--)
+                await leases[index].DisposeAsync();
+            throw;
+        }
+    }
+
+    private sealed class PackageMutationLease(List<FileStream> leases) : IAsyncDisposable
+    {
+        public async ValueTask DisposeAsync()
+        {
+            for (var index = leases.Count - 1; index >= 0; index--)
+                await leases[index].DisposeAsync();
         }
     }
 

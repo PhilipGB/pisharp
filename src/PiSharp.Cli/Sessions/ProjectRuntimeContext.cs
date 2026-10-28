@@ -20,6 +20,8 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
     public UserSettings? ProjectSettings { get; }
     public UserSettings Settings { get; }
     public IReadOnlyList<ManagedResourcePackageRoot> ManagedPackageRoots { get; }
+    public IReadOnlyList<ResourcePackageSource> TemporaryExtensionPackages { get; }
+    public IReadOnlyList<ManagedResourcePackageRoot> TemporaryExtensionPackageRoots { get; }
     public IReadOnlyList<NativeExtensionPackageRoot> NativeExtensionPackageRoots { get; }
     public string ExtensionMode { get; }
     public bool HasUserInterface { get; }
@@ -27,6 +29,8 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
 
     private ProjectRuntimeConfiguration(string workingDirectory, bool trusted, UserSettings baseUserSettings,
         UserSettings? projectSettings, UserSettings settings, IReadOnlyList<ManagedResourcePackageRoot> managedPackageRoots,
+        IReadOnlyList<ResourcePackageSource> temporaryExtensionPackages,
+        IReadOnlyList<ManagedResourcePackageRoot> temporaryExtensionPackageRoots,
         IReadOnlyList<NativeExtensionPackageRoot> nativeExtensionPackageRoots,
         ExtensionCatalog? bootstrapExtensions, string extensionMode, bool hasUserInterface,
         IProjectTrustExtensionUi extensionUi)
@@ -37,6 +41,8 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
         ProjectSettings = projectSettings;
         Settings = settings;
         ManagedPackageRoots = managedPackageRoots;
+        TemporaryExtensionPackages = temporaryExtensionPackages;
+        TemporaryExtensionPackageRoots = temporaryExtensionPackageRoots;
         NativeExtensionPackageRoots = nativeExtensionPackageRoots;
         _bootstrapExtensions = bootstrapExtensions;
         ExtensionMode = extensionMode;
@@ -50,7 +56,12 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
 
     public ProjectRuntimeConfiguration WithSettings(UserSettings baseUserSettings, UserSettings? projectSettings,
         UserSettings settings) => new(WorkingDirectory, Trusted, baseUserSettings, projectSettings, settings,
-        ManagedPackageRoots, NativeExtensionPackageRoots, bootstrapExtensions: null, ExtensionMode, HasUserInterface, ExtensionUi);
+        ManagedPackageRoots, TemporaryExtensionPackages, TemporaryExtensionPackageRoots, NativeExtensionPackageRoots,
+        bootstrapExtensions: null, ExtensionMode, HasUserInterface, ExtensionUi);
+
+    public IReadOnlyList<string> GetCliExtensionPaths(CliArguments arguments) =>
+        (arguments.ExtensionPaths ?? [])
+            .Distinct(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal).ToArray();
 
     public static async Task<ProjectRuntimeConfiguration> LoadAsync(string workingDirectory, string agentDirectory,
         CliArguments arguments, ProjectTrust trustStore, bool interactiveTrust, TextReader input, TextWriter output,
@@ -66,6 +77,11 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
         var nativePackageStore = new NativeExtensionPackageStore(agentDirectory);
         var managedPackageRoots = (await packageStore.ResolveAsync(cwd, trusted: false,
             userPackages: baseSettings.Packages, offline: offline, cancellationToken: cancellationToken)).ToList();
+        var temporaryExtensionPackages = (arguments.ExtensionPaths ?? [])
+            .Where(path => ManagedResourcePackageStore.GetManagedPackageIdentity(path) is not null)
+            .Select(path => new ResourcePackageSource(path)).ToArray();
+        var temporaryExtensionPackageRoots = await packageStore.ResolveTemporaryExtensionSourcesAsync(cwd,
+            temporaryExtensionPackages.Select(package => package.Source).ToArray(), offline, cancellationToken);
         ExtensionCatalog? bootstrapExtensions = null;
         try
         {
@@ -81,6 +97,8 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
                     discover: !arguments.NoExtensions, additionalPaths: cliExtensions,
                     userPaths: userExtensions, builtins: [], userPackages: baseSettings.Packages,
                     managedPackageRoots: managedPackageRoots,
+                    temporaryPackages: temporaryExtensionPackages,
+                    temporaryPackageRoots: temporaryExtensionPackageRoots,
                     uiPackageFactory: extensionUi as IPiSharpExtensionUiPackageFactory);
             }
 
@@ -104,7 +122,8 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
                     offline: offline, cancellationToken: cancellationToken)).ToList();
             }
             return new(cwd, trusted, baseSettings, projectSettings,
-                baseSettings.Overlay(projectSettings ?? new UserSettings()), managedPackageRoots, nativePackageRoots,
+                baseSettings.Overlay(projectSettings ?? new UserSettings()), managedPackageRoots,
+                temporaryExtensionPackages, temporaryExtensionPackageRoots, nativePackageRoots,
                 bootstrapExtensions,
                 ResolveExtensionMode(arguments), hasUserInterface ?? interactiveTrust,
                 extensionUi ?? UnavailableProjectTrustExtensionUi.Instance);
@@ -221,7 +240,7 @@ internal sealed class ProjectRuntimeContext : IDisposable
             var userExtensionPaths = arguments.NoExtensions ? null : configuration.BaseUserSettings.Extensions;
             var projectExtensionPaths = arguments.NoExtensions ? null : configuration.ProjectSettings?.Extensions;
             extensions = ExtensionCatalog.Load(agentDirectory, cwd, configuration.Trusted, discover: !arguments.NoExtensions,
-                additionalPaths: arguments.ExtensionPaths, userPaths: userExtensionPaths,
+                additionalPaths: configuration.GetCliExtensionPaths(arguments), userPaths: userExtensionPaths,
                 projectPaths: projectExtensionPaths,
                 builtins: [ToolSearchBuiltin.Definition, CodemodeBuiltin.Definition,
                     McpBuiltin.CreateDefinition(mcpManager)],
@@ -229,6 +248,8 @@ internal sealed class ProjectRuntimeContext : IDisposable
                 userPackages: configuration.BaseUserSettings.Packages,
                 projectPackages: configuration.ProjectSettings?.Packages,
                 managedPackageRoots: configuration.ManagedPackageRoots,
+                temporaryPackages: configuration.TemporaryExtensionPackages,
+                temporaryPackageRoots: configuration.TemporaryExtensionPackageRoots,
                 nativeExtensionPackageRoots: configuration.NativeExtensionPackageRoots,
                 uiPackageFactory: configuration.ExtensionUi as IPiSharpExtensionUiPackageFactory);
             var mcp = await McpConfiguration.LoadAsync(agentDirectory, cwd, configuration.Trusted, cancellationToken);
@@ -286,7 +307,9 @@ internal sealed class ProjectRuntimeContext : IDisposable
                 userPrompts: configuration.BaseUserSettings.Prompts, projectPrompts: configuration.ProjectSettings?.Prompts,
                 extensionResources: extensionResources,
                 userPackages: configuration.BaseUserSettings.Packages, projectPackages: configuration.ProjectSettings?.Packages,
-                managedPackageRoots: configuration.ManagedPackageRoots);
+                managedPackageRoots: configuration.ManagedPackageRoots,
+                temporaryPackages: configuration.TemporaryExtensionPackages,
+                temporaryPackageRoots: configuration.TemporaryExtensionPackageRoots);
             if (extensions.LoadErrors.Count > 0) throw new ExtensionStartupFailure(extensions.LoadErrors);
             return new ProjectRuntimeContext(configuration, prompts, instructions, contextFiles,
                 resources, extensions, extensionResources, store, sessionImport, mcpManager, effectiveMcpServers);
@@ -310,7 +333,9 @@ internal sealed class ProjectRuntimeContext : IDisposable
             userPrompts: Configuration.BaseUserSettings.Prompts, projectPrompts: Configuration.ProjectSettings?.Prompts,
             extensionResources: extensionResources, userPackages: Configuration.BaseUserSettings.Packages,
             projectPackages: Configuration.ProjectSettings?.Packages,
-            managedPackageRoots: Configuration.ManagedPackageRoots);
+            managedPackageRoots: Configuration.ManagedPackageRoots,
+            temporaryPackages: Configuration.TemporaryExtensionPackages,
+            temporaryPackageRoots: Configuration.TemporaryExtensionPackageRoots);
         ExtensionResources = extensionResources;
     }
 

@@ -1,0 +1,2293 @@
+{
+  "schemaVersion": 1,
+  "fixtureVersion": "managed-packages-v1",
+  "upstream": {
+    "repository": "https://github.com/earendil-works/pi",
+    "revision": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6"
+  },
+  "requiredCheckpointIds": [
+    "p0-prerequisite-merge",
+    "p1-milestone-branch",
+    "verification-infrastructure",
+    "verifier-negative-controls",
+    "source-inventory",
+    "baseline",
+    "cli",
+    "npm-install",
+    "npm-update",
+    "package-managers",
+    "legacy-global",
+    "git-install",
+    "git-update",
+    "identity",
+    "removal-listing",
+    "bulk-updates",
+    "configuration-trust",
+    "resource-distribution",
+    "startup-reload",
+    "failure-recovery",
+    "concurrency",
+    "differential-acceptance",
+    "quality",
+    "committed-evidence",
+    "ci-integration",
+    "draft-publication",
+    "exact-head-ci"
+  ],
+  "approvedExclusions": [
+    {
+      "caseId": "npm.update-cancelled",
+      "classification": "intentional-safety-difference",
+      "reason": "A cancelled PiSharp update stages downloads and retains the prior valid package; pinned Pi removes that package while the download is in flight.",
+      "sourceReference": "tools/parity/managed-npm-update-process-differential.py",
+      "artifactPath": "cases/npm.update-cancelled.json"
+    },
+    {
+      "caseId": "npm.update-interrupted",
+      "classification": "intentional-safety-difference",
+      "reason": "A SIGKILL-interrupted PiSharp update recovers the prior valid package; pinned Pi leaves the package removed.",
+      "sourceReference": "tools/parity/managed-npm-update-process-differential.py",
+      "artifactPath": "cases/npm.update-interrupted.json"
+    },
+    {
+      "caseId": "pm.cancellation",
+      "classification": "intentional-safety-difference",
+      "reason": "When SIGINT terminates the configured manager, pinned Pi leaves the partially created package directory while PiSharp cancels the child and removes the incomplete install.",
+      "sourceReference": "tools/parity/package-managers-process-differential.py",
+      "artifactPath": "cases/pm.cancellation.json"
+    },
+    {
+      "caseId": "git.update-dependency-failure",
+      "classification": "intentional-safety-difference",
+      "reason": "If dependency installation fails during a Git update, pinned Pi leaves the updated source checkout active while PiSharp keeps the prior valid checkout through staged replacement.",
+      "sourceReference": "tools/parity/managed-git-update-process-differential.py",
+      "artifactPath": "cases/git.update-dependency-failure.json"
+    },
+    {
+      "caseId": "bulk.cancelled",
+      "classification": "intentional-safety-difference",
+      "reason": "When a bulk npm update is cancelled during download, pinned Pi removes the package while PiSharp retains the previous valid version through staged replacement.",
+      "sourceReference": "tools/parity/managed-package-bulk-update-process-differential.py",
+      "artifactPath": "cases/bulk.cancelled.json"
+    },
+    {
+      "caseId": "config.failed-write",
+      "classification": "intentional-safety-difference",
+      "reason": "When settings.json cannot be replaced, pinned Pi exits successfully while leaving the installed package unconfigured; PiSharp reports the write failure and also leaves it unconfigured.",
+      "sourceReference": "tools/parity/managed-package-configuration-process-differential.py",
+      "artifactPath": "cases/config.failed-write.json"
+    },
+    {
+      "caseId": "failure.cancelled-install",
+      "classification": "intentional-safety-difference",
+      "reason": "Pi leaves an empty npm package root after an interrupted initial install; PiSharp removes the incomplete staging root.",
+      "sourceReference": "tools/parity/managed-package-failure-process-differential.py",
+      "artifactPath": "cases/failure.cancelled-install.json"
+    },
+    {
+      "caseId": "failure.settings-publication",
+      "classification": "intentional-safety-difference",
+      "reason": "When settings.json cannot be replaced, pinned Pi exits successfully while leaving the installed package unconfigured; PiSharp reports the write failure and also leaves it unconfigured.",
+      "sourceReference": "tools/parity/managed-package-configuration-process-differential.py",
+      "artifactPath": "cases/failure.settings-publication.json"
+    },
+    {
+      "caseId": "failure.interrupted-staging",
+      "classification": "intentional-safety-difference",
+      "reason": "A SIGKILL-interrupted PiSharp npm update retains its staged last-good package while pinned Pi has removed the installed package.",
+      "sourceReference": "tools/parity/managed-npm-update-process-differential.py",
+      "artifactPath": "cases/failure.interrupted-staging.json"
+    },
+    {
+      "caseId": "failure.restart-recovery",
+      "classification": "intentional-safety-difference",
+      "reason": "After SIGKILL during npm update, pinned Pi cannot list the removed package on restart while PiSharp restarts successfully with version 1.0.0.",
+      "sourceReference": "tools/parity/managed-npm-update-process-differential.py",
+      "artifactPath": "cases/failure.restart-recovery.json"
+    },
+    {
+      "caseId": "concurrent.update-discovery",
+      "classification": "intentional-safety-difference",
+      "reason": "While npm update downloads a replacement, pinned Pi temporarily removes the usable package from discovery; PiSharp keeps version 1.0.0 discoverable until version 1.1.0 is published.",
+      "sourceReference": "tools/parity/managed-package-concurrency-process-differential.py",
+      "artifactPath": "cases/concurrent.update-discovery.json"
+    },
+    {
+      "caseId": "concurrent.same-npm-install",
+      "classification": "intentional-safety-difference",
+      "reason": "Pinned Pi runs concurrent npm installs against the same target; npm can remove the package directory while the other process reads it, returning ENOENT and leaving no configured package. PiSharp serializes the installs and publishes one valid package; the verifier accepts only this captured target-path race and a clean PiSharp state.",
+      "sourceReference": "packages/coding-agent/src/core/package-manager.ts#installNpm (pinned Pi b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6); tools/parity/managed-package-concurrency-process-differential.py",
+      "artifactPath": "cases/concurrent.same-npm-install.json"
+    },
+    {
+      "caseId": "concurrent.same-git-install",
+      "classification": "intentional-safety-difference",
+      "reason": "Pinned Pi can race while two processes clone the same Git package, reporting an invalid origin/HEAD ref or a destination collision paired with a missing Git template file, and leaving it unconfigured. PiSharp serializes the install and publishes one valid package; the verifier accepts only these captured upstream races and a safe final PiSharp state.",
+      "sourceReference": "packages/coding-agent/src/core/package-manager.ts#getLocalGitUpdateTarget (pinned Pi b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6); tools/parity/managed-package-concurrency-process-differential.py",
+      "artifactPath": "cases/concurrent.same-git-install.json"
+    }
+  ],
+  "checkpoints": [
+    {
+      "id": "p0-prerequisite-merge",
+      "description": "Verify and merge PR #26 at the revalidated reviewed head.",
+      "requiredCaseIds": [
+        "p0.pr-metadata",
+        "p0.review-state",
+        "p0.exact-head-workflows",
+        "p0.merge-ancestry"
+      ],
+      "requiredFixtureFamilies": [
+        "github-pr",
+        "workflow-runs"
+      ],
+      "requiredAssertions": {
+        "p0.pr-metadata": [
+          "p0.pr-metadata"
+        ],
+        "p0.review-state": [
+          "p0.review-state"
+        ],
+        "p0.exact-head-workflows": [
+          "p0.exact-head-workflows"
+        ],
+        "p0.merge-ancestry": [
+          "p0.merge-ancestry"
+        ]
+      },
+      "requiredExecutableVerification": [
+        "P0 revalidation report",
+        "GitHub merge ancestry"
+      ],
+      "upstreamSourceReferences": [
+        "packages/coding-agent/docs/packages.md"
+      ],
+      "allowedClassifications": [
+        "strict",
+        "equivalent",
+        "intentional-safety-difference",
+        "unsupported-platform",
+        "unsupported-upstream",
+        "mismatch",
+        "unexecuted"
+      ],
+      "dependencies": [],
+      "requiredEvidenceFiles": [
+        "cases/p0.pr-metadata.json",
+        "cases/p0.review-state.json",
+        "cases/p0.exact-head-workflows.json",
+        "cases/p0.merge-ancestry.json"
+      ]
+    },
+    {
+      "id": "p1-milestone-branch",
+      "description": "Create the milestone branch from actual post-merge main and preserve the Pi pin.",
+      "requiredCaseIds": [
+        "p1.branch-base",
+        "p1.pin",
+        "p1.clean-start"
+      ],
+      "requiredFixtureFamilies": [
+        "git-checkout",
+        "pinned-pi"
+      ],
+      "requiredAssertions": {
+        "p1.branch-base": [
+          "p1.branch-base"
+        ],
+        "p1.pin": [
+          "p1.pin"
+        ],
+        "p1.clean-start": [
+          "p1.clean-start"
+        ]
+      },
+      "requiredExecutableVerification": [
+        "git rev-parse and merge-base checks"
+      ],
+      "upstreamSourceReferences": [
+        "packages/coding-agent/docs/packages.md"
+      ],
+      "allowedClassifications": [
+        "strict",
+        "equivalent",
+        "intentional-safety-difference",
+        "unsupported-platform",
+        "unsupported-upstream",
+        "mismatch",
+        "unexecuted"
+      ],
+      "dependencies": [
+        "p0-prerequisite-merge"
+      ],
+      "requiredEvidenceFiles": [
+        "cases/p1.branch-base.json",
+        "cases/p1.pin.json",
+        "cases/p1.clean-start.json"
+      ]
+    },
+    {
+      "id": "verification-infrastructure",
+      "description": "Validate the committed schema, contract, interfaces and exit codes.",
+      "requiredCaseIds": [
+        "v0.schema-valid",
+        "v0.contract-complete",
+        "v0.exit-contract",
+        "v0.runtime-provenance"
+      ],
+      "requiredFixtureFamilies": [
+        "evidence-json",
+        "runtime-provenance"
+      ],
+      "requiredAssertions": {
+        "v0.schema-valid": [
+          "v0.schema-valid"
+        ],
+        "v0.contract-complete": [
+          "v0.contract-complete"
+        ],
+        "v0.exit-contract": [
+          "v0.exit-contract"
+        ],
+        "v0.runtime-provenance": [
+          "v0.runtime-provenance"
+        ]
+      },
+      "requiredExecutableVerification": [
+        "python3 tools/parity/managed_packages/test_verifier.py"
+      ],
+      "upstreamSourceReferences": [
+        "packages/coding-agent/docs/packages.md"
+      ],
+      "allowedClassifications": [
+        "strict",
+        "equivalent",
+        "intentional-safety-difference",
+        "unsupported-platform",
+        "unsupported-upstream",
+        "mismatch",
+        "unexecuted"
+      ],
+      "dependencies": [
+        "p1-milestone-branch"
+      ],
+      "requiredEvidenceFiles": [
+        "cases/v0.schema-valid.json",
+        "cases/v0.contract-complete.json",
+        "cases/v0.exit-contract.json",
+        "cases/v0.runtime-provenance.json"
+      ]
+    },
+    {
+      "id": "verifier-negative-controls",
+      "description": "Reject every required corrupted evidence fixture and accept the valid control.",
+      "requiredCaseIds": [
+        "v1.control-01",
+        "v1.control-02",
+        "v1.control-03",
+        "v1.control-04",
+        "v1.control-05",
+        "v1.control-06",
+        "v1.control-07",
+        "v1.control-08",
+        "v1.control-09",
+        "v1.control-10",
+        "v1.control-11",
+        "v1.control-12",
+        "v1.control-13",
+        "v1.control-14",
+        "v1.control-15",
+        "v1.control-16",
+        "v1.control-17",
+        "v1.control-18",
+        "v1.valid-control"
+      ],
+      "requiredFixtureFamilies": [
+        "synthetic-evidence",
+        "tamper-controls"
+      ],
+      "requiredAssertions": {
+        "v1.control-01": [
+          "v1.control-01"
+        ],
+        "v1.control-02": [
+          "v1.control-02"
+        ],
+        "v1.control-03": [
+          "v1.control-03"
+        ],
+        "v1.control-04": [
+          "v1.control-04"
+        ],
+        "v1.control-05": [
+          "v1.control-05"
+        ],
+        "v1.control-06": [
+          "v1.control-06"
+        ],
+        "v1.control-07": [
+          "v1.control-07"
+        ],
+        "v1.control-08": [
+          "v1.control-08"
+        ],
+        "v1.control-09": [
+          "v1.control-09"
+        ],
+        "v1.control-10": [
+          "v1.control-10"
+        ],
+        "v1.control-11": [
+          "v1.control-11"
+        ],
+        "v1.control-12": [
+          "v1.control-12"
+        ],
+        "v1.control-13": [
+          "v1.control-13"
+        ],
+        "v1.control-14": [
+          "v1.control-14"
+        ],
+        "v1.control-15": [
+          "v1.control-15"
+        ],
+        "v1.control-16": [
+          "v1.control-16"
+        ],
+        "v1.control-17": [
+          "v1.control-17"
+        ],
+        "v1.control-18": [
+          "v1.control-18"
+        ],
+        "v1.valid-control": [
+          "v1.valid-control"
+        ]
+      },
+      "requiredExecutableVerification": [
+        "python3 tools/parity/managed_packages/test_verifier.py"
+      ],
+      "upstreamSourceReferences": [
+        "packages/coding-agent/docs/packages.md"
+      ],
+      "allowedClassifications": [
+        "strict",
+        "equivalent",
+        "intentional-safety-difference",
+        "unsupported-platform",
+        "unsupported-upstream",
+        "mismatch",
+        "unexecuted"
+      ],
+      "dependencies": [
+        "verification-infrastructure"
+      ],
+      "requiredEvidenceFiles": [
+        "cases/v1.control-01.json",
+        "cases/v1.control-02.json",
+        "cases/v1.control-03.json",
+        "cases/v1.control-04.json",
+        "cases/v1.control-05.json",
+        "cases/v1.control-06.json",
+        "cases/v1.control-07.json",
+        "cases/v1.control-08.json",
+        "cases/v1.control-09.json",
+        "cases/v1.control-10.json",
+        "cases/v1.control-11.json",
+        "cases/v1.control-12.json",
+        "cases/v1.control-13.json",
+        "cases/v1.control-14.json",
+        "cases/v1.control-15.json",
+        "cases/v1.control-16.json",
+        "cases/v1.control-17.json",
+        "cases/v1.control-18.json",
+        "cases/v1.valid-control.json"
+      ]
+    },
+    {
+      "id": "source-inventory",
+      "description": "Inventory current PiSharp and pinned Pi package functionality against executable cases.",
+      "requiredCaseIds": [
+        "inventory.pisharp",
+        "inventory.pi",
+        "inventory.source-links",
+        "inventory.case-coverage"
+      ],
+      "requiredFixtureFamilies": [
+        "source-inventory",
+        "package-case-map"
+      ],
+      "requiredAssertions": {
+        "inventory.pisharp": [
+          "inventory.pisharp"
+        ],
+        "inventory.pi": [
+          "inventory.pi"
+        ],
+        "inventory.source-links": [
+          "inventory.source-links"
+        ],
+        "inventory.case-coverage": [
+          "inventory.case-coverage"
+        ]
+      },
+      "requiredExecutableVerification": [
+        "source-pinned inventory validation"
+      ],
+      "upstreamSourceReferences": [
+        "packages/coding-agent/src/core/package-manager.ts",
+        "packages/coding-agent/src/package-manager-cli.ts",
+        "packages/coding-agent/src/core/settings-manager.ts",
+        "packages/coding-agent/docs/packages.md"
+      ],
+      "allowedClassifications": [
+        "strict",
+        "equivalent",
+        "intentional-safety-difference",
+        "unsupported-platform",
+        "unsupported-upstream",
+        "mismatch",
+        "unexecuted"
+      ],
+      "dependencies": [
+        "verifier-negative-controls"
+      ],
+      "requiredEvidenceFiles": [
+        "cases/inventory.pisharp.json",
+        "cases/inventory.pi.json",
+        "cases/inventory.source-links.json",
+        "cases/inventory.case-coverage.json"
+      ]
+    },
+    {
+      "id": "baseline",
+      "description": "Record pre-change package CLI, npm, Git, settings, differential and resource integration outcomes.",
+      "requiredCaseIds": [
+        "baseline.package-cli",
+        "baseline.managed-npm",
+        "baseline.git",
+        "baseline.settings",
+        "baseline.resource-integration"
+      ],
+      "requiredFixtureFamilies": [
+        "baseline-runs",
+        "disposable-package-roots"
+      ],
+      "requiredAssertions": {
+        "baseline.package-cli": [
+          "baseline.package-cli"
+        ],
+        "baseline.managed-npm": [
+          "baseline.managed-npm"
+        ],
+        "baseline.git": [
+          "baseline.git"
+        ],
+        "baseline.settings": [
+          "baseline.settings"
+        ],
+        "baseline.resource-integration": [
+          "baseline.resource-integration"
+        ]
+      },
+      "requiredExecutableVerification": [
+        "existing package differential runners",
+        "package-focused .NET tests"
+      ],
+      "upstreamSourceReferences": [
+        "packages/coding-agent/src/core/package-manager.ts",
+        "packages/coding-agent/src/package-manager-cli.ts"
+      ],
+      "allowedClassifications": [
+        "strict",
+        "equivalent",
+        "intentional-safety-difference",
+        "unsupported-platform",
+        "unsupported-upstream",
+        "mismatch",
+        "unexecuted"
+      ],
+      "dependencies": [
+        "source-inventory"
+      ],
+      "requiredEvidenceFiles": [
+        "cases/baseline.package-cli.json",
+        "cases/baseline.managed-npm.json",
+        "cases/baseline.git.json",
+        "cases/baseline.settings.json",
+        "cases/baseline.resource-integration.json"
+      ]
+    },
+    {
+      "id": "cli",
+      "description": "Verify package command behavior, usage and source/path handling.",
+      "requiredCaseIds": [
+        "cli.install",
+        "cli.remove",
+        "cli.list",
+        "cli.update",
+        "cli.missing-source",
+        "cli.invalid-option",
+        "cli.conflicting-options",
+        "cli.local-scope",
+        "cli.trust-options",
+        "cli.help",
+        "cli.spaces-unicode-path",
+        "cli.invalid-package-spec"
+      ],
+      "requiredFixtureFamilies": [
+        "cli-process",
+        "disposable-settings"
+      ],
+      "requiredAssertions": {
+        "cli.install": [
+          "cli.install"
+        ],
+        "cli.remove": [
+          "cli.remove"
+        ],
+        "cli.list": [
+          "cli.list"
+        ],
+        "cli.update": [
+          "cli.update"
+        ],
+        "cli.missing-source": [
+          "cli.missing-source"
+        ],
+        "cli.invalid-option": [
+          "cli.invalid-option"
+        ],
+        "cli.conflicting-options": [
+          "cli.conflicting-options"
+        ],
+        "cli.local-scope": [
+          "cli.local-scope"
+        ],
+        "cli.trust-options": [
+          "cli.trust-options"
+        ],
+        "cli.help": [
+          "cli.help"
+        ],
+        "cli.spaces-unicode-path": [
+          "cli.spaces-unicode-path"
+        ],
+        "cli.invalid-package-spec": [
+          "cli.invalid-package-spec"
+        ]
+      },
+      "requiredExecutableVerification": [
+        "tools/parity/package-cli-process-differential.py",
+        "tests/PiSharp.Tests/Cli/Packages/ResourcePackageCommandProcessTests.cs"
+      ],
+      "upstreamSourceReferences": [
+        "packages/coding-agent/src/package-manager-cli.ts",
+        "packages/coding-agent/src/core/package-manager.ts"
+      ],
+      "allowedClassifications": [
+        "strict",
+        "equivalent",
+        "intentional-safety-difference",
+        "unsupported-platform",
+        "unsupported-upstream",
+        "mismatch",
+        "unexecuted"
+      ],
+      "dependencies": [
+        "baseline"
+      ],
+      "requiredEvidenceFiles": [
+        "cases/cli.install.json",
+        "cases/cli.remove.json",
+        "cases/cli.list.json",
+        "cases/cli.update.json",
+        "cases/cli.missing-source.json",
+        "cases/cli.invalid-option.json",
+        "cases/cli.conflicting-options.json",
+        "cases/cli.local-scope.json",
+        "cases/cli.trust-options.json",
+        "cases/cli.help.json",
+        "cases/cli.spaces-unicode-path.json",
+        "cases/cli.invalid-package-spec.json"
+      ]
+    },
+    {
+      "id": "npm-install",
+      "description": "Verify npm package installation and failure behavior with real npm processes.",
+      "requiredCaseIds": [
+        "npm.install-exact",
+        "npm.install-range",
+        "npm.install-latest",
+        "npm.install-scoped",
+        "npm.install-dependencies",
+        "npm.install-idempotent",
+        "npm.install-invalid",
+        "npm.install-script-failure",
+        "npm.install-cancelled",
+        "npm.install-unscoped",
+        "npm.install-implicit",
+        "npm.install-prerelease",
+        "npm.install-peer-dependencies",
+        "npm.install-lifecycle-scripts",
+        "npm.install-existing",
+        "npm.install-reinstall",
+        "npm.install-unavailable-version"
+      ],
+      "requiredFixtureFamilies": [
+        "local-npm-registry",
+        "real-npm-processes"
+      ],
+      "requiredAssertions": {
+        "npm.install-exact": [
+          "npm.install-exact"
+        ],
+        "npm.install-range": [
+          "npm.install-range"
+        ],
+        "npm.install-latest": [
+          "npm.install-latest"
+        ],
+        "npm.install-scoped": [
+          "npm.install-scoped"
+        ],
+        "npm.install-dependencies": [
+          "npm.install-dependencies"
+        ],
+        "npm.install-idempotent": [
+          "npm.install-idempotent"
+        ],
+        "npm.install-invalid": [
+          "npm.install-invalid"
+        ],
+        "npm.install-script-failure": [
+          "npm.install-script-failure"
+        ],
+        "npm.install-cancelled": [
+          "npm.install-cancelled"
+        ],
+        "npm.install-unscoped": [
+          "npm.install-unscoped"
+        ],
+        "npm.install-implicit": [
+          "npm.install-implicit"
+        ],
+        "npm.install-prerelease": [
+          "npm.install-prerelease"
+        ],
+        "npm.install-peer-dependencies": [
+          "npm.install-peer-dependencies"
+        ],
+        "npm.install-lifecycle-scripts": [
+          "npm.install-lifecycle-scripts"
+        ],
+        "npm.install-existing": [
+          "npm.install-existing"
+        ],
+        "npm.install-reinstall": [
+          "npm.install-reinstall"
+        ],
+        "npm.install-unavailable-version": [
+          "npm.install-unavailable-version"
+        ]
+      },
+      "requiredExecutableVerification": [
+        "tools/parity/managed-npm-process-differential.py",
+        "tools/parity/package-cli-process-differential.py",
+        "ManagedResourcePackageStoreTests"
+      ],
+      "upstreamSourceReferences": [
+        "packages/coding-agent/src/core/package-manager.ts",
+        "packages/coding-agent/docs/packages.md"
+      ],
+      "allowedClassifications": [
+        "strict",
+        "equivalent",
+        "intentional-safety-difference",
+        "unsupported-platform",
+        "unsupported-upstream",
+        "mismatch",
+        "unexecuted"
+      ],
+      "dependencies": [
+        "baseline"
+      ],
+      "requiredEvidenceFiles": [
+        "cases/npm.install-exact.json",
+        "cases/npm.install-range.json",
+        "cases/npm.install-latest.json",
+        "cases/npm.install-scoped.json",
+        "cases/npm.install-dependencies.json",
+        "cases/npm.install-idempotent.json",
+        "cases/npm.install-invalid.json",
+        "cases/npm.install-script-failure.json",
+        "cases/npm.install-cancelled.json",
+        "cases/npm.install-unscoped.json",
+        "cases/npm.install-implicit.json",
+        "cases/npm.install-prerelease.json",
+        "cases/npm.install-peer-dependencies.json",
+        "cases/npm.install-lifecycle-scripts.json",
+        "cases/npm.install-existing.json",
+        "cases/npm.install-reinstall.json",
+        "cases/npm.install-unavailable-version.json"
+      ]
+    },
+    {
+      "id": "npm-update",
+      "description": "Verify pinned, ranged and floating npm updates, failure recovery, and repeated updates.",
+      "requiredCaseIds": [
+        "npm.update-pinned",
+        "npm.update-range",
+        "npm.update-latest",
+        "npm.update-no-change",
+        "npm.update-failure",
+        "npm.update-cancelled",
+        "npm.update-repeat",
+        "npm.update-unpinned",
+        "npm.update-prerelease",
+        "npm.update-registry-change",
+        "npm.update-interrupted"
+      ],
+      "requiredFixtureFamilies": [
+        "mutable-local-npm-registry",
+        "real-npm-processes"
+      ],
+      "requiredAssertions": {
+        "npm.update-pinned": [
+          "npm.update-pinned"
+        ],
+        "npm.update-range": [
+          "npm.update-range"
+        ],
+        "npm.update-latest": [
+          "npm.update-latest"
+        ],
+        "npm.update-no-change": [
+          "npm.update-no-change"
+        ],
+        "npm.update-failure": [
+          "npm.update-failure"
+        ],
+        "npm.update-cancelled": [
+          "npm.update-cancelled"
+        ],
+        "npm.update-repeat": [
+          "npm.update-repeat"
+        ],
+        "npm.update-unpinned": [
+          "npm.update-unpinned"
+        ],
+        "npm.update-prerelease": [
+          "npm.update-prerelease"
+        ],
+        "npm.update-registry-change": [
+          "npm.update-registry-change"
+        ],
+        "npm.update-interrupted": [
+          "npm.update-interrupted"
+        ]
+      },
+      "requiredExecutableVerification": [
+        "tools/parity/managed-npm-update-process-differential.py",
+        "ManagedResourcePackageStoreTests"
+      ],
+      "upstreamSourceReferences": [
+        "packages/coding-agent/src/core/package-manager.ts",
+        "packages/coding-agent/docs/packages.md"
+      ],
+      "allowedClassifications": [
+        "strict",
+        "equivalent",
+        "intentional-safety-difference",
+        "unsupported-platform",
+        "unsupported-upstream",
+        "mismatch",
+        "unexecuted"
+      ],
+      "dependencies": [
+        "npm-install"
+      ],
+      "requiredEvidenceFiles": [
+        "cases/npm.update-pinned.json",
+        "cases/npm.update-range.json",
+        "cases/npm.update-latest.json",
+        "cases/npm.update-no-change.json",
+        "cases/npm.update-failure.json",
+        "cases/npm.update-cancelled.json",
+        "cases/npm.update-repeat.json",
+        "cases/npm.update-unpinned.json",
+        "cases/npm.update-prerelease.json",
+        "cases/npm.update-registry-change.json",
+        "cases/npm.update-interrupted.json"
+      ]
+    },
+    {
+      "id": "package-managers",
+      "description": "Verify configured npmCommand selection and exact process invocation.",
+      "requiredCaseIds": [
+        "pm.default",
+        "pm.npm",
+        "pm.pnpm",
+        "pm.yarn",
+        "pm.bun",
+        "pm.custom-arguments",
+        "pm.missing-executable",
+        "pm.failure",
+        "pm.cancellation"
+      ],
+      "requiredFixtureFamilies": [
+        "command-shims",
+        "available-real-managers"
+      ],
+      "requiredAssertions": {
+        "pm.default": [
+          "pm.default"
+        ],
+        "pm.npm": [
+          "pm.npm"
+        ],
+        "pm.pnpm": [
+          "pm.pnpm"
+        ],
+        "pm.yarn": [
+          "pm.yarn"
+        ],
+        "pm.bun": [
+          "pm.bun"
+        ],
+        "pm.custom-arguments": [
+          "pm.custom-arguments"
+        ],
+        "pm.missing-executable": [
+          "pm.missing-executable"
+        ],
+        "pm.failure": [
+          "pm.failure"
+        ],
+        "pm.cancellation": [
+          "pm.cancellation"
+        ]
+      },
+      "requiredExecutableVerification": [
+        "tools/parity/package-managers-process-differential.py",
+        "ManagedResourcePackageStoreTests",
+        "ManagedGitPackageStoreTests"
+      ],
+      "upstreamSourceReferences": [
+        "packages/coding-agent/src/core/package-manager.ts",
+        "packages/coding-agent/src/core/settings-manager.ts"
+      ],
+      "allowedClassifications": [
+        "strict",
+        "equivalent",
+        "intentional-safety-difference",
+        "unsupported-platform",
+        "unsupported-upstream",
+        "mismatch",
+        "unexecuted"
+      ],
+      "dependencies": [
+        "baseline"
+      ],
+      "requiredEvidenceFiles": [
+        "cases/pm.default.json",
+        "cases/pm.npm.json",
+        "cases/pm.pnpm.json",
+        "cases/pm.yarn.json",
+        "cases/pm.bun.json",
+        "cases/pm.custom-arguments.json",
+        "cases/pm.missing-executable.json",
+        "cases/pm.failure.json",
+        "cases/pm.cancellation.json"
+      ]
+    },
+    {
+      "id": "legacy-global",
+      "description": "Verify read-only legacy global package lookup, fallback and precedence.",
+      "requiredCaseIds": [
+        "legacy.npm",
+        "legacy.pnpm",
+        "legacy.yarn",
+        "legacy.bun",
+        "legacy.missing",
+        "legacy.malformed",
+        "legacy.managed-precedence",
+        "legacy.read-only"
+      ],
+      "requiredFixtureFamilies": [
+        "disposable-global-roots",
+        "package-manager-shims"
+      ],
+      "requiredAssertions": {
+        "legacy.npm": [
+          "legacy.npm"
+        ],
+        "legacy.pnpm": [
+          "legacy.pnpm"
+        ],
+        "legacy.yarn": [
+          "legacy.yarn"
+        ],
+        "legacy.bun": [
+          "legacy.bun"
+        ],
+        "legacy.missing": [
+          "legacy.missing"
+        ],
+        "legacy.malformed": [
+          "legacy.malformed"
+        ],
+        "legacy.managed-precedence": [
+          "legacy.managed-precedence"
+        ],
+        "legacy.read-only": [
+          "legacy.read-only"
+        ]
+      },
+      "requiredExecutableVerification": [
+        "legacy package resolution probe",
+        "ManagedResourcePackageStoreTests"
+      ],
+      "upstreamSourceReferences": [
+        "packages/coding-agent/src/core/package-manager.ts",
+        "packages/coding-agent/docs/packages.md"
+      ],
+      "allowedClassifications": [
+        "strict",
+        "equivalent",
+        "intentional-safety-difference",
+        "unsupported-platform",
+        "unsupported-upstream",
+        "mismatch",
+        "unexecuted"
+      ],
+      "dependencies": [
+        "baseline"
+      ],
+      "requiredEvidenceFiles": [
+        "cases/legacy.npm.json",
+        "cases/legacy.pnpm.json",
+        "cases/legacy.yarn.json",
+        "cases/legacy.bun.json",
+        "cases/legacy.missing.json",
+        "cases/legacy.malformed.json",
+        "cases/legacy.managed-precedence.json",
+        "cases/legacy.read-only.json"
+      ]
+    },
+    {
+      "id": "git-install",
+      "description": "Verify Git package installation for refs, failures and cancellation.",
+      "requiredCaseIds": [
+        "git.install-branch",
+        "git.install-tag",
+        "git.install-commit",
+        "git.install-floating",
+        "git.install-invalid-ref",
+        "git.install-failure",
+        "git.install-cancelled",
+        "git.install-url-shorthands",
+        "git.install-existing",
+        "git.install-missing-dependencies"
+      ],
+      "requiredFixtureFamilies": [
+        "local-bare-git",
+        "loopback-git-daemon"
+      ],
+      "requiredAssertions": {
+        "git.install-branch": [
+          "git.install-branch"
+        ],
+        "git.install-tag": [
+          "git.install-tag"
+        ],
+        "git.install-commit": [
+          "git.install-commit"
+        ],
+        "git.install-floating": [
+          "git.install-floating"
+        ],
+        "git.install-invalid-ref": [
+          "git.install-invalid-ref"
+        ],
+        "git.install-failure": [
+          "git.install-failure"
+        ],
+        "git.install-cancelled": [
+          "git.install-cancelled"
+        ],
+        "git.install-url-shorthands": [
+          "git.install-url-shorthands"
+        ],
+        "git.install-existing": [
+          "git.install-existing"
+        ],
+        "git.install-missing-dependencies": [
+          "git.install-missing-dependencies"
+        ]
+      },
+      "requiredExecutableVerification": [
+        "tools/parity/managed-git-install-process-differential.py",
+        "ManagedGitPackageStoreTests"
+      ],
+      "upstreamSourceReferences": [
+        "packages/coding-agent/src/core/package-manager.ts",
+        "packages/coding-agent/docs/packages.md"
+      ],
+      "allowedClassifications": [
+        "strict",
+        "equivalent",
+        "intentional-safety-difference",
+        "unsupported-platform",
+        "unsupported-upstream",
+        "mismatch",
+        "unexecuted"
+      ],
+      "dependencies": [
+        "baseline"
+      ],
+      "requiredEvidenceFiles": [
+        "cases/git.install-branch.json",
+        "cases/git.install-tag.json",
+        "cases/git.install-commit.json",
+        "cases/git.install-floating.json",
+        "cases/git.install-invalid-ref.json",
+        "cases/git.install-failure.json",
+        "cases/git.install-cancelled.json",
+        "cases/git.install-url-shorthands.json",
+        "cases/git.install-existing.json",
+        "cases/git.install-missing-dependencies.json"
+      ]
+    },
+    {
+      "id": "git-update",
+      "description": "Verify Git update resolution, atomicity, recovery and observable output.",
+      "requiredCaseIds": [
+        "git.update-moving",
+        "git.update-no-change",
+        "git.update-pinned",
+        "git.update-failed-fetch",
+        "git.update-failed-checkout",
+        "git.update-dependency-failure",
+        "git.update-cancelled",
+        "git.update-recovery",
+        "git.update-pinned-tag",
+        "git.update-pinned-commit",
+        "git.update-changed-remote",
+        "git.update-deleted-branch"
+      ],
+      "requiredFixtureFamilies": [
+        "controlled-local-git",
+        "loopback-git-daemon"
+      ],
+      "requiredAssertions": {
+        "git.update-moving": [
+          "git.update-moving"
+        ],
+        "git.update-no-change": [
+          "git.update-no-change"
+        ],
+        "git.update-pinned": [
+          "git.update-pinned"
+        ],
+        "git.update-failed-fetch": [
+          "git.update-failed-fetch"
+        ],
+        "git.update-failed-checkout": [
+          "git.update-failed-checkout"
+        ],
+        "git.update-dependency-failure": [
+          "git.update-dependency-failure"
+        ],
+        "git.update-cancelled": [
+          "git.update-cancelled"
+        ],
+        "git.update-recovery": [
+          "git.update-recovery"
+        ],
+        "git.update-pinned-tag": [
+          "git.update-pinned-tag"
+        ],
+        "git.update-pinned-commit": [
+          "git.update-pinned-commit"
+        ],
+        "git.update-changed-remote": [
+          "git.update-changed-remote"
+        ],
+        "git.update-deleted-branch": [
+          "git.update-deleted-branch"
+        ]
+      },
+      "requiredExecutableVerification": [
+        "tools/parity/managed-git-update-process-differential.py",
+        "ManagedGitPackageStoreTests"
+      ],
+      "upstreamSourceReferences": [
+        "packages/coding-agent/src/core/package-manager.ts"
+      ],
+      "allowedClassifications": [
+        "strict",
+        "equivalent",
+        "intentional-safety-difference",
+        "unsupported-platform",
+        "unsupported-upstream",
+        "mismatch",
+        "unexecuted"
+      ],
+      "dependencies": [
+        "git-install"
+      ],
+      "requiredEvidenceFiles": [
+        "cases/git.update-moving.json",
+        "cases/git.update-no-change.json",
+        "cases/git.update-pinned.json",
+        "cases/git.update-failed-fetch.json",
+        "cases/git.update-failed-checkout.json",
+        "cases/git.update-dependency-failure.json",
+        "cases/git.update-cancelled.json",
+        "cases/git.update-recovery.json",
+        "cases/git.update-pinned-tag.json",
+        "cases/git.update-pinned-commit.json",
+        "cases/git.update-changed-remote.json",
+        "cases/git.update-deleted-branch.json"
+      ]
+    },
+    {
+      "id": "identity",
+      "description": "Verify package identity, deduplication, scope precedence and autoload behavior.",
+      "requiredCaseIds": [
+        "identity.npm",
+        "identity.git",
+        "identity.local",
+        "identity.duplicate",
+        "identity.scope-override",
+        "identity.autoload-delta",
+        "identity.user-project-duplicates",
+        "identity.local-symlink"
+      ],
+      "requiredFixtureFamilies": [
+        "npm-git-local-source-fixtures",
+        "user-project-settings"
+      ],
+      "requiredAssertions": {
+        "identity.npm": [
+          "identity.npm"
+        ],
+        "identity.git": [
+          "identity.git"
+        ],
+        "identity.local": [
+          "identity.local"
+        ],
+        "identity.duplicate": [
+          "identity.duplicate"
+        ],
+        "identity.scope-override": [
+          "identity.scope-override"
+        ],
+        "identity.autoload-delta": [
+          "identity.autoload-delta"
+        ],
+        "identity.user-project-duplicates": [
+          "identity.user-project-duplicates"
+        ],
+        "identity.local-symlink": [
+          "identity.local-symlink"
+        ]
+      },
+      "requiredExecutableVerification": [
+        "tools/parity/managed-package-identity-process-differential.py"
+      ],
+      "upstreamSourceReferences": [
+        "packages/coding-agent/src/core/package-manager.ts",
+        "packages/coding-agent/src/core/settings-manager.ts"
+      ],
+      "allowedClassifications": [
+        "strict",
+        "equivalent",
+        "intentional-safety-difference",
+        "unsupported-platform",
+        "unsupported-upstream",
+        "mismatch",
+        "unexecuted"
+      ],
+      "dependencies": [
+        "baseline"
+      ],
+      "requiredEvidenceFiles": [
+        "cases/identity.npm.json",
+        "cases/identity.git.json",
+        "cases/identity.local.json",
+        "cases/identity.duplicate.json",
+        "cases/identity.scope-override.json",
+        "cases/identity.autoload-delta.json",
+        "cases/identity.user-project-duplicates.json",
+        "cases/identity.local-symlink.json"
+      ]
+    },
+    {
+      "id": "removal-listing",
+      "description": "Verify npm, Git and local removal and package listing by scope.",
+      "requiredCaseIds": [
+        "remove.npm",
+        "remove.git",
+        "remove.local",
+        "remove.missing",
+        "remove.scope-isolation",
+        "list.empty",
+        "list.mixed-scopes",
+        "list.filtered",
+        "list.missing-install",
+        "list.paths-filter-indicators"
+      ],
+      "requiredFixtureFamilies": [
+        "npm-git-local-source-fixtures",
+        "user-project-settings"
+      ],
+      "requiredAssertions": {
+        "remove.npm": [
+          "remove.npm"
+        ],
+        "remove.git": [
+          "remove.git"
+        ],
+        "remove.local": [
+          "remove.local"
+        ],
+        "remove.missing": [
+          "remove.missing"
+        ],
+        "remove.scope-isolation": [
+          "remove.scope-isolation"
+        ],
+        "list.empty": [
+          "list.empty"
+        ],
+        "list.mixed-scopes": [
+          "list.mixed-scopes"
+        ],
+        "list.filtered": [
+          "list.filtered"
+        ],
+        "list.missing-install": [
+          "list.missing-install"
+        ],
+        "list.paths-filter-indicators": [
+          "list.paths-filter-indicators"
+        ]
+      },
+      "requiredExecutableVerification": [
+        "tools/parity/package-cli-process-differential.py",
+        "ResourcePackageCommandProcessTests"
+      ],
+      "upstreamSourceReferences": [
+        "packages/coding-agent/src/package-manager-cli.ts",
+        "packages/coding-agent/src/core/package-manager.ts"
+      ],
+      "allowedClassifications": [
+        "strict",
+        "equivalent",
+        "intentional-safety-difference",
+        "unsupported-platform",
+        "unsupported-upstream",
+        "mismatch",
+        "unexecuted"
+      ],
+      "dependencies": [
+        "baseline"
+      ],
+      "requiredEvidenceFiles": [
+        "cases/remove.npm.json",
+        "cases/remove.git.json",
+        "cases/remove.local.json",
+        "cases/remove.missing.json",
+        "cases/remove.scope-isolation.json",
+        "cases/list.empty.json",
+        "cases/list.mixed-scopes.json",
+        "cases/list.filtered.json",
+        "cases/list.missing-install.json",
+        "cases/list.paths-filter-indicators.json"
+      ]
+    },
+    {
+      "id": "bulk-updates",
+      "description": "Verify selective and bulk updates, target selection, partial failure and cancellation.",
+      "requiredCaseIds": [
+        "bulk.selective",
+        "bulk.extensions",
+        "bulk.mixed-sources",
+        "bulk.pinned",
+        "bulk.partial-failure",
+        "bulk.cancelled",
+        "bulk.trust"
+      ],
+      "requiredFixtureFamilies": [
+        "mixed-npm-git-fixtures",
+        "project-trust"
+      ],
+      "requiredAssertions": {
+        "bulk.selective": [
+          "bulk.selective"
+        ],
+        "bulk.extensions": [
+          "bulk.extensions"
+        ],
+        "bulk.mixed-sources": [
+          "bulk.mixed-sources"
+        ],
+        "bulk.pinned": [
+          "bulk.pinned"
+        ],
+        "bulk.partial-failure": [
+          "bulk.partial-failure"
+        ],
+        "bulk.cancelled": [
+          "bulk.cancelled"
+        ],
+        "bulk.trust": [
+          "bulk.trust"
+        ]
+      },
+      "requiredExecutableVerification": [
+        "tools/parity/managed-package-bulk-update-process-differential.py"
+      ],
+      "upstreamSourceReferences": [
+        "packages/coding-agent/src/package-manager-cli.ts",
+        "packages/coding-agent/src/core/package-manager.ts"
+      ],
+      "allowedClassifications": [
+        "strict",
+        "equivalent",
+        "intentional-safety-difference",
+        "unsupported-platform",
+        "unsupported-upstream",
+        "mismatch",
+        "unexecuted"
+      ],
+      "dependencies": [
+        "npm-update",
+        "git-update"
+      ],
+      "requiredEvidenceFiles": [
+        "cases/bulk.selective.json",
+        "cases/bulk.extensions.json",
+        "cases/bulk.mixed-sources.json",
+        "cases/bulk.pinned.json",
+        "cases/bulk.partial-failure.json",
+        "cases/bulk.cancelled.json",
+        "cases/bulk.trust.json"
+      ]
+    },
+    {
+      "id": "configuration-trust",
+      "description": "Verify settings persistence, trust gates, atomic writes, concurrency and restart.",
+      "requiredCaseIds": [
+        "config.user",
+        "config.project",
+        "config.relative-source",
+        "config.filters",
+        "config.disabled",
+        "config.trust-denied",
+        "config.trust-approved",
+        "config.failed-write",
+        "config.concurrent-change",
+        "config.restart"
+      ],
+      "requiredFixtureFamilies": [
+        "isolated-settings-roots",
+        "project-trust",
+        "concurrent-writers"
+      ],
+      "requiredAssertions": {
+        "config.user": [
+          "config.user"
+        ],
+        "config.project": [
+          "config.project"
+        ],
+        "config.relative-source": [
+          "config.relative-source"
+        ],
+        "config.filters": [
+          "config.filters"
+        ],
+        "config.disabled": [
+          "config.disabled"
+        ],
+        "config.trust-denied": [
+          "config.trust-denied"
+        ],
+        "config.trust-approved": [
+          "config.trust-approved"
+        ],
+        "config.failed-write": [
+          "config.failed-write"
+        ],
+        "config.concurrent-change": [
+          "config.concurrent-change"
+        ],
+        "config.restart": [
+          "config.restart"
+        ]
+      },
+      "requiredExecutableVerification": [
+        "tools/parity/managed-package-configuration-process-differential.py",
+        "PackageSettingsReaderTests",
+        "PackageSettingsTests",
+        "project trust process tests"
+      ],
+      "upstreamSourceReferences": [
+        "packages/coding-agent/src/core/settings-manager.ts",
+        "packages/coding-agent/src/cli/project-trust.ts",
+        "packages/coding-agent/docs/packages.md"
+      ],
+      "allowedClassifications": [
+        "strict",
+        "equivalent",
+        "intentional-safety-difference",
+        "unsupported-platform",
+        "unsupported-upstream",
+        "mismatch",
+        "unexecuted"
+      ],
+      "dependencies": [
+        "baseline"
+      ],
+      "requiredEvidenceFiles": [
+        "cases/config.user.json",
+        "cases/config.project.json",
+        "cases/config.relative-source.json",
+        "cases/config.filters.json",
+        "cases/config.disabled.json",
+        "cases/config.trust-denied.json",
+        "cases/config.trust-approved.json",
+        "cases/config.failed-write.json",
+        "cases/config.concurrent-change.json",
+        "cases/config.restart.json"
+      ]
+    },
+    {
+      "id": "resource-distribution",
+      "description": "Verify package skills, prompts, themes and native extensions through real CLI/RPC paths.",
+      "requiredCaseIds": [
+        "distribution.local",
+        "distribution.npm",
+        "distribution.git",
+        "distribution.skill",
+        "distribution.prompt",
+        "distribution.theme",
+        "distribution.native-extension",
+        "distribution.manifest",
+        "distribution.filters",
+        "distribution.invalid-resource",
+        "distribution.conventional-directories",
+        "distribution.exclusions",
+        "distribution.disabled",
+        "distribution.source-metadata",
+        "distribution.temporary-npm-package",
+        "distribution.temporary-git-package",
+        "distribution.temporary-source-order"
+      ],
+      "requiredFixtureFamilies": [
+        "local-npm-git-resource-fixtures",
+        "cli-json-rpc-processes"
+      ],
+      "requiredAssertions": {
+        "distribution.local": [
+          "distribution.local"
+        ],
+        "distribution.npm": [
+          "distribution.npm"
+        ],
+        "distribution.git": [
+          "distribution.git"
+        ],
+        "distribution.skill": [
+          "distribution.skill"
+        ],
+        "distribution.prompt": [
+          "distribution.prompt"
+        ],
+        "distribution.theme": [
+          "distribution.theme"
+        ],
+        "distribution.native-extension": [
+          "distribution.native-extension"
+        ],
+        "distribution.manifest": [
+          "distribution.manifest"
+        ],
+        "distribution.filters": [
+          "distribution.filters"
+        ],
+        "distribution.invalid-resource": [
+          "distribution.invalid-resource"
+        ],
+        "distribution.conventional-directories": [
+          "distribution.conventional-directories"
+        ],
+        "distribution.exclusions": [
+          "distribution.exclusions"
+        ],
+        "distribution.disabled": [
+          "distribution.disabled"
+        ],
+        "distribution.source-metadata": [
+          "distribution.source-metadata"
+        ],
+        "distribution.temporary-npm-package": [
+          "distribution.temporary-npm-package"
+        ],
+        "distribution.temporary-git-package": [
+          "distribution.temporary-git-package"
+        ],
+        "distribution.temporary-source-order": [
+          "distribution.temporary-source-order"
+        ]
+      },
+      "requiredExecutableVerification": [
+        "tools/parity/managed-npm-process-differential.py",
+        "tools/parity/resource-invocation-process-differential.py",
+        "ResourcePackageLoadingTests"
+      ],
+      "upstreamSourceReferences": [
+        "packages/coding-agent/src/core/package-manager.ts",
+        "packages/coding-agent/docs/packages.md",
+        "packages/coding-agent/src/core/resource-loader.ts"
+      ],
+      "allowedClassifications": [
+        "strict",
+        "equivalent",
+        "intentional-safety-difference",
+        "unsupported-platform",
+        "unsupported-upstream",
+        "mismatch",
+        "unexecuted"
+      ],
+      "dependencies": [
+        "npm-install",
+        "git-install",
+        "identity"
+      ],
+      "requiredEvidenceFiles": [
+        "cases/distribution.local.json",
+        "cases/distribution.npm.json",
+        "cases/distribution.git.json",
+        "cases/distribution.skill.json",
+        "cases/distribution.prompt.json",
+        "cases/distribution.theme.json",
+        "cases/distribution.native-extension.json",
+        "cases/distribution.manifest.json",
+        "cases/distribution.filters.json",
+        "cases/distribution.invalid-resource.json",
+        "cases/distribution.conventional-directories.json",
+        "cases/distribution.exclusions.json",
+        "cases/distribution.disabled.json",
+        "cases/distribution.source-metadata.json",
+        "cases/distribution.temporary-npm-package.json",
+        "cases/distribution.temporary-git-package.json",
+        "cases/distribution.temporary-source-order.json"
+      ]
+    },
+    {
+      "id": "startup-reload",
+      "description": "Verify install/restart/invoke/update/reload/remove resource lifecycle snapshots.",
+      "requiredCaseIds": [
+        "reload.local",
+        "reload.npm",
+        "reload.git",
+        "reload.updated-resource",
+        "reload.removed-resource",
+        "reload.disabled-resource",
+        "reload.trust-revoked",
+        "reload.no-duplicate-registration"
+      ],
+      "requiredFixtureFamilies": [
+        "restartable-cli-processes",
+        "resource-invocation-fixtures"
+      ],
+      "requiredAssertions": {
+        "reload.local": [
+          "reload.local"
+        ],
+        "reload.npm": [
+          "reload.npm"
+        ],
+        "reload.git": [
+          "reload.git"
+        ],
+        "reload.updated-resource": [
+          "reload.updated-resource"
+        ],
+        "reload.removed-resource": [
+          "reload.removed-resource"
+        ],
+        "reload.disabled-resource": [
+          "reload.disabled-resource"
+        ],
+        "reload.trust-revoked": [
+          "reload.trust-revoked"
+        ],
+        "reload.no-duplicate-registration": [
+          "reload.no-duplicate-registration"
+        ]
+      },
+      "requiredExecutableVerification": [
+        "tools/parity/managed-package-startup-reload-process-differential.py",
+        "tools/parity/managed-npm-process-differential.py"
+      ],
+      "upstreamSourceReferences": [
+        "packages/coding-agent/src/core/package-manager.ts",
+        "packages/coding-agent/docs/packages.md"
+      ],
+      "allowedClassifications": [
+        "strict",
+        "equivalent",
+        "intentional-safety-difference",
+        "unsupported-platform",
+        "unsupported-upstream",
+        "mismatch",
+        "unexecuted"
+      ],
+      "dependencies": [
+        "resource-distribution",
+        "configuration-trust"
+      ],
+      "requiredEvidenceFiles": [
+        "cases/reload.local.json",
+        "cases/reload.npm.json",
+        "cases/reload.git.json",
+        "cases/reload.updated-resource.json",
+        "cases/reload.removed-resource.json",
+        "cases/reload.disabled-resource.json",
+        "cases/reload.trust-revoked.json",
+        "cases/reload.no-duplicate-registration.json"
+      ]
+    },
+    {
+      "id": "failure-recovery",
+      "description": "Verify atomic failure recovery for installs, updates, settings and cancellation.",
+      "requiredCaseIds": [
+        "failure.registry",
+        "failure.git-remote",
+        "failure.invalid-archive",
+        "failure.lifecycle-script",
+        "failure.dependency-install",
+        "failure.settings-publication",
+        "failure.permission",
+        "failure.cancelled-install",
+        "failure.cancelled-update",
+        "failure.interrupted-staging",
+        "failure.restart-recovery"
+      ],
+      "requiredFixtureFamilies": [
+        "deterministic-failure-injection",
+        "disposable-package-roots"
+      ],
+      "requiredAssertions": {
+        "failure.registry": [
+          "failure.registry"
+        ],
+        "failure.git-remote": [
+          "failure.git-remote"
+        ],
+        "failure.invalid-archive": [
+          "failure.invalid-archive"
+        ],
+        "failure.lifecycle-script": [
+          "failure.lifecycle-script"
+        ],
+        "failure.dependency-install": [
+          "failure.dependency-install"
+        ],
+        "failure.settings-publication": [
+          "failure.settings-publication"
+        ],
+        "failure.permission": [
+          "failure.permission"
+        ],
+        "failure.cancelled-install": [
+          "failure.cancelled-install"
+        ],
+        "failure.cancelled-update": [
+          "failure.cancelled-update"
+        ],
+        "failure.interrupted-staging": [
+          "failure.interrupted-staging"
+        ],
+        "failure.restart-recovery": [
+          "failure.restart-recovery"
+        ]
+      },
+      "requiredExecutableVerification": [
+        "tools/parity/managed-package-failure-process-differential.py",
+        "tools/parity/managed-package-configuration-process-differential.py",
+        "tools/parity/managed-npm-update-process-differential.py",
+        "ManagedResourcePackageStoreTests",
+        "ManagedGitPackageStoreTests"
+      ],
+      "upstreamSourceReferences": [
+        "packages/coding-agent/src/core/package-manager.ts"
+      ],
+      "allowedClassifications": [
+        "strict",
+        "equivalent",
+        "intentional-safety-difference",
+        "unsupported-platform",
+        "unsupported-upstream",
+        "mismatch",
+        "unexecuted"
+      ],
+      "dependencies": [
+        "npm-install",
+        "npm-update",
+        "git-install",
+        "git-update"
+      ],
+      "requiredEvidenceFiles": [
+        "cases/failure.registry.json",
+        "cases/failure.git-remote.json",
+        "cases/failure.invalid-archive.json",
+        "cases/failure.lifecycle-script.json",
+        "cases/failure.dependency-install.json",
+        "cases/failure.settings-publication.json",
+        "cases/failure.permission.json",
+        "cases/failure.cancelled-install.json",
+        "cases/failure.cancelled-update.json",
+        "cases/failure.interrupted-staging.json",
+        "cases/failure.restart-recovery.json"
+      ]
+    },
+    {
+      "id": "concurrency",
+      "description": "Verify bounded terminal outcomes and durable integrity under concurrent package operations.",
+      "requiredCaseIds": [
+        "concurrent.same-npm-install",
+        "concurrent.same-git-install",
+        "concurrent.install-remove",
+        "concurrent.update-remove",
+        "concurrent.two-process-update",
+        "concurrent.update-discovery",
+        "concurrent.cancelled-lock",
+        "concurrent.crashed-writer",
+        "concurrent.external-settings-change"
+      ],
+      "requiredFixtureFamilies": [
+        "barrier-synchronized-processes",
+        "disposable-package-roots"
+      ],
+      "requiredAssertions": {
+        "concurrent.same-npm-install": [
+          "concurrent.same-npm-install"
+        ],
+        "concurrent.same-git-install": [
+          "concurrent.same-git-install"
+        ],
+        "concurrent.install-remove": [
+          "concurrent.install-remove"
+        ],
+        "concurrent.update-remove": [
+          "concurrent.update-remove"
+        ],
+        "concurrent.two-process-update": [
+          "concurrent.two-process-update"
+        ],
+        "concurrent.update-discovery": [
+          "concurrent.update-discovery"
+        ],
+        "concurrent.cancelled-lock": [
+          "concurrent.cancelled-lock"
+        ],
+        "concurrent.crashed-writer": [
+          "concurrent.crashed-writer"
+        ],
+        "concurrent.external-settings-change": [
+          "concurrent.external-settings-change"
+        ]
+      },
+      "requiredExecutableVerification": [
+        "tools/parity/managed-package-concurrency-process-differential.py",
+        "ResourcePackageCommandProcessTests"
+      ],
+      "upstreamSourceReferences": [
+        "packages/coding-agent/src/core/package-manager.ts",
+        "packages/coding-agent/src/core/settings-manager.ts"
+      ],
+      "allowedClassifications": [
+        "strict",
+        "equivalent",
+        "intentional-safety-difference",
+        "unsupported-platform",
+        "unsupported-upstream",
+        "mismatch",
+        "unexecuted"
+      ],
+      "dependencies": [
+        "npm-install",
+        "git-install",
+        "configuration-trust"
+      ],
+      "requiredEvidenceFiles": [
+        "cases/concurrent.same-npm-install.json",
+        "cases/concurrent.same-git-install.json",
+        "cases/concurrent.install-remove.json",
+        "cases/concurrent.update-remove.json",
+        "cases/concurrent.two-process-update.json",
+        "cases/concurrent.update-discovery.json",
+        "cases/concurrent.cancelled-lock.json",
+        "cases/concurrent.crashed-writer.json",
+        "cases/concurrent.external-settings-change.json"
+      ]
+    },
+    {
+      "id": "differential-acceptance",
+      "description": "Compare required behavior against pinned Pi, calibrate same-Pi runs, and reject changed contract data.",
+      "requiredCaseIds": [
+        "d0.same-pi-package-cli",
+        "d0.same-pi-npm",
+        "d0.same-pi-git",
+        "d0.negative-control"
+      ],
+      "requiredFixtureFamilies": [
+        "pinned-pi-independent-runs",
+        "negative-differential-control"
+      ],
+      "requiredAssertions": {
+        "d0.same-pi-package-cli": [
+          "d0.same-pi-package-cli"
+        ],
+        "d0.same-pi-npm": [
+          "d0.same-pi-npm"
+        ],
+        "d0.same-pi-git": [
+          "d0.same-pi-git"
+        ],
+        "d0.negative-control": [
+          "d0.negative-control"
+        ]
+      },
+      "requiredExecutableVerification": [
+        "tools/parity/managed-package-differential-acceptance.py"
+      ],
+      "upstreamSourceReferences": [
+        "packages/coding-agent/src/core/package-manager.ts",
+        "packages/coding-agent/src/package-manager-cli.ts"
+      ],
+      "allowedClassifications": [
+        "strict",
+        "equivalent",
+        "intentional-safety-difference",
+        "unsupported-platform",
+        "unsupported-upstream",
+        "mismatch",
+        "unexecuted"
+      ],
+      "dependencies": [
+        "cli",
+        "npm-install",
+        "npm-update",
+        "package-managers",
+        "legacy-global",
+        "git-install",
+        "git-update",
+        "identity",
+        "removal-listing",
+        "bulk-updates",
+        "configuration-trust",
+        "resource-distribution",
+        "startup-reload",
+        "failure-recovery",
+        "concurrency"
+      ],
+      "requiredEvidenceFiles": [
+        "cases/d0.same-pi-package-cli.json",
+        "cases/d0.same-pi-npm.json",
+        "cases/d0.same-pi-git.json",
+        "cases/d0.negative-control.json"
+      ]
+    },
+    {
+      "id": "quality",
+      "description": "Run required .NET, Python, Node, MCP, formatting, documentation and differential gates.",
+      "requiredCaseIds": [
+        "quality.format",
+        "quality.build",
+        "quality.dotnet-suite",
+        "quality.focused-tests",
+        "quality.python-parity",
+        "quality.node-terminal",
+        "quality.mcp",
+        "quality.docs",
+        "quality.differentials"
+      ],
+      "requiredFixtureFamilies": [
+        "trx-test-results",
+        "repository-quality-commands"
+      ],
+      "requiredAssertions": {
+        "quality.format": [
+          "quality.format"
+        ],
+        "quality.build": [
+          "quality.build"
+        ],
+        "quality.dotnet-suite": [
+          "quality.dotnet-suite"
+        ],
+        "quality.focused-tests": [
+          "quality.focused-tests"
+        ],
+        "quality.python-parity": [
+          "quality.python-parity"
+        ],
+        "quality.node-terminal": [
+          "quality.node-terminal"
+        ],
+        "quality.mcp": [
+          "quality.mcp"
+        ],
+        "quality.docs": [
+          "quality.docs"
+        ],
+        "quality.differentials": [
+          "quality.differentials"
+        ]
+      },
+      "requiredExecutableVerification": [
+        "dotnet format",
+        "dotnet build",
+        "dotnet test",
+        "python parity tests",
+        "Node terminal tests",
+        "MCP conformance",
+        "docs path validation",
+        "tools/parity/managed_packages/verify.py check --checkpoint"
+      ],
+      "upstreamSourceReferences": [],
+      "allowedClassifications": [
+        "strict",
+        "equivalent",
+        "intentional-safety-difference",
+        "unsupported-platform",
+        "unsupported-upstream",
+        "mismatch",
+        "unexecuted"
+      ],
+      "dependencies": [
+        "differential-acceptance"
+      ],
+      "requiredEvidenceFiles": [
+        "cases/quality.format.json",
+        "cases/quality.build.json",
+        "cases/quality.dotnet-suite.json",
+        "cases/quality.focused-tests.json",
+        "cases/quality.python-parity.json",
+        "cases/quality.node-terminal.json",
+        "cases/quality.mcp.json",
+        "cases/quality.docs.json",
+        "cases/quality.differentials.json"
+      ]
+    },
+    {
+      "id": "committed-evidence",
+      "description": "Update inventories and create the reproducible managed-package milestone receipt.",
+      "requiredCaseIds": [
+        "evidence.feature-matrix",
+        "evidence.execution-ledger",
+        "evidence.continuation",
+        "evidence.todo",
+        "evidence.receipt",
+        "evidence.case-coverage",
+        "evidence.source-links"
+      ],
+      "requiredFixtureFamilies": [
+        "committed-parity-receipt",
+        "schema-validated-reports"
+      ],
+      "requiredAssertions": {
+        "evidence.feature-matrix": [
+          "evidence.feature-matrix"
+        ],
+        "evidence.execution-ledger": [
+          "evidence.execution-ledger"
+        ],
+        "evidence.continuation": [
+          "evidence.continuation"
+        ],
+        "evidence.todo": [
+          "evidence.todo"
+        ],
+        "evidence.receipt": [
+          "evidence.receipt"
+        ],
+        "evidence.case-coverage": [
+          "evidence.case-coverage"
+        ],
+        "evidence.source-links": [
+          "evidence.source-links"
+        ]
+      },
+      "requiredExecutableVerification": [
+        "docs/parity/fixtures/managed-package-lifecycle-parity.md",
+        "tools/parity/managed_packages/verify.py execute --checkpoint committed-evidence",
+        "tools/parity/managed_packages/verify.py check --all"
+      ],
+      "upstreamSourceReferences": [],
+      "allowedClassifications": [
+        "strict",
+        "equivalent",
+        "intentional-safety-difference",
+        "unsupported-platform",
+        "unsupported-upstream",
+        "mismatch",
+        "unexecuted"
+      ],
+      "dependencies": [
+        "quality"
+      ],
+      "requiredEvidenceFiles": [
+        "cases/evidence.feature-matrix.json",
+        "cases/evidence.execution-ledger.json",
+        "cases/evidence.continuation.json",
+        "cases/evidence.todo.json",
+        "cases/evidence.receipt.json",
+        "cases/evidence.case-coverage.json",
+        "cases/evidence.source-links.json"
+      ]
+    },
+    {
+      "id": "ci-integration",
+      "description": "Run and validate the managed package corpus in required GitHub Actions CI.",
+      "requiredCaseIds": [
+        "ci.pinned-pi",
+        "ci.execute-all",
+        "ci.check-all",
+        "ci.negative-controls",
+        "ci.push-head",
+        "ci.pr-head-base",
+        "ci.upload-on-failure"
+      ],
+      "requiredFixtureFamilies": [
+        "github-actions-push",
+        "github-actions-pr",
+        "uploaded-parity-artifacts"
+      ],
+      "requiredAssertions": {
+        "ci.pinned-pi": [
+          "ci.pinned-pi"
+        ],
+        "ci.execute-all": [
+          "ci.execute-all"
+        ],
+        "ci.check-all": [
+          "ci.check-all"
+        ],
+        "ci.negative-controls": [
+          "ci.negative-controls"
+        ],
+        "ci.push-head": [
+          "ci.push-head"
+        ],
+        "ci.pr-head-base": [
+          "ci.pr-head-base"
+        ],
+        "ci.upload-on-failure": [
+          "ci.upload-on-failure"
+        ]
+      },
+      "requiredExecutableVerification": [
+        ".github/workflows/ci.yml",
+        "managed package parity CI job",
+        "tools/parity/managed_packages/verify.py execute --all",
+        "tools/parity/managed_packages/verify.py execute --checkpoint ci-integration",
+        "tools/parity/managed_packages/verify.py check --all",
+        "tools/parity/managed_packages/test_verifier.py"
+      ],
+      "upstreamSourceReferences": [],
+      "allowedClassifications": [
+        "strict",
+        "equivalent",
+        "intentional-safety-difference",
+        "unsupported-platform",
+        "unsupported-upstream",
+        "mismatch",
+        "unexecuted"
+      ],
+      "dependencies": [
+        "committed-evidence"
+      ],
+      "requiredEvidenceFiles": [
+        "cases/ci.pinned-pi.json",
+        "cases/ci.execute-all.json",
+        "cases/ci.check-all.json",
+        "cases/ci.negative-controls.json",
+        "cases/ci.push-head.json",
+        "cases/ci.pr-head-base.json",
+        "cases/ci.upload-on-failure.json"
+      ]
+    },
+    {
+      "id": "draft-publication",
+      "description": "Publish the new milestone branch as an open draft, unmerged PR targeting main.",
+      "requiredCaseIds": [
+        "publication.repository",
+        "publication.branch",
+        "publication.base",
+        "publication.head",
+        "publication.open",
+        "publication.draft",
+        "publication.unmerged"
+      ],
+      "requiredFixtureFamilies": [
+        "github-pull-request"
+      ],
+      "requiredAssertions": {
+        "publication.repository": [
+          "publication.repository"
+        ],
+        "publication.branch": [
+          "publication.branch"
+        ],
+        "publication.base": [
+          "publication.base"
+        ],
+        "publication.head": [
+          "publication.head"
+        ],
+        "publication.open": [
+          "publication.open"
+        ],
+        "publication.draft": [
+          "publication.draft"
+        ],
+        "publication.unmerged": [
+          "publication.unmerged"
+        ]
+      },
+      "requiredExecutableVerification": [
+        "gh api repository pull request and branch metadata"
+      ],
+      "upstreamSourceReferences": [],
+      "allowedClassifications": [
+        "strict",
+        "equivalent",
+        "intentional-safety-difference",
+        "unsupported-platform",
+        "unsupported-upstream",
+        "mismatch",
+        "unexecuted"
+      ],
+      "dependencies": [
+        "ci-integration"
+      ],
+      "requiredEvidenceFiles": [
+        "cases/publication.repository.json",
+        "cases/publication.branch.json",
+        "cases/publication.base.json",
+        "cases/publication.head.json",
+        "cases/publication.open.json",
+        "cases/publication.draft.json",
+        "cases/publication.unmerged.json"
+      ]
+    },
+    {
+      "id": "exact-head-ci",
+      "description": "Verify current-head push and PR workflows, required jobs, package corpus and draft publication state.",
+      "requiredCaseIds": [
+        "ci1.push-exact-head",
+        "ci1.pr-exact-head-base",
+        "ci1.required-jobs",
+        "ci1.package-gate",
+        "ci1.tests",
+        "ci1.mcp",
+        "ci1.no-skipped-jobs",
+        "ci1.pr-still-draft"
+      ],
+      "requiredFixtureFamilies": [
+        "github-workflow-runs",
+        "github-pull-request"
+      ],
+      "requiredAssertions": {
+        "ci1.push-exact-head": [
+          "ci1.push-exact-head"
+        ],
+        "ci1.pr-exact-head-base": [
+          "ci1.pr-exact-head-base"
+        ],
+        "ci1.required-jobs": [
+          "ci1.required-jobs"
+        ],
+        "ci1.package-gate": [
+          "ci1.package-gate"
+        ],
+        "ci1.tests": [
+          "ci1.tests"
+        ],
+        "ci1.mcp": [
+          "ci1.mcp"
+        ],
+        "ci1.no-skipped-jobs": [
+          "ci1.no-skipped-jobs"
+        ],
+        "ci1.pr-still-draft": [
+          "ci1.pr-still-draft"
+        ]
+      },
+      "requiredExecutableVerification": [
+        "gh api actions runs and workflow jobs",
+        "gh run download managed-package parity artifact",
+        "verify.py check --publication --pr <number>"
+      ],
+      "upstreamSourceReferences": [],
+      "allowedClassifications": [
+        "strict",
+        "equivalent",
+        "intentional-safety-difference",
+        "unsupported-platform",
+        "unsupported-upstream",
+        "mismatch",
+        "unexecuted"
+      ],
+      "dependencies": [
+        "draft-publication"
+      ],
+      "requiredEvidenceFiles": [
+        "cases/ci1.push-exact-head.json",
+        "cases/ci1.pr-exact-head-base.json",
+        "cases/ci1.required-jobs.json",
+        "cases/ci1.package-gate.json",
+        "cases/ci1.tests.json",
+        "cases/ci1.mcp.json",
+        "cases/ci1.no-skipped-jobs.json",
+        "cases/ci1.pr-still-draft.json"
+      ]
+    }
+  ],
+  "requiredPackageCapabilityIds": [
+    "cli",
+    "npm-install",
+    "npm-update",
+    "package-managers",
+    "legacy-global",
+    "git-install",
+    "git-update",
+    "identity",
+    "removal-listing",
+    "bulk-updates",
+    "configuration-trust",
+    "resource-distribution",
+    "startup-reload",
+    "failure-recovery",
+    "concurrency"
+  ],
+  "prerequisitePR": {
+    "number": 26,
+    "reviewedHeadSha": "aa427dc8a9b8890945be3b0dd3840986c72a2105",
+    "reviewedBaseSha": "897bc5778f87ed09ea42e48b260479ee6a6a218c",
+    "requiredWorkflowRunIds": [
+      40215014277,
+      40215019108
+    ]
+  }
+}

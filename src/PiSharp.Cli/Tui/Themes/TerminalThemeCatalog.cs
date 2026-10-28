@@ -21,6 +21,7 @@ internal sealed class TerminalThemeCatalog
     private readonly TerminalColorMode _mode;
     private readonly Func<string, string?> _environment;
     private readonly IReadOnlyList<PackageResourceFile> _packageThemes;
+    private readonly IReadOnlyList<PackageResourceFile> _temporaryPackageThemes;
 
     public IReadOnlyList<TerminalThemeDiagnostic> Diagnostics => GetDiagnostics();
 
@@ -30,7 +31,9 @@ internal sealed class TerminalThemeCatalog
         bool discoverThemes = true, IReadOnlyList<string>? explicitThemePaths = null,
         string? explicitThemeBaseDirectory = null,
         IReadOnlyList<ResourcePackageSource>? userPackages = null, IReadOnlyList<ResourcePackageSource>? projectPackages = null,
-        IReadOnlyList<ManagedResourcePackageRoot>? managedPackageRoots = null)
+        IReadOnlyList<ManagedResourcePackageRoot>? managedPackageRoots = null,
+        IReadOnlyList<ResourcePackageSource>? temporaryPackages = null,
+        IReadOnlyList<ManagedResourcePackageRoot>? temporaryPackageRoots = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(agentDirectory);
         _environment = environment ?? Environment.GetEnvironmentVariable;
@@ -53,8 +56,11 @@ internal sealed class TerminalThemeCatalog
         _projectThemeDirectory = trustedProjectDirectory is null
             ? null
             : Path.Combine(_projectBaseDirectory!, "themes");
-        _packageThemes = ResourcePackageFiles.Load(trustedProjectDirectory ?? _explicitThemeBaseDirectory, _userBaseDirectory,
-            trustedProjectDirectory is not null, userPackages, projectPackages, CancellationToken.None, managedPackageRoots).Themes;
+        var packages = ResourcePackageFiles.Load(trustedProjectDirectory ?? _explicitThemeBaseDirectory, _userBaseDirectory,
+            trustedProjectDirectory is not null, userPackages, projectPackages, CancellationToken.None, managedPackageRoots,
+            temporaryPackages, temporaryPackageRoots);
+        _packageThemes = packages.Themes;
+        _temporaryPackageThemes = packages.TemporaryThemes;
     }
 
     public IReadOnlyList<string> GetAvailableNames()
@@ -163,6 +169,8 @@ internal sealed class TerminalThemeCatalog
     {
         var seen = new HashSet<string>(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
         var packagePaths = _packageThemes.Select(file => file.Path).ToHashSet(seen.Comparer);
+        foreach (var file in _temporaryPackageThemes)
+            if (file.Enabled && seen.Add(file.Path)) yield return file.Path;
         if (_discoverThemes)
         {
             if (_projectBaseDirectory is not null)

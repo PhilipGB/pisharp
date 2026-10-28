@@ -17,6 +17,56 @@ namespace PiSharp.Tests;
 public sealed class ResourcePackageCommandProcessTests
 {
     [Fact]
+    public async Task ConcurrentProcessesInstallTheSameNpmPackageWithoutDuplicatingItsDeclaration()
+    {
+        await using var fixture = new ManagedNpmFixture();
+        fixture.Create();
+        var packageDirectory = fixture.CreatePackageDirectory("concurrent-install");
+        var installLog = Path.Combine(fixture.Root, "concurrent-install.log");
+        var tarball = await fixture.PackAsync(packageDirectory, JsonSerializer.Serialize(new
+        {
+            name = "concurrent-install",
+            version = "1.0.0",
+            scripts = new { postinstall = "node postinstall.js" }
+        }), textFiles: new Dictionary<string, string>
+        {
+            ["postinstall.js"] = $"const fs = require('node:fs');\n" +
+                "Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 250);\n" +
+                $"fs.appendFileSync({JsonSerializer.Serialize(installLog)}, 'run\\n');\n"
+        });
+        var barrierLog = Path.Combine(fixture.Root, "npm-barrier.log");
+        var managerShim = Path.Combine(fixture.Root, "barrier-npm.cjs");
+        await File.WriteAllTextAsync(managerShim,
+            "const fs = require('node:fs');\n" +
+            "const { spawnSync } = require('node:child_process');\n" +
+            "const log = process.env.PISHARP_TEST_NPM_BARRIER_LOG;\n" +
+            "fs.appendFileSync(log, 'ready\\n');\n" +
+            "const result = spawnSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', " +
+                "process.argv.slice(2), { encoding: 'utf8', shell: process.platform === 'win32' });\n" +
+            "if (result.stdout) process.stdout.write(result.stdout);\n" +
+            "if (result.stderr) process.stderr.write(result.stderr);\n" +
+            "process.exit(result.status ?? 1);\n");
+        await File.WriteAllTextAsync(Path.Combine(fixture.AgentDirectory, "settings.json"),
+            JsonSerializer.Serialize(new { npmCommand = new[] { "node", managerShim } }));
+        var source = "npm:concurrent-install@file:" + tarball;
+
+        var environment = new Dictionary<string, string?> { ["PISHARP_TEST_NPM_BARRIER_LOG"] = barrierLog };
+        var installs = await Task.WhenAll(RunAsync(fixture, environment, "install", source),
+            RunAsync(fixture, environment, "install", source));
+
+        Assert.All(installs, result => Assert.True(result.ExitCode == 0,
+            $"Concurrent install failed ({result.ExitCode}):\n{result.Error}\n{result.Output}"));
+        using var settings = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(fixture.AgentDirectory, "settings.json")));
+        Assert.Equal([source], settings.RootElement.GetProperty("packages").EnumerateArray()
+            .Select(package => package.GetString()!).ToArray());
+        Assert.Equal("1.0.0", JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(
+                fixture.AgentDirectory, "npm", "node_modules", "concurrent-install", "package.json")))
+            .RootElement.GetProperty("version").GetString());
+        Assert.Equal(2, (await File.ReadAllLinesAsync(barrierLog)).Length);
+        Assert.NotEmpty(await File.ReadAllLinesAsync(installLog));
+    }
+
+    [Fact]
     public async Task ExtensionGeneratedCustomTurnResumesInAFreshProcessWithoutReplayingTrigger()
     {
         var repositoryRoot = FindRepositoryRoot();
@@ -479,6 +529,12 @@ public sealed class ResourcePackageCommandProcessTests
     {
         await using var fixture = new ManagedNpmFixture();
         fixture.Create();
+        var priorPackageDirectory = fixture.CreatePackageDirectory("cli-package-persistence-v09");
+        var priorTarball = await fixture.PackAsync(priorPackageDirectory,
+            "{\"name\":\"cli-package-persistence\",\"version\":\"0.9.0\"}");
+        var duplicatePackageDirectory = fixture.CreatePackageDirectory("cli-package-persistence-v08");
+        var duplicateTarball = await fixture.PackAsync(duplicatePackageDirectory,
+            "{\"name\":\"cli-package-persistence\",\"version\":\"0.8.0\"}");
         var packageDirectory = fixture.CreatePackageDirectory("cli-package-persistence");
         var tarball = await fixture.PackAsync(packageDirectory,
             "{\"name\":\"cli-package-persistence\",\"version\":\"1.0.0\",\"pi\":{\"skills\":[\"skills\"]}}",
@@ -488,8 +544,8 @@ public sealed class ResourcePackageCommandProcessTests
             });
         var source = "npm:cli-package-persistence@file:" + tarball;
         var settingsPath = Path.Combine(fixture.AgentDirectory, "settings.json");
-        var prior = "npm:cli-package-persistence@^0.9.0";
-        var duplicate = "npm:cli-package-persistence@^0.8.0";
+        var prior = "npm:cli-package-persistence@file:" + priorTarball;
+        var duplicate = "npm:cli-package-persistence@file:" + duplicateTarball;
         const string unrelated = "npm:unrelated-package@1.0.0";
         await File.WriteAllTextAsync(settingsPath, JsonSerializer.Serialize(new
         {
@@ -644,6 +700,53 @@ public sealed class ResourcePackageCommandProcessTests
         var projectRemoved = await RunGitCommandAsync(fixture, "remove", "--local", "--approve", projectSource);
         Assert.Equal(0, projectRemoved.ExitCode);
         Assert.False(Directory.Exists(projectCache));
+    }
+
+    [Fact]
+    public async Task BulkUpdateHandlesMixedUserAndTrustedProjectPackageScopes()
+    {
+        await using var fixture = new ManagedGitFixture();
+        await fixture.CreateAsync();
+        await fixture.SetRemoteDefaultBranchAsync(fixture.Version1);
+        var userNpmDirectory = Path.Combine(fixture.Root, "user-npm-package");
+        var projectNpmDirectory = Path.Combine(fixture.Root, "project-npm-package");
+        await WriteNpmPackageAsync(userNpmDirectory, "bulk-user-package");
+        await WriteNpmPackageAsync(projectNpmDirectory, "bulk-project-package");
+        var userNpmSource = "npm:bulk-user-package@file:" + userNpmDirectory;
+        var projectNpmSource = "npm:bulk-project-package@file:" + projectNpmDirectory;
+        var gitSource = fixture.UnpinnedSource;
+
+        var installedGit = await RunGitCommandAsync(fixture, "install", gitSource);
+        var installedUserNpm = await RunGitCommandAsync(fixture, "install", userNpmSource);
+        Directory.CreateDirectory(Path.Combine(fixture.ProjectDirectory, ".pi", "extension-resources"));
+        var installedProjectNpm = await RunGitCommandAsync(fixture, "install", "--local", "--approve", projectNpmSource);
+        Assert.True(installedGit.ExitCode == 0, installedGit.Error + "\n" + installedGit.Output);
+        Assert.True(installedUserNpm.ExitCode == 0, installedUserNpm.Error + "\n" + installedUserNpm.Output);
+        Assert.True(installedProjectNpm.ExitCode == 0, installedProjectNpm.Error + "\n" + installedProjectNpm.Output);
+
+        await fixture.SetRemoteDefaultBranchAsync(fixture.Version2);
+        var updated = await RunGitCommandAsync(fixture, "update", "--extensions", "--approve");
+
+        Assert.True(updated.ExitCode == 0, updated.Error + "\n" + updated.Output);
+        Assert.Equal(fixture.Version2, await ReadGitHeadAsync(fixture.UserCacheRoot));
+        Assert.True(Directory.Exists(Path.Combine(fixture.AgentDirectory, "npm", "node_modules", "bulk-user-package")));
+        Assert.True(Directory.Exists(Path.Combine(fixture.ProjectDirectory, ".pi", "npm", "node_modules", "bulk-project-package")));
+        using var userSettings = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(fixture.AgentDirectory, "settings.json")));
+        Assert.Equal(new[] { gitSource, userNpmSource }, userSettings.RootElement.GetProperty("packages")
+            .EnumerateArray().Select(package => package.GetString()!).ToArray());
+        using var projectSettings = JsonDocument.Parse(await File.ReadAllTextAsync(
+            Path.Combine(fixture.ProjectDirectory, ".pi", "settings.json")));
+        Assert.Equal(projectNpmSource, projectSettings.RootElement.GetProperty("packages")[0].GetString());
+    }
+
+    private static async Task WriteNpmPackageAsync(string directory, string name)
+    {
+        Directory.CreateDirectory(directory);
+        await File.WriteAllTextAsync(Path.Combine(directory, "package.json"), JsonSerializer.Serialize(new
+        {
+            name,
+            version = "1.0.0"
+        }));
     }
 
     private static async Task<(int ExitCode, string Output, string Error)> RunAsync(

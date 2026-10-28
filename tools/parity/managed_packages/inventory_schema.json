@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Pinned managed package capability inventory",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "pisharpSourceSha", "piSha", "repository", "capabilities"],
+  "properties": {
+    "schemaVersion": {"type": "integer", "enum": [1]},
+    "pisharpSourceSha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "piSha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "repository": {"type": "string", "enum": ["PhilipGB/pisharp"]},
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["capabilityId", "description", "sourceOwners", "requiredCaseIds", "executableCaseBindings", "currentImplementationStatus", "existingTestEvidence", "confirmedDifferences", "coverageNotes", "correctiveWorkRequired", "baselineComparisonStatus"],
+        "properties": {
+          "capabilityId": {"type": "string", "minLength": 1},
+          "description": {"type": "string", "minLength": 1},
+          "sourceOwners": {
+            "type": "array", "minItems": 1,
+            "items": {
+              "type": "object", "additionalProperties": false,
+              "required": ["repository", "path", "symbols"],
+              "properties": {
+                "repository": {"type": "string", "enum": ["pisharp", "pi"]},
+                "path": {"type": "string", "minLength": 1},
+                "symbols": {"type": "array", "items": {"type": "string", "minLength": 1}}
+              }
+            }
+          },
+          "requiredCaseIds": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+          "executableCaseBindings": {
+            "type": "array",
+            "items": {
+              "type": "object", "additionalProperties": false,
+              "required": ["caseId", "runnerPath", "selector", "fixtureFamilies"],
+              "properties": {
+                "caseId": {"type": "string", "minLength": 1},
+                "runnerPath": {"type": "string", "minLength": 1},
+                "selector": {"type": "string", "minLength": 1},
+                "fixtureFamilies": {"type": "array", "minItems": 1, "uniqueItems": true,
+                  "items": {"type": "string", "minLength": 1}}
+              }
+            }
+          },
+          "currentImplementationStatus": {"type": "string", "enum": ["implemented-unverified", "gap-confirmed", "coverage-gap"]},
+          "existingTestEvidence": {"type": "array", "items": {"type": "string", "minLength": 1}},
+          "confirmedDifferences": {
+            "type": "array",
+            "items": {
+              "type": "object", "additionalProperties": false,
+              "required": ["differenceId", "description", "sourceEvidence", "requiredCaseIds"],
+              "properties": {
+                "differenceId": {"type": "string", "minLength": 1},
+                "description": {"type": "string", "minLength": 1},
+                "sourceEvidence": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+                "requiredCaseIds": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+              }
+            }
+          },
+          "coverageNotes": {"type": "array", "items": {"type": "string", "minLength": 1}},
+          "correctiveWorkRequired": {"type": "array", "items": {"type": "string", "minLength": 1}},
+          "baselineComparisonStatus": {"type": "string", "enum": ["pending", "captured"]}
+        }
+      }
+    }
+  }
+}

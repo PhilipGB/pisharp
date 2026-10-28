@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import queue
+import re
 import shutil
 import signal
 import socket
@@ -30,6 +31,11 @@ class RpcEndedBeforeCheckpoint(Exception):
     pass
 
 
+def normalize_temporary_git_cache_path(value):
+    return re.sub(r'(/tmp/extensions/git-[^/]+/)[0-9a-f]{8,64}(/)',
+                  lambda match: match.group(1) + '<source-cache>' + match.group(2), value)
+
+
 def create_managed_npm_tarballs(root, pi, environment):
     pack_root = root / 'managed-npm-input'
     tarballs = pack_root / 'tarballs'
@@ -49,7 +55,8 @@ def create_managed_npm_tarballs(root, pi, environment):
         pi=dict(skills=['skills'], prompts=['prompts'], themes=['themes']),
         scripts=dict(postinstall='node postinstall.cjs'))))
     (skill_package / 'postinstall.cjs').write_text(
-        "require('node:fs').appendFileSync(process.env.PISHARP_MANAGED_NPM_MARKER_DIR + '/skill-package.log', 'run\\n');\n")
+        "const fs=require('node:fs'); fs.appendFileSync(process.env.PISHARP_MANAGED_NPM_MARKER_DIR + '/skill-package.log', 'run\\n'); " +
+        "if(process.env.PISHARP_MANAGED_SOURCE_ORDER_LOG) fs.appendFileSync(process.env.PISHARP_MANAGED_SOURCE_ORDER_LOG, 'npm\\n');\n")
     (skill_package / 'skills/guide').mkdir(parents=True)
     (skill_package / 'prompts').mkdir()
     (skill_package / 'themes').mkdir()
@@ -121,7 +128,8 @@ def create_managed_git_repository(root, pi, environment):
         peerDependencies={'pisharp-host-api-must-not-install': '^1.0.0'},
         scripts=dict(postinstall='node postinstall.cjs'))))
     (source_tree / 'postinstall.cjs').write_text(
-        "require('node:fs').appendFileSync(process.env.PISHARP_MANAGED_GIT_MARKER_DIR + '/package.log', 'run\\n');\n")
+        "const fs=require('node:fs'); fs.appendFileSync(process.env.PISHARP_MANAGED_GIT_MARKER_DIR + '/package.log', 'run\\n'); " +
+        "if(process.env.PISHARP_MANAGED_SOURCE_ORDER_LOG) fs.appendFileSync(process.env.PISHARP_MANAGED_SOURCE_ORDER_LOG, 'git\\n');\n")
     (skills / 'SKILL.md').write_text(
         '---\nname: guide\ndescription: Installed managed Git skill\n---\nInstalled managed Git skill body')
     (prompts / 'review.md').write_text('---\ndescription: Installed managed Git prompt\n---\nReview topic')
@@ -267,7 +275,8 @@ console.log(JSON.stringify({source, before, after, expectedBefore: v1, expectedA
 def replay(product, pi, native, root, output, scenario, extension_mode='manifest', managed_sources=None,
            profile=None):
     package_scenario = scenario in ['local-package', 'padded-local-package', 'file-url-package', 'package-extension',
-                                    'managed-npm-package', 'managed-git-package']
+                                    'managed-npm-package', 'managed-git-package',
+                                    'temporary-npm-package', 'temporary-git-package', 'temporary-mixed-source-order']
     agent = root / product / 'agent'
     home = (profile / 'home') if profile else root / product / 'home'
     skill = root / product / ('package/skills/guide/SKILL.md' if package_scenario else 'guide/SKILL.md')
@@ -275,17 +284,38 @@ def replay(product, pi, native, root, output, scenario, extension_mode='manifest
         skill = agent / 'npm/node_modules/managed-skill/skills/guide/SKILL.md'
     if scenario == 'managed-git-package':
         skill = agent / 'git/127.0.0.1/fixture/repo/skills/guide/SKILL.md'
+    if scenario == 'temporary-npm-package':
+        skill = agent / 'tmp/extensions/npm/managed-skill/skills/guide/SKILL.md'
+    if scenario == 'temporary-git-package':
+        skill = agent / 'tmp/extensions/git-127.0.0.1/fixture/repo/skills/guide/SKILL.md'
+    if scenario == 'temporary-mixed-source-order':
+        skill = agent / 'tmp/extensions/git-127.0.0.1/fixture/repo/skills/guide/SKILL.md'
     if scenario == 'package-extension':
         skill = root / product / '.pi/extension-resources/startup/skills/guide/SKILL.md'
     agent.mkdir(parents=True)
     home.mkdir(parents=True, exist_ok=True)
-    if scenario not in ['managed-npm-package', 'managed-git-package']:
+    if scenario not in ['managed-npm-package', 'managed-git-package', 'temporary-npm-package',
+                        'temporary-git-package', 'temporary-mixed-source-order']:
         skill.parent.mkdir(parents=True)
         description = '!!int word' if scenario == 'invalid-tag' else 'Guide'
         skill.write_text(f'---\nname: guide\ndescription: {description}\n---\nbody')
     if package_scenario:
         if scenario in ['managed-npm-package', 'managed-git-package']:
             (agent / 'settings.json').write_text(json.dumps(dict(packages=managed_sources)))
+            project = root / product / '.pi'
+            (project / 'extension-resources/startup/skills/managed-startup').mkdir(parents=True)
+            (project / 'extension-resources/reloaded/skills/managed-reloaded').mkdir(parents=True)
+            for name in ['managed-startup', 'managed-reloaded']:
+                phase = 'reloaded' if name == 'managed-reloaded' else 'startup'
+                (project / f'extension-resources/{phase}/skills/{name}/SKILL.md').write_text(
+                    f'---\nname: {name}\ndescription: {name} extension resource\n---\n{name} body')
+            (project / 'extension-resources/startup/prompts').mkdir(parents=True)
+            (project / 'extension-resources/reloaded/prompts').mkdir(parents=True)
+            (project / 'extension-resources/startup/themes').mkdir(parents=True)
+            (project / 'extension-resources/reloaded/themes').mkdir(parents=True)
+            (project / 'settings.json').write_text('{}')
+            (project / 'project-trust-extension.json').write_text('{"decision":"yes","remember":true}')
+        elif scenario in ['temporary-npm-package', 'temporary-git-package', 'temporary-mixed-source-order']:
             project = root / product / '.pi'
             (project / 'extension-resources/startup/skills/managed-startup').mkdir(parents=True)
             (project / 'extension-resources/reloaded/skills/managed-reloaded').mkdir(parents=True)
@@ -405,34 +435,43 @@ export default function(pi) {
                    XDG_CACHE_HOME=str(profile / 'cache'), DOTNET_CLI_HOME=str(profile / 'dotnet'),
                    NUGET_PACKAGES=str(profile / 'nuget'), NUGET_HTTP_CACHE_PATH=str(profile / 'nuget-http'),
                    PISHARP_SESSION_DIR=str(profile / 'sessions'), npm_config_cache=str(profile / 'cache/npm'))
-    if scenario in ['managed-npm-package', 'managed-git-package']:
+    managed_scenario = scenario in ['managed-npm-package', 'managed-git-package',
+                                    'temporary-npm-package', 'temporary-git-package', 'temporary-mixed-source-order']
+    if managed_scenario:
         env.update(npm_config_cache=str(profile / 'cache/npm'), npm_config_offline='true',
                    PISHARP_AGENT_DIR=str(agent), PISHARP_SESSION_DIR=str(profile / 'sessions'),
                    PISHARP_MANAGED_NPM_MARKER_DIR=str(root / product / 'install-markers'),
                    PISHARP_TEST_RESOURCE_DISCOVERY='true',
                    PISHARP_TEST_EXTENSION_LOAD_LOG=str(root / product / 'extension-load.log'))
         (root / product / 'install-markers').mkdir(parents=True)
-    if scenario == 'managed-git-package':
+    if scenario in ['managed-git-package', 'temporary-git-package', 'temporary-mixed-source-order']:
         # Keep npm install's cache in the isolated CLI fixture directory rather than the ambient profile.
         env.update(npm_config_cache=str(root / product / 'npm-cache'),
                    PISHARP_MANAGED_GIT_MARKER_DIR=str(root / product / 'install-markers'))
-    elif scenario not in ['managed-npm-package', 'managed-git-package']:
+    if scenario == 'temporary-mixed-source-order':
+        env['PISHARP_MANAGED_SOURCE_ORDER_LOG'] = str(root / product / 'install-markers/source-order.log')
+    elif not managed_scenario:
         env['PI_OFFLINE'] = '1'
-    if scenario in ['package-extension', 'managed-npm-package', 'managed-git-package']:
+    if scenario in ['package-extension', 'managed-npm-package', 'managed-git-package',
+                    'temporary-npm-package', 'temporary-git-package', 'temporary-mixed-source-order']:
         env.update(PISHARP_TEST_RESOURCE_DISCOVERY='true',
                    PISHARP_TEST_EXTENSION_LOAD_LOG=str(root / product / 'extension-load.log'))
         if extension_mode == 'throwing-sibling':
             env['PISHARP_TEST_EXTENSION_PARTIAL_FAILURE'] = 'true'
     common = ['--mode', 'rpc', '--provider', 'fixture', '--model', 'fixture-model', '--no-session',
               '--no-extensions', '--no-skills', '--no-prompt-templates', '--no-tools', '--skill', str(skill)]
-    if scenario not in ['managed-npm-package', 'managed-git-package']:
+    if not managed_scenario:
         common.insert(6, '--offline')
     if package_scenario:
         common = common[:-2]
         common.remove('--no-skills')
         common.remove('--no-prompt-templates')
-    if scenario in ['package-extension', 'managed-npm-package', 'managed-git-package'] and extension_mode != 'no-extensions':
+    if scenario in ['package-extension', 'managed-npm-package', 'managed-git-package',
+                    'temporary-npm-package', 'temporary-git-package', 'temporary-mixed-source-order'] and extension_mode != 'no-extensions':
         common.remove('--no-extensions')
+    if scenario in ['temporary-npm-package', 'temporary-git-package', 'temporary-mixed-source-order']:
+        for source in managed_sources or []:
+            common.extend(['--extension', source])
     if scenario == 'package-extension' and extension_mode == 'missing-explicit':
         suffix = 'ts' if product == 'pi' else 'dll'
         common.extend(['--extension', str(root / product / f'missing.{suffix}')])
@@ -491,14 +530,36 @@ export default function(pi) {
             startup_skill = next((c for c in commands['data']['commands']
                                   if c['name'] == 'skill:managed-startup'), None)
             review_command = next((c for c in commands['data']['commands'] if c['name'] == 'review'), None)
-            if scenario in ['managed-npm-package', 'managed-git-package']:
-                expected_skill_description = ('Installed managed Git skill' if scenario == 'managed-git-package'
-                                              else 'Installed managed skill')
-                expected_prompt_description = ('Installed managed Git prompt' if scenario == 'managed-git-package'
-                                               else 'Installed managed prompt')
-                assert command_info and command_info['description'] == expected_skill_description, commands
+            temporary_resource_metadata = None
+            if scenario in ['temporary-npm-package', 'temporary-git-package', 'temporary-mixed-source-order']:
+                skill_metadata = (command_info or {}).get('sourceInfo', {})
+                prompt_metadata = (review_command or {}).get('sourceInfo', {})
+                skill_fields = {key: skill_metadata.get(key) for key in ['source', 'scope', 'origin']}
+                prompt_fields = {key: prompt_metadata.get(key) for key in ['source', 'scope', 'origin']}
+                assert skill_fields == {'source': 'cli', 'scope': 'temporary', 'origin': 'top-level'}, commands
+                if scenario == 'temporary-mixed-source-order':
+                    prompt_source = managed_sources[0] if review_command['description'] == 'Installed managed Git prompt' else managed_sources[1]
+                else:
+                    prompt_source = managed_sources[0]
+                assert prompt_fields == {'source': prompt_source, 'scope': 'temporary', 'origin': 'package'}, commands
+                temporary_resource_metadata = {'skill': skill_fields, 'prompt': prompt_fields}
+            if scenario in ['managed-npm-package', 'managed-git-package',
+                            'temporary-npm-package', 'temporary-git-package', 'temporary-mixed-source-order']:
+                if scenario == 'temporary-mixed-source-order':
+                    assert command_info and command_info['description'] in [
+                        'Installed managed Git skill', 'Installed managed skill'], commands
+                    assert review_command and review_command['description'] in [
+                        'Installed managed Git prompt', 'Installed managed prompt'], commands
+                else:
+                    expected_skill_description = ('Installed managed Git skill'
+                                                  if scenario in ['managed-git-package', 'temporary-git-package']
+                                                  else 'Installed managed skill')
+                    expected_prompt_description = ('Installed managed Git prompt'
+                                                  if scenario in ['managed-git-package', 'temporary-git-package']
+                                                   else 'Installed managed prompt')
+                    assert command_info and command_info['description'] == expected_skill_description, commands
+                    assert review_command and review_command['description'] == expected_prompt_description, commands
                 assert startup_skill and startup_skill['description'] == 'managed-startup extension resource', commands
-                assert review_command and review_command['description'] == expected_prompt_description, commands
             elif scenario == 'malformed-flow':
                 assert command_info is None, commands
             elif scenario == 'package-extension' and extension_mode in ['disabled', 'no-extensions']:
@@ -511,7 +572,8 @@ export default function(pi) {
             if scenario == 'deleted-skill':
                 skill.unlink()
             prompts = [('skill', '/skill:guide args'), ('template', '/review topic')] \
-                if scenario in ['managed-npm-package', 'managed-git-package'] \
+                if scenario in ['managed-npm-package', 'managed-git-package',
+                                'temporary-npm-package', 'temporary-git-package', 'temporary-mixed-source-order'] \
                 else [('prompt', '/skill:guide args')]
             response_records = []
             for prompt_id, prompt_text in prompts:
@@ -529,7 +591,9 @@ export default function(pi) {
                 assert failure['event'] == 'skill_expansion' and failure['extensionPath'] == str(skill), failure
             else:
                 assert not any(r.get('type') == 'extension_error' for r in records), records
-            expected_requests = 2 if scenario in ['managed-npm-package', 'managed-git-package'] else 1
+            expected_requests = 2 if scenario in ['managed-npm-package', 'managed-git-package',
+                                                   'temporary-npm-package', 'temporary-git-package',
+                                                   'temporary-mixed-source-order'] else 1
             assert len(server.requests) == expected_requests
             provider_inputs = []
             for request in server.requests:
@@ -537,10 +601,17 @@ export default function(pi) {
                 content = users[-1]
                 provider_inputs.append(content if isinstance(content, str) else ''.join(
                     p.get('text', '') for p in content if p.get('type') == 'text'))
-            if scenario in ['managed-npm-package', 'managed-git-package']:
-                expected_skill_body = ('Installed managed Git skill body' if scenario == 'managed-git-package'
+            if scenario in ['managed-npm-package', 'managed-git-package',
+                            'temporary-npm-package', 'temporary-git-package', 'temporary-mixed-source-order']:
+                expected_skill_body = ('Installed managed Git skill body'
+                                       if scenario in ['managed-git-package', 'temporary-git-package']
                                        else 'Installed managed skill body')
-                assert expected_skill_body in provider_inputs[0] and provider_inputs[0].endswith('args'), provider_inputs
+                if scenario == 'temporary-mixed-source-order':
+                    assert any(body in provider_inputs[0] for body in [
+                        'Installed managed Git skill body', 'Installed managed skill body']), provider_inputs
+                else:
+                    assert expected_skill_body in provider_inputs[0], provider_inputs
+                assert provider_inputs[0].endswith('args'), provider_inputs
                 assert 'Review topic' in provider_inputs[1], provider_inputs
             else:
                 text = provider_inputs[0]
@@ -552,26 +623,81 @@ export default function(pi) {
             reader.join(timeout=5)
             result = dict(errorBeforeResponse=True if failure else None, event=failure['event'] if failure else None,
                         error=failure['error'].replace(str(root / product), '<workspace>') if failure else None,
-                        providerInput=provider_inputs[0].replace(str(root / product), '<workspace>'),
+                        providerInput=normalize_temporary_git_cache_path(
+                            provider_inputs[0].replace(str(root / product), '<workspace>')),
                         providerRequests=expected_requests,
                         promptAccepted=True, commandDescription=command_info['description'] if command_info else None)
-            if scenario in ['managed-npm-package', 'managed-git-package']:
-                result['templateProviderInput'] = provider_inputs[1].replace(str(root / product), '<workspace>')
+            if package_scenario:
+                result['packageSkillMetadata'] = {
+                    key: (command_info or {}).get('sourceInfo', {}).get(key)
+                    for key in ['source', 'scope', 'origin']
+                }
+                result['packagePromptMetadata'] = {
+                    key: (review_command or {}).get('sourceInfo', {}).get(key)
+                    for key in ['source', 'scope', 'origin']
+                }
+            if temporary_resource_metadata is not None:
+                result['temporaryResourceMetadata'] = temporary_resource_metadata
+            if scenario in ['managed-npm-package', 'managed-git-package',
+                            'temporary-npm-package', 'temporary-git-package', 'temporary-mixed-source-order']:
+                result['templateProviderInput'] = normalize_temporary_git_cache_path(
+                    provider_inputs[1].replace(str(root / product), '<workspace>'))
                 result['extensionResourceDescription'] = startup_skill['description']
                 result['extensionConfiguredCount'] = sum(line == 'configured' for line in
                     (root / product / 'extension-load.log').read_text().splitlines())
-                marker_names = ['package', 'dependency'] if scenario == 'managed-git-package' else [
-                    'skill-package', 'extension-package', 'dependency']
+                git_scenario = scenario in ['managed-git-package', 'temporary-git-package', 'temporary-mixed-source-order']
+                if scenario == 'temporary-mixed-source-order':
+                    marker_names = ['package', 'skill-package', 'extension-package', 'dependency']
+                else:
+                    marker_names = ['package', 'dependency'] if git_scenario else [
+                        'skill-package', 'extension-package', 'dependency']
                 result['installScripts'] = {name: len((root / product / 'install-markers' / f'{name}.log').read_text().splitlines())
                     for name in marker_names}
-                managed_root = (agent / 'git/127.0.0.1/fixture/repo' if scenario == 'managed-git-package'
-                                else agent / 'npm/node_modules/managed-native-extension')
-                result['peerDependencyInstalled'] = (managed_root / 'node_modules/pisharp-host-api-must-not-install').exists()
-                assert result['extensionConfiguredCount'] == 1, result
-                expected_scripts = {'package': 1, 'dependency': 1} if scenario == 'managed-git-package' else {
-                    'skill-package': 1, 'extension-package': 1, 'dependency': 1}
+                if scenario == 'managed-git-package':
+                    managed_root = agent / 'git/127.0.0.1/fixture/repo'
+                elif scenario == 'temporary-git-package':
+                    roots = list((agent / 'tmp/extensions/git-127.0.0.1').glob('*/fixture/repo'))
+                    managed_root = roots[0] if roots else agent / 'tmp/extensions/git-127.0.0.1/missing/fixture/repo'
+                elif scenario == 'temporary-npm-package':
+                    roots = list((agent / 'tmp/extensions/npm').glob('*/node_modules/managed-native-extension'))
+                    managed_root = roots[0] if roots else agent / 'tmp/extensions/npm/missing/node_modules/managed-native-extension'
+                elif scenario == 'temporary-mixed-source-order':
+                    roots = list((agent / 'tmp/extensions/git-127.0.0.1').glob('*/fixture/repo'))
+                    roots.extend((agent / 'tmp/extensions/npm').glob('*/node_modules/managed-native-extension'))
+                    managed_root = roots[0] if roots else agent / 'tmp/extensions/missing'
+                else:
+                    managed_root = agent / 'npm/node_modules/managed-native-extension'
+                roots = roots if scenario in ['temporary-git-package', 'temporary-npm-package',
+                                               'temporary-mixed-source-order'] else [managed_root]
+                result['peerDependencyInstalled'] = any(
+                    (package_root / 'node_modules/pisharp-host-api-must-not-install').exists() for package_root in roots)
+                expected_configured = 2 if scenario == 'temporary-mixed-source-order' else 1
+                assert result['extensionConfiguredCount'] == expected_configured, result
+                if scenario == 'temporary-mixed-source-order':
+                    expected_scripts = {'package': 1, 'skill-package': 1, 'extension-package': 1, 'dependency': 2}
+                else:
+                    expected_scripts = {'package': 1, 'dependency': 1} if git_scenario else {
+                        'skill-package': 1, 'extension-package': 1, 'dependency': 1}
                 assert result['installScripts'] == expected_scripts, result
                 assert not result['peerDependencyInstalled'], result
+                if scenario == 'temporary-mixed-source-order':
+                    order_path = root / product / 'install-markers/source-order.log'
+                    source_order = order_path.read_text().splitlines() if order_path.exists() else []
+                    collapsed_order = [value for index, value in enumerate(source_order)
+                                       if index == 0 or value != source_order[index - 1]]
+                    assert collapsed_order == ['git', 'npm'], source_order
+                    result['temporarySourceOrder'] = collapsed_order
+                if scenario in ['temporary-npm-package', 'temporary-git-package', 'temporary-mixed-source-order']:
+                    user_settings = json.loads((agent / 'settings.json').read_text()) if (agent / 'settings.json').is_file() else {}
+                    project_settings_path = root / product / '.pi/settings.json'
+                    project_settings = json.loads(project_settings_path.read_text()) if project_settings_path.is_file() else {}
+                    assert not user_settings.get('packages'), user_settings
+                    assert not project_settings.get('packages'), project_settings
+                    assert (agent / 'tmp/extensions').is_dir()
+                    assert not (agent / 'npm').exists() and not (agent / 'git').exists()
+                    result['temporaryScope'] = True
+                    result['packageSettingsUnchanged'] = True
+                    result['persistentPackageRootsAbsent'] = True
             if package_scenario:
                 result['startupAccepted'] = True
                 result['packagePrompt'] = review_command['description'] if review_command else None
@@ -620,13 +746,14 @@ def main():
     parser.add_argument('--pisharp', type=Path, default=ROOT / 'src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--profile', type=Path)
-    parser.add_argument('--scenario', choices=['deleted-skill', 'invalid-tag', 'malformed-flow', 'local-package', 'padded-local-package', 'file-url-package', 'package-extension', 'managed-npm-package', 'managed-git-package'], default='deleted-skill')
+    parser.add_argument('--scenario', choices=['deleted-skill', 'invalid-tag', 'malformed-flow', 'local-package', 'padded-local-package', 'file-url-package', 'package-extension', 'managed-npm-package', 'managed-git-package', 'temporary-npm-package', 'temporary-git-package', 'temporary-mixed-source-order'], default='deleted-skill')
     parser.add_argument('--extension-mode', choices=['manifest', 'conventions', 'disabled', 'no-extensions', 'file', 'root', 'index-with-sibling', 'nested-manifest', 'ignored-sibling', 'hidden-sibling', 'node-modules-sibling', 'throwing-sibling', 'missing-explicit', 'padded-explicit', 'file-url-explicit', 'canonical-explicit-alias', 'project-disabled', 'project-enabled'], default='manifest')
     args = parser.parse_args()
     sha = verify_pi_checkout(args.pi)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     profile = args.profile.resolve() if args.profile else None
-    if args.scenario in ['managed-npm-package', 'managed-git-package']:
+    if args.scenario in ['managed-npm-package', 'managed-git-package',
+                         'temporary-npm-package', 'temporary-git-package', 'temporary-mixed-source-order']:
         if profile is None:
             parser.error('--profile is required for managed package scenarios')
         if not (profile / 'tmp').is_dir():
@@ -634,22 +761,33 @@ def main():
     with tempfile.TemporaryDirectory(prefix='pisharp-resource-invocation-process-',
                                      dir=str(profile / 'tmp') if profile else None) as directory:
         work = Path(directory)
+        fixture_environment = os.environ.copy()
+        if profile:
+            npm_cache = profile / 'cache/npm'
+            npm_cache.mkdir(parents=True, exist_ok=True)
+            fixture_environment['npm_config_cache'] = str(npm_cache)
         daemon = None
         git_fixture = None
         pi_update_probe = None
         try:
-            if args.scenario == 'managed-npm-package':
-                managed_sources = create_managed_npm_tarballs(work, args.pi.resolve(), os.environ.copy())
-            elif args.scenario == 'managed-git-package':
-                git_fixture = create_managed_git_repository(work, args.pi.resolve(), os.environ.copy())
+            if args.scenario in ['managed-npm-package', 'temporary-npm-package', 'temporary-mixed-source-order']:
+                npm_sources = create_managed_npm_tarballs(work, args.pi.resolve(), fixture_environment)
+            else:
+                npm_sources = None
+            if args.scenario in ['managed-git-package', 'temporary-git-package', 'temporary-mixed-source-order']:
+                git_fixture = create_managed_git_repository(work, args.pi.resolve(), fixture_environment)
                 daemon = git_fixture['daemon']
                 managed_sources = [git_fixture['pinned_source']]
+                if args.scenario == 'temporary-mixed-source-order':
+                    managed_sources.extend(npm_sources or [])
+            elif npm_sources is not None:
+                managed_sources = npm_sources
             else:
                 managed_sources = None
             results = {product: replay(product, args.pi.resolve(), args.pisharp.resolve(), work, args.output,
                                        args.scenario, args.extension_mode, managed_sources, profile)
                        for product in ['pi', 'pisharp']}
-            if git_fixture is not None:
+            if git_fixture is not None and args.scenario == 'managed-git-package':
                 probe_log = args.output.with_name(args.output.stem + '-pi-update-probe.log')
                 pi_update_probe = probe_pi_git_update(args.pi.resolve(), work, profile, git_fixture,
                     os.environ.copy(), probe_log)
@@ -669,18 +807,23 @@ def main():
         result['piUpdateProbe'] = pi_update_probe
     if args.scenario == 'package-extension':
         result['extensionMode'] = args.extension_mode
-    if args.scenario in ['managed-npm-package', 'managed-git-package']:
+    if args.scenario in ['managed-npm-package', 'managed-git-package',
+                         'temporary-npm-package', 'temporary-git-package', 'temporary-mixed-source-order']:
         result['scope'] = ('Real Pi/PiSharp RPC startup after local managed npm acquisition: declared skill and prompt template '
                            'appear in commands, expanded provider input contains both package resources, one startup extension '
                            'configuration, lifecycle script policy and peer suppression. Reload is paired separately by the '
                            'native ProjectRuntimeContext reload-owner test; this RPC flow does not claim a reload command.')
-        if args.scenario == 'managed-git-package':
+        if args.scenario in ['managed-git-package', 'temporary-git-package', 'temporary-mixed-source-order']:
             result['scope'] = ('Real Pi/PiSharp RPC startup after managed Git acquisition from a local loopback git daemon: '
                                'declared skill and prompt template appear in commands, expanded provider input contains both '
                                'package resources, one startup extension configuration, dependency lifecycle policy and peer '
                                'suppression. A paired Pi DefaultPackageManager update probe advances the unpinned source from '
                                'v1 to v2; PiSharp explicit update and resource reload are covered by native store/context tests. '
                                'This task does not add a CLI update or RPC reload command.')
+        if args.scenario == 'temporary-mixed-source-order':
+            result['scope'] = ('Real Pi/PiSharp RPC startup with explicit Git then npm extension sources: package lifecycle '
+                               'markers, provider-visible skill/prompt precedence, temporary source metadata, settings '
+                               'isolation and extension initialization order are compared.')
     args.output.write_text(json.dumps(result, indent=2) + '\n')
     assert result['match'], result
     print(f'Matched {args.scenario} RPC/provider input, metadata and error boundary.')

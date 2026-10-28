@@ -5,7 +5,7 @@ using PiSharp.Cli.Packages;
 internal static class CliStartupCommands
 {
     public static async Task<CliArguments?> ParseOrRunAsync(string[] args, string agentDirectory,
-        TextWriter output, TextWriter error)
+        TextWriter output, TextWriter error, CancellationToken cancellationToken = default)
     {
         if (args.Length > 0 && args[0] == "auth")
         {
@@ -25,7 +25,8 @@ internal static class CliStartupCommands
             return null;
         }
         if (await ResourcePackageCommand.TryRunAsync(args, agentDirectory, Environment.CurrentDirectory,
-                Console.In, output, error, interactive: !Console.IsInputRedirected && !Console.IsOutputRedirected))
+                Console.In, output, error, interactive: !Console.IsInputRedirected && !Console.IsOutputRedirected,
+                cancellationToken))
             return null;
         CliArguments cli;
         string? pendingUnknownOption = null;

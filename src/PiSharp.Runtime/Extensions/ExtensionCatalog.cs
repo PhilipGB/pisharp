@@ -780,7 +780,9 @@ public sealed partial class ExtensionCatalog : IDisposable
         IReadOnlyList<ResourcePackageSource>? userPackages = null, IReadOnlyList<ResourcePackageSource>? projectPackages = null,
         IReadOnlyList<ManagedResourcePackageRoot>? managedPackageRoots = null,
         IReadOnlyList<NativeExtensionPackageRoot>? nativeExtensionPackageRoots = null,
-        IPiSharpExtensionUiPackageFactory? uiPackageFactory = null)
+        IPiSharpExtensionUiPackageFactory? uiPackageFactory = null,
+        IReadOnlyList<ResourcePackageSource>? temporaryPackages = null,
+        IReadOnlyList<ManagedResourcePackageRoot>? temporaryPackageRoots = null)
     {
         var catalog = preloaded ?? new ExtensionCatalog();
         try
@@ -793,15 +795,37 @@ public sealed partial class ExtensionCatalog : IDisposable
             var seenBuiltins = new HashSet<string>(StringComparer.Ordinal);
             var seenPaths = new HashSet<string>(catalog._loadErrors.Select(error => error.Path).Select(ResourcePathIdentity.Canonicalize),
                 pathComparer);
-            var packageFiles = discover ? ResourcePackageFiles.Load(cwd, agentDirectory, projectTrusted,
-                userPackages, projectPackages, CancellationToken.None, managedPackageRoots).Extensions : [];
-            var packagePaths = packageFiles.Select(file => file.Path).ToHashSet(seenPaths.Comparer);
-            var packageMetadata = packageFiles.ToDictionary(file => file.Path, file => file.Source, seenPaths.Comparer);
+            var resolvedPackageFiles = discover || temporaryPackages is { Count: > 0 }
+                ? ResourcePackageFiles.Load(cwd, agentDirectory, projectTrusted,
+                    discover ? userPackages : null, discover ? projectPackages : null, CancellationToken.None,
+                    discover ? managedPackageRoots : null, temporaryPackages, temporaryPackageRoots)
+                : null;
+            var packageFiles = discover ? resolvedPackageFiles?.Extensions ?? [] : [];
+            var temporaryPackageFiles = resolvedPackageFiles?.TemporaryExtensions ?? [];
+            var allPackageFiles = packageFiles.Concat(temporaryPackageFiles).ToArray();
+            var packagePaths = allPackageFiles.Select(file => file.Path).ToHashSet(seenPaths.Comparer);
+            var packageMetadata = allPackageFiles.ToDictionary(file => file.Path, file => file.Source, seenPaths.Comparer);
             foreach (var entry in additionalPaths ?? [])
             {
                 if (entry.StartsWith("builtin:", StringComparison.Ordinal))
                 {
                     AddBuiltin(entry);
+                    continue;
+                }
+                if (ManagedResourcePackageStore.GetManagedPackageIdentity(entry) is not null)
+                {
+                    var packageRoot = (temporaryPackageRoots ?? []).FirstOrDefault(root => root.Source == entry);
+                    if (packageRoot is null)
+                    {
+                        if (seenPaths.Add(ResourcePathIdentity.Canonicalize(entry)))
+                            catalog._loadErrors.Add(new(entry, "Extension path does not exist: " + entry));
+                        continue;
+                    }
+                    var rootPath = ResourcePathIdentity.Canonicalize(packageRoot.Path);
+                    foreach (var file in temporaryPackageFiles)
+                        if (file.Enabled && file.Source.BaseDir is { } baseDirectory &&
+                            seenPaths.Comparer.Equals(ResourcePathIdentity.Canonicalize(baseDirectory), rootPath))
+                            AddPath(file.Path, file.Source);
                     continue;
                 }
                 var path = ResourceLocalPath.Resolve(entry, cwd);

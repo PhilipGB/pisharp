@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "exists": true,
+      "path": "packages/coding-agent/docs/packages.md",
+      "repository": "pi",
+      "sha256": "5fe4a3009d7260fe1e2f54b64086fc3c8b4d678232bfa2dbc7e91fe588fc9ea5"
+    },
+    {
+      "exists": true,
+      "path": "packages/coding-agent/src/cli/project-trust.ts",
+      "repository": "pi",
+      "sha256": "f53dace044983ef779b0c99ea3f1a75155116ace6e4569c623b95d6c24972c3b"
+    },
+    {
+      "exists": true,
+      "path": "packages/coding-agent/src/core/package-manager.ts",
+      "repository": "pi",
+      "sha256": "61bb2f0b434b0f5c48ab6bfacd9dff1d99084320eecf695755cd32bd88099310"
+    },
+    {
+      "exists": true,
+      "path": "packages/coding-agent/src/core/resource-loader.ts",
+      "repository": "pi",
+      "sha256": "ccc798224d070e7a18c918f74be48c15eacc67f76aaa66b9809c015327b555d4"
+    },
+    {
+      "exists": true,
+      "path": "packages/coding-agent/src/core/settings-manager.ts",
+      "repository": "pi",
+      "sha256": "aef8fea51000f291c1c51d81fd9b30f7a2bdd0e68370ad84b969e5fd15667e98"
+    },
+    {
+      "exists": true,
+      "path": "packages/coding-agent/src/package-manager-cli.ts",
+      "repository": "pi",
+      "sha256": "3022a5af3ff95f82c6282bb0d3a03527c8692a8c6f53e15a849d7ff70eb3e608"
+    },
+    {
+      "exists": true,
+      "path": "src/PiSharp.Cli/Configuration/PackageSettingsReader.cs",
+      "repository": "pisharp",
+      "sha256": "4b117453fd3dcedba3dac7386f4fa9b2ab269624ccedc1406b89303d882ec09a"
+    },
+    {
+      "exists": true,
+      "path": "src/PiSharp.Cli/Packages/ResourcePackageCommand.cs",
+      "repository": "pisharp",
+      "sha256": "a6f766811f6fe7cedb7f0b13ae95c0cde6dca167e3fa34b1720bd3d55ebbe2e7"
+    },
+    {
+      "exists": true,
+      "path": "src/PiSharp.Cli/Sessions/ProjectRuntimeContext.cs",
+      "repository": "pisharp",
+      "sha256": "d9d02da9f82d94625f0e6448cb99951b4df5abb25ed2aae117c3577c27e51733"
+    },
+    {
+      "exists": true,
+      "path": "src/PiSharp.Runtime/Resources/ManagedGitSource.cs",
+      "repository": "pisharp",
+      "sha256": "504637fc0610555c19d9678213066964c20eadec8c8e9767eb91f1fe8f612b0a"
+    },
+    {
+      "exists": true,
+      "path": "src/PiSharp.Runtime/Resources/ManagedResourcePackageStore.Git.cs",
+      "repository": "pisharp",
+      "sha256": "f958df71025077d59c37cc146c33d0768d1590e2f49a113cd0754b18be042e45"
+    },
+    {
+      "exists": true,
+      "path": "src/PiSharp.Runtime/Resources/ManagedResourcePackageStore.cs",
+      "repository": "pisharp",
+      "sha256": "8feed9b21eb5511a95b0a9a5435ba7a94a07c7a7533549c57f1dfd62ad257553"
+    },
+    {
+      "exists": true,
+      "path": "src/PiSharp.Runtime/Resources/ResourcePackageFiles.cs",
+      "repository": "pisharp",
+      "sha256": "3f913294472a94de90b5b5bb1ed1fff895fe07d3570a86a3b617a3b15347de30"
+    }
+  ]
+}

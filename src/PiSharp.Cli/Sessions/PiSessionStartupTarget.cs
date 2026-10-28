@@ -1,4 +1,5 @@
 using PiSharp.Runtime.Sessions;
+using PiSharp.Runtime.Resources;
 
 namespace PiSharp.Cli.Sessions;
 
@@ -54,8 +55,11 @@ internal sealed record PiSessionStartupTarget(string WorkingDirectory, CliArgume
         path is null ? null : Path.GetFullPath(path, invocationPath);
 
     private static IReadOnlyList<string>? ResolvePaths(IReadOnlyList<string>? paths, string invocationPath, bool preserveBuiltins = false) =>
-        paths?.Select(path => preserveBuiltins && path.StartsWith("builtin:", StringComparison.Ordinal) || path is "~" || path.StartsWith("~/", StringComparison.Ordinal) ||
-            path.StartsWith("~\\", StringComparison.Ordinal) ? path : Path.GetFullPath(path, invocationPath)).ToArray();
+        paths?.Select(path => (preserveBuiltins &&
+                (path.StartsWith("builtin:", StringComparison.Ordinal) ||
+                 ManagedResourcePackageStore.GetManagedPackageIdentity(path) is not null)) ||
+            path is "~" || path.StartsWith("~/", StringComparison.Ordinal) || path.StartsWith("~\\", StringComparison.Ordinal)
+                ? path : Path.GetFullPath(path, invocationPath)).ToArray();
 
     private static string? ResolvePromptFile(string? input, string invocationPath)
     {

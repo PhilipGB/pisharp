@@ -36,11 +36,14 @@ public sealed class ResourceCatalog
         IReadOnlyList<string>? userPrompts = null, IReadOnlyList<string>? projectPrompts = null,
         ExtensionResourceDiscovery? extensionResources = null,
         IReadOnlyList<ResourcePackageSource>? userPackages = null, IReadOnlyList<ResourcePackageSource>? projectPackages = null,
-        IReadOnlyList<ManagedResourcePackageRoot>? managedPackageRoots = null)
+        IReadOnlyList<ManagedResourcePackageRoot>? managedPackageRoots = null,
+        IReadOnlyList<ResourcePackageSource>? temporaryPackages = null,
+        IReadOnlyList<ManagedResourcePackageRoot>? temporaryPackageRoots = null)
     {
         var selection = ResourcePathSelection.Create(cwd, agentDirectory, trusted, cancellationToken,
             discoverSkills, discoverPrompts, additionalSkills, additionalPrompts, userSkills, projectSkills,
-            userPrompts, projectPrompts, extensionResources, userPackages, projectPackages, managedPackageRoots);
+            userPrompts, projectPrompts, extensionResources, userPackages, projectPackages, managedPackageRoots,
+            temporaryPackages, temporaryPackageRoots);
         var skills = new List<SkillResource>();
         var prompts = new List<PromptResource>();
         var skillDiagnostics = new List<ResourceDiagnostic>();
