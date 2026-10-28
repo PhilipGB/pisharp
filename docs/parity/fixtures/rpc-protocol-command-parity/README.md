@@ -1,6 +1,6 @@
 # RPC Protocol and Command Parity — frozen baseline
 
-**Status:** inventory and acceptance contract were frozen before production changes in commit `ac85aa2a0f59566115eb0109cc9022dc64f4d8fe`. R2 passed 12/12 at `44a360fc` and is stale after later changes; R3 passed 10/10 at `cfa79eeb` and is also stale; R4 passes 12/12 at `413ebc6e`. V1 and R1 are stale as well. All require final source-bound reruns after the implementation and harness are frozen. The milestone remains active.
+**Status:** inventory and acceptance contract were frozen before production changes in commit `ac85aa2a0f59566115eb0109cc9022dc64f4d8fe`. R2 (12/12 at `44a360fc`), R3 (10/10 at `cfa79eeb`) and R4 (12/12 at `413ebc6e`) are stale after later source or parity-tool changes. R5 passed 11/11 at `8e7e16f3`; this is the current source-bound process checkpoint. V1 and R1–R4 need final source-bound reruns after the implementation and harness are frozen. The milestone remains active.
 
 ## Verified base
 
@@ -38,7 +38,7 @@ Validation performed on the baseline:
 - The process comparison found and corrected PiSharp's 1 MiB record limit and malformed-JSON response command. Exact error wording is normalized because Node and .NET JSON parsers report different text; command, id, success, data presence, and error presence/type remain checked.
 - `python3 tools/parity/rpc_protocol/runner.py list --checkpoint R8` — returned the six frozen usage-accounting cases.
 
-The frozen runners fail closed for unregistered cases. R1–R4 and V1 need final source-bound reruns after remaining process adapters and implementation changes are frozen. The next checkpoint is R5 lifecycle events.
+R5 source-bound evidence: [compact case results](r5-case-results.json) record 11/11 cases passing at `8e7e16f37e420645fc852cb8cef8bf0ba761778d`; raw captures and the full manifest remain under the ignored evidence directory. The frozen runners fail closed for unregistered cases. R1–R4 and V1 need final source-bound reruns after remaining process adapters and implementation changes are frozen. The next checkpoint is R6 tool lifecycle.
 
 ## Known differences and limitations to revalidate
 
@@ -51,4 +51,4 @@ The frozen runners fail closed for unregistered cases. R1–R4 and V1 need final
 
 ## Next work
 
-The inventory and contract are committed before production changes. R2 passes 12/12, R3 passed 10/10 at an earlier source, and R4 passes 12/12 at source `413ebc6e`. Continue with R5–R15, capture repeated pinned-Pi and PiSharp process observations, then rerun stale checkpoints and complete quality/source-bound evidence and exact-head CI. Final publication is PR #29, open, draft and unmerged.
+The inventory and contract are committed before production changes. R5 passes 11/11 at source `8e7e16f3`; R1–R4 and V1 have historical passes but their reports are stale. Continue with R6–R15, capture repeated pinned-Pi and PiSharp process observations, then rerun stale checkpoints and complete quality/source-bound evidence and exact-head CI. Final publication is PR #29, open, draft and unmerged.

@@ -13727,7 +13727,7 @@
   },
   "rpc_protocol_command_parity_milestone": {
     "status": "in_progress",
-    "phase": "r4_complete_r5_pending_final_source_evidence_refresh",
+    "phase": "r5_complete_r6_pending",
     "branch": "milestone/rpc-protocol-command-parity",
     "branch_base_sha": "646db89bd396b8089b1b9a058fa96b1489f4d0cd",
     "prerequisite_pr28": {
@@ -13788,7 +13788,7 @@
     "maf_package_version": "1.21.0",
     "dotnet_sdk": "10.0.113",
     "production_changes_started": true,
-    "process_case_results_produced": 45,
+    "process_case_results_produced": 56,
     "baseline_validation": {
       "contract_source_verifier": "passed",
       "contract_integrity_tests": "16/16 passed; positive control and all 22 frozen mutations are covered",
@@ -13799,7 +13799,8 @@
       "r1_source_bound_process_run": "initial 11/11 passed with independent report verification; current-head verification rejects the historical report as stale after later parity-tool changes; record limit and malformed-JSON command corrections are included in source",
       "r2_source_bound_process_run": "12/12 passed; independent report verification passed; response IDs/shapes, validation, long-command acceptance and active-compaction behavior are captured from two pinned-Pi runs and one PiSharp process",
       "r3_source_bound_process_run": "10/10 passed at cfa79eeb; stale after later production and parity-tool changes and requires final rerun",
-      "r4_source_bound_process_run": "12/12 passed at 413ebc6e; independent report verification passed, including cancellation restoration, tool completion ordering and persisted queue modes"
+      "r4_source_bound_process_run": "12/12 passed at 413ebc6e; independent report verification passed, including cancellation restoration, tool completion ordering and persisted queue modes",
+      "r5_source_bound_process_run": "11/11 passed; independent report verification passed; all cases matched repeated pinned-Pi observations and a separate PiSharp process at 8e7e16f37e420645fc852cb8cef8bf0ba761778d"
     },
     "historical_mismatch_ids_to_revalidate": [
       "RPC-SYSMSG-SECTIONS",
@@ -13812,10 +13813,16 @@
     ],
     "open_requirements": [
       "Rerun V1 and R1-R4 after production, tests and parity tooling are frozen; current source checks reject historical evidence after implementation or harness changes.",
-      "Implement actual paired Pi/PiSharp process runners for R5-R15 and capture repeated pinned-Pi baselines.",
-      "Capture two stable pinned-Pi process baselines and independent PiSharp process observations for R5-R15.",
+      "Implement actual paired Pi/PiSharp process runners for R6-R15 and capture repeated pinned-Pi baselines.",
+      "Capture two stable pinned-Pi process baselines and independent PiSharp process observations for R6-R15.",
       "Correct confirmed in-scope differences, then complete all quality, source-bound evidence, exact-head CI and draft PR publication gates."
     ],
-    "next_action": "Implement and execute R5 lifecycle event-ordering process cases."
+    "next_action": "Implement and execute R6 tool lifecycle process cases.",
+    "r5_implementation_source_sha": "8e7e16f37e420645fc852cb8cef8bf0ba761778d",
+    "r5_evidence_directory": "artifacts/parity/rpc-protocol-command-parity/r5-8e7e16f3",
+    "r5_evidence_sha256": "9bac9415beaad090519ca680c3ad77ce6511a9e7f4bcd8654ef57994731bb57b",
+    "r5_case_result": "11/11 passed; zero failures/skips; each case matched two calibrated pinned-Pi processes and one PiSharp process",
+    "r5_build_assembly_sha256": "7825a1687685d02b675457cb23d20de5a89981c92041d7fa9e51804644e8f7dd",
+    "r5_compact_case_results": "docs/parity/fixtures/rpc-protocol-command-parity/r5-case-results.json"
   }
 }
