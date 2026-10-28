@@ -65,6 +65,14 @@ class GateCheckpointHelperTests(unittest.TestCase):
         self.assertFalse(gate_checkpoints._all_required_ci_jobs_pass(
             [*passing[:-1], {"name": passing[-1]["name"], "conclusion": "failure"}]))
 
+    def test_dotnet_normal_logger_summary_is_counted(self) -> None:
+        passed = "Test Run Successful.\nTotal tests: 3959\n     Passed: 3959\n Total time: 8.1491 Minutes"
+        failed = "Test Run Failed.\nTotal tests: 10\n     Passed: 7\n     Failed: 2\n     Skipped: 1"
+        self.assertEqual({"passed": 3959, "failed": 0, "skipped": 0},
+                         gate_checkpoints._test_counts(passed))
+        self.assertEqual({"passed": 7, "failed": 2, "skipped": 1},
+                         gate_checkpoints._test_counts(failed))
+
 
 if __name__ == "__main__":
     unittest.main()

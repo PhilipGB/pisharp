@@ -120,6 +120,12 @@ def _clean_source() -> tuple[bool, str | None]:
 
 
 def _test_counts(output: str) -> dict[str, int] | None:
+    match = re.search(r"Test Run (?:Successful|Failed)\.\s*Total tests:\s*(\d+)\s*"
+                      r"Passed:\s*(\d+)(?:\s*Failed:\s*(\d+))?(?:\s*Skipped:\s*(\d+))?",
+                      output, re.IGNORECASE)
+    if match:
+        return {"passed": int(match.group(2)), "failed": int(match.group(3) or 0),
+                "skipped": int(match.group(4) or 0)}
     match = re.search(r"Failed:\s*(\d+)\s*,\s*Passed:\s*(\d+)\s*,\s*Skipped:\s*(\d+)",
                       output, re.IGNORECASE)
     if match:
