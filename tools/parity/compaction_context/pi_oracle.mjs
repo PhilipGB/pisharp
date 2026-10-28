@@ -41,6 +41,13 @@ const [{ createHarness }, { fauxAssistantMessage }, { createAssistantMessageEven
 const { collectEntriesForBranchSummary, prepareBranchEntries } = await importFromPi(
   "packages/coding-agent/src/core/compaction/branch-summarization.ts");
 
+function createHarnessWithStableTempPath(options) {
+  const originalRandom = Math.random;
+  Math.random = () => 0.5;
+  try { return createHarness(options); }
+  finally { Math.random = originalRandom; }
+}
+
 function c6Snapshot(message) {
   const content = Array.isArray(message.content) ? message.content : [];
   const resultTexts = message.role === "toolResult"
@@ -1548,7 +1555,7 @@ async function runOnce() {
       });
     },
   ] : undefined;
-  const harness = await createHarness({
+  const harness = await createHarnessWithStableTempPath({
     models,
     extensionFactories,
     settings: { compaction: { enabled: scenario !== "disabled-setting",
