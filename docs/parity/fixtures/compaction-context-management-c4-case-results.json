@@ -41,18 +41,10 @@
       "contractExpectedObservation": "model context window controls trigger",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "triggerTokens": 83616,
-        "atThreshold": false,
-        "oneAboveThreshold": true,
-        "belowThreshold": false
-      },
-      "actual": {
-        "triggerTokens": 83616,
-        "atThreshold": false,
-        "oneAboveThreshold": true,
-        "belowThreshold": false
-      },
+      "normalizedExpectedSha256": "e15b26f4002a5320f35bbbf4a77f9d3a8feb7a251504bc5553fe7eff3fa82cc3",
+      "normalizedActualSha256": "e15b26f4002a5320f35bbbf4a77f9d3a8feb7a251504bc5553fe7eff3fa82cc3",
+      "normalizedExpectedBytes": 91,
+      "normalizedActualBytes": 91,
       "normalizedExpected": {
         "triggerTokens": 83616,
         "atThreshold": false,
@@ -71,22 +63,10 @@
       "contractExpectedObservation": "reserve and keep recent defaults",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "contextWindowTokens": 100000,
-        "enabled": true,
-        "reserveTokens": 16384,
-        "keepRecentTokens": 20000,
-        "defaultReserveTokens": 16384,
-        "defaultKeepRecentTokens": 20000
-      },
-      "actual": {
-        "enabled": true,
-        "contextWindowTokens": 100000,
-        "reserveTokens": 16384,
-        "keepRecentTokens": 20000,
-        "defaultReserveTokens": 16384,
-        "defaultKeepRecentTokens": 20000
-      },
+      "normalizedExpectedSha256": "169c45b1f8e28ad20f5fdc578633d71c9aaf5754483af56c7c1df1b6375fb749",
+      "normalizedActualSha256": "169c45b1f8e28ad20f5fdc578633d71c9aaf5754483af56c7c1df1b6375fb749",
+      "normalizedExpectedBytes": 153,
+      "normalizedActualBytes": 153,
       "normalizedExpected": {
         "contextWindowTokens": 100000,
         "enabled": true,
@@ -109,18 +89,10 @@
       "contractExpectedObservation": "provider model override precedence",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "selectedReserveTokens": 400000,
-        "selectedKeepRecentTokens": 10000,
-        "fallbackReserveTokens": 8192,
-        "fallbackKeepRecentTokens": 10000
-      },
-      "actual": {
-        "selectedReserveTokens": 400000,
-        "selectedKeepRecentTokens": 10000,
-        "fallbackReserveTokens": 8192,
-        "fallbackKeepRecentTokens": 10000
-      },
+      "normalizedExpectedSha256": "e49593319f91e77b6eae8c3e16292475ea90b4a9670f50cd5de67fa6484b45f7",
+      "normalizedActualSha256": "e49593319f91e77b6eae8c3e16292475ea90b4a9670f50cd5de67fa6484b45f7",
+      "normalizedExpectedBytes": 127,
+      "normalizedActualBytes": 127,
       "normalizedExpected": {
         "selectedReserveTokens": 400000,
         "selectedKeepRecentTokens": 10000,
@@ -139,16 +111,10 @@
       "contractExpectedObservation": "unknown limit is never invented",
       "classification": "intentional-safety-difference",
       "passed": true,
-      "expected": {
-        "contextWindowKnown": false,
-        "piWouldTriggerFromZeroWindow": true,
-        "reserveTokens": 16384
-      },
-      "actual": {
-        "contextWindowKnown": false,
-        "pisharpTriggerInvented": false,
-        "reserveTokens": 16384
-      },
+      "normalizedExpectedSha256": "010f5f69e73237cb29b11ba8ccdcdc6286c3318dd92479b5879f34df74ddac65",
+      "normalizedActualSha256": "ffcb3d6680503a98aa4058e91ce2628895ed504a513d508d98c2a7e8f33cf85e",
+      "normalizedExpectedBytes": 86,
+      "normalizedActualBytes": 81,
       "normalizedExpected": {
         "contextWindowKnown": false,
         "piWouldTriggerFromZeroWindow": true,
@@ -167,18 +133,10 @@
       "contractExpectedObservation": "provider usage anchors current context",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "hasValidUsageAnchor": true,
-        "usageTokens": 13,
-        "trailingTokens": 2,
-        "totalTokens": 15
-      },
-      "actual": {
-        "hasValidUsageAnchor": true,
-        "usageTokens": 13,
-        "trailingTokens": 2,
-        "totalTokens": 15
-      },
+      "normalizedExpectedSha256": "eaf550e7e8453ab972e2d1259ba3a4591d8af15aecbd4f06e672215d78462efa",
+      "normalizedActualSha256": "eaf550e7e8453ab972e2d1259ba3a4591d8af15aecbd4f06e672215d78462efa",
+      "normalizedExpectedBytes": 81,
+      "normalizedActualBytes": 81,
       "normalizedExpected": {
         "hasValidUsageAnchor": true,
         "usageTokens": 13,
@@ -197,16 +155,10 @@
       "contractExpectedObservation": "aborted error and zero usage are not anchors",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "hasValidUsageAnchor": false,
-        "usageTokens": null,
-        "estimateFromVisibleMessages": 7
-      },
-      "actual": {
-        "hasValidUsageAnchor": false,
-        "usageTokens": null,
-        "estimateFromVisibleMessages": 7
-      },
+      "normalizedExpectedSha256": "5775f12ab4c985a721975c11bf24875635921da4036aeff3060d5630ec64493f",
+      "normalizedActualSha256": "5775f12ab4c985a721975c11bf24875635921da4036aeff3060d5630ec64493f",
+      "normalizedExpectedBytes": 80,
+      "normalizedActualBytes": 80,
       "normalizedExpected": {
         "hasValidUsageAnchor": false,
         "usageTokens": null,
@@ -223,16 +175,10 @@
       "contractExpectedObservation": "messages after usage are estimated",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "usageTokens": 100,
-        "trailingTokens": 10,
-        "totalTokens": 110
-      },
-      "actual": {
-        "usageTokens": 100,
-        "trailingTokens": 10,
-        "totalTokens": 110
-      },
+      "normalizedExpectedSha256": "a13954d7370941f78790fe70ecd6284f91b463c979683ebf98d2f7c7c20a9fd2",
+      "normalizedActualSha256": "a13954d7370941f78790fe70ecd6284f91b463c979683ebf98d2f7c7c20a9fd2",
+      "normalizedExpectedBytes": 57,
+      "normalizedActualBytes": 57,
       "normalizedExpected": {
         "usageTokens": 100,
         "trailingTokens": 10,
@@ -249,14 +195,10 @@
       "contractExpectedObservation": "context edit and compaction invalidate stale usage",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "contextEditInvalidatesUsage": true,
-        "compactionInvalidatesUsage": true
-      },
-      "actual": {
-        "contextEditInvalidatesUsage": true,
-        "compactionInvalidatesUsage": true
-      },
+      "normalizedExpectedSha256": "413143ec72d566764049db5e1c26f9bc4cd717aa0055b28dc7c1e26c0140a04b",
+      "normalizedActualSha256": "413143ec72d566764049db5e1c26f9bc4cd717aa0055b28dc7c1e26c0140a04b",
+      "normalizedExpectedBytes": 70,
+      "normalizedActualBytes": 70,
       "normalizedExpected": {
         "contextEditInvalidatesUsage": true,
         "compactionInvalidatesUsage": true
@@ -271,14 +213,10 @@
       "contractExpectedObservation": "cache read and write token fallback",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "usageTokens": 34,
-        "totalTokens": 34
-      },
-      "actual": {
-        "usageTokens": 34,
-        "totalTokens": 34
-      },
+      "normalizedExpectedSha256": "dff02789763942e98b7bd507bb597228ab3a98a8bfce88d69386a5d9c8ac3edc",
+      "normalizedActualSha256": "dff02789763942e98b7bd507bb597228ab3a98a8bfce88d69386a5d9c8ac3edc",
+      "normalizedExpectedBytes": 35,
+      "normalizedActualBytes": 35,
       "normalizedExpected": {
         "usageTokens": 34,
         "totalTokens": 34
@@ -293,18 +231,10 @@
       "contractExpectedObservation": "system prompt and tool declaration estimate",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "estimate": 40,
-        "systemPromptCharacters": 32,
-        "toolCount": 1,
-        "messageCount": 1
-      },
-      "actual": {
-        "estimate": 40,
-        "systemPromptCharacters": 32,
-        "toolCount": 1,
-        "messageCount": 1
-      },
+      "normalizedExpectedSha256": "f1c453d7f67b19164d98397df23669f6181062cc78f315fca0f4717544751bbd",
+      "normalizedActualSha256": "f1c453d7f67b19164d98397df23669f6181062cc78f315fca0f4717544751bbd",
+      "normalizedExpectedBytes": 74,
+      "normalizedActualBytes": 74,
       "normalizedExpected": {
         "estimate": 40,
         "systemPromptCharacters": 32,
@@ -323,16 +253,10 @@
       "contractExpectedObservation": "image and large tool result estimate",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "estimate": 3203,
-        "imageCharacters": 4800,
-        "toolResultCharacters": 8000
-      },
-      "actual": {
-        "estimate": 3203,
-        "imageCharacters": 4800,
-        "toolResultCharacters": 8000
-      },
+      "normalizedExpectedSha256": "0668a3c82559626ab8e514cfc59f924aa363150b4e9895a36cd384c7f81d73a6",
+      "normalizedActualSha256": "0668a3c82559626ab8e514cfc59f924aa363150b4e9895a36cd384c7f81d73a6",
+      "normalizedExpectedBytes": 68,
+      "normalizedActualBytes": 68,
       "normalizedExpected": {
         "estimate": 3203,
         "imageCharacters": 4800,
@@ -349,16 +273,10 @@
       "contractExpectedObservation": "estimate method is explicitly heuristic not tokenizer",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "estimate": 25,
-        "expectedCharacterHeuristic": 25,
-        "tokenizerOutput": false
-      },
-      "actual": {
-        "estimate": 25,
-        "expectedCharacterHeuristic": 25,
-        "tokenizerOutput": false
-      },
+      "normalizedExpectedSha256": "97fb659927f3af4d21a6e61238fed1e055374966fce8553a3586118dcd72d5e7",
+      "normalizedActualSha256": "97fb659927f3af4d21a6e61238fed1e055374966fce8553a3586118dcd72d5e7",
+      "normalizedExpectedBytes": 71,
+      "normalizedActualBytes": 71,
       "normalizedExpected": {
         "estimate": 25,
         "expectedCharacterHeuristic": 25,

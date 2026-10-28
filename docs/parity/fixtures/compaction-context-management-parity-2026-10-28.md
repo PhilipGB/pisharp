@@ -128,8 +128,7 @@ Raw captures remain Git-ignored under
   verifier controls: 20 passed; terminal Node: 24 passed (earlier validation).
 - MCP conformance had no regressions against the classified baseline; three
   known scenarios remain classified.
-- Documentation paths: **156 documents and 699 references verified** before
-  this final C1-C8 progress update; rerun after these documentation edits.
+- Documentation paths: **156 documents and 699 references verified** after the C1-C8 evidence and progress update.
 - The selected pinned Pi compaction/queue suites reported 34 passed and 1
   failing upstream test because the unknown model has context window zero. C2,
   C4, and C5 now classify the observed behavior as an intentional safety

@@ -37,28 +37,10 @@
       "contractExpectedObservation": "threshold after turn compacts without retry",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "providerAttemptCount": 1,
-        "compactionEndEvents": [
-          {
-            "reason": "threshold",
-            "willRetry": false
-          }
-        ],
-        "compactionCount": 1,
-        "completedResponsePersisted": true
-      },
-      "actual": {
-        "providerAttemptCount": 1,
-        "compactionEndEvents": [
-          {
-            "reason": "threshold",
-            "willRetry": false
-          }
-        ],
-        "compactionCount": 1,
-        "completedResponsePersisted": true
-      },
+      "normalizedExpectedSha256": "7da2bb6d42f63b04613c900dfe65e32467c82ba4b13418825efa59d386510d83",
+      "normalizedActualSha256": "7da2bb6d42f63b04613c900dfe65e32467c82ba4b13418825efa59d386510d83",
+      "normalizedExpectedBytes": 145,
+      "normalizedActualBytes": 145,
       "normalizedExpected": {
         "providerAttemptCount": 1,
         "compactionEndEvents": [
@@ -87,60 +69,10 @@
       "contractExpectedObservation": "pre prompt compaction does not replay turn",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "providerAttemptCount": 1,
-        "compactionEndEvents": [
-          {
-            "reason": "threshold",
-            "willRetry": false
-          }
-        ],
-        "compactionCount": 1,
-        "providerRequests": [
-          [
-            {
-              "role": "user",
-              "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\ncompacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary\n</summary>"
-            },
-            {
-              "role": "assistant",
-              "text": "answer two"
-            },
-            {
-              "role": "user",
-              "text": "continue"
-            }
-          ]
-        ],
-        "completedResponsePersisted": true
-      },
-      "actual": {
-        "providerAttemptCount": 1,
-        "compactionEndEvents": [
-          {
-            "reason": "threshold",
-            "willRetry": false
-          }
-        ],
-        "compactionCount": 1,
-        "providerRequests": [
-          [
-            {
-              "role": "user",
-              "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\ncompacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary\n</summary>"
-            },
-            {
-              "role": "assistant",
-              "text": "answer two"
-            },
-            {
-              "role": "user",
-              "text": "continue"
-            }
-          ]
-        ],
-        "completedResponsePersisted": true
-      },
+      "normalizedExpectedSha256": "f1ac50ed58258668146da585325dbb4077f4385a6891638096cd96421d656f63",
+      "normalizedActualSha256": "f1ac50ed58258668146da585325dbb4077f4385a6891638096cd96421d656f63",
+      "normalizedExpectedBytes": 475,
+      "normalizedActualBytes": 475,
       "normalizedExpected": {
         "providerAttemptCount": 1,
         "compactionEndEvents": [
@@ -201,27 +133,10 @@
       "contractExpectedObservation": "unknown window does not speculate",
       "classification": "intentional-safety-difference",
       "passed": true,
-      "expected": {
-        "providerAttemptCount": 1,
-        "compactionEndEvents": [
-          {
-            "reason": "threshold",
-            "willRetry": false
-          },
-          {
-            "reason": "threshold",
-            "willRetry": false
-          }
-        ],
-        "compactionCount": 2,
-        "completedResponsePersisted": false
-      },
-      "actual": {
-        "providerAttemptCount": 1,
-        "compactionEndEvents": [],
-        "compactionCount": 0,
-        "completedResponsePersisted": true
-      },
+      "normalizedExpectedSha256": "c7637d987d32025e0b14c927a883880db8c7d4199cbbcc46e231f3c1964d4b02",
+      "normalizedActualSha256": "761cea0293a72cd67886825bdf0847a724c0bdd86d5fd5337f98db797f47c64d",
+      "normalizedExpectedBytes": 187,
+      "normalizedActualBytes": 105,
       "normalizedExpected": {
         "providerAttemptCount": 1,
         "compactionEndEvents": [
@@ -251,18 +166,10 @@
       "contractExpectedObservation": "disabled setting prevents trigger",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "providerAttemptCount": 1,
-        "compactionEndEvents": [],
-        "compactionCount": 0,
-        "completedResponsePersisted": true
-      },
-      "actual": {
-        "providerAttemptCount": 1,
-        "compactionEndEvents": [],
-        "compactionCount": 0,
-        "completedResponsePersisted": true
-      },
+      "normalizedExpectedSha256": "761cea0293a72cd67886825bdf0847a724c0bdd86d5fd5337f98db797f47c64d",
+      "normalizedActualSha256": "761cea0293a72cd67886825bdf0847a724c0bdd86d5fd5337f98db797f47c64d",
+      "normalizedExpectedBytes": 105,
+      "normalizedActualBytes": 105,
       "normalizedExpected": {
         "providerAttemptCount": 1,
         "compactionEndEvents": [],
@@ -281,44 +188,10 @@
       "contractExpectedObservation": "strict greater than reserve threshold",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "atThreshold": {
-          "providerAttemptCount": 1,
-          "compactionEndEvents": [],
-          "compactionCount": 0,
-          "completedResponsePersisted": true
-        },
-        "oneTokenAbove": {
-          "providerAttemptCount": 1,
-          "compactionEndEvents": [
-            {
-              "reason": "threshold",
-              "willRetry": false
-            }
-          ],
-          "compactionCount": 1,
-          "completedResponsePersisted": true
-        }
-      },
-      "actual": {
-        "atThreshold": {
-          "providerAttemptCount": 1,
-          "compactionEndEvents": [],
-          "compactionCount": 0,
-          "completedResponsePersisted": true
-        },
-        "oneTokenAbove": {
-          "providerAttemptCount": 1,
-          "compactionEndEvents": [
-            {
-              "reason": "threshold",
-              "willRetry": false
-            }
-          ],
-          "compactionCount": 1,
-          "completedResponsePersisted": true
-        }
-      },
+      "normalizedExpectedSha256": "edcda66546759e8e0869ef3fb110ae63c78c0e8857cd9d8427acfc99ecf4b418",
+      "normalizedActualSha256": "edcda66546759e8e0869ef3fb110ae63c78c0e8857cd9d8427acfc99ecf4b418",
+      "normalizedExpectedBytes": 283,
+      "normalizedActualBytes": 283,
       "normalizedExpected": {
         "atThreshold": {
           "providerAttemptCount": 1,
@@ -363,20 +236,10 @@
       "contractExpectedObservation": "model switch uses selected window and overrides",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "modelSwitchApplied": true,
-        "selectedModel": "new-model",
-        "providerAttemptCount": 1,
-        "compactionEndEvents": [],
-        "compactionCount": 0
-      },
-      "actual": {
-        "modelSwitchApplied": true,
-        "selectedModel": "new-model",
-        "providerAttemptCount": 1,
-        "compactionEndEvents": [],
-        "compactionCount": 0
-      },
+      "normalizedExpectedSha256": "80642b737c9c4197cd798dd99237ef55146b9303a13d846279dd74eefd241dfb",
+      "normalizedActualSha256": "80642b737c9c4197cd798dd99237ef55146b9303a13d846279dd74eefd241dfb",
+      "normalizedExpectedBytes": 125,
+      "normalizedActualBytes": 125,
       "normalizedExpected": {
         "modelSwitchApplied": true,
         "selectedModel": "new-model",
@@ -397,38 +260,10 @@
       "contractExpectedObservation": "physical route change refreshes budget",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "providerAttemptCount": 2,
-        "physicalRouteModels": [
-          "large",
-          "small"
-        ],
-        "compactionEndEvents": [
-          {
-            "reason": "threshold",
-            "willRetry": false
-          }
-        ],
-        "compactionCount": 1,
-        "secondRequestContainsSummary": true,
-        "secondRequestOmitsOldContext": true
-      },
-      "actual": {
-        "providerAttemptCount": 2,
-        "physicalRouteModels": [
-          "large",
-          "small"
-        ],
-        "compactionEndEvents": [
-          {
-            "reason": "threshold",
-            "willRetry": false
-          }
-        ],
-        "compactionCount": 1,
-        "secondRequestContainsSummary": true,
-        "secondRequestOmitsOldContext": true
-      },
+      "normalizedExpectedSha256": "665ed393716a744708da094905272ec311186c50b1dc5a2693296ccab1aa7a69",
+      "normalizedActualSha256": "665ed393716a744708da094905272ec311186c50b1dc5a2693296ccab1aa7a69",
+      "normalizedExpectedBytes": 223,
+      "normalizedActualBytes": 223,
       "normalizedExpected": {
         "providerAttemptCount": 2,
         "physicalRouteModels": [
@@ -467,30 +302,10 @@
       "contractExpectedObservation": "queued steering survives auto compaction",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "providerAttemptCount": 2,
-        "compactionEndEvents": [
-          {
-            "reason": "threshold",
-            "willRetry": false
-          }
-        ],
-        "compactionCount": 1,
-        "queuedSteerAccepted": true,
-        "steeringInResumedRequest": true
-      },
-      "actual": {
-        "providerAttemptCount": 2,
-        "compactionEndEvents": [
-          {
-            "reason": "threshold",
-            "willRetry": false
-          }
-        ],
-        "compactionCount": 1,
-        "queuedSteerAccepted": true,
-        "steeringInResumedRequest": true
-      },
+      "normalizedExpectedSha256": "fab552731101c1f8395d8cc368ccfa69ede18987d95eec0aacb3b0ae719a2f89",
+      "normalizedActualSha256": "fab552731101c1f8395d8cc368ccfa69ede18987d95eec0aacb3b0ae719a2f89",
+      "normalizedExpectedBytes": 170,
+      "normalizedActualBytes": 170,
       "normalizedExpected": {
         "providerAttemptCount": 2,
         "compactionEndEvents": [
@@ -521,32 +336,10 @@
       "contractExpectedObservation": "overflow retry is one bounded attempt",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "providerAttemptCount": 2,
-        "compactionEndEvents": [
-          {
-            "reason": "overflow",
-            "willRetry": true
-          }
-        ],
-        "compactionCount": 1,
-        "retryContainsCompactedSummary": true,
-        "retryContainsPartialResponse": false,
-        "continuedResponsePersisted": true
-      },
-      "actual": {
-        "providerAttemptCount": 2,
-        "compactionEndEvents": [
-          {
-            "reason": "overflow",
-            "willRetry": true
-          }
-        ],
-        "compactionCount": 1,
-        "retryContainsCompactedSummary": true,
-        "retryContainsPartialResponse": false,
-        "continuedResponsePersisted": true
-      },
+      "normalizedExpectedSha256": "2f475a19cdeb5d2dbd5e8bb70ec391153b481fae162b74f6c12635daaa5d36e4",
+      "normalizedActualSha256": "2f475a19cdeb5d2dbd5e8bb70ec391153b481fae162b74f6c12635daaa5d36e4",
+      "normalizedExpectedBytes": 217,
+      "normalizedActualBytes": 217,
       "normalizedExpected": {
         "providerAttemptCount": 2,
         "compactionEndEvents": [
@@ -579,56 +372,10 @@
       "contractExpectedObservation": "error turn uses last valid usage not stale usage",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "lastValidUsageTriggersThreshold": {
-          "providerAttemptCount": 2,
-          "compactionCountBeforeError": 0,
-          "compactionCount": 1,
-          "thresholdCompactionEvents": [
-            {
-              "reason": "threshold",
-              "willRetry": false
-            }
-          ]
-        },
-        "failedResponseUsageDoesNotReplaceLastValid": {
-          "providerAttemptCount": 2,
-          "compactionCountBeforeError": 0,
-          "compactionCount": 0,
-          "thresholdCompactionEvents": []
-        },
-        "keptPreCompactionUsageIsIgnored": {
-          "providerAttemptCount": 2,
-          "compactionCountBeforeError": 1,
-          "compactionCount": 1,
-          "thresholdCompactionEvents": []
-        }
-      },
-      "actual": {
-        "lastValidUsageTriggersThreshold": {
-          "providerAttemptCount": 2,
-          "compactionCountBeforeError": 0,
-          "compactionCount": 1,
-          "thresholdCompactionEvents": [
-            {
-              "reason": "threshold",
-              "willRetry": false
-            }
-          ]
-        },
-        "failedResponseUsageDoesNotReplaceLastValid": {
-          "providerAttemptCount": 2,
-          "compactionCountBeforeError": 0,
-          "compactionCount": 0,
-          "thresholdCompactionEvents": []
-        },
-        "keptPreCompactionUsageIsIgnored": {
-          "providerAttemptCount": 2,
-          "compactionCountBeforeError": 1,
-          "compactionCount": 1,
-          "thresholdCompactionEvents": []
-        }
-      },
+      "normalizedExpectedSha256": "6a72080c54739e20f4ccac52bbe1396f9acc03d32e045e5c790784a7d30f655b",
+      "normalizedActualSha256": "6a72080c54739e20f4ccac52bbe1396f9acc03d32e045e5c790784a7d30f655b",
+      "normalizedExpectedBytes": 481,
+      "normalizedActualBytes": 481,
       "normalizedExpected": {
         "lastValidUsageTriggersThreshold": {
           "providerAttemptCount": 2,

@@ -61,12 +61,10 @@
       "contractExpectedObservation": "transient projection does not change canonical history",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "canonicalHistoryUnchanged": true
-      },
-      "actual": {
-        "canonicalHistoryUnchanged": true
-      },
+      "normalizedExpectedSha256": "7440a300ced39727fbbae9b5ffbf939c3281ddb378389a074b301dea6f662a3b",
+      "normalizedActualSha256": "7440a300ced39727fbbae9b5ffbf939c3281ddb378389a074b301dea6f662a3b",
+      "normalizedExpectedBytes": 34,
+      "normalizedActualBytes": 34,
       "normalizedExpected": {
         "canonicalHistoryUnchanged": true
       },
@@ -79,15 +77,10 @@
       "contractExpectedObservation": "single large current tool result is bounded",
       "classification": "intentional-safety-difference",
       "passed": true,
-      "expected": {
-        "canonicalResultPreserved": true,
-        "providerResultCharacters": 8000
-      },
-      "actual": {
-        "canonicalResultPreserved": true,
-        "providerResultCharacters": 0,
-        "summaryRetained": true
-      },
+      "normalizedExpectedSha256": "2d19b5f2c7418aa694299dc6f10bc44ecf148cf56484d08bb9cf4158ac3aa76c",
+      "normalizedActualSha256": "84c747ea458b83600cb1cca1a7310b1e18dc27866a05f195f70f67e3f1ca5493",
+      "normalizedExpectedBytes": 65,
+      "normalizedActualBytes": 85,
       "normalizedExpected": {
         "canonicalResultPreserved": true,
         "providerResultCharacters": 8000
@@ -105,26 +98,10 @@
       "contractExpectedObservation": "sequential tool cycles preserve order",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "orderedCallIds": [
-          "sequence-1",
-          "sequence-2"
-        ],
-        "orderedResultCallIds": [
-          "sequence-1",
-          "sequence-2"
-        ]
-      },
-      "actual": {
-        "orderedCallIds": [
-          "sequence-1",
-          "sequence-2"
-        ],
-        "orderedResultCallIds": [
-          "sequence-1",
-          "sequence-2"
-        ]
-      },
+      "normalizedExpectedSha256": "fe55dc617b54213d89a17718a579506e54f48ad2d07c0b82a39cef6c437ed026",
+      "normalizedActualSha256": "fe55dc617b54213d89a17718a579506e54f48ad2d07c0b82a39cef6c437ed026",
+      "normalizedExpectedBytes": 97,
+      "normalizedActualBytes": 97,
       "normalizedExpected": {
         "orderedCallIds": [
           "sequence-1",
@@ -151,18 +128,10 @@
       "contractExpectedObservation": "parallel calls and results remain matched",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "matchedCallResultIds": [
-          "parallel-1",
-          "parallel-2"
-        ]
-      },
-      "actual": {
-        "matchedCallResultIds": [
-          "parallel-1",
-          "parallel-2"
-        ]
-      },
+      "normalizedExpectedSha256": "ef62f4eb04e8bdb2dd094673f7e7b8e29145b4eec8d22d021c2897c615683d59",
+      "normalizedActualSha256": "ef62f4eb04e8bdb2dd094673f7e7b8e29145b4eec8d22d021c2897c615683d59",
+      "normalizedExpectedBytes": 52,
+      "normalizedActualBytes": 52,
       "normalizedExpected": {
         "matchedCallResultIds": [
           "parallel-1",
@@ -181,14 +150,10 @@
       "contractExpectedObservation": "large tool output summary retains latest outcome",
       "classification": "intentional-safety-difference",
       "passed": true,
-      "expected": {
-        "latestOutcomeRetained": true,
-        "providerResultCharacters": 8019
-      },
-      "actual": {
-        "latestOutcomeRetained": true,
-        "providerResultCharacters": 0
-      },
+      "normalizedExpectedSha256": "a02ab342a0db6ba7abc746d18f9f740597340e9233f7ef0bc8252d88e0f3da3e",
+      "normalizedActualSha256": "63384421cfbd3978e3e9cebceedb9817e4240e26ca2299d02161d6425b00006e",
+      "normalizedExpectedBytes": 62,
+      "normalizedActualBytes": 59,
       "normalizedExpected": {
         "latestOutcomeRetained": true,
         "providerResultCharacters": 8019
@@ -205,24 +170,10 @@
       "contractExpectedObservation": "nested tool call sequence is closed before cut",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "nestedExecutionComplete": true,
-        "nestedCallIds": [
-          "outer-call/1"
-        ],
-        "closedParentCallIds": [
-          "outer-call"
-        ]
-      },
-      "actual": {
-        "nestedExecutionComplete": true,
-        "nestedCallIds": [
-          "outer-call/1"
-        ],
-        "closedParentCallIds": [
-          "outer-call"
-        ]
-      },
+      "normalizedExpectedSha256": "1b5fc26c4d09505ae020385e58248f8c3a99393f3ca31a03f8371774d2ea66eb",
+      "normalizedActualSha256": "1b5fc26c4d09505ae020385e58248f8c3a99393f3ca31a03f8371774d2ea66eb",
+      "normalizedExpectedBytes": 102,
+      "normalizedActualBytes": 102,
       "normalizedExpected": {
         "nestedExecutionComplete": true,
         "nestedCallIds": [
@@ -247,14 +198,10 @@
       "contractExpectedObservation": "incomplete call graph fails before provider send",
       "classification": "intentional-safety-difference",
       "passed": true,
-      "expected": {
-        "providerSendCount": 1,
-        "providerHistoryValid": false
-      },
-      "actual": {
-        "providerSendCount": 0,
-        "providerHistoryValid": false
-      },
+      "normalizedExpectedSha256": "2b78a6f276c3620757562e5f7e2f6c6256c420981a2a372337ce30d85609c98e",
+      "normalizedActualSha256": "87cc38983f875e9d18963712ce80b5cc3b5de8f8bdf367ea9121ea280ed468fd",
+      "normalizedExpectedBytes": 52,
+      "normalizedActualBytes": 52,
       "normalizedExpected": {
         "providerSendCount": 1,
         "providerHistoryValid": false
@@ -271,14 +218,10 @@
       "contractExpectedObservation": "duplicate or unmatched results never replay tools",
       "classification": "intentional-safety-difference",
       "passed": true,
-      "expected": {
-        "providerSendCount": 1,
-        "providerHistoryValid": false
-      },
-      "actual": {
-        "providerSendCount": 0,
-        "providerHistoryValid": false
-      },
+      "normalizedExpectedSha256": "2b78a6f276c3620757562e5f7e2f6c6256c420981a2a372337ce30d85609c98e",
+      "normalizedActualSha256": "87cc38983f875e9d18963712ce80b5cc3b5de8f8bdf367ea9121ea280ed468fd",
+      "normalizedExpectedBytes": 52,
+      "normalizedActualBytes": 52,
       "normalizedExpected": {
         "providerSendCount": 1,
         "providerHistoryValid": false
@@ -295,12 +238,10 @@
       "contractExpectedObservation": "steering after tool result keeps active turn",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "steeringPromptPreserved": true
-      },
-      "actual": {
-        "steeringPromptPreserved": true
-      },
+      "normalizedExpectedSha256": "8af88323e91eb8dfde697628bb65f9833c64741c20bc5a1fe3f28d3845f967df",
+      "normalizedActualSha256": "8af88323e91eb8dfde697628bb65f9833c64741c20bc5a1fe3f28d3845f967df",
+      "normalizedExpectedBytes": 32,
+      "normalizedActualBytes": 32,
       "normalizedExpected": {
         "steeringPromptPreserved": true
       },
@@ -313,14 +254,10 @@
       "contractExpectedObservation": "post compaction request contains valid provider history",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "providerHistoryValid": true,
-        "closedCallResultGroupCount": 2
-      },
-      "actual": {
-        "providerHistoryValid": true,
-        "closedCallResultGroupCount": 2
-      },
+      "normalizedExpectedSha256": "680b48359e3bf5e553d1fe2c5e5fa53ec25ec63ed465bcf816b5ee0e065b38b2",
+      "normalizedActualSha256": "680b48359e3bf5e553d1fe2c5e5fa53ec25ec63ed465bcf816b5ee0e065b38b2",
+      "normalizedExpectedBytes": 60,
+      "normalizedActualBytes": 60,
       "normalizedExpected": {
         "providerHistoryValid": true,
         "closedCallResultGroupCount": 2

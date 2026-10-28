@@ -13696,7 +13696,8 @@
       "c3_dotnet_focused": "79 passed, 0 failed, 0 skipped at source 843d0388.",
       "c4_dotnet_focused": "82 passed, 0 failed, 0 skipped at source 843d0388.",
       "c5_dotnet_focused": "87 passed, 0 failed, 0 skipped at source 843d0388.",
-      "unknown_window_classification": "C2, C4, and C5 classify Pi contextWindow=0 triggering compaction vs PiSharp preserving unknown capacity as a case-level safety difference, with the regression test linked in compact evidence."
+      "unknown_window_classification": "C2, C4, and C5 classify Pi contextWindow=0 triggering compaction vs PiSharp preserving unknown capacity as a case-level safety difference, with the regression test linked in compact evidence.",
+      "documentationPaths": "Documentation paths verified: 156 documents and 699 references after C1-C8 evidence update."
     },
     "open_requirements": [
       "Implement and execute C9-C13, including branch summaries, usage surfaces, CLI/RPC/TUI integration, native extension lifecycle, and failure/cancellation/crash recovery.",

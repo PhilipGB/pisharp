@@ -1103,7 +1103,7 @@
     "builtinParityPython": "27 passed.",
     "compactionVerifierTests": "20 passed, including positive and negative evidence controls.",
     "terminalNode": "24 passed.",
-    "documentationPaths": "Documentation paths verified: 156 documents and 699 references after the C1-C8 evidence update.",
+    "documentationPaths": "Documentation paths verified: 156 documents and 699 references after the C1-C8 evidence/status update.",
     "pinnedPiSuites": "Selected pinned Pi compaction and queue tests: 34 passed / 1 failed; Pi AI overflow: 20 passed. The failed queue expectation conflicts with shouldCompact at model id unknown/contextWindow 0.",
     "mcpConformance": "No regressions against the classified baseline; three known scenarios remain classified.",
     "focusedCompactionAndProviderTests": "82 passed, 0 failed, 0 skipped, including length-stop recovery and all three provider loopback APIs.",

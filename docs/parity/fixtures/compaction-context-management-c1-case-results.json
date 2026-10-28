@@ -15,8 +15,7 @@
   "normalization": [
     "strip generated session entry IDs by comparing the retained entry index",
     "compare cached-excluded provider input tokens and cached input separately",
-    "compare explicit summary and focus observables rather than framework request wrappers",
-    "Use the same non-transient provider failure category on both sides when comparing rollback behavior."
+    "compare explicit summary and focus observables rather than framework request wrappers"
   ],
   "safetyDifferences": [],
   "executedCaseCount": 9,
@@ -35,54 +34,10 @@
       "contractExpectedObservation": "eligible manual request persists one entry",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "C1.eligible-manual-request-persists-one-entry": {
-          "compactionSucceeded": true,
-          "compactionCount": 1,
-          "summary": "compacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary"
-        },
-        "C1.custom-focus-changes-history-prompt-only": {
-          "focusInHistorySummaryRequest": true,
-          "focusAbsentFromTurnPrefixRequest": true
-        },
-        "C1.recent-context-and-full-history-retained": {
-          "firstKeptEntryIndex": 3,
-          "fullHistoryRetained": true,
-          "latestAnswerInContext": true
-        },
-        "C1.summary-usage-details-persist": {
-          "inputTokens": 20,
-          "outputTokens": 40,
-          "cachedInputTokens": 60,
-          "cachedWriteTokens": 80,
-          "totalTokens": 200,
-          "cost": 2
-        }
-      },
-      "actual": {
-        "C1.eligible-manual-request-persists-one-entry": {
-          "compactionSucceeded": true,
-          "compactionCount": 1,
-          "summary": "compacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary"
-        },
-        "C1.custom-focus-changes-history-prompt-only": {
-          "focusInHistorySummaryRequest": true,
-          "focusAbsentFromTurnPrefixRequest": true
-        },
-        "C1.recent-context-and-full-history-retained": {
-          "firstKeptEntryIndex": 3,
-          "fullHistoryRetained": true,
-          "latestAnswerInContext": true
-        },
-        "C1.summary-usage-details-persist": {
-          "inputTokens": 20,
-          "outputTokens": 40,
-          "cachedInputTokens": 60,
-          "cachedWriteTokens": 80,
-          "totalTokens": 200,
-          "cost": 2.0
-        }
-      },
+      "normalizedExpectedSha256": "ccd6566acd18d700ba98b8037439f5a83e59e5fc4b789ffacbe16d9bcfe83fff",
+      "normalizedActualSha256": "0e4efe6ecc960077f5fba78781b6eb71a4e62dd309bf241377ebe5d24cf3f0db",
+      "normalizedExpectedBytes": 603,
+      "normalizedActualBytes": 605,
       "normalizedExpected": {
         "C1.eligible-manual-request-persists-one-entry": {
           "compactionSucceeded": true,
@@ -137,20 +92,10 @@
       "contractExpectedObservation": "ineligible short history is no op",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "compactionSucceeded": false,
-        "compactionCount": 0,
-        "summaryRequestCount": 0,
-        "canonicalStateUnchanged": true,
-        "failureEventPublished": true
-      },
-      "actual": {
-        "compactionSucceeded": false,
-        "compactionCount": 0,
-        "summaryRequestCount": 0,
-        "canonicalStateUnchanged": true,
-        "failureEventPublished": true
-      },
+      "normalizedExpectedSha256": "1a065ada9b4e27cba83d6888cf36db816c201e56030556dcf53d14fdc937ad6d",
+      "normalizedActualSha256": "1a065ada9b4e27cba83d6888cf36db816c201e56030556dcf53d14fdc937ad6d",
+      "normalizedExpectedBytes": 133,
+      "normalizedActualBytes": 133,
       "normalizedExpected": {
         "compactionSucceeded": false,
         "compactionCount": 0,
@@ -171,54 +116,10 @@
       "contractExpectedObservation": "custom focus changes history prompt only",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "C1.eligible-manual-request-persists-one-entry": {
-          "compactionSucceeded": true,
-          "compactionCount": 1,
-          "summary": "compacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary"
-        },
-        "C1.custom-focus-changes-history-prompt-only": {
-          "focusInHistorySummaryRequest": true,
-          "focusAbsentFromTurnPrefixRequest": true
-        },
-        "C1.recent-context-and-full-history-retained": {
-          "firstKeptEntryIndex": 3,
-          "fullHistoryRetained": true,
-          "latestAnswerInContext": true
-        },
-        "C1.summary-usage-details-persist": {
-          "inputTokens": 20,
-          "outputTokens": 40,
-          "cachedInputTokens": 60,
-          "cachedWriteTokens": 80,
-          "totalTokens": 200,
-          "cost": 2
-        }
-      },
-      "actual": {
-        "C1.eligible-manual-request-persists-one-entry": {
-          "compactionSucceeded": true,
-          "compactionCount": 1,
-          "summary": "compacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary"
-        },
-        "C1.custom-focus-changes-history-prompt-only": {
-          "focusInHistorySummaryRequest": true,
-          "focusAbsentFromTurnPrefixRequest": true
-        },
-        "C1.recent-context-and-full-history-retained": {
-          "firstKeptEntryIndex": 3,
-          "fullHistoryRetained": true,
-          "latestAnswerInContext": true
-        },
-        "C1.summary-usage-details-persist": {
-          "inputTokens": 20,
-          "outputTokens": 40,
-          "cachedInputTokens": 60,
-          "cachedWriteTokens": 80,
-          "totalTokens": 200,
-          "cost": 2.0
-        }
-      },
+      "normalizedExpectedSha256": "ccd6566acd18d700ba98b8037439f5a83e59e5fc4b789ffacbe16d9bcfe83fff",
+      "normalizedActualSha256": "0e4efe6ecc960077f5fba78781b6eb71a4e62dd309bf241377ebe5d24cf3f0db",
+      "normalizedExpectedBytes": 603,
+      "normalizedActualBytes": 605,
       "normalizedExpected": {
         "C1.eligible-manual-request-persists-one-entry": {
           "compactionSucceeded": true,
@@ -273,54 +174,10 @@
       "contractExpectedObservation": "recent context and full history retained",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "C1.eligible-manual-request-persists-one-entry": {
-          "compactionSucceeded": true,
-          "compactionCount": 1,
-          "summary": "compacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary"
-        },
-        "C1.custom-focus-changes-history-prompt-only": {
-          "focusInHistorySummaryRequest": true,
-          "focusAbsentFromTurnPrefixRequest": true
-        },
-        "C1.recent-context-and-full-history-retained": {
-          "firstKeptEntryIndex": 3,
-          "fullHistoryRetained": true,
-          "latestAnswerInContext": true
-        },
-        "C1.summary-usage-details-persist": {
-          "inputTokens": 20,
-          "outputTokens": 40,
-          "cachedInputTokens": 60,
-          "cachedWriteTokens": 80,
-          "totalTokens": 200,
-          "cost": 2
-        }
-      },
-      "actual": {
-        "C1.eligible-manual-request-persists-one-entry": {
-          "compactionSucceeded": true,
-          "compactionCount": 1,
-          "summary": "compacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary"
-        },
-        "C1.custom-focus-changes-history-prompt-only": {
-          "focusInHistorySummaryRequest": true,
-          "focusAbsentFromTurnPrefixRequest": true
-        },
-        "C1.recent-context-and-full-history-retained": {
-          "firstKeptEntryIndex": 3,
-          "fullHistoryRetained": true,
-          "latestAnswerInContext": true
-        },
-        "C1.summary-usage-details-persist": {
-          "inputTokens": 20,
-          "outputTokens": 40,
-          "cachedInputTokens": 60,
-          "cachedWriteTokens": 80,
-          "totalTokens": 200,
-          "cost": 2.0
-        }
-      },
+      "normalizedExpectedSha256": "ccd6566acd18d700ba98b8037439f5a83e59e5fc4b789ffacbe16d9bcfe83fff",
+      "normalizedActualSha256": "0e4efe6ecc960077f5fba78781b6eb71a4e62dd309bf241377ebe5d24cf3f0db",
+      "normalizedExpectedBytes": 603,
+      "normalizedActualBytes": 605,
       "normalizedExpected": {
         "C1.eligible-manual-request-persists-one-entry": {
           "compactionSucceeded": true,
@@ -375,26 +232,10 @@
       "contractExpectedObservation": "split turn summary retains interrupted assistant",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "compactionSucceeded": true,
-        "compactionCount": 1,
-        "summaryRequestCount": 2,
-        "firstKeptEntryIndex": 5,
-        "splitTurnSummaryCreated": true,
-        "historySummaryIncludesOlderQuestion": false,
-        "turnPrefixSummaryIncludesCurrentRequest": true,
-        "interruptedAssistantRetainedOnce": true
-      },
-      "actual": {
-        "compactionSucceeded": true,
-        "compactionCount": 1,
-        "summaryRequestCount": 2,
-        "firstKeptEntryIndex": 5,
-        "splitTurnSummaryCreated": true,
-        "historySummaryIncludesOlderQuestion": false,
-        "turnPrefixSummaryIncludesCurrentRequest": true,
-        "interruptedAssistantRetainedOnce": true
-      },
+      "normalizedExpectedSha256": "105c997f17cf69409bd4ae5b5268df5644982afd8a49806fd970453de40f848b",
+      "normalizedActualSha256": "105c997f17cf69409bd4ae5b5268df5644982afd8a49806fd970453de40f848b",
+      "normalizedExpectedBytes": 258,
+      "normalizedActualBytes": 258,
       "normalizedExpected": {
         "compactionSucceeded": true,
         "compactionCount": 1,
@@ -421,54 +262,10 @@
       "contractExpectedObservation": "summary usage details persist",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "C1.eligible-manual-request-persists-one-entry": {
-          "compactionSucceeded": true,
-          "compactionCount": 1,
-          "summary": "compacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary"
-        },
-        "C1.custom-focus-changes-history-prompt-only": {
-          "focusInHistorySummaryRequest": true,
-          "focusAbsentFromTurnPrefixRequest": true
-        },
-        "C1.recent-context-and-full-history-retained": {
-          "firstKeptEntryIndex": 3,
-          "fullHistoryRetained": true,
-          "latestAnswerInContext": true
-        },
-        "C1.summary-usage-details-persist": {
-          "inputTokens": 20,
-          "outputTokens": 40,
-          "cachedInputTokens": 60,
-          "cachedWriteTokens": 80,
-          "totalTokens": 200,
-          "cost": 2
-        }
-      },
-      "actual": {
-        "C1.eligible-manual-request-persists-one-entry": {
-          "compactionSucceeded": true,
-          "compactionCount": 1,
-          "summary": "compacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary"
-        },
-        "C1.custom-focus-changes-history-prompt-only": {
-          "focusInHistorySummaryRequest": true,
-          "focusAbsentFromTurnPrefixRequest": true
-        },
-        "C1.recent-context-and-full-history-retained": {
-          "firstKeptEntryIndex": 3,
-          "fullHistoryRetained": true,
-          "latestAnswerInContext": true
-        },
-        "C1.summary-usage-details-persist": {
-          "inputTokens": 20,
-          "outputTokens": 40,
-          "cachedInputTokens": 60,
-          "cachedWriteTokens": 80,
-          "totalTokens": 200,
-          "cost": 2.0
-        }
-      },
+      "normalizedExpectedSha256": "ccd6566acd18d700ba98b8037439f5a83e59e5fc4b789ffacbe16d9bcfe83fff",
+      "normalizedActualSha256": "0e4efe6ecc960077f5fba78781b6eb71a4e62dd309bf241377ebe5d24cf3f0db",
+      "normalizedExpectedBytes": 603,
+      "normalizedActualBytes": 605,
       "normalizedExpected": {
         "C1.eligible-manual-request-persists-one-entry": {
           "compactionSucceeded": true,
@@ -523,20 +320,10 @@
       "contractExpectedObservation": "summary failure rolls back and reports",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "compactionCount": 0,
-        "summaryRequestCount": 1,
-        "canonicalStateUnchanged": true,
-        "failureEventPublished": true,
-        "providerFailureReported": true
-      },
-      "actual": {
-        "compactionCount": 0,
-        "summaryRequestCount": 1,
-        "canonicalStateUnchanged": true,
-        "failureEventPublished": true,
-        "providerFailureReported": true
-      },
+      "normalizedExpectedSha256": "bca97e1f61a42bcc2281fe272d0d6bc85ba39232630bc63fbfec7d37fb2b765f",
+      "normalizedActualSha256": "bca97e1f61a42bcc2281fe272d0d6bc85ba39232630bc63fbfec7d37fb2b765f",
+      "normalizedExpectedBytes": 136,
+      "normalizedActualBytes": 136,
       "normalizedExpected": {
         "compactionCount": 0,
         "summaryRequestCount": 1,
@@ -557,20 +344,10 @@
       "contractExpectedObservation": "cancellation publishes no entry",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "compactionSucceeded": false,
-        "compactionCount": 0,
-        "summaryRequestCount": 0,
-        "canonicalStateUnchanged": true,
-        "abortedEventPublished": true
-      },
-      "actual": {
-        "compactionSucceeded": false,
-        "compactionCount": 0,
-        "summaryRequestCount": 0,
-        "canonicalStateUnchanged": true,
-        "abortedEventPublished": true
-      },
+      "normalizedExpectedSha256": "ffef19cd6fec360efe54bbcaaea267d419b24c6c7c1cb71059ac8c99240426e6",
+      "normalizedActualSha256": "ffef19cd6fec360efe54bbcaaea267d419b24c6c7c1cb71059ac8c99240426e6",
+      "normalizedExpectedBytes": 133,
+      "normalizedActualBytes": 133,
       "normalizedExpected": {
         "compactionSucceeded": false,
         "compactionCount": 0,
@@ -591,18 +368,10 @@
       "contractExpectedObservation": "active run and queued follow up order",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "compactionCount": 1,
-        "compactionPrecedesFollowUp": true,
-        "followUpPrecedesResponse": true,
-        "followUpResponsePresent": true
-      },
-      "actual": {
-        "compactionCount": 1,
-        "compactionPrecedesFollowUp": true,
-        "followUpPrecedesResponse": true,
-        "followUpResponsePresent": true
-      },
+      "normalizedExpectedSha256": "12659c544355b1b9888fe7758bde7060d9469baf2505f0c927bb8926e31267f0",
+      "normalizedActualSha256": "12659c544355b1b9888fe7758bde7060d9469baf2505f0c927bb8926e31267f0",
+      "normalizedExpectedBytes": 118,
+      "normalizedActualBytes": 118,
       "normalizedExpected": {
         "compactionCount": 1,
         "compactionPrecedesFollowUp": true,

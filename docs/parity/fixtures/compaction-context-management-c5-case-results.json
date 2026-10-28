@@ -47,50 +47,10 @@
       "contractExpectedObservation": "length stop at context boundary recognized",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "providerAttempts": 2,
-        "summaryRequestCount": 2,
-        "compactionEndEvents": [
-          {
-            "reason": "overflow",
-            "willRetry": true
-          }
-        ],
-        "compactionCount": 1,
-        "responseUsage": [
-          {
-            "inputTokens": 10000,
-            "outputTokens": 0
-          },
-          {
-            "inputTokens": 60,
-            "outputTokens": 12
-          }
-        ],
-        "responsePersisted": false
-      },
-      "actual": {
-        "providerAttempts": 2,
-        "summaryRequestCount": 2,
-        "compactionEndEvents": [
-          {
-            "reason": "overflow",
-            "willRetry": true
-          }
-        ],
-        "compactionCount": 1,
-        "responseUsage": [
-          {
-            "inputTokens": 10000,
-            "outputTokens": 0
-          },
-          {
-            "inputTokens": 60,
-            "outputTokens": 12
-          }
-        ],
-        "responsePersisted": false
-      },
+      "normalizedExpectedSha256": "bd509023429c4c4c36f187f81d0f81f748ac45a2b320692927a811145966ae28",
+      "normalizedActualSha256": "bd509023429c4c4c36f187f81d0f81f748ac45a2b320692927a811145966ae28",
+      "normalizedExpectedBytes": 249,
+      "normalizedActualBytes": 249,
       "normalizedExpected": {
         "providerAttempts": 2,
         "summaryRequestCount": 2,
@@ -141,20 +101,10 @@
       "contractExpectedObservation": "overflow for responses chat and anthropic",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "providerAttempts": 2,
-        "overflowRecoveryCount": 1,
-        "retryContainsCompactedSummary": true,
-        "partialResponsePersisted": false,
-        "continuationCompleted": true
-      },
-      "actual": {
-        "providerAttempts": 2,
-        "overflowRecoveryCount": 1,
-        "retryContainsCompactedSummary": true,
-        "partialResponsePersisted": false,
-        "continuationCompleted": true
-      },
+      "normalizedExpectedSha256": "c161c3400622649a5a0fe67585ebffcde8b7feb282252f094e614841f797d394",
+      "normalizedActualSha256": "c161c3400622649a5a0fe67585ebffcde8b7feb282252f094e614841f797d394",
+      "normalizedExpectedBytes": 147,
+      "normalizedActualBytes": 147,
       "normalizedExpected": {
         "providerAttempts": 2,
         "overflowRecoveryCount": 1,
@@ -175,27 +125,10 @@
       "contractExpectedObservation": "partial content overflow does not duplicate request",
       "classification": "intentional-safety-difference",
       "passed": true,
-      "expected": {
-        "providerAttempts": 2,
-        "summaryRequestCount": 2,
-        "compactionEndEvents": [
-          {
-            "reason": "overflow",
-            "willRetry": true
-          }
-        ],
-        "partialResponsePersisted": true,
-        "retryContainsPartialResponse": false,
-        "recoveryErrors": []
-      },
-      "actual": {
-        "providerAttempts": 1,
-        "summaryRequestCount": 0,
-        "compactionEndEvents": [],
-        "partialResponsePersisted": true,
-        "retryContainsPartialResponse": false,
-        "recoveryErrors": []
-      },
+      "normalizedExpectedSha256": "85dc43fce6cc3e1d805314eb5b1d9bef802ae1fcd31e0a0073e7da831c4269ca",
+      "normalizedActualSha256": "91ae2dfcdaea4fbaee3c2cd9180b90a084641bee1221ee4ee660355243c2a7ad",
+      "normalizedExpectedBytes": 198,
+      "normalizedActualBytes": 160,
       "normalizedExpected": {
         "providerAttempts": 2,
         "summaryRequestCount": 2,
@@ -225,50 +158,10 @@
       "contractExpectedObservation": "post compaction provider continuation succeeds",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "providerAttempts": 2,
-        "summaryRequestCount": 2,
-        "compactionEndEvents": [
-          {
-            "reason": "overflow",
-            "willRetry": true
-          }
-        ],
-        "responseUsage": [
-          {
-            "inputTokens": 80,
-            "outputTokens": 16
-          },
-          {
-            "inputTokens": 60,
-            "outputTokens": 12
-          }
-        ],
-        "retryUsesCompactedSummary": true,
-        "continuationCompleted": true
-      },
-      "actual": {
-        "providerAttempts": 2,
-        "summaryRequestCount": 2,
-        "compactionEndEvents": [
-          {
-            "reason": "overflow",
-            "willRetry": true
-          }
-        ],
-        "responseUsage": [
-          {
-            "inputTokens": 80,
-            "outputTokens": 16
-          },
-          {
-            "inputTokens": 60,
-            "outputTokens": 12
-          }
-        ],
-        "retryUsesCompactedSummary": true,
-        "continuationCompleted": true
-      },
+      "normalizedExpectedSha256": "7f7557e4038bc41c2f6313b1f01be02b24c8f7465e537e767e7de690b5eb447a",
+      "normalizedActualSha256": "7f7557e4038bc41c2f6313b1f01be02b24c8f7465e537e767e7de690b5eb447a",
+      "normalizedExpectedBytes": 263,
+      "normalizedActualBytes": 263,
       "normalizedExpected": {
         "providerAttempts": 2,
         "summaryRequestCount": 2,
@@ -319,30 +212,10 @@
       "contractExpectedObservation": "pre content context error recognized",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "providerAttempts": 2,
-        "compactionEndEvents": [
-          {
-            "reason": "overflow",
-            "willRetry": true
-          }
-        ],
-        "retryUsesCompactedSummary": true,
-        "partialResponsePersisted": false,
-        "continuationCompleted": true
-      },
-      "actual": {
-        "providerAttempts": 2,
-        "compactionEndEvents": [
-          {
-            "reason": "overflow",
-            "willRetry": true
-          }
-        ],
-        "retryUsesCompactedSummary": true,
-        "partialResponsePersisted": false,
-        "continuationCompleted": true
-      },
+      "normalizedExpectedSha256": "8f7756e222fd0010fdc2c8674dd9a906240fa745663d23046d7fa5fc52b2123f",
+      "normalizedActualSha256": "8f7756e222fd0010fdc2c8674dd9a906240fa745663d23046d7fa5fc52b2123f",
+      "normalizedExpectedBytes": 180,
+      "normalizedActualBytes": 180,
       "normalizedExpected": {
         "providerAttempts": 2,
         "compactionEndEvents": [
@@ -373,38 +246,10 @@
       "contractExpectedObservation": "provider silent overflow from reported usage",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "providerAttempts": 1,
-        "responseUsage": [
-          {
-            "inputTokens": 10001,
-            "outputTokens": 16
-          }
-        ],
-        "compactionEndEvents": [
-          {
-            "reason": "overflow",
-            "willRetry": false
-          }
-        ],
-        "continuationCompleted": false
-      },
-      "actual": {
-        "providerAttempts": 1,
-        "responseUsage": [
-          {
-            "inputTokens": 10001,
-            "outputTokens": 16
-          }
-        ],
-        "compactionEndEvents": [
-          {
-            "reason": "overflow",
-            "willRetry": false
-          }
-        ],
-        "continuationCompleted": false
-      },
+      "normalizedExpectedSha256": "cc313098fb336834bbfd4083d8aa3f9d9d24d91f82056113eaf9f85080212b2f",
+      "normalizedActualSha256": "cc313098fb336834bbfd4083d8aa3f9d9d24d91f82056113eaf9f85080212b2f",
+      "normalizedExpectedBytes": 174,
+      "normalizedActualBytes": 174,
       "normalizedExpected": {
         "providerAttempts": 1,
         "responseUsage": [
@@ -443,28 +288,10 @@
       "contractExpectedObservation": "recoverable length stop retries once",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "providerAttempts": 2,
-        "compactionEndEvents": [
-          {
-            "reason": "overflow",
-            "willRetry": true
-          }
-        ],
-        "summaryRequestCount": 2,
-        "continuationCompleted": true
-      },
-      "actual": {
-        "providerAttempts": 2,
-        "compactionEndEvents": [
-          {
-            "reason": "overflow",
-            "willRetry": true
-          }
-        ],
-        "summaryRequestCount": 2,
-        "continuationCompleted": true
-      },
+      "normalizedExpectedSha256": "2541c5ad8c2e5db9d40a4bf3a6cfdd68ec7fcd96193109a8054c9a9832edcd1d",
+      "normalizedActualSha256": "2541c5ad8c2e5db9d40a4bf3a6cfdd68ec7fcd96193109a8054c9a9832edcd1d",
+      "normalizedExpectedBytes": 138,
+      "normalizedActualBytes": 138,
       "normalizedExpected": {
         "providerAttempts": 2,
         "compactionEndEvents": [
@@ -493,26 +320,10 @@
       "contractExpectedObservation": "retry request uses compacted transcript",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "retryMessages": [
-          {
-            "role": "user",
-            "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\ncompacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary\n</summary>"
-          }
-        ],
-        "partialResponseOmitted": true,
-        "compactedSummaryIncluded": true
-      },
-      "actual": {
-        "retryMessages": [
-          {
-            "role": "user",
-            "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\ncompacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary\n</summary>"
-          }
-        ],
-        "partialResponseOmitted": true,
-        "compactedSummaryIncluded": true
-      },
+      "normalizedExpectedSha256": "39602c94cf52542356f08169eab6f9006324c3df351d742562dce6f65fca8709",
+      "normalizedActualSha256": "39602c94cf52542356f08169eab6f9006324c3df351d742562dce6f65fca8709",
+      "normalizedExpectedBytes": 313,
+      "normalizedActualBytes": 313,
       "normalizedExpected": {
         "retryMessages": [
           {
@@ -539,40 +350,10 @@
       "contractExpectedObservation": "second overflow stops with clear error",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "providerAttempts": 2,
-        "summaryRequestCount": 2,
-        "compactionEndEvents": [
-          {
-            "reason": "overflow",
-            "willRetry": true
-          },
-          {
-            "reason": "overflow",
-            "willRetry": false
-          }
-        ],
-        "recoveryErrors": [
-          "Truncated response recovery failed after one compact-and-retry attempt."
-        ]
-      },
-      "actual": {
-        "providerAttempts": 2,
-        "summaryRequestCount": 2,
-        "compactionEndEvents": [
-          {
-            "reason": "overflow",
-            "willRetry": true
-          },
-          {
-            "reason": "overflow",
-            "willRetry": false
-          }
-        ],
-        "recoveryErrors": [
-          "Truncated response recovery failed after one compact-and-retry attempt."
-        ]
-      },
+      "normalizedExpectedSha256": "6a2fb82afb6b5524a928a8037bd757770997cbfbca23ff0005c47b41b1d0a9af",
+      "normalizedActualSha256": "6a2fb82afb6b5524a928a8037bd757770997cbfbca23ff0005c47b41b1d0a9af",
+      "normalizedExpectedBytes": 242,
+      "normalizedActualBytes": 242,
       "normalizedExpected": {
         "providerAttempts": 2,
         "summaryRequestCount": 2,
@@ -613,32 +394,10 @@
       "contractExpectedObservation": "stale old model overflow does not compact new model",
       "classification": "equivalent",
       "passed": true,
-      "expected": {
-        "modelSwitchApplied": true,
-        "selectedModel": "new-model",
-        "providerAttempts": 1,
-        "responseUsage": [
-          {
-            "inputTokens": 1000,
-            "outputTokens": 0
-          }
-        ],
-        "compactionEndEvents": [],
-        "partialResponsePersisted": true
-      },
-      "actual": {
-        "modelSwitchApplied": true,
-        "selectedModel": "new-model",
-        "providerAttempts": 1,
-        "responseUsage": [
-          {
-            "inputTokens": 1000,
-            "outputTokens": 0
-          }
-        ],
-        "compactionEndEvents": [],
-        "partialResponsePersisted": true
-      },
+      "normalizedExpectedSha256": "9997497eb2d8c0d3cc52142153fb8f960bbbe296552dc749b55c878d3dbd1dda",
+      "normalizedActualSha256": "9997497eb2d8c0d3cc52142153fb8f960bbbe296552dc749b55c878d3dbd1dda",
+      "normalizedExpectedBytes": 189,
+      "normalizedActualBytes": 189,
       "normalizedExpected": {
         "modelSwitchApplied": true,
         "selectedModel": "new-model",
@@ -671,41 +430,10 @@
       "contractExpectedObservation": "unknown model window does not fabricate capacity",
       "classification": "intentional-safety-difference",
       "passed": true,
-      "expected": {
-        "providerAttempts": 1,
-        "summaryRequestCount": 4,
-        "compactionEndEvents": [
-          {
-            "reason": "threshold",
-            "willRetry": false
-          },
-          {
-            "reason": "threshold",
-            "willRetry": false
-          }
-        ],
-        "responseUsage": [
-          {
-            "inputTokens": 60,
-            "outputTokens": 12
-          }
-        ],
-        "compactionCount": 2,
-        "responsePersisted": false
-      },
-      "actual": {
-        "providerAttempts": 1,
-        "summaryRequestCount": 0,
-        "compactionEndEvents": [],
-        "responseUsage": [
-          {
-            "inputTokens": 20000,
-            "outputTokens": 16
-          }
-        ],
-        "compactionCount": 0,
-        "responsePersisted": true
-      },
+      "normalizedExpectedSha256": "7c794dcd2847ea217319459dbde04f0a749d9e578aa4b1142978576fc450dba2",
+      "normalizedActualSha256": "05e5c7661eae31a06582860e0fc0f38ada9b279343bfd5f1c959cea7c5e975fe",
+      "normalizedExpectedBytes": 253,
+      "normalizedActualBytes": 174,
       "normalizedExpected": {
         "providerAttempts": 1,
         "summaryRequestCount": 4,
