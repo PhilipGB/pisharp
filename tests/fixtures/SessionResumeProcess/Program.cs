@@ -87,6 +87,30 @@ if (mode == "pause-after-intent")
     return 10;
 }
 
+if (mode == "pause-after-compaction-save")
+{
+    var conversation = new ConversationSession(workingDirectory, "session-resume-process", null);
+    conversation.Append(new ChatMessage(ChatRole.User, "first compaction question"));
+    conversation.Append(new ChatMessage(ChatRole.Assistant, "first compaction answer"));
+    conversation.Append(new ChatMessage(ChatRole.User, "retained compaction question"));
+    conversation.Append(new ChatMessage(ChatRole.Assistant, "retained compaction answer"));
+    await store.SaveAsync(conversation, sessionPath);
+
+    async Task SaveAndPause(CancellationToken cancellationToken)
+    {
+        await store.SaveAsync(conversation, sessionPath, cancellationToken);
+        if (!conversation.Tree.ActivePath().Any(node => node.Type == "compaction")) return;
+        await File.WriteAllTextAsync(sessionPath + ".compaction-ready", "compaction saved before publication");
+        await Task.Delay(Timeout.InfiniteTimeSpan);
+    }
+
+    var run = await ConversationRun.OpenAsync(new PiAgent(new DeterministicClient(), new CodingTools(workingDirectory),
+        retryPolicy: ProviderRetryPolicy.None), conversation, save: SaveAndPause, keepRecentTokens: 1,
+        sessionFile: sessionPath);
+    await run.CompactWithResultAsync();
+    return 13;
+}
+
 if (mode == "recover-no-replay")
 {
     var conversation = await store.LoadAsync(sessionPath);
@@ -109,7 +133,8 @@ internal sealed class DeterministicClient : IChatClient
     public List<ChatMessage[]> Requests { get; } = [];
 
     public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
-        CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(new ChatResponse([new ChatMessage(ChatRole.Assistant, "process compaction summary")]));
 
     public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
         ChatOptions? options = null,

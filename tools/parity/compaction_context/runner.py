@@ -28,7 +28,7 @@ FILTERS = {
     "C10": "FullyQualifiedName~CompactionTests|FullyQualifiedName~RpcSessionStatsProjectorTests|FullyQualifiedName~CodemodeModelTests",
     "C11": "FullyQualifiedName~RpcCompactionProcessTests|FullyQualifiedName~RpcSessionStatsProjectorTests|FullyQualifiedName~RpcEventProjectorTests|FullyQualifiedName~JsonEventModeTests",
     "C12": "FullyQualifiedName~PiSharpExtensionCompactionTests|FullyQualifiedName~NativeExtensionCompactionEventTests|FullyQualifiedName~NativeExtensionTreeEventTests|FullyQualifiedName~NativeExtensionSessionMutationDispatcherTests|FullyQualifiedName~BoundaryCompactionAndRecoveryTests",
-    "C13": "FullyQualifiedName~CompactionTests|FullyQualifiedName~RpcCompactionProcessTests|FullyQualifiedName~CrashRecoveryProcessTests",
+    "C13": "FullyQualifiedName~CompactionTests|FullyQualifiedName~RpcCompactionProcessTests|FullyQualifiedName~CrashRecoveryProcessTests|FullyQualifiedName~RpcSessionReplacementProcessTests|FullyQualifiedName~NativeExtensionTreeEventTests|FullyQualifiedName~NativeExtensionCompactionEventTests|FullyQualifiedName~BoundaryCompactionAndRecoveryTests",
 }
 
 
@@ -80,6 +80,23 @@ def run_checkpoint(checkpoint_id: str, evidence_dir: Path, pi_path: Path | None)
             raise verify.VerificationError(f"Pi checkout is {head}; expected {verify.PINNED_PI_SHA}")
     output = evidence_dir / "runs" / checkpoint_id
     output.mkdir(parents=True, exist_ok=True)
+    if checkpoint_id in {"D0", "Q0", "E0", "CI0", "PUB0"}:
+        if checkpoint_id in {"D0", "Q0"} and pi_path is None:
+            raise verify.VerificationError(f"checkpoint {checkpoint_id} requires --pi")
+        command = [sys.executable, "tools/parity/compaction_context/gate_checkpoints.py", "run",
+                   "--checkpoint", checkpoint_id,
+                   "--evidence-dir", str(evidence_dir)]
+        if pi_path is not None:
+            command.extend(["--pi", str(pi_path)])
+        completed = subprocess.run(command, cwd=ROOT, capture_output=True, text=True,
+                                   env={**os.environ, "DOTNET_PROCESSOR_COUNT": "4"}, check=False)
+        (output / "runner.stdout.log").write_text(completed.stdout, encoding="utf-8")
+        (output / "runner.stderr.log").write_text(completed.stderr, encoding="utf-8")
+        if completed.stdout:
+            print(completed.stdout, end="")
+        if completed.stderr:
+            print(completed.stderr, file=sys.stderr, end="")
+        return completed.returncode
     if checkpoint_id in {"P0", "P1", "V0", "V1"}:
         if pi_path is None:
             raise verify.VerificationError(f"checkpoint {checkpoint_id} requires --pi")
@@ -389,9 +406,32 @@ def run_checkpoint(checkpoint_id: str, evidence_dir: Path, pi_path: Path | None)
             differential_report["verifierCounts"] = verify.validate_case_results(
                 differential_report["cases"], checkpoint_id, differential_dir, verify_artifacts=True)
 
+    if checkpoint_id == "C13" and results and results[-1]["exitCode"] == 0:
+        differential_dir = output / "differential"
+        command = [sys.executable, "tools/parity/compaction_context/c13_oracle.py",
+                   "--pi", str(pi_path), "--evidence-dir", str(differential_dir)]
+        completed = subprocess.run(command, cwd=ROOT, capture_output=True, text=True,
+                                   env={**os.environ, "DOTNET_PROCESSOR_COUNT": "4"}, check=False)
+        stdout_path = output / f"command-{len(results) + 1}.stdout.log"
+        stderr_path = output / f"command-{len(results) + 1}.stderr.log"
+        stdout_path.write_text(completed.stdout, encoding="utf-8")
+        stderr_path.write_text(completed.stderr, encoding="utf-8")
+        results.append({
+            "argv": command,
+            "exitCode": completed.returncode,
+            "stdout": {"path": str(stdout_path.relative_to(evidence_dir)),
+                       "sha256": hashlib.sha256(completed.stdout.encode()).hexdigest()},
+            "stderr": {"path": str(stderr_path.relative_to(evidence_dir)),
+                       "sha256": hashlib.sha256(completed.stderr.encode()).hexdigest()},
+        })
+        if completed.returncode == 0:
+            differential_report = verify._json(differential_dir / "c13-case-results.json")
+            differential_report["verifierCounts"] = verify.validate_case_results(
+                differential_report["cases"], checkpoint_id, differential_dir, verify_artifacts=True)
+
     produced_cases = differential_report["cases"] if differential_report is not None else []
     source_clean = _source_tree_is_clean()
-    source_sha = _git("rev-parse", "HEAD") if source_clean else None
+    source_sha = _git("log", "-1", "--format=%H", "--", "src", "tests", "tools/parity") if source_clean else None
     required_count = len(checkpoint["requiredCases"])
     validated_counts = differential_report["verifierCounts"] if differential_report is not None else {}
     passed_count = validated_counts.get("passed", 0)

@@ -256,7 +256,7 @@ def run(pi_path: Path, evidence_dir: Path) -> dict[str, Any]:
         "checkpointId": "C8",
         "contractSha256": verify.FROZEN_CONTRACT_SHA256,
         "piSha": verify.PINNED_PI_SHA,
-        "pisharpSourceSha": c5_oracle.git("rev-parse", "HEAD") if c5_oracle.source_tree_is_clean() else None,
+        "pisharpSourceSha": c5_oracle.implementation_source_sha() if c5_oracle.source_tree_is_clean() else None,
         "cases": cases,
         "checkpointResults": [{
             "checkpointId": "C8",

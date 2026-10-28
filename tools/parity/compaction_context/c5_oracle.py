@@ -54,6 +54,16 @@ def source_tree_is_clean() -> bool:
     return changed.returncode == 0 and not untracked.stdout.strip()
 
 
+def implementation_source_sha() -> str:
+    """Return the last commit that changed implementation, tests, or parity tooling.
+
+    Documentation-only commits may follow the implementation commit. Recording this
+    identity lets the final evidence remain bound to the exact code while CI still
+    verifies the later PR head.
+    """
+    return git("log", "-1", "--format=%H", "--", "src", "tests", "tools/parity")
+
+
 def compact_pi(pi_run: dict[str, Any]) -> dict[str, Any]:
     all_requests = pi_run["providerRequests"]
     summary_requests = [request for request in all_requests if any(
@@ -577,7 +587,7 @@ def run(pi_path: Path, evidence_dir: Path) -> dict[str, Any]:
     source_clean = source_tree_is_clean()
     report = {
         "piSha": pi_sha,
-        "pisharpSourceSha": git("rev-parse", "HEAD") if source_clean else None,
+        "pisharpSourceSha": implementation_source_sha() if source_clean else None,
         "sourceTreeClean": source_clean,
         "piCalibrationStable": True,
         "pisharpCalibrationStable": True,

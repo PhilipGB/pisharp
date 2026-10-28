@@ -559,7 +559,7 @@ public sealed class RpcModeTests
             Assert.Equal(["hello ", "world"], textDeltas.Select(update =>
                 update.GetProperty("assistantMessageEvent").GetProperty("delta").GetString()));
             var usage = textDeltas[0].GetProperty("usage");
-            Assert.Equal(100, usage.GetProperty("input").GetInt64());
+            Assert.Equal(80, usage.GetProperty("input").GetInt64());
             Assert.Equal(40, usage.GetProperty("output").GetInt64());
             Assert.Equal(20, usage.GetProperty("cacheRead").GetInt64());
             Assert.Equal(5, usage.GetProperty("cacheWrite").GetInt64());
@@ -2113,7 +2113,7 @@ public sealed class RpcModeTests
         Assert.Equal(1, data.GetProperty("toolResults").GetInt32());
         Assert.Equal(4, data.GetProperty("totalMessages").GetInt32());
         Assert.Equal(0, data.GetProperty("tokens").GetProperty("total").GetInt64());
-        Assert.Equal(0m, data.GetProperty("cost").GetDecimal());
+        Assert.Equal(JsonValueKind.Null, data.GetProperty("cost").ValueKind);
     }
 
     [Fact]

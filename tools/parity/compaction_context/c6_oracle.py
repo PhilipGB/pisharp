@@ -25,6 +25,13 @@ CASE_IDS = (
 )
 
 SAFETY_REGRESSIONS = {
+    CASE_IDS[0]: (
+        "Pi estimates retained messages with its per-content characters/4 heuristic and does not pre-project the active tool transcript. "
+        "PiSharp uses a deliberately higher serialized characters/2 plus framing heuristic only for an ephemeral request projection; "
+        "the canonical history remains unchanged.",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#TransientContextEstimateIsConservativeSerializedCharacterHeuristicNotTokenizer; "
+        "tests/PiSharp.Tests/Runtime/Sessions/InFlightContextBudgetTests.cs#OversizedActiveToolResultIsSummarizedInsteadOfKeptInTransientRequest",
+    ),
     CASE_IDS[1]: (
         "Pi keeps the active 8,000-character result in the provider request; PiSharp projects a bounded summary while retaining the raw canonical result.",
         "tests/PiSharp.Tests/Runtime/Sessions/InFlightContextBudgetTests.cs#OversizedActiveToolResultIsSummarizedInsteadOfKeptInTransientRequest",
@@ -58,9 +65,16 @@ def validate_pair(case_id: str, pi: dict[str, Any], pisharp: dict[str, Any]) -> 
         valid = pi["canonicalHistoryUnchanged"] and pisharp["canonicalHistoryUnchanged"] and \
             pi["providerSendCount"] == 2 and pisharp["providerSendCount"] == 1 and \
             pi["providerCallIds"] == ["large-1"] and pi["providerResultCallIds"] == ["large-1"] and \
-            pisharp["summarizedCallIds"] == ["large-1"] and pisharp["summarizedResultCallIds"] == ["large-1"]
+            pisharp["summarizedCallIds"] == ["large-1"] and pisharp["summarizedResultCallIds"] == ["large-1"] and \
+            pisharp["transientEstimateIsMoreConservative"] and \
+            pisharp["transientBudgetEstimate"] > pisharp["piCompatibleMessageEstimate"]
         expected = {"canonicalHistoryUnchanged": pi["canonicalHistoryUnchanged"]}
-        actual = {"canonicalHistoryUnchanged": pisharp["canonicalHistoryUnchanged"]}
+        actual = {
+            "canonicalHistoryUnchanged": pisharp["canonicalHistoryUnchanged"],
+            "transientBudgetEstimate": pisharp["transientBudgetEstimate"],
+            "piCompatibleMessageEstimate": pisharp["piCompatibleMessageEstimate"],
+            "transientEstimateIsMoreConservative": pisharp["transientEstimateIsMoreConservative"],
+        }
     elif case_id == CASE_IDS[1]:
         raw = raw_tool_history(pi["providerRequests"][-1]["messages"])
         canonical = raw_tool_history(pisharp["canonicalMessages"])
@@ -221,7 +235,7 @@ def run(pi_path: Path, evidence_dir: Path) -> dict[str, Any]:
                    for case_id, (reason, regression) in SAFETY_REGRESSIONS.items()]
     result = {
         "piSha": verify.PINNED_PI_SHA,
-        "pisharpSourceSha": c5_oracle.git("rev-parse", "HEAD") if c5_oracle.source_tree_is_clean() else None,
+        "pisharpSourceSha": c5_oracle.implementation_source_sha() if c5_oracle.source_tree_is_clean() else None,
         "sourceTreeClean": c5_oracle.source_tree_is_clean(),
         "piCalibrationStable": True,
         "pisharpCalibrationStable": True,
@@ -231,6 +245,7 @@ def run(pi_path: Path, evidence_dir: Path) -> dict[str, Any]:
         "unresolvedMismatchCount": 0,
         "normalization": [
             "compare durable raw-history preservation separately from the transient provider request",
+            "record the Pi per-message estimate separately from PiSharp's conservative ephemeral projection estimate",
             "compare ordered call/result groups in summarized prefixes to raw pinned-Pi continuation requests",
             "sort parallel call and result IDs before checking complete batch matching",
             "compare nested call completion metadata and the closed model-issued parent call/result pair",

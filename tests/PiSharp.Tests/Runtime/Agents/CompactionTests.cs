@@ -994,7 +994,7 @@ public sealed class CompactionTests
     }
 
     [Fact]
-    public void StreamingContextEstimateMatchesSerializedUtf16LengthsIncludingUnicodeAndLargeToolResults()
+    public void TransientContextEstimateIsConservativeSerializedCharacterHeuristicNotTokenizer()
     {
         var context = new ChatMessage[]
         {
@@ -1007,7 +1007,10 @@ public sealed class CompactionTests
         var chars = prompt.Length + context.Sum(message =>
             JsonSerializer.Serialize(message, AIJsonUtilities.DefaultOptions).Length + 64L);
         var expected = (int)Math.Min(int.MaxValue, (chars + 1) / 2 + 512);
-        Assert.Equal(expected, AutoCompactionPolicy.Estimate(context, prompt));
+        var transientEstimate = AutoCompactionPolicy.Estimate(context, prompt);
+        var piCompatibleMessageEstimate = PiContextUsageEstimator.EstimateAfterUsage(0, context);
+        Assert.Equal(expected, transientEstimate);
+        Assert.True(transientEstimate > piCompatibleMessageEstimate);
     }
 
     [Fact]
@@ -1399,6 +1402,38 @@ public sealed class CompactionTests
         Assert.Equal(head, conversation.Tree.HeadId);
         Assert.DoesNotContain(conversation.Tree.Entries, entry => entry.Type == "compaction");
         Assert.Equal(4, conversation.ContextMessages().Count);
+    }
+
+    [Fact]
+    public async Task CompactionCancelledBeforeSummaryLeavesRunUsable()
+    {
+        var conversation = Seed(Path.GetTempPath());
+        var originalHead = conversation.Tree.HeadId;
+        var client = new SummaryClient();
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())), conversation);
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        var lifecycle = new List<AgentLifecycleEvent>();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => run.CompactWithResultAsync(
+            cancellationToken: cancellation.Token,
+            publishEvent: item =>
+            {
+                lifecycle.Add(item);
+                return Task.CompletedTask;
+            }));
+
+        Assert.Empty(client.SummaryRequests);
+        Assert.Equal(originalHead, conversation.Tree.HeadId);
+        Assert.DoesNotContain(conversation.Tree.ActivePath(), entry => entry.Type == "compaction");
+        Assert.Empty(lifecycle);
+
+        var nextTurn = new List<AgentLifecycleEvent>();
+        await foreach (var item in run.RunEventsAsync("continue after cancellation")) nextTurn.Add(item);
+
+        Assert.Contains(nextTurn, item => item.Type == "turn_completed");
+        Assert.Contains(conversation.ActiveMessages(), message => message.Text == "continue after cancellation");
+        Assert.Contains(conversation.ActiveMessages(), message => message.Text == "continued");
     }
 
     [Fact]

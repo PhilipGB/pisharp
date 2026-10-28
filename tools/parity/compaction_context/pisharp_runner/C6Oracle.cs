@@ -9,6 +9,10 @@ internal static class C6Oracle
     private static readonly Type s_budgetType = typeof(ConversationSession).Assembly.GetType(
         "PiSharp.Runtime.Sessions.InFlightContextBudget", throwOnError: true)!;
     private static readonly MethodInfo s_project = s_budgetType.GetMethod("ProjectAsync", BindingFlags.Public | BindingFlags.Instance)!;
+    private static readonly Type s_estimatorType = typeof(ConversationSession).Assembly.GetType(
+        "PiSharp.Runtime.Sessions.PiContextUsageEstimator", throwOnError: true)!;
+    private static readonly MethodInfo s_piMessageEstimate = s_estimatorType.GetMethod(
+        "EstimateAfterUsage", BindingFlags.Public | BindingFlags.Static)!;
 
     public static async Task<object> RunAsync()
     {
@@ -40,6 +44,8 @@ internal static class C6Oracle
     private static async Task<object> ObserveAsync(string scenario, ChatMessage[] messages)
     {
         var canonicalBefore = messages.Select(Snapshot).ToArray();
+        var transientBudgetEstimate = AutoCompactionPolicy.Estimate(messages, "");
+        var piCompatibleMessageEstimate = (int)s_piMessageEstimate.Invoke(null, [0L, messages])!;
         var summaryInputs = Array.Empty<ChatMessage>();
         var summaryText = "";
         var getPolicy = new Func<AutoCompactionPolicy>(() =>
@@ -87,6 +93,9 @@ internal static class C6Oracle
         return new
         {
             scenario,
+            transientBudgetEstimate,
+            piCompatibleMessageEstimate,
+            transientEstimateIsMoreConservative = transientBudgetEstimate > piCompatibleMessageEstimate,
             canonicalHistoryUnchanged = System.Text.Json.JsonSerializer.Serialize(canonicalBefore) ==
                 System.Text.Json.JsonSerializer.Serialize(canonicalAfter),
             canonicalMessages = canonicalBefore,
