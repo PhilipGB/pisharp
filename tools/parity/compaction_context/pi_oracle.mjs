@@ -20,12 +20,15 @@ if (head !== PIN) throw new Error(`Pi checkout is ${head}; expected ${PIN}`);
 
 const importFromPi = (relative) => import(pathToFileURL(join(piRoot, relative)).href);
 const [{ createHarness }, { fauxAssistantMessage }, { createAssistantMessageEventStream },
-  { prepareCompaction, DEFAULT_COMPACTION_SETTINGS }, { buildSessionProjection }] = await Promise.all([
+  { prepareCompaction, DEFAULT_COMPACTION_SETTINGS, estimateContextTokens, estimateProjectedContextTokens,
+    estimateTokens, shouldCompact }, { buildSessionProjection }, { SettingsManager }, { SETTINGS_DEFAULTS }] = await Promise.all([
   importFromPi("packages/coding-agent/test/suite/harness.ts"),
   importFromPi("packages/ai/src/providers/faux.ts"),
   importFromPi("packages/ai/src/utils/event-stream.ts"),
   importFromPi("packages/coding-agent/src/core/compaction/compaction.ts"),
   importFromPi("packages/coding-agent/src/core/session-manager.ts"),
+  importFromPi("packages/coding-agent/src/core/settings-manager.ts"),
+  importFromPi("packages/coding-agent/src/core/settings-defaults.ts"),
 ]);
 
 function c3CompactText(text) {
@@ -214,6 +217,166 @@ function runC3() {
   return { scenario: "c3", cases };
 }
 
+function c4Usage(input, output, cacheRead = 0, cacheWrite = 0, totalTokens = input + output + cacheRead + cacheWrite) {
+  return { input, output, cacheRead, cacheWrite, totalTokens,
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } };
+}
+
+function c4Assistant(text, usage, stopReason = "stop") {
+  return { role: "assistant", content: [{ type: "text", text }], usage, stopReason, timestamp: 1,
+    api: "anthropic-messages", provider: "provider", model: "family/model" };
+}
+
+function c4Fixture() {
+  const entries = [];
+  let id = 0;
+  let parentId = null;
+  const append = fields => {
+    const entry = { id: `c4-${String(id++).padStart(4, "0")}`, parentId,
+      timestamp: "2026-10-28T00:00:00.000Z", ...fields };
+    entries.push(entry);
+    parentId = entry.id;
+    return entry.id;
+  };
+  const user = text => append({ type: "message", message: { role: "user", content: text, timestamp: 1 } });
+  const assistant = message => append({ type: "message", message });
+  const edit = targetId => append({ type: "context_edit", targetId, replacement: null });
+  const compact = (summary, firstKeptEntryId) => append({ type: "compaction", summary, firstKeptEntryId, tokensBefore: 100 });
+  return { entries, user, assistant, edit, compact };
+}
+
+function runC4() {
+  const cases = {};
+  const defaults = SettingsManager.inMemory().getCompactionSettings();
+  cases["C4.model-context-window-controls-trigger"] = {
+    triggerTokens: 100_000 - defaults.reserveTokens,
+    atThreshold: shouldCompact(83_616, 100_000, defaults),
+    oneAboveThreshold: shouldCompact(83_617, 100_000, defaults),
+    belowThreshold: shouldCompact(80_000, 100_000, defaults),
+  };
+  const defaultPolicy = { contextWindowTokens: 100_000, ...defaults };
+  cases["C4.reserve-and-keep-recent-defaults"] = {
+    ...defaultPolicy,
+    defaultReserveTokens: SETTINGS_DEFAULTS.compaction.reserveTokens,
+    defaultKeepRecentTokens: SETTINGS_DEFAULTS.compaction.keepRecentTokens,
+  };
+  const modelKey = "provider/family/model";
+  const overrideManager = SettingsManager.inMemory({ compaction: {
+    reserveTokens: 8192,
+    keepRecentTokens: 10_000,
+    modelOverrides: { [modelKey]: { reserveTokens: 400_000 } },
+  } });
+  const selected = overrideManager.getCompactionSettings({ provider: "provider", id: "family/model" });
+  const fallback = overrideManager.getCompactionSettings({ provider: "provider", id: "other" });
+  cases["C4.provider-model-override-precedence"] = {
+    selectedReserveTokens: selected.reserveTokens,
+    selectedKeepRecentTokens: selected.keepRecentTokens,
+    fallbackReserveTokens: fallback.reserveTokens,
+    fallbackKeepRecentTokens: fallback.keepRecentTokens,
+  };
+  cases["C4.unknown-limit-is-never-invented"] = {
+    contextWindowKnown: false,
+    piWouldTriggerFromZeroWindow: shouldCompact(1, 0, defaults),
+    reserveTokens: defaults.reserveTokens,
+  };
+
+  const anchorMessages = [
+    { role: "user", content: "previous request", timestamp: 1 },
+    c4Assistant("answer", c4Usage(10, 3)),
+    { role: "user", content: "pending", timestamp: 1 },
+  ];
+  const anchor = estimateContextTokens(anchorMessages);
+  cases["C4.provider-usage-anchors-current-context"] = {
+    hasValidUsageAnchor: anchor.usageTokens === 13,
+    usageTokens: anchor.usageTokens,
+    trailingTokens: anchor.trailingTokens,
+    totalTokens: anchor.tokens,
+  };
+  const invalidMessages = [
+    { role: "user", content: "request", timestamp: 1 },
+    c4Assistant("failed", c4Usage(500, 0), "error"),
+    c4Assistant("zero usage", c4Usage(0, 0)),
+  ];
+  const invalid = estimateContextTokens(invalidMessages);
+  cases["C4.aborted-error-and-zero-usage-are-not-anchors"] = {
+    hasValidUsageAnchor: invalid.lastUsageIndex !== null,
+    usageTokens: null,
+    estimateFromVisibleMessages: invalid.tokens,
+  };
+  const trailingMessages = [
+    { role: "user", content: "request", timestamp: 1 },
+    c4Assistant("answer", c4Usage(90, 10)),
+    { role: "user", content: "pending one", timestamp: 1 },
+    { role: "user", content: "pending two with more text", timestamp: 1 },
+  ];
+  const trailing = estimateContextTokens(trailingMessages);
+  cases["C4.messages-after-usage-are-estimated"] = {
+    usageTokens: trailing.usageTokens,
+    trailingTokens: trailing.trailingTokens,
+    totalTokens: trailing.tokens,
+  };
+
+  const edited = c4Fixture();
+  edited.user("request");
+  const editedAssistant = edited.assistant(c4Assistant("answer", c4Usage(10, 3)));
+  edited.edit(editedAssistant);
+  const editedProjection = buildSessionProjection(edited.entries);
+  const editEstimate = estimateProjectedContextTokens(editedProjection, edited.entries);
+  const compacted = c4Fixture();
+  compacted.user("old request");
+  compacted.assistant(c4Assistant("old answer", c4Usage(10, 3)));
+  const current = compacted.user("current request");
+  compacted.assistant(c4Assistant("current answer", c4Usage(15, 2)));
+  compacted.compact("current summary", current);
+  const compactedEstimate = estimateProjectedContextTokens(buildSessionProjection(compacted.entries), compacted.entries);
+  cases["C4.context-edit-and-compaction-invalidate-stale-usage"] = {
+    contextEditInvalidatesUsage: editEstimate.lastUsageIndex === null && editEstimate.usageTokens === 0,
+    compactionInvalidatesUsage: compactedEstimate.lastUsageIndex === null && compactedEstimate.usageTokens === 0,
+  };
+
+  const cache = estimateContextTokens([
+    { role: "user", content: "request", timestamp: 1 },
+    c4Assistant("answer", c4Usage(7, 3, 20, 4, 0)),
+  ]);
+  cases["C4.cache-read-and-write-token-fallback"] = { usageTokens: cache.usageTokens, totalTokens: cache.tokens };
+
+  const prompt = "fixture system prompt characters";
+  const tool = { name: "custom", description: "fixture", parameters: {
+    type: "object", properties: { path: { type: "string" } },
+  } };
+  const systemEstimate = estimateContextTokens([
+    { role: "system", content: prompt, toolsAdded: [tool] },
+    { role: "user", content: "user context", timestamp: 1 },
+  ]);
+  cases["C4.system-prompt-and-tool-declaration-estimate"] = {
+    estimate: systemEstimate.tokens,
+    systemPromptCharacters: prompt.length,
+    toolCount: 1,
+    messageCount: 1,
+  };
+
+  const imageAndResult = estimateContextTokens([
+    { role: "user", content: [
+      { type: "image", data: "", mimeType: "image/png" }, { type: "text", text: "image marker" },
+    ], timestamp: 1 },
+    { role: "toolResult", toolCallId: "large", toolName: "read",
+      content: [{ type: "text", text: "x".repeat(8000) }], isError: false, timestamp: 1 },
+  ]);
+  cases["C4.image-and-large-tool-result-estimate"] = {
+    estimate: imageAndResult.tokens,
+    imageCharacters: 4800,
+    toolResultCharacters: 8000,
+  };
+  const unicodeText = "π🦊é".repeat(25);
+  const heuristic = estimateTokens({ role: "user", content: unicodeText, timestamp: 1 });
+  cases["C4.estimate-method-is-explicitly-heuristic-not-tokenizer"] = {
+    estimate: heuristic,
+    expectedCharacterHeuristic: Math.ceil(unicodeText.length / 4),
+    tokenizerOutput: false,
+  };
+  return { scenario: "c4", cases };
+}
+
 function plainMessage(message) {
   const content = message.content;
   const text = message.role === "compactionSummary" || message.role === "branchSummary" ? message.summary
@@ -351,6 +514,7 @@ async function runErrorTurnUsageOnce() {
 
 async function runOnce() {
   if (scenario === "c3") return runC3();
+  if (scenario === "c4") return runC4();
   if (scenario === "error-turn-usage") return runErrorTurnUsageOnce();
   const contextWindow = scenario === "queued-steering" ? 12_000
     : ["threshold-after-turn", "threshold-equal", "threshold-over", "disabled-setting"].includes(scenario) ? 10_000

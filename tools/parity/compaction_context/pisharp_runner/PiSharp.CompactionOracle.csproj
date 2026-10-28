@@ -7,5 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../../../src/PiSharp.Runtime/PiSharp.Runtime.csproj" />
+    <ProjectReference Include="../../../../src/PiSharp.Cli/PiSharp.Cli.csproj" />
   </ItemGroup>
 </Project>
