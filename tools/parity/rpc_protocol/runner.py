@@ -72,6 +72,7 @@ def run_v1_controls(evidence_dir: Path) -> dict[str, int]:
 def run_process_cases(checkpoint_id: str, selected_cases: list[dict], pi_checkout: Path,
                       evidence_dir: Path, *, require_complete: bool) -> int:
     validate_clean_source_tree()
+    pi_checkout = pi_checkout.resolve()
     unsupported = [case["id"] for case in selected_cases if case["id"] not in scenario_case_ids()]
     if unsupported:
         raise VerificationError(f"no process scenario adapters are registered for: {', '.join(unsupported)}")
@@ -188,7 +189,7 @@ def main() -> int:
             f"no process scenario adapters are registered yet for {len(missing)} selected case(s); "
             "the contract is frozen and these cases remain unexecuted"
         )
-    except (VerificationError, OSError) as error:
+    except (VerificationError, OSError, ValueError) as error:
         print(f"RPC acceptance run failed: {error}", file=sys.stderr)
         return 1
 
