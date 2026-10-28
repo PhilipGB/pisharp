@@ -82,4 +82,19 @@ public sealed class RpcSessionStatsProjectorTests
         Assert.True(stats.ContainsKey("cost"));
         Assert.Null(stats["cost"]);
     }
+
+    [Fact]
+    public void UsesReportedTotalWhenProviderCacheTokenSplitsAreUnknown()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        session.AppendUsage(new UsageRecord("fixture", "compaction", 24, 5, null, null, 29, null));
+
+        var stats = RpcSessionStatsProjector.Project(session, null, null, null);
+
+        Assert.Equal(24, stats["tokens"]!["input"]!.GetValue<long>());
+        Assert.Equal(5, stats["tokens"]!["output"]!.GetValue<long>());
+        Assert.Null(stats["tokens"]!["cacheRead"]);
+        Assert.Null(stats["tokens"]!["cacheWrite"]);
+        Assert.Equal(29, stats["tokens"]!["total"]!.GetValue<long>());
+    }
 }

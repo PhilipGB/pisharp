@@ -343,6 +343,29 @@ def run_checkpoint(checkpoint_id: str, evidence_dir: Path, pi_path: Path | None)
             differential_report["verifierCounts"] = verify.validate_case_results(
                 differential_report["cases"], checkpoint_id, differential_dir, verify_artifacts=True)
 
+    if checkpoint_id == "C11" and results and results[-1]["exitCode"] == 0:
+        differential_dir = output / "differential"
+        command = [sys.executable, "tools/parity/compaction_context/c11_oracle.py",
+                   "--pi", str(pi_path), "--evidence-dir", str(differential_dir)]
+        completed = subprocess.run(command, cwd=ROOT, capture_output=True, text=True,
+                                   env={**os.environ, "DOTNET_PROCESSOR_COUNT": "4"}, check=False)
+        stdout_path = output / f"command-{len(results) + 1}.stdout.log"
+        stderr_path = output / f"command-{len(results) + 1}.stderr.log"
+        stdout_path.write_text(completed.stdout, encoding="utf-8")
+        stderr_path.write_text(completed.stderr, encoding="utf-8")
+        results.append({
+            "argv": command,
+            "exitCode": completed.returncode,
+            "stdout": {"path": str(stdout_path.relative_to(evidence_dir)),
+                       "sha256": hashlib.sha256(completed.stdout.encode()).hexdigest()},
+            "stderr": {"path": str(stderr_path.relative_to(evidence_dir)),
+                       "sha256": hashlib.sha256(completed.stderr.encode()).hexdigest()},
+        })
+        if completed.returncode == 0:
+            differential_report = verify._json(differential_dir / "c11-case-results.json")
+            differential_report["verifierCounts"] = verify.validate_case_results(
+                differential_report["cases"], checkpoint_id, differential_dir, verify_artifacts=True)
+
     produced_cases = differential_report["cases"] if differential_report is not None else []
     source_clean = _source_tree_is_clean()
     source_sha = _git("rev-parse", "HEAD") if source_clean else None

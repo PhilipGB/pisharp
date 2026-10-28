@@ -316,6 +316,7 @@ internal static class InteractiveMode
                                 break;
                             case "/compact":
                                 {
+                                    terminalScreen?.SetWorkingStatus("Compacting context...");
                                     terminalScreen?.ReportTerminalProgress(null);
                                     bool compacted;
                                     try
@@ -325,6 +326,7 @@ internal static class InteractiveMode
                                     finally
                                     {
                                         terminalScreen?.ClearTerminalProgress();
+                                        terminalScreen?.SetWorkingStatus(null);
                                     }
                                     Console.WriteLine(compacted ? "Context compacted; full history retained." :
                                         "Nothing to compact (at least two completed user turns are required).");

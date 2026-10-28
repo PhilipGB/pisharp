@@ -20,7 +20,12 @@ internal static class RpcSessionStatsProjector
         var output = UsageTokenAggregation.SumKnown(usage.Select(item => item.Output));
         var cacheRead = UsageTokenAggregation.SumKnown(usage.Select(item => item.CacheRead));
         var cacheWrite = UsageTokenAggregation.SumKnown(usage.Select(item => item.CacheWrite));
-        var tokens = input + output + cacheRead + cacheWrite;
+        var componentsKnown = usage.All(item => item.Input is not null && item.Output is not null &&
+            item.CacheRead is not null && item.CacheWrite is not null);
+        var tokens = componentsKnown
+            ? input + output + cacheRead + cacheWrite
+            : UsageTokenAggregation.SumKnown(usage.Select(item => item.TotalTokens)) ??
+                input + output + cacheRead + cacheWrite;
 
         var result = new JsonObject();
         if (sessionFile is not null) result["sessionFile"] = sessionFile;
@@ -74,7 +79,7 @@ internal static class RpcSessionStatsProjector
             var usage = node.Payload.Deserialize<UsageRecord>() ??
                 throw new InvalidDataException($"Invalid usage record at {node.Id}.");
             yield return new SessionUsage(usage.InputTokens, usage.OutputTokens, usage.CachedInputTokens,
-                usage.CachedWriteTokens, usage.Cost);
+                usage.CachedWriteTokens, usage.TotalTokens, usage.Cost);
             yield break;
         }
 
@@ -136,7 +141,7 @@ internal static class RpcSessionStatsProjector
             costValue.TryGetProperty("total", out var totalCost) && totalCost.TryGetDecimal(out var parsedCost)
                 ? parsedCost : null;
         usage = new SessionUsage(Number(value, "input"), Number(value, "output"), Number(value, "cacheRead"),
-            Number(value, "cacheWrite"), cost);
+            Number(value, "cacheWrite"), Number(value, "totalTokens"), cost);
         return true;
     }
 
@@ -148,5 +153,6 @@ internal static class RpcSessionStatsProjector
         text.ValueKind == JsonValueKind.String ? text.GetString() : null;
 
     private readonly record struct MessageStats(int UserMessages, int AssistantMessages, int ToolCalls, int ToolResults);
-    private readonly record struct SessionUsage(long? Input, long? Output, long? CacheRead, long? CacheWrite, decimal? Cost);
+    private readonly record struct SessionUsage(long? Input, long? Output, long? CacheRead, long? CacheWrite,
+        long? TotalTokens, decimal? Cost);
 }
