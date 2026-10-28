@@ -9,21 +9,20 @@ published managed-package evidence records 27/27 checkpoints and 240/240 cases.
 Pi is pinned to `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The frozen
 compaction contract remains 22 checkpoints / 211 cases.
 
-Current-source checkpoint C7 (`d274475f25512c9568112985896a17136586a2a6`)
-passes 10/10 paired cases, with nine equivalent cases and one intentional
+The last source-bound checkpoint C7 (`d274475f25512c9568112985896a17136586a2a6`)
+passed 10/10 paired cases, with nine equivalent cases and one intentional
 whitespace-only-summary safety difference. The paired evidence covers summary
 prompts and updates, split-turn inputs, tool serialization, file details,
 transient retries, usage, routing and reasoning. Raw captures are under
 `artifacts/parity/20261028-c7-d274475f/`, with compact hashes and source pins in
 the committed C7 case record.
 
-C6 passed 10/10 at `1ff1d67` but is now stale after C7 source changes. C5's
-2/11 cases and all C1-C6 evidence need a final-source refresh. C7 is currently
-the only source-bound checkpoint: 10/211 cases, with 201 cases remaining in the
-frozen contract. Focused C7 .NET tests pass 80/80, the parity Python suite
-20/20, and formatting verification passes. Continue with C8-C13, D0, Q0, E0,
-CI0 and PUB0, then rerun all required checkpoint evidence against the final
-source. PR #28 remains open and draft.
+C8 source commit `472daccd` now persists summary usage on compaction entries;
+the focused C8 filter passes 140/140 and formatting passes. This production/test
+change makes C7 evidence historical under the source-identity gate, so no
+checkpoint currently has evidence bound to the latest source. Refresh C1-C7,
+finish C8 paired evidence, then continue with C9-C13, D0, Q0, E0, CI0 and PUB0.
+PR #28 remains open and draft.
 See the
 [inventory](parity/fixtures/compaction-context-management-inventory.json),
 [receipt](parity/fixtures/compaction-context-management-parity-2026-10-28.md),

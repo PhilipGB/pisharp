@@ -6,8 +6,9 @@ This branch starts at the verified PR #27 merge `12064420179f4119bdaf37479c7cba0
 The Pi oracle is pinned to `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; the installed
 `Microsoft.Agents.AI` version is 1.21.0. C5 recovery observations were first
 captured at source `b22f7e7bad940a1dd0a26d716628f6739a8a9abf`; C6 passed at
-`1ff1d67d85d4ef76995700e0e345632c9c6ec16f`. The current source-bound checkpoint
-is C7 at `d274475f25512c9568112985896a17136586a2a6`.
+`1ff1d67d85d4ef76995700e0e345632c9c6ec16f`. The most recent clean
+source-bound checkpoint was C7 at `d274475f25512c9568112985896a17136586a2a6`;
+the current implementation source is `472daccd`.
 
 The frozen contract is [contract.json](../../../tools/parity/compaction_context/contract.json),
 SHA-256 `c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6`:
@@ -94,6 +95,8 @@ state preservation match. The compact hash-bound record is
 [compaction-context-management-c7-case-results.json](compaction-context-management-c7-case-results.json).
 Raw captures remain Git-ignored under
 `artifacts/parity/20261028-c7-d274475f/runs/C7/differential/`.
+The later C8 source change at `472daccd` makes this C7 result historical under
+the exact-source gate; rerun C7 before final acceptance.
 
 ## Local validation
 
@@ -103,6 +106,9 @@ Raw captures remain Git-ignored under
 - C7 checkpoint runner: **10/10 passed** at `d274475f`; focused C7 .NET filter:
   **80/80 passed**; format verification passed. Nine cases are equivalent and
   one whitespace-only-summary case is an intentional safety difference.
+- C8 focused .NET filter: **140/140 passed** at `472daccd`; the compaction-entry
+  usage round-trip regression passes; format verification passed. C8 paired
+  evidence is not yet recorded.
 
 - Full .NET suite: **3,939 passed, 0 failed, 0 skipped**.
 - Focused compaction and provider loopback tests: **82/82 passed**.
@@ -122,14 +128,14 @@ Raw captures remain Git-ignored under
 
 ## Acceptance remains open
 
-The current source-bound result is C7 10/10 at `d274475f`, or 10/211 cases
-(4.7%); C7 is the only checkpoint passing at current source. C6's 10/10 result
-at `1ff1d67` is now stale after C7 source changes. Earlier C1-C5 evidence also
-needs a final-source refresh. The remaining 201 cases need adapters or refreshed
-evidence across manual and automatic compaction, cut points, estimates, session
-persistence and branching, usage, CLI/RPC/TUI, extensions, failures,
-cancellation, and publication. The frozen denominator remains 22 checkpoints /
-211 cases, and full acceptance is not claimed.
+The last source-bound result is C7 10/10 at `d274475f`, or 10/211 cases
+(4.7%). The C8 implementation change at `472daccd` means no checkpoint result
+is currently bound to the latest source; refresh C1-C7, complete C8 paired
+evidence, and then continue across the remaining 201 cases. Open work covers
+manual and automatic compaction, cut points, estimates, session persistence and
+branching, usage, CLI/RPC/TUI, extensions, failures, cancellation, and
+publication. The frozen denominator remains 22 checkpoints / 211 cases, and
+full acceptance is not claimed.
 
 Also open are the complete Responses, Chat Completions, and Anthropic
 compaction-continuation wire corpus; classification of the separate transient

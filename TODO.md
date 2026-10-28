@@ -9,22 +9,23 @@ head was `2f88019cd8840b2468b1957217ae361e0bab3ad6`; exact-head push run
 commit. Pi is pinned to `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; the frozen
 contract remains 22 checkpoints / 211 cases.
 
-Checkpoint C7 passes 10/10 paired cases at implementation source
+Checkpoint C7 passed 10/10 paired cases at implementation source
 `d274475f25512c9568112985896a17136586a2a6`. Summary prompts, prior-summary
 updates, split-turn requests, tool serialization, file details, retry behavior,
 usage, routing, and reasoning match pinned Pi. One whitespace-only summary
 case is an intentional safety difference: pinned Pi accepts it and compacts;
 PiSharp rejects it and preserves history. Raw captures are under
 `artifacts/parity/20261028-c7-d274475f/`; the compact case record pins the
-evidence hashes and source revisions. C6 passed 10/10 at `1ff1d67` but is now
-stale after the C7 source changes. C5's 2/11 cases and all C1-C6 evidence need a
-final-source refresh. The focused C7 .NET filter passes 80/80, parity Python
-passes 20/20, and formatting verification passes.
+evidence hashes and source revisions. The C8 implementation commit
+`472daccd` now persists usage on compaction entries and passes its focused .NET
+filter 140/140 plus format verification. C7 evidence is historical because C8
+changed source and tests; no checkpoint is source-bound to the current head
+yet. C1-C7 require final-source refresh, and C8 still needs paired evidence.
 
-The milestone remains incomplete: C7 is the only current-source checkpoint,
-with 10/211 cases verified. Continue with C8-C13, D0, Q0, E0, CI0 and PUB0, and
-refresh C1-C6 against the final source before acceptance. PR #28 must remain
-open and draft. See the
+The milestone remains incomplete: the last clean source-bound result was C7 at
+10/211; that evidence must be refreshed at the current source. Continue with
+C8-C13, D0, Q0, E0, CI0 and PUB0, and refresh C1-C7 against the final source
+before acceptance. PR #28 must remain open and draft. See the
 [inventory](docs/parity/fixtures/compaction-context-management-inventory.json),
 [receipt](docs/parity/fixtures/compaction-context-management-parity-2026-10-28.md),
 and [execution ledger](docs/parity/execution-ledger.json).

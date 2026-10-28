@@ -10,18 +10,19 @@ evidence records 27/27 checkpoints and 240/240 cases. Pi is pinned to
 Length-stop recovery is implemented with output-usage/model-cap eligibility,
 stale-model and projected-history guards, one overflow compaction, one
 continuation, and no partial-response replay. Summary generation checkpoint C7
-passes 10/10 paired cases at source
+passed 10/10 paired cases at source
 `d274475f25512c9568112985896a17136586a2a6`: nine equivalent and one intentional
 whitespace-only-summary safety difference. The C7 compact case record binds
 the observations to raw artifact hashes under
-`artifacts/parity/20261028-c7-d274475f/`. Focused C7 .NET tests pass 80/80 and
-format verification passes. The earlier C6 checkpoint passed 10/10 at
-`1ff1d67` but is stale after C7 source changes; earlier C1-C5 evidence also
-needs a final-source refresh.
+`artifacts/parity/20261028-c7-d274475f/`. C8 source commit `472daccd` adds
+compaction-entry usage persistence; its focused .NET filter passes 140/140 and
+format verification passes. C7 evidence is historical under the exact-source
+gate, so the current source has no paired checkpoint evidence yet. Refresh
+C1-C7 and finish C8's paired cases.
 
-The milestone remains incomplete: C7 is the only current-source checkpoint,
-with 10/211 cases verified and 201 cases remaining. C8-C13, D0, Q0, E0, CI0,
-PUB0 and final-source refreshes for C1-C6 are open. The three-API compaction-continuation corpus,
+The milestone remains incomplete: the last clean source-bound result was C7 at
+10/211; it must be refreshed after C8 source changes. C8-C13, D0, Q0, E0, CI0,
+PUB0 and final-source refreshes for C1-C7 are open. The three-API compaction-continuation corpus,
 transient estimator classification and most persistence, branch, accounting,
 public API, extension and lifecycle scenarios remain open. A pinned Pi queue
 test failed because its fixture model was `unknown` with context window zero
