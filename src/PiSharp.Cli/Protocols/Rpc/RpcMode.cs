@@ -125,7 +125,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                     var root = document.RootElement;
                     if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("type", out var kind) || kind.ValueKind != JsonValueKind.String)
                     {
-                        await RespondAsync(null, "unknown", false, "Command must be an object with a type.");
+                        await RespondInvalidRequestAsync(root, cancellationToken);
                         continue;
                     }
                     var type = kind.GetString()!;
@@ -258,13 +258,20 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             _active = ExecuteAsync(id, promptMessage, expanded, _abort.Token);
                             break;
                         case "bash":
-                            if (!root.TryGetProperty("command", out var bashCommand) || bashCommand.ValueKind != JsonValueKind.String)
-                            { await RespondAsync(id, type, false, "A string command is required."); break; }
-                            if (root.TryGetProperty("excludeFromContext", out var excludeFromContext) &&
-                                excludeFromContext.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
-                            { await RespondAsync(id, type, false, "excludeFromContext must be a boolean."); break; }
-                            StartBash(id, bashCommand.GetString()!, excludeFromContext.ValueKind == JsonValueKind.True, cancellationToken);
-                            break;
+                            {
+                                string bashCommandText;
+                                if (!root.TryGetProperty("command", out var bashCommand))
+                                    bashCommandText = "undefined";
+                                else if (bashCommand.ValueKind != JsonValueKind.String)
+                                { await RespondAsync(id, type, false, "A string command is required."); break; }
+                                else
+                                    bashCommandText = bashCommand.GetString()!;
+                                if (root.TryGetProperty("excludeFromContext", out var excludeFromContext) &&
+                                    excludeFromContext.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+                                { await RespondAsync(id, type, false, "excludeFromContext must be a boolean."); break; }
+                                StartBash(id, bashCommandText, excludeFromContext.ValueKind == JsonValueKind.True, cancellationToken);
+                                break;
+                            }
                         case "abort_bash":
                             CurrentRun.AbortBash();
                             foreach (var operation in _bashOperations.Values)
@@ -886,6 +893,22 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     private Task RespondAsync(JsonElement? id, string command, bool success, string? error = null) => success
         ? _writer.EmitAsync(new { id, type = "response", command, success = true })
         : _writer.EmitAsync(new { id, type = "response", command, success = false, error });
+
+    private Task RespondInvalidRequestAsync(JsonElement root, CancellationToken cancellationToken)
+    {
+        var response = new JsonObject
+        {
+            ["type"] = "response",
+            ["success"] = false,
+            ["error"] = "Command must be an object with a type."
+        };
+        if (root.ValueKind == JsonValueKind.Object)
+        {
+            if (root.TryGetProperty("id", out var id)) response["id"] = JsonNode.Parse(id.GetRawText());
+            if (root.TryGetProperty("type", out var type)) response["command"] = JsonNode.Parse(type.GetRawText());
+        }
+        return _writer.EmitAsync(response, cancellationToken);
+    }
 
     private void PublishQueueUpdate(ConversationRun currentRun, AgentLifecycleEvent item) =>
         Events.EmitCommandLifecycleAsync(currentRun, item).GetAwaiter().GetResult();

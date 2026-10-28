@@ -2686,6 +2686,90 @@ public sealed class RpcModeTests
         }
     }
 
+    [Fact]
+    public async Task InvalidRpcRequestShapePreservesProvidedIdAndOmitsUndefinedCommand()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-rpc-invalid-shape-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        Task? serving = null;
+        try
+        {
+            var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(cwd)),
+                new ConversationSession(cwd, "invalid-shape-fixture", null));
+            serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
+
+            channel.Writer.TryWrite("{\"id\":\"missing-type\"}");
+            await WaitForAsync(output, "\"id\":\"missing-type\"");
+            channel.Writer.TryWrite("[]");
+            channel.Writer.Complete();
+            await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+            var records = output.Lines().Select(line => JsonDocument.Parse(line)).ToArray();
+            try
+            {
+                Assert.Equal(2, records.Length);
+                Assert.Equal("missing-type", records[0].RootElement.GetProperty("id").GetString());
+                Assert.False(records[0].RootElement.TryGetProperty("command", out _));
+                Assert.False(records[0].RootElement.GetProperty("success").GetBoolean());
+                Assert.False(records[1].RootElement.TryGetProperty("id", out _));
+                Assert.False(records[1].RootElement.TryGetProperty("command", out _));
+                Assert.False(records[1].RootElement.GetProperty("success").GetBoolean());
+            }
+            finally { foreach (var record in records) record.Dispose(); }
+        }
+        finally
+        {
+            channel.Writer.TryComplete();
+            if (serving is not null) await serving.WaitAsync(TimeSpan.FromSeconds(5));
+            Directory.Delete(cwd, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task SetSessionNameKeepsMissingAndNullFieldsDistinct()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-rpc-null-field-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        Task? serving = null;
+        try
+        {
+            var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(cwd)),
+                new ConversationSession(cwd, "null-field-fixture", null));
+            serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
+
+            channel.Writer.TryWrite("{\"id\":\"missing\",\"type\":\"set_session_name\"}");
+            await WaitForAsync(output, "\"id\":\"missing\"");
+            channel.Writer.TryWrite("{\"id\":\"null\",\"type\":\"set_session_name\",\"name\":null}");
+            await WaitForAsync(output, "\"id\":\"null\"");
+            channel.Writer.Complete();
+            await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+            var records = output.Lines().Select(line => JsonDocument.Parse(line)).ToArray();
+            try
+            {
+                var missing = Assert.Single(records, record => record.RootElement.TryGetProperty("id", out var id) &&
+                    id.GetString() == "missing");
+                var explicitNull = Assert.Single(records, record => record.RootElement.TryGetProperty("id", out var id) &&
+                    id.GetString() == "null");
+                Assert.Equal("Cannot read properties of undefined (reading 'trim')",
+                    missing.RootElement.GetProperty("error").GetString());
+                Assert.Equal("Cannot read properties of null (reading 'trim')",
+                    explicitNull.RootElement.GetProperty("error").GetString());
+            }
+            finally { foreach (var record in records) record.Dispose(); }
+        }
+        finally
+        {
+            channel.Writer.TryComplete();
+            if (serving is not null) await serving.WaitAsync(TimeSpan.FromSeconds(5));
+            Directory.Delete(cwd, recursive: true);
+        }
+    }
+
     private sealed class OrderedRpcQueueClient : IChatClient
     {
         public List<string> LatestUserByRequest { get; } = [];

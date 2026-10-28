@@ -234,7 +234,17 @@ internal sealed class RpcSessionCommandHandler(
             case "set_session_name":
                 {
                     if (isBusy()) return await RejectBusyAsync(id, command);
-                    if (!root.TryGetProperty("name", out var name) || name.ValueKind != JsonValueKind.String)
+                    if (!root.TryGetProperty("name", out var name))
+                    {
+                        await respond(id, command, false, "Cannot read properties of undefined (reading 'trim')");
+                        return true;
+                    }
+                    if (name.ValueKind == JsonValueKind.Null)
+                    {
+                        await respond(id, command, false, "Cannot read properties of null (reading 'trim')");
+                        return true;
+                    }
+                    if (name.ValueKind != JsonValueKind.String)
                     {
                         await respond(id, command, false, "A string name is required.");
                         return true;

@@ -33,7 +33,7 @@ public sealed class JsonLineWriter(TextWriter output)
         if (getType(value) != "response") return JsonSerializer.Serialize(value);
 
         var response = JsonSerializer.SerializeToNode(value)?.AsObject() ?? new JsonObject();
-        if (response["id"] is null) response.Remove("id");
+        if (value.GetType().GetProperty("id")?.GetValue(value) is null) response.Remove("id");
         if (response["error"] is null) response.Remove("error");
         return response.ToJsonString();
     }
