@@ -2666,7 +2666,7 @@ def run_process_case(case: dict[str, Any], *, pi: Path, evidence_dir: Path) -> d
     matches = observations["pi1"] == observations["pisharp"]
     pi_path, _ = observation_paths["pi1"]
     sharp_path, _ = observation_paths["pisharp"]
-    assertions = [{
+    assertion = {
         "contractObservation": case["expectedObservation"],
         "comparison": case["comparisonRules"]["mode"],
         "piArtifact": pi_path,
@@ -2676,7 +2676,19 @@ def run_process_case(case: dict[str, Any], *, pi: Path, evidence_dir: Path) -> d
         "piValue": observations["pi1"],
         "pisharpValue": observations["pisharp"],
         "passed": matches,
-    }]
+    }
+    if assertion["comparison"] == "equivalent":
+        assertion.update({
+            "normalizedPi": observations["pi1"],
+            "normalizedPiSharp": observations["pisharp"],
+            "normalizationEvidence": {
+                "rules": case["comparisonRules"]["normalizations"],
+                "piObservationArtifact": pi_path,
+                "pisharpObservationArtifact": sharp_path,
+                "normalizationAppliedBeforeComparison": True,
+            },
+        })
+    assertions = [assertion]
     all_passed = same_pi and matches and not any(failures.values())
     return {
         "caseId": case_id,
