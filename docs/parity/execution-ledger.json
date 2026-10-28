@@ -13637,8 +13637,8 @@
     "quality_execution": "Local exact-source corpus, quality, committed-evidence, exact-head CI, CI integration, draft publication, and publication verification pass."
   },
   "compaction_context_management_parity_milestone": {
-    "status": "in_progress",
-    "phase": "C1-C13_D0_Q0_passed_154_source_bound_cases_at_7480e81d; P0_P1_V0_V1_passed_38; 192_of_211_total; E0_CI0_PUB0_pending",
+    "status": "complete",
+    "phase": "complete_22_of_22_checkpoints_211_of_211_cases_at_7480e81d_zero_failures_skips_or_unresolved_mismatches",
     "branch": "milestone/compaction-context-management-parity",
     "branch_base_sha": "12064420179f4119bdaf37479c7cba0f5ca40717",
     "pi_reference": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
@@ -13647,8 +13647,8 @@
     "required_checkpoints": 22,
     "required_cases": 211,
     "implementation_source_sha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
-    "case_evidence_produced": 192,
-    "status_reason": "C1-C13 pass 135/135, D0 9/9 and Q0 10/10 at final implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b. P0/P1 pass 10/10 and V0/V1 pass 28/28. Total: 192/211. The remaining 19 cases are E0, CI0 and PUB0.",
+    "case_evidence_produced": 211,
+    "status_reason": "All 22/22 checkpoints and 211/211 required cases pass with zero failures/skips. C1-C13: 135/135 (121 equivalent, 14 verified safety differences); D0 9/9; Q0 10/10; P0/P1 10/10; V0/V1 28/28; E0 9/9; CI0 5/5; PUB0 5/5. Final implementation source is 7480e81dcba48ca2861596789c6f39fecbc6ad2b.",
     "implemented": [
       "Manual and automatic compaction, cut points, retained history, and queue behavior.",
       "Context-window and usage accounting without invented unknown token or cost values.",
@@ -13666,19 +13666,17 @@
       "compaction_python": "27/27 passed.",
       "builtin_parity_python": "27/27 passed.",
       "terminal_node": "24/24 passed.",
-      "documentationPaths": "Q0 validated 156 documents / 700 references; final post-evidence revalidation passes 156 documents / 694 references.",
+      "documentationPaths": "Q0 validated 156 documents / 700 references; final post-evidence revalidation passes 156 documents / 690 references.",
       "mcp_conformance": "Build passed and conformance has no regressions against its classified baseline; three known scenarios remain classified.",
       "pinned_pi_suites": "200 passed, 0 failed, 20 exact credential-dependent skips.",
       "paired_c1_c13": "135/135 passed; 121 equivalent, 14 intentional safety differences, 0 unresolved.",
       "independent_d0": "9/9 passed; all 135 paired cases checked with stable Pi observations and verified artifact hashes.",
-      "quality_q0": "10/10 passed at the final implementation source SHA."
+      "quality_q0": "10/10 passed at the final implementation source SHA.",
+      "finalAcceptance": "22/22 checkpoints and 211/211 cases passed; zero failures, skips, or unresolved mismatches.",
+      "exactHeadCI": "Both automatic push and pull-request workflows passed on the exact final head with every required job green; no manual dispatch.",
+      "evidenceFinalizers": "CI0 5/5, E0 9/9, PUB0 5/5; final aggregate 22/22 checkpoints and 211/211 cases."
     },
-    "open_requirements": [
-      "Push the final documentation head and verify automatic push and pull-request workflows on that exact PR head; do not dispatch workflows manually.",
-      "Run CI0 and E0 against the explicit current evidence directory; require all predecessor reports, source identity and artifact hashes to validate.",
-      "Update the draft PR description with final verified SHAs, checkpoint/case counts, workflow run IDs and limitations; run PUB0.",
-      "Keep PR #28 open, draft and unmerged."
-    ],
+    "open_requirements": [],
     "ci_scope_adjustment": "The managed-package parity corpus and its evidence steps run only on milestone/managed-package-lifecycle-parity because their clean-start assertions are pinned to that branch and base; verifier controls and common CI still run on this milestone.",
     "draft_pr": {
       "number": 28,
@@ -13692,10 +13690,36 @@
     "inventory": "docs/parity/fixtures/compaction-context-management-inventory.json",
     "case_evidence_committed": 192,
     "compact_evidence_records": [
+      "docs/parity/fixtures/compaction-context-management-c1-case-results.json",
+      "docs/parity/fixtures/compaction-context-management-c2-case-results.json",
+      "docs/parity/fixtures/compaction-context-management-c3-case-results.json",
+      "docs/parity/fixtures/compaction-context-management-c4-case-results.json",
+      "docs/parity/fixtures/compaction-context-management-c5-case-results.json",
+      "docs/parity/fixtures/compaction-context-management-c6-case-results.json",
+      "docs/parity/fixtures/compaction-context-management-c7-case-results.json",
+      "docs/parity/fixtures/compaction-context-management-c8-case-results.json",
+      "docs/parity/fixtures/compaction-context-management-c9-case-results.json",
+      "docs/parity/fixtures/compaction-context-management-c10-case-results.json",
+      "docs/parity/fixtures/compaction-context-management-c11-case-results.json",
+      "docs/parity/fixtures/compaction-context-management-c12-case-results.json",
+      "docs/parity/fixtures/compaction-context-management-c13-case-results.json",
+      "docs/parity/fixtures/compaction-context-management-d0-case-results.json",
+      "docs/parity/fixtures/compaction-context-management-q0-case-results.json",
       "docs/parity/fixtures/compaction-context-management-p0-case-results.json",
       "docs/parity/fixtures/compaction-context-management-p1-case-results.json",
       "docs/parity/fixtures/compaction-context-management-v0-case-results.json",
       "docs/parity/fixtures/compaction-context-management-v1-case-results.json"
-    ]
+    ],
+    "published_case_index_count": 211,
+    "completion_evidence_directory": "artifacts/parity/20261028T-final-source-7480e81d",
+    "final_acceptance": {
+      "checkpoints": "22/22 passed",
+      "cases": "211/211 passed",
+      "failedCases": 0,
+      "skippedCases": 0,
+      "unresolvedMismatches": 0,
+      "finalImplementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6"
+    }
   }
 }

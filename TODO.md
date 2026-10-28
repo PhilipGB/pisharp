@@ -1,16 +1,16 @@
-## Active milestone — Compaction, Context Budget, Overflow and Usage Parity — 2026-10-28
+## Completed milestone — Compaction, Context Budget, Overflow and Usage Parity — 2026-10-28
 
 PR #27 is merged at `12064420179f4119bdaf37479c7cba0f5ca40717`. Pi is pinned to `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; the frozen contract has 22 checkpoints and 211 required cases.
 
-The final implementation source is `7480e81dcba48ca2861596789c6f39fecbc6ad2b`. C1-C13 pass 135/135; D0 passes 9/9; Q0 passes 10/10. The paired C corpus has 121 equivalent cases, 14 verified intentional safety differences, and zero unresolved mismatches. P0 and P1 pass 10/10; V0 and V1 pass 28/28. Overall, 192/211 contract cases pass.
+The final implementation source is `7480e81dcba48ca2861596789c6f39fecbc6ad2b`. C1-C13 pass 135/135; D0 passes 9/9; Q0 passes 10/10. The paired C corpus has 121 equivalent cases, 14 verified intentional safety differences, and zero unresolved mismatches. P0/P1 pass 10/10; V0/V1 pass 28/28; E0 passes 9/9; CI0 passes 5/5; PUB0 passes 5/5. All 22/22 contract checkpoints and 211/211 cases pass, with zero failed or skipped cases.
 
-Q0 records 3,959/3,959 .NET tests, focused compaction/session/provider 114/114, focused RPC/TUI/extension 52/52, terminal Python 66/66, compaction Python 27/27, built-in parity Python 27/27, terminal Node 24/24, and 200 pinned Pi passes with 20 exact credential-dependent skips. Q0 recorded 156 documents / 700 references; after the final evidence updates, path validation passes for 156 documents / 694 references.
+Q0 records 3,959/3,959 .NET tests, focused compaction/session/provider 114/114, focused RPC/TUI/extension 52/52, terminal Python 66/66, compaction Python 27/27, built-in parity Python 27/27, terminal Node 24/24, and 200 pinned Pi passes with 20 exact credential-dependent skips. Q0 recorded 156 documents / 700 references; final documentation path validation passes for 156 documents / 690 references.
 
-Remaining contract work is E0, CI0 and PUB0 (19 cases). The compact P0/P1/V0/V1 records and 192-case evidence index are recorded in the committed evidence update. Then push the final docs head, verify both automatic workflows on that exact SHA, run CI0 and E0, update the draft PR description, and run PUB0. PR #28 must remain open, draft, and unmerged.
+All 22 checkpoints and 211 cases pass. CI0 confirms successful automatic push and pull-request workflows on the exact final head; E0 verifies committed source-bound evidence; PUB0 independently verifies the full aggregate. PR #28 remains open, draft, and unmerged.
 
 Provider-boundary tests use local loopback fixtures; no live model endpoint was called. The pinned Pi upstream suite skips 20 credential-gated interactive/LLM tests and validates their exact names. The local NuGet audit cache is read-only; Q0 suppresses only NU1900 while keeping --warnaserror for all other warnings. The automatic CI build uses the normal clean cache.
 
-See the [source-pinned inventory](docs/parity/fixtures/compaction-context-management-inventory.json), [compact evidence](docs/parity/fixtures/compaction-context-management-c1-case-results.json), [case index](docs/parity/fixtures/compaction-context-management/evidence-summary.json), and [execution ledger](docs/parity/execution-ledger.json).
+See the [source-pinned inventory](parity/fixtures/compaction-context-management-inventory.json), [compact evidence](parity/fixtures/compaction-context-management-c1-case-results.json), [case index](parity/fixtures/compaction-context-management/evidence-summary.json), and [execution ledger](parity/execution-ledger.json).
 
 ## Active milestone — Complete Managed Package Lifecycle and Resource Distribution Parity — 2026-10-27
 

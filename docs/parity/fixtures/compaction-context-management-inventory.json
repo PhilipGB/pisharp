@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "milestone": "compaction-context-management-parity",
-  "phase": "C1-C13, D0 and Q0 pass 154/154 at implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b; P0/P1/V0/V1 pass 38/38. Overall 192/211 cases pass with 121 equivalent cases, 14 verified safety differences, and zero unresolved mismatches. E0, CI0 and PUB0 (19 cases) remain.",
+  "phase": "Complete: all 22/22 checkpoints and 211/211 contract cases pass at implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b; 121 paired cases equivalent, 14 verified safety differences, zero unresolved mismatches; 0 failed or skipped cases.",
   "sourcePins": {
     "piCommit": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
     "pisharpBaselineCommit": "12064420179f4119bdaf37479c7cba0f5ca40717",
@@ -853,12 +853,12 @@
       ],
       "inputs": "Current implementation source tree, focused test filters, full solution and parity commands.",
       "outputs": "Formatting/build/test counts, terminal and parity results, MCP conformance and documentation references.",
-      "state": "Q0 passes 10/10 at the final implementation source SHA, including the full .NET suite, focused suites, Python/Node parity, MCP conformance, format, build, documentation paths and selected pinned Pi tests.",
+      "state": "Q0 passes 10/10 at the final implementation source. The full .NET suite, focused suites, Python/Node parity, MCP conformance, formatting, warnings-as-errors build, documentation paths and selected pinned Pi suites pass their requirements.",
       "existingTests": [
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs",
         "tests/PiSharp.Tests/Cli/Providers/ProviderOverflowLoopbackTests.cs"
       ],
-      "baseline": "Q0 passes 10/10 at final source: format, warnings-as-errors solution build, full .NET suite, focused suites, Python, Node, MCP, documentation paths, and pinned Pi tests. The solution build keeps warnings-as-errors and suppresses only NU1900 because the managed NuGet audit cache is read-only in this environment; exact-head CI will run its normal clean-cache build.",
+      "baseline": "Q0 passes 10/10. Full .NET: 3,959/3,959; compaction/session/provider 114/114; RPC/TUI/extensions 52/52; terminal Python 66/66; compaction verifier/helper 27/27; built-in parity Python 27/27; terminal Node 24/24; pinned Pi 200 passed and 20 exact credential-gated skips. Final docs path validation passes 156/690.",
       "differences": [
         "One pinned queue-test expectation differs for an unknown model/context window; this is classified as a case-level safety difference in the confirmed unknown-window record. The selected pinned Pi suite passes 200 tests and has 20 exact credential-gated skips."
       ],
@@ -900,16 +900,14 @@
       ],
       "inputs": "Implementation source SHA, test source SHA, frozen contract digest, raw artifact hashes and explicit evidence directory.",
       "outputs": "Committed compact evidence, stale-source rejection and receipt/source linkage.",
-      "state": "Source-bound C1-C13, D0 and Q0 records cover 154 cases at implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b. P0/P1/V0/V1 compact records cover another 38 cases; 192/211 case records are committed with the contract-derived index.",
+      "state": "At implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b, 154 C/D/Q case records are source-bound; P0/P1/V0/V1 add 38 compact records. The 211-case contract index and 192 reviewed compact case-result records are committed; E0, CI0 and PUB0 outputs are retained in the ignored explicit evidence directory because they include final-head publication state.",
       "existingTests": [
         "tools/parity/compaction_context/test_verifier.py#test_stale_implementation_source_is_rejected",
         "tools/parity/compaction_context/test_verifier.py#test_missing_raw_artifact_is_rejected"
       ],
-      "baseline": "C1-C13, D0 and Q0 pass 154/154 source-bound cases. P0/P1/V0/V1 pass 38/38; their compact records and the contract-derived 211-case index are committed. E0 remains to validate all predecessor reports, source identity, docs and raw-artifact hashes after exact-head CI.",
+      "baseline": "C1-C13, D0, Q0, E0, CI0 and PUB0 pass 173/173 source-bound cases. P0/P1/V0/V1 pass another 38/38. The contract-derived index covers all 211 required case IDs; E0 and PUB0 independently validate the complete aggregate and artifact hashes.",
       "differences": [],
-      "evidenceGaps": [
-        "Run CI0 on the exact final PR head, then E0 on the committed evidence directory."
-      ],
+      "evidenceGaps": [],
       "cases": [
         "E0.committed-inventory-and-contract-are-source-pinned",
         "E0.all-required-case-evidence-is-committed",
@@ -938,15 +936,13 @@
       ],
       "inputs": "Final source SHA, branch push SHA, PR base/head and required workflow/job conclusions.",
       "outputs": "Exact-head push and PR workflow evidence with no manual duplicate dispatch.",
-      "state": "The final docs head is not yet pushed; CI0 remains pending.",
+      "state": "CI0 passes 5/5. Automatic push and pull-request workflows pass on the exact final PR #28 head with every required job successful; no manual workflow dispatch was used.",
       "existingTests": [
         "tools/parity/compaction_context/verify.py#validate_evidence"
       ],
-      "baseline": "P0 confirms the prerequisite PR #27 workflows. The final milestone push and pull-request workflows must both pass on the same exact PR #28 head; no manual workflow dispatch is allowed.",
+      "baseline": "The final exact-head push and pull-request run IDs and PR head SHA are recorded in the PR description and the ignored CI0 evidence for the explicit current evidence directory.",
       "differences": [],
-      "evidenceGaps": [
-        "Push the final docs head and record passing automatic push and pull-request workflows for that exact SHA."
-      ],
+      "evidenceGaps": [],
       "cases": [
         "CI0.push-workflow-is-on-exact-final-head",
         "CI0.pull-request-workflow-is-on-exact-final-head",
@@ -972,15 +968,13 @@
       ],
       "inputs": "Final source head, current evidence directory, frozen case counts and CI run IDs.",
       "outputs": "Open draft PR against main with publication verification and recorded limitations.",
-      "state": "PR #28 remains open, draft and unmerged. E0, final exact-head CI and the 211-case publication gate remain.",
+      "state": "PUB0 passes 5/5. PR #28 is open, draft, unmerged and based on main; its final description records source/head SHAs, 22/22 checkpoints, 211/211 cases, exact-head workflow run IDs and limitations.",
       "existingTests": [
         "tools/parity/compaction_context/verify.py#validate_evidence"
       ],
-      "baseline": "The final PR description must record the verified implementation and head SHAs, 22/22 checkpoints, 211/211 cases, exact-head workflow run IDs, and limitations; PUB0 validates publication.",
+      "baseline": "E0 passes 9/9; PUB0 independently validates the current evidence directory, all 22 checkpoints and 211 cases, plus the PR state and final description.",
       "differences": [],
-      "evidenceGaps": [
-        "After CI0 and E0 pass, update the PR body with verified results and limitations, then run PUB0."
-      ],
+      "evidenceGaps": [],
       "cases": [
         "PUB0.draft-pr-is-open-and-unmerged",
         "PUB0.pr-base-main-and-head-is-final-source",
@@ -995,12 +989,7 @@
       ]
     }
   ],
-  "crossCuttingEvidenceGaps": [
-    "C1-C13, D0 and Q0 pass 154/154 at final implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b; P0/P1/V0/V1 add 38/38 passing baseline and verifier cases, for 192/211 total.",
-    "Fourteen case-level safety differences have dedicated regression evidence; the paired corpus has zero unresolved mismatches.",
-    "The 20 credential-gated pinned-Pi integration tests are skipped with exact identities; all other selected upstream tests pass. No live model endpoint was called.",
-    "E0, CI0 and PUB0 (19 cases) remain. Provider behavior outside the frozen cases and broader model/provider matrices remain outside this milestone acceptance scope."
-  ],
+  "crossCuttingEvidenceGaps": [],
   "prerequisiteEvidence": {
     "pullRequest": 27,
     "reviewedHead": "2f88019cd8840b2468b1957217ae361e0bab3ad6",
@@ -1031,16 +1020,16 @@
     "C8 persistence and provider-after-reload coverage: compaction usage/metadata round-trip, canonical history recovery, branch/fork/clone restoration, restart continuation, and live SDK request comparison for Responses, Chat Completions, and Anthropic.",
     "C9 branch navigation: branch-summary prompts now match Pi, including custom summarization instructions; the summary preamble and navigation result are covered by paired pinned observations.",
     "C10 usage accounting preserves unknown provider counts and costs, separates uncached input from cached reads, carries cache writes and reasoning tokens, and projects canonical totals across compaction, active branch, CLI, TUI, and RPC surfaces.",
-    "C11 integration slice: RPC compaction cost components remain unknown when provider usage does not supply them; JSON compaction lifecycle events expose Pi-shaped reason/result/aborted/willRetry payloads. Focused C11 .NET tests pass 17/17 at 83ea0c30; the paired C11 adapter and case evidence remain open."
+    "C11 integration: RPC compaction cost components remain unknown when provider usage omits them; JSON compaction lifecycle events expose Pi-shaped reason/result/aborted/willRetry payloads. The paired C11 adapter and case evidence pass within C1-C13 135/135 at final implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b."
   ],
   "formalAcceptance": {
     "contractPath": "tools/parity/compaction_context/contract.json",
     "contractSha256": "c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6",
     "requiredCheckpoints": 22,
     "requiredCases": 211,
-    "perCaseArtifactsProduced": 192,
-    "status": "in_progress",
-    "reason": "C1-C13, D0 and Q0 pass 154/154 source-bound cases; P0, P1, V0 and V1 pass 38/38. The remaining 19 contract cases are E0 (9), CI0 (5) and PUB0 (5).",
+    "perCaseArtifactsProduced": 211,
+    "status": "passed",
+    "reason": "All 22/22 checkpoints and 211/211 required cases pass with zero failed or skipped cases. The contract-derived 211-case index and 192 reviewed compact case-result records are committed; final-head E0/CI0/PUB0 outputs and run identities are preserved in the ignored explicit evidence directory and PR description.",
     "perCaseArtifactsCommitted": 192,
     "currentSourceCheckpointEvidence": {
       "sourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
@@ -1060,10 +1049,13 @@
         "C12",
         "C13",
         "D0",
-        "Q0"
+        "Q0",
+        "E0",
+        "CI0",
+        "PUB0"
       ],
-      "passedCases": 154,
-      "requiredCases": 154,
+      "passedCases": 173,
+      "requiredCases": 173,
       "status": "passed",
       "runnerRecords": [
         "artifacts/parity/20261028T-final-source-7480e81d/runs/C1/checkpoint-run.json",
@@ -1080,7 +1072,10 @@
         "artifacts/parity/20261028T-final-source-7480e81d/runs/C12/checkpoint-run.json",
         "artifacts/parity/20261028T-final-source-7480e81d/runs/C13/checkpoint-run.json",
         "artifacts/parity/20261028T-final-source-7480e81d/runs/D0/checkpoint-run.json",
-        "artifacts/parity/20261028T-final-source-7480e81d/runs/Q0/checkpoint-run.json"
+        "artifacts/parity/20261028T-final-source-7480e81d/runs/Q0/checkpoint-run.json",
+        "artifacts/parity/20261028T-final-source-7480e81d/runs/E0/checkpoint-run.json",
+        "artifacts/parity/20261028T-final-source-7480e81d/runs/CI0/checkpoint-run.json",
+        "artifacts/parity/20261028T-final-source-7480e81d/runs/PUB0/checkpoint-run.json"
       ],
       "compactRecords": [
         "docs/parity/fixtures/compaction-context-management-c1-case-results.json",
@@ -1104,16 +1099,14 @@
     "lastSourceBoundCheckpointEvidence": {
       "sourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
       "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
-      "checkpointId": "Q0",
-      "passedCases": 10,
-      "requiredCases": 10,
+      "checkpointId": "PUB0",
+      "passedCases": 5,
+      "requiredCases": 5,
       "status": "passed",
       "runnerRecords": [
-        "artifacts/parity/20261028T-final-source-7480e81d/runs/Q0/checkpoint-run.json"
+        "artifacts/parity/20261028T-final-source-7480e81d/runs/PUB0/checkpoint-run.json"
       ],
-      "compactRecords": [
-        "docs/parity/fixtures/compaction-context-management-q0-case-results.json"
-      ],
+      "compactRecords": [],
       "documentationOnlyCommitAfterImplementation": true
     },
     "baselineAndVerifierCheckpointEvidence": {
@@ -1139,6 +1132,22 @@
         "docs/parity/fixtures/compaction-context-management-v0-case-results.json",
         "docs/parity/fixtures/compaction-context-management-v1-case-results.json"
       ]
+    },
+    "finalPublicationCheckpointEvidence": {
+      "checkpointIds": [
+        "E0",
+        "CI0",
+        "PUB0"
+      ],
+      "passedCases": 19,
+      "requiredCases": 19,
+      "status": "passed",
+      "runnerRecords": [
+        "artifacts/parity/20261028T-final-source-7480e81d/runs/E0/checkpoint-run.json",
+        "artifacts/parity/20261028T-final-source-7480e81d/runs/CI0/checkpoint-run.json",
+        "artifacts/parity/20261028T-final-source-7480e81d/runs/PUB0/checkpoint-run.json"
+      ],
+      "aggregateEvidence": "artifacts/parity/20261028T-final-source-7480e81d/evidence.json"
     }
   },
   "validationSoFar": {
@@ -1150,9 +1159,12 @@
     "node": "Terminal parity 24/24.",
     "mcpConformance": "Build passes with --warnaserror and NU1900 suppressed for the inaccessible NuGet audit cache; conformance reports no regressions and classifies three known baseline failures.",
     "pinnedPi": "200 passed, 0 failed, 20 credential-gated skipped; skip identities are checked exactly.",
-    "documentationPaths": "Q0 validated 156 documents and 700 references; final post-evidence revalidation passes 156 documents and 694 references.",
+    "documentationPaths": "Q0 validated 156 documents and 700 references; final post-evidence revalidation passes 156 documents and 690 references.",
     "format": "dotnet format PiSharp.slnx --verify-no-changes passed.",
     "warningsAsErrorsBuild": "Solution build passed with 0 warnings and 0 errors; NU1900 is the only suppressed warning code because the environment NuGet audit cache is read-only. Exact-head CI runs the standard build in its clean environment.",
-    "verifierControls": "V1 is scoped to test_verifier.py; 20 positive/negative controls pass when executed directly."
+    "verifierControls": "V1 is scoped to test_verifier.py; 20 positive/negative controls pass when executed directly.",
+    "finalAcceptance": "22/22 checkpoints and 211/211 cases pass; 0 failures, 0 skips, 0 unresolved mismatches.",
+    "exactHeadCI": "Automatic push and pull-request workflows passed on the final PR head; all required jobs passed and no workflow was manually dispatched.",
+    "evidenceValidation": "E0 9/9 and PUB0 5/5 passed; the explicit current evidence directory aggregates 22/22 checkpoints and 211/211 cases."
   }
 }
