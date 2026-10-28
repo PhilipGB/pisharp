@@ -1,0 +1,91 @@
+#!/usr/bin/env python3
+"""Contract integrity regressions for the RPC parity acceptance harness."""
+from __future__ import annotations
+
+import json
+import tempfile
+import unittest
+from pathlib import Path
+
+import verify
+
+
+class FrozenRpcContractTests(unittest.TestCase):
+    def test_committed_contract_and_inventory_are_source_pinned(self) -> None:
+        contract = verify.load_contract()
+        self.assertEqual(24, contract["checkpointCount"])
+        self.assertEqual(contract["requiredCaseCount"], len(contract["requiredCaseIds"]))
+        self.assertEqual(len(contract["requiredCaseIds"]), len(set(contract["requiredCaseIds"])))
+        self.assertEqual("b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6", contract["sourcePins"]["piCommit"])
+
+    def test_credential_gated_upstream_tests_are_exact_and_unverified(self) -> None:
+        inventory = json.loads(verify.INVENTORY_PATH.read_text(encoding="utf-8"))
+        cases = inventory["credentialGatedUpstreamCases"]
+        self.assertEqual(20, len(cases))
+        self.assertEqual(20, inventory["counts"]["credentialGatedUpstreamCases"])
+        self.assertTrue(all("never counted as a pass" in item["classification"] for item in cases))
+        self.assertEqual(20, len({(item["source"], item["testName"]) for item in cases}))
+
+    def test_contract_byte_change_fails_frozen_digest(self) -> None:
+        original = json.loads(verify.CONTRACT_PATH.read_text(encoding="utf-8"))
+        original["requiredCaseIds"][0] = "P0.changed-case"
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "contract.json"
+            path.write_text(json.dumps(original), encoding="utf-8")
+            with self.assertRaisesRegex(verify.VerificationError, "digest changed"):
+                verify.load_contract(path)
+
+    def test_wrong_pi_pin_fails_even_without_digest_check(self) -> None:
+        changed = json.loads(verify.CONTRACT_PATH.read_text(encoding="utf-8"))
+        changed["sourcePins"]["piCommit"] = "0" * 40
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "contract.json"
+            path.write_text(json.dumps(changed), encoding="utf-8")
+            with self.assertRaisesRegex(verify.VerificationError, "pinned Pi SHA"):
+                verify.load_contract(path, verify_lock=False)
+
+    def test_wrong_merge_pin_fails_even_without_digest_check(self) -> None:
+        changed = json.loads(verify.CONTRACT_PATH.read_text(encoding="utf-8"))
+        changed["sourcePins"]["pisharpBaseCommit"] = "0" * 40
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "contract.json"
+            path.write_text(json.dumps(changed), encoding="utf-8")
+            with self.assertRaisesRegex(verify.VerificationError, "merge base changed"):
+                verify.load_contract(path, verify_lock=False)
+
+    def test_duplicate_checkpoint_case_id_is_rejected(self) -> None:
+        changed = json.loads(verify.CONTRACT_PATH.read_text(encoding="utf-8"))
+        first = changed["checkpoints"][0]["requiredCaseIds"][0]
+        replaced = changed["checkpoints"][1]["requiredCaseIds"][0]
+        global_index = changed["requiredCaseIds"].index(replaced)
+        changed["checkpoints"][1]["requiredCaseIds"][0] = first
+        changed["checkpoints"][1]["caseDefinitions"][0]["id"] = first
+        changed["requiredCaseIds"][global_index] = first
+        changed["cases"][global_index]["id"] = first
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "contract.json"
+            path.write_text(json.dumps(changed), encoding="utf-8")
+            with self.assertRaisesRegex(verify.VerificationError, "duplicate case ID"):
+                verify.load_contract(path, verify_lock=False)
+
+    def test_case_without_executable_runner_is_rejected(self) -> None:
+        changed = json.loads(verify.CONTRACT_PATH.read_text(encoding="utf-8"))
+        changed["checkpoints"][0]["caseDefinitions"][0]["runner"] = ""
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "contract.json"
+            path.write_text(json.dumps(changed), encoding="utf-8")
+            with self.assertRaisesRegex(verify.VerificationError, "lacks case field runner"):
+                verify.load_contract(path, verify_lock=False)
+
+    def test_strict_case_cannot_declare_normalization(self) -> None:
+        changed = json.loads(verify.CONTRACT_PATH.read_text(encoding="utf-8"))
+        changed["checkpoints"][0]["caseDefinitions"][0]["comparisonRules"]["normalizations"] = ["drop response id"]
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "contract.json"
+            path.write_text(json.dumps(changed), encoding="utf-8")
+            with self.assertRaisesRegex(verify.VerificationError, "normalization under strict"):
+                verify.load_contract(path, verify_lock=False)
+
+
+if __name__ == "__main__":
+    unittest.main()

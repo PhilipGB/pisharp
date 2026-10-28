@@ -8,9 +8,15 @@ The independent review correction fixes native branch-summary usage in RPC `get_
 
 Q0 records 3,963/3,963 .NET tests, focused compaction/session/provider 114/114, focused RPC/TUI/extension 56/56, terminal Python 66/66, compaction helper Python 27/27, built-in parity Python 27/27, and terminal Node 24/24. It records 200 pinned Pi passes and 20 exact credential-gated upstream skips. Documentation validation recorded 156 documents / 690 references. No live model endpoint was called.
 
-Limitations: the 20 credential-dependent pinned Pi interactive/LLM cases remain unverified. The managed-package parity corpus remains scoped to its historical milestone branch, as noted in the independent review. PR #28 remains open, draft, and unmerged for review.
+Limitations: the 20 credential-dependent pinned Pi interactive/LLM cases remain unverified. The managed-package parity corpus remains scoped to its historical milestone branch, as noted in the independent review. PR #28 is merged at `646db89bd396b8089b1b9a058fa96b1489f4d0cd`.
 
 See the [source-pinned inventory](parity/fixtures/compaction-context-management-inventory.json), [compact evidence](parity/fixtures/compaction-context-management-c1-case-results.json), [case index](parity/fixtures/compaction-context-management/evidence-summary.json), and [execution ledger](parity/execution-ledger.json).
+
+## Active milestone — Complete RPC Protocol and Command Parity — 2026-10-28
+
+PR #28 is verified merged at `646db89bd396b8089b1b9a058fa96b1489f4d0cd`; `milestone/rpc-protocol-command-parity` is based on that exact commit. Pinned Pi is `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The pre-production inventory covers 33 commands, 24 event families, 9 extension UI methods, 5 record families and 7 protocol operations. The immutable contract has 24 checkpoints and 252 derived case IDs. Inventory and contract checks pass, including 8 contract-integrity tests. The inventory/contract commit is being prepared before production work; no production changes or differential cases have been completed. The next work is executable evidence adapters and V1 negative controls, then process comparisons beginning with JSONL transport and response semantics.
+
+See the [milestone receipt](parity/fixtures/rpc-protocol-command-parity/README.md), [inventory](parity/fixtures/rpc-protocol-command-parity/inventory.json), [case index](parity/fixtures/rpc-protocol-command-parity/required-case-index.json), and [contract](../tools/parity/rpc_protocol/contract.json).
 
 ## Active milestone — Complete Managed Package Lifecycle and Resource Distribution Parity — 2026-10-27
 

@@ -6,9 +6,15 @@ The independent review correction fixes native branch-summary usage in RPC `get_
 
 Q0 records 3,963/3,963 .NET tests, focused compaction/session/provider 114/114, focused RPC/TUI/extension 56/56, terminal Python 66/66, compaction helper Python 27/27, built-in parity Python 27/27, and terminal Node 24/24. It records 200 pinned Pi passes and 20 exact credential-gated upstream skips. Documentation validation recorded 156 documents / 690 references. No live model endpoint was called.
 
-Limitations: the 20 credential-dependent pinned Pi interactive/LLM cases remain unverified. The managed-package parity corpus remains scoped to its historical milestone branch, as noted in the independent review. PR #28 remains open, draft, and unmerged for review.
+Limitations: the 20 credential-dependent pinned Pi interactive/LLM cases remain unverified. The managed-package parity corpus remains scoped to its historical milestone branch, as noted in the independent review. PR #28 is merged at `646db89bd396b8089b1b9a058fa96b1489f4d0cd`.
 
 See the [source-pinned inventory](parity/fixtures/compaction-context-management-inventory.json), [compact evidence](parity/fixtures/compaction-context-management-c1-case-results.json), [case index](parity/fixtures/compaction-context-management/evidence-summary.json), and [execution ledger](parity/execution-ledger.json).
+
+## Active milestone — Complete RPC Protocol and Command Parity — 2026-10-28
+
+PR #28 is verified merged at `646db89bd396b8089b1b9a058fa96b1489f4d0cd`; the clean milestone branch `milestone/rpc-protocol-command-parity` starts from that commit. Pi is pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Before production changes, the source inventory and frozen contract record 33 commands, 24 event families, 9 extension UI methods, 24 checkpoints and 252 case IDs derived from the immutable case list. The inventory and contract are validated and ready to commit. No production source has changed. Eight contract-integrity tests pass; process cases, behavioral corrections, differential evidence, quality gates and PR #29 remain open.
+
+See the [milestone receipt](docs/parity/fixtures/rpc-protocol-command-parity/README.md), [source-pinned inventory](docs/parity/fixtures/rpc-protocol-command-parity/inventory.json), [case index](docs/parity/fixtures/rpc-protocol-command-parity/required-case-index.json), and [contract](tools/parity/rpc_protocol/contract.json).
 
 ## Active milestone — Complete Managed Package Lifecycle and Resource Distribution Parity — 2026-10-27
 
@@ -584,11 +590,11 @@ The detailed entries in this section preserve earlier source/test evidence only;
 
 ## Current priority
 
-Resources / instructions and trust remains open at Pi `4270522473e677ddba7b093caa0064a3df51d459` / PiSharp product code `65d045c5ff99e8c289b2cddb75cf6309a5879fdd`. Exact-head Linux CI [38205629517](https://github.com/PhilipGB/pisharp/actions/runs/38205629517) is green on the current evidence commit. Precedence/reload, current skill prompts and thinking visibility now have paired current-Pi evidence; trust callback/editor echo, submitted user-message and usage presentation, settings reload and broader startup differences remain open. The current Pi audit classifies 231 commits through `42705224`; the Codemode schema-error description delta is matched.
+Complete the source-bound RPC contract and process-level differential corpus on `milestone/rpc-protocol-command-parity`, retaining Microsoft Agent Framework 1.21.0 as the runtime execution framework. Current inventory and contract are validated in the worktree; the next action is to commit that frozen baseline before production changes, then implement evidence runners and execute the R1/R2 transport and response cases.
 
 ## Exact next action
 
-Refresh current-Pi same-head calibration and paired PTY evidence for the trusted project-extension UI at Pi `4270522473e677ddba7b093caa0064a3df51d459` / PiSharp `3043c4b185e594b989aab73ff7eff915f7beed8d`. Compare trust callback order, editor echo, submitted user message, provider requests and terminal states; fix the earliest confirmed product mismatch. Continue unresolved startup/TUI, other ledger capabilities, MCP conformance, upstream deltas and the final audit; the final parity gate remains false.
+Commit the pinned inventory and 24-checkpoint/252-case contract with the fail-closed verifier, then complete the V1 negative controls and capture paired pinned-Pi/PiSharp process baselines. Resolve the documented `get_messages` section projection difference and proceed through each unpassed checkpoint; keep PR #29 open, draft and unmerged.
 
 ## Architecture risks to reconcile before completion
 

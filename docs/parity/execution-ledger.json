@@ -13724,5 +13724,60 @@
       "status": "complete"
     },
     "published_head_before_review_correction": "763f008a347282078b86946b398e9229dd930f06"
+  },
+  "rpc_protocol_command_parity_milestone": {
+    "status": "in_progress",
+    "phase": "frozen_inventory_contract_preproduction",
+    "branch": "milestone/rpc-protocol-command-parity",
+    "branch_base_sha": "646db89bd396b8089b1b9a058fa96b1489f4d0cd",
+    "prerequisite_pr28": {
+      "reviewed_head": "c019cd0111106b70a83d56e30d86932c987291e1",
+      "implementation_source_sha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2",
+      "actual_merge_sha": "646db89bd396b8089b1b9a058fa96b1489f4d0cd",
+      "push_run_id": 40747257587,
+      "pull_request_run_id": 40747270521,
+      "five_jobs_successful_in_each_run": true,
+      "managed_package_corpus": "Its run steps are intentionally skipped outside the historical milestone branch; this is recorded and not claimed as rerun."
+    },
+    "pi_reference": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "contract": "tools/parity/rpc_protocol/contract.json",
+    "contract_sha256": "036c369054fbb50887629666f6b25ef76d8a9fbe856d00d4a79a2cf9609f0761",
+    "inventory": "docs/parity/fixtures/rpc-protocol-command-parity/inventory.json",
+    "inventory_sha256": "b7c4983036690f3b929a205256aa33e44e143a8ef1ec3aab7f8bcfb6cf68051a",
+    "required_case_index": "docs/parity/fixtures/rpc-protocol-command-parity/required-case-index.json",
+    "checkpoint_count": 24,
+    "required_case_count": 252,
+    "inventoried_commands": 33,
+    "inventoried_event_families": 24,
+    "inventoried_extension_ui_methods": 9,
+    "credential_gated_upstream_test_identities": 20,
+    "inventoried_protocol_record_families": 5,
+    "inventoried_protocol_operations": 7,
+    "maf_package_version": "1.21.0",
+    "dotnet_sdk": "10.0.113",
+    "production_changes_started": false,
+    "process_case_results_produced": 0,
+    "baseline_validation": {
+      "contract_source_verifier": "passed",
+      "contract_integrity_tests": "8/8 passed",
+      "source_inventory_pin": "passed; selected tracked files only; unrelated upstream untracked file excluded",
+      "runner_behavior": "fail closed when no scenario adapter is registered"
+    },
+    "historical_mismatch_ids_to_revalidate": [
+      "RPC-SYSMSG-SECTIONS",
+      "RPC-NEW-SESSION-PARENT-TYPE",
+      "RPC-CONTEXT-USAGE-ESTIMATE",
+      "RPC-SCOPED-THINKING-SUFFIX",
+      "RPC-PROVIDER-STREAMING-AND-CANCEL",
+      "RPC-EXTENSION-UI-LIFECYCLE",
+      "RPC-ACTIVE-SESSION-REPLACEMENT"
+    ],
+    "open_requirements": [
+      "Commit the frozen inventory, 24-checkpoint contract and verifier before production changes.",
+      "Implement the full 22-control V1 mutation corpus and actual differential process runners.",
+      "Capture two stable pinned-Pi process baselines and independent PiSharp process observations for R1-R15.",
+      "Correct confirmed in-scope differences, then complete all quality, source-bound evidence, exact-head CI and draft PR publication gates."
+    ],
+    "next_action": "Commit the frozen inventory/contract baseline, then implement evidence adapters and V1 negative controls before production changes."
   }
 }
