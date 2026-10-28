@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json;
 using Microsoft.Extensions.AI;
 using PiSharp.Cli;
 using PiSharp.Runtime;
@@ -164,6 +165,9 @@ public sealed class ProviderOverflowLoopbackTests
         using var listener = StartLoopbackListener(out var port);
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         var bodies = new List<string>();
+        var requestPaths = new List<string>();
+        var responseStatuses = new List<int>();
+        var responseBodies = new List<string>();
         var receivedRequests = 0;
         var server = Task.Run(async () =>
         {
@@ -171,12 +175,14 @@ public sealed class ProviderOverflowLoopbackTests
             {
                 var request = await listener.GetContextAsync().WaitAsync(deadline.Token);
                 Interlocked.Increment(ref receivedRequests);
+                var requestPath = request.Request.Url?.AbsolutePath;
                 Assert.Equal(api switch
                 {
                     "openai-responses" => "/v1/responses",
                     "openai-completions" => "/v1/chat/completions",
                     _ => "/v1/messages"
-                }, request.Request.Url?.AbsolutePath);
+                }, requestPath);
+                requestPaths.Add(requestPath ?? "");
                 using var reader = new StreamReader(request.Request.InputStream);
                 bodies.Add(await reader.ReadToEndAsync(deadline.Token));
                 string responseBody;
@@ -225,6 +231,8 @@ public sealed class ProviderOverflowLoopbackTests
                             "event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n";
                     if (api != "anthropic-messages") responseBody += "data: [DONE]\n\n";
                 }
+                responseStatuses.Add(request.Response.StatusCode);
+                responseBodies.Add(responseBody);
                 var responseBytes = Encoding.UTF8.GetBytes(responseBody);
                 request.Response.ContentLength64 = responseBytes.Length;
                 request.Response.OutputStream.Write(responseBytes);
@@ -288,6 +296,43 @@ public sealed class ProviderOverflowLoopbackTests
             Assert.DoesNotContain(new string('P', 900), bodies[2]);
             Assert.Equal(900, conversation.ActiveMessages()[0].Text.Length);
             Assert.Contains(conversation.ActiveMessages(), message => message.Text == "done");
+
+            var captureDirectory = Environment.GetEnvironmentVariable("PISHARP_C5_PROVIDER_CAPTURE_DIR");
+            if (!string.IsNullOrWhiteSpace(captureDirectory))
+            {
+                Directory.CreateDirectory(captureDirectory);
+                var capture = new
+                {
+                    api,
+                    requests = bodies.Select((body, index) => new { index, path = requestPaths[index], body }),
+                    responses = responseBodies.Select((body, index) => new
+                    {
+                        index,
+                        statusCode = responseStatuses[index],
+                        body,
+                    }),
+                    events = events.Select(item => new
+                    {
+                        type = item.Type,
+                        text = item.Text,
+                        error = item.Error,
+                        inputTokens = item.InputTokens,
+                        outputTokens = item.OutputTokens,
+                        willRetry = item.WillRetry,
+                    }),
+                    overflowRecoveryCount = events.Count(item => item.Type == "model_context_overflow_recovery"),
+                    completed = events.Any(item => item.Type == "turn_completed"),
+                    retainedCanonicalPrefix = conversation.ActiveMessages()[0].Text.Length == 900,
+                    activeMessages = conversation.ActiveMessages().Select(message => new
+                    {
+                        role = message.Role.ToString(),
+                        text = message.Text,
+                    }),
+                };
+                var capturePath = Path.Combine(captureDirectory, $"{api}.json");
+                await File.WriteAllTextAsync(capturePath, JsonSerializer.Serialize(capture,
+                    new JsonSerializerOptions { WriteIndented = true }) + "\n", deadline.Token);
+            }
         }
         finally
         {

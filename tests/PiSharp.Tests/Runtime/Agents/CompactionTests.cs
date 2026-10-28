@@ -210,6 +210,31 @@ public sealed class CompactionTests
     }
 
     [Fact]
+    public async Task UnknownContextWindowDoesNotInventCapacityFromReportedUsage()
+    {
+        var conversation = Seed(Path.GetTempPath());
+        var client = new PostTurnUsageClient
+        {
+            ReportedUsage = new UsageDetails
+            {
+                InputTokenCount = 20_000,
+                OutputTokenCount = 16,
+                TotalTokenCount = 20_016
+            }
+        };
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())), conversation);
+        var events = new List<AgentLifecycleEvent>();
+
+        await foreach (var item in run.RunEventsAsync("continue")) events.Add(item);
+
+        Assert.Equal(1, client.StreamingRequests);
+        Assert.Equal(0, client.SummaryRequests);
+        Assert.DoesNotContain(events, item => item.Type is "compaction_start" or "compaction_end");
+        Assert.DoesNotContain(conversation.Tree.ActivePath(), entry => entry.Type == "compaction");
+        Assert.Contains(conversation.ActiveMessages(), message => message.Text == "continued response");
+    }
+
+    [Fact]
     public async Task RecoverableLengthStopCompactsOnceAndContinuesWithoutPartialOutput()
     {
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-length-recovery-" + Guid.NewGuid().ToString("N"));
