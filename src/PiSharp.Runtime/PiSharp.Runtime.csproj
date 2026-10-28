@@ -4,6 +4,7 @@
     <ProjectReference Include="..\PiSharp.Core\PiSharp.Core.csproj" />
     <ProjectReference Include="..\PiSharp.Extensions.Abstractions\PiSharp.Extensions.Abstractions.csproj" />
     <InternalsVisibleTo Include="PiSharp.Cli" />
+    <InternalsVisibleTo Include="PiSharp.CompactionOracle" />
     <InternalsVisibleTo Include="PiSharp.McpConformance" />
     <InternalsVisibleTo Include="PiSharp.Tests" />
   </ItemGroup>

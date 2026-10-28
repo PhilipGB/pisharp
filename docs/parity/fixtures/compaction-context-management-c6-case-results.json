@@ -1,0 +1,327 @@
+{
+  "schemaVersion": 1,
+  "milestone": "compaction-context-management-parity",
+  "checkpointId": "C6",
+  "contractSha256": "c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6",
+  "evidenceDirectory": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C6/differential",
+  "generatedReportSha256": "1132b224ac664cd5d6e794fcac96440a708b2ec7da2619e0440edd5b4f85982c",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "pisharpSourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2",
+  "sourceTreeClean": true,
+  "piCalibrationStable": true,
+  "pisharpCalibrationStable": true,
+  "pairedObservationsEqual": false,
+  "acceptedSafetyDifferenceCount": 5,
+  "normalization": [
+    "compare durable raw-history preservation separately from the transient provider request",
+    "record the Pi per-message estimate separately from PiSharp's conservative ephemeral projection estimate",
+    "compare ordered call/result groups in summarized prefixes to raw pinned-Pi continuation requests",
+    "sort parallel call and result IDs before checking complete batch matching",
+    "compare nested call completion metadata and the closed model-issued parent call/result pair",
+    "classify large-result bounding and malformed-graph rejection as accepted safety differences"
+  ],
+  "safetyDifferences": [
+    {
+      "caseId": "C6.transient-projection-does-not-change-canonical-history",
+      "reason": "Pi estimates retained messages with its per-content characters/4 heuristic and does not pre-project the active tool transcript. PiSharp uses a deliberately higher serialized characters/2 plus framing heuristic only for an ephemeral request projection; the canonical history remains unchanged.",
+      "regression": "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#TransientContextEstimateIsConservativeSerializedCharacterHeuristicNotTokenizer; tests/PiSharp.Tests/Runtime/Sessions/InFlightContextBudgetTests.cs#OversizedActiveToolResultIsSummarizedInsteadOfKeptInTransientRequest",
+      "safetyEvidence": "pisharp-c6-run-1.json"
+    },
+    {
+      "caseId": "C6.single-large-current-tool-result-is-bounded",
+      "reason": "Pi keeps the active 8,000-character result in the provider request; PiSharp projects a bounded summary while retaining the raw canonical result.",
+      "regression": "tests/PiSharp.Tests/Runtime/Sessions/InFlightContextBudgetTests.cs#OversizedActiveToolResultIsSummarizedInsteadOfKeptInTransientRequest",
+      "safetyEvidence": "pisharp-c6-run-1.json"
+    },
+    {
+      "caseId": "C6.large-tool-output-summary-retains-latest-outcome",
+      "reason": "Pi keeps both large and latest raw tool outcomes in the request; PiSharp summarizes the prefix and retains the latest outcome.",
+      "regression": "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#LongSummaryTranscriptRetainsLatestMessageWithinBound",
+      "safetyEvidence": "pisharp-c6-run-1.json"
+    },
+    {
+      "caseId": "C6.incomplete-call-graph-fails-before-provider-send",
+      "reason": "Pi sends the incomplete call graph to its provider hook; PiSharp rejects the transient continuation before sending it.",
+      "regression": "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#OverflowProjectionRefusesMalformedEarlierToolGraph",
+      "safetyEvidence": "pisharp-c6-run-1.json"
+    },
+    {
+      "caseId": "C6.duplicate-or-unmatched-results-never-replay-tools",
+      "reason": "Pi sends duplicate tool results to its provider hook; PiSharp rejects the malformed graph before sending the transient continuation.",
+      "regression": "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#OverflowProjectionRefusesMalformedEarlierToolGraph",
+      "safetyEvidence": "pisharp-c6-run-1.json"
+    }
+  ],
+  "executedCaseCount": 10,
+  "requiredCaseCount": 10,
+  "unexecutedCaseIds": [],
+  "verifierCounts": {
+    "required": 10,
+    "executed": 10,
+    "passed": 10,
+    "failed": 0,
+    "skipped": 0
+  },
+  "cases": [
+    {
+      "caseId": "C6.transient-projection-does-not-change-canonical-history",
+      "contractExpectedObservation": "transient projection does not change canonical history",
+      "classification": "intentional-safety-difference",
+      "passed": true,
+      "normalizedExpectedSha256": "7440a300ced39727fbbae9b5ffbf939c3281ddb378389a074b301dea6f662a3b",
+      "normalizedActualSha256": "cfd3fa042e6c488d9ea1a24e56cd2b12f5cc977a4276a8d3e71af4749a91e065",
+      "normalizedExpectedBytes": 34,
+      "normalizedActualBytes": 143,
+      "normalizedExpected": {
+        "canonicalHistoryUnchanged": true
+      },
+      "normalizedActual": {
+        "canonicalHistoryUnchanged": true,
+        "transientBudgetEstimate": 4842,
+        "piCompatibleMessageEstimate": 2010,
+        "transientEstimateIsMoreConservative": true
+      }
+    },
+    {
+      "caseId": "C6.single-large-current-tool-result-is-bounded",
+      "contractExpectedObservation": "single large current tool result is bounded",
+      "classification": "intentional-safety-difference",
+      "passed": true,
+      "normalizedExpectedSha256": "2d19b5f2c7418aa694299dc6f10bc44ecf148cf56484d08bb9cf4158ac3aa76c",
+      "normalizedActualSha256": "84c747ea458b83600cb1cca1a7310b1e18dc27866a05f195f70f67e3f1ca5493",
+      "normalizedExpectedBytes": 65,
+      "normalizedActualBytes": 85,
+      "normalizedExpected": {
+        "canonicalResultPreserved": true,
+        "providerResultCharacters": 8000
+      },
+      "normalizedActual": {
+        "canonicalResultPreserved": true,
+        "providerResultCharacters": 0,
+        "summaryRetained": true
+      }
+    },
+    {
+      "caseId": "C6.sequential-tool-cycles-preserve-order",
+      "contractExpectedObservation": "sequential tool cycles preserve order",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "fe55dc617b54213d89a17718a579506e54f48ad2d07c0b82a39cef6c437ed026",
+      "normalizedActualSha256": "fe55dc617b54213d89a17718a579506e54f48ad2d07c0b82a39cef6c437ed026",
+      "normalizedExpectedBytes": 97,
+      "normalizedActualBytes": 97,
+      "normalizedExpected": {
+        "orderedCallIds": [
+          "sequence-1",
+          "sequence-2"
+        ],
+        "orderedResultCallIds": [
+          "sequence-1",
+          "sequence-2"
+        ]
+      },
+      "normalizedActual": {
+        "orderedCallIds": [
+          "sequence-1",
+          "sequence-2"
+        ],
+        "orderedResultCallIds": [
+          "sequence-1",
+          "sequence-2"
+        ]
+      }
+    },
+    {
+      "caseId": "C6.parallel-calls-and-results-remain-matched",
+      "contractExpectedObservation": "parallel calls and results remain matched",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "ef62f4eb04e8bdb2dd094673f7e7b8e29145b4eec8d22d021c2897c615683d59",
+      "normalizedActualSha256": "ef62f4eb04e8bdb2dd094673f7e7b8e29145b4eec8d22d021c2897c615683d59",
+      "normalizedExpectedBytes": 52,
+      "normalizedActualBytes": 52,
+      "normalizedExpected": {
+        "matchedCallResultIds": [
+          "parallel-1",
+          "parallel-2"
+        ]
+      },
+      "normalizedActual": {
+        "matchedCallResultIds": [
+          "parallel-1",
+          "parallel-2"
+        ]
+      }
+    },
+    {
+      "caseId": "C6.large-tool-output-summary-retains-latest-outcome",
+      "contractExpectedObservation": "large tool output summary retains latest outcome",
+      "classification": "intentional-safety-difference",
+      "passed": true,
+      "normalizedExpectedSha256": "a02ab342a0db6ba7abc746d18f9f740597340e9233f7ef0bc8252d88e0f3da3e",
+      "normalizedActualSha256": "63384421cfbd3978e3e9cebceedb9817e4240e26ca2299d02161d6425b00006e",
+      "normalizedExpectedBytes": 62,
+      "normalizedActualBytes": 59,
+      "normalizedExpected": {
+        "latestOutcomeRetained": true,
+        "providerResultCharacters": 8019
+      },
+      "normalizedActual": {
+        "latestOutcomeRetained": true,
+        "providerResultCharacters": 0
+      }
+    },
+    {
+      "caseId": "C6.nested-tool-call-sequence-is-closed-before-cut",
+      "contractExpectedObservation": "nested tool call sequence is closed before cut",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "1b5fc26c4d09505ae020385e58248f8c3a99393f3ca31a03f8371774d2ea66eb",
+      "normalizedActualSha256": "1b5fc26c4d09505ae020385e58248f8c3a99393f3ca31a03f8371774d2ea66eb",
+      "normalizedExpectedBytes": 102,
+      "normalizedActualBytes": 102,
+      "normalizedExpected": {
+        "nestedExecutionComplete": true,
+        "nestedCallIds": [
+          "outer-call/1"
+        ],
+        "closedParentCallIds": [
+          "outer-call"
+        ]
+      },
+      "normalizedActual": {
+        "nestedExecutionComplete": true,
+        "nestedCallIds": [
+          "outer-call/1"
+        ],
+        "closedParentCallIds": [
+          "outer-call"
+        ]
+      }
+    },
+    {
+      "caseId": "C6.incomplete-call-graph-fails-before-provider-send",
+      "contractExpectedObservation": "incomplete call graph fails before provider send",
+      "classification": "intentional-safety-difference",
+      "passed": true,
+      "normalizedExpectedSha256": "2b78a6f276c3620757562e5f7e2f6c6256c420981a2a372337ce30d85609c98e",
+      "normalizedActualSha256": "87cc38983f875e9d18963712ce80b5cc3b5de8f8bdf367ea9121ea280ed468fd",
+      "normalizedExpectedBytes": 52,
+      "normalizedActualBytes": 52,
+      "normalizedExpected": {
+        "providerSendCount": 1,
+        "providerHistoryValid": false
+      },
+      "normalizedActual": {
+        "providerSendCount": 0,
+        "providerHistoryValid": false
+      }
+    },
+    {
+      "caseId": "C6.duplicate-or-unmatched-results-never-replay-tools",
+      "contractExpectedObservation": "duplicate or unmatched results never replay tools",
+      "classification": "intentional-safety-difference",
+      "passed": true,
+      "normalizedExpectedSha256": "2b78a6f276c3620757562e5f7e2f6c6256c420981a2a372337ce30d85609c98e",
+      "normalizedActualSha256": "87cc38983f875e9d18963712ce80b5cc3b5de8f8bdf367ea9121ea280ed468fd",
+      "normalizedExpectedBytes": 52,
+      "normalizedActualBytes": 52,
+      "normalizedExpected": {
+        "providerSendCount": 1,
+        "providerHistoryValid": false
+      },
+      "normalizedActual": {
+        "providerSendCount": 0,
+        "providerHistoryValid": false
+      }
+    },
+    {
+      "caseId": "C6.steering-after-tool-result-keeps-active-turn",
+      "contractExpectedObservation": "steering after tool result keeps active turn",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "8af88323e91eb8dfde697628bb65f9833c64741c20bc5a1fe3f28d3845f967df",
+      "normalizedActualSha256": "8af88323e91eb8dfde697628bb65f9833c64741c20bc5a1fe3f28d3845f967df",
+      "normalizedExpectedBytes": 32,
+      "normalizedActualBytes": 32,
+      "normalizedExpected": {
+        "steeringPromptPreserved": true
+      },
+      "normalizedActual": {
+        "steeringPromptPreserved": true
+      }
+    },
+    {
+      "caseId": "C6.post-compaction-request-contains-valid-provider-history",
+      "contractExpectedObservation": "post compaction request contains valid provider history",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "680b48359e3bf5e553d1fe2c5e5fa53ec25ec63ed465bcf816b5ee0e065b38b2",
+      "normalizedActualSha256": "680b48359e3bf5e553d1fe2c5e5fa53ec25ec63ed465bcf816b5ee0e065b38b2",
+      "normalizedExpectedBytes": 60,
+      "normalizedActualBytes": 60,
+      "normalizedExpected": {
+        "providerHistoryValid": true,
+        "closedCallResultGroupCount": 2
+      },
+      "normalizedActual": {
+        "providerHistoryValid": true,
+        "closedCallResultGroupCount": 2
+      }
+    }
+  ],
+  "rawArtifacts": [
+    {
+      "path": "pi-c6/pi-run-1.json",
+      "sha256": "0e1aff9bd529eb807901de8c7c6ea5629531554a736ee216c660a34a1efa3e5a"
+    },
+    {
+      "path": "pi-c6/pi-run-2.json",
+      "sha256": "0e1aff9bd529eb807901de8c7c6ea5629531554a736ee216c660a34a1efa3e5a"
+    },
+    {
+      "path": "pi-c6/pi-oracle.json",
+      "sha256": "2d32610653653db5b0677d5885b2234e3080726a421817c5d6fb89af9af5ad3c"
+    },
+    {
+      "path": "pi-c6.stdout.log",
+      "sha256": "6b3d78741925ee35f1f4a441576e7b28684557fd7179c2018da750a382f44fb0"
+    },
+    {
+      "path": "pi-c6.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-c6-run-1.json",
+      "sha256": "51e8d4bd2801aebbe8335957099acaa8908e1a0c17c261c5488b1eaf4b34e2e6"
+    },
+    {
+      "path": "pisharp-c6-run-1.stdout.log",
+      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
+    },
+    {
+      "path": "pisharp-c6-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-c6-run-2.json",
+      "sha256": "51e8d4bd2801aebbe8335957099acaa8908e1a0c17c261c5488b1eaf4b34e2e6"
+    },
+    {
+      "path": "pisharp-c6-run-2.stdout.log",
+      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
+    },
+    {
+      "path": "pisharp-c6-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-c6-observations.json",
+      "sha256": "5190eb93b760cee4a8ddc3b5caa2d6b0892d90c6256f2bf1973c13b19f99c6d7"
+    },
+    {
+      "path": "pisharp-c6-observations.json",
+      "sha256": "089b39360e695f7db1b5bb4fa621b7652cea857c4aaa34705a98b41ae288bbbb"
+    }
+  ]
+}

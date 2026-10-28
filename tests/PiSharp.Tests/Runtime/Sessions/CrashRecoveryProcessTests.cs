@@ -10,6 +10,51 @@ namespace PiSharp.Tests;
 public sealed class CrashRecoveryProcessTests
 {
     [Fact]
+    public async Task ProcessKillAfterCompactionSaveReloadsOneCommittedEntry()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-crash-compaction-" + Guid.NewGuid().ToString("N"));
+        var workingDirectory = Path.Combine(root, "project");
+        var sessionPath = Path.Combine(root, "sessions", "compaction.session.json");
+        Directory.CreateDirectory(workingDirectory);
+        Directory.CreateDirectory(Path.GetDirectoryName(sessionPath)!);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+        var helperPath = ResolveSessionResumeHelperPath();
+        Process? child = null;
+        try
+        {
+            child = StartSessionResumeHelper(helperPath, "pause-after-compaction-save", workingDirectory, sessionPath);
+            var output = child.StandardOutput.ReadToEndAsync();
+            var error = child.StandardError.ReadToEndAsync();
+            await ProcessTestHelpers.WaitForFileAsync(sessionPath + ".compaction-ready", timeout.Token);
+            child.Kill(entireProcessTree: true);
+            await child.WaitForExitAsync(timeout.Token);
+            _ = await output.WaitAsync(timeout.Token);
+            _ = await error.WaitAsync(timeout.Token);
+
+            var store = new ConversationStore(workingDirectory, Path.GetDirectoryName(sessionPath));
+            var recovered = await store.LoadAsync(sessionPath, timeout.Token);
+            var compaction = Assert.Single(recovered.Tree.ActivePath(), node => node.Type == "compaction");
+            Assert.Contains("process compaction summary", compaction.Payload.GetProperty("summary").GetString(),
+                StringComparison.Ordinal);
+            Assert.Contains(recovered.ContextMessages(), message =>
+                message.Text.Contains("process compaction summary", StringComparison.Ordinal));
+            Assert.Equal(4, recovered.ActiveMessages().Count);
+            Assert.Single(ConversationSession.Parse(recovered.ToJson()).Tree.ActivePath(), node => node.Type == "compaction");
+        }
+        finally
+        {
+            if (child is { HasExited: false })
+            {
+                child.Kill(entireProcessTree: true);
+                await child.WaitForExitAsync();
+            }
+            child?.Dispose();
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task ChildProcessKillAfterToolIntentBeforeInvocationDoesNotRunOrReplayTool()
     {
         if (!OperatingSystem.IsLinux()) return;

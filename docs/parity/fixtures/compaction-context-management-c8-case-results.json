@@ -1,0 +1,679 @@
+{
+  "schemaVersion": 1,
+  "milestone": "compaction-context-management-parity",
+  "checkpointId": "C8",
+  "contractSha256": "c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6",
+  "evidenceDirectory": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C8/differential",
+  "generatedReportSha256": "d1d0b0ac5348834d9f2253ca1a5982a6945fbfa639953a0429093dc0ea28594b",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "pisharpSourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2",
+  "sourceTreeClean": true,
+  "piCalibrationStable": true,
+  "pisharpCalibrationStable": true,
+  "pairedObservationsEqual": true,
+  "acceptedSafetyDifferenceCount": 0,
+  "normalization": [
+    "Strict gate observations are compared exactly as recorded."
+  ],
+  "safetyDifferences": [],
+  "executedCaseCount": 10,
+  "requiredCaseCount": 10,
+  "unexecutedCaseIds": [],
+  "verifierCounts": {
+    "required": 10,
+    "executed": 10,
+    "passed": 10,
+    "failed": 0,
+    "skipped": 0
+  },
+  "cases": [
+    {
+      "caseId": "C8.compaction-entry-persists-summary-boundary-usage",
+      "contractExpectedObservation": "compaction entry persists summary boundary usage",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "3711286f72f5a477061b6eb171f9d1f6617852e97d476c80c114d0f19b2b8f2c",
+      "normalizedActualSha256": "3711286f72f5a477061b6eb171f9d1f6617852e97d476c80c114d0f19b2b8f2c",
+      "normalizedExpectedBytes": 254,
+      "normalizedActualBytes": 254,
+      "normalizedExpected": {
+        "summary": "older history summary",
+        "boundaryPreserved": true,
+        "boundaryMessage": "retained answer",
+        "tokensBefore": 500,
+        "usageInput": 10,
+        "usageOutput": 12,
+        "usageCachedInput": 2,
+        "usageCachedWrite": 3,
+        "usageTotal": 24,
+        "detailsOwner": "c8-fixture",
+        "detailsRevision": 7
+      },
+      "normalizedActual": {
+        "summary": "older history summary",
+        "boundaryPreserved": true,
+        "boundaryMessage": "retained answer",
+        "tokensBefore": 500,
+        "usageInput": 10,
+        "usageOutput": 12,
+        "usageCachedInput": 2,
+        "usageCachedWrite": 3,
+        "usageTotal": 24,
+        "detailsOwner": "c8-fixture",
+        "detailsRevision": 7
+      }
+    },
+    {
+      "caseId": "C8.canonical-ancestor-messages-remain-recoverable",
+      "contractExpectedObservation": "canonical ancestor messages remain recoverable",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "de872d35e98a53fbbf4b04ed6525e67cc4e41bfb7560cfb526801621f8983053",
+      "normalizedActualSha256": "de872d35e98a53fbbf4b04ed6525e67cc4e41bfb7560cfb526801621f8983053",
+      "normalizedExpectedBytes": 122,
+      "normalizedActualBytes": 122,
+      "normalizedExpected": {
+        "messages": [
+          "older question",
+          "older answer",
+          "retained question",
+          "retained answer"
+        ],
+        "allFourCanonicalMessagesRemain": true
+      },
+      "normalizedActual": {
+        "messages": [
+          "older question",
+          "older answer",
+          "retained question",
+          "retained answer"
+        ],
+        "allFourCanonicalMessagesRemain": true
+      }
+    },
+    {
+      "caseId": "C8.jsonl-export-import-round-trips-compaction",
+      "contractExpectedObservation": "jsonl export import round trips compaction",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "11b0c37aa8214a0b35a3736646de34e101da749f86b559dfb24312b147073adb",
+      "normalizedActualSha256": "11b0c37aa8214a0b35a3736646de34e101da749f86b559dfb24312b147073adb",
+      "normalizedExpectedBytes": 495,
+      "normalizedActualBytes": 495,
+      "normalizedExpected": {
+        "summaryBoundaryUsage": {
+          "summary": "older history summary",
+          "boundaryPreserved": true,
+          "boundaryMessage": "retained answer",
+          "tokensBefore": 500,
+          "usageInput": 10,
+          "usageOutput": 12,
+          "usageCachedInput": 2,
+          "usageCachedWrite": 3,
+          "usageTotal": 24,
+          "detailsOwner": "c8-fixture",
+          "detailsRevision": 7
+        },
+        "context": [
+          {
+            "role": "user",
+            "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\nolder history summary\n</summary>"
+          },
+          {
+            "role": "assistant",
+            "text": "retained answer"
+          }
+        ]
+      },
+      "normalizedActual": {
+        "summaryBoundaryUsage": {
+          "summary": "older history summary",
+          "boundaryPreserved": true,
+          "tokensBefore": 500,
+          "usageInput": 10,
+          "usageOutput": 12,
+          "usageCachedInput": 2,
+          "usageCachedWrite": 3,
+          "usageTotal": 24,
+          "boundaryMessage": "retained answer",
+          "detailsOwner": "c8-fixture",
+          "detailsRevision": 7
+        },
+        "context": [
+          {
+            "role": "user",
+            "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\nolder history summary\n</summary>"
+          },
+          {
+            "role": "assistant",
+            "text": "retained answer"
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "C8.reload-restores-compacted-context-not-projection",
+      "contractExpectedObservation": "reload restores compacted context not projection",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "dde895656417004ab1ea9853adbda81f7636ef6f525b0bd1f6d0fe89a21b0a61",
+      "normalizedActualSha256": "dde895656417004ab1ea9853adbda81f7636ef6f525b0bd1f6d0fe89a21b0a61",
+      "normalizedExpectedBytes": 509,
+      "normalizedActualBytes": 509,
+      "normalizedExpected": {
+        "compactedContext": [
+          {
+            "role": "user",
+            "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\nolder history summary\n</summary>"
+          },
+          {
+            "role": "assistant",
+            "text": "retained answer"
+          }
+        ],
+        "reloadedContext": [
+          {
+            "role": "user",
+            "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\nolder history summary\n</summary>"
+          },
+          {
+            "role": "assistant",
+            "text": "retained answer"
+          }
+        ],
+        "contextsMatch": true,
+        "oldRawHistoryAbsentFromContext": true
+      },
+      "normalizedActual": {
+        "compactedContext": [
+          {
+            "role": "user",
+            "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\nolder history summary\n</summary>"
+          },
+          {
+            "role": "assistant",
+            "text": "retained answer"
+          }
+        ],
+        "reloadedContext": [
+          {
+            "role": "user",
+            "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\nolder history summary\n</summary>"
+          },
+          {
+            "role": "assistant",
+            "text": "retained answer"
+          }
+        ],
+        "contextsMatch": true,
+        "oldRawHistoryAbsentFromContext": true
+      }
+    },
+    {
+      "caseId": "C8.branch-context-is-reconstructed-from-selected-path",
+      "contractExpectedObservation": "branch context is reconstructed from selected path",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "352de92957d9aaf0558c57f0e7999fe34246e74b81c945f851239fb0c2560494",
+      "normalizedActualSha256": "352de92957d9aaf0558c57f0e7999fe34246e74b81c945f851239fb0c2560494",
+      "normalizedExpectedBytes": 487,
+      "normalizedActualBytes": 487,
+      "normalizedExpected": {
+        "beforeCompactionBranch": [
+          {
+            "role": "user",
+            "text": "older question"
+          },
+          {
+            "role": "assistant",
+            "text": "older answer"
+          },
+          {
+            "role": "user",
+            "text": "retained question"
+          },
+          {
+            "role": "assistant",
+            "text": "retained answer"
+          }
+        ],
+        "alternateBranch": [
+          {
+            "role": "user",
+            "text": "older question"
+          },
+          {
+            "role": "assistant",
+            "text": "older answer"
+          },
+          {
+            "role": "user",
+            "text": "retained question"
+          },
+          {
+            "role": "assistant",
+            "text": "retained answer"
+          },
+          {
+            "role": "user",
+            "text": "alternate branch question"
+          }
+        ],
+        "alternateQuestionOnlyOnAlternatePath": true
+      },
+      "normalizedActual": {
+        "beforeCompactionBranch": [
+          {
+            "role": "user",
+            "text": "older question"
+          },
+          {
+            "role": "assistant",
+            "text": "older answer"
+          },
+          {
+            "role": "user",
+            "text": "retained question"
+          },
+          {
+            "role": "assistant",
+            "text": "retained answer"
+          }
+        ],
+        "alternateBranch": [
+          {
+            "role": "user",
+            "text": "older question"
+          },
+          {
+            "role": "assistant",
+            "text": "older answer"
+          },
+          {
+            "role": "user",
+            "text": "retained question"
+          },
+          {
+            "role": "assistant",
+            "text": "retained answer"
+          },
+          {
+            "role": "user",
+            "text": "alternate branch question"
+          }
+        ],
+        "alternateQuestionOnlyOnAlternatePath": true
+      }
+    },
+    {
+      "caseId": "C8.switching-before-and-after-compaction-restores-correct-path",
+      "contractExpectedObservation": "switching before and after compaction restores correct path",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "a97e5cf5e28ebe6549602800ce33836fb3f663b3bb34c08be6ffbcb5ebaa35ea",
+      "normalizedActualSha256": "a97e5cf5e28ebe6549602800ce33836fb3f663b3bb34c08be6ffbcb5ebaa35ea",
+      "normalizedExpectedBytes": 530,
+      "normalizedActualBytes": 530,
+      "normalizedExpected": {
+        "beforeCompactionBranch": [
+          {
+            "role": "user",
+            "text": "older question"
+          },
+          {
+            "role": "assistant",
+            "text": "older answer"
+          },
+          {
+            "role": "user",
+            "text": "retained question"
+          },
+          {
+            "role": "assistant",
+            "text": "retained answer"
+          }
+        ],
+        "afterCompactionBranch": [
+          {
+            "role": "user",
+            "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\nolder history summary\n</summary>"
+          },
+          {
+            "role": "assistant",
+            "text": "retained answer"
+          },
+          {
+            "role": "user",
+            "text": "after compaction question"
+          }
+        ],
+        "beforeHasNoSummary": true,
+        "afterHasSummary": true
+      },
+      "normalizedActual": {
+        "beforeCompactionBranch": [
+          {
+            "role": "user",
+            "text": "older question"
+          },
+          {
+            "role": "assistant",
+            "text": "older answer"
+          },
+          {
+            "role": "user",
+            "text": "retained question"
+          },
+          {
+            "role": "assistant",
+            "text": "retained answer"
+          }
+        ],
+        "afterCompactionBranch": [
+          {
+            "role": "user",
+            "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\nolder history summary\n</summary>"
+          },
+          {
+            "role": "assistant",
+            "text": "retained answer"
+          },
+          {
+            "role": "user",
+            "text": "after compaction question"
+          }
+        ],
+        "beforeHasNoSummary": true,
+        "afterHasSummary": true
+      }
+    },
+    {
+      "caseId": "C8.fork-and-clone-preserve-compacted-session",
+      "contractExpectedObservation": "fork and clone preserve compacted session",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "9e1f8fc1a55f3cf1ab15bb53e3e0c3836bcccc5525af89753a4fbfa2f81785af",
+      "normalizedActualSha256": "9e1f8fc1a55f3cf1ab15bb53e3e0c3836bcccc5525af89753a4fbfa2f81785af",
+      "normalizedExpectedBytes": 28,
+      "normalizedActualBytes": 28,
+      "normalizedExpected": {
+        "bothPreserveSummary": true
+      },
+      "normalizedActual": {
+        "bothPreserveSummary": true
+      }
+    },
+    {
+      "caseId": "C8.restart-recovery-keeps-provider-continuation",
+      "contractExpectedObservation": "restart recovery keeps provider continuation",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "26eee45760235469267bff5b533a5b88389223f7666be7199074a6cbf5d8b613",
+      "normalizedActualSha256": "26eee45760235469267bff5b533a5b88389223f7666be7199074a6cbf5d8b613",
+      "normalizedExpectedBytes": 118,
+      "normalizedActualBytes": 118,
+      "normalizedExpected": {
+        "requestCount": 1,
+        "requestIncludesSummary": true,
+        "requestIncludesRetainedHistory": true,
+        "requestIncludesNewPrompt": true
+      },
+      "normalizedActual": {
+        "requestCount": 1,
+        "requestIncludesSummary": true,
+        "requestIncludesRetainedHistory": true,
+        "requestIncludesNewPrompt": true
+      }
+    },
+    {
+      "caseId": "C8.openai-responses-chat-anthropic-after-reload",
+      "contractExpectedObservation": "openai responses chat anthropic after reload",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "0b966b4dc8ccb405f9580c53b4e5551f1ea09119a359bf97ff456e592e70d7bb",
+      "normalizedActualSha256": "0b966b4dc8ccb405f9580c53b4e5551f1ea09119a359bf97ff456e592e70d7bb",
+      "normalizedExpectedBytes": 5936,
+      "normalizedActualBytes": 5936,
+      "normalizedExpected": {
+        "openai-responses": [
+          {
+            "role": "system",
+            "text": "You are an expert coding assistant operating inside pi, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files.\n\n<tools>\n(none)\n\nIn addition to the tools above, you may have access to other custom tools depending on the project.\n</tools>\n\n<rules>\n- Be concise in your responses\n- Show file paths clearly when working with files\n</rules>\n\n<docs>\nPi documentation (read only when the user asks about pi itself, its SDK, extensions, themes, skills, or TUI):\n- Main documentation: <project>/README.md\n- Additional docs: <project>/docs\n- Examples: <project>/examples (extensions, custom tools, SDK)\n- When reading pi docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory\n- When asked about: extensions (docs/extensions.md, examples/extensions/), themes (docs/themes.md), skills (docs/skills.md), prompt templates (docs/prompt-templates.md), TUI components (docs/tui.md), keybindings (docs/keybindings.md), SDK integrations (docs/sdk.md), custom providers (docs/custom-provider.md), adding models (docs/models.md), pi packages (docs/packages.md), environment variables (docs/environment-variables.md), MCP servers (docs/mcp.md), codemode scripts and non-LLM models such as classifiers and image models (docs/codemode.md)\n- When working on pi topics, read the docs and examples, and follow .md cross-references before implementing\n- Always read pi .md files completely and follow links to related docs (e.g., tui.md for TUI API details)\n</docs>\n\n<cwd>\n<working-directory>\n</cwd>"
+          },
+          {
+            "role": "user",
+            "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\nolder history summary\n</summary>"
+          },
+          {
+            "role": "assistant",
+            "text": "retained answer"
+          },
+          {
+            "role": "user",
+            "text": "after compaction question"
+          },
+          {
+            "role": "user",
+            "text": "continue after restart"
+          }
+        ],
+        "openai-completions": [
+          {
+            "role": "system",
+            "text": "You are an expert coding assistant operating inside pi, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files.\n\n<tools>\n(none)\n\nIn addition to the tools above, you may have access to other custom tools depending on the project.\n</tools>\n\n<rules>\n- Be concise in your responses\n- Show file paths clearly when working with files\n</rules>\n\n<docs>\nPi documentation (read only when the user asks about pi itself, its SDK, extensions, themes, skills, or TUI):\n- Main documentation: <project>/README.md\n- Additional docs: <project>/docs\n- Examples: <project>/examples (extensions, custom tools, SDK)\n- When reading pi docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory\n- When asked about: extensions (docs/extensions.md, examples/extensions/), themes (docs/themes.md), skills (docs/skills.md), prompt templates (docs/prompt-templates.md), TUI components (docs/tui.md), keybindings (docs/keybindings.md), SDK integrations (docs/sdk.md), custom providers (docs/custom-provider.md), adding models (docs/models.md), pi packages (docs/packages.md), environment variables (docs/environment-variables.md), MCP servers (docs/mcp.md), codemode scripts and non-LLM models such as classifiers and image models (docs/codemode.md)\n- When working on pi topics, read the docs and examples, and follow .md cross-references before implementing\n- Always read pi .md files completely and follow links to related docs (e.g., tui.md for TUI API details)\n</docs>\n\n<cwd>\n<working-directory>\n</cwd>"
+          },
+          {
+            "role": "user",
+            "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\nolder history summary\n</summary>"
+          },
+          {
+            "role": "assistant",
+            "text": "retained answer"
+          },
+          {
+            "role": "user",
+            "text": "after compaction question"
+          },
+          {
+            "role": "user",
+            "text": "continue after restart"
+          }
+        ],
+        "anthropic-messages": [
+          {
+            "role": "system",
+            "text": "You are an expert coding assistant operating inside pi, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files.\n\n<tools>\n(none)\n\nIn addition to the tools above, you may have access to other custom tools depending on the project.\n</tools>\n\n<rules>\n- Be concise in your responses\n- Show file paths clearly when working with files\n</rules>\n\n<docs>\nPi documentation (read only when the user asks about pi itself, its SDK, extensions, themes, skills, or TUI):\n- Main documentation: <project>/README.md\n- Additional docs: <project>/docs\n- Examples: <project>/examples (extensions, custom tools, SDK)\n- When reading pi docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory\n- When asked about: extensions (docs/extensions.md, examples/extensions/), themes (docs/themes.md), skills (docs/skills.md), prompt templates (docs/prompt-templates.md), TUI components (docs/tui.md), keybindings (docs/keybindings.md), SDK integrations (docs/sdk.md), custom providers (docs/custom-provider.md), adding models (docs/models.md), pi packages (docs/packages.md), environment variables (docs/environment-variables.md), MCP servers (docs/mcp.md), codemode scripts and non-LLM models such as classifiers and image models (docs/codemode.md)\n- When working on pi topics, read the docs and examples, and follow .md cross-references before implementing\n- Always read pi .md files completely and follow links to related docs (e.g., tui.md for TUI API details)\n</docs>\n\n<cwd>\n<working-directory>\n</cwd>"
+          },
+          {
+            "role": "user",
+            "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\nolder history summary\n</summary>"
+          },
+          {
+            "role": "assistant",
+            "text": "retained answer"
+          },
+          {
+            "role": "user",
+            "text": "after compaction question"
+          },
+          {
+            "role": "user",
+            "text": "continue after restart"
+          }
+        ]
+      },
+      "normalizedActual": {
+        "openai-responses": [
+          {
+            "role": "system",
+            "text": "You are an expert coding assistant operating inside pi, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files.\n\n<tools>\n(none)\n\nIn addition to the tools above, you may have access to other custom tools depending on the project.\n</tools>\n\n<rules>\n- Be concise in your responses\n- Show file paths clearly when working with files\n</rules>\n\n<docs>\nPi documentation (read only when the user asks about pi itself, its SDK, extensions, themes, skills, or TUI):\n- Main documentation: <project>/README.md\n- Additional docs: <project>/docs\n- Examples: <project>/examples (extensions, custom tools, SDK)\n- When reading pi docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory\n- When asked about: extensions (docs/extensions.md, examples/extensions/), themes (docs/themes.md), skills (docs/skills.md), prompt templates (docs/prompt-templates.md), TUI components (docs/tui.md), keybindings (docs/keybindings.md), SDK integrations (docs/sdk.md), custom providers (docs/custom-provider.md), adding models (docs/models.md), pi packages (docs/packages.md), environment variables (docs/environment-variables.md), MCP servers (docs/mcp.md), codemode scripts and non-LLM models such as classifiers and image models (docs/codemode.md)\n- When working on pi topics, read the docs and examples, and follow .md cross-references before implementing\n- Always read pi .md files completely and follow links to related docs (e.g., tui.md for TUI API details)\n</docs>\n\n<cwd>\n<working-directory>\n</cwd>"
+          },
+          {
+            "role": "user",
+            "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\nolder history summary\n</summary>"
+          },
+          {
+            "role": "assistant",
+            "text": "retained answer"
+          },
+          {
+            "role": "user",
+            "text": "after compaction question"
+          },
+          {
+            "role": "user",
+            "text": "continue after restart"
+          }
+        ],
+        "openai-completions": [
+          {
+            "role": "system",
+            "text": "You are an expert coding assistant operating inside pi, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files.\n\n<tools>\n(none)\n\nIn addition to the tools above, you may have access to other custom tools depending on the project.\n</tools>\n\n<rules>\n- Be concise in your responses\n- Show file paths clearly when working with files\n</rules>\n\n<docs>\nPi documentation (read only when the user asks about pi itself, its SDK, extensions, themes, skills, or TUI):\n- Main documentation: <project>/README.md\n- Additional docs: <project>/docs\n- Examples: <project>/examples (extensions, custom tools, SDK)\n- When reading pi docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory\n- When asked about: extensions (docs/extensions.md, examples/extensions/), themes (docs/themes.md), skills (docs/skills.md), prompt templates (docs/prompt-templates.md), TUI components (docs/tui.md), keybindings (docs/keybindings.md), SDK integrations (docs/sdk.md), custom providers (docs/custom-provider.md), adding models (docs/models.md), pi packages (docs/packages.md), environment variables (docs/environment-variables.md), MCP servers (docs/mcp.md), codemode scripts and non-LLM models such as classifiers and image models (docs/codemode.md)\n- When working on pi topics, read the docs and examples, and follow .md cross-references before implementing\n- Always read pi .md files completely and follow links to related docs (e.g., tui.md for TUI API details)\n</docs>\n\n<cwd>\n<working-directory>\n</cwd>"
+          },
+          {
+            "role": "user",
+            "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\nolder history summary\n</summary>"
+          },
+          {
+            "role": "assistant",
+            "text": "retained answer"
+          },
+          {
+            "role": "user",
+            "text": "after compaction question"
+          },
+          {
+            "role": "user",
+            "text": "continue after restart"
+          }
+        ],
+        "anthropic-messages": [
+          {
+            "role": "system",
+            "text": "You are an expert coding assistant operating inside pi, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files.\n\n<tools>\n(none)\n\nIn addition to the tools above, you may have access to other custom tools depending on the project.\n</tools>\n\n<rules>\n- Be concise in your responses\n- Show file paths clearly when working with files\n</rules>\n\n<docs>\nPi documentation (read only when the user asks about pi itself, its SDK, extensions, themes, skills, or TUI):\n- Main documentation: <project>/README.md\n- Additional docs: <project>/docs\n- Examples: <project>/examples (extensions, custom tools, SDK)\n- When reading pi docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory\n- When asked about: extensions (docs/extensions.md, examples/extensions/), themes (docs/themes.md), skills (docs/skills.md), prompt templates (docs/prompt-templates.md), TUI components (docs/tui.md), keybindings (docs/keybindings.md), SDK integrations (docs/sdk.md), custom providers (docs/custom-provider.md), adding models (docs/models.md), pi packages (docs/packages.md), environment variables (docs/environment-variables.md), MCP servers (docs/mcp.md), codemode scripts and non-LLM models such as classifiers and image models (docs/codemode.md)\n- When working on pi topics, read the docs and examples, and follow .md cross-references before implementing\n- Always read pi .md files completely and follow links to related docs (e.g., tui.md for TUI API details)\n</docs>\n\n<cwd>\n<working-directory>\n</cwd>"
+          },
+          {
+            "role": "user",
+            "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\nolder history summary\n</summary>"
+          },
+          {
+            "role": "assistant",
+            "text": "retained answer"
+          },
+          {
+            "role": "user",
+            "text": "after compaction question"
+          },
+          {
+            "role": "user",
+            "text": "continue after restart"
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "C8.metadata-label-and-extension-fields-survive",
+      "contractExpectedObservation": "metadata label and extension fields survive",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "c1c38a7600d68674d20a1928842e065bc141da50bf2a3a5a8c28c02a3fb494b1",
+      "normalizedActualSha256": "c1c38a7600d68674d20a1928842e065bc141da50bf2a3a5a8c28c02a3fb494b1",
+      "normalizedExpectedBytes": 107,
+      "normalizedActualBytes": 107,
+      "normalizedExpected": {
+        "label": "compacted checkpoint",
+        "extensionOwner": "c8-fixture",
+        "extensionRevision": 7,
+        "customExtension": true
+      },
+      "normalizedActual": {
+        "label": "compacted checkpoint",
+        "extensionOwner": "c8-fixture",
+        "extensionRevision": 7,
+        "customExtension": true
+      }
+    }
+  ],
+  "rawArtifacts": [
+    {
+      "path": "pi-c8/pi-run-1.json",
+      "sha256": "624471f1adaeafd6832766d8eb734459f32ec44aad2627d75c2cb6eb7fdf4b34"
+    },
+    {
+      "path": "pi-c8/pi-run-2.json",
+      "sha256": "624471f1adaeafd6832766d8eb734459f32ec44aad2627d75c2cb6eb7fdf4b34"
+    },
+    {
+      "path": "pi-c8/pi-oracle.json",
+      "sha256": "cd56580b5588923a127a8561c042c353dd33a8a851932026210b5f37157c974f"
+    },
+    {
+      "path": "pi-c8.stdout.log",
+      "sha256": "34c85f7db5531f6a2ffdcfd7260e9b1df238ad50c96928729d7cf28cf30802dd"
+    },
+    {
+      "path": "pi-c8.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-c8-run-1.json",
+      "sha256": "51e60c138244d01c7bd303d9d8b0220e5d26db8a1efa5e7eed5ce23e737e584b"
+    },
+    {
+      "path": "pisharp-c8-run-1.stdout.log",
+      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
+    },
+    {
+      "path": "pisharp-c8-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-c8-run-2.json",
+      "sha256": "51e60c138244d01c7bd303d9d8b0220e5d26db8a1efa5e7eed5ce23e737e584b"
+    },
+    {
+      "path": "pisharp-c8-run-2.stdout.log",
+      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
+    },
+    {
+      "path": "pisharp-c8-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provider-test.stdout.log",
+      "sha256": "f4e691e608726c6068c7645acc79cdbae284f38dfa074aadbb2f7545f92e9fec"
+    },
+    {
+      "path": "provider-test.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provider-requests/openai-responses.json",
+      "sha256": "5f6e5c5cdf27c6a6e45ae0fbb69d3871987668ab72f248eb5c6aeee7bc32d490"
+    },
+    {
+      "path": "provider-requests/openai-completions.json",
+      "sha256": "fd571e0c90c8f11ac9aded504562d3b41591de912575a9167adfe78344c20b0c"
+    },
+    {
+      "path": "provider-requests/anthropic-messages.json",
+      "sha256": "eabcd7691efd181aa763c62709be926051afe0354e502785538f940a4233f7c7"
+    },
+    {
+      "path": "pi-c8-provider-requests.json",
+      "sha256": "84403b1f7a105f3cff325dc18cd33927e3188f6c3659cf9d8ec427291ea5eb46"
+    },
+    {
+      "path": "pisharp-c8-provider-requests.json",
+      "sha256": "9a036d88cd45476213ff1afe77d70af5dff77ce839a1035681f375c5863d1ab7"
+    },
+    {
+      "path": "pi-c8-observations.json",
+      "sha256": "ed577913a9ca94396683dfae2a232ced07c93ce9d359e47cfc5925e38a49a4ba"
+    },
+    {
+      "path": "pisharp-c8-observations.json",
+      "sha256": "3bc39c5e1a4046af7c2cbfe25db7b2ba2efe15aa7732195233037ba0999ee3b0"
+    }
+  ]
+}

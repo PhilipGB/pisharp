@@ -1,0 +1,240 @@
+{
+  "schemaVersion": 1,
+  "milestone": "compaction-context-management-parity",
+  "checkpointId": "C12",
+  "contractSha256": "c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6",
+  "evidenceDirectory": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C12/differential",
+  "generatedReportSha256": "26c9fe042f14ccd78ccef63af57374a4a3473387a26e47e907745a56f95d8b98",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "pisharpSourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2",
+  "sourceTreeClean": true,
+  "piCalibrationStable": true,
+  "pisharpCalibrationStable": true,
+  "pairedObservationsEqual": true,
+  "acceptedSafetyDifferenceCount": 1,
+  "normalization": [
+    "Strict gate observations are compared exactly as recorded."
+  ],
+  "safetyDifferences": [
+    {
+      "caseId": "C12.invalid-boundary-and-unbalanced-tools-are-rejected",
+      "reason": "Pinned Pi accepts extension-provided stale and tool-unbalanced retained boundaries. PiSharp rejects both before summarization or persistence to prevent corrupted canonical context.",
+      "regression": "NativeExtensionCompactionEventTests.InvalidCustomCompactionIsAttributedAndLeavesCanonicalSessionUnchanged; CustomCompactionCannotSplitAnIncompleteToolCallResultPair",
+      "evidence": "pisharp-c12-observations.json"
+    }
+  ],
+  "executedCaseCount": 8,
+  "requiredCaseCount": 8,
+  "unexecutedCaseIds": [],
+  "verifierCounts": {
+    "required": 8,
+    "executed": 8,
+    "passed": 8,
+    "failed": 0,
+    "skipped": 0
+  },
+  "cases": [
+    {
+      "caseId": "C12.before-compact-hook-sees-detached-real-plan",
+      "contractExpectedObservation": "before compact hook sees detached real plan",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "6f29956d44dbdbb0dfe3619848ae4278894ed812496d3f6344ca15eff2d7a5c6",
+      "normalizedActualSha256": "6f29956d44dbdbb0dfe3619848ae4278894ed812496d3f6344ca15eff2d7a5c6",
+      "normalizedExpectedBytes": 31,
+      "normalizedActualBytes": 31,
+      "normalizedExpected": {
+        "mappedAssertionsPassed": true
+      },
+      "normalizedActual": {
+        "mappedAssertionsPassed": true
+      }
+    },
+    {
+      "caseId": "C12.hook-cancel-prevents-summary-and-persistence",
+      "contractExpectedObservation": "hook cancel prevents summary and persistence",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "6f29956d44dbdbb0dfe3619848ae4278894ed812496d3f6344ca15eff2d7a5c6",
+      "normalizedActualSha256": "6f29956d44dbdbb0dfe3619848ae4278894ed812496d3f6344ca15eff2d7a5c6",
+      "normalizedExpectedBytes": 31,
+      "normalizedActualBytes": 31,
+      "normalizedExpected": {
+        "mappedAssertionsPassed": true
+      },
+      "normalizedActual": {
+        "mappedAssertionsPassed": true
+      }
+    },
+    {
+      "caseId": "C12.custom-summary-is-validated-and-persisted",
+      "contractExpectedObservation": "custom summary is validated and persisted",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "6f29956d44dbdbb0dfe3619848ae4278894ed812496d3f6344ca15eff2d7a5c6",
+      "normalizedActualSha256": "6f29956d44dbdbb0dfe3619848ae4278894ed812496d3f6344ca15eff2d7a5c6",
+      "normalizedExpectedBytes": 31,
+      "normalizedActualBytes": 31,
+      "normalizedExpected": {
+        "mappedAssertionsPassed": true
+      },
+      "normalizedActual": {
+        "mappedAssertionsPassed": true
+      }
+    },
+    {
+      "caseId": "C12.invalid-boundary-and-unbalanced-tools-are-rejected",
+      "contractExpectedObservation": "invalid boundary and unbalanced tools are rejected",
+      "classification": "intentional-safety-difference",
+      "passed": true,
+      "normalizedExpectedSha256": "25045c76823a8930bf71d74d1639816b1da0d25d38b7f4dfa9a28380b698235a",
+      "normalizedActualSha256": "08d721489251f52d0d4aed03a69b78661af4ff8072fb1ae9d14ab5d5eba28c69",
+      "normalizedExpectedBytes": 139,
+      "normalizedActualBytes": 139,
+      "normalizedExpected": {
+        "staleBoundaryRejected": false,
+        "staleBoundaryPersisted": true,
+        "unbalancedToolBoundaryRejected": false,
+        "unbalancedToolBoundaryPersisted": true
+      },
+      "normalizedActual": {
+        "staleBoundaryRejected": true,
+        "staleBoundaryPersisted": false,
+        "unbalancedToolBoundaryRejected": true,
+        "unbalancedToolBoundaryPersisted": false
+      }
+    },
+    {
+      "caseId": "C12.extension-usage-and-details-persist-with-correct-projection",
+      "contractExpectedObservation": "extension usage and details persist with correct projection",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "6f29956d44dbdbb0dfe3619848ae4278894ed812496d3f6344ca15eff2d7a5c6",
+      "normalizedActualSha256": "6f29956d44dbdbb0dfe3619848ae4278894ed812496d3f6344ca15eff2d7a5c6",
+      "normalizedExpectedBytes": 31,
+      "normalizedActualBytes": 31,
+      "normalizedExpected": {
+        "mappedAssertionsPassed": true
+      },
+      "normalizedActual": {
+        "mappedAssertionsPassed": true
+      }
+    },
+    {
+      "caseId": "C12.after-hook-fires-only-after-durable-commit",
+      "contractExpectedObservation": "after hook fires only after durable commit",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "3b4a4721559ce96526873a30b30ed3a29ab7e40e3af9d5e2635394b3d234180f",
+      "normalizedActualSha256": "3b4a4721559ce96526873a30b30ed3a29ab7e40e3af9d5e2635394b3d234180f",
+      "normalizedExpectedBytes": 59,
+      "normalizedActualBytes": 59,
+      "normalizedExpected": {
+        "afterHookSawEntry": true,
+        "entryPresentInSessionFile": true
+      },
+      "normalizedActual": {
+        "afterHookSawEntry": true,
+        "entryPresentInSessionFile": true
+      }
+    },
+    {
+      "caseId": "C12.manual-auto-overflow-reasons-and-will-retry-match",
+      "contractExpectedObservation": "manual auto overflow reasons and will retry match",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "6f29956d44dbdbb0dfe3619848ae4278894ed812496d3f6344ca15eff2d7a5c6",
+      "normalizedActualSha256": "6f29956d44dbdbb0dfe3619848ae4278894ed812496d3f6344ca15eff2d7a5c6",
+      "normalizedExpectedBytes": 31,
+      "normalizedActualBytes": 31,
+      "normalizedExpected": {
+        "mappedAssertionsPassed": true
+      },
+      "normalizedActual": {
+        "mappedAssertionsPassed": true
+      }
+    },
+    {
+      "caseId": "C12.tree-summary-hooks-see-and-may-control-navigation",
+      "contractExpectedObservation": "tree summary hooks see and may control navigation",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "6f29956d44dbdbb0dfe3619848ae4278894ed812496d3f6344ca15eff2d7a5c6",
+      "normalizedActualSha256": "6f29956d44dbdbb0dfe3619848ae4278894ed812496d3f6344ca15eff2d7a5c6",
+      "normalizedExpectedBytes": 31,
+      "normalizedActualBytes": 31,
+      "normalizedExpected": {
+        "mappedAssertionsPassed": true
+      },
+      "normalizedActual": {
+        "mappedAssertionsPassed": true
+      }
+    }
+  ],
+  "rawArtifacts": [
+    {
+      "path": "pinned-pi-c12-tests-run-1.stdout.log",
+      "sha256": "c048e9282cf4a0315bdcc03e92b0dc89bcb2b681bb2655ed7a54c42a2a0d77f3"
+    },
+    {
+      "path": "pinned-pi-c12-tests-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-c12-tests-run-1.stdout.log",
+      "sha256": "d28b0776e797105fd184a44729e6c77060a10ebe51e05ce5508acd6e307a417f"
+    },
+    {
+      "path": "pisharp-c12-tests-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pinned-pi-c12-tests-run-2.stdout.log",
+      "sha256": "9b76ef7927dc54b3eac0ee5aa6b68c74be74d2f87f5231c4341f1c051ce2d861"
+    },
+    {
+      "path": "pinned-pi-c12-tests-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-c12-tests-run-2.stdout.log",
+      "sha256": "0bf7980477725c8dba54bbf9e3d5511943de8ade3c4e1d39b375b23646addaad"
+    },
+    {
+      "path": "pisharp-c12-tests-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pinned-pi-c12-boundary-run-1.json",
+      "sha256": "78a2a75538e6312c1d8718c5ae00f53124f484f87fcfcf277bda3d213c7148e3"
+    },
+    {
+      "path": "pinned-pi-c12-boundary-run-1.stdout.log",
+      "sha256": "de4804a1b5f59426030e637cc7830959495f1e1662522f5901db65a7331f21ad"
+    },
+    {
+      "path": "pinned-pi-c12-boundary-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pinned-pi-c12-boundary-run-2.json",
+      "sha256": "78a2a75538e6312c1d8718c5ae00f53124f484f87fcfcf277bda3d213c7148e3"
+    },
+    {
+      "path": "pinned-pi-c12-boundary-run-2.stdout.log",
+      "sha256": "5ac78315534802f02d68b953f9bd11b7397dfbf9f219f2d1479dfeaaca17f280"
+    },
+    {
+      "path": "pinned-pi-c12-boundary-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-c12-observations.json",
+      "sha256": "d80cb11b099f7c56c8faabcbe5d68ba8d05b5517d5e9f0c7988b8fd71a1e650c"
+    },
+    {
+      "path": "pisharp-c12-observations.json",
+      "sha256": "129f5a361bbaa259edbaa02f40c8dc035454b2fad734edd4c5b6c67e5fd44230"
+    }
+  ]
+}

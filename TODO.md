@@ -1,4 +1,14 @@
-# PiSharp capability parity
+## Completed milestone — Compaction, Context Budget, Overflow and Usage Parity — 2026-10-28
+
+PR #27 is merged at `12064420179f4119bdaf37479c7cba0f5ca40717`. Pinned Pi is `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; the frozen acceptance contract defines 22 checkpoints and 211 required cases.
+
+The independent review correction fixes native branch-summary usage in RPC `get_session_stats` at implementation source `41e9b7e7ebdea70b878e409204cd8b3d177144e2`. Regressions cover native generation, persisted reload, imported summaries, mixed sessions, and exactly-once accounting. All 22/22 checkpoints and 211/211 mandatory cases pass, with zero failed, skipped, or unresolved cases. C1-C13 pass 135/135: 121 equivalent observations and 14 verified intentional safety differences. D0 passes 9/9; Q0 10/10; P0/P1 10/10; V0/V1 28/28; E0 9/9; CI0 5/5; and PUB0 5/5. Exact-head CI run IDs and final publication details are recorded in PR #28's description.
+
+Q0 records 3,963/3,963 .NET tests, focused compaction/session/provider 114/114, focused RPC/TUI/extension 56/56, terminal Python 66/66, compaction helper Python 27/27, built-in parity Python 27/27, and terminal Node 24/24. It records 200 pinned Pi passes and 20 exact credential-gated upstream skips. Documentation validation recorded 156 documents / 690 references. No live model endpoint was called.
+
+Limitations: the 20 credential-dependent pinned Pi interactive/LLM cases remain unverified. The managed-package parity corpus remains scoped to its historical milestone branch, as noted in the independent review. PR #28 remains open, draft, and unmerged for review.
+
+See the [source-pinned inventory](parity/fixtures/compaction-context-management-inventory.json), [compact evidence](parity/fixtures/compaction-context-management-c1-case-results.json), [case index](parity/fixtures/compaction-context-management/evidence-summary.json), and [execution ledger](parity/execution-ledger.json).
 
 ## Active milestone — Complete Managed Package Lifecycle and Resource Distribution Parity — 2026-10-27
 
@@ -13,8 +23,7 @@ verification completed all 27/27 checkpoints and 240/240 cases with zero
 failures or skips. The mixed local and managed CLI extension ordering correction
 passes both argument orders. Local quality passes the full .NET suite (3,910/3,910), focused package tests
 118/118, architecture 7/7, Python 154/154, Node 24/24, MCP, format,
-warnings-as-errors build, docs and all 18 differential rechecks. PR #27 remains
-open, draft, and unmerged. See the
+warnings-as-errors build, docs and all 18 differential rechecks. PR #27 was merged at `12064420179f4119bdaf37479c7cba0f5ca40717`. See the
 [managed-package receipt](docs/parity/fixtures/managed-package-lifecycle-parity.md)
 and [inventory](docs/parity/fixtures/managed-package-lifecycle-parity/inventory.json).
 

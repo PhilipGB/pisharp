@@ -216,7 +216,7 @@ public sealed class MistralProviderCompatibilityTests
         Assert.Null(returnedCall.Exception);
         Assert.Equal("pi", Assert.IsType<JsonElement>(returnedCall.Arguments!["query"]).GetString());
         var usage = Assert.Single(contents.OfType<UsageContent>()).Details;
-        Assert.Equal(7, usage.InputTokenCount);
+        Assert.Equal(10, usage.InputTokenCount);
         Assert.Equal(3, usage.CachedInputTokenCount);
         Assert.Equal(14, usage.TotalTokenCount);
         Assert.Equal(ChatFinishReason.ToolCalls, updates.Last(update => update.FinishReason is not null).FinishReason);

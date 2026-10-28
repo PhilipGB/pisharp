@@ -277,7 +277,7 @@ internal static class InteractiveMode
                     }
                     var sessionCommands = new InteractiveSessionCommands(projectBinding.Store, projectBinding.WorkingDirectory, projectBinding.Arguments.NoSession,
                         Console.Out, () => editor.ReadLineAsync(HandleEditorApplicationAction, enableApplicationActions: false),
-                        presentation.LoadSessionTranscript);
+                        presentation.LoadSessionTranscript, projectBinding.Settings.BranchSummary, editor.Prefill);
                     if (!await sessionCommands.TryExecuteAsync(command, argument, conversationBinding.Conversation, conversationBinding.Run, conversationBinding.Path))
                     {
                         switch (command)
@@ -316,6 +316,7 @@ internal static class InteractiveMode
                                 break;
                             case "/compact":
                                 {
+                                    terminalScreen?.SetWorkingStatus("Compacting context...");
                                     terminalScreen?.ReportTerminalProgress(null);
                                     bool compacted;
                                     try
@@ -325,6 +326,7 @@ internal static class InteractiveMode
                                     finally
                                     {
                                         terminalScreen?.ClearTerminalProgress();
+                                        terminalScreen?.SetWorkingStatus(null);
                                     }
                                     Console.WriteLine(compacted ? "Context compacted; full history retained." :
                                         "Nothing to compact (at least two completed user turns are required).");

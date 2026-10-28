@@ -455,14 +455,12 @@ internal sealed class PiMessagesChatClient(HttpClient http, Uri baseUri, ModelDe
 
         var details = new UsageDetails
         {
-            InputTokenCount = Count(usage, "input"),
+            InputTokenCount = Count(usage, "input") + Count(usage, "cacheRead"),
             OutputTokenCount = Count(usage, "output"),
             CachedInputTokenCount = Count(usage, "cacheRead"),
-            TotalTokenCount = Count(usage, "totalTokens")
+            TotalTokenCount = Count(usage, "totalTokens"),
+            AdditionalCounts = new AdditionalPropertiesDictionary<long> { ["piMessages.cacheWrite"] = Count(usage, "cacheWrite") }
         };
-        var cacheWrite = Count(usage, "cacheWrite");
-        if (cacheWrite > 0)
-            details.AdditionalCounts = new AdditionalPropertiesDictionary<long> { ["piMessages.cacheWrite"] = cacheWrite };
         var content = new UsageContent(details)
         {
             AdditionalProperties = new AdditionalPropertiesDictionary

@@ -22,6 +22,6 @@ public sealed record SessionStatistics(string Id, string? Name, string Model, in
             messages.SelectMany(message => message.Contents).OfType<FunctionCallContent>().Count(),
             messages.SelectMany(message => message.Contents).OfType<FunctionResultContent>().Count(),
             AutoCompactionPolicy.Estimate(session.ContextMessages(), ""),
-            usage.Count == 0 ? null : usage.Sum(item => item.TotalTokens), cost);
+            usage.Count == 0 ? null : UsageTokenAggregation.SumKnown(usage.Select(item => item.TotalTokens)), cost);
     }
 }

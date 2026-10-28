@@ -120,16 +120,19 @@ internal sealed class AgentRunRetryController
         Func<CancellationToken, Task> restoreContext,
         Action flushPending,
         Func<string?> getHead,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Func<AgentLifecycleEvent, bool, string?, int, CancellationToken, Task<bool>>? recoverCompletedResponse = null)
     {
         var accepted = false;
         var continuation = false;
         var retries = 0;
+        var completedResponseRecoveryAttempted = false;
         string? attemptStartHead = null;
         var attemptStartPathLength = 0;
         while (true)
         {
             string? providerError = null;
+            AgentLifecycleEvent? completedResponse = null;
             try
             {
                 await foreach (var update in executeAttempt(continuation, item =>
@@ -140,6 +143,8 @@ internal sealed class AgentRunRetryController
                         attemptStartHead = item.RunStartHead;
                         attemptStartPathLength = item.RunStartPathLength ?? 0;
                     }
+                    if (item.Type == "model_request_started") completedResponse = null;
+                    else if (item.Type == "model_request_completed") completedResponse = item;
                     if (item.Type == "model_request_failed") providerError = item.Error;
                     else if (item.Type == "model_request_completed") providerError = null;
                     publish(item);
@@ -153,6 +158,14 @@ internal sealed class AgentRunRetryController
                     observeUpdate(update);
 
                 flushPending();
+                if (recoverCompletedResponse is not null && completedResponse is { } response &&
+                    await recoverCompletedResponse(response, completedResponseRecoveryAttempted,
+                        attemptStartHead, attemptStartPathLength, cancellationToken).ConfigureAwait(false))
+                {
+                    completedResponseRecoveryAttempted = true;
+                    continuation = true;
+                    continue;
+                }
                 if (retries > 0)
                     publish(new AgentLifecycleEvent("auto_retry_end") { RetrySuccess = true, RetryAttempt = retries });
                 publish(new("turn_completed") { TurnEndHead = getHead() });

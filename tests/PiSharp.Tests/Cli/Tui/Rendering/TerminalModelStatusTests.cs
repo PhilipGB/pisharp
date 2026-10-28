@@ -63,7 +63,7 @@ public sealed class TerminalModelStatusTests
     {
         var session = new ConversationSession(Path.GetTempPath(), "fixture-model", null, "fixture");
         session.Append(new ChatMessage(ChatRole.User, "request"));
-        session.AppendUsage(new UsageRecord("fixture-model", "model", 10, 3, 0, 0, 13, null));
+        session.AppendUsage(new UsageRecord("fixture-model", "model", 10, 3, 0, 0, 13, null, CachedWriteTokens: 0));
         session.Append(new ChatMessage(ChatRole.Assistant, "answer"));
         var model = new ModelDescriptor("fixture-model", null, 8192, null,
             Provider: "fixture", Reasoning: false, Api: "openai-completions");

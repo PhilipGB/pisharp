@@ -91,12 +91,14 @@ internal sealed class BedrockConverseChatClient(IBedrockConverseTransport transp
                     yield return finishUpdate;
                     break;
                 case ConverseStreamMetadataEvent metadata when metadata.Usage is { } usage:
+                    var cacheReadTokens = usage.CacheReadInputTokens ?? 0;
+                    var cacheWriteTokens = usage.CacheWriteInputTokens ?? 0;
                     var details = new UsageDetails
                     {
-                        InputTokenCount = usage.InputTokens,
+                        InputTokenCount = usage.InputTokens + cacheReadTokens,
                         OutputTokenCount = usage.OutputTokens,
-                        CachedInputTokenCount = usage.CacheReadInputTokens,
-                        TotalTokenCount = usage.TotalTokens
+                        CachedInputTokenCount = cacheReadTokens,
+                        TotalTokenCount = usage.TotalTokens + cacheReadTokens + cacheWriteTokens
                     };
                     if (BedrockRequestMapper.ReadCacheWriteCounts(usage) is { } counts)
                         details.AdditionalCounts = new AdditionalPropertiesDictionary<long>(counts);

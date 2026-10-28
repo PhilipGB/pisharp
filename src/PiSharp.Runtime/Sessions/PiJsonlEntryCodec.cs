@@ -137,26 +137,32 @@ internal static class PiJsonlEntryCodec
         return message;
     }
 
-    internal static JsonObject EmptyUsage() => new()
+    internal static JsonObject EmptyUsage() => new();
+
+    internal static JsonObject ProjectUsage(UsageRecord usage)
     {
-        ["input"] = 0,
-        ["output"] = 0,
-        ["cacheRead"] = 0,
-        ["cacheWrite"] = 0,
-        ["totalTokens"] = 0,
-        ["cost"] = new JsonObject { ["input"] = 0, ["output"] = 0, ["cacheRead"] = 0, ["cacheWrite"] = 0, ["total"] = 0 }
-    };
+        var value = new JsonObject();
+        if (usage.InputTokens is long input) value["input"] = input;
+        if (usage.OutputTokens is long output) value["output"] = output;
+        if (usage.CachedInputTokens is long cacheRead) value["cacheRead"] = cacheRead;
+        if (usage.CachedWriteTokens is long cacheWrite) value["cacheWrite"] = cacheWrite;
+        if (usage.TotalTokens is long totalTokens) value["totalTokens"] = totalTokens;
+        if (usage.ReasoningTokens is long reasoning && reasoning > 0) value["reasoning"] = reasoning;
+        if (usage.Cost is decimal cost)
+        {
+            var costs = new JsonObject { ["total"] = cost };
+            if (usage.InputCost is decimal inputCost) costs["input"] = inputCost;
+            if (usage.OutputCost is decimal outputCost) costs["output"] = outputCost;
+            if (usage.CachedInputCost is decimal cachedInputCost) costs["cacheRead"] = cachedInputCost;
+            if (usage.CachedWriteCost is decimal cachedWriteCost) costs["cacheWrite"] = cachedWriteCost;
+            value["cost"] = costs;
+        }
+        return value;
+    }
 
     internal static JsonObject ProjectToolUsage(UsageDetails usage, decimal? cost = null)
     {
-        var value = new JsonObject
-        {
-            ["input"] = usage.InputTokenCount ?? 0,
-            ["output"] = usage.OutputTokenCount ?? 0,
-            ["cacheRead"] = usage.CachedInputTokenCount ?? 0,
-            ["cacheWrite"] = UsageRecord.Create("tool", "tool", usage, null).CachedWriteTokens,
-            ["totalTokens"] = usage.TotalTokenCount ?? (usage.InputTokenCount ?? 0) + (usage.OutputTokenCount ?? 0)
-        };
+        var value = ProjectUsage(UsageRecord.Create("tool", "tool", usage, null));
         if (cost is not null) value["cost"] = new JsonObject { ["total"] = cost.Value };
         return value;
     }
@@ -171,11 +177,61 @@ internal static class PiJsonlEntryCodec
 
     internal static UsageRecord? ImportedUsage(ConversationNode node)
     {
-        if (node.Type != "chat" || OriginalEntry(node) is not { } entry ||
-            StringProperty(entry, "type") != "message" || !TryProperty(entry, "message", out var message) ||
-            StringProperty(message, "role") != "assistant" || !TryProperty(message, "usage", out var usage) ||
-            usage.ValueKind != JsonValueKind.Object)
-            return null;
+        JsonElement usage;
+        string model;
+        string source;
+        if (node.Type == "compaction")
+        {
+            if (TryProperty(node.Payload, "nativeUsage", out var nativeUsage) &&
+                nativeUsage.ValueKind == JsonValueKind.Object)
+                return null;
+            var entry = OriginalEntry(node) ?? node.Payload;
+            if (!TryProperty(entry, "usage", out usage) || usage.ValueKind != JsonValueKind.Object) return null;
+            model = StringProperty(entry, "model") ?? "unknown";
+            source = "compaction";
+        }
+        else if (node.Type == "branch_summary")
+        {
+            if (TryProperty(node.Payload, "nativeUsage", out var nativeUsage) &&
+                nativeUsage.ValueKind == JsonValueKind.Object)
+            {
+                if (nativeUsage.Deserialize<UsageRecord>() is not { } nativeRecord) return null;
+                if (!TryProperty(node.Payload, "usage", out var projectedUsage) ||
+                    projectedUsage.ValueKind != JsonValueKind.Object ||
+                    !TryProperty(projectedUsage, "cost", out var projectedCost) ||
+                    projectedCost.ValueKind != JsonValueKind.Object)
+                    return nativeRecord with { Source = "branch_summary" };
+
+                if (!TryReadOptionalCost(projectedCost, "input", out var projectedInputCost) ||
+                    !TryReadOptionalCost(projectedCost, "output", out var projectedOutputCost) ||
+                    !TryReadOptionalCost(projectedCost, "cacheRead", out var projectedCachedInputCost) ||
+                    !TryReadOptionalCost(projectedCost, "cacheWrite", out var projectedCachedWriteCost))
+                    return null;
+
+                return nativeRecord with
+                {
+                    Source = "branch_summary",
+                    InputCost = projectedInputCost,
+                    OutputCost = projectedOutputCost,
+                    CachedInputCost = projectedCachedInputCost,
+                    CachedWriteCost = projectedCachedWriteCost
+                };
+            }
+            var entry = OriginalEntry(node) ?? node.Payload;
+            if (!TryProperty(entry, "usage", out usage) || usage.ValueKind != JsonValueKind.Object) return null;
+            model = StringProperty(entry, "model") ?? "unknown";
+            source = "branch_summary";
+        }
+        else
+        {
+            if (node.Type != "chat" || OriginalEntry(node) is not { } entry ||
+                StringProperty(entry, "type") != "message" || !TryProperty(entry, "message", out var message) ||
+                StringProperty(message, "role") != "assistant" || !TryProperty(message, "usage", out usage) ||
+                usage.ValueKind != JsonValueKind.Object)
+                return null;
+            model = StringProperty(message, "model") ?? "unknown";
+            source = "model";
+        }
 
         if (!TryReadUsageCount(usage, "input", out var input) ||
             !TryReadUsageCount(usage, "output", out var output) ||
@@ -183,30 +239,71 @@ internal static class PiJsonlEntryCodec
             !TryReadUsageCount(usage, "cacheWrite", out var cacheWrite) ||
             !TryReadUsageCount(usage, "totalTokens", out var total))
             return null;
-        if (total == 0) total = input + output;
-
-        decimal? cost = null;
-        if (TryProperty(usage, "cost", out var costObject) && costObject.ValueKind == JsonValueKind.Object &&
-            TryProperty(costObject, "total", out var totalCost))
+        var computedTotal = input is long knownInput && output is long knownOutput &&
+            cacheRead is long knownCacheRead && cacheWrite is long knownCacheWrite
+                ? SaturatingAdd(SaturatingAdd(knownInput, knownOutput), SaturatingAdd(knownCacheRead, knownCacheWrite))
+                : (long?)null;
+        if (total is not > 0) total = computedTotal ?? total;
+        long? reasoning = null;
+        if (TryProperty(usage, "reasoning", out var reasoningValue) && reasoningValue.ValueKind != JsonValueKind.Null)
         {
-            if (!totalCost.TryGetDecimal(out var value) || value < 0) return null;
-            cost = value;
+            if (reasoningValue.ValueKind != JsonValueKind.Number || !reasoningValue.TryGetInt64(out var reasoningTokens) ||
+                reasoningTokens < 0) return null;
+            reasoning = reasoningTokens;
         }
 
-        return new UsageRecord(StringProperty(message, "model") ?? "unknown", "model", input, output,
-            cacheRead, 0, total, cost, cacheWrite);
+        decimal? cost = null;
+        decimal? inputCost = null;
+        decimal? outputCost = null;
+        decimal? cachedInputCost = null;
+        decimal? cachedWriteCost = null;
+        if (TryProperty(usage, "cost", out var costObject) && costObject.ValueKind == JsonValueKind.Object)
+        {
+            if (TryProperty(costObject, "total", out var totalCost) && totalCost.ValueKind != JsonValueKind.Null)
+            {
+                if (!totalCost.TryGetDecimal(out var value) || value < 0) return null;
+                cost = value;
+            }
+            if (!TryReadOptionalCost(costObject, "input", out inputCost) ||
+                !TryReadOptionalCost(costObject, "output", out outputCost) ||
+                !TryReadOptionalCost(costObject, "cacheRead", out cachedInputCost) ||
+                !TryReadOptionalCost(costObject, "cacheWrite", out cachedWriteCost)) return null;
+        }
+
+        return new UsageRecord(model, source, input, output, cacheRead, reasoning, total, cost, cacheWrite)
+        {
+            InputIncludingCachedTokens = input is long uncachedInput && cacheRead is long knownRead
+                ? SaturatingAdd(uncachedInput, knownRead) : null,
+            InputCost = inputCost,
+            OutputCost = outputCost,
+            CachedInputCost = cachedInputCost,
+            CachedWriteCost = cachedWriteCost
+        };
     }
 
-    private static bool TryReadUsageCount(JsonElement usage, string name, out long count)
+    private static bool TryReadOptionalCost(JsonElement cost, string name, out decimal? value)
     {
-        count = 0;
-        if (!TryProperty(usage, name, out var value)) return true;
-        return value.ValueKind == JsonValueKind.Number && value.TryGetInt64(out count) && count >= 0;
+        value = null;
+        if (!TryProperty(cost, name, out var item) || item.ValueKind == JsonValueKind.Null) return true;
+        if (!item.TryGetDecimal(out var parsed) || parsed < 0) return false;
+        value = parsed;
+        return true;
     }
+
+    private static bool TryReadUsageCount(JsonElement usage, string name, out long? count)
+    {
+        count = null;
+        if (!TryProperty(usage, name, out var value) || value.ValueKind == JsonValueKind.Null) return true;
+        if (value.ValueKind != JsonValueKind.Number || !value.TryGetInt64(out var parsed) || parsed < 0) return false;
+        count = parsed;
+        return true;
+    }
+
+    private static long SaturatingAdd(long left, long right) => left > long.MaxValue - right ? long.MaxValue : left + right;
 
     internal static ChatMessage? ImportedContextMessage(ConversationNode node)
     {
-        if (node.Type == "branch_summary" && OriginalEntry(node) is { } summaryEntry &&
+        if (node.Type == "branch_summary" && (OriginalEntry(node) ?? node.Payload) is { } summaryEntry &&
             StringProperty(summaryEntry, "summary") is { } summary)
             return new ChatMessage(ChatRole.User,
                 $"The following is a summary of a branch that this conversation came back from:\n\n<summary>\n{summary}\n</summary>");
@@ -516,6 +613,23 @@ internal static class PiJsonlEntryCodec
             if (TryProperty(payload, "fromHook", out var fromHook) && fromHook.ValueKind == JsonValueKind.True)
                 entry["fromHook"] = true;
             if (TryProperty(payload, "usage", out var usage) && usage.ValueKind is not (JsonValueKind.Null or JsonValueKind.Undefined))
+                entry["usage"] = JsonNode.Parse(usage.GetRawText());
+            return entry;
+        }
+        if (node.Type == "branch_summary")
+        {
+            var entry = new JsonObject
+            {
+                ["type"] = "branch_summary",
+                ["fromId"] = StringProperty(node.Payload, "fromId") ?? "root",
+                ["summary"] = StringProperty(node.Payload, "summary") ??
+                    throw new InvalidDataException($"Missing branch summary at {node.Id}.")
+            };
+            if (TryProperty(node.Payload, "details", out var details) && details.ValueKind is not (JsonValueKind.Null or JsonValueKind.Undefined))
+                entry["details"] = JsonNode.Parse(details.GetRawText());
+            if (TryProperty(node.Payload, "fromHook", out var fromHook) && fromHook.ValueKind == JsonValueKind.True)
+                entry["fromHook"] = true;
+            if (TryProperty(node.Payload, "usage", out var usage) && usage.ValueKind is not (JsonValueKind.Null or JsonValueKind.Undefined))
                 entry["usage"] = JsonNode.Parse(usage.GetRawText());
             return entry;
         }

@@ -163,6 +163,277 @@ public sealed class CompactionTests
     }
 
     [Fact]
+    public async Task ProviderUsageAboveThresholdCompactsAfterCompletedTurnWithoutRetry()
+    {
+        var conversation = Seed(Path.GetTempPath());
+        var client = new PostTurnUsageClient();
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())), conversation,
+            autoCompaction: new AutoCompactionPolicy(1000, 100, KeepRecentTokens: 1));
+        var events = new List<AgentLifecycleEvent>();
+
+        await foreach (var item in run.RunEventsAsync("continue")) events.Add(item);
+
+        var compacted = Assert.Single(events, item => item.Type == "compaction_end");
+        Assert.Equal("threshold", compacted.CompactionReason);
+        Assert.False(compacted.CompactionWillRetry);
+        Assert.Equal(1, client.StreamingRequests);
+        Assert.Equal(2, client.SummaryRequests);
+        Assert.Contains(conversation.Tree.Entries, entry => entry.Type == "compaction");
+        Assert.Contains(conversation.Tree.Entries, entry => entry.Type == "chat" &&
+            ConversationMessageCodec.RestoreEntry(entry).Text == "continued response");
+    }
+
+    [Fact]
+    public async Task ProviderUsageAboveContextWindowCompactsAsOverflowWithoutRetry()
+    {
+        var conversation = Seed(Path.GetTempPath());
+        var client = new PostTurnUsageClient
+        {
+            ReportedUsage = new UsageDetails
+            {
+                InputTokenCount = 1001,
+                OutputTokenCount = 2,
+                TotalTokenCount = 1003
+            }
+        };
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())), conversation,
+            autoCompaction: new AutoCompactionPolicy(1000, 100, KeepRecentTokens: 1));
+        var events = new List<AgentLifecycleEvent>();
+
+        await foreach (var item in run.RunEventsAsync("continue")) events.Add(item);
+
+        var compacted = events.Last(item => item.Type == "compaction_end");
+        Assert.Equal("overflow", compacted.CompactionReason);
+        Assert.False(compacted.CompactionWillRetry);
+        Assert.Equal(1, client.StreamingRequests);
+        Assert.Equal(2, client.SummaryRequests);
+    }
+
+    [Fact]
+    public async Task UnknownContextWindowDoesNotInventCapacityFromReportedUsage()
+    {
+        var conversation = Seed(Path.GetTempPath());
+        var client = new PostTurnUsageClient
+        {
+            ReportedUsage = new UsageDetails
+            {
+                InputTokenCount = 20_000,
+                OutputTokenCount = 16,
+                TotalTokenCount = 20_016
+            }
+        };
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())), conversation);
+        var events = new List<AgentLifecycleEvent>();
+
+        await foreach (var item in run.RunEventsAsync("continue")) events.Add(item);
+
+        Assert.Equal(1, client.StreamingRequests);
+        Assert.Equal(0, client.SummaryRequests);
+        Assert.DoesNotContain(events, item => item.Type is "compaction_start" or "compaction_end");
+        Assert.DoesNotContain(conversation.Tree.ActivePath(), entry => entry.Type == "compaction");
+        Assert.Contains(conversation.ActiveMessages(), message => message.Text == "continued response");
+    }
+
+    [Fact]
+    public async Task RecoverableLengthStopCompactsOnceAndContinuesWithoutPartialOutput()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-length-recovery-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            var conversation = Seed(cwd);
+            var client = new LengthRecoveryClient();
+            var agent = new PiAgent(client, new CodingTools(cwd), maxOutputTokens: 100);
+            var run = await ConversationRun.OpenAsync(agent, conversation,
+                autoCompaction: new AutoCompactionPolicy(50_000, 10_000, KeepRecentTokens: 1));
+            var events = new List<AgentLifecycleEvent>();
+
+            await foreach (var item in run.RunEventsAsync("continue")) events.Add(item);
+
+            var firstResponse = events.First(item => item.Type == "model_request_completed");
+            Assert.Equal("length", firstResponse.ProviderFinishReason);
+            Assert.Equal(100, firstResponse.ProviderDesiredMaxOutputTokens);
+            Assert.Equal(16, firstResponse.ProviderUsage?.OutputTokenCount);
+            Assert.Equal(2, client.StreamingRequests);
+            Assert.Equal(2, client.SummaryRequests);
+            Assert.True(client.ContinuationSawSummary);
+            Assert.DoesNotContain(client.ContinuationMessages!, message => message.Text == "partial output");
+            Assert.Contains(conversation.ActiveMessages(), message => message.Text == "partial output");
+            Assert.DoesNotContain(conversation.ContextMessages(), message => message.Text == "partial output");
+            Assert.Single(events, item => item.Type == "compaction_end" && item.CompactionReason == "overflow" &&
+                item.CompactionWillRetry == true);
+            Assert.Contains(events, item => item.Type == "turn_completed");
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
+    public async Task LengthStopAtDesiredOutputLimitDoesNotCompactOrRetry()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-length-limit-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            var conversation = Seed(cwd);
+            var client = new LengthRecoveryClient { ReportedOutputTokenCount = 100 };
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd), maxOutputTokens: 100),
+                conversation, autoCompaction: new AutoCompactionPolicy(50_000, 10_000, KeepRecentTokens: 1));
+            var events = new List<AgentLifecycleEvent>();
+
+            await foreach (var item in run.RunEventsAsync("continue")) events.Add(item);
+
+            Assert.Equal(1, client.StreamingRequests);
+            Assert.Equal(0, client.SummaryRequests);
+            Assert.DoesNotContain(events, item => item.Type == "compaction_start");
+            Assert.Contains(conversation.ContextMessages(), message => message.Text == "partial output");
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
+    public async Task LengthStopFromPreviousModelIsNotRecoveredAfterModelSwitch()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-length-model-switch-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            var conversation = Seed(cwd);
+            var responseGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var client = new LengthRecoveryClient { FirstResponseGate = responseGate };
+            var agent = new PiAgent(client, new CodingTools(cwd), maxOutputTokens: 100);
+            var run = await ConversationRun.OpenAsync(agent, conversation,
+                autoCompaction: new AutoCompactionPolicy(50_000, 10_000, KeepRecentTokens: 1));
+            var events = new List<AgentLifecycleEvent>();
+            var switched = false;
+
+            try
+            {
+                await foreach (var item in run.RunEventsAsync("continue"))
+                {
+                    if (!switched && item.Type == "model_text_delta")
+                    {
+                        switched = run.TrySetModelDuringRun("next-model", null, "next-provider", null,
+                            new AutoCompactionPolicy(50_000, 10_000, KeepRecentTokens: 1), 1, "off", null,
+                            () => agent.SetModelRuntime(client, supportsImages: true, imageResizeOptions: null,
+                                maxOutputTokens: 100));
+                        responseGate.TrySetResult();
+                    }
+                    events.Add(item);
+                }
+            }
+            finally
+            {
+                responseGate.TrySetResult();
+            }
+
+            Assert.True(switched);
+            Assert.Equal(1, client.StreamingRequests);
+            Assert.Equal(0, client.SummaryRequests);
+            Assert.DoesNotContain(events, item => item.Type == "compaction_start");
+            Assert.Contains(conversation.ContextMessages(), message => message.Text == "partial output");
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
+    public async Task LengthStopWithoutOutputUsageDoesNotInventCountsForRecovery()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-length-no-usage-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            var conversation = Seed(cwd);
+            var client = new LengthRecoveryClient { ReportedOutputTokenCount = null };
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd), maxOutputTokens: 100),
+                conversation, autoCompaction: new AutoCompactionPolicy(50_000, 10_000, KeepRecentTokens: 1));
+            var events = new List<AgentLifecycleEvent>();
+
+            await foreach (var item in run.RunEventsAsync("continue")) events.Add(item);
+
+            Assert.Equal(1, client.StreamingRequests);
+            Assert.Equal(0, client.SummaryRequests);
+            var response = Assert.Single(events, item => item.Type == "model_request_completed");
+            Assert.Null(response.ProviderUsage?.OutputTokenCount);
+            Assert.DoesNotContain(events, item => item.Type == "compaction_start");
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
+    public async Task LengthStopWithoutDesiredModelOutputLimitDoesNotRetry()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-length-no-limit-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            var conversation = Seed(cwd);
+            var client = new LengthRecoveryClient();
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation,
+                autoCompaction: new AutoCompactionPolicy(50_000, 10_000, KeepRecentTokens: 1));
+            var events = new List<AgentLifecycleEvent>();
+
+            await foreach (var item in run.RunEventsAsync("continue")) events.Add(item);
+
+            Assert.Equal(1, client.StreamingRequests);
+            Assert.Equal(0, client.SummaryRequests);
+            Assert.Null(Assert.Single(events, item => item.Type == "model_request_completed")
+                .ProviderDesiredMaxOutputTokens);
+            Assert.DoesNotContain(events, item => item.Type == "compaction_start");
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
+    public async Task RepeatedLengthStopCompactsAndRetriesOnlyOnce()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-length-repeat-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            var conversation = Seed(cwd);
+            var client = new LengthRecoveryClient { AlwaysLength = true };
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd), maxOutputTokens: 100),
+                conversation, autoCompaction: new AutoCompactionPolicy(50_000, 10_000, KeepRecentTokens: 1));
+            var events = new List<AgentLifecycleEvent>();
+
+            await foreach (var item in run.RunEventsAsync("continue")) events.Add(item);
+
+            Assert.Equal(2, client.StreamingRequests);
+            Assert.Equal(2, client.SummaryRequests);
+            Assert.Single(events, item => item.Type == "compaction_end" && item.CompactionWillRetry == true);
+            Assert.Contains(events, item => item.Type == "compaction_end" &&
+                item.Error == "Truncated response recovery failed after one compact-and-retry attempt.");
+            Assert.DoesNotContain(events, item => item.Type == "turn_failed");
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
+    public async Task CachedInputCountAlreadyIncludedInInputDoesNotFalseClassifySilentOverflow()
+    {
+        var conversation = Seed(Path.GetTempPath());
+        var client = new PostTurnUsageClient
+        {
+            ReportedUsage = new UsageDetails
+            {
+                InputTokenCount = 995,
+                CachedInputTokenCount = 10,
+                OutputTokenCount = 20,
+                TotalTokenCount = 1015
+            }
+        };
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())), conversation,
+            autoCompaction: new AutoCompactionPolicy(1000, 100, KeepRecentTokens: 1));
+        var events = new List<AgentLifecycleEvent>();
+
+        await foreach (var item in run.RunEventsAsync("continue")) events.Add(item);
+
+        var compacted = events.Last(item => item.Type == "compaction_end");
+        Assert.Equal("threshold", compacted.CompactionReason);
+        Assert.False(compacted.CompactionWillRetry);
+    }
+
+    [Fact]
     public async Task AutomaticCompactionUsesTheSplitTurnCoordinatorBeforeAcceptingTheNextPrompt()
     {
         var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
@@ -200,7 +471,7 @@ public sealed class CompactionTests
     public async Task AutoBudgetPrefersLatestProviderUsageAfterCurrentCompactionBoundary()
     {
         var conversation = Seed(Path.GetTempPath());
-        conversation.AppendUsage(new UsageRecord("fixture", "model", 4300, 200, 0, 0, 4500, null));
+        conversation.AppendUsage(new UsageRecord("fixture", "model", 4300, 200, 0, 0, 4500, null, CachedWriteTokens: 0));
         var client = new SummaryClient();
         var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())), conversation,
             autoCompaction: new AutoCompactionPolicy(5000, 1000));
@@ -423,6 +694,34 @@ public sealed class CompactionTests
     }
 
     [Fact]
+    public async Task SummaryRejectsLengthStoppedOutputAndRetriesTransientProviderFailure()
+    {
+        var lengthClient = new SummaryClient
+        {
+            SummaryResponses = ["incomplete summary"],
+            SummaryFinishReason = ChatFinishReason.Length
+        };
+        var lengthAgent = new PiAgent(lengthClient, new CodingTools(Path.GetTempPath()),
+            retryPolicy: ProviderRetryPolicy.None);
+        var lengthFailure = await Assert.ThrowsAsync<InvalidDataException>(() =>
+            lengthAgent.SummarizeAsync([new ChatMessage(ChatRole.User, "context")], null));
+        Assert.Equal("Summarization failed: generation hit the token cap and the summary is incomplete",
+            lengthFailure.Message);
+        Assert.Single(lengthClient.SummaryRequests);
+
+        var retryClient = new SummaryClient
+        {
+            FailSummaryNumber = 1,
+            SummaryResponses = ["unused response", "recovered summary"]
+        };
+        var retryAgent = new PiAgent(retryClient, new CodingTools(Path.GetTempPath()),
+            retryPolicy: new ProviderRetryPolicy(maxRetries: 1));
+        var summary = await retryAgent.SummarizeAsync([new ChatMessage(ChatRole.User, "context")], null);
+        Assert.Equal("recovered summary", summary.Text);
+        Assert.Equal(2, retryClient.SummaryRequests.Count);
+    }
+
+    [Fact]
     public async Task LongSummaryTranscriptRetainsLatestMessageWithinBound()
     {
         var client = new ToolLoopBudgetClient();
@@ -552,7 +851,8 @@ public sealed class CompactionTests
             var path = store.NewPath(conversation);
             await store.SaveAsync(conversation, path);
             var client = new ToolLoopBudgetClient { FailSummaryOnce = true };
-            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation,
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd),
+                retryPolicy: ProviderRetryPolicy.None), conversation,
                 save: token => store.SaveAsync(conversation, path, token),
                 autoCompaction: new AutoCompactionPolicy(2700, 300));
             var events = new List<AgentLifecycleEvent>();
@@ -588,7 +888,8 @@ public sealed class CompactionTests
             var path = store.NewPath(conversation);
             await store.SaveAsync(conversation, path);
             var client = new ToolLoopBudgetClient { FailSummary = true };
-            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation,
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd),
+                retryPolicy: ProviderRetryPolicy.None), conversation,
                 save: token => store.SaveAsync(conversation, path, token),
                 autoCompaction: new AutoCompactionPolicy(2100, 300));
             var events = new List<AgentLifecycleEvent>();
@@ -606,12 +907,18 @@ public sealed class CompactionTests
 
     [Theory]
     [InlineData("Your input exceeds the context window of this model", false, true)]
+    [InlineData("prompt is too long: 213462 tokens > 200000 maximum", false, true)]
+    [InlineData("413 {\"error\":{\"type\":\"request_too_large\",\"message\":\"Request exceeds the maximum size\"}}", false, true)]
     [InlineData("the request exceeds the available context size, try increasing it", false, true)]
     [InlineData("400 `prompt too long; exceeded max context length by 100918 tokens`", false, true)]
     [InlineData("400 {\"code\":\"1261\",\"message\":\"Prompt exceeds max length\"}", false, true)]
     [InlineData("400 Input length (265330) exceeds model's maximum context length (262144).", false, true)]
+    [InlineData("The input token count (1196265) exceeds the maximum number of tokens allowed (1048575)", false, true)]
+    [InlineData("Please reduce the length of the messages or completion", false, true)]
+    [InlineData("The input (100 tokens) is longer than the model's context length (90 tokens).", false, true)]
     [InlineData("400 model runner crashed", false, false)]
     [InlineData("rate limit: too many requests; context_length_exceeded", false, false)]
+    [InlineData("Throttling error: Too many tokens, please wait before trying again.", false, false)]
     [InlineData("Your input exceeds the context window of this model", true, false)]
     public async Task ProviderOverflowRetriesOnceOnlyBeforeContentWithShortenedRequest(string error, bool afterContent, bool recover)
     {
@@ -687,7 +994,7 @@ public sealed class CompactionTests
     }
 
     [Fact]
-    public void StreamingContextEstimateMatchesSerializedUtf16LengthsIncludingUnicodeAndLargeToolResults()
+    public void TransientContextEstimateIsConservativeSerializedCharacterHeuristicNotTokenizer()
     {
         var context = new ChatMessage[]
         {
@@ -700,7 +1007,10 @@ public sealed class CompactionTests
         var chars = prompt.Length + context.Sum(message =>
             JsonSerializer.Serialize(message, AIJsonUtilities.DefaultOptions).Length + 64L);
         var expected = (int)Math.Min(int.MaxValue, (chars + 1) / 2 + 512);
-        Assert.Equal(expected, AutoCompactionPolicy.Estimate(context, prompt));
+        var transientEstimate = AutoCompactionPolicy.Estimate(context, prompt);
+        var piCompatibleMessageEstimate = PiContextUsageEstimator.EstimateAfterUsage(0, context);
+        Assert.Equal(expected, transientEstimate);
+        Assert.True(transientEstimate > piCompatibleMessageEstimate);
     }
 
     [Fact]
@@ -735,7 +1045,112 @@ public sealed class CompactionTests
             OutputTokenCount = 2,
             TotalTokenCount = 0
         }, null);
+        Assert.Equal(10, usage.InputIncludingCachedTokens);
+        Assert.Null(usage.InputTokens);
+        Assert.Null(usage.TotalTokens);
+    }
+
+    [Fact]
+    public void UsageRecordCreateFallsBackToAllProviderContextTokenCategories()
+    {
+        var usage = UsageRecord.Create("fixture", "model", new UsageDetails
+        {
+            InputTokenCount = 7,
+            OutputTokenCount = 3,
+            CachedInputTokenCount = 5,
+            TotalTokenCount = 0,
+            AdditionalCounts = new AdditionalPropertiesDictionary<long> { ["cacheWriteTokens"] = 7 }
+        }, null);
+
+        Assert.Equal(17, usage.TotalTokens);
+    }
+
+    [Fact]
+    public void UsageRecordCreateCanFallbackWhenEveryContextCategoryIsKnown()
+    {
+        var usage = UsageRecord.Create("fixture", "model", new UsageDetails
+        {
+            InputTokenCount = 10,
+            OutputTokenCount = 2,
+            CachedInputTokenCount = 0,
+            TotalTokenCount = 0,
+            AdditionalCounts = new AdditionalPropertiesDictionary<long> { ["cacheWriteTokens"] = 0 }
+        }, null);
+
         Assert.Equal(12, usage.TotalTokens);
+    }
+
+    [Fact]
+    public void UsageRecordCreateSeparatesCachedInputAndKeepsMissingReasoningUnknown()
+    {
+        var pricing = new ModelPricing(3m, 8m, CachedInput: 1m, CachedWrite: 4m);
+        var usage = UsageRecord.Create("fixture", "model", new UsageDetails
+        {
+            InputTokenCount = 100,
+            OutputTokenCount = 3,
+            CachedInputTokenCount = 25,
+            TotalTokenCount = 0,
+            AdditionalCounts = new AdditionalPropertiesDictionary<long> { ["cacheWriteTokens"] = 7 }
+        }, pricing);
+
+        Assert.Equal(75, usage.InputTokens);
+        Assert.Equal(25, usage.CachedInputTokens);
+        Assert.Equal(7, usage.CachedWriteTokens);
+        Assert.Equal(110, usage.TotalTokens);
+        Assert.Null(usage.ReasoningTokens);
+        Assert.Equal(0.000302m, usage.Cost);
+    }
+
+    [Fact]
+    public void UsageRecordCreateSelectsPricingTierUsingAllInputCategories()
+    {
+        var pricing = new ModelPricing(1m, 3m, CachedInput: 0.5m, CachedWrite: 2m,
+            Tiers: [new ModelPricingTier(272_000, 10m, 30m, CachedInput: 1m, CachedWrite: 5m)]);
+        var usage = UsageRecord.Create("tiered", "model", new UsageDetails
+        {
+            InputTokenCount = 260_000,
+            OutputTokenCount = 0,
+            CachedInputTokenCount = 200_000,
+            TotalTokenCount = 0,
+            AdditionalCounts = new AdditionalPropertiesDictionary<long> { ["cacheWriteTokens"] = 20_000 }
+        }, pricing);
+
+        Assert.Equal(0.9m, usage.Cost);
+    }
+
+    [Fact]
+    public void UsageRecordCreateLeavesCostUnknownWithoutModelPricing()
+    {
+        var usage = UsageRecord.Create("unpriced", "model", new UsageDetails
+        {
+            InputTokenCount = 7,
+            OutputTokenCount = 3,
+            TotalTokenCount = 10
+        }, pricing: null);
+
+        Assert.Null(usage.Cost);
+    }
+
+    [Fact]
+    public void UsageRecordCreatePreservesMissingUsageFieldsAsUnknown()
+    {
+        var usage = UsageRecord.Create("partial", "model", new UsageDetails
+        {
+            InputTokenCount = 10,
+            OutputTokenCount = null,
+            CachedInputTokenCount = null,
+            TotalTokenCount = null
+        }, pricing: null);
+
+        Assert.Null(usage.InputTokens);
+        Assert.Null(usage.OutputTokens);
+        Assert.Null(usage.CachedInputTokens);
+        Assert.Null(usage.CachedWriteTokens);
+        Assert.Null(usage.TotalTokens);
+        Assert.Null(usage.ReasoningTokens);
+        Assert.Equal(10, usage.InputIncludingCachedTokens);
+        Assert.Null(usage.Cost);
+        Assert.Null(new UsageRecord("manual", "model", 1, 1, 0, 0, 2, null).CachedWriteTokens);
     }
 
     [Fact]
@@ -977,7 +1392,8 @@ public sealed class CompactionTests
             SummaryResponses = ["older history summary", "unused"],
             FailSummaryNumber = 2
         };
-        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())), conversation,
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath()),
+            retryPolicy: ProviderRetryPolicy.None), conversation,
             autoCompaction: new AutoCompactionPolicy(5000, 1000, 15));
 
         await Assert.ThrowsAsync<IOException>(() => run.CompactAsync());
@@ -986,6 +1402,38 @@ public sealed class CompactionTests
         Assert.Equal(head, conversation.Tree.HeadId);
         Assert.DoesNotContain(conversation.Tree.Entries, entry => entry.Type == "compaction");
         Assert.Equal(4, conversation.ContextMessages().Count);
+    }
+
+    [Fact]
+    public async Task CompactionCancelledBeforeSummaryLeavesRunUsable()
+    {
+        var conversation = Seed(Path.GetTempPath());
+        var originalHead = conversation.Tree.HeadId;
+        var client = new SummaryClient();
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())), conversation);
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        var lifecycle = new List<AgentLifecycleEvent>();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => run.CompactWithResultAsync(
+            cancellationToken: cancellation.Token,
+            publishEvent: item =>
+            {
+                lifecycle.Add(item);
+                return Task.CompletedTask;
+            }));
+
+        Assert.Empty(client.SummaryRequests);
+        Assert.Equal(originalHead, conversation.Tree.HeadId);
+        Assert.DoesNotContain(conversation.Tree.ActivePath(), entry => entry.Type == "compaction");
+        Assert.Empty(lifecycle);
+
+        var nextTurn = new List<AgentLifecycleEvent>();
+        await foreach (var item in run.RunEventsAsync("continue after cancellation")) nextTurn.Add(item);
+
+        Assert.Contains(nextTurn, item => item.Type == "turn_completed");
+        Assert.Contains(conversation.ActiveMessages(), message => message.Text == "continue after cancellation");
+        Assert.Contains(conversation.ActiveMessages(), message => message.Text == "continued");
     }
 
     [Fact]
@@ -1162,6 +1610,7 @@ public sealed class CompactionTests
         public bool FailSummary { get; init; }
         public int? FailSummaryNumber { get; init; }
         public UsageDetails? SummaryUsage { get; init; }
+        public ChatFinishReason? SummaryFinishReason { get; init; }
         public string LastSummaryRequest { get; private set; } = "";
         public IReadOnlyList<string>? SummaryResponses { get; init; }
         public List<string> SummaryRequests { get; } = [];
@@ -1178,9 +1627,35 @@ public sealed class CompactionTests
                 : "Summary of first turn";
             return Task.FromResult(new ChatResponse([new ChatMessage(ChatRole.Assistant, summary)])
             {
-                Usage = SummaryUsage
+                Usage = CompleteUncachedUsage(SummaryUsage),
+                FinishReason = SummaryFinishReason
             });
         }
+
+        private static UsageDetails? CompleteUncachedUsage(UsageDetails? usage)
+        {
+            if (usage is null) return null;
+            var counts = new AdditionalPropertiesDictionary<long>();
+            if (usage.AdditionalCounts is not null)
+                foreach (var count in usage.AdditionalCounts) counts[count.Key] = count.Value;
+            if (!counts.Keys.Any(key => key.Equals("cacheWriteTokens", StringComparison.OrdinalIgnoreCase) ||
+                    key.Equals("cacheWriteTokenCount", StringComparison.OrdinalIgnoreCase) ||
+                    key.Equals("cache_write_tokens", StringComparison.OrdinalIgnoreCase) ||
+                    key.Equals("cache_creation_input_tokens", StringComparison.OrdinalIgnoreCase) ||
+                    key.Equals("piMessages.cacheWrite", StringComparison.OrdinalIgnoreCase) ||
+                    key.Equals("bedrock.cacheWriteInputTokenCount", StringComparison.OrdinalIgnoreCase)))
+                counts["cacheWriteTokens"] = 0;
+            return new UsageDetails
+            {
+                InputTokenCount = usage.InputTokenCount,
+                OutputTokenCount = usage.OutputTokenCount,
+                CachedInputTokenCount = usage.CachedInputTokenCount ?? 0,
+                ReasoningTokenCount = usage.ReasoningTokenCount,
+                TotalTokenCount = usage.TotalTokenCount,
+                AdditionalCounts = counts
+            };
+        }
+
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
@@ -1188,6 +1663,104 @@ public sealed class CompactionTests
             yield return new ChatResponseUpdate(ChatRole.Assistant, "continued");
             await Task.CompletedTask;
         }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class PostTurnUsageClient : IChatClient
+    {
+        public int StreamingRequests { get; private set; }
+        public int SummaryRequests { get; private set; }
+        public UsageDetails ReportedUsage { get; init; } = new()
+        {
+            InputTokenCount = 950,
+            OutputTokenCount = 20,
+            TotalTokenCount = 970
+        };
+
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            SummaryRequests++;
+            return Task.FromResult(new ChatResponse([new ChatMessage(ChatRole.Assistant, "post-turn summary")]));
+        }
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            if (messages.Last().Text.Contains("structured context checkpoint summary", StringComparison.Ordinal))
+            {
+                SummaryRequests++;
+                yield return new ChatResponseUpdate(ChatRole.Assistant, "post-turn summary");
+            }
+            else
+            {
+                StreamingRequests++;
+                yield return new ChatResponseUpdate(ChatRole.Assistant, "continued response");
+                yield return new ChatResponseUpdate(ChatRole.Assistant, [new UsageContent(ReportedUsage)]);
+            }
+            await Task.CompletedTask;
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class LengthRecoveryClient : IChatClient
+    {
+        public int StreamingRequests { get; private set; }
+        public int SummaryRequests { get; private set; }
+        public long? ReportedOutputTokenCount { get; init; } = 16;
+        public bool AlwaysLength { get; init; }
+        public TaskCompletionSource? FirstResponseGate { get; init; }
+        public bool ContinuationSawSummary { get; private set; }
+        public IReadOnlyList<ChatMessage>? ContinuationMessages { get; private set; }
+
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            SummaryRequests++;
+            return Task.FromResult(new ChatResponse([new ChatMessage(ChatRole.Assistant, "compacted history summary")])
+            {
+                Usage = new UsageDetails { InputTokenCount = 40, OutputTokenCount = 8, TotalTokenCount = 48 }
+            });
+        }
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            StreamingRequests++;
+            if (StreamingRequests == 1)
+            {
+                yield return new ChatResponseUpdate(ChatRole.Assistant, "partial output");
+                if (FirstResponseGate is not null)
+                    await FirstResponseGate.Task.WaitAsync(cancellationToken);
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                    [new UsageContent(new UsageDetails
+                    {
+                        InputTokenCount = 80,
+                        OutputTokenCount = ReportedOutputTokenCount,
+                        TotalTokenCount = 80 + (ReportedOutputTokenCount ?? 0)
+                    })])
+                {
+                    FinishReason = ChatFinishReason.Length
+                };
+            }
+            else
+            {
+                ContinuationMessages = messages.ToArray();
+                ContinuationSawSummary = ContinuationMessages.Any(message =>
+                    message.Text.Contains("compacted history summary", StringComparison.Ordinal));
+                yield return new ChatResponseUpdate(ChatRole.Assistant, "continued response");
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                    [new UsageContent(new UsageDetails { InputTokenCount = 60, OutputTokenCount = 12, TotalTokenCount = 72 })])
+                {
+                    FinishReason = AlwaysLength ? ChatFinishReason.Length : ChatFinishReason.Stop
+                };
+            }
+            await Task.CompletedTask;
+        }
+
         public object? GetService(Type serviceType, object? serviceKey = null) => null;
         public void Dispose() { }
     }

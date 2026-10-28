@@ -775,6 +775,20 @@ class ManagedPackageVerifierTests(unittest.TestCase):
         state = verify._workflow_gate_state(jobs, required)
         self.assertFalse(state['allJobsCompletedSuccessfully'])
 
+    def test_managed_package_corpus_runs_only_on_its_milestone_branch(self) -> None:
+        workflow = (verify.ROOT / '.github/workflows/ci.yml').read_text(encoding='utf-8')
+        branch_condition = (
+            "if: ${{ github.head_ref == 'milestone/managed-package-lifecycle-parity' "
+            "|| github.ref_name == 'milestone/managed-package-lifecycle-parity' }}"
+        )
+        for step_name in (
+            'Run managed-package parity corpus',
+            'Record managed-package CI integration',
+            'Independently check managed-package evidence',
+        ):
+            with self.subTest(step=step_name):
+                self.assertIn(branch_condition, verify._workflow_step_block(workflow, step_name))
+
     def test_remote_pr_artifact_must_bind_to_current_head_and_base(self) -> None:
         evidence = fixture_support.make_valid_evidence(self.root / 'remote')
         source_sha = 'e' * 40

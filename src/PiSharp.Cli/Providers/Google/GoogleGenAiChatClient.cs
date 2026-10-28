@@ -361,11 +361,12 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
             var total = ReadLong(usage, "totalTokenCount");
             updateCandidate.Contents.Add(new UsageContent(new UsageDetails
             {
-                InputTokenCount = (prompt ?? 0) - (cached ?? 0),
-                OutputTokenCount = candidatesTokens + thoughts,
-                CachedInputTokenCount = cached,
+                InputTokenCount = prompt,
+                OutputTokenCount = candidatesTokens is long candidateCount ? candidateCount + (thoughts ?? 0) : null,
+                CachedInputTokenCount = cached ?? 0,
                 ReasoningTokenCount = thoughts,
-                TotalTokenCount = total
+                TotalTokenCount = total,
+                AdditionalCounts = new AdditionalPropertiesDictionary<long> { ["cacheWriteTokens"] = 0 }
             }));
             hasUsage = true;
         }

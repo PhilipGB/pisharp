@@ -29,7 +29,7 @@ public sealed class ConversationSessionTests
         var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
         session.Append(new ChatMessage(ChatRole.User, "root"));
         var root = session.Tree.HeadId;
-        session.AppendUsage(new UsageRecord("fixture", "model", 10, 2, 0, 0, 12, null));
+        session.AppendUsage(new UsageRecord("fixture", "model", 10, 2, 0, 0, 12, null, CachedWriteTokens: 0));
         session.Tree.Select(root);
         var document = System.Text.Json.Nodes.JsonNode.Parse(session.ToJson())!;
         document["Entries"]![1]!["Payload"]!["Cost"] = -1;

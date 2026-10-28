@@ -132,7 +132,8 @@ internal sealed class ModelRuntimeController(
             prepared.Connection.Endpoint?.ToString(), prepared.Selection.Provider.Id,
             prepared.Pricing, prepared.ContextPolicy, prepared.KeepRecentTokens, prepared.Thinking, prepared.ReasoningOptions,
             () => activeAgent.SetModelRuntime(prepared.ChatClient, prepared.SupportsImages, prepared.ImageResizeOptions,
-                prepared.VirtualModelRouter, autoResizeImages: prepared.AutoResizeImages), providerApi: ProviderChatClientFactory.ResolveProtocol(prepared.Selection),
+                prepared.VirtualModelRouter, autoResizeImages: prepared.AutoResizeImages,
+                maxOutputTokens: prepared.Selection.Model.MaxOutputTokens), providerApi: ProviderChatClientFactory.ResolveProtocol(prepared.Selection),
             notifyAfterActivation: notifyAfterActivation is null ? null : token =>
                 notifyAfterActivation(prepared, token), updateSelectionOwner: () => updateCurrent(prepared)))
         {

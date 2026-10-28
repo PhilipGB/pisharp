@@ -54,6 +54,7 @@ public sealed class PiAgent
     private int _providerRequestIndex;
     private int _firstRequestSteeringIndex;
     private int _supportsImages;
+    private int _maxOutputTokens;
     private int _autoResizeImages = 1;
     private ModelImageResizeOptions? _selectedImageResizeOptions;
     private long _systemMessageTimestamp;
@@ -127,7 +128,8 @@ public sealed class PiAgent
         IReadOnlyList<ExtensionLifecycleHandlerRegistration>? extensionLifecycleHandlers = null,
         PiSharpExtensionContextConfiguration? extensionContextConfiguration = null,
         IReadOnlyDictionary<string, int>? thinkingBudgets = null,
-        IReadOnlyList<PiSharpBeforeAgentStartHandlerRegistration>? beforeAgentStartHandlers = null)
+        IReadOnlyList<PiSharpBeforeAgentStartHandlerRegistration>? beforeAgentStartHandlers = null,
+        int? maxOutputTokens = null)
     {
         _contextTransforms = new(extensionContextTransforms);
         _extensionLifecycleHandlers = extensionLifecycleHandlers?.ToArray() ?? [];
@@ -156,9 +158,12 @@ public sealed class PiAgent
             () => Volatile.Read(ref _selectedImageResizeOptions));
         _routedChatClient.SetRouter(virtualModelRequestRouter);
         _supportsImages = supportsImages ? 1 : 0;
+        _maxOutputTokens = maxOutputTokens is > 0 ? maxOutputTokens.Value : 0;
         _codingTools.SetReadModelSupportsImages(supportsImages);
         _reasoning = reasoning;
-        _summarizer = new PiCompactionSummarizer(_routedChatClient);
+        var effectiveRetryPolicy = retryPolicy ?? ProviderRetryPolicy.Default;
+        _summarizer = new PiCompactionSummarizer(_routedChatClient,
+            () => Volatile.Read(ref _reasoning), () => Volatile.Read(ref _maxOutputTokens), effectiveRetryPolicy);
         _toolCatalog = new AgentToolCatalog(tools, selectedTools, excludedTools, noTools, noBuiltinTools,
             extensionTools, extensionToolRegistrations, initialActiveToolNames);
         lock (_runtimeToolGate)
@@ -181,14 +186,15 @@ public sealed class PiAgent
         var initialSystemInstructions = BuildSystemPrompt(initialLoadout.Declared,
             initialLoadout.ActiveToolNames).Text;
         _agent = new ChatClientAgent(new ObservedChatClient(_routedChatClient, PublishEvent,
-            retryPolicy ?? ProviderRetryPolicy.Default, TakeSteeringForRequest, ProjectForRequestAsync,
+            effectiveRetryPolicy, TakeSteeringForRequest, ProjectForRequestAsync,
             supportsImages, () => Volatile.Read(ref _reasoning), () => _routedChatClient.HasRouter || Volatile.Read(ref _supportsImages) != 0,
             _routedChatClient, GetToolsForRequest, _routedChatClient, GetAdditionalSystemInstructionsForCurrentTurn,
             _contextTransforms.ApplyAsync, (messages, options) =>
                 _currentToolTranscript?.Project(messages, options), GetSystemInstructionsForCurrentLoadout,
             () => thinkingBudgets, TakeContextMessagesForRequestAsync,
             (messages, token) => _prepareTurn?.Invoke(messages, token) ?? Task.FromResult(messages),
-            token => ProviderWireInvocation.Enter(_extensionEvents, token), _extensionEvents), new ChatClientAgentOptions
+            token => ProviderWireInvocation.Enter(_extensionEvents, token), _extensionEvents,
+            GetDesiredMaxOutputTokens), new ChatClientAgentOptions
             {
                 Name = "PiSharp",
                 ChatHistoryProvider = _history,
@@ -637,6 +643,14 @@ public sealed class PiAgent
         CancellationToken cancellationToken = default, string? previousSummary = null, bool turnPrefix = false) =>
         _summarizer.SummarizeAsync(messages, focus, cancellationToken, previousSummary, turnPrefix);
 
+    internal Task<CompactionSummary> SummarizeWithBudgetAsync(IReadOnlyList<ChatMessage> messages, string? focus,
+        CancellationToken cancellationToken, string? previousSummary, bool turnPrefix, int? reserveTokens) =>
+        _summarizer.SummarizeAsync(messages, focus, cancellationToken, previousSummary, turnPrefix, reserveTokens);
+
+    public Task<CompactionSummary> SummarizeBranchAsync(IReadOnlyList<ChatMessage> messages,
+        string? customInstructions, bool replaceInstructions, CancellationToken cancellationToken = default) =>
+        _summarizer.SummarizeBranchAsync(messages, customInstructions, replaceInstructions, cancellationToken);
+
     public sealed record CompactionSummary(string Text, UsageDetails? Usage, IReadOnlyList<UsageRecord>? PhysicalUsage = null);
 
     public async Task<AgentSession> CreateSessionAsync(CancellationToken cancellationToken = default) =>
@@ -646,10 +660,11 @@ public sealed class PiAgent
 
     public void SetModelRuntime(IChatClient client, bool supportsImages, ModelImageResizeOptions? imageResizeOptions,
         VirtualModelRequestRouter? virtualModelRequestRouter = null, ICodemodeModels? codemodeModels = null,
-        bool autoResizeImages = true)
+        bool autoResizeImages = true, int? maxOutputTokens = null)
     {
         _chatClient.SetClient(client);
         _routedChatClient.SetRouter(virtualModelRequestRouter);
+        Volatile.Write(ref _maxOutputTokens, maxOutputTokens is > 0 ? maxOutputTokens.Value : 0);
         Volatile.Write(ref _supportsImages, supportsImages ? 1 : 0);
         _codingTools.SetReadModelSupportsImages(supportsImages);
         _selectedImageResizeOptions = imageResizeOptions;
@@ -659,6 +674,13 @@ public sealed class PiAgent
     }
 
     internal bool HasVirtualModelRouter => _routedChatClient.HasRouter;
+
+    private int? GetDesiredMaxOutputTokens()
+    {
+        if (_routedChatClient.CurrentRoute is { } route) return route.Model.MaxOutputTokens;
+        var value = Volatile.Read(ref _maxOutputTokens);
+        return value > 0 ? value : null;
+    }
 
     internal void SetPhysicalImageLimits(ModelDescriptor? model)
     {

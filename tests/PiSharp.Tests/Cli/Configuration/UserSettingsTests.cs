@@ -618,6 +618,28 @@ public sealed class UserSettingsTests
     }
 
     [Fact]
+    public async Task BranchSummarySettingsValidateAndOverlayReserveAndPromptBehavior()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-branch-summary-settings-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, ".pi"));
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "settings.json"),
+                "{\"branchSummary\":{\"reserveTokens\":1200,\"skipPrompt\":false}}");
+            await File.WriteAllTextAsync(Path.Combine(root, ".pi", "settings.json"),
+                "{\"branchSummary\":{\"skipPrompt\":true}}");
+
+            var user = await UserSettings.LoadAsync(root, _ => null);
+            var effective = user.Overlay(await UserSettings.LoadProjectAsync(root));
+
+            Assert.Equal(1200, effective.BranchSummary!.EffectiveReserveTokens);
+            Assert.True(effective.BranchSummary.SkipPrompt);
+            Assert.Equal(BranchSummarySettings.DefaultReserveTokens, new BranchSummarySettings().EffectiveReserveTokens);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
     public async Task TrustedProjectSettingsOverlayUserDefaultsWithoutDiscardingNestedCompaction()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-project-settings-" + Guid.NewGuid().ToString("N"));
@@ -800,6 +822,11 @@ public sealed class UserSettingsTests
     [InlineData("{\"compaction\":{\"modelOverrides\":{\"p/m\":{\"enabled\":false}}}}")]
     [InlineData("{\"compaction\":{\"modelOverrides\":{\"p/m\":{\"reserveTokens\":1},\"p/m\":{\"reserveTokens\":2}}}}")]
     [InlineData("{\"compaction\":{\"modelOverrides\":[]}}")]
+    [InlineData("{\"branchSummary\":[]}")]
+    [InlineData("{\"branchSummary\":{\"reserveTokens\":-1}}")]
+    [InlineData("{\"branchSummary\":{\"skipPrompt\":\"true\"}}")]
+    [InlineData("{\"branchSummary\":{\"reserveTokens\":1,\"reserveTokens\":2}}")]
+    [InlineData("{\"branchSummary\":{\"unknown\":true}}")]
     [InlineData("{\"images\":{\"blockImages\":\"true\"}}")]
     [InlineData("{\"images\":{\"blockImages\":true,\"blockImages\":false}}")]
     [InlineData("{\"images\":{\"autoResize\":\"true\"}}")]

@@ -1,0 +1,344 @@
+{
+  "schemaVersion": 1,
+  "milestone": "compaction-context-management-parity",
+  "checkpointId": "C4",
+  "contractSha256": "c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6",
+  "evidenceDirectory": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C4/differential",
+  "generatedReportSha256": "21174d6d194b1a1224fbacc2cc3cfa39c0e5ac6aca0c9d843db69969396040fc",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "pisharpSourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2",
+  "sourceTreeClean": true,
+  "piCalibrationStable": true,
+  "pisharpCalibrationStable": true,
+  "pairedObservationsEqual": true,
+  "acceptedSafetyDifferenceCount": 1,
+  "normalization": [
+    "compare model-policy values and content estimates as explicit integer observations",
+    "use the same messages-after-usage estimator for fallback visible content",
+    "omit C# diagnostic per-message detail from the normalized estimate result"
+  ],
+  "safetyDifferences": [
+    {
+      "caseId": "C4.unknown-limit-is-never-invented",
+      "reason": "Pinned Pi evaluates unknown contextWindow as zero and triggers shouldCompact; PiSharp preserves the unknown limit and does not invent capacity.",
+      "regression": "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#UnknownContextWindowDoesNotInventCapacityFromReportedUsage",
+      "safetyEvidence": "pisharp-c4-observations.json"
+    }
+  ],
+  "executedCaseCount": 12,
+  "requiredCaseCount": 12,
+  "unexecutedCaseIds": [],
+  "verifierCounts": {
+    "required": 12,
+    "executed": 12,
+    "passed": 12,
+    "failed": 0,
+    "skipped": 0
+  },
+  "cases": [
+    {
+      "caseId": "C4.model-context-window-controls-trigger",
+      "contractExpectedObservation": "model context window controls trigger",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "e15b26f4002a5320f35bbbf4a77f9d3a8feb7a251504bc5553fe7eff3fa82cc3",
+      "normalizedActualSha256": "e15b26f4002a5320f35bbbf4a77f9d3a8feb7a251504bc5553fe7eff3fa82cc3",
+      "normalizedExpectedBytes": 91,
+      "normalizedActualBytes": 91,
+      "normalizedExpected": {
+        "triggerTokens": 83616,
+        "atThreshold": false,
+        "oneAboveThreshold": true,
+        "belowThreshold": false
+      },
+      "normalizedActual": {
+        "triggerTokens": 83616,
+        "atThreshold": false,
+        "oneAboveThreshold": true,
+        "belowThreshold": false
+      }
+    },
+    {
+      "caseId": "C4.reserve-and-keep-recent-defaults",
+      "contractExpectedObservation": "reserve and keep recent defaults",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "169c45b1f8e28ad20f5fdc578633d71c9aaf5754483af56c7c1df1b6375fb749",
+      "normalizedActualSha256": "169c45b1f8e28ad20f5fdc578633d71c9aaf5754483af56c7c1df1b6375fb749",
+      "normalizedExpectedBytes": 153,
+      "normalizedActualBytes": 153,
+      "normalizedExpected": {
+        "contextWindowTokens": 100000,
+        "enabled": true,
+        "reserveTokens": 16384,
+        "keepRecentTokens": 20000,
+        "defaultReserveTokens": 16384,
+        "defaultKeepRecentTokens": 20000
+      },
+      "normalizedActual": {
+        "enabled": true,
+        "contextWindowTokens": 100000,
+        "reserveTokens": 16384,
+        "keepRecentTokens": 20000,
+        "defaultReserveTokens": 16384,
+        "defaultKeepRecentTokens": 20000
+      }
+    },
+    {
+      "caseId": "C4.provider-model-override-precedence",
+      "contractExpectedObservation": "provider model override precedence",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "e49593319f91e77b6eae8c3e16292475ea90b4a9670f50cd5de67fa6484b45f7",
+      "normalizedActualSha256": "e49593319f91e77b6eae8c3e16292475ea90b4a9670f50cd5de67fa6484b45f7",
+      "normalizedExpectedBytes": 127,
+      "normalizedActualBytes": 127,
+      "normalizedExpected": {
+        "selectedReserveTokens": 400000,
+        "selectedKeepRecentTokens": 10000,
+        "fallbackReserveTokens": 8192,
+        "fallbackKeepRecentTokens": 10000
+      },
+      "normalizedActual": {
+        "selectedReserveTokens": 400000,
+        "selectedKeepRecentTokens": 10000,
+        "fallbackReserveTokens": 8192,
+        "fallbackKeepRecentTokens": 10000
+      }
+    },
+    {
+      "caseId": "C4.unknown-limit-is-never-invented",
+      "contractExpectedObservation": "unknown limit is never invented",
+      "classification": "intentional-safety-difference",
+      "passed": true,
+      "normalizedExpectedSha256": "010f5f69e73237cb29b11ba8ccdcdc6286c3318dd92479b5879f34df74ddac65",
+      "normalizedActualSha256": "ffcb3d6680503a98aa4058e91ce2628895ed504a513d508d98c2a7e8f33cf85e",
+      "normalizedExpectedBytes": 86,
+      "normalizedActualBytes": 81,
+      "normalizedExpected": {
+        "contextWindowKnown": false,
+        "piWouldTriggerFromZeroWindow": true,
+        "reserveTokens": 16384
+      },
+      "normalizedActual": {
+        "contextWindowKnown": false,
+        "pisharpTriggerInvented": false,
+        "reserveTokens": 16384
+      }
+    },
+    {
+      "caseId": "C4.provider-usage-anchors-current-context",
+      "contractExpectedObservation": "provider usage anchors current context",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "eaf550e7e8453ab972e2d1259ba3a4591d8af15aecbd4f06e672215d78462efa",
+      "normalizedActualSha256": "eaf550e7e8453ab972e2d1259ba3a4591d8af15aecbd4f06e672215d78462efa",
+      "normalizedExpectedBytes": 81,
+      "normalizedActualBytes": 81,
+      "normalizedExpected": {
+        "hasValidUsageAnchor": true,
+        "usageTokens": 13,
+        "trailingTokens": 2,
+        "totalTokens": 15
+      },
+      "normalizedActual": {
+        "hasValidUsageAnchor": true,
+        "usageTokens": 13,
+        "trailingTokens": 2,
+        "totalTokens": 15
+      }
+    },
+    {
+      "caseId": "C4.aborted-error-and-zero-usage-are-not-anchors",
+      "contractExpectedObservation": "aborted error and zero usage are not anchors",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "5775f12ab4c985a721975c11bf24875635921da4036aeff3060d5630ec64493f",
+      "normalizedActualSha256": "5775f12ab4c985a721975c11bf24875635921da4036aeff3060d5630ec64493f",
+      "normalizedExpectedBytes": 80,
+      "normalizedActualBytes": 80,
+      "normalizedExpected": {
+        "hasValidUsageAnchor": false,
+        "usageTokens": null,
+        "estimateFromVisibleMessages": 7
+      },
+      "normalizedActual": {
+        "hasValidUsageAnchor": false,
+        "usageTokens": null,
+        "estimateFromVisibleMessages": 7
+      }
+    },
+    {
+      "caseId": "C4.messages-after-usage-are-estimated",
+      "contractExpectedObservation": "messages after usage are estimated",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "a13954d7370941f78790fe70ecd6284f91b463c979683ebf98d2f7c7c20a9fd2",
+      "normalizedActualSha256": "a13954d7370941f78790fe70ecd6284f91b463c979683ebf98d2f7c7c20a9fd2",
+      "normalizedExpectedBytes": 57,
+      "normalizedActualBytes": 57,
+      "normalizedExpected": {
+        "usageTokens": 100,
+        "trailingTokens": 10,
+        "totalTokens": 110
+      },
+      "normalizedActual": {
+        "usageTokens": 100,
+        "trailingTokens": 10,
+        "totalTokens": 110
+      }
+    },
+    {
+      "caseId": "C4.context-edit-and-compaction-invalidate-stale-usage",
+      "contractExpectedObservation": "context edit and compaction invalidate stale usage",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "413143ec72d566764049db5e1c26f9bc4cd717aa0055b28dc7c1e26c0140a04b",
+      "normalizedActualSha256": "413143ec72d566764049db5e1c26f9bc4cd717aa0055b28dc7c1e26c0140a04b",
+      "normalizedExpectedBytes": 70,
+      "normalizedActualBytes": 70,
+      "normalizedExpected": {
+        "contextEditInvalidatesUsage": true,
+        "compactionInvalidatesUsage": true
+      },
+      "normalizedActual": {
+        "contextEditInvalidatesUsage": true,
+        "compactionInvalidatesUsage": true
+      }
+    },
+    {
+      "caseId": "C4.cache-read-and-write-token-fallback",
+      "contractExpectedObservation": "cache read and write token fallback",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "dff02789763942e98b7bd507bb597228ab3a98a8bfce88d69386a5d9c8ac3edc",
+      "normalizedActualSha256": "dff02789763942e98b7bd507bb597228ab3a98a8bfce88d69386a5d9c8ac3edc",
+      "normalizedExpectedBytes": 35,
+      "normalizedActualBytes": 35,
+      "normalizedExpected": {
+        "usageTokens": 34,
+        "totalTokens": 34
+      },
+      "normalizedActual": {
+        "usageTokens": 34,
+        "totalTokens": 34
+      }
+    },
+    {
+      "caseId": "C4.system-prompt-and-tool-declaration-estimate",
+      "contractExpectedObservation": "system prompt and tool declaration estimate",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "f1c453d7f67b19164d98397df23669f6181062cc78f315fca0f4717544751bbd",
+      "normalizedActualSha256": "f1c453d7f67b19164d98397df23669f6181062cc78f315fca0f4717544751bbd",
+      "normalizedExpectedBytes": 74,
+      "normalizedActualBytes": 74,
+      "normalizedExpected": {
+        "estimate": 40,
+        "systemPromptCharacters": 32,
+        "toolCount": 1,
+        "messageCount": 1
+      },
+      "normalizedActual": {
+        "estimate": 40,
+        "systemPromptCharacters": 32,
+        "toolCount": 1,
+        "messageCount": 1
+      }
+    },
+    {
+      "caseId": "C4.image-and-large-tool-result-estimate",
+      "contractExpectedObservation": "image and large tool result estimate",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "0668a3c82559626ab8e514cfc59f924aa363150b4e9895a36cd384c7f81d73a6",
+      "normalizedActualSha256": "0668a3c82559626ab8e514cfc59f924aa363150b4e9895a36cd384c7f81d73a6",
+      "normalizedExpectedBytes": 68,
+      "normalizedActualBytes": 68,
+      "normalizedExpected": {
+        "estimate": 3203,
+        "imageCharacters": 4800,
+        "toolResultCharacters": 8000
+      },
+      "normalizedActual": {
+        "estimate": 3203,
+        "imageCharacters": 4800,
+        "toolResultCharacters": 8000
+      }
+    },
+    {
+      "caseId": "C4.estimate-method-is-explicitly-heuristic-not-tokenizer",
+      "contractExpectedObservation": "estimate method is explicitly heuristic not tokenizer",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "97fb659927f3af4d21a6e61238fed1e055374966fce8553a3586118dcd72d5e7",
+      "normalizedActualSha256": "97fb659927f3af4d21a6e61238fed1e055374966fce8553a3586118dcd72d5e7",
+      "normalizedExpectedBytes": 71,
+      "normalizedActualBytes": 71,
+      "normalizedExpected": {
+        "estimate": 25,
+        "expectedCharacterHeuristic": 25,
+        "tokenizerOutput": false
+      },
+      "normalizedActual": {
+        "estimate": 25,
+        "expectedCharacterHeuristic": 25,
+        "tokenizerOutput": false
+      }
+    }
+  ],
+  "rawArtifacts": [
+    {
+      "path": "pi-c4/pi-run-1.json",
+      "sha256": "4e4a8a0d74728aa76518c2a1eda2b6946b9e65b39f7128bafa3edf0a7ff7aa9a"
+    },
+    {
+      "path": "pi-c4/pi-run-2.json",
+      "sha256": "4e4a8a0d74728aa76518c2a1eda2b6946b9e65b39f7128bafa3edf0a7ff7aa9a"
+    },
+    {
+      "path": "pi-c4/pi-oracle.json",
+      "sha256": "eb4f893dd2f45b5f009ab00a70077a9b558841e10732781f333923a1745c4cc6"
+    },
+    {
+      "path": "pi-c4.stdout.log",
+      "sha256": "5f2d53f2f2386ddd20fc95ce747bd99c3f74e80f28672b83670058ef0a3434dd"
+    },
+    {
+      "path": "pi-c4.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-c4-run-1.json",
+      "sha256": "496791ddc512386020b98099ae4ffd48bfaa436a41f5a3a6df77a629f002fa35"
+    },
+    {
+      "path": "pisharp-c4-run-1.stdout.log",
+      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
+    },
+    {
+      "path": "pisharp-c4-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-c4-run-2.json",
+      "sha256": "496791ddc512386020b98099ae4ffd48bfaa436a41f5a3a6df77a629f002fa35"
+    },
+    {
+      "path": "pisharp-c4-run-2.stdout.log",
+      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
+    },
+    {
+      "path": "pisharp-c4-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-c4-observations.json",
+      "sha256": "f94e4562f25ef78c7ab23815b625c60baacb41c0245d61f4100392927ee6f2c8"
+    },
+    {
+      "path": "pisharp-c4-observations.json",
+      "sha256": "ec34f1b95462ca8f04fef9d0b442f858e691fe7e5efa1bde95b477a658f34c4e"
+    }
+  ]
+}

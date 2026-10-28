@@ -97,10 +97,10 @@ internal sealed class ConversationCompactionCoordinator(
             {
                 if (conversation.Tree.HeadId != previousHead)
                     throw new InvalidOperationException("Conversation changed during compaction.");
-                conversation.AppendCompaction(plan, summaryText, keepRecentTokens, compactionTokensBefore,
-                    resultDetails, firstKeptEntryId, customCompaction?.Details, LastCompactionFromExtension);
                 var usageRecords = CompactionUsageAccounting.Records(summary, conversation.Model, getPricing());
                 var usage = CompactionUsageAccounting.Aggregate(usageRecords);
+                conversation.AppendCompaction(plan, summaryText, keepRecentTokens, compactionTokensBefore,
+                    resultDetails, firstKeptEntryId, customCompaction?.Details, LastCompactionFromExtension, usage);
                 foreach (var record in usageRecords) conversation.AppendUsage(record);
                 var messages = conversation.ContextMessages();
                 var restored = adoptExecutionHistory ? await restoreHistory(messages, cancellationToken) : null;
@@ -165,7 +165,7 @@ internal sealed class ConversationCompactionCoordinator(
 
     private static UsageDetails CreateUsageDetails(NativeExtensions.PiSharpExtensionCompactionUsage usage) => new()
     {
-        InputTokenCount = usage.InputTokens,
+        InputTokenCount = usage.InputTokens + usage.CachedInputTokens,
         OutputTokenCount = usage.OutputTokens,
         CachedInputTokenCount = usage.CachedInputTokens,
         ReasoningTokenCount = usage.ReasoningTokens,
@@ -239,23 +239,25 @@ internal sealed class ConversationCompactionCoordinator(
     private async Task<PiAgent.CompactionSummary> SummarizeAsync(ConversationSession.CompactionPlan plan,
         string? focus, CancellationToken cancellationToken)
     {
+        var reserveTokens = getPolicy()?.ReserveTokens;
         if (!plan.IsSplitTurn)
-            return await agent.SummarizeAsync(plan.MessagesToSummarize, focus, cancellationToken,
-                previousSummary: plan.PreviousSummary);
+            return await agent.SummarizeWithBudgetAsync(plan.MessagesToSummarize, focus, cancellationToken,
+                previousSummary: plan.PreviousSummary, turnPrefix: false, reserveTokens: reserveTokens);
 
         var historyText = plan.PreviousSummary ?? "No prior history.";
         UsageDetails? usage = null;
         var physicalUsage = new List<UsageRecord>();
         if (plan.MessagesToSummarize.Count > 0)
         {
-            var history = await agent.SummarizeAsync(plan.MessagesToSummarize, focus, cancellationToken,
-                previousSummary: plan.PreviousSummary);
+            var history = await agent.SummarizeWithBudgetAsync(plan.MessagesToSummarize, focus, cancellationToken,
+                previousSummary: plan.PreviousSummary, turnPrefix: false, reserveTokens: reserveTokens);
             historyText = history.Text;
             usage = history.Usage;
             if (history.PhysicalUsage is { } historyUsage) physicalUsage.AddRange(historyUsage);
         }
 
-        var turn = await agent.SummarizeAsync(plan.TurnPrefixMessages ?? [], null, cancellationToken, turnPrefix: true);
+        var turn = await agent.SummarizeWithBudgetAsync(plan.TurnPrefixMessages ?? [], null, cancellationToken,
+            previousSummary: null, turnPrefix: true, reserveTokens: reserveTokens);
         usage = AddUsage(usage, turn.Usage);
         if (turn.PhysicalUsage is { } turnUsage) physicalUsage.AddRange(turnUsage);
         return new PiAgent.CompactionSummary(

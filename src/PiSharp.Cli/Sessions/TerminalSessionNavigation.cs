@@ -101,9 +101,39 @@ internal sealed class TerminalSessionNavigation(ActiveProjectRuntime projectBind
             return;
         }
 
-        await conversationBinding.Run.SelectAsync(selected.Id);
+        var branchSummarySettings = projectBinding.Settings.BranchSummary ?? new BranchSummarySettings();
+        var summarize = false;
+        string? customInstructions = null;
+        if (branchSummarySettings.SkipPrompt != true)
+        {
+            while (true)
+            {
+                var choice = presentation.Editor?.ShowInlineSelectionList("Summarize branch?",
+                    [
+                        new TerminalSelectionOption<string>("no", "no", "No summary"),
+                        new TerminalSelectionOption<string>("summarize", "summarize", "Summarize"),
+                        new TerminalSelectionOption<string>("custom", "custom", "Summarize with custom prompt")
+                    ], [""], "enter select • escape/ctrl+c close", selectedKey: "no")?.Option.Value;
+                if (choice is null) return;
+                if (choice == "custom")
+                {
+                    var values = await presentation.Editor!.PromptSequenceAsync("Custom summarization instructions",
+                        [("Custom summarization instructions", null)]).ConfigureAwait(false);
+                    if (values is null) continue;
+                    customInstructions = values.FirstOrDefault();
+                    summarize = true;
+                    break;
+                }
+                summarize = choice == "summarize";
+                break;
+            }
+        }
+        var navigation = await conversationBinding.Run.NavigateTreeAsync(selected.Id,
+            new ConversationTreeSelectionOptions(Summarize: summarize, CustomInstructions: customInstructions,
+                ReserveTokens: branchSummarySettings.EffectiveReserveTokens));
 
         presentation.LoadSessionTranscript();
+        if (navigation.EditorText is { } draft) presentation.Editor?.Prefill(draft);
         Console.WriteLine($"Selected {selected.Id[..12]} · {selected.Type}");
     }
 

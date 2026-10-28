@@ -336,7 +336,16 @@ public sealed class VirtualModelCompactionTests
             if (failure is not null) throw failure;
             inspect?.Invoke(messages.ToArray());
             return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, contents ?? [new TextContent(answer)]))
-            { Usage = new UsageDetails { InputTokenCount = inputTokens, OutputTokenCount = 2, TotalTokenCount = inputTokens + 2 } });
+            {
+                Usage = new UsageDetails
+                {
+                    InputTokenCount = inputTokens,
+                    OutputTokenCount = 2,
+                    CachedInputTokenCount = 0,
+                    TotalTokenCount = inputTokens + 2,
+                    AdditionalCounts = new AdditionalPropertiesDictionary<long> { ["cacheWriteTokens"] = 0 }
+                }
+            });
         }
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)

@@ -23,7 +23,7 @@ public sealed class PiContextUsageEstimatorTests
     {
         var session = new ConversationSession(Path.GetTempPath(), "model", null, "provider");
         session.Append(new ChatMessage(ChatRole.User, new string('x', 8_000)));
-        session.AppendUsage(new UsageRecord("model", "model", 10, 3, 0, 0, 13, null));
+        session.AppendUsage(new UsageRecord("model", "model", 10, 3, 0, 0, 13, null, CachedWriteTokens: 0));
         session.Append(new ChatMessage(ChatRole.Assistant, "answer"));
         session.Append(new ChatMessage(ChatRole.User, "pending"));
 
@@ -42,7 +42,7 @@ public sealed class PiContextUsageEstimatorTests
     {
         var session = new ConversationSession(Path.GetTempPath(), "model", null, "provider");
         session.Append(new ChatMessage(ChatRole.User, "request"));
-        session.AppendUsage(new UsageRecord("model", "model", 10, 3, 0, 0, 13, null));
+        session.AppendUsage(new UsageRecord("model", "model", 10, 3, 0, 0, 13, null, CachedWriteTokens: 0));
         session.Append(new ChatMessage(ChatRole.Assistant, "answer"));
         var assistantId = session.Tree.HeadId!;
         session.AppendContextOmission(assistantId);
@@ -60,7 +60,7 @@ public sealed class PiContextUsageEstimatorTests
     {
         var session = new ConversationSession(Path.GetTempPath(), "model", null, "provider");
         session.Append(new ChatMessage(ChatRole.User, "request"));
-        session.AppendUsage(new UsageRecord("model", "model", 10, 3, 0, 0, 13, null));
+        session.AppendUsage(new UsageRecord("model", "model", 10, 3, 0, 0, 13, null, CachedWriteTokens: 0));
         session.Append(new ChatMessage(ChatRole.Assistant, "partial")
         {
             AdditionalProperties = new() { ["pisharp.stopReason"] = "error" }

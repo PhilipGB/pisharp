@@ -1,0 +1,1551 @@
+{
+  "schemaVersion": 1,
+  "milestone": "compaction-context-management-parity",
+  "status": "frozen-before-production-implementation",
+  "sourcePins": {
+    "piRepository": "https://github.com/earendil-works/pi",
+    "piCommit": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "pisharpBaseCommit": "12064420179f4119bdaf37479c7cba0f5ca40717",
+    "prerequisitePullRequest": 27,
+    "prerequisiteReviewedHead": "2f88019cd8840b2468b1957217ae361e0bab3ad6",
+    "prerequisiteActualMergeCommit": "12064420179f4119bdaf37479c7cba0f5ca40717"
+  },
+  "checkpointCount": 22,
+  "requiredCaseCount": 211,
+  "requiredCheckpointIds": [
+    "P0",
+    "P1",
+    "V0",
+    "V1",
+    "C1",
+    "C2",
+    "C3",
+    "C4",
+    "C5",
+    "C6",
+    "C7",
+    "C8",
+    "C9",
+    "C10",
+    "C11",
+    "C12",
+    "C13",
+    "D0",
+    "Q0",
+    "E0",
+    "CI0",
+    "PUB0"
+  ],
+  "caseIdentityRule": "Counts and required IDs are calculated from this frozen contract; executed or discovered cases never define the denominator.",
+  "evidenceRoot": "artifacts/parity/compaction-context/<run-id>",
+  "rawCaptureRequirements": [
+    "process stdout/stderr and exit status",
+    "provider request bytes or canonical JSON",
+    "observable events and state",
+    "persisted session artifacts",
+    "normalization rules and output digest"
+  ],
+  "negativeControls": [
+    "altered Pi SHA",
+    "mutated provider request",
+    "wrong cut point",
+    "dropped tool call",
+    "duplicated tool call",
+    "wrong branch",
+    "missing usage/cost",
+    "wrong cancellation",
+    "missing case",
+    "skipped case",
+    "stale source",
+    "failed CI",
+    "wrong-head CI"
+  ],
+  "checkpoints": [
+    {
+      "id": "P0",
+      "name": "PR #27 merge prerequisite",
+      "requiredCases": [
+        {
+          "id": "P0.reviewed-head-is-exact",
+          "expectedObservation": "reviewed head is exact",
+          "evidencePath": "cases/P0.reviewed-head-is-exact.json"
+        },
+        {
+          "id": "P0.actual-merge-sha-is-recorded",
+          "expectedObservation": "actual merge sha is recorded",
+          "evidencePath": "cases/P0.actual-merge-sha-is-recorded.json"
+        },
+        {
+          "id": "P0.main-contains-pr-head-and-merge",
+          "expectedObservation": "main contains pr head and merge",
+          "evidencePath": "cases/P0.main-contains-pr-head-and-merge.json"
+        },
+        {
+          "id": "P0.push-and-pr-ci-pass-on-head",
+          "expectedObservation": "push and pr ci pass on head",
+          "evidencePath": "cases/P0.push-and-pr-ci-pass-on-head.json"
+        },
+        {
+          "id": "P0.published-evidence-has-27-checkpoints-240-cases",
+          "expectedObservation": "published evidence has 27 checkpoints 240 cases",
+          "evidencePath": "cases/P0.published-evidence-has-27-checkpoints-240-cases.json"
+        }
+      ],
+      "runner": {
+        "command": "python3 tools/parity/compaction_context/runner.py run --checkpoint P0 --pi <pinned-pi-checkout> --evidence-dir <current-run-directory>",
+        "verifier": "python3 tools/parity/compaction_context/verify.py check --evidence-dir <current-run-directory>"
+      },
+      "expectedObservations": "The actual merged PR #27 reviewed head is reachable from the recorded merge commit and fetched main; the two final workflows and the published 27-checkpoint/240-case result are bound to the exact reviewed head.",
+      "passFailCriteria": "Every required case ID occurs exactly once with executed=true, passed=true, skipped=false, current source identity, raw observation references and matching expected fields. Any missing, duplicate, failed, skipped, stale or unresolved case fails this checkpoint.",
+      "evidencePath": "checkpoints/P0.json",
+      "sourceReferences": [
+        "docs/parity/fixtures/managed-package-lifecycle-parity.md#Required-case-inventory",
+        ".github/workflows/ci.yml#jobs"
+      ]
+    },
+    {
+      "id": "P1",
+      "name": "New milestone branch and clean baseline",
+      "requiredCases": [
+        {
+          "id": "P1.branch-parent-is-actual-merge",
+          "expectedObservation": "branch parent is actual merge",
+          "evidencePath": "cases/P1.branch-parent-is-actual-merge.json"
+        },
+        {
+          "id": "P1.pinned-pi-checkout-is-b06c1f2",
+          "expectedObservation": "pinned pi checkout is b06c1f2",
+          "evidencePath": "cases/P1.pinned-pi-checkout-is-b06c1f2.json"
+        },
+        {
+          "id": "P1.baseline-tree-and-package-versions-recorded",
+          "expectedObservation": "baseline tree and package versions recorded",
+          "evidencePath": "cases/P1.baseline-tree-and-package-versions-recorded.json"
+        },
+        {
+          "id": "P1.worktree-starts-clean",
+          "expectedObservation": "worktree starts clean",
+          "evidencePath": "cases/P1.worktree-starts-clean.json"
+        },
+        {
+          "id": "P1.maf-installed-version-is-recorded",
+          "expectedObservation": "maf installed version is recorded",
+          "evidencePath": "cases/P1.maf-installed-version-is-recorded.json"
+        }
+      ],
+      "runner": {
+        "command": "python3 tools/parity/compaction_context/runner.py run --checkpoint P1 --pi <pinned-pi-checkout> --evidence-dir <current-run-directory>",
+        "verifier": "python3 tools/parity/compaction_context/verify.py check --evidence-dir <current-run-directory>"
+      },
+      "expectedObservations": "The milestone branch is rooted at the actual PR #27 merge SHA, pinned Pi is exactly the requested commit, package versions and starting tree are recorded, and no inherited uncommitted changes are present.",
+      "passFailCriteria": "Every required case ID occurs exactly once with executed=true, passed=true, skipped=false, current source identity, raw observation references and matching expected fields. Any missing, duplicate, failed, skipped, stale or unresolved case fails this checkpoint.",
+      "evidencePath": "checkpoints/P1.json",
+      "sourceReferences": [
+        "tools/parity/pi-reference.txt",
+        "src/PiSharp.Runtime/PiSharp.Runtime.csproj#Microsoft.Agents.AI"
+      ]
+    },
+    {
+      "id": "V0",
+      "name": "Source-pinned capability inventory and coverage",
+      "requiredCases": [
+        {
+          "id": "V0.manual-and-auto-source-owners",
+          "expectedObservation": "manual and auto source owners",
+          "evidencePath": "cases/V0.manual-and-auto-source-owners.json"
+        },
+        {
+          "id": "V0.cut-point-and-retention-source-owners",
+          "expectedObservation": "cut point and retention source owners",
+          "evidencePath": "cases/V0.cut-point-and-retention-source-owners.json"
+        },
+        {
+          "id": "V0.context-budget-and-provider-overflow-owners",
+          "expectedObservation": "context budget and provider overflow owners",
+          "evidencePath": "cases/V0.context-budget-and-provider-overflow-owners.json"
+        },
+        {
+          "id": "V0.tool-loop-and-provider-request-owners",
+          "expectedObservation": "tool loop and provider request owners",
+          "evidencePath": "cases/V0.tool-loop-and-provider-request-owners.json"
+        },
+        {
+          "id": "V0.summary-generation-and-branch-summary-owners",
+          "expectedObservation": "summary generation and branch summary owners",
+          "evidencePath": "cases/V0.summary-generation-and-branch-summary-owners.json"
+        },
+        {
+          "id": "V0.session-jsonl-and-branch-state-owners",
+          "expectedObservation": "session jsonl and branch state owners",
+          "evidencePath": "cases/V0.session-jsonl-and-branch-state-owners.json"
+        },
+        {
+          "id": "V0.usage-reasoning-pricing-owners",
+          "expectedObservation": "usage reasoning pricing owners",
+          "evidencePath": "cases/V0.usage-reasoning-pricing-owners.json"
+        },
+        {
+          "id": "V0.cli-rpc-json-tui-owners",
+          "expectedObservation": "cli rpc json tui owners",
+          "evidencePath": "cases/V0.cli-rpc-json-tui-owners.json"
+        },
+        {
+          "id": "V0.extension-hook-owners",
+          "expectedObservation": "extension hook owners",
+          "evidencePath": "cases/V0.extension-hook-owners.json"
+        },
+        {
+          "id": "V0.failure-cancellation-recovery-owners",
+          "expectedObservation": "failure cancellation recovery owners",
+          "evidencePath": "cases/V0.failure-cancellation-recovery-owners.json"
+        },
+        {
+          "id": "V0.observable-input-output-state-map",
+          "expectedObservation": "observable input output state map",
+          "evidencePath": "cases/V0.observable-input-output-state-map.json"
+        },
+        {
+          "id": "V0.existing-tests-mapped-by-case",
+          "expectedObservation": "existing tests mapped by case",
+          "evidencePath": "cases/V0.existing-tests-mapped-by-case.json"
+        },
+        {
+          "id": "V0.confirmed-differences-separated-from-unknowns",
+          "expectedObservation": "confirmed differences separated from unknowns",
+          "evidencePath": "cases/V0.confirmed-differences-separated-from-unknowns.json"
+        },
+        {
+          "id": "V0.every-required-behavior-has-a-case",
+          "expectedObservation": "every required behavior has a case",
+          "evidencePath": "cases/V0.every-required-behavior-has-a-case.json"
+        }
+      ],
+      "runner": {
+        "command": "python3 tools/parity/compaction_context/runner.py run --checkpoint V0 --pi <pinned-pi-checkout> --evidence-dir <current-run-directory>",
+        "verifier": "python3 tools/parity/compaction_context/verify.py check --evidence-dir <current-run-directory>"
+      },
+      "expectedObservations": "Each supported pinned-Pi behavior maps to its upstream owner, PiSharp owner, inputs, outputs, durable/transient state, current test coverage, confirmed difference or evidence gap, and one or more immutable required case IDs.",
+      "passFailCriteria": "Every required case ID occurs exactly once with executed=true, passed=true, skipped=false, current source identity, raw observation references and matching expected fields. Any missing, duplicate, failed, skipped, stale or unresolved case fails this checkpoint.",
+      "evidencePath": "checkpoints/V0.json",
+      "sourceReferences": [
+        "Pi:packages/coding-agent/src/core/compaction/compaction.ts#prepareCompaction,compact,findCutPoint,estimateContextTokens",
+        "Pi:packages/coding-agent/src/core/compaction/branch-summarization.ts#collectEntriesForBranchSummary,prepareBranchEntries,generateBranchSummary",
+        "Pi:packages/coding-agent/src/core/agent-session.ts#compact,_checkCompaction,_runAutoCompaction,navigateTree",
+        "PiSharp:src/PiSharp.Runtime/Sessions/ConversationCompactionCoordinator.cs#CompactAsync,PreparePlan",
+        "PiSharp:src/PiSharp.Runtime/Sessions/ConversationRun.cs#CompactWithResultAsync,SelectAsync",
+        "PiSharp:src/PiSharp.Runtime/Sessions/InFlightContextBudget.cs#ProjectAsync",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcCompactionProcessTests.cs"
+      ]
+    },
+    {
+      "id": "V1",
+      "name": "Verifier positive and negative controls",
+      "requiredCases": [
+        {
+          "id": "V1.positive-control-valid-evidence-accepted",
+          "expectedObservation": "positive control valid evidence accepted",
+          "evidencePath": "cases/V1.positive-control-valid-evidence-accepted.json"
+        },
+        {
+          "id": "V1.negative-altered-pi-pin-rejected",
+          "expectedObservation": "negative altered pi pin rejected",
+          "evidencePath": "cases/V1.negative-altered-pi-pin-rejected.json"
+        },
+        {
+          "id": "V1.negative-mutated-provider-request-rejected",
+          "expectedObservation": "negative mutated provider request rejected",
+          "evidencePath": "cases/V1.negative-mutated-provider-request-rejected.json"
+        },
+        {
+          "id": "V1.negative-incorrect-cut-point-rejected",
+          "expectedObservation": "negative incorrect cut point rejected",
+          "evidencePath": "cases/V1.negative-incorrect-cut-point-rejected.json"
+        },
+        {
+          "id": "V1.negative-dropped-tool-call-rejected",
+          "expectedObservation": "negative dropped tool call rejected",
+          "evidencePath": "cases/V1.negative-dropped-tool-call-rejected.json"
+        },
+        {
+          "id": "V1.negative-duplicated-tool-call-rejected",
+          "expectedObservation": "negative duplicated tool call rejected",
+          "evidencePath": "cases/V1.negative-duplicated-tool-call-rejected.json"
+        },
+        {
+          "id": "V1.negative-wrong-branch-rejected",
+          "expectedObservation": "negative wrong branch rejected",
+          "evidencePath": "cases/V1.negative-wrong-branch-rejected.json"
+        },
+        {
+          "id": "V1.negative-missing-usage-or-cost-rejected",
+          "expectedObservation": "negative missing usage or cost rejected",
+          "evidencePath": "cases/V1.negative-missing-usage-or-cost-rejected.json"
+        },
+        {
+          "id": "V1.negative-wrong-cancellation-rejected",
+          "expectedObservation": "negative wrong cancellation rejected",
+          "evidencePath": "cases/V1.negative-wrong-cancellation-rejected.json"
+        },
+        {
+          "id": "V1.negative-missing-case-rejected",
+          "expectedObservation": "negative missing case rejected",
+          "evidencePath": "cases/V1.negative-missing-case-rejected.json"
+        },
+        {
+          "id": "V1.negative-skipped-case-rejected",
+          "expectedObservation": "negative skipped case rejected",
+          "evidencePath": "cases/V1.negative-skipped-case-rejected.json"
+        },
+        {
+          "id": "V1.negative-stale-source-evidence-rejected",
+          "expectedObservation": "negative stale source evidence rejected",
+          "evidencePath": "cases/V1.negative-stale-source-evidence-rejected.json"
+        },
+        {
+          "id": "V1.negative-failed-ci-rejected",
+          "expectedObservation": "negative failed ci rejected",
+          "evidencePath": "cases/V1.negative-failed-ci-rejected.json"
+        },
+        {
+          "id": "V1.negative-wrong-head-ci-rejected",
+          "expectedObservation": "negative wrong head ci rejected",
+          "evidencePath": "cases/V1.negative-wrong-head-ci-rejected.json"
+        }
+      ],
+      "runner": {
+        "command": "python3 tools/parity/compaction_context/runner.py run --checkpoint V1 --pi <pinned-pi-checkout> --evidence-dir <current-run-directory>",
+        "verifier": "python3 tools/parity/compaction_context/verify.py check --evidence-dir <current-run-directory>"
+      },
+      "expectedObservations": "The verifier accepts valid evidence and rejects each specified mutation. Missing, skipped, stale, failed, wrong-head, or semantically altered evidence cannot pass.",
+      "passFailCriteria": "Every required case ID occurs exactly once with executed=true, passed=true, skipped=false, current source identity, raw observation references and matching expected fields. Any missing, duplicate, failed, skipped, stale or unresolved case fails this checkpoint.",
+      "evidencePath": "checkpoints/V1.json",
+      "sourceReferences": [
+        "tools/parity/compaction_context/verify.py#validate_evidence",
+        "tools/parity/compaction_context/test_verifier.py#negative_controls"
+      ]
+    },
+    {
+      "id": "C1",
+      "name": "Manual compaction",
+      "requiredCases": [
+        {
+          "id": "C1.eligible-manual-request-persists-one-entry",
+          "expectedObservation": "eligible manual request persists one entry",
+          "evidencePath": "cases/C1.eligible-manual-request-persists-one-entry.json"
+        },
+        {
+          "id": "C1.ineligible-short-history-is-no-op",
+          "expectedObservation": "ineligible short history is no op",
+          "evidencePath": "cases/C1.ineligible-short-history-is-no-op.json"
+        },
+        {
+          "id": "C1.custom-focus-changes-history-prompt-only",
+          "expectedObservation": "custom focus changes history prompt only",
+          "evidencePath": "cases/C1.custom-focus-changes-history-prompt-only.json"
+        },
+        {
+          "id": "C1.recent-context-and-full-history-retained",
+          "expectedObservation": "recent context and full history retained",
+          "evidencePath": "cases/C1.recent-context-and-full-history-retained.json"
+        },
+        {
+          "id": "C1.split-turn-summary-retains-interrupted-assistant",
+          "expectedObservation": "split turn summary retains interrupted assistant",
+          "evidencePath": "cases/C1.split-turn-summary-retains-interrupted-assistant.json"
+        },
+        {
+          "id": "C1.summary-usage-details-persist",
+          "expectedObservation": "summary usage details persist",
+          "evidencePath": "cases/C1.summary-usage-details-persist.json"
+        },
+        {
+          "id": "C1.summary-failure-rolls-back-and-reports",
+          "expectedObservation": "summary failure rolls back and reports",
+          "evidencePath": "cases/C1.summary-failure-rolls-back-and-reports.json"
+        },
+        {
+          "id": "C1.cancellation-publishes-no-entry",
+          "expectedObservation": "cancellation publishes no entry",
+          "evidencePath": "cases/C1.cancellation-publishes-no-entry.json"
+        },
+        {
+          "id": "C1.active-run-and-queued-follow-up-order",
+          "expectedObservation": "active run and queued follow up order",
+          "evidencePath": "cases/C1.active-run-and-queued-follow-up-order.json"
+        }
+      ],
+      "runner": {
+        "command": "python3 tools/parity/compaction_context/runner.py run --checkpoint C1 --pi <pinned-pi-checkout> --evidence-dir <current-run-directory>",
+        "verifier": "python3 tools/parity/compaction_context/verify.py check --evidence-dir <current-run-directory>"
+      },
+      "expectedObservations": "Manual compaction uses pinned-Pi eligibility, retained boundary, summary inputs and lifecycle; canonical history remains recoverable and one successful action publishes exactly one entry.",
+      "passFailCriteria": "Every required case ID occurs exactly once with executed=true, passed=true, skipped=false, current source identity, raw observation references and matching expected fields. Any missing, duplicate, failed, skipped, stale or unresolved case fails this checkpoint.",
+      "evidencePath": "checkpoints/C1.json",
+      "sourceReferences": [
+        "Pi:packages/coding-agent/src/core/agent-session.ts#compact",
+        "Pi:packages/coding-agent/src/core/compaction/compaction.ts#prepareCompaction,compact",
+        "PiSharp:src/PiSharp.Runtime/Sessions/ConversationRun.cs#CompactWithResultAsync",
+        "PiSharp:src/PiSharp.Runtime/Sessions/ConversationCompactionCoordinator.cs#CompactAsync",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcCompactionProcessTests.cs"
+      ]
+    },
+    {
+      "id": "C2",
+      "name": "Automatic compaction",
+      "requiredCases": [
+        {
+          "id": "C2.threshold-after-turn-compacts-without-retry",
+          "expectedObservation": "threshold after turn compacts without retry",
+          "evidencePath": "cases/C2.threshold-after-turn-compacts-without-retry.json"
+        },
+        {
+          "id": "C2.pre-prompt-compaction-does-not-replay-turn",
+          "expectedObservation": "pre prompt compaction does not replay turn",
+          "evidencePath": "cases/C2.pre-prompt-compaction-does-not-replay-turn.json"
+        },
+        {
+          "id": "C2.unknown-window-does-not-speculate",
+          "expectedObservation": "unknown window does not speculate",
+          "evidencePath": "cases/C2.unknown-window-does-not-speculate.json"
+        },
+        {
+          "id": "C2.disabled-setting-prevents-trigger",
+          "expectedObservation": "disabled setting prevents trigger",
+          "evidencePath": "cases/C2.disabled-setting-prevents-trigger.json"
+        },
+        {
+          "id": "C2.strict-greater-than-reserve-threshold",
+          "expectedObservation": "strict greater than reserve threshold",
+          "evidencePath": "cases/C2.strict-greater-than-reserve-threshold.json"
+        },
+        {
+          "id": "C2.model-switch-uses-selected-window-and-overrides",
+          "expectedObservation": "model switch uses selected window and overrides",
+          "evidencePath": "cases/C2.model-switch-uses-selected-window-and-overrides.json"
+        },
+        {
+          "id": "C2.physical-route-change-refreshes-budget",
+          "expectedObservation": "physical route change refreshes budget",
+          "evidencePath": "cases/C2.physical-route-change-refreshes-budget.json"
+        },
+        {
+          "id": "C2.queued-steering-survives-auto-compaction",
+          "expectedObservation": "queued steering survives auto compaction",
+          "evidencePath": "cases/C2.queued-steering-survives-auto-compaction.json"
+        },
+        {
+          "id": "C2.overflow-retry-is-one-bounded-attempt",
+          "expectedObservation": "overflow retry is one bounded attempt",
+          "evidencePath": "cases/C2.overflow-retry-is-one-bounded-attempt.json"
+        },
+        {
+          "id": "C2.error-turn-uses-last-valid-usage-not-stale-usage",
+          "expectedObservation": "error turn uses last valid usage not stale usage",
+          "evidencePath": "cases/C2.error-turn-uses-last-valid-usage-not-stale-usage.json"
+        }
+      ],
+      "runner": {
+        "command": "python3 tools/parity/compaction_context/runner.py run --checkpoint C2 --pi <pinned-pi-checkout> --evidence-dir <current-run-directory>",
+        "verifier": "python3 tools/parity/compaction_context/verify.py check --evidence-dir <current-run-directory>"
+      },
+      "expectedObservations": "Threshold and overflow triggers match pinned-Pi decision points, selected physical model budgets and queue behavior; unknown windows never invent capacity.",
+      "passFailCriteria": "Every required case ID occurs exactly once with executed=true, passed=true, skipped=false, current source identity, raw observation references and matching expected fields. Any missing, duplicate, failed, skipped, stale or unresolved case fails this checkpoint.",
+      "evidencePath": "checkpoints/C2.json",
+      "sourceReferences": [
+        "Pi:packages/coding-agent/src/core/agent-session.ts#_checkCompaction,_runAutoCompaction",
+        "Pi:packages/coding-agent/src/core/compaction/compaction.ts#shouldCompact",
+        "PiSharp:src/PiSharp.Runtime/Sessions/AutoCompactionPolicy.cs",
+        "PiSharp:src/PiSharp.Runtime/Sessions/ConversationRun.cs#pre-prompt,post-turn,overflow"
+      ]
+    },
+    {
+      "id": "C3",
+      "name": "Compaction cut points and retained history",
+      "requiredCases": [
+        {
+          "id": "C3.user-boundary-selection",
+          "expectedObservation": "user boundary selection",
+          "evidencePath": "cases/C3.user-boundary-selection.json"
+        },
+        {
+          "id": "C3.assistant-boundary-split-turn",
+          "expectedObservation": "assistant boundary split turn",
+          "evidencePath": "cases/C3.assistant-boundary-split-turn.json"
+        },
+        {
+          "id": "C3.tool-call-result-kept-as-one-group",
+          "expectedObservation": "tool call result kept as one group",
+          "evidencePath": "cases/C3.tool-call-result-kept-as-one-group.json"
+        },
+        {
+          "id": "C3.sequential-tool-cycles",
+          "expectedObservation": "sequential tool cycles",
+          "evidencePath": "cases/C3.sequential-tool-cycles.json"
+        },
+        {
+          "id": "C3.parallel-tool-batch-boundary",
+          "expectedObservation": "parallel tool batch boundary",
+          "evidencePath": "cases/C3.parallel-tool-batch-boundary.json"
+        },
+        {
+          "id": "C3.oversized-trailing-result-falls-back-before-call",
+          "expectedObservation": "oversized trailing result falls back before call",
+          "evidencePath": "cases/C3.oversized-trailing-result-falls-back-before-call.json"
+        },
+        {
+          "id": "C3.never-cut-at-tool-result",
+          "expectedObservation": "never cut at tool result",
+          "evidencePath": "cases/C3.never-cut-at-tool-result.json"
+        },
+        {
+          "id": "C3.incomplete-assistant-and-tool-call-retained",
+          "expectedObservation": "incomplete assistant and tool call retained",
+          "evidencePath": "cases/C3.incomplete-assistant-and-tool-call-retained.json"
+        },
+        {
+          "id": "C3.missing-tool-result-provider-projection",
+          "expectedObservation": "missing tool result provider projection",
+          "evidencePath": "cases/C3.missing-tool-result-provider-projection.json"
+        },
+        {
+          "id": "C3.unmatched-or-duplicate-tool-result-handling",
+          "expectedObservation": "unmatched or duplicate tool result handling",
+          "evidencePath": "cases/C3.unmatched-or-duplicate-tool-result-handling.json"
+        },
+        {
+          "id": "C3.repeated-compaction-updates-prior-summary",
+          "expectedObservation": "repeated compaction updates prior summary",
+          "evidencePath": "cases/C3.repeated-compaction-updates-prior-summary.json"
+        },
+        {
+          "id": "C3.latest-compaction-controls-context",
+          "expectedObservation": "latest compaction controls context",
+          "evidencePath": "cases/C3.latest-compaction-controls-context.json"
+        },
+        {
+          "id": "C3.recovery-omission-suffix-boundary",
+          "expectedObservation": "recovery omission suffix boundary",
+          "evidencePath": "cases/C3.recovery-omission-suffix-boundary.json"
+        },
+        {
+          "id": "C3.empty-or-insufficient-history-is-no-op",
+          "expectedObservation": "empty or insufficient history is no op",
+          "evidencePath": "cases/C3.empty-or-insufficient-history-is-no-op.json"
+        }
+      ],
+      "runner": {
+        "command": "python3 tools/parity/compaction_context/runner.py run --checkpoint C3 --pi <pinned-pi-checkout> --evidence-dir <current-run-directory>",
+        "verifier": "python3 tools/parity/compaction_context/verify.py check --evidence-dir <current-run-directory>"
+      },
+      "expectedObservations": "Every persistent cut is at a pinned-Pi-valid user/assistant boundary, closes complete tool-call groups, retains the required recent context and handles repeated/recovery compaction.",
+      "passFailCriteria": "Every required case ID occurs exactly once with executed=true, passed=true, skipped=false, current source identity, raw observation references and matching expected fields. Any missing, duplicate, failed, skipped, stale or unresolved case fails this checkpoint.",
+      "evidencePath": "checkpoints/C3.json",
+      "sourceReferences": [
+        "Pi:packages/coding-agent/src/core/compaction/compaction.ts#findCutPoint,prepareCompaction,estimateTokens",
+        "Pi:packages/coding-agent/src/core/session-manager.ts#buildSessionContext,appendCompaction",
+        "PiSharp:src/PiSharp.Runtime/Sessions/ConversationCompactionCoordinator.cs#PreparePlan",
+        "PiSharp:src/PiSharp.Runtime/Sessions/ConversationContextProjection.cs#CompactionContextEntries,ContextMessages",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionNestedToolCallsTests.cs"
+      ]
+    },
+    {
+      "id": "C4",
+      "name": "Context limits and usage estimation",
+      "requiredCases": [
+        {
+          "id": "C4.model-context-window-controls-trigger",
+          "expectedObservation": "model context window controls trigger",
+          "evidencePath": "cases/C4.model-context-window-controls-trigger.json"
+        },
+        {
+          "id": "C4.reserve-and-keep-recent-defaults",
+          "expectedObservation": "reserve and keep recent defaults",
+          "evidencePath": "cases/C4.reserve-and-keep-recent-defaults.json"
+        },
+        {
+          "id": "C4.provider-model-override-precedence",
+          "expectedObservation": "provider model override precedence",
+          "evidencePath": "cases/C4.provider-model-override-precedence.json"
+        },
+        {
+          "id": "C4.unknown-limit-is-never-invented",
+          "expectedObservation": "unknown limit is never invented",
+          "evidencePath": "cases/C4.unknown-limit-is-never-invented.json"
+        },
+        {
+          "id": "C4.provider-usage-anchors-current-context",
+          "expectedObservation": "provider usage anchors current context",
+          "evidencePath": "cases/C4.provider-usage-anchors-current-context.json"
+        },
+        {
+          "id": "C4.aborted-error-and-zero-usage-are-not-anchors",
+          "expectedObservation": "aborted error and zero usage are not anchors",
+          "evidencePath": "cases/C4.aborted-error-and-zero-usage-are-not-anchors.json"
+        },
+        {
+          "id": "C4.messages-after-usage-are-estimated",
+          "expectedObservation": "messages after usage are estimated",
+          "evidencePath": "cases/C4.messages-after-usage-are-estimated.json"
+        },
+        {
+          "id": "C4.context-edit-and-compaction-invalidate-stale-usage",
+          "expectedObservation": "context edit and compaction invalidate stale usage",
+          "evidencePath": "cases/C4.context-edit-and-compaction-invalidate-stale-usage.json"
+        },
+        {
+          "id": "C4.cache-read-and-write-token-fallback",
+          "expectedObservation": "cache read and write token fallback",
+          "evidencePath": "cases/C4.cache-read-and-write-token-fallback.json"
+        },
+        {
+          "id": "C4.system-prompt-and-tool-declaration-estimate",
+          "expectedObservation": "system prompt and tool declaration estimate",
+          "evidencePath": "cases/C4.system-prompt-and-tool-declaration-estimate.json"
+        },
+        {
+          "id": "C4.image-and-large-tool-result-estimate",
+          "expectedObservation": "image and large tool result estimate",
+          "evidencePath": "cases/C4.image-and-large-tool-result-estimate.json"
+        },
+        {
+          "id": "C4.estimate-method-is-explicitly-heuristic-not-tokenizer",
+          "expectedObservation": "estimate method is explicitly heuristic not tokenizer",
+          "evidencePath": "cases/C4.estimate-method-is-explicitly-heuristic-not-tokenizer.json"
+        }
+      ],
+      "runner": {
+        "command": "python3 tools/parity/compaction_context/runner.py run --checkpoint C4 --pi <pinned-pi-checkout> --evidence-dir <current-run-directory>",
+        "verifier": "python3 tools/parity/compaction_context/verify.py check --evidence-dir <current-run-directory>"
+      },
+      "expectedObservations": "Reported provider usage takes precedence where valid; estimates, model limits, reserves and invalidation follow pinned-Pi semantics, and heuristic counts are labeled rather than represented as tokenizer output.",
+      "passFailCriteria": "Every required case ID occurs exactly once with executed=true, passed=true, skipped=false, current source identity, raw observation references and matching expected fields. Any missing, duplicate, failed, skipped, stale or unresolved case fails this checkpoint.",
+      "evidencePath": "checkpoints/C4.json",
+      "sourceReferences": [
+        "Pi:packages/coding-agent/src/core/compaction/compaction.ts#calculateContextTokens,estimateContextTokens,estimateProjectedContextTokens,estimateTokens,shouldCompact",
+        "Pi:packages/coding-agent/src/core/settings-manager.ts#getCompactionSettings",
+        "PiSharp:src/PiSharp.Runtime/Sessions/PiContextUsageEstimator.cs",
+        "PiSharp:src/PiSharp.Runtime/Sessions/AutoCompactionPolicy.cs",
+        "tests/PiSharp.Tests/Runtime/Sessions/PiContextUsageEstimatorTests.cs"
+      ]
+    },
+    {
+      "id": "C5",
+      "name": "Provider overflow and retry",
+      "requiredCases": [
+        {
+          "id": "C5.pre-content-context-error-recognized",
+          "expectedObservation": "pre content context error recognized",
+          "evidencePath": "cases/C5.pre-content-context-error-recognized.json"
+        },
+        {
+          "id": "C5.provider-silent-overflow-from-reported-usage",
+          "expectedObservation": "provider silent overflow from reported usage",
+          "evidencePath": "cases/C5.provider-silent-overflow-from-reported-usage.json"
+        },
+        {
+          "id": "C5.length-stop-at-context-boundary-recognized",
+          "expectedObservation": "length stop at context boundary recognized",
+          "evidencePath": "cases/C5.length-stop-at-context-boundary-recognized.json"
+        },
+        {
+          "id": "C5.partial-content-overflow-does-not-duplicate-request",
+          "expectedObservation": "partial content overflow does not duplicate request",
+          "evidencePath": "cases/C5.partial-content-overflow-does-not-duplicate-request.json"
+        },
+        {
+          "id": "C5.recoverable-length-stop-retries-once",
+          "expectedObservation": "recoverable length stop retries once",
+          "evidencePath": "cases/C5.recoverable-length-stop-retries-once.json"
+        },
+        {
+          "id": "C5.retry-request-uses-compacted-transcript",
+          "expectedObservation": "retry request uses compacted transcript",
+          "evidencePath": "cases/C5.retry-request-uses-compacted-transcript.json"
+        },
+        {
+          "id": "C5.second-overflow-stops-with-clear-error",
+          "expectedObservation": "second overflow stops with clear error",
+          "evidencePath": "cases/C5.second-overflow-stops-with-clear-error.json"
+        },
+        {
+          "id": "C5.stale-old-model-overflow-does-not-compact-new-model",
+          "expectedObservation": "stale old model overflow does not compact new model",
+          "evidencePath": "cases/C5.stale-old-model-overflow-does-not-compact-new-model.json"
+        },
+        {
+          "id": "C5.overflow-for-responses-chat-and-anthropic",
+          "expectedObservation": "overflow for responses chat and anthropic",
+          "evidencePath": "cases/C5.overflow-for-responses-chat-and-anthropic.json"
+        },
+        {
+          "id": "C5.unknown-model-window-does-not-fabricate-capacity",
+          "expectedObservation": "unknown model window does not fabricate capacity",
+          "evidencePath": "cases/C5.unknown-model-window-does-not-fabricate-capacity.json"
+        },
+        {
+          "id": "C5.post-compaction-provider-continuation-succeeds",
+          "expectedObservation": "post compaction provider continuation succeeds",
+          "evidencePath": "cases/C5.post-compaction-provider-continuation-succeeds.json"
+        }
+      ],
+      "runner": {
+        "command": "python3 tools/parity/compaction_context/runner.py run --checkpoint C5 --pi <pinned-pi-checkout> --evidence-dir <current-run-directory>",
+        "verifier": "python3 tools/parity/compaction_context/verify.py check --evidence-dir <current-run-directory>"
+      },
+      "expectedObservations": "Only recognized pre-content overflow and pinned-Pi recoverable length outcomes enter the bounded retry path; partial output, repeat failures and model switches cannot duplicate calls or use stale budgets.",
+      "passFailCriteria": "Every required case ID occurs exactly once with executed=true, passed=true, skipped=false, current source identity, raw observation references and matching expected fields. Any missing, duplicate, failed, skipped, stale or unresolved case fails this checkpoint.",
+      "evidencePath": "checkpoints/C5.json",
+      "sourceReferences": [
+        "Pi:packages/ai/src/utils/overflow.ts#isContextOverflow,isRecoverableLength",
+        "Pi:packages/coding-agent/src/core/agent-session.ts#_checkCompaction,_runAutoCompaction,_isRetryable",
+        "PiSharp:src/PiSharp.Runtime/Sessions/ConversationRun.cs#overflow recovery",
+        "PiSharp:src/PiSharp.Runtime/Sessions/ObservedChatClient.cs#provider failure capture",
+        "tests/PiSharp.Tests/Cli/Providers/ProviderOverflowLoopbackTests.cs"
+      ]
+    },
+    {
+      "id": "C6",
+      "name": "In-flight and parallel tool continuation",
+      "requiredCases": [
+        {
+          "id": "C6.transient-projection-does-not-change-canonical-history",
+          "expectedObservation": "transient projection does not change canonical history",
+          "evidencePath": "cases/C6.transient-projection-does-not-change-canonical-history.json"
+        },
+        {
+          "id": "C6.single-large-current-tool-result-is-bounded",
+          "expectedObservation": "single large current tool result is bounded",
+          "evidencePath": "cases/C6.single-large-current-tool-result-is-bounded.json"
+        },
+        {
+          "id": "C6.sequential-tool-cycles-preserve-order",
+          "expectedObservation": "sequential tool cycles preserve order",
+          "evidencePath": "cases/C6.sequential-tool-cycles-preserve-order.json"
+        },
+        {
+          "id": "C6.parallel-calls-and-results-remain-matched",
+          "expectedObservation": "parallel calls and results remain matched",
+          "evidencePath": "cases/C6.parallel-calls-and-results-remain-matched.json"
+        },
+        {
+          "id": "C6.large-tool-output-summary-retains-latest-outcome",
+          "expectedObservation": "large tool output summary retains latest outcome",
+          "evidencePath": "cases/C6.large-tool-output-summary-retains-latest-outcome.json"
+        },
+        {
+          "id": "C6.nested-tool-call-sequence-is-closed-before-cut",
+          "expectedObservation": "nested tool call sequence is closed before cut",
+          "evidencePath": "cases/C6.nested-tool-call-sequence-is-closed-before-cut.json"
+        },
+        {
+          "id": "C6.incomplete-call-graph-fails-before-provider-send",
+          "expectedObservation": "incomplete call graph fails before provider send",
+          "evidencePath": "cases/C6.incomplete-call-graph-fails-before-provider-send.json"
+        },
+        {
+          "id": "C6.duplicate-or-unmatched-results-never-replay-tools",
+          "expectedObservation": "duplicate or unmatched results never replay tools",
+          "evidencePath": "cases/C6.duplicate-or-unmatched-results-never-replay-tools.json"
+        },
+        {
+          "id": "C6.steering-after-tool-result-keeps-active-turn",
+          "expectedObservation": "steering after tool result keeps active turn",
+          "evidencePath": "cases/C6.steering-after-tool-result-keeps-active-turn.json"
+        },
+        {
+          "id": "C6.post-compaction-request-contains-valid-provider-history",
+          "expectedObservation": "post compaction request contains valid provider history",
+          "evidencePath": "cases/C6.post-compaction-request-contains-valid-provider-history.json"
+        }
+      ],
+      "runner": {
+        "command": "python3 tools/parity/compaction_context/runner.py run --checkpoint C6 --pi <pinned-pi-checkout> --evidence-dir <current-run-directory>",
+        "verifier": "python3 tools/parity/compaction_context/verify.py check --evidence-dir <current-run-directory>"
+      },
+      "expectedObservations": "Transient request projection is verified independently from durable compaction; requests retain valid call/result groups and raw canonical history is unchanged.",
+      "passFailCriteria": "Every required case ID occurs exactly once with executed=true, passed=true, skipped=false, current source identity, raw observation references and matching expected fields. Any missing, duplicate, failed, skipped, stale or unresolved case fails this checkpoint.",
+      "evidencePath": "checkpoints/C6.json",
+      "sourceReferences": [
+        "Pi:packages/coding-agent/src/core/agent-session.ts#tool continuation and _checkCompaction",
+        "Pi:packages/coding-agent/src/core/compaction/compaction.ts#findCutPoint",
+        "PiSharp:src/PiSharp.Runtime/Sessions/InFlightContextBudget.cs#ProjectAsync,CompletedToolBoundary,HasBalancedToolCalls",
+        "PiSharp:src/PiSharp.Runtime/Sessions/ProviderTurnHistoryReconciler.cs",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionNestedToolCallsTests.cs"
+      ]
+    },
+    {
+      "id": "C7",
+      "name": "Summarization instructions and output",
+      "requiredCases": [
+        {
+          "id": "C7.initial-summary-instructions-match-pinned-prompt",
+          "expectedObservation": "initial summary instructions match pinned prompt",
+          "evidencePath": "cases/C7.initial-summary-instructions-match-pinned-prompt.json"
+        },
+        {
+          "id": "C7.previous-summary-is-updated-with-prior-facts-preserved",
+          "expectedObservation": "previous summary is updated with prior facts preserved",
+          "evidencePath": "cases/C7.previous-summary-is-updated-with-prior-facts-preserved.json"
+        },
+        {
+          "id": "C7.manual-focus-is-excluded-from-turn-prefix-summary",
+          "expectedObservation": "manual focus is excluded from turn prefix summary",
+          "evidencePath": "cases/C7.manual-focus-is-excluded-from-turn-prefix-summary.json"
+        },
+        {
+          "id": "C7.split-turn-uses-history-and-turn-summary-requests",
+          "expectedObservation": "split turn uses history and turn summary requests",
+          "evidencePath": "cases/C7.split-turn-uses-history-and-turn-summary-requests.json"
+        },
+        {
+          "id": "C7.tool-call-result-content-is-serialized-for-summary",
+          "expectedObservation": "tool call result content is serialized for summary",
+          "evidencePath": "cases/C7.tool-call-result-content-is-serialized-for-summary.json"
+        },
+        {
+          "id": "C7.file-operation-details-follow-summarized-history",
+          "expectedObservation": "file operation details follow summarized history",
+          "evidencePath": "cases/C7.file-operation-details-follow-summarized-history.json"
+        },
+        {
+          "id": "C7.length-stop-and-empty-summary-fail-safely",
+          "expectedObservation": "length stop and empty summary fail safely",
+          "evidencePath": "cases/C7.length-stop-and-empty-summary-fail-safely.json"
+        },
+        {
+          "id": "C7.transient-stream-failure-obeys-retry-policy",
+          "expectedObservation": "transient stream failure obeys retry policy",
+          "evidencePath": "cases/C7.transient-stream-failure-obeys-retry-policy.json"
+        },
+        {
+          "id": "C7.summary-usage-is-reported-only-when-supplied",
+          "expectedObservation": "summary usage is reported only when supplied",
+          "evidencePath": "cases/C7.summary-usage-is-reported-only-when-supplied.json"
+        },
+        {
+          "id": "C7.summary-model-routing-and-thinking-options",
+          "expectedObservation": "summary model routing and thinking options",
+          "evidencePath": "cases/C7.summary-model-routing-and-thinking-options.json"
+        }
+      ],
+      "runner": {
+        "command": "python3 tools/parity/compaction_context/runner.py run --checkpoint C7 --pi <pinned-pi-checkout> --evidence-dir <current-run-directory>",
+        "verifier": "python3 tools/parity/compaction_context/verify.py check --evidence-dir <current-run-directory>"
+      },
+      "expectedObservations": "Summary request count, role/text payload, prior-summary update, focus, split-turn handling, retry, output validation and provider usage match pinned Pi.",
+      "passFailCriteria": "Every required case ID occurs exactly once with executed=true, passed=true, skipped=false, current source identity, raw observation references and matching expected fields. Any missing, duplicate, failed, skipped, stale or unresolved case fails this checkpoint.",
+      "evidencePath": "checkpoints/C7.json",
+      "sourceReferences": [
+        "Pi:packages/coding-agent/src/core/compaction/compaction.ts#generateSummaryWithUsage,completeSummarization,compact",
+        "Pi:packages/coding-agent/src/core/compaction/utils.ts#SUMMARIZATION_SYSTEM_PROMPT,serializeConversation",
+        "PiSharp:src/PiSharp.Runtime/Agents/PiCompactionSummarizer.cs#SummarizeAsync",
+        "PiSharp:src/PiSharp.Runtime/Sessions/SummaryTranscriptExcerpt.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcCompactionProcessTests.cs"
+      ]
+    },
+    {
+      "id": "C8",
+      "name": "Session persistence, reload, and branching",
+      "requiredCases": [
+        {
+          "id": "C8.compaction-entry-persists-summary-boundary-usage",
+          "expectedObservation": "compaction entry persists summary boundary usage",
+          "evidencePath": "cases/C8.compaction-entry-persists-summary-boundary-usage.json"
+        },
+        {
+          "id": "C8.canonical-ancestor-messages-remain-recoverable",
+          "expectedObservation": "canonical ancestor messages remain recoverable",
+          "evidencePath": "cases/C8.canonical-ancestor-messages-remain-recoverable.json"
+        },
+        {
+          "id": "C8.jsonl-export-import-round-trips-compaction",
+          "expectedObservation": "jsonl export import round trips compaction",
+          "evidencePath": "cases/C8.jsonl-export-import-round-trips-compaction.json"
+        },
+        {
+          "id": "C8.reload-restores-compacted-context-not-projection",
+          "expectedObservation": "reload restores compacted context not projection",
+          "evidencePath": "cases/C8.reload-restores-compacted-context-not-projection.json"
+        },
+        {
+          "id": "C8.branch-context-is-reconstructed-from-selected-path",
+          "expectedObservation": "branch context is reconstructed from selected path",
+          "evidencePath": "cases/C8.branch-context-is-reconstructed-from-selected-path.json"
+        },
+        {
+          "id": "C8.switching-before-and-after-compaction-restores-correct-path",
+          "expectedObservation": "switching before and after compaction restores correct path",
+          "evidencePath": "cases/C8.switching-before-and-after-compaction-restores-correct-path.json"
+        },
+        {
+          "id": "C8.fork-and-clone-preserve-compacted-session",
+          "expectedObservation": "fork and clone preserve compacted session",
+          "evidencePath": "cases/C8.fork-and-clone-preserve-compacted-session.json"
+        },
+        {
+          "id": "C8.restart-recovery-keeps-provider-continuation",
+          "expectedObservation": "restart recovery keeps provider continuation",
+          "evidencePath": "cases/C8.restart-recovery-keeps-provider-continuation.json"
+        },
+        {
+          "id": "C8.openai-responses-chat-anthropic-after-reload",
+          "expectedObservation": "openai responses chat anthropic after reload",
+          "evidencePath": "cases/C8.openai-responses-chat-anthropic-after-reload.json"
+        },
+        {
+          "id": "C8.metadata-label-and-extension-fields-survive",
+          "expectedObservation": "metadata label and extension fields survive",
+          "evidencePath": "cases/C8.metadata-label-and-extension-fields-survive.json"
+        }
+      ],
+      "runner": {
+        "command": "python3 tools/parity/compaction_context/runner.py run --checkpoint C8 --pi <pinned-pi-checkout> --evidence-dir <current-run-directory>",
+        "verifier": "python3 tools/parity/compaction_context/verify.py check --evidence-dir <current-run-directory>"
+      },
+      "expectedObservations": "Compaction metadata persists through native and Pi JSONL round-trips, all canonical ancestors remain recoverable, and restored active-branch provider requests use the selected projection.",
+      "passFailCriteria": "Every required case ID occurs exactly once with executed=true, passed=true, skipped=false, current source identity, raw observation references and matching expected fields. Any missing, duplicate, failed, skipped, stale or unresolved case fails this checkpoint.",
+      "evidencePath": "checkpoints/C8.json",
+      "sourceReferences": [
+        "Pi:packages/coding-agent/src/core/session-manager.ts#appendCompaction,buildSessionContext,branch",
+        "PiSharp:src/PiSharp.Runtime/Sessions/ConversationSession.cs#AppendCompaction,ContextMessages,Snapshot",
+        "PiSharp:src/PiSharp.Runtime/Sessions/PiJsonlSessionInterchange.cs",
+        "PiSharp:src/PiSharp.Runtime/Sessions/ConversationStore.cs",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs",
+        "tests/PiSharp.Tests/Runtime/Sessions/PiJsonlSessionInterchangeTests.cs"
+      ]
+    },
+    {
+      "id": "C9",
+      "name": "Branch summaries and context restoration",
+      "requiredCases": [
+        {
+          "id": "C9.branch-diff-uses-common-ancestor-and-old-path",
+          "expectedObservation": "branch diff uses common ancestor and old path",
+          "evidencePath": "cases/C9.branch-diff-uses-common-ancestor-and-old-path.json"
+        },
+        {
+          "id": "C9.branch-entries-are-chronological-and-no-duplicate-tool-results",
+          "expectedObservation": "branch entries are chronological and no duplicate tool results",
+          "evidencePath": "cases/C9.branch-entries-are-chronological-and-no-duplicate-tool-results.json"
+        },
+        {
+          "id": "C9.token-budget-retains-recent-summary-context",
+          "expectedObservation": "token budget retains recent summary context",
+          "evidencePath": "cases/C9.token-budget-retains-recent-summary-context.json"
+        },
+        {
+          "id": "C9.nested-branch-file-operation-details-accumulate",
+          "expectedObservation": "nested branch file operation details accumulate",
+          "evidencePath": "cases/C9.nested-branch-file-operation-details-accumulate.json"
+        },
+        {
+          "id": "C9.custom-instructions-append-or-replace-default",
+          "expectedObservation": "custom instructions append or replace default",
+          "evidencePath": "cases/C9.custom-instructions-append-or-replace-default.json"
+        },
+        {
+          "id": "C9.summary-output-has-preamble-and-file-details",
+          "expectedObservation": "summary output has preamble and file details",
+          "evidencePath": "cases/C9.summary-output-has-preamble-and-file-details.json"
+        },
+        {
+          "id": "C9.summary-applies-at-navigation-target-with-label",
+          "expectedObservation": "summary applies at navigation target with label",
+          "evidencePath": "cases/C9.summary-applies-at-navigation-target-with-label.json"
+        },
+        {
+          "id": "C9.cancel-or-failure-keeps-selected-head-and-history",
+          "expectedObservation": "cancel or failure keeps selected head and history",
+          "evidencePath": "cases/C9.cancel-or-failure-keeps-selected-head-and-history.json"
+        },
+        {
+          "id": "C9.public-navigation-prompts-and-skips-as-pinned",
+          "expectedObservation": "public navigation prompts and skips as pinned",
+          "evidencePath": "cases/C9.public-navigation-prompts-and-skips-as-pinned.json"
+        }
+      ],
+      "runner": {
+        "command": "python3 tools/parity/compaction_context/runner.py run --checkpoint C9 --pi <pinned-pi-checkout> --evidence-dir <current-run-directory>",
+        "verifier": "python3 tools/parity/compaction_context/verify.py check --evidence-dir <current-run-directory>"
+      },
+      "expectedObservations": "Tree navigation collects only the abandoned path, generates and applies the expected branch summary at the selected target, carries metadata/usage, and preserves state on cancellation/failure.",
+      "passFailCriteria": "Every required case ID occurs exactly once with executed=true, passed=true, skipped=false, current source identity, raw observation references and matching expected fields. Any missing, duplicate, failed, skipped, stale or unresolved case fails this checkpoint.",
+      "evidencePath": "checkpoints/C9.json",
+      "sourceReferences": [
+        "Pi:packages/coding-agent/src/core/compaction/branch-summarization.ts#generateBranchSummary",
+        "Pi:packages/coding-agent/src/core/agent-session.ts#navigateTree",
+        "PiSharp:src/PiSharp.Runtime/Sessions/ConversationRun.cs#SelectAsync",
+        "tests/PiSharp.Tests/Cli/Tui/Dialogs/TerminalTreePickerTests.cs",
+        "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionTreeEventTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionProcessTests.cs"
+      ]
+    },
+    {
+      "id": "C10",
+      "name": "Token, reasoning, cost, and usage accounting",
+      "requiredCases": [
+        {
+          "id": "C10.summary-request-usage-persists-on-active-branch",
+          "expectedObservation": "summary request usage persists on active branch",
+          "evidencePath": "cases/C10.summary-request-usage-persists-on-active-branch.json"
+        },
+        {
+          "id": "C10.fallback-context-total-includes-cache-tokens",
+          "expectedObservation": "fallback context total includes cache tokens",
+          "evidencePath": "cases/C10.fallback-context-total-includes-cache-tokens.json"
+        },
+        {
+          "id": "C10.input-output-cache-read-cache-write-remain-distinct",
+          "expectedObservation": "input output cache read cache write remain distinct",
+          "evidencePath": "cases/C10.input-output-cache-read-cache-write-remain-distinct.json"
+        },
+        {
+          "id": "C10.reasoning-tokens-are-preserved",
+          "expectedObservation": "reasoning tokens are preserved",
+          "evidencePath": "cases/C10.reasoning-tokens-are-preserved.json"
+        },
+        {
+          "id": "C10.missing-usage-fields-remain-unknown",
+          "expectedObservation": "missing usage fields remain unknown",
+          "evidencePath": "cases/C10.missing-usage-fields-remain-unknown.json"
+        },
+        {
+          "id": "C10.unknown-prices-do-not-create-cost",
+          "expectedObservation": "unknown prices do not create cost",
+          "evidencePath": "cases/C10.unknown-prices-do-not-create-cost.json"
+        },
+        {
+          "id": "C10.known-pricing-and-input-tiers-are-calculated",
+          "expectedObservation": "known pricing and input tiers are calculated",
+          "evidencePath": "cases/C10.known-pricing-and-input-tiers-are-calculated.json"
+        },
+        {
+          "id": "C10.split-summary-physical-model-costs-aggregate-correctly",
+          "expectedObservation": "split summary physical model costs aggregate correctly",
+          "evidencePath": "cases/C10.split-summary-physical-model-costs-aggregate-correctly.json"
+        },
+        {
+          "id": "C10.inactive-branch-usage-is-excluded-from-active-total",
+          "expectedObservation": "inactive branch usage is excluded from active total",
+          "evidencePath": "cases/C10.inactive-branch-usage-is-excluded-from-active-total.json"
+        },
+        {
+          "id": "C10.cli-tui-and-rpc-report-canonical-session-usage",
+          "expectedObservation": "cli tui and rpc report canonical session usage",
+          "evidencePath": "cases/C10.cli-tui-and-rpc-report-canonical-session-usage.json"
+        }
+      ],
+      "runner": {
+        "command": "python3 tools/parity/compaction_context/runner.py run --checkpoint C10 --pi <pinned-pi-checkout> --evidence-dir <current-run-directory>",
+        "verifier": "python3 tools/parity/compaction_context/verify.py check --evidence-dir <current-run-directory>"
+      },
+      "expectedObservations": "Only supplied usage/prices are reported; input/output/cache/reasoning counts and costs aggregate on the correct model and active branch across CLI/TUI/RPC projections.",
+      "passFailCriteria": "Every required case ID occurs exactly once with executed=true, passed=true, skipped=false, current source identity, raw observation references and matching expected fields. Any missing, duplicate, failed, skipped, stale or unresolved case fails this checkpoint.",
+      "evidencePath": "checkpoints/C10.json",
+      "sourceReferences": [
+        "Pi:packages/coding-agent/src/core/usage-totals.ts#addUsageToTotals,getUsageCostBreakdown",
+        "Pi:packages/coding-agent/src/core/compaction/compaction.ts#calculateContextTokens,compact",
+        "PiSharp:src/PiSharp.Runtime/Sessions/UsageAccounting.cs#UsageRecord.Create",
+        "PiSharp:src/PiSharp.Runtime/Sessions/CompactionUsageAccounting.cs",
+        "PiSharp:src/PiSharp.Cli/Protocols/Rpc/RpcSessionStatsProjector.cs",
+        "PiSharp:src/PiSharp.Cli/Tui/Rendering/TerminalModelStatus.cs"
+      ]
+    },
+    {
+      "id": "C11",
+      "name": "CLI, RPC, JSON, TUI, and provider integration",
+      "requiredCases": [
+        {
+          "id": "C11.cli-manual-compact-input-and-result",
+          "expectedObservation": "cli manual compact input and result",
+          "evidencePath": "cases/C11.cli-manual-compact-input-and-result.json"
+        },
+        {
+          "id": "C11.tui-compact-command-and-progress-status",
+          "expectedObservation": "tui compact command and progress status",
+          "evidencePath": "cases/C11.tui-compact-command-and-progress-status.json"
+        },
+        {
+          "id": "C11.rpc-compact-request-and-result-shape",
+          "expectedObservation": "rpc compact request and result shape",
+          "evidencePath": "cases/C11.rpc-compact-request-and-result-shape.json"
+        },
+        {
+          "id": "C11.rpc-event-order-and-correlation",
+          "expectedObservation": "rpc event order and correlation",
+          "evidencePath": "cases/C11.rpc-event-order-and-correlation.json"
+        },
+        {
+          "id": "C11.rpc-state-context-usage-after-compaction",
+          "expectedObservation": "rpc state context usage after compaction",
+          "evidencePath": "cases/C11.rpc-state-context-usage-after-compaction.json"
+        },
+        {
+          "id": "C11.json-mode-compaction-output-contract",
+          "expectedObservation": "json mode compaction output contract",
+          "evidencePath": "cases/C11.json-mode-compaction-output-contract.json"
+        },
+        {
+          "id": "C11.responses-wire-request-after-compaction",
+          "expectedObservation": "responses wire request after compaction",
+          "evidencePath": "cases/C11.responses-wire-request-after-compaction.json"
+        },
+        {
+          "id": "C11.chat-completions-wire-request-after-compaction",
+          "expectedObservation": "chat completions wire request after compaction",
+          "evidencePath": "cases/C11.chat-completions-wire-request-after-compaction.json"
+        },
+        {
+          "id": "C11.anthropic-messages-wire-request-after-compaction",
+          "expectedObservation": "anthropic messages wire request after compaction",
+          "evidencePath": "cases/C11.anthropic-messages-wire-request-after-compaction.json"
+        },
+        {
+          "id": "C11.provider-history-is-valid-and-summary-not-canonical-projection",
+          "expectedObservation": "provider history is valid and summary not canonical projection",
+          "evidencePath": "cases/C11.provider-history-is-valid-and-summary-not-canonical-projection.json"
+        }
+      ],
+      "runner": {
+        "command": "python3 tools/parity/compaction_context/runner.py run --checkpoint C11 --pi <pinned-pi-checkout> --evidence-dir <current-run-directory>",
+        "verifier": "python3 tools/parity/compaction_context/verify.py check --evidence-dir <current-run-directory>"
+      },
+      "expectedObservations": "User-visible commands, events, state, JSON output and physical requests match the pinned interface on OpenAI Responses, OpenAI Chat Completions and Anthropic Messages.",
+      "passFailCriteria": "Every required case ID occurs exactly once with executed=true, passed=true, skipped=false, current source identity, raw observation references and matching expected fields. Any missing, duplicate, failed, skipped, stale or unresolved case fails this checkpoint.",
+      "evidencePath": "checkpoints/C11.json",
+      "sourceReferences": [
+        "Pi:packages/coding-agent/src/modes/interactive/interactive-mode.ts#/compact,tree navigation,status",
+        "Pi:packages/coding-agent/src/modes/rpc/rpc-mode.ts#compact,navigateTree",
+        "PiSharp:src/PiSharp.Cli/Tui/InteractiveMode.cs#/compact",
+        "PiSharp:src/PiSharp.Cli/Protocols/Rpc/RpcCompactionCommandHandler.cs",
+        "PiSharp:src/PiSharp.Cli/Protocols/Rpc/RpcCompactionResultProjector.cs",
+        "PiSharp:src/PiSharp.Cli/Protocols/Json"
+      ]
+    },
+    {
+      "id": "C12",
+      "name": "Native extension lifecycle and hooks",
+      "requiredCases": [
+        {
+          "id": "C12.before-compact-hook-sees-detached-real-plan",
+          "expectedObservation": "before compact hook sees detached real plan",
+          "evidencePath": "cases/C12.before-compact-hook-sees-detached-real-plan.json"
+        },
+        {
+          "id": "C12.hook-cancel-prevents-summary-and-persistence",
+          "expectedObservation": "hook cancel prevents summary and persistence",
+          "evidencePath": "cases/C12.hook-cancel-prevents-summary-and-persistence.json"
+        },
+        {
+          "id": "C12.custom-summary-is-validated-and-persisted",
+          "expectedObservation": "custom summary is validated and persisted",
+          "evidencePath": "cases/C12.custom-summary-is-validated-and-persisted.json"
+        },
+        {
+          "id": "C12.invalid-boundary-and-unbalanced-tools-are-rejected",
+          "expectedObservation": "invalid boundary and unbalanced tools are rejected",
+          "evidencePath": "cases/C12.invalid-boundary-and-unbalanced-tools-are-rejected.json"
+        },
+        {
+          "id": "C12.extension-usage-and-details-persist-with-correct-projection",
+          "expectedObservation": "extension usage and details persist with correct projection",
+          "evidencePath": "cases/C12.extension-usage-and-details-persist-with-correct-projection.json"
+        },
+        {
+          "id": "C12.after-hook-fires-only-after-durable-commit",
+          "expectedObservation": "after hook fires only after durable commit",
+          "evidencePath": "cases/C12.after-hook-fires-only-after-durable-commit.json"
+        },
+        {
+          "id": "C12.manual-auto-overflow-reasons-and-will-retry-match",
+          "expectedObservation": "manual auto overflow reasons and will retry match",
+          "evidencePath": "cases/C12.manual-auto-overflow-reasons-and-will-retry-match.json"
+        },
+        {
+          "id": "C12.tree-summary-hooks-see-and-may-control-navigation",
+          "expectedObservation": "tree summary hooks see and may control navigation",
+          "evidencePath": "cases/C12.tree-summary-hooks-see-and-may-control-navigation.json"
+        }
+      ],
+      "runner": {
+        "command": "python3 tools/parity/compaction_context/runner.py run --checkpoint C12 --pi <pinned-pi-checkout> --evidence-dir <current-run-directory>",
+        "verifier": "python3 tools/parity/compaction_context/verify.py check --evidence-dir <current-run-directory>"
+      },
+      "expectedObservations": "Native hooks observe detached plans, can safely cancel or provide validated summaries, and receive success/failure lifecycle notifications only at the proper persistence boundary.",
+      "passFailCriteria": "Every required case ID occurs exactly once with executed=true, passed=true, skipped=false, current source identity, raw observation references and matching expected fields. Any missing, duplicate, failed, skipped, stale or unresolved case fails this checkpoint.",
+      "evidencePath": "checkpoints/C12.json",
+      "sourceReferences": [
+        "Pi:packages/coding-agent/src/core/agent-session.ts#session_before_compact,session_after_compact,navigateTree",
+        "PiSharp:src/PiSharp.Runtime/Sessions/NativeExtensionCompactionEventPublisher.cs",
+        "PiSharp:src/PiSharp.Extensions.Abstractions/PiSharpExtensionSessionMutationEvents.cs#PiSharpExtensionSessionBeforeCompactEvent,PiSharpExtensionSessionBeforeTreeEvent",
+        "tests/PiSharp.Tests/Runtime/Extensions/PiSharpExtensionCompactionTests.cs",
+        "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionCompactionEventTests.cs"
+      ]
+    },
+    {
+      "id": "C13",
+      "name": "Failure, cancellation, and crash recovery",
+      "requiredCases": [
+        {
+          "id": "C13.failure-before-summary-does-not-mutate-history",
+          "expectedObservation": "failure before summary does not mutate history",
+          "evidencePath": "cases/C13.failure-before-summary-does-not-mutate-history.json"
+        },
+        {
+          "id": "C13.streaming-summary-failure-keeps-canonical-tree",
+          "expectedObservation": "streaming summary failure keeps canonical tree",
+          "evidencePath": "cases/C13.streaming-summary-failure-keeps-canonical-tree.json"
+        },
+        {
+          "id": "C13.post-summary-prepublish-failure-keeps-one-state",
+          "expectedObservation": "post summary prepublish failure keeps one state",
+          "evidencePath": "cases/C13.post-summary-prepublish-failure-keeps-one-state.json"
+        },
+        {
+          "id": "C13.persistence-failure-rolls-back-or-recovers-consistently",
+          "expectedObservation": "persistence failure rolls back or recovers consistently",
+          "evidencePath": "cases/C13.persistence-failure-rolls-back-or-recovers-consistently.json"
+        },
+        {
+          "id": "C13.provider-continuation-failure-does-not-repeat-tool",
+          "expectedObservation": "provider continuation failure does not repeat tool",
+          "evidencePath": "cases/C13.provider-continuation-failure-does-not-repeat-tool.json"
+        },
+        {
+          "id": "C13.stale-session-cannot-write-after-replacement",
+          "expectedObservation": "stale session cannot write after replacement",
+          "evidencePath": "cases/C13.stale-session-cannot-write-after-replacement.json"
+        },
+        {
+          "id": "C13.branch-replacement-failure-restores-prior-session",
+          "expectedObservation": "branch replacement failure restores prior session",
+          "evidencePath": "cases/C13.branch-replacement-failure-restores-prior-session.json"
+        },
+        {
+          "id": "C13.cancel-before-request-cleans-lifecycle-state",
+          "expectedObservation": "cancel before request cleans lifecycle state",
+          "evidencePath": "cases/C13.cancel-before-request-cleans-lifecycle-state.json"
+        },
+        {
+          "id": "C13.cancel-during-summary-cleans-lifecycle-state",
+          "expectedObservation": "cancel during summary cleans lifecycle state",
+          "evidencePath": "cases/C13.cancel-during-summary-cleans-lifecycle-state.json"
+        },
+        {
+          "id": "C13.process-kill-during-publication-reloads-valid-state",
+          "expectedObservation": "process kill during publication reloads valid state",
+          "evidencePath": "cases/C13.process-kill-during-publication-reloads-valid-state.json"
+        },
+        {
+          "id": "C13.unknown-tool-outcome-is-not-replayed",
+          "expectedObservation": "unknown tool outcome is not replayed",
+          "evidencePath": "cases/C13.unknown-tool-outcome-is-not-replayed.json"
+        },
+        {
+          "id": "C13.next-request-recovers-after-each-failure",
+          "expectedObservation": "next request recovers after each failure",
+          "evidencePath": "cases/C13.next-request-recovers-after-each-failure.json"
+        }
+      ],
+      "runner": {
+        "command": "python3 tools/parity/compaction_context/runner.py run --checkpoint C13 --pi <pinned-pi-checkout> --evidence-dir <current-run-directory>",
+        "verifier": "python3 tools/parity/compaction_context/verify.py check --evidence-dir <current-run-directory>"
+      },
+      "expectedObservations": "Failures and cancellation at each required boundary leave a valid durable graph, do not replay uncertain non-idempotent tools, report the correct outcome and allow the next use to recover.",
+      "passFailCriteria": "Every required case ID occurs exactly once with executed=true, passed=true, skipped=false, current source identity, raw observation references and matching expected fields. Any missing, duplicate, failed, skipped, stale or unresolved case fails this checkpoint.",
+      "evidencePath": "checkpoints/C13.json",
+      "sourceReferences": [
+        "Pi:packages/coding-agent/src/core/agent-session.ts#compact,_runAutoCompaction,abortCompaction,navigateTree",
+        "PiSharp:src/PiSharp.Runtime/Sessions/ConversationCompactionCoordinator.cs#rollback",
+        "PiSharp:src/PiSharp.Runtime/Sessions/ConversationRun.cs#gate,restore,save,cancel",
+        "PiSharp:src/PiSharp.Runtime/Sessions/DurableExecution.cs",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs"
+      ]
+    },
+    {
+      "id": "D0",
+      "name": "Independent pinned-Pi differential acceptance",
+      "requiredCases": [
+        {
+          "id": "D0.same-pi-run-one-stable",
+          "expectedObservation": "same pi run one stable",
+          "evidencePath": "cases/D0.same-pi-run-one-stable.json"
+        },
+        {
+          "id": "D0.same-pi-run-two-stable",
+          "expectedObservation": "same pi run two stable",
+          "evidencePath": "cases/D0.same-pi-run-two-stable.json"
+        },
+        {
+          "id": "D0.all-scenarios-executed-against-pinned-pi-and-pisharp",
+          "expectedObservation": "all scenarios executed against pinned pi and pisharp",
+          "evidencePath": "cases/D0.all-scenarios-executed-against-pinned-pi-and-pisharp.json"
+        },
+        {
+          "id": "D0.raw-process-provider-state-persistence-captures-exist",
+          "expectedObservation": "raw process provider state persistence captures exist",
+          "evidencePath": "cases/D0.raw-process-provider-state-persistence-captures-exist.json"
+        },
+        {
+          "id": "D0.normalization-removes-only-nonsemantic-fields",
+          "expectedObservation": "normalization removes only nonsemantic fields",
+          "evidencePath": "cases/D0.normalization-removes-only-nonsemantic-fields.json"
+        },
+        {
+          "id": "D0.independent-pisharp-observations-match-baseline",
+          "expectedObservation": "independent pisharp observations match baseline",
+          "evidencePath": "cases/D0.independent-pisharp-observations-match-baseline.json"
+        },
+        {
+          "id": "D0.every-difference-has-strict-equivalent-or-safety-classification",
+          "expectedObservation": "every difference has strict equivalent or safety classification",
+          "evidencePath": "cases/D0.every-difference-has-strict-equivalent-or-safety-classification.json"
+        },
+        {
+          "id": "D0.safety-differences-have-safe-regression-evidence",
+          "expectedObservation": "safety differences have safe regression evidence",
+          "evidencePath": "cases/D0.safety-differences-have-safe-regression-evidence.json"
+        },
+        {
+          "id": "D0.zero-unresolved-mismatches",
+          "expectedObservation": "zero unresolved mismatches",
+          "evidencePath": "cases/D0.zero-unresolved-mismatches.json"
+        }
+      ],
+      "runner": {
+        "command": "python3 tools/parity/compaction_context/runner.py run --checkpoint D0 --pi <pinned-pi-checkout> --evidence-dir <current-run-directory>",
+        "verifier": "python3 tools/parity/compaction_context/verify.py check --evidence-dir <current-run-directory>"
+      },
+      "expectedObservations": "Pinned Pi produces identical normalized observations twice; independently captured PiSharp observations are compared field-by-field, with no unresolved mismatch and no permissive normalization.",
+      "passFailCriteria": "Every required case ID occurs exactly once with executed=true, passed=true, skipped=false, current source identity, raw observation references and matching expected fields. Any missing, duplicate, failed, skipped, stale or unresolved case fails this checkpoint.",
+      "evidencePath": "checkpoints/D0.json",
+      "sourceReferences": [
+        "Pi:packages/coding-agent/src/core/compaction/compaction.ts",
+        "Pi:packages/coding-agent/src/core/compaction/branch-summarization.ts",
+        "Pi:packages/coding-agent/src/core/agent-session.ts",
+        "PiSharp:src/PiSharp.Runtime/Sessions/ConversationCompactionCoordinator.cs",
+        "PiSharp:src/PiSharp.Runtime/Sessions/ConversationRun.cs",
+        "tools/parity/compaction_context/runner.py"
+      ]
+    },
+    {
+      "id": "Q0",
+      "name": "Full quality and regression verification",
+      "requiredCases": [
+        {
+          "id": "Q0.dotnet-format-no-changes",
+          "expectedObservation": "dotnet format no changes",
+          "evidencePath": "cases/Q0.dotnet-format-no-changes.json"
+        },
+        {
+          "id": "Q0.warnings-as-errors-solution-build",
+          "expectedObservation": "warnings as errors solution build",
+          "evidencePath": "cases/Q0.warnings-as-errors-solution-build.json"
+        },
+        {
+          "id": "Q0.full-dotnet-suite-zero-failures-and-skips",
+          "expectedObservation": "full dotnet suite zero failures and skips",
+          "evidencePath": "cases/Q0.full-dotnet-suite-zero-failures-and-skips.json"
+        },
+        {
+          "id": "Q0.focused-compaction-session-provider-tests",
+          "expectedObservation": "focused compaction session provider tests",
+          "evidencePath": "cases/Q0.focused-compaction-session-provider-tests.json"
+        },
+        {
+          "id": "Q0.focused-rpc-tui-extension-tests",
+          "expectedObservation": "focused rpc tui extension tests",
+          "evidencePath": "cases/Q0.focused-rpc-tui-extension-tests.json"
+        },
+        {
+          "id": "Q0.python-parity-suites",
+          "expectedObservation": "python parity suites",
+          "evidencePath": "cases/Q0.python-parity-suites.json"
+        },
+        {
+          "id": "Q0.node-parity-suites",
+          "expectedObservation": "node parity suites",
+          "evidencePath": "cases/Q0.node-parity-suites.json"
+        },
+        {
+          "id": "Q0.mcp-conformance",
+          "expectedObservation": "mcp conformance",
+          "evidencePath": "cases/Q0.mcp-conformance.json"
+        },
+        {
+          "id": "Q0.documentation-link-validation",
+          "expectedObservation": "documentation link validation",
+          "evidencePath": "cases/Q0.documentation-link-validation.json"
+        },
+        {
+          "id": "Q0.pinned-pi-upstream-compaction-branch-overflow-tests",
+          "expectedObservation": "pinned pi upstream compaction branch overflow tests",
+          "evidencePath": "cases/Q0.pinned-pi-upstream-compaction-branch-overflow-tests.json"
+        }
+      ],
+      "runner": {
+        "command": "python3 tools/parity/compaction_context/runner.py run --checkpoint Q0 --pi <pinned-pi-checkout> --evidence-dir <current-run-directory>",
+        "verifier": "python3 tools/parity/compaction_context/verify.py check --evidence-dir <current-run-directory>"
+      },
+      "expectedObservations": "Every named full, focused, parity, platform, MCP, documentation and upstream gate runs on the final implementation with actual counts and zero unexplained failures or skips.",
+      "passFailCriteria": "Every required case ID occurs exactly once with executed=true, passed=true, skipped=false, current source identity, raw observation references and matching expected fields. Any missing, duplicate, failed, skipped, stale or unresolved case fails this checkpoint.",
+      "evidencePath": "checkpoints/Q0.json",
+      "sourceReferences": [
+        "PiSharp:PiSharp.slnx",
+        "tools/parity/terminal",
+        "tools/McpConformance/PiSharp.McpConformance.csproj",
+        "tools/parity/compaction_context/runner.py"
+      ]
+    },
+    {
+      "id": "E0",
+      "name": "Committed source-bound evidence validation",
+      "requiredCases": [
+        {
+          "id": "E0.committed-inventory-and-contract-are-source-pinned",
+          "expectedObservation": "committed inventory and contract are source pinned",
+          "evidencePath": "cases/E0.committed-inventory-and-contract-are-source-pinned.json"
+        },
+        {
+          "id": "E0.all-required-case-evidence-is-committed",
+          "expectedObservation": "all required case evidence is committed",
+          "evidencePath": "cases/E0.all-required-case-evidence-is-committed.json"
+        },
+        {
+          "id": "E0.implementation-sha-has-no-later-src-or-test-changes",
+          "expectedObservation": "implementation sha has no later src or test changes",
+          "evidencePath": "cases/E0.implementation-sha-has-no-later-src-or-test-changes.json"
+        },
+        {
+          "id": "E0.contract-derived-denominator-matches-all-evidence",
+          "expectedObservation": "contract derived denominator matches all evidence",
+          "evidencePath": "cases/E0.contract-derived-denominator-matches-all-evidence.json"
+        },
+        {
+          "id": "E0.explicit-current-evidence-directory-is-validated",
+          "expectedObservation": "explicit current evidence directory is validated",
+          "evidencePath": "cases/E0.explicit-current-evidence-directory-is-validated.json"
+        },
+        {
+          "id": "E0.stale-evidence-is-rejected",
+          "expectedObservation": "stale evidence is rejected",
+          "evidencePath": "cases/E0.stale-evidence-is-rejected.json"
+        },
+        {
+          "id": "E0.artifact-hashes-and-raw-paths-validate",
+          "expectedObservation": "artifact hashes and raw paths validate",
+          "evidencePath": "cases/E0.artifact-hashes-and-raw-paths-validate.json"
+        },
+        {
+          "id": "E0.feature-matrix-ledger-todo-continuation-updated",
+          "expectedObservation": "feature matrix ledger todo continuation updated",
+          "evidencePath": "cases/E0.feature-matrix-ledger-todo-continuation-updated.json"
+        },
+        {
+          "id": "E0.completion-receipt-has-final-source-shas-and-scope",
+          "expectedObservation": "completion receipt has final source shas and scope",
+          "evidencePath": "cases/E0.completion-receipt-has-final-source-shas-and-scope.json"
+        }
+      ],
+      "runner": {
+        "command": "python3 tools/parity/compaction_context/runner.py run --checkpoint E0 --pi <pinned-pi-checkout> --evidence-dir <current-run-directory>",
+        "verifier": "python3 tools/parity/compaction_context/verify.py check --evidence-dir <current-run-directory>"
+      },
+      "expectedObservations": "The committed receipt is reproducibly bound to both source SHAs, frozen contract, case IDs and a fresh evidence directory; post-source changes or stale files are rejected.",
+      "passFailCriteria": "Every required case ID occurs exactly once with executed=true, passed=true, skipped=false, current source identity, raw observation references and matching expected fields. Any missing, duplicate, failed, skipped, stale or unresolved case fails this checkpoint.",
+      "evidencePath": "checkpoints/E0.json",
+      "sourceReferences": [
+        "tools/parity/compaction_context/contract.json",
+        "tools/parity/compaction_context/verify.py",
+        "docs/parity/fixtures/compaction-context-management/"
+      ]
+    },
+    {
+      "id": "CI0",
+      "name": "Exact-head push and PR CI",
+      "requiredCases": [
+        {
+          "id": "CI0.push-workflow-is-on-exact-final-head",
+          "expectedObservation": "push workflow is on exact final head",
+          "evidencePath": "cases/CI0.push-workflow-is-on-exact-final-head.json"
+        },
+        {
+          "id": "CI0.pull-request-workflow-is-on-exact-final-head",
+          "expectedObservation": "pull request workflow is on exact final head",
+          "evidencePath": "cases/CI0.pull-request-workflow-is-on-exact-final-head.json"
+        },
+        {
+          "id": "CI0.pull-request-base-is-main",
+          "expectedObservation": "pull request base is main",
+          "evidencePath": "cases/CI0.pull-request-base-is-main.json"
+        },
+        {
+          "id": "CI0.every-required-job-and-case-passes",
+          "expectedObservation": "every required job and case passes",
+          "evidencePath": "cases/CI0.every-required-job-and-case-passes.json"
+        },
+        {
+          "id": "CI0.no-duplicate-manual-workflow-dispatch",
+          "expectedObservation": "no duplicate manual workflow dispatch",
+          "evidencePath": "cases/CI0.no-duplicate-manual-workflow-dispatch.json"
+        }
+      ],
+      "runner": {
+        "command": "python3 tools/parity/compaction_context/runner.py run --checkpoint CI0 --pi <pinned-pi-checkout> --evidence-dir <current-run-directory>",
+        "verifier": "python3 tools/parity/compaction_context/verify.py check --evidence-dir <current-run-directory>"
+      },
+      "expectedObservations": "Automatic push and PR workflows complete successfully for the same final head and the correct main base, with every mandatory job/case present and successful.",
+      "passFailCriteria": "Every required case ID occurs exactly once with executed=true, passed=true, skipped=false, current source identity, raw observation references and matching expected fields. Any missing, duplicate, failed, skipped, stale or unresolved case fails this checkpoint.",
+      "evidencePath": "checkpoints/CI0.json",
+      "sourceReferences": [
+        ".github/workflows/ci.yml#push,pull_request,jobs",
+        "tools/parity/compaction_context/verify.py#exact-head CI validation"
+      ]
+    },
+    {
+      "id": "PUB0",
+      "name": "Draft PR publication and final acceptance",
+      "requiredCases": [
+        {
+          "id": "PUB0.draft-pr-is-open-and-unmerged",
+          "expectedObservation": "draft pr is open and unmerged",
+          "evidencePath": "cases/PUB0.draft-pr-is-open-and-unmerged.json"
+        },
+        {
+          "id": "PUB0.pr-base-main-and-head-is-final-source",
+          "expectedObservation": "pr base main and head is final source",
+          "evidencePath": "cases/PUB0.pr-base-main-and-head-is-final-source.json"
+        },
+        {
+          "id": "PUB0.publication-verifier-uses-current-run-directory",
+          "expectedObservation": "publication verifier uses current run directory",
+          "evidencePath": "cases/PUB0.publication-verifier-uses-current-run-directory.json"
+        },
+        {
+          "id": "PUB0.all-22-checkpoints-and-211-cases-pass",
+          "expectedObservation": "all 22 checkpoints and 211 cases pass",
+          "evidencePath": "cases/PUB0.all-22-checkpoints-and-211-cases-pass.json"
+        },
+        {
+          "id": "PUB0.pr-description-records-verified-results-and-limitations",
+          "expectedObservation": "pr description records verified results and limitations",
+          "evidencePath": "cases/PUB0.pr-description-records-verified-results-and-limitations.json"
+        }
+      ],
+      "runner": {
+        "command": "python3 tools/parity/compaction_context/runner.py run --checkpoint PUB0 --pi <pinned-pi-checkout> --evidence-dir <current-run-directory>",
+        "verifier": "python3 tools/parity/compaction_context/verify.py check --evidence-dir <current-run-directory>"
+      },
+      "expectedObservations": "The final PR remains open, draft and unmerged against main; the independent verifier accepts only the explicit current exact-head evidence and all frozen cases pass.",
+      "passFailCriteria": "Every required case ID occurs exactly once with executed=true, passed=true, skipped=false, current source identity, raw observation references and matching expected fields. Any missing, duplicate, failed, skipped, stale or unresolved case fails this checkpoint.",
+      "evidencePath": "checkpoints/PUB0.json",
+      "sourceReferences": [
+        "tools/parity/compaction_context/verify.py#publication verification"
+      ]
+    }
+  ]
+}

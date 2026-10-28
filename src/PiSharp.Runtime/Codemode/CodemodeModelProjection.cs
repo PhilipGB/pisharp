@@ -31,7 +31,7 @@ internal static class CodemodeModelProjection
                     ["total"] = usage.Cost
                 }
             };
-            if (usage.ReasoningTokens > 0) projected["reasoning"] = usage.ReasoningTokens;
+            if (usage.ReasoningTokens is > 0) projected["reasoning"] = usage.ReasoningTokens;
             value["usage"] = projected;
         }
         return value.ToJsonString(s_json);

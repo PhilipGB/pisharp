@@ -78,6 +78,15 @@ public sealed record AgentLifecycleEvent(string Type, string? Text = null, strin
     public string? ProviderFinishReason { get; init; }
 
     [JsonIgnore]
+    public int? ProviderDesiredMaxOutputTokens { get; init; }
+
+    [JsonIgnore]
+    internal string? ProviderRequestedModelId { get; init; }
+
+    [JsonIgnore]
+    internal string? ProviderRequestedProviderId { get; init; }
+
+    [JsonIgnore]
     public string? ProviderThinkingLevel { get; init; }
 
     [JsonIgnore]

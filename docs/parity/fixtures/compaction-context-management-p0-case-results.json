@@ -1,0 +1,260 @@
+{
+  "schemaVersion": 1,
+  "milestone": "compaction-context-management-parity",
+  "checkpointId": "P0",
+  "contractSha256": "c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6",
+  "evidenceDirectory": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/P0",
+  "checkpointReportSha256": "812747e925e8e29828943cc4d70117cc8bc9b652b480436f256347d59778c961",
+  "caseReportSha256": "ecfa10ec2850b5b0b24b00050e4efa64c12e8a7487c2948ac4e1f0aea03f85e3",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "evidenceHeadSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2",
+  "implementationSourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2",
+  "sourceTreeClean": false,
+  "status": "passed",
+  "executedCaseCount": 5,
+  "requiredCaseCount": 5,
+  "verifierCounts": {
+    "required": 5,
+    "executed": 5,
+    "passed": 5,
+    "failed": 0,
+    "skipped": 0
+  },
+  "measuredEvidence": {
+    "reviewedHead": "2f88019cd8840b2468b1957217ae361e0bab3ad6",
+    "mergeCommit": "12064420179f4119bdaf37479c7cba0f5ca40717",
+    "prMergedToMain": true,
+    "mainSha": "12064420179f4119bdaf37479c7cba0f5ca40717",
+    "mainContainsReviewedHeadAndMerge": true,
+    "pushAndPullRequestWorkflowsPassed": true,
+    "workflowRuns": [
+      {
+        "runId": 40617744882,
+        "headSha": "2f88019cd8840b2468b1957217ae361e0bab3ad6",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "success",
+        "jobs": [
+          {
+            "name": "macos-clipboard-contracts",
+            "conclusion": "success"
+          },
+          {
+            "name": "mcp-conformance",
+            "conclusion": "success"
+          },
+          {
+            "name": "managed-package-verifier",
+            "conclusion": "success"
+          },
+          {
+            "name": "macos-session-locks",
+            "conclusion": "success"
+          },
+          {
+            "name": "windows-clipboard-contracts",
+            "conclusion": "success"
+          }
+        ]
+      },
+      {
+        "runId": 40617750121,
+        "headSha": "2f88019cd8840b2468b1957217ae361e0bab3ad6",
+        "event": "pull_request",
+        "status": "completed",
+        "conclusion": "success",
+        "jobs": [
+          {
+            "name": "macos-session-locks",
+            "conclusion": "success"
+          },
+          {
+            "name": "macos-clipboard-contracts",
+            "conclusion": "success"
+          },
+          {
+            "name": "managed-package-verifier",
+            "conclusion": "success"
+          },
+          {
+            "name": "windows-clipboard-contracts",
+            "conclusion": "success"
+          },
+          {
+            "name": "mcp-conformance",
+            "conclusion": "success"
+          }
+        ]
+      }
+    ],
+    "publishedEvidence": {
+      "checkpointCount": 27,
+      "caseCount": 240,
+      "passedCheckpointCount": 27,
+      "passedCaseCount": 240,
+      "skippedCaseCount": 0,
+      "executionExitCode": 0
+    }
+  },
+  "cases": [
+    {
+      "caseId": "P0.reviewed-head-is-exact",
+      "contractExpectedObservation": "reviewed head is exact",
+      "classification": "equivalent",
+      "executed": true,
+      "passed": true,
+      "skipped": false,
+      "assertions": [
+        {
+          "name": "source-pinned-checkpoint-observation",
+          "comparison": "strict",
+          "passed": true,
+          "expected": "2f88019cd8840b2468b1957217ae361e0bab3ad6",
+          "actual": "2f88019cd8840b2468b1957217ae361e0bab3ad6",
+          "expectedSha256": "602e7a98a997ca04c34a2597417ed175615001ec2578644ff3f982e7bebc5ffe",
+          "actualSha256": "602e7a98a997ca04c34a2597417ed175615001ec2578644ff3f982e7bebc5ffe"
+        }
+      ]
+    },
+    {
+      "caseId": "P0.actual-merge-sha-is-recorded",
+      "contractExpectedObservation": "actual merge sha is recorded",
+      "classification": "equivalent",
+      "executed": true,
+      "passed": true,
+      "skipped": false,
+      "assertions": [
+        {
+          "name": "source-pinned-checkpoint-observation",
+          "comparison": "strict",
+          "passed": true,
+          "expected": "12064420179f4119bdaf37479c7cba0f5ca40717",
+          "actual": "12064420179f4119bdaf37479c7cba0f5ca40717",
+          "expectedSha256": "0657ed60faece7208ef62580575deeac8a97d80b1e5e401e2fd38da9e0821db8",
+          "actualSha256": "0657ed60faece7208ef62580575deeac8a97d80b1e5e401e2fd38da9e0821db8"
+        }
+      ]
+    },
+    {
+      "caseId": "P0.main-contains-pr-head-and-merge",
+      "contractExpectedObservation": "main contains pr head and merge",
+      "classification": "equivalent",
+      "executed": true,
+      "passed": true,
+      "skipped": false,
+      "assertions": [
+        {
+          "name": "source-pinned-checkpoint-observation",
+          "comparison": "strict",
+          "passed": true,
+          "expected": true,
+          "actual": true,
+          "expectedSha256": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b",
+          "actualSha256": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b"
+        }
+      ]
+    },
+    {
+      "caseId": "P0.push-and-pr-ci-pass-on-head",
+      "contractExpectedObservation": "push and pr ci pass on head",
+      "classification": "equivalent",
+      "executed": true,
+      "passed": true,
+      "skipped": false,
+      "assertions": [
+        {
+          "name": "source-pinned-checkpoint-observation",
+          "comparison": "strict",
+          "passed": true,
+          "expected": true,
+          "actual": true,
+          "expectedSha256": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b",
+          "actualSha256": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b"
+        }
+      ]
+    },
+    {
+      "caseId": "P0.published-evidence-has-27-checkpoints-240-cases",
+      "contractExpectedObservation": "published evidence has 27 checkpoints 240 cases",
+      "classification": "equivalent",
+      "executed": true,
+      "passed": true,
+      "skipped": false,
+      "assertions": [
+        {
+          "name": "source-pinned-checkpoint-observation",
+          "comparison": "strict",
+          "passed": true,
+          "expected": {
+            "checkpointCount": 27,
+            "caseCount": 240,
+            "passedCheckpointCount": 27,
+            "passedCaseCount": 240,
+            "skippedCaseCount": 0,
+            "executionExitCode": 0
+          },
+          "actual": {
+            "checkpointCount": 27,
+            "caseCount": 240,
+            "passedCheckpointCount": 27,
+            "passedCaseCount": 240,
+            "skippedCaseCount": 0,
+            "executionExitCode": 0
+          },
+          "expectedSha256": "b4c6ccbc65127bdbc8dec69ee69d0fb9bb8ef96140ac82a5f0fff351a2ec213b",
+          "actualSha256": "b4c6ccbc65127bdbc8dec69ee69d0fb9bb8ef96140ac82a5f0fff351a2ec213b"
+        }
+      ]
+    }
+  ],
+  "rawArtifacts": [
+    {
+      "path": "expected-observations.json",
+      "sha256": "449f44e849739c95d7da795067d9b11e508d3fa6b88ad111fa4055c12a375144"
+    },
+    {
+      "path": "actual-observations.json",
+      "sha256": "449f44e849739c95d7da795067d9b11e508d3fa6b88ad111fa4055c12a375144"
+    },
+    {
+      "path": "measured-source-evidence.json",
+      "sha256": "f170d0b70da1a9cfd4edb3a3713171686d836fa940950ec29bf81c0dc34b57d8"
+    },
+    {
+      "path": "commands/pr-27.stdout.log",
+      "sha256": "c5e40fa67b06e6cd652e2c261c8caa4c51e63e867424f7b648b311c2658ffba5"
+    },
+    {
+      "path": "commands/pr-27.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "commands/run-40617744882.stdout.log",
+      "sha256": "594c852dce68ceab7d6ddc79b8e9a3b9a46d3cdf5641be1ecff138e4780e0fa9"
+    },
+    {
+      "path": "commands/run-40617744882.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "commands/run-40617750121.stdout.log",
+      "sha256": "8a9bf87d455d045f457078dee5e23e548542aa6119ef0070c0031abbe28064d9"
+    },
+    {
+      "path": "commands/run-40617750121.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "commands/fetch-main.stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "commands/fetch-main.stderr.log",
+      "sha256": "340654fbb37b0eff473b5fc5de6d0466f7c208d9795b94f624919cfc1340c821"
+    },
+    {
+      "path": "published-pr27-evidence.json",
+      "sha256": "29ab99597a76a8f6c363237e608321cb1d468d316ebfa5cbeee901848aa0805f"
+    }
+  ]
+}

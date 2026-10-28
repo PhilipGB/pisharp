@@ -1,0 +1,302 @@
+{
+  "schemaVersion": 1,
+  "milestone": "compaction-context-management-parity",
+  "checkpointId": "C13",
+  "contractSha256": "c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6",
+  "evidenceDirectory": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C13/differential",
+  "generatedReportSha256": "1cc293048d18b6e6036d05a83cf5a8ceab329d1713b6cad196f5bde9abd5c073",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "pisharpSourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2",
+  "sourceTreeClean": true,
+  "piCalibrationStable": true,
+  "pisharpCalibrationStable": true,
+  "pairedObservationsEqual": true,
+  "acceptedSafetyDifferenceCount": 1,
+  "normalization": [
+    "Strict gate observations are compared exactly as recorded."
+  ],
+  "safetyDifferences": [
+    {
+      "caseId": "C13.unknown-tool-outcome-is-not-replayed",
+      "reason": "Pinned Pi retains an interrupted tool attempt for the next model turn without a durable marker that blocks replay. PiSharp persists an explicit unknown outcome and prevents automatic re-execution after a process crash, avoiding duplicate non-idempotent side effects.",
+      "regression": "CrashRecoveryProcessTests.ChildProcessKillAfterToolIntentBeforeInvocationDoesNotRunOrReplayTool; CrashAfterToolSideEffectBeforeOutcomeCheckpointRecoversWithoutReplayingTool",
+      "evidence": "pisharp-c13-observations.json"
+    }
+  ],
+  "executedCaseCount": 12,
+  "requiredCaseCount": 12,
+  "unexecutedCaseIds": [],
+  "verifierCounts": {
+    "required": 12,
+    "executed": 12,
+    "passed": 12,
+    "failed": 0,
+    "skipped": 0
+  },
+  "cases": [
+    {
+      "caseId": "C13.failure-before-summary-does-not-mutate-history",
+      "contractExpectedObservation": "failure before summary does not mutate history",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "6f29956d44dbdbb0dfe3619848ae4278894ed812496d3f6344ca15eff2d7a5c6",
+      "normalizedActualSha256": "6f29956d44dbdbb0dfe3619848ae4278894ed812496d3f6344ca15eff2d7a5c6",
+      "normalizedExpectedBytes": 31,
+      "normalizedActualBytes": 31,
+      "normalizedExpected": {
+        "mappedAssertionsPassed": true
+      },
+      "normalizedActual": {
+        "mappedAssertionsPassed": true
+      }
+    },
+    {
+      "caseId": "C13.streaming-summary-failure-keeps-canonical-tree",
+      "contractExpectedObservation": "streaming summary failure keeps canonical tree",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "6f29956d44dbdbb0dfe3619848ae4278894ed812496d3f6344ca15eff2d7a5c6",
+      "normalizedActualSha256": "6f29956d44dbdbb0dfe3619848ae4278894ed812496d3f6344ca15eff2d7a5c6",
+      "normalizedExpectedBytes": 31,
+      "normalizedActualBytes": 31,
+      "normalizedExpected": {
+        "mappedAssertionsPassed": true
+      },
+      "normalizedActual": {
+        "mappedAssertionsPassed": true
+      }
+    },
+    {
+      "caseId": "C13.post-summary-prepublish-failure-keeps-one-state",
+      "contractExpectedObservation": "post summary prepublish failure keeps one state",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "ce6e1cdb9131ce19265f74c8ac664b71e5e070bfcfbd1467b35ebed695cf3448",
+      "normalizedActualSha256": "ce6e1cdb9131ce19265f74c8ac664b71e5e070bfcfbd1467b35ebed695cf3448",
+      "normalizedExpectedBytes": 36,
+      "normalizedActualBytes": 36,
+      "normalizedExpected": {
+        "oneConsistentCanonicalState": true
+      },
+      "normalizedActual": {
+        "oneConsistentCanonicalState": true
+      }
+    },
+    {
+      "caseId": "C13.persistence-failure-rolls-back-or-recovers-consistently",
+      "contractExpectedObservation": "persistence failure rolls back or recovers consistently",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "356f5ec61d32d7427ecce846011011a706833b986f2e378acdb7963f065cfeb7",
+      "normalizedActualSha256": "356f5ec61d32d7427ecce846011011a706833b986f2e378acdb7963f065cfeb7",
+      "normalizedExpectedBytes": 34,
+      "normalizedActualBytes": 34,
+      "normalizedExpected": {
+        "recoverableCanonicalState": true
+      },
+      "normalizedActual": {
+        "recoverableCanonicalState": true
+      }
+    },
+    {
+      "caseId": "C13.provider-continuation-failure-does-not-repeat-tool",
+      "contractExpectedObservation": "provider continuation failure does not repeat tool",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "6f29956d44dbdbb0dfe3619848ae4278894ed812496d3f6344ca15eff2d7a5c6",
+      "normalizedActualSha256": "6f29956d44dbdbb0dfe3619848ae4278894ed812496d3f6344ca15eff2d7a5c6",
+      "normalizedExpectedBytes": 31,
+      "normalizedActualBytes": 31,
+      "normalizedExpected": {
+        "mappedAssertionsPassed": true
+      },
+      "normalizedActual": {
+        "mappedAssertionsPassed": true
+      }
+    },
+    {
+      "caseId": "C13.stale-session-cannot-write-after-replacement",
+      "contractExpectedObservation": "stale session cannot write after replacement",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "6f29956d44dbdbb0dfe3619848ae4278894ed812496d3f6344ca15eff2d7a5c6",
+      "normalizedActualSha256": "6f29956d44dbdbb0dfe3619848ae4278894ed812496d3f6344ca15eff2d7a5c6",
+      "normalizedExpectedBytes": 31,
+      "normalizedActualBytes": 31,
+      "normalizedExpected": {
+        "mappedAssertionsPassed": true
+      },
+      "normalizedActual": {
+        "mappedAssertionsPassed": true
+      }
+    },
+    {
+      "caseId": "C13.branch-replacement-failure-restores-prior-session",
+      "contractExpectedObservation": "branch replacement failure restores prior session",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "6f29956d44dbdbb0dfe3619848ae4278894ed812496d3f6344ca15eff2d7a5c6",
+      "normalizedActualSha256": "6f29956d44dbdbb0dfe3619848ae4278894ed812496d3f6344ca15eff2d7a5c6",
+      "normalizedExpectedBytes": 31,
+      "normalizedActualBytes": 31,
+      "normalizedExpected": {
+        "mappedAssertionsPassed": true
+      },
+      "normalizedActual": {
+        "mappedAssertionsPassed": true
+      }
+    },
+    {
+      "caseId": "C13.cancel-before-request-cleans-lifecycle-state",
+      "contractExpectedObservation": "cancel before request cleans lifecycle state",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "6f29956d44dbdbb0dfe3619848ae4278894ed812496d3f6344ca15eff2d7a5c6",
+      "normalizedActualSha256": "6f29956d44dbdbb0dfe3619848ae4278894ed812496d3f6344ca15eff2d7a5c6",
+      "normalizedExpectedBytes": 31,
+      "normalizedActualBytes": 31,
+      "normalizedExpected": {
+        "mappedAssertionsPassed": true
+      },
+      "normalizedActual": {
+        "mappedAssertionsPassed": true
+      }
+    },
+    {
+      "caseId": "C13.cancel-during-summary-cleans-lifecycle-state",
+      "contractExpectedObservation": "cancel during summary cleans lifecycle state",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "6f29956d44dbdbb0dfe3619848ae4278894ed812496d3f6344ca15eff2d7a5c6",
+      "normalizedActualSha256": "6f29956d44dbdbb0dfe3619848ae4278894ed812496d3f6344ca15eff2d7a5c6",
+      "normalizedExpectedBytes": 31,
+      "normalizedActualBytes": 31,
+      "normalizedExpected": {
+        "mappedAssertionsPassed": true
+      },
+      "normalizedActual": {
+        "mappedAssertionsPassed": true
+      }
+    },
+    {
+      "caseId": "C13.process-kill-during-publication-reloads-valid-state",
+      "contractExpectedObservation": "process kill during publication reloads valid state",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "986164d91a2927e1b8e45ec6b40bcb3abb5454a686af1c809bdcf4170258e5f1",
+      "normalizedActualSha256": "986164d91a2927e1b8e45ec6b40bcb3abb5454a686af1c809bdcf4170258e5f1",
+      "normalizedExpectedBytes": 47,
+      "normalizedActualBytes": 47,
+      "normalizedExpected": {
+        "killedProcessReloadsOneValidCompaction": true
+      },
+      "normalizedActual": {
+        "killedProcessReloadsOneValidCompaction": true
+      }
+    },
+    {
+      "caseId": "C13.unknown-tool-outcome-is-not-replayed",
+      "contractExpectedObservation": "unknown tool outcome is not replayed",
+      "classification": "intentional-safety-difference",
+      "passed": true,
+      "normalizedExpectedSha256": "ca31a756e73e35119fd765aebb87b6d96cb55635a62a342a9cb2d171b39f6388",
+      "normalizedActualSha256": "08c40f920a4c23ab8946186572f9c406f4b3bbce0587d4c649d0e8ffc6f30dad",
+      "normalizedExpectedBytes": 115,
+      "normalizedActualBytes": 108,
+      "normalizedExpected": {
+        "interruptedToolResolution": "retained-for-next-model-turn",
+        "automaticReplayPreventedByDurableUnknownMarker": false
+      },
+      "normalizedActual": {
+        "interruptedToolResolution": "unknown-outcome-marker",
+        "automaticReplayPreventedByDurableUnknownMarker": true
+      }
+    },
+    {
+      "caseId": "C13.next-request-recovers-after-each-failure",
+      "contractExpectedObservation": "next request recovers after each failure",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "6f29956d44dbdbb0dfe3619848ae4278894ed812496d3f6344ca15eff2d7a5c6",
+      "normalizedActualSha256": "6f29956d44dbdbb0dfe3619848ae4278894ed812496d3f6344ca15eff2d7a5c6",
+      "normalizedExpectedBytes": 31,
+      "normalizedActualBytes": 31,
+      "normalizedExpected": {
+        "mappedAssertionsPassed": true
+      },
+      "normalizedActual": {
+        "mappedAssertionsPassed": true
+      }
+    }
+  ],
+  "rawArtifacts": [
+    {
+      "path": "pinned-pi-c13-tests-run-1.stdout.log",
+      "sha256": "5d0ef66b322073f482d2ffa5fb20fbf5e845c2bb84265769c3463b048cb0a7f7"
+    },
+    {
+      "path": "pinned-pi-c13-tests-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-c13-tests-run-1.stdout.log",
+      "sha256": "0f6ead13c49279cd56b1737830c8db1c982ab27c715d8c6cb51376739ac9e277"
+    },
+    {
+      "path": "pisharp-c13-tests-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pinned-pi-c13-tests-run-2.stdout.log",
+      "sha256": "ee17a90a0c8d160088691bd9efcc3261d8486d4d64a0d94120d08e3ad68bccaf"
+    },
+    {
+      "path": "pinned-pi-c13-tests-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-c13-tests-run-2.stdout.log",
+      "sha256": "e24b0873b9a3addd975748e1b15c0bf2dd1b0f41aa6f02db89a19672204e7351"
+    },
+    {
+      "path": "pisharp-c13-tests-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pinned-pi-c13-probe-run-1.json",
+      "sha256": "a56eb48e44b268245d2cb1f2d7adbd2ab09477d35ce70137d5e40d4433eca68e"
+    },
+    {
+      "path": "pinned-pi-c13-probe-run-1.stdout.log",
+      "sha256": "9697598dece3310f1db28f108c4344071b0e6fd7440ae132783c6f69ab3e31d7"
+    },
+    {
+      "path": "pinned-pi-c13-probe-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pinned-pi-c13-probe-run-2.json",
+      "sha256": "a56eb48e44b268245d2cb1f2d7adbd2ab09477d35ce70137d5e40d4433eca68e"
+    },
+    {
+      "path": "pinned-pi-c13-probe-run-2.stdout.log",
+      "sha256": "48ff272f2ae86ca92119b956b2f48cca19a37de04072870de3e88877670dec07"
+    },
+    {
+      "path": "pinned-pi-c13-probe-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "c13-test-map.json",
+      "sha256": "60bcc17d99a91addeb45584cfef3e282f27d548cd474e9d52e8aa59c665c2022"
+    },
+    {
+      "path": "pi-c13-observations.json",
+      "sha256": "d59beabdf8cd35858e2179b5779c2ff197fc50dac757ab9cb2ad5f9285f545db"
+    },
+    {
+      "path": "pisharp-c13-observations.json",
+      "sha256": "1bc47eecd8288045e268b9bd57981a6ae215cbea64e60ef28500bdad8452718a"
+    }
+  ]
+}

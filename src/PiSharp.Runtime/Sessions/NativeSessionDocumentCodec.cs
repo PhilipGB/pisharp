@@ -65,8 +65,12 @@ internal static class NativeSessionDocumentCodec
     internal static void ValidateUsage(UsageRecord usage, string id)
     {
         if (string.IsNullOrWhiteSpace(usage.Model) || string.IsNullOrWhiteSpace(usage.Source) ||
-            usage.InputTokens < 0 || usage.OutputTokens < 0 || usage.CachedInputTokens < 0 ||
-            usage.ReasoningTokens < 0 || usage.TotalTokens < 0 || usage.Cost < 0)
+            usage.InputTokens is < 0 || usage.OutputTokens is < 0 || usage.CachedInputTokens is < 0 ||
+            usage.InputIncludingCachedTokens is < 0 || usage.ReasoningTokens is < 0 ||
+            usage.TotalTokens is < 0 || usage.CachedWriteTokens is < 0 || usage.Cost < 0 ||
+            (usage.InputIncludingCachedTokens is long totalInput && usage.InputTokens is long input &&
+                usage.CachedInputTokens is long cached &&
+                (input > long.MaxValue - cached || input + cached != totalInput)))
             throw new InvalidDataException($"Invalid usage record at {id}.");
     }
 

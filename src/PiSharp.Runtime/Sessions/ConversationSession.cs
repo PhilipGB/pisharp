@@ -471,6 +471,30 @@ public sealed class ConversationSession
         Tree.Append("usage", JsonSerializer.SerializeToElement(usage));
     }
 
+    /// <summary>Appends a Pi-compatible summary for the branch that was left during tree navigation.</summary>
+    public ConversationNode AppendBranchSummary(string fromId, string summary, JsonElement? details = null,
+        bool fromExtension = false, UsageRecord? usage = null)
+    {
+        if (string.IsNullOrWhiteSpace(fromId)) throw new ArgumentException("A source branch is required.", nameof(fromId));
+        if (string.IsNullOrWhiteSpace(summary) || summary.Length > 64 * 1024)
+            throw new InvalidDataException("Branch summary must be nonempty and at most 64KB.");
+        if (details is { ValueKind: JsonValueKind.Undefined })
+            throw new ArgumentException("Branch summary details must be a JSON value when supplied.", nameof(details));
+        if (usage is not null) NativeSessionDocumentCodec.ValidateUsage(usage, Tree.HeadId ?? "new entry");
+
+        object? projectedUsage = usage is null ? null : PiJsonlEntryCodec.ProjectUsage(usage);
+        var payload = JsonSerializer.SerializeToElement(new
+        {
+            fromId,
+            summary,
+            details,
+            fromHook = fromExtension,
+            usage = projectedUsage,
+            nativeUsage = usage
+        });
+        return Tree.Append("branch_summary", payload);
+    }
+
     public IReadOnlyList<UsageRecord> ActiveUsage()
     {
         var usage = new List<UsageRecord>();
@@ -506,7 +530,7 @@ public sealed class ConversationSession
 
     public void AppendCompaction(CompactionPlan plan, string summary, int? keepRecentTokens = null,
         int tokensBefore = 0, ConversationCompactionDetails? details = null, string? firstKeptEntryId = null,
-        JsonElement? extensionDetails = null, bool fromExtension = false)
+        JsonElement? extensionDetails = null, bool fromExtension = false, UsageRecord? usage = null)
     {
         if (string.IsNullOrWhiteSpace(summary) || summary.Length > 64 * 1024)
             throw new InvalidDataException("Compaction summary must be nonempty and at most 64KB.");
@@ -517,8 +541,10 @@ public sealed class ConversationSession
         var persistedDetails = extensionDetails?.Clone() ?? (details is null
             ? null
             : JsonSerializer.SerializeToElement(details));
+        var projectedUsage = usage is null ? (JsonElement?)null :
+            JsonSerializer.SerializeToElement(PiJsonlEntryCodec.ProjectUsage(usage));
         Tree.Append("compaction", JsonSerializer.SerializeToElement(new CompactionRecord(summary,
-            retainedEntryId, tokensBefore, persistedDetails, fromExtension)));
+            retainedEntryId, tokensBefore, persistedDetails, fromExtension, projectedUsage, usage)));
     }
 
     internal void ValidateCompactionBoundary(string firstKeptEntryId)
@@ -532,9 +558,14 @@ public sealed class ConversationSession
             throw new InvalidDataException("Compaction boundary must identify a user or assistant entry on the active branch after the previous compaction.");
         var entries = CompactionContextEntries(out var previousSummary);
         var retainedIndex = entries.ToList().FindIndex(entry => entry.SourceEntryId == firstKeptEntryId);
-        if (retainedIndex < 0 || !ConversationCompactionCoordinator.HasCompleteToolCallPairs(
-                entries.Skip(previousSummary is null ? 0 : 1).TakeWhile(entry => entry.SourceEntryId != firstKeptEntryId)
-                    .SelectMany(entry => entry.Messages).ToArray()))
+        var recoveryOmittedBoundary = retainedIndex < 0 && role == ChatRole.Assistant &&
+            Enumerable.Range(Math.Max(0, previousCompactionIndex + 1), Math.Max(0, boundaryIndex - previousCompactionIndex - 1))
+                .Any(index => ConversationContextProjection.ContextMessageForNode(path[index])?.Role == ChatRole.User &&
+                    RecoveryOmittedAssistantAfter(index) == firstKeptEntryId);
+        var summarizedPrefix = entries.Where(entry => entry.SourceIndex < boundaryIndex &&
+            (previousSummary is null || !entry.IsPreviousSummary)).SelectMany(entry => entry.Messages).ToArray();
+        if (retainedIndex < 0 && !recoveryOmittedBoundary ||
+            !ConversationCompactionCoordinator.HasCompleteToolCallPairs(summarizedPrefix))
             throw new InvalidDataException("Compaction boundary splits an incomplete tool call/result pair.");
     }
 
@@ -699,7 +730,11 @@ public sealed class ConversationSession
         [property: JsonPropertyName("details"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         JsonElement? Details,
         [property: JsonPropertyName("fromHook"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-        bool FromExtension);
+        bool FromExtension,
+        [property: JsonPropertyName("usage"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        JsonElement? Usage,
+        [property: JsonPropertyName("nativeUsage"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        UsageRecord? NativeUsage);
 
     internal ConversationContextProjection.ContextUsageProjection ProjectContextUsageForEstimate() =>
         ConversationContextProjection.ProjectContextUsageForEstimate(Tree.ActivePath());

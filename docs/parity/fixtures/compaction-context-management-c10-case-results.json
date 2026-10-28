@@ -1,0 +1,398 @@
+{
+  "schemaVersion": 1,
+  "milestone": "compaction-context-management-parity",
+  "checkpointId": "C10",
+  "contractSha256": "c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6",
+  "evidenceDirectory": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C10/differential",
+  "generatedReportSha256": "d4b1b7c80810091da002c4a5197defc68ba8ab226c20df1bdcd14630fc4c01af",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "pisharpSourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2",
+  "sourceTreeClean": true,
+  "piCalibrationStable": true,
+  "pisharpCalibrationStable": true,
+  "pairedObservationsEqual": true,
+  "acceptedSafetyDifferenceCount": 2,
+  "normalization": [
+    "Strict gate observations are compared exactly as recorded."
+  ],
+  "safetyDifferences": [
+    {
+      "caseId": "C10.missing-usage-fields-remain-unknown",
+      "reason": "Pi's Usage contract requires numeric input/output/cache counts; MAF marks absent counts as unknown. PiSharp preserves those unknowns and keeps the supplied combined input total separately.",
+      "regression": "CompactionTests.UsageRecordCreatePreservesMissingUsageFieldsAsUnknown",
+      "evidence": "pisharp-c10-observations.json"
+    },
+    {
+      "caseId": "C10.unknown-prices-do-not-create-cost",
+      "reason": "Pi's required numeric pricing rates represent this zero-rate fixture as a free model; PiSharp preserves absent pricing as unknown so a missing price is not reported as free.",
+      "regression": "CompactionTests.UsageRecordCreateLeavesCostUnknownWithoutModelPricing",
+      "evidence": "pisharp-c10-observations.json"
+    }
+  ],
+  "executedCaseCount": 10,
+  "requiredCaseCount": 10,
+  "unexecutedCaseIds": [],
+  "verifierCounts": {
+    "required": 10,
+    "executed": 10,
+    "passed": 10,
+    "failed": 0,
+    "skipped": 0
+  },
+  "cases": [
+    {
+      "caseId": "C10.summary-request-usage-persists-on-active-branch",
+      "contractExpectedObservation": "summary request usage persists on active branch",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "28b248a55d2edab5e2bdb0c5c76350190f74650a898b9c605489d03dde753228",
+      "normalizedActualSha256": "28b248a55d2edab5e2bdb0c5c76350190f74650a898b9c605489d03dde753228",
+      "normalizedExpectedBytes": 162,
+      "normalizedActualBytes": 162,
+      "normalizedExpected": {
+        "summaryEntryType": "branch_summary",
+        "summaryEntryIsActive": true,
+        "usageIsOnActiveBranch": true,
+        "input": 20,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 0,
+        "totalTokens": 34
+      },
+      "normalizedActual": {
+        "summaryEntryType": "branch_summary",
+        "summaryEntryIsActive": true,
+        "usageIsOnActiveBranch": true,
+        "input": 20,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 0,
+        "totalTokens": 34
+      }
+    },
+    {
+      "caseId": "C10.fallback-context-total-includes-cache-tokens",
+      "contractExpectedObservation": "fallback context total includes cache tokens",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "914314b47ccd96464e5eac1a6b37477254e0d104b862833cefc47af3959f1488",
+      "normalizedActualSha256": "914314b47ccd96464e5eac1a6b37477254e0d104b862833cefc47af3959f1488",
+      "normalizedExpectedBytes": 70,
+      "normalizedActualBytes": 70,
+      "normalizedExpected": {
+        "input": 6,
+        "output": 3,
+        "cacheRead": 4,
+        "cacheWrite": 5,
+        "contextTokens": 18
+      },
+      "normalizedActual": {
+        "input": 6,
+        "output": 3,
+        "cacheRead": 4,
+        "cacheWrite": 5,
+        "contextTokens": 18
+      }
+    },
+    {
+      "caseId": "C10.input-output-cache-read-cache-write-remain-distinct",
+      "contractExpectedObservation": "input output cache read cache write remain distinct",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "be1867c777cc5e65f3dcd44239b112d9b7025e68b3ede72d838cd4608f8bbd6f",
+      "normalizedActualSha256": "be1867c777cc5e65f3dcd44239b112d9b7025e68b3ede72d838cd4608f8bbd6f",
+      "normalizedExpectedBytes": 68,
+      "normalizedActualBytes": 68,
+      "normalizedExpected": {
+        "input": 6,
+        "output": 3,
+        "cacheRead": 4,
+        "cacheWrite": 5,
+        "totalTokens": 18
+      },
+      "normalizedActual": {
+        "input": 6,
+        "output": 3,
+        "cacheRead": 4,
+        "cacheWrite": 5,
+        "totalTokens": 18
+      }
+    },
+    {
+      "caseId": "C10.reasoning-tokens-are-preserved",
+      "contractExpectedObservation": "reasoning tokens are preserved",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "9790fc01b077695382fd0fb0b8bbb244bd3cf34b5fa640f610ee337a43a763ea",
+      "normalizedActualSha256": "9790fc01b077695382fd0fb0b8bbb244bd3cf34b5fa640f610ee337a43a763ea",
+      "normalizedExpectedBytes": 36,
+      "normalizedActualBytes": 36,
+      "normalizedExpected": {
+        "reasoning": 2,
+        "input": 6,
+        "output": 3
+      },
+      "normalizedActual": {
+        "reasoning": 2,
+        "input": 6,
+        "output": 3
+      }
+    },
+    {
+      "caseId": "C10.missing-usage-fields-remain-unknown",
+      "contractExpectedObservation": "missing usage fields remain unknown",
+      "classification": "intentional-safety-difference",
+      "passed": true,
+      "normalizedExpectedSha256": "450038a594cc8e06688cd64d2b38be98578cd171657848dfed6747ba8d0e68d8",
+      "normalizedActualSha256": "0d91d881c6c1e159b974e421d1892fcd27a385d4e2d907801d53ce886658bcc8",
+      "normalizedExpectedBytes": 178,
+      "normalizedActualBytes": 172,
+      "normalizedExpected": {
+        "inputIsUnknown": false,
+        "outputIsUnknown": false,
+        "cacheReadIsUnknown": false,
+        "cacheWriteIsUnknown": false,
+        "totalIsUnknown": false,
+        "reasoningIsUnknown": true,
+        "inputTotalIsKnown": false
+      },
+      "normalizedActual": {
+        "inputIsUnknown": true,
+        "outputIsUnknown": true,
+        "cacheReadIsUnknown": true,
+        "cacheWriteIsUnknown": true,
+        "totalIsUnknown": true,
+        "reasoningIsUnknown": true,
+        "inputTotalIsKnown": true
+      }
+    },
+    {
+      "caseId": "C10.unknown-prices-do-not-create-cost",
+      "contractExpectedObservation": "unknown prices do not create cost",
+      "classification": "intentional-safety-difference",
+      "passed": true,
+      "normalizedExpectedSha256": "01dcca1283fac6f0eb0ca3e9a094ec51e8b9a88a8d22f372a46f36255b333caa",
+      "normalizedActualSha256": "b09f5a01d9cddf62eeaea9b361f4dda8777d3a87fdf72a1aa78c72fad134d848",
+      "normalizedExpectedBytes": 10,
+      "normalizedActualBytes": 13,
+      "normalizedExpected": {
+        "cost": 0
+      },
+      "normalizedActual": {
+        "cost": null
+      }
+    },
+    {
+      "caseId": "C10.known-pricing-and-input-tiers-are-calculated",
+      "contractExpectedObservation": "known pricing and input tiers are calculated",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "759dc9d58c2f2739e17835afe8f06d3fa5d51c27cfa51d550d6c22788197fb5b",
+      "normalizedActualSha256": "759dc9d58c2f2739e17835afe8f06d3fa5d51c27cfa51d550d6c22788197fb5b",
+      "normalizedExpectedBytes": 109,
+      "normalizedActualBytes": 109,
+      "normalizedExpected": {
+        "knownCost": 0.000302,
+        "tieredCost": 0.9,
+        "tieredInput": 60000,
+        "tieredCacheRead": 200000,
+        "tieredCacheWrite": 20000
+      },
+      "normalizedActual": {
+        "knownCost": 0.000302,
+        "tieredCost": 0.9,
+        "tieredInput": 60000,
+        "tieredCacheRead": 200000,
+        "tieredCacheWrite": 20000
+      }
+    },
+    {
+      "caseId": "C10.split-summary-physical-model-costs-aggregate-correctly",
+      "contractExpectedObservation": "split summary physical model costs aggregate correctly",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "ed82e6ec1713a926aaa2a135a58b05ac0c4c6041dd4b12e1ddc07d3fa1ec43a3",
+      "normalizedActualSha256": "ed82e6ec1713a926aaa2a135a58b05ac0c4c6041dd4b12e1ddc07d3fa1ec43a3",
+      "normalizedExpectedBytes": 103,
+      "normalizedActualBytes": 103,
+      "normalizedExpected": {
+        "modelCount": 2,
+        "input": 100,
+        "output": 7,
+        "cacheRead": 15,
+        "cacheWrite": 5,
+        "totalTokens": 127,
+        "cost": 0.000454
+      },
+      "normalizedActual": {
+        "modelCount": 2,
+        "input": 100,
+        "output": 7,
+        "cacheRead": 15,
+        "cacheWrite": 5,
+        "totalTokens": 127,
+        "cost": 0.000454
+      }
+    },
+    {
+      "caseId": "C10.inactive-branch-usage-is-excluded-from-active-total",
+      "contractExpectedObservation": "inactive branch usage is excluded from active total",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "30b70ef803b3e63cf526b5befe196753bbb6fde934c51b0b8ebab19812ed7ef8",
+      "normalizedActualSha256": "30b70ef803b3e63cf526b5befe196753bbb6fde934c51b0b8ebab19812ed7ef8",
+      "normalizedExpectedBytes": 91,
+      "normalizedActualBytes": 91,
+      "normalizedExpected": {
+        "activeUsageCount": 1,
+        "input": 40,
+        "output": 8,
+        "totalTokens": 48,
+        "inactiveUsageIncluded": false
+      },
+      "normalizedActual": {
+        "activeUsageCount": 1,
+        "input": 40,
+        "output": 8,
+        "totalTokens": 48,
+        "inactiveUsageIncluded": false
+      }
+    },
+    {
+      "caseId": "C10.cli-tui-and-rpc-report-canonical-session-usage",
+      "contractExpectedObservation": "cli tui and rpc report canonical session usage",
+      "classification": "equivalent",
+      "passed": true,
+      "normalizedExpectedSha256": "94f2cac3df3890189f2ab147695d36a03c82e76ac0d85ae1fba44f2b6f20e990",
+      "normalizedActualSha256": "94f2cac3df3890189f2ab147695d36a03c82e76ac0d85ae1fba44f2b6f20e990",
+      "normalizedExpectedBytes": 321,
+      "normalizedActualBytes": 321,
+      "normalizedExpected": {
+        "cli": {
+          "input": 60,
+          "cost": 0.0123
+        },
+        "tui": {
+          "input": true,
+          "output": true,
+          "cacheRead": true,
+          "cacheWrite": true,
+          "cost": true
+        },
+        "rpc": {
+          "input": 40,
+          "output": 8,
+          "cacheRead": 5,
+          "cacheWrite": 7,
+          "total": 60,
+          "cost": 0.0123
+        },
+        "nativeBranchSummaryRpc": {
+          "summaryEntries": 1,
+          "input": 20,
+          "output": 4,
+          "cacheRead": 5,
+          "cacheWrite": 2,
+          "total": 31,
+          "cost": 0.014
+        }
+      },
+      "normalizedActual": {
+        "cli": {
+          "input": 60,
+          "cost": 0.0123
+        },
+        "tui": {
+          "input": true,
+          "output": true,
+          "cacheRead": true,
+          "cacheWrite": true,
+          "cost": true
+        },
+        "rpc": {
+          "input": 40,
+          "output": 8,
+          "cacheRead": 5,
+          "cacheWrite": 7,
+          "total": 60,
+          "cost": 0.0123
+        },
+        "nativeBranchSummaryRpc": {
+          "summaryEntries": 1,
+          "input": 20,
+          "output": 4,
+          "cacheRead": 5,
+          "cacheWrite": 2,
+          "total": 31,
+          "cost": 0.014
+        }
+      }
+    }
+  ],
+  "rawArtifacts": [
+    {
+      "path": "pi-c10-run-1.json",
+      "sha256": "e8e9eb5fbfeba343ac941047b6455c3026c204a9fc1f9ec0816ee3640579aaa8"
+    },
+    {
+      "path": "pi-c10-run-1.stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-c10-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-c10-run-2.json",
+      "sha256": "e8e9eb5fbfeba343ac941047b6455c3026c204a9fc1f9ec0816ee3640579aaa8"
+    },
+    {
+      "path": "pi-c10-run-2.stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-c10-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pinned-pi-c10-tests.stdout.log",
+      "sha256": "806f11556e3904c47606c55fae6f40efd6099d6484d557d94eba401622fc76af"
+    },
+    {
+      "path": "pinned-pi-c10-tests.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-c10-run-1.json",
+      "sha256": "ddb2ebcbcb2ac9f6150741174ae555b2f98d1c9118510e231babcf0920d179e5"
+    },
+    {
+      "path": "pisharp-c10-run-1.stdout.log",
+      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
+    },
+    {
+      "path": "pisharp-c10-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-c10-run-2.json",
+      "sha256": "ddb2ebcbcb2ac9f6150741174ae555b2f98d1c9118510e231babcf0920d179e5"
+    },
+    {
+      "path": "pisharp-c10-run-2.stdout.log",
+      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
+    },
+    {
+      "path": "pisharp-c10-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-c10-observations.json",
+      "sha256": "193ddbf3af78bc1d7a7bd64161f331d51177d56400e02b483a3f8fb3bc81e0dd"
+    },
+    {
+      "path": "pisharp-c10-observations.json",
+      "sha256": "a51e3129c90a608a1f759f220d14fcb8acbda064a5abb0c8ce578c2e8ff4e7f6"
+    }
+  ]
+}

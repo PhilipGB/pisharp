@@ -114,7 +114,7 @@ public sealed class PiMessagesProviderTests
                     type = "done", reason = "toolUse", responseId = "response-7", providerThinkingLevel = "high",
                     usage = new
                     {
-                        input = 40, output = 15, cacheRead = 5, cacheWrite = 8, totalTokens = 55,
+                        input = 40, output = 15, cacheRead = 5, cacheWrite = 8, totalTokens = 68,
                         cost = new { input = 0.01, output = 0.02, cacheRead = 0.003, cacheWrite = 0.004, total = 0.037 }
                     }
                 }
@@ -185,10 +185,10 @@ public sealed class PiMessagesProviderTests
         Assert.Equal("call-2", call.CallId);
         Assert.Equal("ping", Assert.IsType<JsonElement>(call.Arguments!["text"]).GetString());
         var usage = response.Usage!;
-        Assert.Equal(40, usage.InputTokenCount);
+        Assert.Equal(45, usage.InputTokenCount);
         Assert.Equal(15, usage.OutputTokenCount);
         Assert.Equal(5, usage.CachedInputTokenCount);
-        Assert.Equal(55, usage.TotalTokenCount);
+        Assert.Equal(68, usage.TotalTokenCount);
         Assert.Equal(8, usage.AdditionalCounts!["piMessages.cacheWrite"]);
         var signatures = PiMessagesRequestMapper.GetStoredJson(assistant.AdditionalProperties,
             PiMessagesRequestMapper.TextSignaturesKey)!.AsObject();

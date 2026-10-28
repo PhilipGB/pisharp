@@ -1,0 +1,1887 @@
+#!/usr/bin/env node
+import { createHash } from "node:crypto";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { resolve, join } from "node:path";
+import { pathToFileURL } from "node:url";
+import { execFileSync } from "node:child_process";
+
+const PIN = "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6";
+const args = process.argv.slice(2);
+const value = (name) => {
+  const index = args.indexOf(name);
+  if (index < 0 || !args[index + 1]) throw new Error(`missing ${name}`);
+  return args[index + 1];
+};
+const piRoot = resolve(value("--pi"));
+const output = resolve(value("--output"));
+const scenario = args.includes("--scenario") ? value("--scenario") : "length-recovery";
+const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: piRoot, encoding: "utf8" }).trim();
+if (head !== PIN) throw new Error(`Pi checkout is ${head}; expected ${PIN}`);
+
+const importFromPi = (relative) => import(pathToFileURL(join(piRoot, relative)).href);
+const [{ createHarness }, { fauxAssistantMessage }, { createAssistantMessageEventStream },
+  { getModel: getPiModel, normalizeContext }, { stream: streamPiResponses },
+  { stream: streamPiCompletions }, { stream: streamPiAnthropic }, { convertToLlm },
+  { compact, generateSummaryWithUsage, prepareCompaction, DEFAULT_COMPACTION_SETTINGS, estimateContextTokens, estimateProjectedContextTokens,
+    estimateTokens, shouldCompact }, { buildSessionProjection }, { SessionManager, loadEntriesFromFile }, { SettingsManager }, { SETTINGS_DEFAULTS }] = await Promise.all([
+  importFromPi("packages/coding-agent/test/suite/harness.ts"),
+  importFromPi("packages/ai/src/providers/faux.ts"),
+  importFromPi("packages/ai/src/utils/event-stream.ts"),
+  importFromPi("packages/ai/src/compat.ts"),
+  importFromPi("packages/ai/src/api/openai-responses.ts"),
+  importFromPi("packages/ai/src/api/openai-completions.ts"),
+  importFromPi("packages/ai/src/api/anthropic-messages.ts"),
+  importFromPi("packages/coding-agent/src/core/messages.ts"),
+  importFromPi("packages/coding-agent/src/core/compaction/compaction.ts"),
+  importFromPi("packages/coding-agent/src/core/session-manager.ts"),
+  importFromPi("packages/coding-agent/src/core/session-manager.ts"),
+  importFromPi("packages/coding-agent/src/core/settings-manager.ts"),
+  importFromPi("packages/coding-agent/src/core/settings-defaults.ts"),
+]);
+const { collectEntriesForBranchSummary, prepareBranchEntries } = await importFromPi(
+  "packages/coding-agent/src/core/compaction/branch-summarization.ts");
+
+function createHarnessWithStableTempPath(options) {
+  const originalRandom = Math.random;
+  Math.random = () => 0.5;
+  try { return createHarness(options); }
+  finally { Math.random = originalRandom; }
+}
+
+function c6Snapshot(message) {
+  const content = Array.isArray(message.content) ? message.content : [];
+  const resultTexts = message.role === "toolResult"
+    ? content.filter(item => item.type === "text").map(item => item.text ?? "") : [];
+  const text = typeof message.content === "string" ? message.content
+    : content.filter(item => item.type === "text").map(item => item.text ?? "").join("");
+  return {
+    role: message.role === "toolResult" ? "toolResult" : message.role,
+    text,
+    callIds: content.filter(item => item.type === "toolCall").map(item => item.id),
+    resultCallIds: message.role === "toolResult" ? [message.toolCallId] : [],
+    resultCharacters: resultTexts.reduce((sum, value) => sum + value.length, 0),
+    nestedCallIds: message.role === "toolResult" ? (message.nestedCalls?.calls ?? []).map(call => call.id) : [],
+    nestedExecutionComplete: message.role === "toolResult" ? message.nestedCalls?.complete ?? null : null,
+  };
+}
+
+function c6ToolHistory(messages) {
+  return messages.filter(message => message.callIds.length || message.resultCallIds.length);
+}
+
+function c6IsBalanced(messages) {
+  const used = new Set();
+  const pending = new Set();
+  for (const message of messages) {
+    for (const id of message.callIds) {
+      if (!id || used.has(id) || pending.has(id)) return false;
+      used.add(id);
+      pending.add(id);
+    }
+    for (const id of message.resultCallIds) {
+      if (!pending.delete(id)) return false;
+    }
+  }
+  return pending.size === 0;
+}
+
+function c6CallMessage(model, calls) {
+  return {
+    ...fauxAssistantMessage("", { stopReason: "toolUse" }),
+    content: calls.map(call => ({ type: "toolCall", id: call.id, name: call.name ?? "capture_tool",
+      arguments: call.args ?? { key: call.key } })),
+    api: model.api,
+    provider: model.provider,
+    model: model.id,
+  };
+}
+
+function c6SeedCall(harness, id) {
+  const model = harness.getModel();
+  harness.sessionManager.appendMessage({
+    ...c6CallMessage(model, [{ id, key: "dangling" }]),
+    timestamp: Date.now(),
+  });
+}
+
+function c6SeedResult(harness, callId, text) {
+  harness.sessionManager.appendMessage({
+    role: "toolResult",
+    toolCallId: callId,
+    toolName: "capture_tool",
+    content: [{ type: "text", text }],
+    isError: false,
+    timestamp: Date.now(),
+  });
+}
+
+async function runPiC6Scenario(scenario) {
+  const outputText = {
+    large: "x".repeat(8_000),
+    old: "o".repeat(8_000),
+    latest: "LATEST TOOL OUTCOME",
+    first: "first outcome",
+    second: "second outcome",
+    parallel1: "parallel first outcome",
+    parallel2: "parallel second outcome",
+    outer: "outer dispatched child",
+    child: "child completed",
+    steering: "s".repeat(8_000),
+    dangling: "dangling result",
+  };
+  const tool = {
+    name: "capture_tool",
+    label: "Capture fixture",
+    description: "Return deterministic fixture output.",
+    parameters: { type: "object", properties: { key: { type: "string" } }, required: ["key"] },
+    execute: async (_toolCallId, params) => ({
+      content: [{ type: "text", text: outputText[params.key] ?? `result for ${params.key}` }],
+      details: {},
+    }),
+  };
+  const nestedTools = (pi) => {
+    pi.registerTool({
+      name: "leaf",
+      label: "Nested leaf",
+      description: "Return the nested result.",
+      exposure: "codemode",
+      parameters: { type: "object", properties: { key: { type: "string" } }, required: ["key"] },
+      execute: async (_toolCallId, params) => ({
+        content: [{ type: "text", text: outputText[params.key] ?? "child completed" }], details: {},
+      }),
+    });
+    pi.registerTool({
+      name: "outer",
+      label: "Nested outer",
+      description: "Run a child tool and return its outcome.",
+      exposure: "model-only",
+      parameters: { type: "object", properties: {}, additionalProperties: false },
+      execute: async (_toolCallId, _params, _signal, _onUpdate, context) => {
+        const child = await context.executeTool("leaf", { key: "child" });
+        return { content: [{ type: "text", text: `outer result after ${child.result.content[0]?.text ?? "child"}` }], details: {} };
+      },
+    });
+  };
+  const harness = scenario === "nested"
+    ? await createHarness({ initialActiveToolNames: [], extensionFactories: [nestedTools] })
+    : await createHarness({ tools: [tool] });
+  if (scenario === "nested") await harness.session.bindExtensions({});
+  const requests = [];
+  const steps = scenario === "parallel" ? [
+    { calls: [{ id: "parallel-1", key: "parallel1" }, { id: "parallel-2", key: "parallel2" }] }, { text: "done" },
+  ] : scenario === "sequential" || scenario === "post-compaction" ? [
+    { calls: [{ id: "sequence-1", key: "first" }] },
+    { calls: [{ id: "sequence-2", key: "second" }] }, { text: "done" },
+  ] : scenario === "latest-outcome" ? [
+    { calls: [{ id: "old-output", key: "old" }] },
+    { calls: [{ id: "latest-output", key: "latest" }] }, { text: "done" },
+  ] : scenario === "nested" ? [
+    { calls: [{ id: "outer-call", name: "outer", args: {} }] }, { text: "done" },
+  ] : [
+    ...(scenario === "incomplete" || scenario === "duplicate" || scenario === "steering"
+      ? [] : [{ calls: [{ id: "large-1", key: scenario === "steering" ? "steering" : "large" }] }]),
+    { text: "done" },
+  ];
+
+  if (scenario === "incomplete") {
+    harness.sessionManager.appendMessage({ role: "user", content: "read pending output", timestamp: Date.now() - 2 });
+    c6SeedCall(harness, "pending-call");
+  } else if (scenario === "duplicate") {
+    harness.sessionManager.appendMessage({ role: "user", content: "continue safely", timestamp: Date.now() - 4 });
+    const model = harness.getModel();
+    harness.sessionManager.appendMessage({ ...c6CallMessage(model, [{ id: "once-only", key: "dangling" }]), timestamp: Date.now() - 3 });
+    c6SeedResult(harness, "once-only", "first result");
+    c6SeedResult(harness, "once-only", "duplicate result");
+  } else if (scenario === "steering") {
+    harness.sessionManager.appendMessage({ role: "user", content: "read the large file", timestamp: Date.now() - 4 });
+    const model = harness.getModel();
+    harness.sessionManager.appendMessage({ ...c6CallMessage(model, [{ id: "steering-tool", key: "steering" }]), timestamp: Date.now() - 3 });
+    c6SeedResult(harness, "steering-tool", outputText.steering);
+  }
+  harness.session.agent.state.messages = harness.sessionManager.buildSessionContext().messages;
+
+  let stepIndex = 0;
+  harness.session.agent.streamFunction = (model, context) => {
+    const requestMessages = context.messages.map(c6Snapshot);
+    const canonicalMessages = harness.sessionManager.buildSessionProjection().messages.map(c6Snapshot);
+    requests.push({ messages: requestMessages, canonicalMessages });
+    const step = steps[Math.min(stepIndex++, steps.length - 1)];
+    const message = step.calls
+      ? c6CallMessage(model, step.calls)
+      : { ...fauxAssistantMessage(step.text ?? "done"), api: model.api, provider: model.provider, model: model.id };
+    const stream = createAssistantMessageEventStream();
+    queueMicrotask(() => stream.push({ type: "done", reason: message.stopReason ?? "stop", message }));
+    return stream;
+  };
+
+  let error = null;
+  try {
+    await harness.session.prompt(scenario === "steering" ? "change direction" : "continue");
+  } catch (caught) {
+    error = String(caught?.message ?? caught);
+  }
+  const latestRequest = requests.at(-1) ?? { messages: [], canonicalMessages: [] };
+  const requestToolHistory = c6ToolHistory(latestRequest.messages);
+  const canonicalToolHistory = c6ToolHistory(latestRequest.canonicalMessages);
+  const calls = latestRequest.messages.flatMap(message => message.callIds);
+  const results = latestRequest.messages.flatMap(message => message.resultCallIds);
+  return {
+    scenario,
+    providerSendCount: requests.length,
+    providerRequests: requests,
+    providerCallIds: calls,
+    providerResultCallIds: results,
+    providerHistoryValid: c6IsBalanced(latestRequest.messages),
+    canonicalHistoryUnchanged: JSON.stringify(requestToolHistory) === JSON.stringify(canonicalToolHistory),
+    canonicalMessages: latestRequest.canonicalMessages,
+    projectedToolResultCharacters: latestRequest.messages.reduce((sum, message) => sum + message.resultCharacters, 0),
+    latestOutcomeRetained: latestRequest.messages.some(message => message.text.includes("LATEST TOOL OUTCOME")),
+    nestedCallIds: latestRequest.messages.flatMap(message => message.nestedCallIds),
+    nestedExecutionComplete: latestRequest.messages.filter(message => message.role === "toolResult")
+      .map(message => message.nestedExecutionComplete).find(value => value !== null) ?? null,
+    steeringPromptPreserved: latestRequest.messages.some(message => message.role === "user" && message.text === "change direction"),
+    error,
+  };
+}
+
+async function runC6() {
+  const scenarios = [
+    ["C6.transient-projection-does-not-change-canonical-history", "canonical"],
+    ["C6.single-large-current-tool-result-is-bounded", "large-result"],
+    ["C6.sequential-tool-cycles-preserve-order", "sequential"],
+    ["C6.parallel-calls-and-results-remain-matched", "parallel"],
+    ["C6.large-tool-output-summary-retains-latest-outcome", "latest-outcome"],
+    ["C6.nested-tool-call-sequence-is-closed-before-cut", "nested"],
+    ["C6.incomplete-call-graph-fails-before-provider-send", "incomplete"],
+    ["C6.duplicate-or-unmatched-results-never-replay-tools", "duplicate"],
+    ["C6.steering-after-tool-result-keeps-active-turn", "steering"],
+    ["C6.post-compaction-request-contains-valid-provider-history", "post-compaction"],
+  ];
+  const cases = {};
+  for (const [caseId, name] of scenarios) cases[caseId] = await runPiC6Scenario(name);
+  return { scenario: "c6", cases };
+}
+
+function c3CompactText(text) {
+  return text.length <= 256 ? text : `${text.slice(0, 24)}<${text.length} chars>${text.slice(-24)}`;
+}
+
+function c3Snapshot(message) {
+  const content = Array.isArray(message.content) ? message.content : [];
+  const role = message.role === "toolResult" ? "toolResult" : message.role;
+  let text;
+  if (message.role === "compactionSummary") text = message.summary;
+  else if (typeof message.content === "string") text = message.content;
+  else text = content.filter(item => item.type === "text").map(item => item.text).join("");
+  return {
+    role,
+    text: c3CompactText(text ?? ""),
+    callIds: content.filter(item => item.type === "toolCall").map(item => item.id),
+    resultCallIds: message.role === "toolResult" ? [message.toolCallId] : [],
+  };
+}
+
+function createC3Fixture() {
+  const entries = [];
+  const byId = new Map();
+  let id = 0;
+  let parentId = null;
+  const append = fields => {
+    const entry = { id: `c3-${String(id++).padStart(4, "0")}`, parentId,
+      timestamp: "2026-10-28T00:00:00.000Z", ...fields };
+    entries.push(entry);
+    byId.set(entry.id, entry);
+    parentId = entry.id;
+    return entry.id;
+  };
+  const message = value => append({ type: "message", message: value });
+  const user = text => message({ role: "user", content: text, timestamp: 1 });
+  const assistant = (text, calls = []) => message({
+    role: "assistant",
+    content: [...(text ? [{ type: "text", text }] : []), ...calls.map(call => ({
+      type: "toolCall", id: call.id, name: call.name, arguments: call.arguments,
+    }))],
+    stopReason: calls.length ? "toolUse" : "stop",
+    timestamp: 1,
+    api: "anthropic-messages",
+    provider: "anthropic",
+    model: "fixture",
+  });
+  const toolResult = (toolCallId, text) => message({
+    role: "toolResult", toolCallId, toolName: "read",
+    content: [{ type: "text", text }], isError: false, timestamp: 1,
+  });
+  const compact = (summary, firstKeptEntryId) => append({
+    type: "compaction", summary, firstKeptEntryId, tokensBefore: 100,
+  });
+  const omit = targetId => append({ type: "context_edit", targetId, replacement: null });
+  const observe = keepRecentTokens => {
+    const plan = prepareCompaction(entries, { ...DEFAULT_COMPACTION_SETTINGS, keepRecentTokens });
+    const boundary = plan ? byId.get(plan.firstKeptEntryId) : undefined;
+    const contextMessages = buildSessionProjection(entries).messages.map(c3Snapshot);
+    const metadata = boundary?.type === "message" ? c3Snapshot(boundary.message) : undefined;
+    return {
+      planExists: plan !== undefined,
+      boundaryRole: metadata?.role ?? null,
+      boundaryText: metadata?.text ?? null,
+      boundaryIndex: boundary ? entries.indexOf(boundary) : null,
+      boundaryCallIds: metadata?.callIds ?? [],
+      boundaryResultCallIds: metadata?.resultCallIds ?? [],
+      isSplitTurn: plan?.isSplitTurn ?? null,
+      previousSummary: plan?.previousSummary ?? null,
+      messagesToSummarize: plan?.messagesToSummarize.map(c3Snapshot) ?? [],
+      turnPrefixMessages: plan?.turnPrefixMessages.map(c3Snapshot) ?? [],
+      contextMessages,
+    };
+  };
+  return { entries, byId, user, assistant, toolResult, compact, omit, observe };
+}
+
+function runC3() {
+  const cases = {};
+  const add = (caseId, fixture, keepRecentTokens) => { cases[caseId] = fixture.observe(keepRecentTokens); };
+  let fixture = createC3Fixture();
+  fixture.user("older question"); fixture.assistant("older answer");
+  fixture.user("U".repeat(80)); fixture.assistant("A".repeat(80));
+  add("C3.user-boundary-selection", fixture, 30);
+
+  fixture = createC3Fixture();
+  fixture.user("older question"); fixture.assistant("older answer");
+  fixture.user("current request"); fixture.assistant("current response");
+  add("C3.assistant-boundary-split-turn", fixture, 1);
+
+  fixture = createC3Fixture();
+  fixture.user("older question"); fixture.assistant("older answer"); fixture.user("current request");
+  fixture.assistant("", [{ id: "call-1", name: "read", arguments: { path: "small.txt" } }]);
+  fixture.toolResult("call-1", "short result");
+  add("C3.tool-call-result-kept-as-one-group", fixture, 1);
+
+  fixture = createC3Fixture();
+  fixture.user("older question"); fixture.assistant("older answer"); fixture.user("current request");
+  fixture.assistant("", [{ id: "cycle-1", name: "read", arguments: {} }]);
+  fixture.toolResult("cycle-1", "first result");
+  fixture.assistant("continue after first tool cycle");
+  fixture.assistant("", [{ id: "cycle-2", name: "read", arguments: {} }]);
+  fixture.toolResult("cycle-2", "second result");
+  add("C3.sequential-tool-cycles", fixture, 1);
+
+  fixture = createC3Fixture();
+  fixture.user("older question"); fixture.assistant("older answer"); fixture.user("current request");
+  fixture.assistant("", [
+    { id: "parallel-1", name: "read", arguments: {} },
+    { id: "parallel-2", name: "read", arguments: {} },
+  ]);
+  fixture.toolResult("parallel-1", "first result"); fixture.toolResult("parallel-2", "second result");
+  add("C3.parallel-tool-batch-boundary", fixture, 1);
+
+  fixture = createC3Fixture();
+  fixture.user("old history"); fixture.assistant("old answer"); fixture.user("read the large file");
+  fixture.assistant("", [{ id: "call-1", name: "read", arguments: { path: "big.txt" } }]);
+  fixture.toolResult("call-1", "x".repeat(8000));
+  add("C3.oversized-trailing-result-falls-back-before-call", fixture, 1000);
+
+  fixture = createC3Fixture();
+  fixture.user("old history"); fixture.assistant("old answer"); fixture.user("current request");
+  fixture.assistant("A".repeat(80)); fixture.toolResult("unmatched-result", "R".repeat(2000));
+  add("C3.never-cut-at-tool-result", fixture, 100);
+
+  fixture = createC3Fixture();
+  fixture.user("old history"); fixture.assistant("old answer"); fixture.user("current request");
+  fixture.assistant("", [{ id: "incomplete-call", name: "read", arguments: { path: "pending.txt" } }]);
+  add("C3.incomplete-assistant-and-tool-call-retained", fixture, 1);
+
+  fixture = createC3Fixture();
+  fixture.user("current request");
+  fixture.assistant("", [{ id: "missing-result", name: "read", arguments: { path: "pending.txt" } }]);
+  add("C3.missing-tool-result-provider-projection", fixture, 1);
+
+  fixture = createC3Fixture();
+  fixture.user("older question"); fixture.assistant("older answer"); fixture.user("current request");
+  fixture.assistant("", [{ id: "duplicate-result", name: "read", arguments: {} }]);
+  fixture.toolResult("duplicate-result", "first result");
+  fixture.toolResult("duplicate-result", "duplicate result");
+  fixture.user("new request");
+  add("C3.unmatched-or-duplicate-tool-result-handling", fixture, 1);
+
+  fixture = createC3Fixture();
+  fixture.user("U".repeat(80)); fixture.assistant("A".repeat(80));
+  const secondUser = fixture.user("V".repeat(80)); fixture.assistant("B".repeat(80));
+  const firstPlan = prepareCompaction(fixture.entries, { ...DEFAULT_COMPACTION_SETTINGS, keepRecentTokens: 30 });
+  if (!firstPlan) throw new Error("C3 initial compaction plan missing");
+  fixture.compact("First summary", secondUser);
+  fixture.user("U".repeat(120)); fixture.assistant("A".repeat(120));
+  add("C3.repeated-compaction-updates-prior-summary", fixture, 40);
+
+  fixture = createC3Fixture();
+  fixture.user("U".repeat(80)); fixture.assistant("A".repeat(80));
+  const retainedUser = fixture.user("V".repeat(80)); fixture.assistant("B".repeat(80));
+  const firstCompactionPlan = prepareCompaction(fixture.entries, { ...DEFAULT_COMPACTION_SETTINGS, keepRecentTokens: 30 });
+  if (!firstCompactionPlan) throw new Error("C3 first compaction plan missing");
+  fixture.compact("First summary", retainedUser);
+  fixture.user("U".repeat(120)); fixture.assistant("A".repeat(120));
+  const secondCompactionPlan = prepareCompaction(fixture.entries, { ...DEFAULT_COMPACTION_SETTINGS, keepRecentTokens: 40 });
+  if (!secondCompactionPlan) throw new Error("C3 second compaction plan missing");
+  fixture.compact("Second summary", secondCompactionPlan.firstKeptEntryId);
+  const context = buildSessionProjection(fixture.entries).messages.map(c3Snapshot);
+  cases["C3.latest-compaction-controls-context"] = {
+    compactionCount: fixture.entries.filter(entry => entry.type === "compaction").length,
+    contextMessages: context,
+    latestSummaryIsSecond: context.some(message => message.role === "compactionSummary" && message.text === "Second summary"),
+    previousSummaryOmitted: context.every(message => message.text !== "First summary"),
+    retainedCurrentAnswer: context.some(message => message.text === "A".repeat(120)),
+  };
+
+  fixture = createC3Fixture();
+  fixture.user("older question"); fixture.assistant("older answer"); fixture.user("U".repeat(100));
+  const failedAssistant = fixture.assistant("", [{ id: "failed-call", name: "read", arguments: { path: "current.txt" } }]);
+  const failedResultEntry = fixture.toolResult("failed-call", "R".repeat(100));
+  fixture.omit(failedAssistant); fixture.omit(failedResultEntry);
+  add("C3.recovery-omission-suffix-boundary", fixture, 15);
+
+  const empty = createC3Fixture().observe(1);
+  fixture = createC3Fixture(); fixture.user("only one user message");
+  const oneUser = fixture.observe(1);
+  cases["C3.empty-or-insufficient-history-is-no-op"] = {
+    emptyPlanExists: empty.planExists,
+    oneUserPlanExists: oneUser.planExists,
+  };
+  return { scenario: "c3", cases };
+}
+
+function c4Usage(input, output, cacheRead = 0, cacheWrite = 0, totalTokens = input + output + cacheRead + cacheWrite) {
+  return { input, output, cacheRead, cacheWrite, totalTokens,
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } };
+}
+
+function c4Assistant(text, usage, stopReason = "stop") {
+  return { role: "assistant", content: [{ type: "text", text }], usage, stopReason, timestamp: 1,
+    api: "anthropic-messages", provider: "provider", model: "family/model" };
+}
+
+function c4Fixture() {
+  const entries = [];
+  let id = 0;
+  let parentId = null;
+  const append = fields => {
+    const entry = { id: `c4-${String(id++).padStart(4, "0")}`, parentId,
+      timestamp: "2026-10-28T00:00:00.000Z", ...fields };
+    entries.push(entry);
+    parentId = entry.id;
+    return entry.id;
+  };
+  const user = text => append({ type: "message", message: { role: "user", content: text, timestamp: 1 } });
+  const assistant = message => append({ type: "message", message });
+  const edit = targetId => append({ type: "context_edit", targetId, replacement: null });
+  const compact = (summary, firstKeptEntryId) => append({ type: "compaction", summary, firstKeptEntryId, tokensBefore: 100 });
+  return { entries, user, assistant, edit, compact };
+}
+
+function runC4() {
+  const cases = {};
+  const defaults = SettingsManager.inMemory().getCompactionSettings();
+  cases["C4.model-context-window-controls-trigger"] = {
+    triggerTokens: 100_000 - defaults.reserveTokens,
+    atThreshold: shouldCompact(83_616, 100_000, defaults),
+    oneAboveThreshold: shouldCompact(83_617, 100_000, defaults),
+    belowThreshold: shouldCompact(80_000, 100_000, defaults),
+  };
+  const defaultPolicy = { contextWindowTokens: 100_000, ...defaults };
+  cases["C4.reserve-and-keep-recent-defaults"] = {
+    ...defaultPolicy,
+    defaultReserveTokens: SETTINGS_DEFAULTS.compaction.reserveTokens,
+    defaultKeepRecentTokens: SETTINGS_DEFAULTS.compaction.keepRecentTokens,
+  };
+  const modelKey = "provider/family/model";
+  const overrideManager = SettingsManager.inMemory({ compaction: {
+    reserveTokens: 8192,
+    keepRecentTokens: 10_000,
+    modelOverrides: { [modelKey]: { reserveTokens: 400_000 } },
+  } });
+  const selected = overrideManager.getCompactionSettings({ provider: "provider", id: "family/model" });
+  const fallback = overrideManager.getCompactionSettings({ provider: "provider", id: "other" });
+  cases["C4.provider-model-override-precedence"] = {
+    selectedReserveTokens: selected.reserveTokens,
+    selectedKeepRecentTokens: selected.keepRecentTokens,
+    fallbackReserveTokens: fallback.reserveTokens,
+    fallbackKeepRecentTokens: fallback.keepRecentTokens,
+  };
+  cases["C4.unknown-limit-is-never-invented"] = {
+    contextWindowKnown: false,
+    piWouldTriggerFromZeroWindow: shouldCompact(1, 0, defaults),
+    reserveTokens: defaults.reserveTokens,
+  };
+
+  const anchorMessages = [
+    { role: "user", content: "previous request", timestamp: 1 },
+    c4Assistant("answer", c4Usage(10, 3)),
+    { role: "user", content: "pending", timestamp: 1 },
+  ];
+  const anchor = estimateContextTokens(anchorMessages);
+  cases["C4.provider-usage-anchors-current-context"] = {
+    hasValidUsageAnchor: anchor.usageTokens === 13,
+    usageTokens: anchor.usageTokens,
+    trailingTokens: anchor.trailingTokens,
+    totalTokens: anchor.tokens,
+  };
+  const invalidMessages = [
+    { role: "user", content: "request", timestamp: 1 },
+    c4Assistant("failed", c4Usage(500, 0), "error"),
+    c4Assistant("zero usage", c4Usage(0, 0)),
+  ];
+  const invalid = estimateContextTokens(invalidMessages);
+  cases["C4.aborted-error-and-zero-usage-are-not-anchors"] = {
+    hasValidUsageAnchor: invalid.lastUsageIndex !== null,
+    usageTokens: null,
+    estimateFromVisibleMessages: invalid.tokens,
+  };
+  const trailingMessages = [
+    { role: "user", content: "request", timestamp: 1 },
+    c4Assistant("answer", c4Usage(90, 10)),
+    { role: "user", content: "pending one", timestamp: 1 },
+    { role: "user", content: "pending two with more text", timestamp: 1 },
+  ];
+  const trailing = estimateContextTokens(trailingMessages);
+  cases["C4.messages-after-usage-are-estimated"] = {
+    usageTokens: trailing.usageTokens,
+    trailingTokens: trailing.trailingTokens,
+    totalTokens: trailing.tokens,
+  };
+
+  const edited = c4Fixture();
+  edited.user("request");
+  const editedAssistant = edited.assistant(c4Assistant("answer", c4Usage(10, 3)));
+  edited.edit(editedAssistant);
+  const editedProjection = buildSessionProjection(edited.entries);
+  const editEstimate = estimateProjectedContextTokens(editedProjection, edited.entries);
+  const compacted = c4Fixture();
+  compacted.user("old request");
+  compacted.assistant(c4Assistant("old answer", c4Usage(10, 3)));
+  const current = compacted.user("current request");
+  compacted.assistant(c4Assistant("current answer", c4Usage(15, 2)));
+  compacted.compact("current summary", current);
+  const compactedEstimate = estimateProjectedContextTokens(buildSessionProjection(compacted.entries), compacted.entries);
+  cases["C4.context-edit-and-compaction-invalidate-stale-usage"] = {
+    contextEditInvalidatesUsage: editEstimate.lastUsageIndex === null && editEstimate.usageTokens === 0,
+    compactionInvalidatesUsage: compactedEstimate.lastUsageIndex === null && compactedEstimate.usageTokens === 0,
+  };
+
+  const cache = estimateContextTokens([
+    { role: "user", content: "request", timestamp: 1 },
+    c4Assistant("answer", c4Usage(7, 3, 20, 4, 0)),
+  ]);
+  cases["C4.cache-read-and-write-token-fallback"] = { usageTokens: cache.usageTokens, totalTokens: cache.tokens };
+
+  const prompt = "fixture system prompt characters";
+  const tool = { name: "custom", description: "fixture", parameters: {
+    type: "object", properties: { path: { type: "string" } },
+  } };
+  const systemEstimate = estimateContextTokens([
+    { role: "system", content: prompt, toolsAdded: [tool] },
+    { role: "user", content: "user context", timestamp: 1 },
+  ]);
+  cases["C4.system-prompt-and-tool-declaration-estimate"] = {
+    estimate: systemEstimate.tokens,
+    systemPromptCharacters: prompt.length,
+    toolCount: 1,
+    messageCount: 1,
+  };
+
+  const imageAndResult = estimateContextTokens([
+    { role: "user", content: [
+      { type: "image", data: "", mimeType: "image/png" }, { type: "text", text: "image marker" },
+    ], timestamp: 1 },
+    { role: "toolResult", toolCallId: "large", toolName: "read",
+      content: [{ type: "text", text: "x".repeat(8000) }], isError: false, timestamp: 1 },
+  ]);
+  cases["C4.image-and-large-tool-result-estimate"] = {
+    estimate: imageAndResult.tokens,
+    imageCharacters: 4800,
+    toolResultCharacters: 8000,
+  };
+  const unicodeText = "π🦊é".repeat(25);
+  const heuristic = estimateTokens({ role: "user", content: unicodeText, timestamp: 1 });
+  cases["C4.estimate-method-is-explicitly-heuristic-not-tokenizer"] = {
+    estimate: heuristic,
+    expectedCharacterHeuristic: Math.ceil(unicodeText.length / 4),
+    tokenizerOutput: false,
+  };
+  return { scenario: "c4", cases };
+}
+
+function plainMessage(message) {
+  const content = message.content;
+  const text = message.role === "compactionSummary" || message.role === "branchSummary" ? message.summary
+    : typeof content === "string" ? content
+      : Array.isArray(content) ? content.filter((item) => item.type === "text").map((item) => item.text).join("")
+        : "";
+  return { role: message.role, text };
+}
+
+async function runErrorTurnUsageOnce() {
+  const runFailedTurn = async ({ validUsageTokens, staleCompaction = false, errorUsageTokens = 19_000 }) => {
+    const harness = await createHarness({
+      models: [{ id: "faux-1", contextWindow: 20_000, maxTokens: 100 }],
+      settings: { retry: { enabled: false }, compaction: { enabled: true, reserveTokens: 10_000, keepRecentTokens: 1 } },
+    });
+    const now = Date.now();
+    const model = harness.getModel();
+    const providerRequests = [];
+    let requestCount = 0;
+    try {
+      if (staleCompaction) harness.settingsManager.applyOverrides({ compaction: { enabled: false } });
+      for (const [role, text, offset, usageTokens] of [
+        ["user", "first history", -4_000, null], ["assistant", "answer one", -3_000, 60],
+        ["user", "second history", -2_000, null], ["assistant", "answer two", -1_000, 60],
+      ]) {
+        if (role === "user") {
+          harness.sessionManager.appendMessage({ role, content: [{ type: "text", text }], timestamp: now + offset });
+        } else {
+          harness.sessionManager.appendMessage({
+            ...fauxAssistantMessage(text, { timestamp: now + offset }),
+            api: model.api,
+            provider: model.provider,
+            model: model.id,
+            usage: { input: usageTokens, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: usageTokens,
+              cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+          });
+        }
+      }
+      harness.session.agent.state.messages = harness.sessionManager.buildSessionContext().messages;
+      harness.session.agent.streamFunction = (requestModel, context, options) => {
+        const isSummaryRequest = context.messages.some((message) => message.role === "system" &&
+          plainMessage(message).text.startsWith("You are a context summarization assistant"));
+        providerRequests.push({ model: requestModel.id, isSummaryRequest,
+          messages: context.messages.map(plainMessage), maxTokens: options?.maxTokens ?? null });
+        const stream = createAssistantMessageEventStream();
+        queueMicrotask(() => {
+          if (isSummaryRequest) {
+            stream.push({ type: "done", reason: "stop", message: {
+              ...fauxAssistantMessage("compacted history summary", { timestamp: now + 86_400_000 + requestCount }),
+              api: requestModel.api,
+              provider: requestModel.provider,
+              model: requestModel.id,
+              usage: { input: 60, output: 12, cacheRead: 0, cacheWrite: 0, totalTokens: 72,
+                cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+            } });
+            return;
+          }
+          requestCount++;
+          if (requestCount === 1) {
+            stream.push({ type: "done", reason: "stop", message: {
+              ...fauxAssistantMessage("completed response", {
+                timestamp: staleCompaction ? now - 10_000 : now + 1_000,
+              }),
+              api: requestModel.api,
+              provider: requestModel.provider,
+              model: requestModel.id,
+              usage: { input: validUsageTokens, output: 0, cacheRead: 0, cacheWrite: 0,
+                totalTokens: validUsageTokens,
+                cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+            } });
+            return;
+          }
+          if (!staleCompaction) harness.settingsManager.applyOverrides({ compaction: { enabled: true } });
+          const error = {
+            ...fauxAssistantMessage("", { stopReason: "error", errorMessage: "529 overloaded",
+              timestamp: now + 2_000 }),
+            api: requestModel.api,
+            provider: requestModel.provider,
+            model: requestModel.id,
+            usage: { input: errorUsageTokens, output: 0, cacheRead: 0, cacheWrite: 0,
+              totalTokens: errorUsageTokens,
+              cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+          };
+          stream.push({ type: "error", reason: "error", error });
+          stream.end(error);
+        });
+        return stream;
+      };
+
+      await harness.session.prompt("successful prior turn");
+      if (staleCompaction) {
+        harness.settingsManager.applyOverrides({ compaction: { enabled: false } });
+        await harness.session.compact();
+        harness.settingsManager.applyOverrides({ compaction: { enabled: true } });
+      } else harness.settingsManager.applyOverrides({ compaction: { enabled: false } });
+      const compactionCountBeforeError = harness.sessionManager.getEntries()
+        .filter(entry => entry.type === "compaction").length;
+      try {
+        await harness.session.prompt("x".repeat(320));
+      } catch {
+        // The provider error is an input to Pi's post-response compaction decision.
+      }
+      const thresholdEvents = harness.events.filter((event) => event.type === "compaction_end" &&
+        event.reason === "threshold").map((event) => ({ reason: event.reason, willRetry: event.willRetry ?? false }));
+      return {
+        providerAttemptCount: requestCount,
+        summaryRequestCount: providerRequests.filter(request => request.isSummaryRequest).length,
+        thresholdCompactionEvents: thresholdEvents,
+        compactionCountBeforeError,
+        compactionCount: harness.sessionManager.getEntries().filter(entry => entry.type === "compaction").length,
+        providerRequests,
+        events: harness.events.map((event) => ({
+          type: event.type,
+          reason: event.reason ?? null,
+          willRetry: event.willRetry ?? null,
+          errorMessage: event.errorMessage ?? null,
+          messageError: event.message?.errorMessage ?? null,
+        })),
+        activeMessages: harness.sessionManager.buildSessionContext().messages.map(plainMessage),
+      };
+    } finally {
+      harness.cleanup();
+    }
+  };
+
+  return {
+    scenario: "error-turn-usage",
+    errorTurnObservations: {
+      lastValidUsageTriggersThreshold: await runFailedTurn({ validUsageTokens: 9_936 }),
+      failedResponseUsageDoesNotReplaceLastValid: await runFailedTurn({ validUsageTokens: 1_000 }),
+      keptPreCompactionUsageIsIgnored: await runFailedTurn({ validUsageTokens: 19_000, staleCompaction: true }),
+    },
+  };
+}
+
+async function runPiC7() {
+  const harness = await createHarness({
+    models: [{ id: "faux-1", contextWindow: 50_000, maxTokens: 96, reasoning: true }],
+    tools: [],
+    settings: { retry: { enabled: true, maxRetries: 1, baseDelayMs: 0, maxAgentDelayMs: 0 } },
+  });
+  const baseModel = harness.getModel();
+  const requests = [];
+  let routedHarness = null;
+  let responses = [];
+  const streamFn = (model, context, options) => {
+    const visible = context.messages.map(plainMessage);
+    requests.push({
+      modelId: model.id,
+      maxTokens: options?.maxTokens ?? null,
+      reasoning: options?.reasoning ?? null,
+      messages: visible,
+      systemPrompt: visible.find(message => message.role === "system")?.text ?? null,
+      prompt: visible.findLast(message => message.role === "user")?.text ?? null,
+    });
+    const spec = responses.length ? responses.shift() : { text: "summary" };
+    const message = {
+      ...fauxAssistantMessage(spec.text ?? "", {
+        stopReason: spec.stopReason ?? "stop",
+        errorMessage: spec.errorMessage,
+      }),
+      api: model.api,
+      provider: model.provider,
+      model: model.id,
+    };
+    if (Object.hasOwn(spec, "usage")) message.usage = spec.usage;
+    else delete message.usage;
+    const stream = createAssistantMessageEventStream();
+    queueMicrotask(() => stream.push(spec.stopReason === "error"
+      ? { type: "error", reason: "error", error: message }
+      : { type: "done", reason: spec.stopReason ?? "stop", message }));
+    return stream;
+  };
+  const user = text => ({ role: "user", content: [{ type: "text", text }], timestamp: 1 });
+  const assistant = text => ({ ...fauxAssistantMessage(text, { timestamp: 2 }), timestamp: 2 });
+  const toolCall = (id, name, args) => ({
+    ...fauxAssistantMessage("", { timestamp: 2, stopReason: "toolUse" }),
+    content: [{ type: "toolCall", id, name, arguments: args }],
+  });
+  const toolResult = (id, text) => ({
+    role: "toolResult", toolCallId: id, toolName: "read",
+    content: [{ type: "text", text }], isError: false, timestamp: 3,
+  });
+  const summary = async ({ messages = [user("open the release task"), assistant("keep the release decision")],
+    focus, previousSummary, turnPrefix = false, model = baseModel, retry }) => {
+    const before = requests.length;
+    const result = await generateSummaryWithUsage(messages, model, 100, undefined, undefined, undefined,
+      focus, previousSummary, "high", streamFn, undefined, retry, undefined, "c7-session");
+    return { request: requests[before], text: result.text, usage: result.usage ?? null,
+      usageSupplied: result.usage !== undefined, turnPrefix };
+  };
+
+  const cases = {};
+  try {
+    responses = [{ text: "initial summary", usage: { input: 10, output: 2, cacheRead: 0, cacheWrite: 0,
+      totalTokens: 12, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } } }];
+    cases["C7.initial-summary-instructions-match-pinned-prompt"] = await summary({});
+
+    responses = [{ text: "updated summary" }];
+    cases["C7.previous-summary-is-updated-with-prior-facts-preserved"] = await summary({
+      previousSummary: "Known fact: release uses branch stable.",
+    });
+
+    responses = [{ text: "focus history summary" }, { text: "focused turn summary" }];
+    const focusBefore = requests.length;
+    await compact({
+      firstKeptEntryId: "kept-entry",
+      messagesToSummarize: [user("older question"), assistant("older answer")],
+      turnPrefixMessages: [user("U".repeat(100)), toolCall("read-call", "read", { path: "current.txt" }),
+        toolResult("read-call", "R".repeat(80))],
+      isSplitTurn: true, tokensBefore: 50,
+      fileOps: { read: new Set(["current.txt"]), written: new Set(), edited: new Set() },
+      settings: { ...DEFAULT_COMPACTION_SETTINGS, reserveTokens: 100, keepRecentTokens: 10 },
+    }, baseModel, undefined, undefined, "prioritize exact file paths", undefined, "high", streamFn, undefined,
+    { enabled: false, maxRetries: 0, baseDelayMs: 0 }, undefined, "c7-focus");
+    const focusRequests = requests.slice(focusBefore);
+    cases["C7.manual-focus-is-excluded-from-turn-prefix-summary"] = {
+      historyIncludesFocus: focusRequests[0]?.prompt?.includes("prioritize exact file paths") ?? false,
+      turnPrefixExcludesFocus: !(focusRequests[1]?.prompt ?? "").includes("prioritize exact file paths"),
+      turnPrefixPrompt: focusRequests[1]?.prompt ?? null,
+    };
+
+    responses = [{ text: "history summary" }, { text: "turn prefix summary" }];
+    const splitBefore = requests.length;
+    const splitResult = await compact({
+      firstKeptEntryId: "kept-entry",
+      messagesToSummarize: [user("older question"), assistant("older answer")],
+      turnPrefixMessages: [user("U".repeat(100)), toolCall("read-call", "read", { path: "current.txt" }),
+        toolResult("read-call", "R".repeat(80))],
+      isSplitTurn: true,
+      tokensBefore: 50,
+      fileOps: { read: new Set(["current.txt"]), written: new Set(), edited: new Set() },
+      settings: { ...DEFAULT_COMPACTION_SETTINGS, reserveTokens: 100, keepRecentTokens: 10 },
+    }, baseModel, undefined, undefined, "manual focus", undefined, "high", streamFn, undefined,
+    { enabled: true, maxRetries: 1, baseDelayMs: 0, maxAgentDelayMs: 0 }, undefined, "c7-split");
+    cases["C7.split-turn-uses-history-and-turn-summary-requests"] = {
+      requests: requests.slice(splitBefore), summary: splitResult.summary,
+      summaryUsage: splitResult.summaryUsage ?? splitResult.usage ?? null,
+    };
+
+    responses = [{ text: "tool history summary" }];
+    cases["C7.tool-call-result-content-is-serialized-for-summary"] = await summary({
+      messages: [user("read the file"), toolCall("read-1", "read", { path: "plan.md" }),
+        toolResult("read-1", "Decision: ship on Friday.")],
+    });
+
+    responses = [{ text: "file history summary" }, { text: "summary" }];
+    const fileBefore = requests.length;
+    const fileResult = await compact({
+      firstKeptEntryId: "kept-entry",
+      messagesToSummarize: [user("read and update files"), toolCall("read-1", "read", { path: "plan.md" }),
+        toolResult("read-1", "plan contents"), toolCall("write-1", "write", { path: "release.md" }),
+        toolResult("write-1", "saved"), assistant("files updated")],
+      turnPrefixMessages: [user("continue")], isSplitTurn: true, tokensBefore: 50,
+      fileOps: { read: new Set(["plan.md"]), written: new Set(["release.md"]), edited: new Set() },
+      settings: { ...DEFAULT_COMPACTION_SETTINGS, reserveTokens: 100, keepRecentTokens: 10 },
+    }, baseModel, undefined, undefined, undefined, undefined, "high", streamFn, undefined,
+    { enabled: false, maxRetries: 0, baseDelayMs: 0 }, undefined, "c7-files");
+    cases["C7.file-operation-details-follow-summarized-history"] = {
+      requests: requests.slice(fileBefore), summary: fileResult.summary, details: fileResult.details ?? null,
+    };
+
+    const failureHarness = await createHarness({
+      models: [{ id: "faux-1", contextWindow: 50_000, maxTokens: 96, reasoning: true }],
+      tools: [],
+      settings: { compaction: { reserveTokens: 100, keepRecentTokens: 1 } },
+    });
+    let failureObservations;
+    try {
+      const failureModel = failureHarness.getModel();
+      const failureNow = Date.now();
+      for (const [role, text, offset] of [
+        ["user", "first history", -4_000], ["assistant", "first answer", -3_000],
+        ["user", "recent history", -2_000], ["assistant", "recent answer", -1_000],
+      ]) {
+        if (role === "user") {
+          failureHarness.sessionManager.appendMessage({ role, content: [{ type: "text", text }], timestamp: failureNow + offset });
+        } else {
+          failureHarness.sessionManager.appendMessage({
+            ...fauxAssistantMessage(text, { timestamp: failureNow + offset }),
+            api: failureModel.api, provider: failureModel.provider, model: failureModel.id,
+          });
+        }
+      }
+      failureHarness.session.agent.state.messages = failureHarness.sessionManager.buildSessionContext().messages;
+      failureHarness.session.agent.streamFunction = streamFn;
+      const lengthHead = failureHarness.sessionManager.getEntries().at(-1)?.id;
+      responses = [{ text: "partial summary", stopReason: "length" }];
+      let lengthError = null;
+      try { await failureHarness.session.compact(); }
+      catch (caught) { lengthError = String(caught?.message ?? caught); }
+      const afterLengthHead = failureHarness.sessionManager.getEntries().at(-1)?.id;
+      const length = {
+        error: lengthError,
+        compactionCount: failureHarness.sessionManager.getEntries().filter(entry => entry.type === "compaction").length,
+        canonicalStateUnchanged: lengthHead === afterLengthHead,
+      };
+      responses = [{ text: "   " }];
+      let emptyError = null;
+      let emptyResult = null;
+      try { emptyResult = await failureHarness.session.compact(); }
+      catch (caught) { emptyError = String(caught?.message ?? caught); }
+      failureObservations = {
+        length,
+        empty: {
+          error: emptyError,
+          summary: emptyResult?.summary ?? null,
+          compactionCount: failureHarness.sessionManager.getEntries().filter(entry => entry.type === "compaction").length,
+          canonicalStateUnchanged: afterLengthHead === failureHarness.sessionManager.getEntries().at(-1)?.id,
+        },
+      };
+    } finally {
+      failureHarness.cleanup();
+    }
+    cases["C7.length-stop-and-empty-summary-fail-safely"] = failureObservations;
+
+    responses = [{ text: "", stopReason: "error", errorMessage: "529 overloaded" }, { text: "retried summary" }];
+    const retryBefore = requests.length;
+    const retryResult = await summary({ retry: { enabled: true, maxRetries: 1, baseDelayMs: 0, maxAgentDelayMs: 0 } });
+    cases["C7.transient-stream-failure-obeys-retry-policy"] = {
+      attempts: requests.slice(retryBefore).length, requestSequence: requests.slice(retryBefore),
+      summary: retryResult.text,
+    };
+
+    responses = [{ text: "usage summary", usage: { input: 11, output: 3, cacheRead: 0, cacheWrite: 0,
+      totalTokens: 14, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } } }];
+    const suppliedUsage = await summary({});
+    responses = [{ text: "no usage summary" }];
+    const omittedUsage = await summary({});
+    cases["C7.summary-usage-is-reported-only-when-supplied"] = {
+      supplied: { usageSupplied: suppliedUsage.usageSupplied, usage: suppliedUsage.usage },
+      omitted: { usageSupplied: omittedUsage.usageSupplied, usage: omittedUsage.usage },
+    };
+
+    responses = [{ text: "routed summary" }];
+    routedHarness = await createHarness({
+      models: [
+        { id: "small", contextWindow: 1_000, maxTokens: 96 },
+        { id: "large", contextWindow: 50_000, maxTokens: 48, reasoning: true },
+      ],
+      tools: [],
+      settings: { compaction: { reserveTokens: 100, keepRecentTokens: 1 } },
+      extensionFactories: [
+        (pi) => pi.registerVirtualModel({
+          provider: "router", id: "auto", name: "Auto", thinkingLevels: ["high"], contextWindow: 1_000,
+          route: (_request, context) => ({ model: context.modelRegistry.find("faux", "large"), thinkingLevel: "high" }),
+        }),
+      ],
+    });
+    const routeRuntime = routedHarness.session.modelRuntime;
+    await routedHarness.session.setModel(routeRuntime.getModel("router", "auto"));
+    routedHarness.session.setThinkingLevel("high");
+    routedHarness.session.agent.streamFunction = streamFn;
+    const routeModel = routedHarness.session.model;
+    const now = Date.now();
+    for (const [role, text, offset] of [
+      ["user", "first history", -4_000], ["assistant", "first answer", -3_000],
+      ["user", "recent history", -2_000], ["assistant", "recent answer", -1_000],
+    ]) {
+      if (role === "user") {
+        routedHarness.sessionManager.appendMessage({ role, content: [{ type: "text", text }], timestamp: now + offset });
+      } else {
+        routedHarness.sessionManager.appendMessage({
+          ...fauxAssistantMessage(text, { timestamp: now + offset }),
+          api: routeModel.api, provider: routeModel.provider, model: routeModel.id,
+        });
+      }
+    }
+    routedHarness.session.agent.state.messages = routedHarness.sessionManager.buildSessionContext().messages;
+    const routeBefore = requests.length;
+    await routedHarness.session.compact();
+    const routedRequests = requests.slice(routeBefore);
+    cases["C7.summary-model-routing-and-thinking-options"] = {
+      requests: routedRequests,
+      modelId: routedRequests[0]?.modelId ?? null,
+      maxTokens: routedRequests[0]?.maxTokens ?? null,
+      reasoning: routedRequests[0]?.reasoning ?? null,
+    };
+    return { scenario: "c7", cases };
+  } finally {
+    routedHarness?.cleanup();
+    harness.cleanup();
+  }
+}
+
+function c8Text(message) {
+  if (typeof message.content === "string") return message.content;
+  return (message.content ?? []).filter(part => part.type === "text").map(part => part.text ?? "").join("");
+}
+
+function c8Messages(messages) {
+  return convertToLlm(messages).map(message => ({ role: message.role, text: c8Text(message) }));
+}
+
+function c8ProviderResponse(api) {
+  const body = api === "openai-responses"
+    ? [
+        `data: ${JSON.stringify({ type: "response.created", response: { id: "resp_c8", object: "response", created_at: 1, model: "fixture-model", status: "in_progress", output: [] } })}`,
+        `data: ${JSON.stringify({ type: "response.output_text.delta", item_id: "msg_c8", output_index: 0, content_index: 0, delta: "continued" })}`,
+        `data: ${JSON.stringify({ type: "response.completed", response: { id: "resp_c8", object: "response", created_at: 1, model: "fixture-model", status: "completed", output: [], usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 } } })}`,
+        "data: [DONE]",
+      ].join("\n\n") + "\n\n"
+    : api === "openai-completions"
+      ? [
+          `data: ${JSON.stringify({ id: "chat_c8", object: "chat.completion.chunk", created: 1, model: "fixture-model", choices: [{ index: 0, delta: { role: "assistant", content: "continued" }, finish_reason: null }] })}`,
+          `data: ${JSON.stringify({ id: "chat_c8", object: "chat.completion.chunk", created: 1, model: "fixture-model", choices: [{ index: 0, delta: {}, finish_reason: "stop" }] })}`,
+          "data: [DONE]",
+        ].join("\n\n") + "\n\n"
+      : [
+          `event: message_start\ndata: ${JSON.stringify({ type: "message_start", message: { id: "msg_c8", type: "message", role: "assistant", model: "fixture-model", content: [], stop_reason: null, stop_sequence: null, usage: { input_tokens: 1, output_tokens: 0 } } })}`,
+          `event: content_block_start\ndata: ${JSON.stringify({ type: "content_block_start", index: 0, content_block: { type: "text", text: "" } })}`,
+          `event: content_block_delta\ndata: ${JSON.stringify({ type: "content_block_delta", index: 0, delta: { type: "text_delta", text: "continued" } })}`,
+          `event: content_block_stop\ndata: ${JSON.stringify({ type: "content_block_stop", index: 0 })}`,
+          `event: message_delta\ndata: ${JSON.stringify({ type: "message_delta", delta: { stop_reason: "end_turn", stop_sequence: null }, usage: { output_tokens: 1 } })}`,
+          `event: message_stop\ndata: ${JSON.stringify({ type: "message_stop" })}`,
+        ].join("\n\n") + "\n\n";
+  return new Response(body, { status: 200, headers: { "content-type": "text/event-stream" } });
+}
+
+function c8NormalizeJson(value, temporaryRoot) {
+  if (typeof value === "string") return value.replaceAll(temporaryRoot, "<temporary-working-directory>");
+  if (Array.isArray(value)) return value.map(item => c8NormalizeJson(item, temporaryRoot));
+  if (value && typeof value === "object")
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, c8NormalizeJson(item, temporaryRoot)]));
+  return value;
+}
+
+async function c8ObservePiApiRequest(api, messages, temporaryRoot) {
+  const provider = api === "anthropic-messages" ? "anthropic" : "openai";
+  const modelName = provider === "anthropic" ? "claude-sonnet-4-6" : "gpt-4o-mini";
+  const baseModel = getPiModel(provider, modelName);
+  if (!baseModel) throw new Error(`missing pinned Pi model fixture ${provider}/${modelName}`);
+  const model = {
+    ...baseModel,
+    api,
+    id: "fixture-model",
+    baseUrl: api === "anthropic-messages" ? "http://127.0.0.1" : "http://127.0.0.1/v1",
+  };
+  let captured;
+  const fetch = async (input, init = {}) => {
+    const request = input instanceof Request ? input.clone() : new Request(input, init);
+    const body = typeof init.body === "string" ? init.body : await request.text();
+    captured = {
+      api,
+      path: new URL(request.url).pathname,
+      request: c8NormalizeJson(JSON.parse(body), temporaryRoot),
+    };
+    return c8ProviderResponse(api);
+  };
+  const streamFunction = api === "openai-responses" ? streamPiResponses
+    : api === "openai-completions" ? streamPiCompletions : streamPiAnthropic;
+  const stream = streamFunction(model, normalizeContext({ messages }), { apiKey: "fixture-key", fetch });
+  const result = await stream.result();
+  if (!captured) throw new Error(`pinned Pi ${api} adapter did not issue a provider request: ${JSON.stringify(result)}`);
+  return captured;
+}
+
+async function runPiC8() {
+  const harness = await createHarness();
+  let continuationHarness;
+  try {
+    const sessionDir = join(harness.tempDir, "c8-sessions");
+    const manager = SessionManager.create(harness.tempDir, sessionDir, { id: "c8-primary" });
+    manager.appendMessage({ role: "user", content: "older question", timestamp: 1 });
+    manager.appendMessage(fauxAssistantMessage("older answer"));
+    manager.appendMessage({ role: "user", content: "retained question", timestamp: 3 });
+    const retainedAnswerId = manager.appendMessage(fauxAssistantMessage("retained answer"));
+    // Persistence is tested with a shared explicit boundary; cut-point selection is covered by C3.
+    const boundaryId = retainedAnswerId;
+    const boundaryMessage = "retained answer";
+    const usage = { input: 10, output: 12, cacheRead: 2, cacheWrite: 3, totalTokens: 24 };
+    const details = { owner: "c8-fixture", revision: 7 };
+    const compactionId = manager.appendCompaction("older history summary", boundaryId,
+      500, details, false, usage);
+    manager.appendLabelChange(compactionId, "compacted checkpoint");
+    manager.appendCustomEntry("c8.extension-state", { owner: "c8-fixture", revision: 7 });
+    const originalMessages = manager.getEntries().filter(entry => entry.type === "message")
+      .map(entry => c8Text(entry.message));
+    const compactedContext = c8Messages(manager.buildSessionContext().messages);
+    const sourcePath = manager.getSessionFile();
+    if (!sourcePath) throw new Error("persisted Pi session has no session path");
+
+    const reloaded = SessionManager.open(sourcePath);
+    const reloadedContext = c8Messages(reloaded.buildSessionContext().messages);
+    const entry = reloaded.getEntry(compactionId);
+    if (!entry || entry.type !== "compaction") throw new Error("reloaded compaction entry was missing");
+    const summaryBoundaryUsage = {
+      summary: entry.summary,
+      boundaryPreserved: entry.firstKeptEntryId === boundaryId,
+      boundaryMessage,
+      tokensBefore: entry.tokensBefore,
+      usageInput: entry.usage?.input ?? null,
+      usageOutput: entry.usage?.output ?? null,
+      usageCachedInput: entry.usage?.cacheRead ?? null,
+      usageCachedWrite: entry.usage?.cacheWrite ?? null,
+      usageTotal: entry.usage?.totalTokens ?? null,
+      detailsOwner: entry.details?.owner ?? null,
+      detailsRevision: entry.details?.revision ?? null,
+    };
+
+    const exportedPath = `${sourcePath}.export.jsonl`;
+    await writeFile(exportedPath, await readFile(sourcePath));
+    const jsonlReload = SessionManager.open(exportedPath);
+    const jsonlContext = c8Messages(jsonlReload.buildSessionContext().messages);
+    const jsonlEntry = jsonlReload.getEntry(compactionId);
+
+    reloaded.branch(boundaryId);
+    const beforeCompactionBranch = c8Messages(reloaded.buildSessionContext().messages);
+    reloaded.appendMessage({ role: "user", content: "alternate branch question", timestamp: 5 });
+    const alternateBranch = c8Messages(reloaded.buildSessionContext().messages);
+    reloaded.branch(compactionId);
+    reloaded.appendMessage({ role: "user", content: "after compaction question", timestamp: 6 });
+    const afterCompactionBranch = c8Messages(reloaded.buildSessionContext().messages);
+
+    const forkDir = join(harness.tempDir, "c8-fork");
+    const forked = SessionManager.forkFrom(sourcePath, join(harness.tempDir, "forked-worktree"), forkDir,
+      { id: "c8-forked" });
+    const cloned = SessionManager.inMemory(harness.tempDir, { id: "c8-clone" }, loadEntriesFromFile(sourcePath));
+    const continuationManager = SessionManager.inMemory(harness.tempDir, { id: "c8-resumed" },
+      loadEntriesFromFile(sourcePath));
+    continuationHarness = await createHarness({ sessionManager: continuationManager, initialActiveToolNames: [] });
+    continuationHarness.setResponses([fauxAssistantMessage("continued response")]);
+    const capturedRequests = [];
+    const originalStreamFunction = continuationHarness.session.agent.streamFunction;
+    continuationHarness.session.agent.streamFunction = (model, context, options) => {
+      capturedRequests.push(context.messages);
+      return originalStreamFunction(model, context, options);
+    };
+    await continuationHarness.session.prompt("continue after restart");
+    const apiRequests = await Promise.all([
+      c8ObservePiApiRequest("openai-responses", capturedRequests[0], continuationHarness.tempDir),
+      c8ObservePiApiRequest("openai-completions", capturedRequests[0], continuationHarness.tempDir),
+      c8ObservePiApiRequest("anthropic-messages", capturedRequests[0], continuationHarness.tempDir),
+    ]);
+
+    return {
+      scenario: "c8",
+      cases: {
+        "C8.compaction-entry-persists-summary-boundary-usage": summaryBoundaryUsage,
+        "C8.canonical-ancestor-messages-remain-recoverable": {
+          messages: originalMessages,
+          allFourCanonicalMessagesRemain: JSON.stringify(originalMessages) === JSON.stringify([
+            "older question", "older answer", "retained question", "retained answer",
+          ]),
+        },
+        "C8.jsonl-export-import-round-trips-compaction": {
+          summaryBoundaryUsage: jsonlEntry ? {
+            summary: jsonlEntry.summary,
+            boundaryPreserved: jsonlEntry.firstKeptEntryId === boundaryId,
+            boundaryMessage,
+            tokensBefore: jsonlEntry.tokensBefore,
+            usageInput: jsonlEntry.usage?.input ?? null,
+            usageOutput: jsonlEntry.usage?.output ?? null,
+            usageCachedInput: jsonlEntry.usage?.cacheRead ?? null,
+            usageCachedWrite: jsonlEntry.usage?.cacheWrite ?? null,
+            usageTotal: jsonlEntry.usage?.totalTokens ?? null,
+            detailsOwner: jsonlEntry.details?.owner ?? null,
+            detailsRevision: jsonlEntry.details?.revision ?? null,
+          } : null,
+          context: jsonlContext,
+        },
+        "C8.reload-restores-compacted-context-not-projection": {
+          compactedContext,
+          reloadedContext,
+          contextsMatch: JSON.stringify(compactedContext) === JSON.stringify(reloadedContext),
+          oldRawHistoryAbsentFromContext: !reloadedContext.some(message => message.text === "older question"),
+        },
+        "C8.branch-context-is-reconstructed-from-selected-path": {
+          beforeCompactionBranch,
+          alternateBranch,
+          alternateQuestionOnlyOnAlternatePath: alternateBranch.some(message => message.text === "alternate branch question") &&
+            !reloadedContext.some(message => message.text === "alternate branch question"),
+        },
+        "C8.switching-before-and-after-compaction-restores-correct-path": {
+          beforeCompactionBranch,
+          afterCompactionBranch,
+          beforeHasNoSummary: !beforeCompactionBranch.some(message => message.text.includes("compacted into")),
+          afterHasSummary: afterCompactionBranch.some(message => message.text.includes("older history summary")),
+        },
+        "C8.fork-and-clone-preserve-compacted-session": {
+          forkContext: c8Messages(forked.buildSessionContext().messages),
+          cloneContext: c8Messages(cloned.buildSessionContext().messages),
+          bothPreserveSummary: [forked, cloned].every(session =>
+            c8Messages(session.buildSessionContext().messages).some(message => message.text.includes("older history summary"))),
+        },
+        "C8.restart-recovery-keeps-provider-continuation": {
+          requests: capturedRequests.map(c8Messages),
+          requestCount: capturedRequests.length,
+          requestIncludesSummary: capturedRequests.some(request => c8Messages(request).some(message =>
+            message.text.includes("older history summary"))),
+          requestIncludesRetainedHistory: capturedRequests.some(request => c8Messages(request).some(message =>
+            message.text === "retained answer")),
+          requestIncludesNewPrompt: capturedRequests.some(request => c8Messages(request).some(message =>
+            message.text === "continue after restart")),
+        },
+        "C8.openai-responses-chat-anthropic-after-reload": {
+          requests: apiRequests,
+          providerRequestCount: apiRequests.length,
+          allAdaptersReceivedSummary: apiRequests.every(item => JSON.stringify(item.request).includes("older history summary")),
+          allAdaptersReceivedRetainedHistory: apiRequests.every(item => JSON.stringify(item.request).includes("retained answer")),
+          allAdaptersReceivedNewPrompt: apiRequests.every(item => JSON.stringify(item.request).includes("continue after restart")),
+        },
+        "C8.metadata-label-and-extension-fields-survive": {
+          label: jsonlReload.getLabel(compactionId) ?? null,
+          detailsOwner: jsonlEntry?.details?.owner ?? null,
+          detailsRevision: jsonlEntry?.details?.revision ?? null,
+          customExtension: jsonlReload.getEntries().some(item => item.type === "custom" &&
+            item.customType === "c8.extension-state" && item.data?.revision === 7),
+        },
+      },
+    };
+  } finally {
+    continuationHarness?.cleanup();
+    harness.cleanup();
+  }
+}
+
+const C9_SUMMARY_TEXT = "generated branch summary";
+const C9_TOOL_RESULT_SENTINEL = "TOOL RESULT MUST NOT BE DUPLICATED";
+
+function c9AppendUser(manager, content) {
+  return manager.appendMessage({ role: "user", content, timestamp: Date.now() });
+}
+
+function c9AppendAssistant(manager, content) {
+  const normalized = typeof content === "string" ? [{ type: "text", text: content }] : content;
+  return manager.appendMessage({ role: "assistant", content: normalized, timestamp: Date.now() });
+}
+
+function c9CreateFixture(manager, { includeToolCall = false } = {}) {
+  c9AppendUser(manager, "SHARED ROOT QUESTION");
+  c9AppendAssistant(manager, "SHARED ANCESTOR ANSWER");
+  const commonAncestorId = manager.getLeafId();
+  c9AppendUser(manager, "OLD BRANCH FIRST");
+  if (includeToolCall) {
+    c9AppendAssistant(manager, [{ type: "toolCall", id: "branch-read", name: "read", arguments: { path: "branch.md" } }]);
+    manager.appendMessage({ role: "toolResult", toolCallId: "branch-read", toolName: "read",
+      content: [{ type: "text", text: C9_TOOL_RESULT_SENTINEL }], isError: false, timestamp: Date.now() });
+  }
+  c9AppendUser(manager, "OLD BRANCH LAST");
+  c9AppendAssistant(manager, "OLD BRANCH FINAL");
+  const oldLeafId = manager.getLeafId();
+  manager.branch(commonAncestorId);
+  c9AppendUser(manager, "TARGET BRANCH QUESTION");
+  const targetId = c9AppendAssistant(manager, "TARGET BRANCH ANSWER");
+  manager.branch(oldLeafId);
+  return { commonAncestorId, oldLeafId, targetId };
+}
+
+function c9InstallStream(harness, { fail = false, waitForCancellation = false } = {}) {
+  const requests = [];
+  let markStarted = () => {};
+  const started = new Promise(resolve => { markStarted = resolve; });
+  harness.session.agent.streamFunction = (model, context, options) => {
+    requests.push({ systemPrompt: context.systemPrompt, text: context.messages.map(c8Text).join("\n") });
+    markStarted();
+    if (fail) throw new Error("fixture branch summary failure");
+    const stream = createAssistantMessageEventStream();
+    if (waitForCancellation) {
+      const abort = () => queueMicrotask(() => stream.push({ type: "done", reason: "aborted",
+        message: fauxAssistantMessage("", { stopReason: "aborted" }) }));
+      if (options.signal?.aborted) abort();
+      else options.signal?.addEventListener("abort", abort, { once: true });
+    } else {
+      queueMicrotask(() => stream.push({ type: "done", reason: "stop", message: {
+        ...fauxAssistantMessage(C9_SUMMARY_TEXT), api: model.api, provider: model.provider, model: model.id,
+      } }));
+    }
+    return stream;
+  };
+  return { requests, started, get requestText() { return requests.map(item => item.text).join("\n"); } };
+}
+
+async function c9NewHarness(cleanups, settings = {}) {
+  const harness = await createHarness({ settings: {
+    retry: { enabled: false },
+    branchSummary: { reserveTokens: 16_384, skipPrompt: false, ...settings.branchSummary },
+  } });
+  cleanups.push(() => harness.cleanup());
+  return harness;
+}
+
+function c9OrderedMarkers(text, markers) {
+  let position = -1;
+  const found = [];
+  for (const marker of markers) {
+    const next = text.indexOf(marker, position + 1);
+    if (next < 0) continue;
+    found.push(marker);
+    position = next;
+  }
+  return found;
+}
+
+function c9StringArray(value) {
+  return Array.isArray(value) ? value.filter(item => typeof item === "string") : [];
+}
+
+async function c9RunCustomInstructions(cleanups, replaceInstructions) {
+  const harness = await c9NewHarness(cleanups);
+  const fixture = c9CreateFixture(harness.sessionManager);
+  const capture = c9InstallStream(harness);
+  await harness.session.navigateTree(fixture.targetId, {
+    summarize: true, customInstructions: "CUSTOM BRANCH FOCUS", replaceInstructions,
+  });
+  return capture.requestText;
+}
+
+async function c9RunUncommittedNavigation(cleanups, cancellation) {
+  const harness = await c9NewHarness(cleanups);
+  const fixture = c9CreateFixture(harness.sessionManager);
+  const capture = c9InstallStream(harness, { fail: !cancellation, waitForCancellation: cancellation });
+  const beforeCount = harness.sessionManager.getEntries().length;
+  let error = null;
+  let cancelled = false;
+  const navigation = harness.session.navigateTree(fixture.targetId, { summarize: true });
+  if (cancellation) {
+    await capture.started;
+    harness.session.abortBranchSummary();
+  }
+  try {
+    await navigation;
+  } catch (failure) {
+    error = failure instanceof Error ? failure.message : String(failure);
+  }
+  if (cancellation) {
+    const result = await navigation;
+    cancelled = result.cancelled && result.aborted === true;
+  }
+  return {
+    unchanged: harness.sessionManager.getLeafId() === fixture.oldLeafId &&
+      harness.sessionManager.getEntries().length === beforeCount &&
+      !harness.sessionManager.getEntries().some(entry => entry.type === "branch_summary"),
+    cancelled,
+    error,
+  };
+}
+
+async function runPiC9() {
+  const cleanups = [];
+  try {
+    const primary = await c9NewHarness(cleanups);
+    const primaryFixture = c9CreateFixture(primary.sessionManager, { includeToolCall: true });
+    const primaryCapture = c9InstallStream(primary);
+    const collected = collectEntriesForBranchSummary(primary.sessionManager, primaryFixture.oldLeafId,
+      primaryFixture.targetId);
+    await primary.session.navigateTree(primaryFixture.targetId, { summarize: true, label: "returned-to-target" });
+    const primarySummary = primary.sessionManager.getEntries().find(entry => entry.type === "branch_summary");
+
+    const budgetHarness = await c9NewHarness(cleanups, { branchSummary: { reserveTokens: 127_988 } });
+    c9AppendUser(budgetHarness.sessionManager, "shared");
+    c9AppendAssistant(budgetHarness.sessionManager, "shared answer");
+    const budgetCommon = budgetHarness.sessionManager.getLeafId();
+    c9AppendUser(budgetHarness.sessionManager, `VERY-OLD-BUDGET-MARKER ${"x".repeat(1_000)}`);
+    budgetHarness.sessionManager.branchWithSummary(budgetHarness.sessionManager.getLeafId(), "IMPORTANT-SUMMARY-MARKER");
+    c9AppendUser(budgetHarness.sessionManager, "RECENT-BUDGET-MARKER");
+    const budgetOldLeaf = budgetHarness.sessionManager.getLeafId();
+    budgetHarness.sessionManager.branch(budgetCommon);
+    c9AppendUser(budgetHarness.sessionManager, "target");
+    const budgetTarget = c9AppendAssistant(budgetHarness.sessionManager, "target answer");
+    budgetHarness.sessionManager.branch(budgetOldLeaf);
+    const budgetCapture = c9InstallStream(budgetHarness);
+    await budgetHarness.session.navigateTree(budgetTarget, { summarize: true });
+
+    const nestedHarness = await c9NewHarness(cleanups);
+    c9AppendUser(nestedHarness.sessionManager, "shared");
+    c9AppendAssistant(nestedHarness.sessionManager, "shared answer");
+    const nestedCommon = nestedHarness.sessionManager.getLeafId();
+    c9AppendUser(nestedHarness.sessionManager, "nested branch work");
+    nestedHarness.sessionManager.branchWithSummary(nestedHarness.sessionManager.getLeafId(), "NESTED PREVIOUS SUMMARY", {
+      readFiles: ["nested-read.md", "overwritten.md"], modifiedFiles: ["nested-write.md"],
+    });
+    c9AppendAssistant(nestedHarness.sessionManager, [
+      { type: "toolCall", id: "read-fresh", name: "read", arguments: { path: "fresh-read.md" } },
+      { type: "toolCall", id: "write-fresh", name: "write", arguments: { path: "fresh-write.md" } },
+      { type: "toolCall", id: "edit-old", name: "edit", arguments: { path: "overwritten.md" } },
+    ]);
+    const nestedOldLeaf = nestedHarness.sessionManager.getLeafId();
+    nestedHarness.sessionManager.branch(nestedCommon);
+    c9AppendUser(nestedHarness.sessionManager, "target");
+    const nestedTarget = c9AppendAssistant(nestedHarness.sessionManager, "target answer");
+    nestedHarness.sessionManager.branch(nestedOldLeaf);
+    const nestedCollected = collectEntriesForBranchSummary(nestedHarness.sessionManager, nestedOldLeaf, nestedTarget);
+    const nestedPreparation = prepareBranchEntries(nestedCollected.entries);
+    const nestedCapture = c9InstallStream(nestedHarness);
+    const nestedLeafSelectedBeforeNavigate = nestedHarness.sessionManager.getLeafId() === nestedOldLeaf;
+    await nestedHarness.session.navigateTree(nestedTarget, { summarize: true });
+    const nestedSummary = nestedHarness.sessionManager.getEntries().findLast(entry => entry.type === "branch_summary");
+
+    const appendPrompt = await c9RunCustomInstructions(cleanups, false);
+    const replacePrompt = await c9RunCustomInstructions(cleanups, true);
+    const failed = await c9RunUncommittedNavigation(cleanups, false);
+    const cancelled = await c9RunUncommittedNavigation(cleanups, true);
+
+    const defaultSettings = SettingsManager.inMemory();
+    const skipSettings = SettingsManager.inMemory({ branchSummary: { skipPrompt: true } });
+    const interactiveSource = await readFile(join(piRoot, "packages/coding-agent/src/modes/interactive/interactive-mode.ts"), "utf8");
+    const hasPromptOptions = interactiveSource.includes('showExtensionSelector("Summarize branch?", [\n\t\t\t\t\t\t\t\t"No summary",\n\t\t\t\t\t\t\t\t"Summarize",\n\t\t\t\t\t\t\t\t"Summarize with custom prompt",');
+    const branchSettings = defaultSettings.getBranchSummarySettings();
+    const skipBranchSettings = skipSettings.getBranchSummarySettings();
+
+    return {
+      scenario: "c9",
+      cases: {
+        "C9.branch-diff-uses-common-ancestor-and-old-path": {
+          commonAncestorContainsSharedMarker: c9EntryText(primary.sessionManager.getEntry(collected.commonAncestorId)).includes("SHARED ANCESTOR ANSWER"),
+          oldPathEntryCount: collected.entries.length,
+          oldPathEntries: collected.entries.map(entry => ({ type: entry.type })),
+          targetBranchEntriesExcluded: collected.entries.every(entry => entry.id !== primaryFixture.targetId),
+          summaryFromIdIsOldHead: primarySummary?.type === "branch_summary" && primarySummary.fromId === primaryFixture.oldLeafId,
+        },
+        "C9.branch-entries-are-chronological-and-no-duplicate-tool-results": {
+          markerOrder: c9OrderedMarkers(primaryCapture.requestText, ["OLD BRANCH FIRST", "branch.md", "OLD BRANCH LAST", "OLD BRANCH FINAL"]),
+          toolResultDuplicated: primaryCapture.requestText.includes(C9_TOOL_RESULT_SENTINEL),
+          targetBranchIncluded: primaryCapture.requestText.includes("TARGET BRANCH"),
+        },
+        "C9.token-budget-retains-recent-summary-context": {
+          retainsRecentMessage: budgetCapture.requestText.includes("RECENT-BUDGET-MARKER"),
+          retainsImportantSummary: budgetCapture.requestText.includes("IMPORTANT-SUMMARY-MARKER"),
+          dropsOlderMessage: !budgetCapture.requestText.includes("VERY-OLD-BUDGET-MARKER"),
+          selectedOldLeafWasBranch: budgetOldLeaf !== budgetTarget,
+        },
+        "C9.nested-branch-file-operation-details-accumulate": {
+          readFiles: c9StringArray(nestedSummary?.details?.readFiles),
+          modifiedFiles: c9StringArray(nestedSummary?.details?.modifiedFiles),
+          promptIncludesNestedSummary: nestedCapture.requestText.includes("NESTED PREVIOUS SUMMARY"),
+          sourceWasOldBranch: nestedSummary?.fromId === nestedOldLeaf,
+          headWasOldBranchBeforeNavigate: nestedLeafSelectedBeforeNavigate,
+          preparedFileOps: {
+            read: [...nestedPreparation.fileOps.read], written: [...nestedPreparation.fileOps.written],
+            edited: [...nestedPreparation.fileOps.edited],
+          },
+          requestText: nestedCapture.requestText,
+        },
+        "C9.custom-instructions-append-or-replace-default": {
+          appendHasDefaultInstructions: appendPrompt.includes("Create a structured summary of this conversation branch"),
+          appendHasCustomInstructions: appendPrompt.includes("Additional focus: CUSTOM BRANCH FOCUS"),
+          replaceHasCustomInstructions: replacePrompt.includes("CUSTOM BRANCH FOCUS"),
+          replaceHasDefaultInstructions: replacePrompt.includes("Create a structured summary of this conversation branch"),
+        },
+        "C9.summary-output-has-preamble-and-file-details": {
+          summaryStartsWithPreamble: primarySummary?.type === "branch_summary" && primarySummary.summary.startsWith("The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n"),
+          summaryIncludesGeneratedText: primarySummary?.type === "branch_summary" && primarySummary.summary.includes(C9_SUMMARY_TEXT),
+          summaryIncludesReadFileDetails: primarySummary?.type === "branch_summary" && primarySummary.summary.includes("<read-files>\nbranch.md\n</read-files>"),
+          detailsReadFiles: c9StringArray(primarySummary?.details?.readFiles),
+        },
+        "C9.summary-applies-at-navigation-target-with-label": {
+          parentIsSelectedTarget: primarySummary?.type === "branch_summary" && primarySummary.parentId === primaryFixture.targetId,
+          fromIdIsAbandonedHead: primarySummary?.type === "branch_summary" && primarySummary.fromId === primaryFixture.oldLeafId,
+          label: primarySummary?.type === "branch_summary" ? primary.sessionManager.getLabel(primarySummary.id) ?? null : null,
+        },
+        "C9.cancel-or-failure-keeps-selected-head-and-history": {
+          failedUnchanged: failed.unchanged,
+          failedError: failed.error,
+          cancelledUnchanged: cancelled.unchanged,
+          cancelled: cancelled.cancelled,
+        },
+        "C9.public-navigation-prompts-and-skips-as-pinned": {
+          defaultReserveTokens: branchSettings.reserveTokens,
+          defaultPrompts: !branchSettings.skipPrompt,
+          skipPromptOverrideSuppressesPrompt: skipBranchSettings.skipPrompt,
+          promptTitle: "Summarize branch?",
+          choices: ["No summary", "Summarize", "Summarize with custom prompt"],
+          defaultChoice: "No summary",
+          sourceHasPinnedPromptOptions: hasPromptOptions,
+        },
+      },
+    };
+  } finally {
+    for (const cleanup of cleanups.reverse()) cleanup();
+  }
+}
+
+function c9EntryText(entry) {
+  if (!entry || entry.type !== "message") return "";
+  return c8Text(entry.message);
+}
+
+async function runOnce() {
+  if (scenario === "c3") return runC3();
+  if (scenario === "c4") return runC4();
+  if (scenario === "c6") return runC6();
+  if (scenario === "c7") return runPiC7();
+  if (scenario === "c8") return runPiC8();
+  if (scenario === "c9") return runPiC9();
+  if (scenario === "error-turn-usage") return runErrorTurnUsageOnce();
+  const contextWindow = scenario === "queued-steering" ? 12_000
+    : ["threshold-after-turn", "threshold-equal", "threshold-over", "disabled-setting"].includes(scenario) ? 10_000
+    : scenario === "pre-prompt-compaction" ? 1_800
+      : ["context-boundary-length", "silent-usage-overflow"].includes(scenario) ? 10_000
+        : scenario === "physical-route-change" ? 50_000
+          : scenario === "unknown-model-window" ? 0 : scenario === "stale-old-model-overflow" ? 1_000 : 1_000_000;
+  const models = scenario === "stale-old-model-overflow"
+    ? [{ id: "old-model", contextWindow, maxTokens: 100 }, { id: "new-model", contextWindow: 1_000_000, maxTokens: 100 }]
+    : scenario === "physical-route-change"
+      ? [{ id: "large", contextWindow: 50_000, maxTokens: 100 }, { id: "small", contextWindow: 10_000, maxTokens: 100 }]
+      : [{ id: "faux-1", contextWindow, maxTokens: 100 }];
+  let markManualCompactionStarted = () => {};
+  const manualCompactionStarted = new Promise((resolve) => { markManualCompactionStarted = resolve; });
+  const routeDecisions = [];
+  const extensionFactories = scenario === "manual-cancel" ? [
+    (pi) => {
+      pi.on("session_before_compact", async (event) => await new Promise((resolve) => {
+        event.signal.addEventListener("abort", () => resolve({ cancel: true }), { once: true });
+        markManualCompactionStarted();
+      }));
+    },
+  ] : scenario === "manual-queue-order" ? [
+    (pi) => {
+      pi.on("session_before_compact", async (event) => ({
+        compaction: {
+          summary: "manual queue summary",
+          firstKeptEntryId: event.preparation.firstKeptEntryId,
+          tokensBefore: event.preparation.tokensBefore,
+          details: {},
+        },
+      }));
+    },
+  ] : scenario === "queued-steering" ? [
+    (pi) => {
+      pi.on("session_before_compact", async (event) => {
+        pi.sendUserMessage("change direction", { deliverAs: "steer" });
+        return { compaction: {
+          summary: "compacted history summary",
+          firstKeptEntryId: event.preparation.firstKeptEntryId,
+          tokensBefore: event.preparation.tokensBefore,
+          details: {},
+        } };
+      });
+    },
+  ] : scenario === "physical-route-change" ? [
+    (pi) => {
+      let userRouteCount = 0;
+      pi.registerVirtualModel({
+        provider: "router",
+        id: "auto",
+        name: "Auto",
+        contextWindow: 50_000,
+        maxTokens: 100,
+        route(request, ctx) {
+          const modelId = request.reason === "direct" ? "large" : userRouteCount++ === 0 ? "large" : "small";
+          routeDecisions.push({ reason: request.reason, model: modelId });
+          return { model: ctx.modelRegistry.find("faux", modelId), thinkingLevel: "off" };
+        },
+      });
+    },
+  ] : undefined;
+  const harness = await createHarnessWithStableTempPath({
+    models,
+    extensionFactories,
+    settings: { compaction: { enabled: scenario !== "disabled-setting",
+      reserveTokens: scenario === "queued-steering" ? 2_000
+        : scenario === "physical-route-change" ? 1_000
+        : ["threshold-after-turn", "threshold-equal", "threshold-over"].includes(scenario) ? 100
+        : scenario === "pre-prompt-compaction" ? 300
+          : ["context-boundary-length", "silent-usage-overflow", "stale-old-model-overflow", "disabled-setting"].includes(scenario)
+            ? 0 : 10_000,
+      keepRecentTokens: 1 } },
+  });
+  const providerRequests = [];
+  let modelSwitchApplied = false;
+  try {
+    const model = harness.getModel();
+    if (scenario === "physical-route-change") {
+      const virtualModel = harness.session.modelRuntime.getModel("router", "auto");
+      if (!virtualModel) throw new Error("physical route virtual model was not registered");
+      await harness.session.setModel(virtualModel);
+    }
+    const now = Date.parse("2100-01-01T00:00:00.000Z");
+    if (scenario.startsWith("manual-")) {
+      harness.settingsManager.applyOverrides({ compaction: { keepRecentTokens: 1 } });
+      if (["manual-eligible", "manual-failure", "manual-cancel", "manual-split-turn", "manual-queue-order"].includes(scenario)) {
+        for (const [role, text, offset] of [
+          ["user", "first", -4_000], ["assistant", "answer one", -3_000],
+          ["user", "second", -2_000], ["assistant", "answer two", -1_000],
+        ]) {
+          if (role === "user") {
+            harness.sessionManager.appendMessage({ role, content: [{ type: "text", text }], timestamp: now + offset });
+          } else {
+            const assistant = {
+              ...fauxAssistantMessage(text, { timestamp: now + offset }),
+              api: model.api,
+              provider: model.provider,
+              model: model.id,
+              usage: { input: 10, output: 2, cacheRead: 0, cacheWrite: 0, totalTokens: 12,
+                cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+            };
+            harness.sessionManager.appendMessage(assistant);
+          }
+        }
+        if (scenario === "manual-split-turn") {
+          harness.sessionManager.appendMessage({ role: "user", content: [{ type: "text", text: "current request" }],
+            timestamp: now - 500 });
+          harness.sessionManager.appendMessage({
+            ...fauxAssistantMessage("partial answer", { timestamp: now - 250, stopReason: "aborted" }),
+            api: model.api,
+            provider: model.provider,
+            model: model.id,
+            usage: { input: 10, output: 2, cacheRead: 0, cacheWrite: 0, totalTokens: 12,
+              cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+          });
+        }
+      } else {
+        harness.sessionManager.appendMessage({ role: "user", content: [{ type: "text", text: "only turn" }],
+          timestamp: now - 1_000 });
+      }
+      harness.session.agent.state.messages = harness.sessionManager.buildSessionContext().messages;
+      const summaryRequests = [];
+      const events = [];
+      let summaryResponseCount = 0;
+      let queuedPrompt;
+      const entriesBefore = harness.sessionManager.getEntries().length;
+      harness.session.subscribe((event) => events.push(event));
+      if (scenario === "manual-queue-order") {
+        harness.session.subscribe((event) => {
+          if (event.type === "compaction_end" && event.reason === "manual" && event.result) {
+            queuedPrompt = harness.session.prompt("queued after compaction");
+          }
+        });
+      }
+      harness.session.agent.streamFunction = (summaryModel, context, options) => {
+        if (scenario === "manual-queue-order") {
+          providerRequests.push({ messages: context.messages.map(plainMessage) });
+          const stream = createAssistantMessageEventStream();
+          queueMicrotask(() => stream.push({ type: "done", reason: "stop", message: {
+            ...fauxAssistantMessage("queued response"),
+            api: summaryModel.api,
+            provider: summaryModel.provider,
+            model: summaryModel.id,
+          } }));
+          return stream;
+        }
+        summaryRequests.push({
+          messages: context.messages.map(plainMessage),
+          maxTokens: options?.maxTokens ?? null,
+          customInstructions: context.customInstructions ?? null,
+        });
+        summaryResponseCount++;
+        if (scenario === "manual-failure") throw new Error("summary provider failed");
+        const stream = createAssistantMessageEventStream();
+        const summaryText = scenario === "manual-split-turn"
+          ? summaryResponseCount === 1 ? "history summary" : "turn prefix summary"
+          : "compacted history summary";
+        queueMicrotask(() => {
+          stream.push({ type: "done", reason: "stop", message: {
+            ...fauxAssistantMessage(summaryText),
+            api: summaryModel.api,
+            provider: summaryModel.provider,
+            model: summaryModel.id,
+            usage: { input: 10, output: 20, cacheRead: 30, cacheWrite: 40, totalTokens: 100,
+              cost: { input: 0.1, output: 0.2, cacheRead: 0.3, cacheWrite: 0.4, total: 1 } },
+          } });
+        });
+        return stream;
+      };
+      let result = null;
+      let error = null;
+      try {
+        if (scenario === "manual-cancel") {
+          const compactPromise = harness.session.compact();
+          await manualCompactionStarted;
+          harness.session.abortCompaction();
+          result = await compactPromise;
+        } else {
+          result = await harness.session.compact(scenario === "manual-eligible" ? "prioritize files" : undefined);
+          if (scenario === "manual-queue-order") {
+            if (!queuedPrompt) throw new Error("compaction_end did not start the queued prompt");
+            await queuedPrompt;
+          }
+        }
+      } catch (caught) {
+        error = String(caught?.message ?? caught);
+      }
+      const entries = harness.sessionManager.getEntries();
+      const firstKeptEntryIndex = result
+        ? entries.findIndex((entry) => entry.id === result.firstKeptEntryId) : null;
+      return {
+        scenario,
+        compactionSucceeded: result !== null,
+        canonicalStateUnchanged: result === null && entries.length === entriesBefore,
+        error,
+        result: result ? {
+          summary: result.summary,
+          firstKeptEntryIndex,
+          tokensBefore: result.tokensBefore,
+          estimatedTokensAfter: result.estimatedTokensAfter,
+          usage: result.usage ?? null,
+          details: result.details ?? null,
+        } : null,
+        summaryRequests,
+        compactionCount: entries.filter((entry) => entry.type === "compaction").length,
+        entries: entries.map((entry) => entry.type === "compaction"
+          ? { type: entry.type, summary: entry.summary, tokensBefore: entry.tokensBefore,
+              usage: entry.usage ?? null, details: entry.details ?? null }
+          : { type: entry.type, message: entry.type === "message" ? plainMessage(entry.message) : null }),
+        providerRequests,
+        contextMessages: harness.session.messages.map(plainMessage),
+        activeMessages: harness.sessionManager.buildSessionContext().messages.map(plainMessage),
+        events: events.map((event) => ({ type: event.type, reason: event.reason ?? null,
+          willRetry: event.willRetry ?? null, aborted: event.aborted ?? false,
+          error: event.errorMessage ?? event.error ?? null })),
+      };
+    }
+    // Recovery checks compare response timestamps with the compaction boundary.
+    // Keep fixture responses after that boundary even when both operations share a millisecond.
+    const responseTimestampBase = now + 86_400_000;
+    for (const [role, text, offset] of [
+      ["user", "first", -4_000],
+      ["assistant", "answer one", -3_000],
+      ["user", "second", -2_000],
+      ["assistant", "answer two", -1_000],
+    ]) {
+      if (role === "user") {
+        const textValue = scenario === "pre-prompt-compaction" && text === "first" ? "x".repeat(12_000) : text;
+        harness.sessionManager.appendMessage({ role, content: [{ type: "text", text: textValue }], timestamp: now + offset });
+      } else {
+        const assistant = {
+          ...fauxAssistantMessage(text, { timestamp: now + offset }),
+          api: model.api,
+          provider: model.provider,
+          model: model.id,
+          usage: { input: 60, output: 10, cacheRead: 0, cacheWrite: 0, totalTokens: 70,
+            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+        };
+        if (scenario === "pre-prompt-compaction") {
+          assistant.usage = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0,
+            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } };
+        }
+        harness.sessionManager.appendMessage(assistant);
+      }
+    }
+    harness.session.agent.state.messages = harness.sessionManager.buildSessionContext().messages;
+    harness.session.agent.streamFunction = (requestModel, context, options) => {
+      const requestNumber = providerRequests.length + 1;
+      providerRequests.push({
+        model: requestModel.id,
+        messages: context.messages.map(plainMessage),
+        systemPrompt: context.systemPrompt,
+        maxTokens: options?.maxTokens ?? null,
+      });
+      const stream = createAssistantMessageEventStream();
+      const isSummaryRequest = context.messages.some((message) => message.role === "system" &&
+        plainMessage(message).text.startsWith("You are a context summarization assistant"));
+      const overflowError = requestNumber === 1 &&
+        ["pre-content-overflow", "partial-content-overflow"].includes(scenario);
+      const text = scenario === "physical-route-change"
+        ? isSummaryRequest ? "compacted history summary" : "completed response"
+        : requestNumber === 1
+        ? scenario === "partial-content-overflow" ? "partial output"
+          : ["silent-usage-overflow", "unknown-model-window", "threshold-after-turn", "threshold-equal", "queued-steering",
+            "threshold-over", "disabled-setting", "pre-prompt-compaction"].includes(scenario) ? "completed response"
+            : overflowError ? "" : "partial output"
+        : requestNumber === 2 || requestNumber === 3 ? "compacted history summary" : "continued response";
+      const scenarioText = scenario === "pre-prompt-compaction"
+        ? isSummaryRequest ? "compacted history summary" : "completed response"
+        : text;
+      const stopReason = overflowError ? "error" :
+        scenario === "physical-route-change" ? "stop" :
+        requestNumber === 1 && scenario === "stale-old-model-overflow" ? "length" :
+        requestNumber === 1 && ["silent-usage-overflow", "unknown-model-window", "threshold-after-turn", "queued-steering",
+          "threshold-equal", "threshold-over", "disabled-setting", "pre-prompt-compaction"].includes(scenario) ? "stop" :
+            requestNumber === 1 || (scenario === "second-length-stop" && requestNumber === 4) ? "length" : "stop";
+      const inputTokens = scenario === "physical-route-change"
+        ? isSummaryRequest ? 60 : requestModel.id === "large" ? 9_500 : 100
+        : requestNumber === 1 && scenario === "context-boundary-length" ? contextWindow
+        : requestNumber === 1 && scenario === "stale-old-model-overflow" ? contextWindow
+        : requestNumber === 1 && scenario === "threshold-after-turn" ? 9_950
+        : requestNumber === 1 && scenario === "queued-steering" ? 10_050
+        : requestNumber === 1 && scenario === "threshold-equal" ? 9_884
+        : requestNumber === 1 && scenario === "threshold-over" ? 9_885
+        : requestNumber === 1 && scenario === "disabled-setting" ? 2_000
+        : requestNumber === 1 && scenario === "silent-usage-overflow" ? contextWindow + 1
+          : requestNumber === 1 && scenario === "unknown-model-window" ? 20_000
+            : requestNumber === 1 ? 80 : 60;
+      const outputTokens = requestNumber === 1
+        ? (["context-boundary-length", "stale-old-model-overflow"].includes(scenario) || overflowError ? 0 : 16)
+        : 12;
+      const message = {
+          ...fauxAssistantMessage(scenarioText, {
+          stopReason,
+          ...(overflowError ? { errorMessage: "context_length_exceeded: prompt exceeds context window" } : {}),
+          timestamp: responseTimestampBase + requestNumber,
+        }),
+        api: requestModel.api,
+        provider: requestModel.provider,
+        model: requestModel.id,
+        usage: { input: inputTokens, output: outputTokens, cacheRead: 0, cacheWrite: 0,
+          totalTokens: inputTokens + outputTokens,
+          cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+      };
+      queueMicrotask(async () => {
+        if (overflowError) {
+          stream.push({ type: "error", reason: "error", error: message });
+          stream.end(message);
+        } else if (scenario === "stale-old-model-overflow" && requestNumber === 1) {
+          await harness.session.setModel(harness.getModel("new-model"));
+          modelSwitchApplied = true;
+          stream.push({ type: "done", reason: stopReason, message });
+        } else stream.push({ type: "done", reason: stopReason, message });
+      });
+      return stream;
+    };
+    if (scenario === "physical-route-change") {
+      await harness.session.prompt("first on large route");
+      await harness.session.prompt("next on small route");
+    } else await harness.session.prompt("continue");
+
+    return {
+      scenario,
+      modelSwitchApplied,
+      selectedModel: harness.session.model.id,
+      routeDecisions,
+      providerRequests,
+      events: harness.events.map((event) => ({
+        type: event.type,
+        reason: event.reason ?? null,
+        willRetry: event.willRetry ?? null,
+        errorMessage: event.errorMessage ?? null,
+        messageError: event.message?.errorMessage ?? null,
+        summary: event.result?.summary ?? null,
+        tokensBefore: event.result?.tokensBefore ?? null,
+        usage: event.type === "message_end" && event.message?.role === "assistant" &&
+          event.message.stopReason !== "error"
+          ? { inputTokens: event.message.usage.input, outputTokens: event.message.usage.output }
+          : null,
+      })),
+      sessionEntries: harness.sessionManager.getEntries().map((entry) => entry.type === "message"
+        ? { type: "message", message: plainMessage(entry.message), stopReason: entry.message.stopReason ?? null,
+            errorMessage: entry.message.errorMessage ?? null }
+        : entry.type === "compaction"
+          ? { type: "compaction", summary: entry.summary, tokensBefore: entry.tokensBefore }
+          : { type: entry.type }),
+      activeMessages: harness.session.agent.state.messages.map(plainMessage),
+      compactionCount: harness.sessionManager.getEntries().filter((entry) => entry.type === "compaction").length,
+      selectedModel: harness.session.model.id,
+    };
+  } finally {
+    harness.cleanup();
+  }
+}
+
+const first = await runOnce();
+const second = await runOnce();
+const firstBytes = JSON.stringify(first);
+const secondBytes = JSON.stringify(second);
+await mkdir(output, { recursive: true });
+await writeFile(join(output, "pi-run-1.json"), `${JSON.stringify(first, null, 2)}\n`);
+await writeFile(join(output, "pi-run-2.json"), `${JSON.stringify(second, null, 2)}\n`);
+if (firstBytes !== secondBytes) {
+  const differences = [];
+  const collectDifferences = (left, right, path = "") => {
+    if (differences.length >= 12 || JSON.stringify(left) === JSON.stringify(right)) return;
+    if (Array.isArray(left) && Array.isArray(right)) {
+      if (left.length !== right.length) differences.push(`${path || "/"}: lengths ${left.length} vs ${right.length}`);
+      for (let index = 0; index < Math.min(left.length, right.length); index++) {
+        collectDifferences(left[index], right[index], `${path}/${index}`);
+      }
+    } else if (left && right && typeof left === "object" && typeof right === "object") {
+      for (const key of new Set([...Object.keys(left), ...Object.keys(right)])) {
+        collectDifferences(left[key], right[key], `${path}/${key}`);
+      }
+    } else {
+      differences.push(`${path || "/"}: ${JSON.stringify(left)} vs ${JSON.stringify(right)}`);
+    }
+  };
+  collectDifferences(first, second);
+  throw new Error(`pinned Pi oracle was not stable across two executions: ${differences.join("; ")}`);
+}
+const sha256 = createHash("sha256").update(firstBytes).digest("hex");
+await writeFile(join(output, "pi-oracle.json"), `${JSON.stringify({
+  piSha: PIN,
+  scenario: first.scenario,
+  stable: true,
+  normalizedSha256: sha256,
+  runs: ["pi-run-1.json", "pi-run-2.json"],
+}, null, 2)}\n`);
+console.log(`Stable pinned-Pi observation: ${first.scenario}; SHA-256 ${sha256}`);
