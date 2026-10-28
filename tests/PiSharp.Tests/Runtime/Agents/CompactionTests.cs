@@ -851,7 +851,8 @@ public sealed class CompactionTests
             var path = store.NewPath(conversation);
             await store.SaveAsync(conversation, path);
             var client = new ToolLoopBudgetClient { FailSummaryOnce = true };
-            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation,
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd),
+                retryPolicy: ProviderRetryPolicy.None), conversation,
                 save: token => store.SaveAsync(conversation, path, token),
                 autoCompaction: new AutoCompactionPolicy(2700, 300));
             var events = new List<AgentLifecycleEvent>();
@@ -887,7 +888,8 @@ public sealed class CompactionTests
             var path = store.NewPath(conversation);
             await store.SaveAsync(conversation, path);
             var client = new ToolLoopBudgetClient { FailSummary = true };
-            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation,
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd),
+                retryPolicy: ProviderRetryPolicy.None), conversation,
                 save: token => store.SaveAsync(conversation, path, token),
                 autoCompaction: new AutoCompactionPolicy(2100, 300));
             var events = new List<AgentLifecycleEvent>();
@@ -1297,7 +1299,8 @@ public sealed class CompactionTests
             SummaryResponses = ["older history summary", "unused"],
             FailSummaryNumber = 2
         };
-        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())), conversation,
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath()),
+            retryPolicy: ProviderRetryPolicy.None), conversation,
             autoCompaction: new AutoCompactionPolicy(5000, 1000, 15));
 
         await Assert.ThrowsAsync<IOException>(() => run.CompactAsync());
