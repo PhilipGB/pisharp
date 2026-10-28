@@ -15,7 +15,9 @@ C1-C13 pass **135/135** at the final implementation SHA. The paired corpus has
 121 equivalent observations and 14 case-level intentional safety differences;
 all have regression evidence and no unresolved mismatches. D0 independently
 passes **9/9**, checking all 135 paired cases, stable same-Pi observations,
-artifact hashes, and the case classifications. Q0 passes **10/10**.
+artifact hashes, and the case classifications. Q0 passes **10/10**. P0/P1 pass
+10/10 and V0/V1 pass 28/28, bringing the current contract result to **192/211**;
+E0, CI0, and PUB0 (19 cases) remain.
 
 Implemented and verified behavior covers manual and automatic compaction,
 cut-point retention, context-window and usage accounting, provider overflow and
@@ -43,7 +45,7 @@ and raw artifact hashes.
 - Terminal Python: **66/66**; compaction verifier/helper tests: **27/27**; built-in parity Python: **27/27**; terminal Node: **24/24**.
 - MCP conformance reports no regressions against its classified baseline; three known scenarios remain classified.
 - Pinned Pi suite: **200 passed, 0 failed, 20 credential-gated skips**, with exact skip identities verified.
-- Documentation paths: **156 documents / 700 references**.
+- Q0 validated **156 documents / 700 references**. After the final evidence updates, the documentation path validator passes for **156 documents / 694 references**.
 - Format and warnings-as-errors solution build passed. The workspace NuGet audit cache is read-only, so Q0 suppresses only the NU1900 cache-write warning; all other warnings remain errors. Automatic exact-head CI runs the standard build in its clean environment.
 
 Raw process streams remain Git-ignored under
@@ -53,11 +55,14 @@ Raw process streams remain Git-ignored under
 ## Remaining publication gates
 
 The source-bound implementation, differential, and quality checkpoints are complete.
-The final publication run will add the P0/P1/V0/V1 baseline and verifier controls,
-then validate E0, both automatic CI workflows on the exact final PR head, and PUB0.
+The final publication run will validate E0, both automatic CI workflows on the exact final PR head, and PUB0.
 PR #28 remains open, draft, and unmerged for independent review. Provider tests use
 local loopback fixtures; no live model endpoint was called. The selected pinned Pi
 suite requires provider credentials for its 20 skipped interactive/LLM cases.
 
-Final exact-head run IDs and publication counts are recorded in the PR description
-and the ignored CI0/PUB0 evidence for the exact final head.
+The clean-baseline and inventory/verifier checkpoints pass: P0/P1 **10/10**, V0/V1 **28/28**. Their compact records are
+[P0 compact record](compaction-context-management-p0-case-results.json),
+[P1 compact record](compaction-context-management-p1-case-results.json),
+[V0 compact record](compaction-context-management-v0-case-results.json), and
+[V1 compact record](compaction-context-management-v1-case-results.json). Final exact-head run IDs and publication counts will be recorded in the PR description
+and ignored CI0/PUB0 evidence for the exact final head.
