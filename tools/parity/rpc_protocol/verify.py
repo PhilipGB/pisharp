@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import subprocess
 import sys
@@ -28,6 +29,7 @@ REQUIRED_CHECKPOINT_IDS = (
 SHA1 = re.compile(r"^[0-9a-f]{40}$")
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
 PROCESS_CHECKPOINTS = {f"R{i}" for i in range(1, 16)} | {"D0"}
+CI_WORKFLOW_PATH = ROOT / ".github/workflows/ci.yml"
 
 
 class VerificationError(ValueError):
@@ -267,7 +269,8 @@ def validate_case_results(results: list[dict[str, Any]], checkpoint_id: str, evi
     return counts
 
 
-def validate_evidence_header(evidence: dict[str, Any], *, current_head: str | None = None) -> None:
+def validate_evidence_header(evidence: dict[str, Any], *, current_head: str | None = None,
+                             require_clean_worktree: bool = True) -> None:
     """Validate source identities before interpreting individual case results."""
     contract = load_contract()
     if evidence.get("contractSha256") != FROZEN_CONTRACT_SHA256:
@@ -278,9 +281,123 @@ def validate_evidence_header(evidence: dict[str, Any], *, current_head: str | No
     head_sha = evidence.get("finalHeadCommit") or current_head
     if not isinstance(source_sha, str) or not isinstance(head_sha, str):
         raise VerificationError("evidence is missing implementation source or tested head SHA")
+    if current_head is not None and evidence.get("finalHeadCommit") != current_head:
+        raise VerificationError("evidence final head differs from the current repository head")
     validate_source_identity(source_sha, head_sha)
+    if require_clean_worktree:
+        validate_clean_source_tree()
     if evidence.get("pisharpBaseCommit") != contract["sourcePins"]["pisharpBaseCommit"]:
         raise VerificationError("evidence is based on the wrong PiSharp merge commit")
+
+
+def required_ci_jobs(workflow_path: Path = CI_WORKFLOW_PATH) -> set[str]:
+    """Read top-level job IDs from the exact workflow source used by the repo."""
+    try:
+        lines = workflow_path.read_text(encoding="utf-8").splitlines()
+    except OSError as error:
+        raise VerificationError(f"cannot read CI workflow source: {error}") from error
+    try:
+        jobs_index = next(index for index, line in enumerate(lines) if line == "jobs:")
+    except StopIteration as error:
+        raise VerificationError("CI workflow has no jobs section") from error
+    jobs: set[str] = set()
+    for line in lines[jobs_index + 1:]:
+        match = re.fullmatch(r"  ([A-Za-z0-9_-]+):", line)
+        if match:
+            jobs.add(match.group(1))
+        elif line and not line.startswith(" "):
+            break
+    if not jobs:
+        raise VerificationError("CI workflow has no top-level jobs")
+    return jobs
+
+
+def validate_ci_evidence(ci_evidence: Any, *, final_head_sha: str, milestone_base_sha: str,
+                         cwd: Path = ROOT) -> None:
+    """Require automatic push and PR runs, exact heads, current base and every current job."""
+    if not isinstance(ci_evidence, dict):
+        raise VerificationError("exact-head CI evidence is missing")
+    runs = ci_evidence.get("runs")
+    if not isinstance(runs, list) or len(runs) != 2:
+        raise VerificationError("CI evidence must contain exactly one push and one pull_request run")
+    by_event: dict[str, dict[str, Any]] = {}
+    run_ids: set[str] = set()
+    for run in runs:
+        if not isinstance(run, dict):
+            raise VerificationError("CI run record must be an object")
+        event = run.get("event")
+        run_id = run.get("runId")
+        if event not in {"push", "pull_request"} or event in by_event:
+            raise VerificationError("CI evidence includes an unexpected, manual or duplicate workflow event")
+        if not isinstance(run_id, str) or not run_id or run_id in run_ids:
+            raise VerificationError("CI evidence has a missing or duplicate workflow run ID")
+        by_event[event] = run
+        run_ids.add(run_id)
+    if set(by_event) != {"push", "pull_request"}:
+        raise VerificationError("automatic push and pull_request CI runs are both required")
+    expected_jobs = required_ci_jobs()
+    for event, run in by_event.items():
+        if run.get("headSha") != final_head_sha:
+            raise VerificationError(f"{event} CI run is not for the final PR head")
+        if run.get("conclusion") != "success":
+            raise VerificationError(f"{event} CI run did not succeed")
+        jobs = run.get("jobs")
+        if not isinstance(jobs, dict) or set(jobs) != expected_jobs:
+            raise VerificationError(f"{event} CI job set is incomplete or differs from the workflow")
+        if any(conclusion != "success" for conclusion in jobs.values()):
+            raise VerificationError(f"{event} CI has a failed, skipped or cancelled mandatory job")
+    pull_request_base = by_event["pull_request"].get("baseSha")
+    if not isinstance(pull_request_base, str) or not SHA1.fullmatch(pull_request_base):
+        raise VerificationError("pull_request CI evidence lacks a full base SHA")
+    if not SHA1.fullmatch(milestone_base_sha):
+        raise VerificationError("frozen milestone base SHA is invalid")
+    ancestor = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", milestone_base_sha, pull_request_base],
+        cwd=cwd, capture_output=True, text=True,
+    )
+    if ancestor.returncode != 0:
+        raise VerificationError("pull_request CI base does not contain the prerequisite merge")
+
+
+def validate_v1_control_evidence(control: Any, evidence_dir: Path) -> dict[str, int]:
+    """Re-run the synthetic positive/mutation corpus and validate its captured report."""
+    if not isinstance(control, dict):
+        raise VerificationError("V1 verifier-control evidence is missing")
+    checkpoint = next(item for item in load_contract()["checkpoints"] if item["id"] == "V1")
+    case_ids = [case["id"] for case in checkpoint["caseDefinitions"]]
+    positive_id = "V1.valid-positive-control"
+    if control.get("caseIds") != case_ids:
+        raise VerificationError("V1 control report does not enumerate the frozen case IDs in order")
+    if control.get("positiveControlAccepted") is not True:
+        raise VerificationError("V1 positive control was not accepted")
+    negative_ids = [case_id for case_id in case_ids if case_id != positive_id]
+    if control.get("negativeControlsRejected") != negative_ids:
+        raise VerificationError("V1 report does not record every frozen negative control as rejected")
+    report = control.get("report")
+    if not isinstance(report, dict):
+        raise VerificationError("V1 report artifact metadata is missing")
+    relative = report.get("path")
+    digest = report.get("sha256")
+    if not isinstance(relative, str) or not SHA256.fullmatch(str(digest or "")):
+        raise VerificationError("V1 report artifact reference is invalid")
+    path = _relative_artifact(evidence_dir, relative)
+    try:
+        report_text = path.read_text(encoding="utf-8")
+    except OSError as error:
+        raise VerificationError(f"V1 report artifact is missing: {relative}") from error
+    if hashlib.sha256(path.read_bytes()).hexdigest() != digest:
+        raise VerificationError("V1 report artifact hash mismatch")
+    if "Ran " not in report_text or "OK" not in report_text:
+        raise VerificationError("V1 report does not contain a successful test run")
+    command = [sys.executable, "-m", "unittest", "discover", "-s", str(HERE), "-p", "test_*.py"]
+    environment = dict(os.environ)
+    previous_pythonpath = environment.get("PYTHONPATH")
+    environment["PYTHONPATH"] = str(HERE) + (os.pathsep + previous_pythonpath if previous_pythonpath else "")
+    rerun = subprocess.run(command, cwd=ROOT, env=environment, capture_output=True, text=True)
+    rerun_text = rerun.stdout + rerun.stderr
+    if rerun.returncode != 0 or "Ran " not in rerun_text or "OK" not in rerun_text:
+        raise VerificationError("V1 positive/mutation control suite did not pass when independently rerun")
+    return {"required": len(case_ids), "executed": len(case_ids), "passed": len(case_ids), "failed": 0, "skipped": 0}
 
 
 def validate_source_identity(source_sha: str, head_sha: str, *, cwd: Path = ROOT) -> None:
@@ -289,9 +406,23 @@ def validate_source_identity(source_sha: str, head_sha: str, *, cwd: Path = ROOT
     ancestor = subprocess.run(["git", "merge-base", "--is-ancestor", source_sha, head_sha], cwd=cwd)
     if ancestor.returncode != 0:
         raise VerificationError("implementation source is not an ancestor of the tested head")
-    changed = subprocess.run(["git", "diff", "--quiet", source_sha, head_sha, "--", "src", "tests", "tools/parity"], cwd=cwd)
+    changed = subprocess.run(
+        ["git", "diff", "--quiet", source_sha, head_sha, "--", "src", "tests", "tools/parity", ".github/workflows"],
+        cwd=cwd,
+    )
     if changed.returncode != 0:
         raise VerificationError("evidence is stale: production, test or parity sources changed after implementation source")
+
+
+def validate_clean_source_tree(*, cwd: Path = ROOT) -> None:
+    changed = subprocess.run(
+        ["git", "status", "--porcelain", "--", "src", "tests", "tools/parity", ".github/workflows"],
+        cwd=cwd, capture_output=True, text=True,
+    )
+    if changed.returncode != 0:
+        raise VerificationError("cannot inspect source worktree status")
+    if changed.stdout.strip():
+        raise VerificationError("evidence cannot be accepted with uncommitted production, test, parity or workflow changes")
 
 
 def main() -> int:
@@ -311,7 +442,18 @@ def main() -> int:
             return 0
         evidence_path = args.evidence_dir / "evidence.json"
         evidence = _read_json(evidence_path)
-        validate_evidence_header(evidence, current_head=evidence.get("finalHeadCommit"))
+        current_head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()
+        validate_evidence_header(evidence, current_head=current_head)
+        if args.checkpoint == "V1":
+            counts = validate_v1_control_evidence(evidence.get("v1ControlEvidence"), args.evidence_dir)
+            print(json.dumps(counts, sort_keys=True))
+            return 0
+        if args.checkpoint in {"CI0", "PUB0"}:
+            validate_ci_evidence(
+                evidence.get("ciEvidence"),
+                final_head_sha=evidence["finalHeadCommit"],
+                milestone_base_sha=contract["sourcePins"]["pisharpBaseCommit"],
+            )
         results = evidence.get("caseResults", [])
         counts = validate_case_results(results, args.checkpoint, args.evidence_dir)
         print(json.dumps(counts, sort_keys=True))

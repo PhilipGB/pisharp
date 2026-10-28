@@ -1,6 +1,6 @@
 # RPC Protocol and Command Parity — frozen baseline
 
-**Status:** inventory and acceptance contract prepared before production changes. The RPC behavior cases have not run; the milestone remains active.
+**Status:** inventory and acceptance contract frozen before production changes in commit `ac85aa2a0f59566115eb0109cc9022dc64f4d8fe`. The RPC behavior cases have not run; the milestone remains active.
 
 ## Verified base
 
@@ -28,7 +28,7 @@ The inventory also names all **20 credential-gated upstream tests** reported pen
 Validation performed on the baseline:
 
 - `python3 tools/parity/rpc_protocol/verify.py contract --pi-checkout artifacts/parity/pi-ownership-oracle` — passed; Pi checkout SHA and tracked-source hashes match.
-- `PYTHONPATH=tools/parity/rpc_protocol python3 -m unittest -v test_contract` — 8/8 passed.
+- `PYTHONPATH=tools/parity/rpc_protocol python3 -m unittest discover -s tools/parity/rpc_protocol -p 'test_*.py' -v` — 16/16 tests passed, covering the valid control and all 22 frozen mutations.
 - `python3 tools/parity/rpc_protocol/runner.py list --checkpoint R8` — returned the six frozen usage-accounting cases.
 
 No production files were changed to create this baseline. The runner fails closed while process adapters are absent, so unexecuted cases cannot be reported as passing.
@@ -44,4 +44,4 @@ No production files were changed to create this baseline. The runner fails close
 
 ## Next work
 
-Commit this inventory and contract before production changes. Then complete V1's positive and negative controls, build the actual process runners, capture repeated pinned-Pi baselines, and proceed through R1–R15. Final publication is PR #29, open, draft and unmerged.
+The inventory and contract are committed before production changes. The V1 runner now executes and records its verifier controls; its source-clean evidence run remains outstanding. Next capture repeated pinned-Pi and PiSharp process baselines, then proceed through R1–R15. Final publication is PR #29, open, draft and unmerged.
