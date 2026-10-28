@@ -4,10 +4,10 @@
   "checkpointId": "P1",
   "contractSha256": "c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6",
   "evidenceDirectory": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/P1",
-  "checkpointReportSha256": "2ab9d8e39c601c1797e4271f9350cbfd578c35211cc6f1147bfa59527b916968",
+  "checkpointReportSha256": "3c8bd24920ee444f824e3c4bd2d44ee7e856d01dc596dff35f0cf528ee2a491b",
   "caseReportSha256": "8fcfe07b5d5d8a908a69914f373ec75de0088e0a2889efd66a0a5460308cc5b3",
   "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-  "evidenceHeadSha": "0a8cbe825ccdd4e4016adf7e1ad5098e04e19285",
+  "evidenceHeadSha": "619c0d8c5803bba8815b23428b872adc77921a7c",
   "implementationSourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2",
   "sourceTreeClean": true,
   "status": "passed",
@@ -131,32 +131,32 @@
   ],
   "rawArtifacts": [
     {
+      "path": "expected-observations.json",
+      "sha256": "6536e10886dd2f21c16832fab818eca627688f40989519989f67aaffb73dbdd7"
+    },
+    {
       "path": "actual-observations.json",
       "sha256": "6536e10886dd2f21c16832fab818eca627688f40989519989f67aaffb73dbdd7"
     },
     {
-      "path": "commands/fetch-main.stderr.log",
-      "sha256": "340654fbb37b0eff473b5fc5de6d0466f7c208d9795b94f624919cfc1340c821"
-    },
-    {
-      "path": "commands/fetch-main.stdout.log",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
-      "path": "commands/pinned-pi-head.stderr.log",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      "path": "measured-source-evidence.json",
+      "sha256": "e6a12388d7308d48b5fb5e7907a8f1b215b8bd91fef1f15acefcc7eeb343986c"
     },
     {
       "path": "commands/pinned-pi-head.stdout.log",
       "sha256": "83fb001315a6c8775065d7291e81bbe43f30e00ed9bc2bce2fab603a7a11690c"
     },
     {
-      "path": "expected-observations.json",
-      "sha256": "6536e10886dd2f21c16832fab818eca627688f40989519989f67aaffb73dbdd7"
+      "path": "commands/pinned-pi-head.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
-      "path": "measured-source-evidence.json",
-      "sha256": "e6a12388d7308d48b5fb5e7907a8f1b215b8bd91fef1f15acefcc7eeb343986c"
+      "path": "commands/fetch-main.stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "commands/fetch-main.stderr.log",
+      "sha256": "340654fbb37b0eff473b5fc5de6d0466f7c208d9795b94f624919cfc1340c821"
     }
   ]
 }

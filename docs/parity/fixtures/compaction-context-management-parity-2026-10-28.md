@@ -8,14 +8,14 @@ The native branch-summary usage omission from RPC `get_session_stats` is fixed a
 
 ## Current verified results
 
-Current refreshed evidence passes 18/22 checkpoints and 187/211 required cases:
+Current refreshed evidence passes 19/22 checkpoints and 192/211 required cases:
 
 - C1-C13: 135/135, with 121 equivalent observations, 14 verified intentional safety differences, and zero unresolved mismatches.
 - D0: 9/9, including two-run pinned-Pi stability and hashes for current compact C evidence.
 - Q0: 10/10.
-- P0: 5/5; V0/V1: 28/28.
+- P0/P1: 10/10, with P1 passing on a clean committed tree; V0/V1: 28/28.
 
-The canonical `runs/P1` record remains incomplete. A clean-tree attempt wrote outside that checkpoint directory and does not count; rerun P1 there after committing these docs. E0, CI0, and PUB0 have not run for the corrected source. The corrected commits have not yet been pushed, and PR #28 still publishes the prior head `763f008a347282078b86946b398e9229dd930f06`.
+E0, CI0, and PUB0 have not run for the corrected source. The corrected commits have not yet been pushed, and PR #28 still publishes the prior head `763f008a347282078b86946b398e9229dd930f06`.
 
 ## Quality evidence
 

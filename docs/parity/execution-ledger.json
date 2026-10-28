@@ -13638,7 +13638,7 @@
   },
   "compaction_context_management_parity_milestone": {
     "status": "in_progress",
-    "phase": "clean_baseline_p1_rerun",
+    "phase": "exact_head_ci_and_publication",
     "branch": "milestone/compaction-context-management-parity",
     "branch_base_sha": "12064420179f4119bdaf37479c7cba0f5ca40717",
     "pi_reference": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
@@ -13647,8 +13647,8 @@
     "required_checkpoints": 22,
     "required_cases": 211,
     "implementation_source_sha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2",
-    "case_evidence_produced": 187,
-    "status_reason": "Independent review found native branch-summary usage missing from RPC get_session_stats. The fix and regressions are committed at 41e9b7e7ebdea70b878e409204cd8b3d177144e2. Current canonical evidence passes 18/22 checkpoints and 187/211 cases. A successful P1 attempt wrote outside runs/P1 and is not accepted; rerun P1 in its canonical evidence path after committing these docs.",
+    "case_evidence_produced": 192,
+    "status_reason": "Independent review found native branch-summary usage missing from RPC get_session_stats. The fix and regressions are committed at 41e9b7e7ebdea70b878e409204cd8b3d177144e2. Refreshed current-source evidence passes 19/22 checkpoints and 192/211 cases; only E0, CI0, and PUB0 remain.",
     "implemented": [
       "Manual and automatic compaction, cut points, retained history, and queue behavior.",
       "Context-window and usage accounting without invented unknown token or cost values.",
@@ -13672,15 +13672,14 @@
       "paired_c1_c13": "135/135 passed: 121 equivalent, 14 intentional safety differences, 0 unresolved mismatches.",
       "independent_d0": "9/9 passed after refreshing C1-C13 compact reports; stable Pi observations and artifact hashes verified.",
       "quality_q0": "10/10 passed at implementation source 41e9b7e7ebdea70b878e409204cd8b3d177144e2.",
-      "passedCheckpointCount": "18/22; 187/211 cases in passed checkpoints.",
-      "p1": "Canonical runs/P1 record remains incomplete. A clean-tree P1 attempt wrote to the evidence root and is not counted; rerun in runs/P1 after committing docs.",
+      "passedCheckpointCount": "19/22; 192/211 cases in passed checkpoints.",
+      "p1": "Canonical runs/P1 passes 5/5 with a clean committed worktree; evidence head 619c0d8c5803bba8815b23428b872adc77921a7c; implementation source 41e9b7e7ebdea70b878e409204cd8b3d177144e2.",
       "exactHeadCI": "Pending push of corrected source and evidence head.",
       "evidenceFinalizers": "E0, CI0, and PUB0 remain."
     },
     "open_requirements": [
-      "Commit the refreshed source-bound docs, then rerun P1 under runs/P1 with a clean worktree.",
-      "Refresh the P1 compact record and commit current local acceptance evidence.",
-      "Push the corrected implementation and evidence; verify automatic workflows on the exact final head.",
+      "Push the corrected implementation and committed source-bound evidence.",
+      "Verify automatic push and pull-request workflows on the exact final head.",
       "Run E0, update PR #28 description with verified results, run PUB0, and validate the 22/211 aggregate."
     ],
     "ci_scope_adjustment": "The managed-package parity corpus and its evidence steps run only on milestone/managed-package-lifecycle-parity because their clean-start assertions are pinned to that branch and base; verifier controls and common CI still run on this milestone.",
@@ -13719,8 +13718,8 @@
     "published_case_index_count": 211,
     "completion_evidence_directory": "artifacts/parity/20261028T-review-fix-41e9b7e7",
     "final_acceptance": {
-      "checkpoints": "18/22 passed; P1, E0, CI0, and PUB0 remain.",
-      "cases": "187/211 passed in completed checkpoints; 24 cases remain in unfinished checkpoints.",
+      "checkpoints": "19/22 passed; E0, CI0, and PUB0 remain.",
+      "cases": "192/211 passed in completed checkpoints; 19 cases remain in unfinished checkpoints.",
       "failedCases": 0,
       "skippedCases": 0,
       "unresolvedMismatches": 0,
