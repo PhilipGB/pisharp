@@ -64,6 +64,11 @@ KNOWN_PI_SKIP_IDS = frozenset({
 })
 
 
+def _compaction_checkpoint_ids(checkpoint_ids: list[str]) -> tuple[str, ...]:
+    return tuple(checkpoint_id for checkpoint_id in checkpoint_ids
+                 if re.fullmatch(r"C\d+", checkpoint_id))
+
+
 def _write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -517,8 +522,12 @@ def _run_d0(output_dir: Path, evidence_root: Path, pi_path: Path) -> dict[str, A
         "D0.same-pi-run-one-stable": {**json.loads(runs[0]), "stableWithRunTwo": True},
         "D0.same-pi-run-two-stable": {**json.loads(runs[1]), "stableWithRunOne": True},
     }
-    all_cases_ok = len(flat_cases) == sum(len(item["requiredCases"]) for item in contract["checkpoints"]
-                                          if item["id"].startswith("C")) and all(case.get("passed") is True for case in flat_cases)
+    compaction_checkpoints = _compaction_checkpoint_ids(
+        [item["id"] for item in contract["checkpoints"]])
+    all_cases_ok = len(flat_cases) == sum(
+        len(checkpoints_by_id[checkpoint_id]["requiredCases"])
+        for checkpoint_id in compaction_checkpoints) and all(
+            case.get("passed") is True for case in flat_cases)
     required_map = {
         "D0.all-scenarios-executed-against-pinned-pi-and-pisharp": all_cases_ok,
         "D0.raw-process-provider-state-persistence-captures-exist": all(bool(case.get("rawArtifacts")) for case in flat_cases),

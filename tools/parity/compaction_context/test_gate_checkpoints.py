@@ -57,6 +57,10 @@ class GateCheckpointHelperTests(unittest.TestCase):
         self.assertIn("PUB0", aggregate_evidence.FINAL_SOURCE_CHECKPOINTS)
         self.assertNotIn("P0", aggregate_evidence.FINAL_SOURCE_CHECKPOINTS)
 
+    def test_d0_counts_compaction_checkpoints_without_ci0(self) -> None:
+        self.assertEqual(("C1", "C13"), gate_checkpoints._compaction_checkpoint_ids(
+            ["C1", "CI0", "C13", "D0"]))
+
     def test_required_ci_jobs_are_present_and_successful(self) -> None:
         passing = [{"name": name, "conclusion": "success"}
                    for name in gate_checkpoints.REQUIRED_CI_JOBS]
