@@ -22,7 +22,8 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     Func<CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeContextMessagesForRequestAsync = null,
     Func<IReadOnlyList<ChatMessage>, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? prepareTurnAsync = null,
     Func<CancellationToken, IDisposable>? providerWireScopeFactory = null,
-    NativeExtensionEventDispatcher? messageEvents = null)
+    NativeExtensionEventDispatcher? messageEvents = null,
+    Func<int?>? getDesiredMaxOutputTokens = null)
     : DelegatingChatClient(inner)
 {
     public override async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages,
@@ -35,6 +36,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
             cancellationToken)).ToArray();
         var requestMessages = await PrepareRequestAsync(original, force: false, cancellationToken);
         options = ApplyCurrentToolLoadout(ApplyCurrentReasoning(options));
+        var requestedMaxOutputTokens = options?.MaxOutputTokens;
         if (routedChatClient?.HasContextMutationHandlers == true)
             options = NativeContextMutationRequest.Attach(options, new NativeContextMutationRequest());
         var overflowRecovered = false;
@@ -56,7 +58,8 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
                     ProviderResponseId = response.ResponseId,
                     ProviderModelId = response.ModelId,
                     ProviderProviderId = VirtualModelRequestHints.ReadHint(requestOptions)?.Execution?.Route?.Provider,
-                    ProviderFinishReason = response.FinishReason?.Value
+                    ProviderFinishReason = response.FinishReason?.Value,
+                    ProviderDesiredMaxOutputTokens = getDesiredMaxOutputTokens?.Invoke() ?? requestedMaxOutputTokens
                 });
                 return response;
             }
@@ -89,6 +92,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
             cancellationToken)).ToArray();
         var requestMessages = await PrepareRequestAsync(original, force: false, cancellationToken);
         options = ApplyCurrentToolLoadout(ApplyCurrentReasoning(options));
+        var requestedMaxOutputTokens = options?.MaxOutputTokens;
         if (routedChatClient?.HasContextMutationHandlers == true)
             options = NativeContextMutationRequest.Attach(options, new NativeContextMutationRequest());
         var overflowRecovered = false;
@@ -290,7 +294,8 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
                     ProviderResponseId = response.ResponseId,
                     ProviderModelId = response.ModelId,
                     ProviderProviderId = VirtualModelRequestHints.ReadHint(requestOptions)?.Execution?.Route?.Provider,
-                    ProviderFinishReason = response.FinishReason?.Value
+                    ProviderFinishReason = response.FinishReason?.Value,
+                    ProviderDesiredMaxOutputTokens = getDesiredMaxOutputTokens?.Invoke() ?? requestedMaxOutputTokens
                 });
                 yield break;
             }

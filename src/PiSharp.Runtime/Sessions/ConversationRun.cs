@@ -696,6 +696,7 @@ public sealed partial class ConversationRun
                         PiSharpCustomMessageProjection.ToChatMessage)).ToArray();
                     acceptedMessages = (await _agent.NormalizeAcceptedPromptImagesAsync(acceptedMessages,
                         linked.Token).ConfigureAwait(false)).ToArray();
+                    var lengthStopRecovery = CreateLengthStopRecoveryCoordinator(Publish);
                     outcome = await _retryController.RunTurnAsync(
                         (continuation, observeAttempt) => continuation || turn.Continuation
                             ? RunStreamingContinuationAsync(turn.Text, linked.Token, observeAttempt)
@@ -754,7 +755,9 @@ public sealed partial class ConversationRun
                         },
                         FlushPendingBashExecutions,
                         () => Conversation.Tree.HeadId,
-                        linked.Token);
+                        linked.Token,
+                        (response, attempted, head, pathLength, token) => lengthStopRecovery.TryRecoverAsync(
+                            response, attempted, head, pathLength, Publish, token));
                     activeTurnOutcomeSent = true;
                     if (outcome != AgentTurnOutcome.Completed)
                     {
@@ -1304,6 +1307,11 @@ public sealed partial class ConversationRun
             ? "Already compacted"
             : "Nothing to compact (session too small)";
 
+    private (string Model, string? Provider) GetCurrentRequestModel()
+    {
+        lock (_runtimeStateGate) return (_currentModel, _currentProvider);
+    }
+
     private Task<ConversationCompactionResult?> CompactCoreAsync(string? focus, CancellationToken cancellationToken,
         NativeExtensions.PiSharpExtensionCompactionReason reason = NativeExtensions.PiSharpExtensionCompactionReason.Manual,
         bool willRetry = false) =>
@@ -1556,6 +1564,9 @@ public sealed partial class ConversationRun
         VirtualModelContextCoordinator? virtualContext = null;
         var physicalOverflowCompacted = false;
         UsageRecord? latestCompletedProviderUsage = null;
+        AgentLifecycleEvent? latestCompletedProviderResponse = null;
+        string? requestModelAtStart = null;
+        string? requestProviderAtStart = null;
         IReadOnlyList<JsonElement>? expectedProviderPrefix = null;
         var providerTurns = new ProviderTurnJournal(Conversation, () => _agent.GetHistory(_execution),
             () => virtualContext?.HasCompacted == true || physicalOverflowCompacted, () => _historyCount, onEvent);
@@ -1635,11 +1646,14 @@ public sealed partial class ConversationRun
             if (item.Type == "model_request_started")
             {
                 latestCompletedProviderUsage = null;
+                latestCompletedProviderResponse = null;
                 lock (_runtimeStateGate)
                 {
                     // The provider request following tool execution is the natural continuation
                     // of that turn. Commit context-only extension messages after the completed
                     // tool results so the continuation sees them without starting another turn.
+                    requestModelAtStart = _currentModel;
+                    requestProviderAtStart = _currentProvider;
                     attribution.Begin(_currentModel, _currentProvider, _providerApi, _pricing);
                     _providerRequestModel = attribution.Model;
                     _providerRequestPricing = attribution.Pricing;
@@ -1677,7 +1691,12 @@ public sealed partial class ConversationRun
                         providerTurns.Response.Contents.OfType<FunctionCallContent>().Any()))
                         Conversation.Append(providerTurns.Response);
                 }
-                item = attribution.Complete(item, providerTurns.Response);
+                item = attribution.Complete(item with
+                {
+                    ProviderRequestedModelId = requestModelAtStart,
+                    ProviderRequestedProviderId = requestProviderAtStart
+                }, providerTurns.Response);
+                latestCompletedProviderResponse = item;
             }
             else if (item.ProviderUpdate?.Contents?.OfType<UsageContent>().LastOrDefault() is { } updateUsage)
                 item = item with { UsageSnapshot = attribution.Usage(updateUsage.Details) };
@@ -2092,8 +2111,10 @@ public sealed partial class ConversationRun
             lock (_runtimeStateGate) lastTurn = CompleteProviderTurnUnsafe();
             await CompleteNativeTurnAsync(lastTurn, aborted: false, errorMessage: null).ConfigureAwait(false);
             completed = true;
-            await CompactAfterCompletedTurnAsync(cancellationToken, onEvent, latestCompletedProviderUsage)
-                .ConfigureAwait(false);
+            if (!LengthStopRecoveryCoordinator.IsRecoverable(
+                Conversation, latestCompletedProviderResponse, GetCurrentRequestModel))
+                await CompactAfterCompletedTurnAsync(cancellationToken, onEvent, latestCompletedProviderUsage)
+                    .ConfigureAwait(false);
         }
         finally
         {
@@ -2283,6 +2304,23 @@ public sealed partial class ConversationRun
             }
         }
     }
+
+    private LengthStopRecoveryCoordinator CreateLengthStopRecoveryCoordinator(
+        Action<AgentLifecycleEvent> publish) => new(
+            Conversation,
+            _agent,
+            _compactionCoordinator,
+            () => AutoCompactionEnabled,
+            GetCurrentRequestModel,
+            CompactionUnavailableError,
+            _autoCompaction?.KeepRecentTokens ?? _keepRecentTokens,
+            OmitFailedRetryContextAsync,
+            async cancellationToken =>
+            {
+                var history = Conversation.ContextMessages();
+                _execution = await RestoreExecutionAsync(history, cancellationToken).ConfigureAwait(false);
+                _historyCount = history.Count;
+            });
 
     private (string? MessageEntryId, IReadOnlyList<string> ToolResultEntryIds) FindTurnEntryIds(
         ProviderTurnSnapshot turn)

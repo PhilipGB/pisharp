@@ -158,6 +158,7 @@ public sealed class ProviderOverflowLoopbackTests
     [Theory]
     [InlineData("openai-responses")]
     [InlineData("openai-completions")]
+    [InlineData("anthropic-messages")]
     public async Task RealSdkRecoversPreContentHttpOverflowWithoutReplacingCanonicalHistory(string api)
     {
         using var listener = StartLoopbackListener(out var port);
@@ -170,7 +171,12 @@ public sealed class ProviderOverflowLoopbackTests
             {
                 var request = await listener.GetContextAsync().WaitAsync(deadline.Token);
                 Interlocked.Increment(ref receivedRequests);
-                Assert.Equal(api == "openai-responses" ? "/v1/responses" : "/v1/chat/completions", request.Request.Url?.AbsolutePath);
+                Assert.Equal(api switch
+                {
+                    "openai-responses" => "/v1/responses",
+                    "openai-completions" => "/v1/chat/completions",
+                    _ => "/v1/messages"
+                }, request.Request.Url?.AbsolutePath);
                 using var reader = new StreamReader(request.Request.InputStream);
                 bodies.Add(await reader.ReadToEndAsync(deadline.Token));
                 string responseBody;
@@ -178,18 +184,27 @@ public sealed class ProviderOverflowLoopbackTests
                 {
                     request.Response.StatusCode = 400;
                     request.Response.ContentType = "application/json";
-                    responseBody = """
+                    responseBody = api == "anthropic-messages" ? """
+                        {"type":"error","error":{"type":"invalid_request_error","message":"prompt is too long: 5000 tokens > 1000 maximum"}}
+                        """ : """
                         {"error":{"message":"Your input exceeds the context window of this model","type":"invalid_request_error","code":"context_length_exceeded"}}
                         """;
                 }
                 else if (i == 1)
                 {
                     request.Response.ContentType = "application/json";
-                    responseBody = api == "openai-responses" ? """
+                    responseBody = api switch
+                    {
+                        "openai-responses" => """
                         {"id":"resp_summary","object":"response","created_at":1,"model":"fixture-model","status":"completed","output":[{"id":"msg_1","type":"message","role":"assistant","status":"completed","content":[{"type":"output_text","text":"Earlier answer summarized.","annotations":[]}]}],"usage":{"input_tokens":20,"output_tokens":5,"total_tokens":25}}
-                        """ : """
+                        """,
+                        "openai-completions" => """
                         {"id":"chatcmpl_summary","object":"chat.completion","created":1,"model":"fixture-model","choices":[{"index":0,"message":{"role":"assistant","content":"Earlier answer summarized."},"finish_reason":"stop"}],"usage":{"prompt_tokens":20,"completion_tokens":5,"total_tokens":25}}
-                        """;
+                        """,
+                        _ => """
+                        {"id":"msg_summary","type":"message","role":"assistant","model":"fixture-model","content":[{"type":"text","text":"Earlier answer summarized."}],"stop_reason":"end_turn","stop_sequence":null,"usage":{"input_tokens":20,"output_tokens":5}}
+                        """
+                    };
                 }
                 else
                 {
@@ -199,9 +214,16 @@ public sealed class ProviderOverflowLoopbackTests
                         responseBody = "data: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_ok\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"in_progress\",\"output\":[]}}\n\n" +
                             "data: {\"type\":\"response.output_text.delta\",\"item_id\":\"msg_1\",\"output_index\":0,\"content_index\":0,\"delta\":\"done\"}\n\n";
                     }
-                    else
+                    else if (api == "openai-completions")
                         responseBody = "data: {\"id\":\"chatcmpl_ok\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-model\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"done\"},\"finish_reason\":null}]}\n\n";
-                    responseBody += "data: [DONE]\n\n";
+                    else
+                        responseBody = "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_ok\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":20,\"output_tokens\":0}}}\n\n" +
+                            "event: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\n" +
+                            "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"done\"}}\n\n" +
+                            "event: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\n" +
+                            "event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"output_tokens\":1}}\n\n" +
+                            "event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n";
+                    if (api != "anthropic-messages") responseBody += "data: [DONE]\n\n";
                 }
                 var responseBytes = Encoding.UTF8.GetBytes(responseBody);
                 request.Response.ContentLength64 = responseBytes.Length;
@@ -213,7 +235,10 @@ public sealed class ProviderOverflowLoopbackTests
         try
         {
             var model = new ModelDescriptor("fixture-model", "fixture", null, "fixture", Provider: "fixture", Api: api);
-            var profile = new ProviderProfile("fixture", "fixture", new Uri($"http://127.0.0.1:{port}/v1"), true, false,
+            var baseUrl = api == "anthropic-messages"
+                ? $"http://127.0.0.1:{port}"
+                : $"http://127.0.0.1:{port}/v1";
+            var profile = new ProviderProfile("fixture", "fixture", new Uri(baseUrl), true, false,
                 null, null, [model]);
             var selection = new ModelSelection(profile, model, "fixture-key", true, "fixture");
             var conversation = new ConversationSession(Path.GetTempPath(), "fixture-model", null);
@@ -225,7 +250,7 @@ public sealed class ProviderOverflowLoopbackTests
             var events = new List<AgentLifecycleEvent>();
             await foreach (var item in run.RunEventsAsync("new prompt", deadline.Token)) events.Add(item);
             string? serverError = null;
-            if (events.Any(item => item.Type == "turn_failed"))
+            if (events.Any(item => item.Type is "turn_failed" or "turn_interrupted"))
             {
                 deadline.Cancel();
                 listener.Close();
@@ -249,6 +274,8 @@ public sealed class ProviderOverflowLoopbackTests
                 Assert.Equal(HttpStatusCode.BadRequest, httpFailure.StatusCode);
                 Assert.Contains("context_length_exceeded", httpFailure.Message, StringComparison.Ordinal);
             }
+            if (api == "anthropic-messages")
+                Assert.Contains(events, item => item.Type == "model_request_failed" && item.ProviderException is not null);
             try { await server.WaitAsync(deadline.Token); }
             catch (OperationCanceledException error) when (deadline.IsCancellationRequested)
             {

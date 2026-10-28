@@ -81,22 +81,66 @@ def required_cases(contract: dict[str, Any]) -> dict[str, tuple[dict[str, Any], 
     return result
 
 
-def _assertion_passes(assertion: dict[str, Any], evidence_dir: Path, verify_artifacts: bool) -> bool:
+def _artifact_path(evidence_dir: Path, relative: str) -> Path:
+    path = Path(relative)
+    if path.is_absolute() or ".." in path.parts:
+        raise VerificationError(f"evidence artifact path escapes its run directory: {relative}")
+    return evidence_dir / path
+
+
+def _json_pointer(value: Any, pointer: str) -> Any:
+    if pointer == "":
+        return value
+    if not pointer.startswith("/"):
+        raise VerificationError(f"artifact JSON pointer must be empty or start with '/': {pointer}")
+    current = value
+    for token in pointer[1:].split("/"):
+        token = token.replace("~1", "/").replace("~0", "~")
+        try:
+            current = current[int(token)] if isinstance(current, list) else current[token]
+        except (IndexError, KeyError, TypeError, ValueError) as error:
+            raise VerificationError(f"artifact JSON pointer does not resolve: {pointer}") from error
+    return current
+
+
+def _assertion_passes(assertion: dict[str, Any], evidence_dir: Path, verify_artifacts: bool,
+                      expected_case_id: str, expected_observation: str,
+                      available_artifacts: set[str]) -> bool:
     mode = assertion.get("comparison", "strict")
     expected = assertion.get("expected")
     actual = assertion.get("actual")
+    if (assertion.get("caseId") != expected_case_id or
+            assertion.get("contractObservation") != expected_observation):
+        return False
+
+    baseline_path = assertion.get("baselineArtifact")
+    implementation_path = assertion.get("implementationArtifact")
+    if (not isinstance(baseline_path, str) or not isinstance(implementation_path, str) or
+            baseline_path not in available_artifacts or implementation_path not in available_artifacts or
+            baseline_path == implementation_path):
+        return False
+    try:
+        baseline = _json(_artifact_path(evidence_dir, baseline_path))
+        implementation = _json(_artifact_path(evidence_dir, implementation_path))
+        baseline_value = _json_pointer(baseline, assertion["baselinePointer"])
+        implementation_value = _json_pointer(implementation, assertion["implementationPointer"])
+    except (KeyError, VerificationError, OSError):
+        return False
+    if expected != baseline_value or actual != implementation_value or assertion.get("passed") is not True:
+        return False
+
     if mode == "strict":
-        return assertion.get("passed") is True and expected == actual
+        return expected == actual
     if mode == "equivalent":
-        return (assertion.get("passed") is True and assertion.get("normalizedExpected") is not None
-                and assertion.get("normalizedExpected") == assertion.get("normalizedActual"))
+        return (expected == actual and assertion.get("normalizedExpected") == expected and
+                assertion.get("normalizedActual") == actual)
     if mode == "intentional-safety-difference":
         path = assertion.get("safetyEvidence")
         regression = assertion.get("safetyRegression")
-        if not assertion.get("passed") or not path or not regression:
+        if not path or not regression:
             return False
         if verify_artifacts:
-            return (evidence_dir / path).is_file()
+            return _artifact_path(evidence_dir, path).is_file()
         return True
     return False
 
@@ -112,6 +156,63 @@ def validate_source_identity(source_sha: str, head_sha: str, *, cwd: Path = ROOT
                              cwd=cwd, capture_output=True, text=True)
     if changed.returncode != 0:
         raise VerificationError("implementation evidence is stale: production, test, or parity sources changed")
+
+
+def validate_case_results(case_results: list[dict[str, Any]], checkpoint_id: str,
+                          evidence_dir: Path, *, verify_artifacts: bool = True) -> dict[str, int]:
+    """Validate an executable runner's completed subset without treating it as a full checkpoint."""
+    contract = load_contract()
+    checkpoint = next((item for item in contract["checkpoints"] if item["id"] == checkpoint_id), None)
+    if checkpoint is None:
+        raise VerificationError(f"unknown checkpoint: {checkpoint_id}")
+    required = {case["id"]: case for case in checkpoint["requiredCases"]}
+    seen: set[str] = set()
+    counts = {"required": len(required), "executed": 0, "passed": 0, "failed": 0, "skipped": 0}
+    for result in case_results:
+        case_id = result.get("caseId")
+        if case_id not in required or case_id in seen:
+            raise VerificationError(f"unknown or duplicate case result: {case_id}")
+        seen.add(case_id)
+        case = required[case_id]
+        if (result.get("checkpointId") != checkpoint_id or
+                result.get("contractExpectedObservation") != case["expectedObservation"]):
+            raise VerificationError(f"case {case_id} does not match its frozen contract assignment")
+        if result.get("executed") is not True:
+            raise VerificationError(f"required case did not execute: {case_id}")
+        counts["executed"] += 1
+        if result.get("skipped") is True:
+            counts["skipped"] += 1
+            raise VerificationError(f"required case was skipped: {case_id}")
+        if result.get("passed") is not True:
+            counts["failed"] += 1
+            raise VerificationError(f"required case failed: {case_id}")
+        artifacts = result.get("rawArtifacts")
+        if not isinstance(artifacts, list) or not artifacts:
+            raise VerificationError(f"case has no raw evidence references: {case_id}")
+        available_artifacts: set[str] = set()
+        for artifact in artifacts:
+            relative = artifact.get("path") if isinstance(artifact, dict) else None
+            if not relative:
+                raise VerificationError(f"case {case_id} has a raw artifact without a path")
+            path = _artifact_path(evidence_dir, relative)
+            if verify_artifacts:
+                if not path.is_file():
+                    raise VerificationError(f"case {case_id} references missing raw evidence: {relative}")
+                if hashlib.sha256(path.read_bytes()).hexdigest() != artifact.get("sha256"):
+                    raise VerificationError(f"case {case_id} raw evidence hash does not match: {relative}")
+            elif not SHA_PATTERN.fullmatch(str(artifact.get("sha256", ""))):
+                raise VerificationError(f"case {case_id} raw evidence has no SHA-256")
+            available_artifacts.add(relative)
+        assertions = result.get("assertions")
+        if not isinstance(assertions, list) or not assertions:
+            raise VerificationError(f"case has no observable assertions: {case_id}")
+        if not all(isinstance(assertion, dict) and _assertion_passes(
+                assertion, evidence_dir, verify_artifacts, case_id,
+                case["expectedObservation"], available_artifacts) for assertion in assertions):
+            counts["failed"] += 1
+            raise VerificationError(f"case contains a failed or mismatched observation: {case_id}")
+        counts["passed"] += 1
+    return counts
 
 
 def validate_evidence(evidence: dict[str, Any], evidence_dir: Path, *,
@@ -176,20 +277,30 @@ def validate_evidence(evidence: dict[str, Any], evidence_dir: Path, *,
         assertions = result.get("assertions")
         if not isinstance(assertions, list) or not assertions:
             raise VerificationError(f"case has no observable assertions: {case_id}")
-        if not all(isinstance(assertion, dict) and _assertion_passes(assertion, evidence_dir, verify_artifacts)
-                   for assertion in assertions):
-            counts["failed"] += 1
-            raise VerificationError(f"case contains a failed or mismatched observation: {case_id}")
         artifacts = result.get("rawArtifacts")
         if not isinstance(artifacts, list) or not artifacts:
             raise VerificationError(f"case has no raw evidence references: {case_id}")
-        if verify_artifacts:
-            for artifact in artifacts:
-                relative = artifact.get("path") if isinstance(artifact, dict) else None
-                if not relative or not (evidence_dir / relative).is_file():
+        available_artifacts: set[str] = set()
+        for artifact in artifacts:
+            relative = artifact.get("path") if isinstance(artifact, dict) else None
+            if not relative:
+                raise VerificationError(f"case {case_id} has a raw artifact without a path")
+            artifact_path = _artifact_path(evidence_dir, relative)
+            if verify_artifacts:
+                if not artifact_path.is_file():
                     raise VerificationError(f"case {case_id} references missing raw evidence: {relative}")
-                if not SHA_PATTERN.fullmatch(str(artifact.get("sha256", ""))):
-                    raise VerificationError(f"case {case_id} raw evidence has no SHA-256")
+                digest = hashlib.sha256(artifact_path.read_bytes()).hexdigest()
+                if digest != artifact.get("sha256"):
+                    raise VerificationError(f"case {case_id} raw evidence hash does not match: {relative}")
+            elif not SHA_PATTERN.fullmatch(str(artifact.get("sha256", ""))):
+                raise VerificationError(f"case {case_id} raw evidence has no SHA-256")
+            available_artifacts.add(relative)
+        if not all(isinstance(assertion, dict) and _assertion_passes(
+                assertion, evidence_dir, verify_artifacts, case_id,
+                contract_case["expectedObservation"], available_artifacts)
+                   for assertion in assertions):
+            counts["failed"] += 1
+            raise VerificationError(f"case contains a failed or mismatched observation: {case_id}")
 
     checkpoint_results = evidence.get("checkpointResults")
     if not isinstance(checkpoint_results, list):

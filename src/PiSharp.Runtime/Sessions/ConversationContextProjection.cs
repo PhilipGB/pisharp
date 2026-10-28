@@ -169,6 +169,33 @@ internal static class ConversationContextProjection
         return context;
     }
 
+    internal static bool IsProjectedMessage(IReadOnlyList<ConversationNode> path, string sourceEntryId,
+        ChatRole expectedRole)
+    {
+        var compactAt = path.ToList().FindLastIndex(node => node.Type == "compaction");
+        IReadOnlyList<ConversationNode> projectedNodes = path;
+        if (compactAt >= 0)
+        {
+            var kept = path[compactAt].Payload.GetProperty("firstKeptEntryId").GetString();
+            var from = kept is null ? compactAt : path.ToList().FindIndex(node => node.Id == kept);
+            if (from < 0 || from > compactAt) throw new InvalidDataException("Invalid compaction boundary.");
+            projectedNodes = path.Skip(from).Where((node, offset) => from + offset >= compactAt ||
+                ContextMessageForNode(node)?.Role != ChatRole.System).ToArray();
+        }
+
+        var target = projectedNodes.FirstOrDefault(node => node.Id == sourceEntryId);
+        if (target is null) return false;
+        var message = ContextMessageForNode(target);
+        if (message is null) return false;
+        var edits = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
+        foreach (var node in projectedNodes)
+            if (PiJsonlEntryCodec.TryGetContextEdit(node, out var targetId, out var replacement))
+                edits[targetId] = replacement;
+        if (edits.TryGetValue(target.Id, out var contextEdit))
+            message = PiJsonlEntryCodec.ApplyContextEdit(target, message, contextEdit);
+        return message?.Role == expectedRole;
+    }
+
     internal static ChatMessage CompactionSummaryMessage(string summary) => new(ChatRole.User,
         "The conversation history before this point was compacted into the following summary:\n\n<summary>\n" +
         summary + "\n</summary>");

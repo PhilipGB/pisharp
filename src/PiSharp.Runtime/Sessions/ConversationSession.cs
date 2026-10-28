@@ -571,9 +571,14 @@ public sealed class ConversationSession
             throw new InvalidDataException("Compaction boundary must identify a user or assistant entry on the active branch after the previous compaction.");
         var entries = CompactionContextEntries(out var previousSummary);
         var retainedIndex = entries.ToList().FindIndex(entry => entry.SourceEntryId == firstKeptEntryId);
-        if (retainedIndex < 0 || !ConversationCompactionCoordinator.HasCompleteToolCallPairs(
-                entries.Skip(previousSummary is null ? 0 : 1).TakeWhile(entry => entry.SourceEntryId != firstKeptEntryId)
-                    .SelectMany(entry => entry.Messages).ToArray()))
+        var recoveryOmittedBoundary = retainedIndex < 0 && role == ChatRole.Assistant &&
+            Enumerable.Range(Math.Max(0, previousCompactionIndex + 1), Math.Max(0, boundaryIndex - previousCompactionIndex - 1))
+                .Any(index => ConversationContextProjection.ContextMessageForNode(path[index])?.Role == ChatRole.User &&
+                    RecoveryOmittedAssistantAfter(index) == firstKeptEntryId);
+        var summarizedPrefix = entries.Where(entry => entry.SourceIndex < boundaryIndex &&
+            (previousSummary is null || !entry.IsPreviousSummary)).SelectMany(entry => entry.Messages).ToArray();
+        if (retainedIndex < 0 && !recoveryOmittedBoundary ||
+            !ConversationCompactionCoordinator.HasCompleteToolCallPairs(summarizedPrefix))
             throw new InvalidDataException("Compaction boundary splits an incomplete tool call/result pair.");
     }
 

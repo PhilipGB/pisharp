@@ -42,6 +42,14 @@ def _write_json(path: Path, value: Any) -> None:
     path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
+def _source_tree_is_clean() -> bool:
+    changed = subprocess.run(["git", "diff", "--quiet", "HEAD", "--", "src", "tests", "tools/parity"],
+                             cwd=ROOT, capture_output=True)
+    untracked = subprocess.run(["git", "ls-files", "--others", "--exclude-standard", "--",
+                                "src", "tests", "tools/parity"], cwd=ROOT, capture_output=True, text=True)
+    return changed.returncode == 0 and not untracked.stdout.strip()
+
+
 def _commands(checkpoint: str, pi: Path | None) -> list[list[str]]:
     if checkpoint == "V1":
         return [[sys.executable, "-m", "unittest", "discover", "-s",
@@ -91,20 +99,62 @@ def run_checkpoint(checkpoint_id: str, evidence_dir: Path, pi_path: Path | None)
         })
         if completed.returncode != 0:
             break
+    differential_report = None
+    if checkpoint_id == "C5" and results and results[-1]["exitCode"] == 0:
+        differential_dir = output / "differential"
+        command = [sys.executable, "tools/parity/compaction_context/c5_oracle.py",
+                   "--pi", str(pi_path), "--evidence-dir", str(differential_dir)]
+        completed = subprocess.run(command, cwd=ROOT, capture_output=True, text=True,
+                                   env={**os.environ, "DOTNET_PROCESSOR_COUNT": "4"}, check=False)
+        stdout_path = output / f"command-{len(results) + 1}.stdout.log"
+        stderr_path = output / f"command-{len(results) + 1}.stderr.log"
+        stdout_path.write_text(completed.stdout, encoding="utf-8")
+        stderr_path.write_text(completed.stderr, encoding="utf-8")
+        results.append({
+            "argv": command,
+            "exitCode": completed.returncode,
+            "stdout": {"path": str(stdout_path.relative_to(evidence_dir)),
+                       "sha256": hashlib.sha256(completed.stdout.encode()).hexdigest()},
+            "stderr": {"path": str(stderr_path.relative_to(evidence_dir)),
+                       "sha256": hashlib.sha256(completed.stderr.encode()).hexdigest()},
+        })
+        if completed.returncode == 0:
+            differential_report = verify._json(differential_dir / "c5-case-results.json")
+            differential_report["verifierCounts"] = verify.validate_case_results(
+                differential_report["cases"], checkpoint_id, differential_dir, verify_artifacts=True)
+
+    produced_cases = differential_report["cases"] if differential_report is not None else []
+    source_clean = _source_tree_is_clean()
+    source_sha = _git("rev-parse", "HEAD") if source_clean else None
+    required_count = len(checkpoint["requiredCases"])
+    validated_counts = differential_report["verifierCounts"] if differential_report is not None else {}
+    passed_count = validated_counts.get("passed", 0)
+    failed_count = validated_counts.get("failed", 0)
+    skipped_count = validated_counts.get("skipped", 0)
+    all_cases_produced = len(produced_cases) == required_count
     report = {
         "checkpointId": checkpoint_id,
         "contractSha256": verify.FROZEN_CONTRACT_SHA256,
         "piSha": verify.PINNED_PI_SHA if pi_path is not None else None,
-        "pisharpSourceSha": _git("rev-parse", "HEAD"),
+        "pisharpSourceSha": source_sha,
+        "sourceTreeClean": source_clean,
         "commands": results,
-        "requiredCaseCount": len(checkpoint["requiredCases"]),
-        "caseEvidenceProduced": 0,
-        "status": "incomplete",
-        "reason": "Command-level baseline ran; per-case provider, state, persistence, oracle-calibration, and assertion adapters are still required. This report cannot pass a checkpoint.",
+        "requiredCaseCount": required_count,
+        "caseEvidenceProduced": len(produced_cases),
+        "executedCaseCount": sum(item.get("executed") is True for item in produced_cases),
+        "failedCaseCount": failed_count,
+        "skippedCaseCount": skipped_count,
+        "caseResultsPath": (str((output / "differential" / "c5-case-results.json").relative_to(evidence_dir))
+                            if differential_report is not None else None),
+        "status": "passed" if all_cases_produced and passed_count == required_count
+            and failed_count == 0 and skipped_count == 0 and source_clean else "incomplete",
+        "reason": (None if all_cases_produced and passed_count == required_count and source_clean else
+                   f"Produced {len(produced_cases)}/{required_count} case artifacts; remaining required adapters or a clean committed source tree are required."),
     }
     _write_json(output / "checkpoint-run.json", report)
-    print(f"Recorded command-level baseline for {checkpoint_id}; 0/{report['requiredCaseCount']} case artifacts; checkpoint remains incomplete.")
-    return 1
+    print(f"Recorded {report['caseEvidenceProduced']}/{report['requiredCaseCount']} case artifacts for {checkpoint_id}; "
+          f"status {report['status']}.")
+    return 0 if report["status"] == "passed" else 1
 
 
 def main(argv: list[str] | None = None) -> int:

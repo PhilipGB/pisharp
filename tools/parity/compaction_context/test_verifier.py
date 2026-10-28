@@ -5,6 +5,7 @@ import copy
 import json
 import tempfile
 import unittest
+import hashlib
 from pathlib import Path
 
 import verify
@@ -15,8 +16,25 @@ class CompactionContextVerifierTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.contract = verify.load_contract()
         cls.required = verify.required_cases(cls.contract)
+        cls.artifact_dir = tempfile.TemporaryDirectory()
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        cls.artifact_dir.cleanup()
+
+    @staticmethod
+    def artifact(path: Path) -> dict:
+        return {"path": path.name, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
 
     def valid_evidence(self) -> dict:
+        self.evidence_dir = Path(tempfile.mkdtemp(dir=self.artifact_dir.name))
+        expected_by_case = {case_id: case["expectedObservation"]
+                            for case_id, (_, case) in self.required.items()}
+        self.baseline_path = self.evidence_dir / "pi-observations.json"
+        self.implementation_path = self.evidence_dir / "pisharp-observations.json"
+        payload = json.dumps({"observations": expected_by_case})
+        self.baseline_path.write_text(payload, encoding="utf-8")
+        self.implementation_path.write_text(payload, encoding="utf-8")
         cases = []
         for case_id, (checkpoint, contract_case) in self.required.items():
             expected = contract_case["expectedObservation"]
@@ -28,9 +46,14 @@ class CompactionContextVerifierTests(unittest.TestCase):
                 "passed": True,
                 "skipped": False,
                 "classification": "strict",
-                "assertions": [{"name": "control", "comparison": "strict",
+                "assertions": [{"name": "control", "caseId": case_id,
+                                "contractObservation": expected, "comparison": "strict",
+                                "baselineArtifact": self.baseline_path.name,
+                                "baselinePointer": f"/observations/{case_id}",
+                                "implementationArtifact": self.implementation_path.name,
+                                "implementationPointer": f"/observations/{case_id}",
                                 "expected": expected, "actual": expected, "passed": True}],
-                "rawArtifacts": [{"path": "control.json", "sha256": "a" * 64}],
+                "rawArtifacts": [self.artifact(self.baseline_path), self.artifact(self.implementation_path)],
             })
         checkpoints = []
         for item in self.contract["checkpoints"]:
@@ -49,7 +72,7 @@ class CompactionContextVerifierTests(unittest.TestCase):
         }
 
     def check(self, evidence: dict) -> None:
-        verify.validate_evidence(evidence, Path("."), verify_artifacts=False, verify_source=False)
+        verify.validate_evidence(evidence, self.evidence_dir, verify_artifacts=True, verify_source=False)
 
     def assert_rejected(self, evidence: dict) -> None:
         with self.assertRaises(verify.VerificationError):
@@ -60,8 +83,8 @@ class CompactionContextVerifierTests(unittest.TestCase):
         case["assertions"][0]["actual"] = actual
 
     def test_valid_positive_control_is_accepted(self) -> None:
-        result = verify.validate_evidence(self.valid_evidence(), Path("."),
-                                          verify_artifacts=False, verify_source=False)
+        result = verify.validate_evidence(self.valid_evidence(), self.evidence_dir,
+                                          verify_artifacts=True, verify_source=False)
         self.assertEqual(self.contract["requiredCaseCount"], result["executed"])
         self.assertEqual(self.contract["checkpointCount"], result["checkpoints"])
 
@@ -73,6 +96,18 @@ class CompactionContextVerifierTests(unittest.TestCase):
     def test_mutated_provider_request_is_rejected(self) -> None:
         evidence = self.valid_evidence()
         self.mutate_assertion(evidence, "C11.responses-wire-request-after-compaction", actual={"messages": []})
+        self.assert_rejected(evidence)
+
+    def test_mutated_artifact_is_rejected_even_when_its_hash_is_updated(self) -> None:
+        evidence = self.valid_evidence()
+        case_id = "C11.responses-wire-request-after-compaction"
+        case = next(item for item in evidence["cases"] if item["caseId"] == case_id)
+        implementation = json.loads(self.implementation_path.read_text(encoding="utf-8"))
+        implementation["observations"][case_id] = {"messages": []}
+        self.implementation_path.write_text(json.dumps(implementation), encoding="utf-8")
+        case["rawArtifacts"][1]["sha256"] = hashlib.sha256(
+            self.implementation_path.read_bytes()).hexdigest()
+        case["assertions"][0]["actual"] = {"messages": []}
         self.assert_rejected(evidence)
 
     def test_incorrect_cut_point_is_rejected(self) -> None:
@@ -156,9 +191,9 @@ class CompactionContextVerifierTests(unittest.TestCase):
 
     def test_missing_raw_artifact_is_rejected(self) -> None:
         evidence = self.valid_evidence()
+        evidence["cases"][0]["rawArtifacts"][0]["sha256"] = "a" * 64
         with self.assertRaises(verify.VerificationError):
-            verify.validate_evidence(evidence, Path("/definitely/missing"),
-                                     verify_artifacts=True, verify_source=False)
+            verify.validate_evidence(evidence, self.evidence_dir, verify_artifacts=True, verify_source=False)
 
 
 if __name__ == "__main__":
