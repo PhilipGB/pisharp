@@ -278,11 +278,19 @@ def validate_evidence_header(evidence: dict[str, Any], *, current_head: str | No
     if evidence.get("piCommit") != PINNED_PI_SHA:
         raise VerificationError("evidence uses the wrong pinned Pi SHA")
     source_sha = evidence.get("implementationSourceCommit")
-    head_sha = evidence.get("finalHeadCommit") or current_head
+    head_sha = current_head or evidence.get("finalHeadCommit")
     if not isinstance(source_sha, str) or not isinstance(head_sha, str):
         raise VerificationError("evidence is missing implementation source or tested head SHA")
-    if current_head is not None and evidence.get("finalHeadCommit") != current_head:
-        raise VerificationError("evidence final head differs from the current repository head")
+    evidence_head = evidence.get("finalHeadCommit")
+    if current_head is not None:
+        if not isinstance(evidence_head, str) or not SHA1.fullmatch(evidence_head):
+            raise VerificationError("evidence final head must be a full lowercase Git SHA")
+        final_head_is_ancestor = subprocess.run(
+            ["git", "merge-base", "--is-ancestor", evidence_head, current_head],
+            cwd=ROOT, capture_output=True, text=True,
+        )
+        if final_head_is_ancestor.returncode != 0:
+            raise VerificationError("evidence final head is not an ancestor of the current repository head")
     validate_source_identity(source_sha, head_sha)
     if require_clean_worktree:
         validate_clean_source_tree()
