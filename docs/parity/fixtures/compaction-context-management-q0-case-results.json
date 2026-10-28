@@ -3,10 +3,10 @@
   "milestone": "compaction-context-management-parity",
   "checkpointId": "Q0",
   "contractSha256": "c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6",
-  "evidenceDirectory": "artifacts/parity/20261028T-final-source-7480e81d/runs/Q0",
-  "generatedReportSha256": "c3f0826d5095b9ad54f6627827165c08075e5e3b5e2a8ad0c95f15cd338d9ebd",
+  "evidenceDirectory": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/Q0",
+  "generatedReportSha256": "384dff01817404fb9456c568422f3a0ece14817ed95d432c4821bcf441de5ee1",
   "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-  "pisharpSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
+  "pisharpSourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2",
   "sourceTreeClean": true,
   "piCalibrationStable": false,
   "pisharpCalibrationStable": false,
@@ -82,8 +82,8 @@
       "contractExpectedObservation": "warnings as errors solution build",
       "classification": "strict",
       "passed": true,
-      "normalizedExpectedSha256": "f126de10a1dfa608cf74123e53e6a13e923151ea1cbec8b03ce49ee28fc8ad9b",
-      "normalizedActualSha256": "f126de10a1dfa608cf74123e53e6a13e923151ea1cbec8b03ce49ee28fc8ad9b",
+      "normalizedExpectedSha256": "467c0b319b15df014ca3289a46d16c640cb3a39ad025aff17df0e72710ef4a02",
+      "normalizedActualSha256": "467c0b319b15df014ca3289a46d16c640cb3a39ad025aff17df0e72710ef4a02",
       "normalizedExpectedBytes": 419,
       "normalizedActualBytes": 419,
       "normalizedExpected": {
@@ -99,7 +99,7 @@
               "-p:NoWarn=NU1900"
             ],
             "exitCode": 0,
-            "stdoutSha256": "2e3a51c20fc7377c8a68f08239bc10c15820143295b94cca0a9bb9bcc35c2671",
+            "stdoutSha256": "0d5e27bdb5a9ea5b36bbe642a488d87f0cec1147028c2006bc86725f43e39ae6",
             "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             "testCounts": null
           }
@@ -120,7 +120,7 @@
               "-p:NoWarn=NU1900"
             ],
             "exitCode": 0,
-            "stdoutSha256": "2e3a51c20fc7377c8a68f08239bc10c15820143295b94cca0a9bb9bcc35c2671",
+            "stdoutSha256": "0d5e27bdb5a9ea5b36bbe642a488d87f0cec1147028c2006bc86725f43e39ae6",
             "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             "testCounts": null
           }
@@ -134,8 +134,8 @@
       "contractExpectedObservation": "full dotnet suite zero failures and skips",
       "classification": "strict",
       "passed": true,
-      "normalizedExpectedSha256": "6b1902fb3bcea0fae0100f97add2ac16ff2a0ae4e4197c8ae0139306332da1c6",
-      "normalizedActualSha256": "6b1902fb3bcea0fae0100f97add2ac16ff2a0ae4e4197c8ae0139306332da1c6",
+      "normalizedExpectedSha256": "178f1f68d72fe8cc6be6e090ac9ab63461b0b9b41350cdaf1fee52496b7eead4",
+      "normalizedActualSha256": "178f1f68d72fe8cc6be6e090ac9ab63461b0b9b41350cdaf1fee52496b7eead4",
       "normalizedExpectedBytes": 475,
       "normalizedActualBytes": 475,
       "normalizedExpected": {
@@ -151,10 +151,10 @@
               "console;verbosity=normal"
             ],
             "exitCode": 0,
-            "stdoutSha256": "de99edea74208934e46abb0fa9eda0770645e0a3d10780560bf0e2cb8ab59149",
+            "stdoutSha256": "6669c439bac7ce4ea33091601266fb35a8dabfe3fc3a1471aa3dd5d1d4185d19",
             "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             "testCounts": {
-              "passed": 3959,
+              "passed": 3963,
               "failed": 0,
               "skipped": 0
             }
@@ -176,10 +176,10 @@
               "console;verbosity=normal"
             ],
             "exitCode": 0,
-            "stdoutSha256": "de99edea74208934e46abb0fa9eda0770645e0a3d10780560bf0e2cb8ab59149",
+            "stdoutSha256": "6669c439bac7ce4ea33091601266fb35a8dabfe3fc3a1471aa3dd5d1d4185d19",
             "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             "testCounts": {
-              "passed": 3959,
+              "passed": 3963,
               "failed": 0,
               "skipped": 0
             }
@@ -194,8 +194,8 @@
       "contractExpectedObservation": "focused compaction session provider tests",
       "classification": "strict",
       "passed": true,
-      "normalizedExpectedSha256": "e89fdb0e83591fb889747b5a3809a5602e47b3cdb113e7756992f31d481e4be6",
-      "normalizedActualSha256": "e89fdb0e83591fb889747b5a3809a5602e47b3cdb113e7756992f31d481e4be6",
+      "normalizedExpectedSha256": "b84b8a47735f5d568bbf216d875ee170ee41ef80d5eb429664417499190d4881",
+      "normalizedActualSha256": "b84b8a47735f5d568bbf216d875ee170ee41ef80d5eb429664417499190d4881",
       "normalizedExpectedBytes": 716,
       "normalizedActualBytes": 716,
       "normalizedExpected": {
@@ -212,7 +212,7 @@
               "FullyQualifiedName~CompactionTests|FullyQualifiedName~CrashRecoveryProcessTests|FullyQualifiedName~PiContextUsageEstimatorTests|FullyQualifiedName~InFlightContextBudgetTests|FullyQualifiedName~ProviderOverflowLoopbackTests"
             ],
             "exitCode": 0,
-            "stdoutSha256": "1f7d09357a1dfbf88fc5bc7d12f9c5ff3a886117a672e179bba1448c4bc84e44",
+            "stdoutSha256": "62c1ef3974ffc13c2db5d5394049045ec004ae7f6808964078dbbc045c48328c",
             "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             "testCounts": {
               "passed": 114,
@@ -238,7 +238,7 @@
               "FullyQualifiedName~CompactionTests|FullyQualifiedName~CrashRecoveryProcessTests|FullyQualifiedName~PiContextUsageEstimatorTests|FullyQualifiedName~InFlightContextBudgetTests|FullyQualifiedName~ProviderOverflowLoopbackTests"
             ],
             "exitCode": 0,
-            "stdoutSha256": "1f7d09357a1dfbf88fc5bc7d12f9c5ff3a886117a672e179bba1448c4bc84e44",
+            "stdoutSha256": "62c1ef3974ffc13c2db5d5394049045ec004ae7f6808964078dbbc045c48328c",
             "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             "testCounts": {
               "passed": 114,
@@ -256,10 +256,10 @@
       "contractExpectedObservation": "focused rpc tui extension tests",
       "classification": "strict",
       "passed": true,
-      "normalizedExpectedSha256": "9ddca193f65acd85cdd80d9fce19f417f041c57a57009337a281a7dc7acff91b",
-      "normalizedActualSha256": "9ddca193f65acd85cdd80d9fce19f417f041c57a57009337a281a7dc7acff91b",
-      "normalizedExpectedBytes": 852,
-      "normalizedActualBytes": 852,
+      "normalizedExpectedSha256": "4db76adb1100c027956fed41d861815ea3efe622fd875efefcd7388da451a7df",
+      "normalizedActualSha256": "4db76adb1100c027956fed41d861815ea3efe622fd875efefcd7388da451a7df",
+      "normalizedExpectedBytes": 943,
+      "normalizedActualBytes": 943,
       "normalizedExpected": {
         "caseId": "Q0.focused-rpc-tui-extension-tests",
         "commands": [
@@ -271,13 +271,13 @@
               "tests/PiSharp.Tests/PiSharp.Tests.csproj",
               "--no-restore",
               "--filter",
-              "FullyQualifiedName~RpcCompactionProcessTests|FullyQualifiedName~RpcSessionStatsProjectorTests|FullyQualifiedName~RpcEventProjectorTests|FullyQualifiedName~JsonEventModeTests|FullyQualifiedName~TerminalTreePickerTests|FullyQualifiedName~NativeExtensionCompactionEventTests|FullyQualifiedName~NativeExtensionTreeEventTests|FullyQualifiedName~PiSharpExtensionCompactionTests"
+              "FullyQualifiedName~RpcCompactionProcessTests|FullyQualifiedName~RpcSessionStatsProjectorTests|FullyQualifiedName~RpcEventProjectorTests|FullyQualifiedName~JsonEventModeTests|FullyQualifiedName~TerminalTreePickerTests|FullyQualifiedName~NativeExtensionCompactionEventTests|FullyQualifiedName~NativeExtensionTreeEventTests|FullyQualifiedName~PiSharpExtensionCompactionTests|FullyQualifiedName~RpcModeTests.GetSessionStatsIncludesNativeBranchSummaryUsageAfterReload"
             ],
             "exitCode": 0,
-            "stdoutSha256": "56048f20b6591a7a47ff17f392c3fbd4fc9281c7bcad3152e5aba9d12789ee52",
+            "stdoutSha256": "14e335022e82a7cbff2cba79f2dee081f2493da713406e90ed9252985638ce60",
             "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             "testCounts": {
-              "passed": 52,
+              "passed": 56,
               "failed": 0,
               "skipped": 0
             }
@@ -297,13 +297,13 @@
               "tests/PiSharp.Tests/PiSharp.Tests.csproj",
               "--no-restore",
               "--filter",
-              "FullyQualifiedName~RpcCompactionProcessTests|FullyQualifiedName~RpcSessionStatsProjectorTests|FullyQualifiedName~RpcEventProjectorTests|FullyQualifiedName~JsonEventModeTests|FullyQualifiedName~TerminalTreePickerTests|FullyQualifiedName~NativeExtensionCompactionEventTests|FullyQualifiedName~NativeExtensionTreeEventTests|FullyQualifiedName~PiSharpExtensionCompactionTests"
+              "FullyQualifiedName~RpcCompactionProcessTests|FullyQualifiedName~RpcSessionStatsProjectorTests|FullyQualifiedName~RpcEventProjectorTests|FullyQualifiedName~JsonEventModeTests|FullyQualifiedName~TerminalTreePickerTests|FullyQualifiedName~NativeExtensionCompactionEventTests|FullyQualifiedName~NativeExtensionTreeEventTests|FullyQualifiedName~PiSharpExtensionCompactionTests|FullyQualifiedName~RpcModeTests.GetSessionStatsIncludesNativeBranchSummaryUsageAfterReload"
             ],
             "exitCode": 0,
-            "stdoutSha256": "56048f20b6591a7a47ff17f392c3fbd4fc9281c7bcad3152e5aba9d12789ee52",
+            "stdoutSha256": "14e335022e82a7cbff2cba79f2dee081f2493da713406e90ed9252985638ce60",
             "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             "testCounts": {
-              "passed": 52,
+              "passed": 56,
               "failed": 0,
               "skipped": 0
             }
@@ -318,8 +318,8 @@
       "contractExpectedObservation": "python parity suites",
       "classification": "strict",
       "passed": true,
-      "normalizedExpectedSha256": "35004038186dfdacf2480c8ac0495313a2ff6e0151aee286bdc0fbd4249918e7",
-      "normalizedActualSha256": "35004038186dfdacf2480c8ac0495313a2ff6e0151aee286bdc0fbd4249918e7",
+      "normalizedExpectedSha256": "c5dc6587b045965a78752787319959f18df881bc04999018af05246f81f72020",
+      "normalizedActualSha256": "c5dc6587b045965a78752787319959f18df881bc04999018af05246f81f72020",
       "normalizedExpectedBytes": 1221,
       "normalizedActualBytes": 1221,
       "normalizedExpected": {
@@ -339,7 +339,7 @@
             ],
             "exitCode": 0,
             "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-            "stderrSha256": "0fdeb57faf78c939e009af16623e149d0de3113727c20dfcfc33ed879540198f",
+            "stderrSha256": "9c07c4a473b2b3da94366580969ec75bd030cf11bd593f0c2a02827401378c8b",
             "testCounts": {
               "passed": 66,
               "failed": 0,
@@ -360,7 +360,7 @@
             ],
             "exitCode": 0,
             "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-            "stderrSha256": "a8e0e48db0758029cfe05a9c4b8cb9b0f484a61af3652ca01005b68a0089d42a",
+            "stderrSha256": "1c0c3d0ca0a6e0cb6c16edc4da588ac454f275ef22cd17a4a871cd9d8d9a0bdf",
             "testCounts": {
               "passed": 27,
               "failed": 0,
@@ -381,7 +381,7 @@
             ],
             "exitCode": 0,
             "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-            "stderrSha256": "1f8169f5f7221c414d35b14133c5253885702bd2614215e4455f7ee2ef8a27ba",
+            "stderrSha256": "5d2705660980a76b4206f967997f2cf8886c0cb81751d8b46cc7e7fa51152146",
             "testCounts": {
               "passed": 27,
               "failed": 0,
@@ -409,7 +409,7 @@
             ],
             "exitCode": 0,
             "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-            "stderrSha256": "0fdeb57faf78c939e009af16623e149d0de3113727c20dfcfc33ed879540198f",
+            "stderrSha256": "9c07c4a473b2b3da94366580969ec75bd030cf11bd593f0c2a02827401378c8b",
             "testCounts": {
               "passed": 66,
               "failed": 0,
@@ -430,7 +430,7 @@
             ],
             "exitCode": 0,
             "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-            "stderrSha256": "a8e0e48db0758029cfe05a9c4b8cb9b0f484a61af3652ca01005b68a0089d42a",
+            "stderrSha256": "1c0c3d0ca0a6e0cb6c16edc4da588ac454f275ef22cd17a4a871cd9d8d9a0bdf",
             "testCounts": {
               "passed": 27,
               "failed": 0,
@@ -451,7 +451,7 @@
             ],
             "exitCode": 0,
             "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-            "stderrSha256": "1f8169f5f7221c414d35b14133c5253885702bd2614215e4455f7ee2ef8a27ba",
+            "stderrSha256": "5d2705660980a76b4206f967997f2cf8886c0cb81751d8b46cc7e7fa51152146",
             "testCounts": {
               "passed": 27,
               "failed": 0,
@@ -468,8 +468,8 @@
       "contractExpectedObservation": "node parity suites",
       "classification": "strict",
       "passed": true,
-      "normalizedExpectedSha256": "c82a5400afc211ab2debc4119dc135423a148cf0003fd8755be820e53eb7cd1f",
-      "normalizedActualSha256": "c82a5400afc211ab2debc4119dc135423a148cf0003fd8755be820e53eb7cd1f",
+      "normalizedExpectedSha256": "ee005ad338d3f6c55cddf21714b81dc492dd4b2adfa59395cc86b68f1e349ad4",
+      "normalizedActualSha256": "ee005ad338d3f6c55cddf21714b81dc492dd4b2adfa59395cc86b68f1e349ad4",
       "normalizedExpectedBytes": 425,
       "normalizedActualBytes": 425,
       "normalizedExpected": {
@@ -484,7 +484,7 @@
               "tools/parity/terminal"
             ],
             "exitCode": 0,
-            "stdoutSha256": "c49731068e45469f8f6ac5fb3d8195da2305bd2a7215849b8ecb3c5993c21792",
+            "stdoutSha256": "332b9915197fbbaeac230ab40acb9b64e35648179142fca129c38708de08a8a5",
             "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             "testCounts": {
               "passed": 24,
@@ -508,7 +508,7 @@
               "tools/parity/terminal"
             ],
             "exitCode": 0,
-            "stdoutSha256": "c49731068e45469f8f6ac5fb3d8195da2305bd2a7215849b8ecb3c5993c21792",
+            "stdoutSha256": "332b9915197fbbaeac230ab40acb9b64e35648179142fca129c38708de08a8a5",
             "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             "testCounts": {
               "passed": 24,
@@ -526,8 +526,8 @@
       "contractExpectedObservation": "mcp conformance",
       "classification": "strict",
       "passed": true,
-      "normalizedExpectedSha256": "06946f17f7a080e088348371703bb6e589908f6092262c907fd282de406f3b8d",
-      "normalizedActualSha256": "06946f17f7a080e088348371703bb6e589908f6092262c907fd282de406f3b8d",
+      "normalizedExpectedSha256": "617868cbdad49369d9bba1de8cde639beba23ae34c6da99494e33af1388f6b51",
+      "normalizedActualSha256": "617868cbdad49369d9bba1de8cde639beba23ae34c6da99494e33af1388f6b51",
       "normalizedExpectedBytes": 712,
       "normalizedActualBytes": 712,
       "normalizedExpected": {
@@ -543,7 +543,7 @@
               "-p:NoWarn=NU1900"
             ],
             "exitCode": 0,
-            "stdoutSha256": "d35c338708e737067b40a2d6589ced43d22d6bb5a4de3604aa2174741fe20aa8",
+            "stdoutSha256": "90b36410a8dd515de7e24d25419efe5ea123777f044cd081d956c56a286b0a5a",
             "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             "testCounts": null
           },
@@ -575,7 +575,7 @@
               "-p:NoWarn=NU1900"
             ],
             "exitCode": 0,
-            "stdoutSha256": "d35c338708e737067b40a2d6589ced43d22d6bb5a4de3604aa2174741fe20aa8",
+            "stdoutSha256": "90b36410a8dd515de7e24d25419efe5ea123777f044cd081d956c56a286b0a5a",
             "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             "testCounts": null
           },
@@ -600,8 +600,8 @@
       "contractExpectedObservation": "documentation link validation",
       "classification": "strict",
       "passed": true,
-      "normalizedExpectedSha256": "9c847d934597c55aa2d9fbde925f8501e76e295054d4614a638779dee5732412",
-      "normalizedActualSha256": "9c847d934597c55aa2d9fbde925f8501e76e295054d4614a638779dee5732412",
+      "normalizedExpectedSha256": "b5ba965df5e4244db9731c6b6a1aad0909d6241761ea20d8fdf164e6d6a48d89",
+      "normalizedActualSha256": "b5ba965df5e4244db9731c6b6a1aad0909d6241761ea20d8fdf164e6d6a48d89",
       "normalizedExpectedBytes": 411,
       "normalizedActualBytes": 411,
       "normalizedExpected": {
@@ -614,7 +614,7 @@
               "tools/validate_doc_paths.py"
             ],
             "exitCode": 0,
-            "stdoutSha256": "3156cd0979a7b20a438395a89953b2ced7c417a7cd7094b09138886c1bae026e",
+            "stdoutSha256": "745aafd1f7cd9ed71e834e7f9485f720f2265aa7f4906713c42dab646a7a2c8c",
             "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             "testCounts": null
           }
@@ -632,7 +632,7 @@
               "tools/validate_doc_paths.py"
             ],
             "exitCode": 0,
-            "stdoutSha256": "3156cd0979a7b20a438395a89953b2ced7c417a7cd7094b09138886c1bae026e",
+            "stdoutSha256": "745aafd1f7cd9ed71e834e7f9485f720f2265aa7f4906713c42dab646a7a2c8c",
             "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             "testCounts": null
           }
@@ -646,10 +646,10 @@
       "contractExpectedObservation": "pinned pi upstream compaction branch overflow tests",
       "classification": "strict",
       "passed": true,
-      "normalizedExpectedSha256": "f5c8dbc5268d1daca83668b25622d0055c4cdaee8865bea32f7daf268a59b522",
-      "normalizedActualSha256": "f5c8dbc5268d1daca83668b25622d0055c4cdaee8865bea32f7daf268a59b522",
-      "normalizedExpectedBytes": 39285,
-      "normalizedActualBytes": 39285,
+      "normalizedExpectedSha256": "166056477ff80c928f280dc052c7751365761f7a6a8066a6664024845ef66445",
+      "normalizedActualSha256": "166056477ff80c928f280dc052c7751365761f7a6a8066a6664024845ef66445",
+      "normalizedExpectedBytes": 39339,
+      "normalizedActualBytes": 39339,
       "normalizedExpected": {
         "caseId": "Q0.pinned-pi-upstream-compaction-branch-overflow-tests",
         "commands": [
@@ -657,10 +657,10 @@
             "name": "pinned-pi-suites",
             "argv": [
               "node",
-              "/tmp/pi-c9/node_modules/vitest/vitest.mjs",
+              "/home/philip/Projects/pisharp/artifacts/parity/pi-ownership-oracle/node_modules/vitest/vitest.mjs",
               "--run",
               "--reporter=json",
-              "--outputFile=/home/philip/Projects/pisharp/artifacts/parity/20261028T-final-source-7480e81d/runs/Q0/pinned-pi-q0.json",
+              "--outputFile=/home/philip/Projects/pisharp/artifacts/parity/20261028T-review-fix-41e9b7e7/runs/Q0/pinned-pi-q0.json",
               "packages/ai/test/overflow.test.ts",
               "packages/coding-agent/test/agent-session-auto-compaction-queue.test.ts",
               "packages/coding-agent/test/agent-session-stats.test.ts",
@@ -680,7 +680,7 @@
               "packages/coding-agent/test/suite/regressions/9340-9777-auto-compaction-cancellation.test.ts"
             ],
             "exitCode": 0,
-            "stdoutSha256": "ead0fa05abcab3ce434f2da38f2e2ecff519f8e2d26b5a4bd2c897e7607272cf",
+            "stdoutSha256": "e80402698b491194a61d02ef0d866ae83fc4d02becfdfce3f52990fc70878076",
             "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             "knownSkippedTests": [
               "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation - branch scenarios should navigate between branches correctly",
@@ -944,10 +944,10 @@
             "name": "pinned-pi-suites",
             "argv": [
               "node",
-              "/tmp/pi-c9/node_modules/vitest/vitest.mjs",
+              "/home/philip/Projects/pisharp/artifacts/parity/pi-ownership-oracle/node_modules/vitest/vitest.mjs",
               "--run",
               "--reporter=json",
-              "--outputFile=/home/philip/Projects/pisharp/artifacts/parity/20261028T-final-source-7480e81d/runs/Q0/pinned-pi-q0.json",
+              "--outputFile=/home/philip/Projects/pisharp/artifacts/parity/20261028T-review-fix-41e9b7e7/runs/Q0/pinned-pi-q0.json",
               "packages/ai/test/overflow.test.ts",
               "packages/coding-agent/test/agent-session-auto-compaction-queue.test.ts",
               "packages/coding-agent/test/agent-session-stats.test.ts",
@@ -967,7 +967,7 @@
               "packages/coding-agent/test/suite/regressions/9340-9777-auto-compaction-cancellation.test.ts"
             ],
             "exitCode": 0,
-            "stdoutSha256": "ead0fa05abcab3ce434f2da38f2e2ecff519f8e2d26b5a4bd2c897e7607272cf",
+            "stdoutSha256": "e80402698b491194a61d02ef0d866ae83fc4d02becfdfce3f52990fc70878076",
             "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             "knownSkippedTests": [
               "packages/coding-agent/test/agent-session-tree-navigation.test.ts :: AgentSession tree navigation - branch scenarios should navigate between branches correctly",
@@ -1229,7 +1229,7 @@
   "rawArtifacts": [
     {
       "path": "baseline-observations.json",
-      "sha256": "3525ed11b2b5df6d316c92d300579b83ee0020b6a0541c45decc570a81059e23"
+      "sha256": "f76474b46a41d450577bf9aea45103f3779719e817e8a16210d95236e19d6fe0"
     },
     {
       "path": "commands/build.stderr.log",
@@ -1237,11 +1237,11 @@
     },
     {
       "path": "commands/build.stdout.log",
-      "sha256": "2e3a51c20fc7377c8a68f08239bc10c15820143295b94cca0a9bb9bcc35c2671"
+      "sha256": "0d5e27bdb5a9ea5b36bbe642a488d87f0cec1147028c2006bc86725f43e39ae6"
     },
     {
       "path": "commands/builtin-tool-python.stderr.log",
-      "sha256": "1f8169f5f7221c414d35b14133c5253885702bd2614215e4455f7ee2ef8a27ba"
+      "sha256": "5d2705660980a76b4206f967997f2cf8886c0cb81751d8b46cc7e7fa51152146"
     },
     {
       "path": "commands/builtin-tool-python.stdout.log",
@@ -1249,7 +1249,7 @@
     },
     {
       "path": "commands/compaction-python.stderr.log",
-      "sha256": "a8e0e48db0758029cfe05a9c4b8cb9b0f484a61af3652ca01005b68a0089d42a"
+      "sha256": "1c0c3d0ca0a6e0cb6c16edc4da588ac454f275ef22cd17a4a871cd9d8d9a0bdf"
     },
     {
       "path": "commands/compaction-python.stdout.log",
@@ -1261,7 +1261,7 @@
     },
     {
       "path": "commands/documentation-links.stdout.log",
-      "sha256": "3156cd0979a7b20a438395a89953b2ced7c417a7cd7094b09138886c1bae026e"
+      "sha256": "745aafd1f7cd9ed71e834e7f9485f720f2265aa7f4906713c42dab646a7a2c8c"
     },
     {
       "path": "commands/focused-compaction.stderr.log",
@@ -1269,7 +1269,7 @@
     },
     {
       "path": "commands/focused-compaction.stdout.log",
-      "sha256": "1f7d09357a1dfbf88fc5bc7d12f9c5ff3a886117a672e179bba1448c4bc84e44"
+      "sha256": "62c1ef3974ffc13c2db5d5394049045ec004ae7f6808964078dbbc045c48328c"
     },
     {
       "path": "commands/focused-surfaces.stderr.log",
@@ -1277,7 +1277,7 @@
     },
     {
       "path": "commands/focused-surfaces.stdout.log",
-      "sha256": "56048f20b6591a7a47ff17f392c3fbd4fc9281c7bcad3152e5aba9d12789ee52"
+      "sha256": "14e335022e82a7cbff2cba79f2dee081f2493da713406e90ed9252985638ce60"
     },
     {
       "path": "commands/format.stderr.log",
@@ -1293,7 +1293,7 @@
     },
     {
       "path": "commands/full-dotnet-tests.stdout.log",
-      "sha256": "de99edea74208934e46abb0fa9eda0770645e0a3d10780560bf0e2cb8ab59149"
+      "sha256": "6669c439bac7ce4ea33091601266fb35a8dabfe3fc3a1471aa3dd5d1d4185d19"
     },
     {
       "path": "commands/mcp-build.stderr.log",
@@ -1301,7 +1301,7 @@
     },
     {
       "path": "commands/mcp-build.stdout.log",
-      "sha256": "d35c338708e737067b40a2d6589ced43d22d6bb5a4de3604aa2174741fe20aa8"
+      "sha256": "90b36410a8dd515de7e24d25419efe5ea123777f044cd081d956c56a286b0a5a"
     },
     {
       "path": "commands/mcp-run.stderr.log",
@@ -1317,7 +1317,7 @@
     },
     {
       "path": "commands/pinned-pi-suites.stdout.log",
-      "sha256": "ead0fa05abcab3ce434f2da38f2e2ecff519f8e2d26b5a4bd2c897e7607272cf"
+      "sha256": "e80402698b491194a61d02ef0d866ae83fc4d02becfdfce3f52990fc70878076"
     },
     {
       "path": "commands/terminal-node.stderr.log",
@@ -1325,11 +1325,11 @@
     },
     {
       "path": "commands/terminal-node.stdout.log",
-      "sha256": "c49731068e45469f8f6ac5fb3d8195da2305bd2a7215849b8ecb3c5993c21792"
+      "sha256": "332b9915197fbbaeac230ab40acb9b64e35648179142fca129c38708de08a8a5"
     },
     {
       "path": "commands/terminal-python.stderr.log",
-      "sha256": "0fdeb57faf78c939e009af16623e149d0de3113727c20dfcfc33ed879540198f"
+      "sha256": "9c07c4a473b2b3da94366580969ec75bd030cf11bd593f0c2a02827401378c8b"
     },
     {
       "path": "commands/terminal-python.stdout.log",
@@ -1337,11 +1337,11 @@
     },
     {
       "path": "implementation-observations.json",
-      "sha256": "3525ed11b2b5df6d316c92d300579b83ee0020b6a0541c45decc570a81059e23"
+      "sha256": "f76474b46a41d450577bf9aea45103f3779719e817e8a16210d95236e19d6fe0"
     },
     {
       "path": "pinned-pi-q0.json",
-      "sha256": "e75a4fca7c74a6484887922b5bf3a0c41275476a9836dd3569a1bcad7c59ef07"
+      "sha256": "64f0c16a7748af7da454147fc40fb817467e1bd39f5f6eca1f11aaa3681c6025"
     }
   ]
 }

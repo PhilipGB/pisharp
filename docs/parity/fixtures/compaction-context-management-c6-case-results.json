@@ -3,10 +3,10 @@
   "milestone": "compaction-context-management-parity",
   "checkpointId": "C6",
   "contractSha256": "c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6",
-  "evidenceDirectory": "artifacts/parity/20261028T-final-source-7480e81d/runs/C6/differential",
-  "generatedReportSha256": "3a8e0123dfe622864fbc98df1a6e9b7a108d9f7edf46b0966b22a5bac2c75719",
+  "evidenceDirectory": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C6/differential",
+  "generatedReportSha256": "1132b224ac664cd5d6e794fcac96440a708b2ec7da2619e0440edd5b4f85982c",
   "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-  "pisharpSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
+  "pisharpSourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2",
   "sourceTreeClean": true,
   "piCalibrationStable": true,
   "pisharpCalibrationStable": true,
@@ -23,31 +23,31 @@
   "safetyDifferences": [
     {
       "caseId": "C6.transient-projection-does-not-change-canonical-history",
-      "reason": "The transient estimator is a more conservative serialized-character safety bound than Pi’s message estimate; it applies only to an ephemeral outbound projection and leaves canonical history unchanged.",
+      "reason": "Pi estimates retained messages with its per-content characters/4 heuristic and does not pre-project the active tool transcript. PiSharp uses a deliberately higher serialized characters/2 plus framing heuristic only for an ephemeral request projection; the canonical history remains unchanged.",
       "regression": "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#TransientContextEstimateIsConservativeSerializedCharacterHeuristicNotTokenizer; tests/PiSharp.Tests/Runtime/Sessions/InFlightContextBudgetTests.cs#OversizedActiveToolResultIsSummarizedInsteadOfKeptInTransientRequest",
       "safetyEvidence": "pisharp-c6-run-1.json"
     },
     {
       "caseId": "C6.single-large-current-tool-result-is-bounded",
-      "reason": "PiSharp bounds the oversized transient provider result while preserving the full canonical tool result.",
+      "reason": "Pi keeps the active 8,000-character result in the provider request; PiSharp projects a bounded summary while retaining the raw canonical result.",
       "regression": "tests/PiSharp.Tests/Runtime/Sessions/InFlightContextBudgetTests.cs#OversizedActiveToolResultIsSummarizedInsteadOfKeptInTransientRequest",
       "safetyEvidence": "pisharp-c6-run-1.json"
     },
     {
       "caseId": "C6.large-tool-output-summary-retains-latest-outcome",
-      "reason": "PiSharp summarizes oversized transient history while retaining the latest outcome and canonical records.",
+      "reason": "Pi keeps both large and latest raw tool outcomes in the request; PiSharp summarizes the prefix and retains the latest outcome.",
       "regression": "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#LongSummaryTranscriptRetainsLatestMessageWithinBound",
       "safetyEvidence": "pisharp-c6-run-1.json"
     },
     {
       "caseId": "C6.incomplete-call-graph-fails-before-provider-send",
-      "reason": "PiSharp rejects an incomplete tool-call/result graph before sending a malformed provider history.",
+      "reason": "Pi sends the incomplete call graph to its provider hook; PiSharp rejects the transient continuation before sending it.",
       "regression": "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#OverflowProjectionRefusesMalformedEarlierToolGraph",
       "safetyEvidence": "pisharp-c6-run-1.json"
     },
     {
       "caseId": "C6.duplicate-or-unmatched-results-never-replay-tools",
-      "reason": "PiSharp rejects duplicate or unmatched tool results before provider send to avoid replaying tool side effects.",
+      "reason": "Pi sends duplicate tool results to its provider hook; PiSharp rejects the malformed graph before sending the transient continuation.",
       "regression": "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#OverflowProjectionRefusesMalformedEarlierToolGraph",
       "safetyEvidence": "pisharp-c6-run-1.json"
     }
@@ -272,22 +272,6 @@
   ],
   "rawArtifacts": [
     {
-      "path": "pi-c6-observations.json",
-      "sha256": "5190eb93b760cee4a8ddc3b5caa2d6b0892d90c6256f2bf1973c13b19f99c6d7"
-    },
-    {
-      "path": "pi-c6.stderr.log",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
-      "path": "pi-c6.stdout.log",
-      "sha256": "6b3d78741925ee35f1f4a441576e7b28684557fd7179c2018da750a382f44fb0"
-    },
-    {
-      "path": "pi-c6/pi-oracle.json",
-      "sha256": "2d32610653653db5b0677d5885b2234e3080726a421817c5d6fb89af9af5ad3c"
-    },
-    {
       "path": "pi-c6/pi-run-1.json",
       "sha256": "0e1aff9bd529eb807901de8c7c6ea5629531554a736ee216c660a34a1efa3e5a"
     },
@@ -296,32 +280,48 @@
       "sha256": "0e1aff9bd529eb807901de8c7c6ea5629531554a736ee216c660a34a1efa3e5a"
     },
     {
-      "path": "pisharp-c6-observations.json",
-      "sha256": "089b39360e695f7db1b5bb4fa621b7652cea857c4aaa34705a98b41ae288bbbb"
+      "path": "pi-c6/pi-oracle.json",
+      "sha256": "2d32610653653db5b0677d5885b2234e3080726a421817c5d6fb89af9af5ad3c"
+    },
+    {
+      "path": "pi-c6.stdout.log",
+      "sha256": "6b3d78741925ee35f1f4a441576e7b28684557fd7179c2018da750a382f44fb0"
+    },
+    {
+      "path": "pi-c6.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
       "path": "pisharp-c6-run-1.json",
       "sha256": "51e8d4bd2801aebbe8335957099acaa8908e1a0c17c261c5488b1eaf4b34e2e6"
     },
     {
-      "path": "pisharp-c6-run-1.stderr.log",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
       "path": "pisharp-c6-run-1.stdout.log",
       "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
+    },
+    {
+      "path": "pisharp-c6-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
       "path": "pisharp-c6-run-2.json",
       "sha256": "51e8d4bd2801aebbe8335957099acaa8908e1a0c17c261c5488b1eaf4b34e2e6"
     },
     {
+      "path": "pisharp-c6-run-2.stdout.log",
+      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
+    },
+    {
       "path": "pisharp-c6-run-2.stderr.log",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
-      "path": "pisharp-c6-run-2.stdout.log",
-      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
+      "path": "pi-c6-observations.json",
+      "sha256": "5190eb93b760cee4a8ddc3b5caa2d6b0892d90c6256f2bf1973c13b19f99c6d7"
+    },
+    {
+      "path": "pisharp-c6-observations.json",
+      "sha256": "089b39360e695f7db1b5bb4fa621b7652cea857c4aaa34705a98b41ae288bbbb"
     }
   ]
 }

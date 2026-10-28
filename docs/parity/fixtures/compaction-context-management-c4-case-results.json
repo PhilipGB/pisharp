@@ -3,10 +3,10 @@
   "milestone": "compaction-context-management-parity",
   "checkpointId": "C4",
   "contractSha256": "c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6",
-  "evidenceDirectory": "artifacts/parity/20261028T-final-source-7480e81d/runs/C4/differential",
-  "generatedReportSha256": "6c479b70f3213010e8bc3e27d1c0e6ba16f322d9bca2ca8caba8271563ea7445",
+  "evidenceDirectory": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C4/differential",
+  "generatedReportSha256": "21174d6d194b1a1224fbacc2cc3cfa39c0e5ac6aca0c9d843db69969396040fc",
   "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-  "pisharpSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
+  "pisharpSourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2",
   "sourceTreeClean": true,
   "piCalibrationStable": true,
   "pisharpCalibrationStable": true,
@@ -20,7 +20,7 @@
   "safetyDifferences": [
     {
       "caseId": "C4.unknown-limit-is-never-invented",
-      "reason": "PiSharp does not infer a model context limit when metadata is absent.",
+      "reason": "Pinned Pi evaluates unknown contextWindow as zero and triggers shouldCompact; PiSharp preserves the unknown limit and does not invent capacity.",
       "regression": "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#UnknownContextWindowDoesNotInventCapacityFromReportedUsage",
       "safetyEvidence": "pisharp-c4-observations.json"
     }
@@ -289,22 +289,6 @@
   ],
   "rawArtifacts": [
     {
-      "path": "pi-c4-observations.json",
-      "sha256": "f94e4562f25ef78c7ab23815b625c60baacb41c0245d61f4100392927ee6f2c8"
-    },
-    {
-      "path": "pi-c4.stderr.log",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
-      "path": "pi-c4.stdout.log",
-      "sha256": "5f2d53f2f2386ddd20fc95ce747bd99c3f74e80f28672b83670058ef0a3434dd"
-    },
-    {
-      "path": "pi-c4/pi-oracle.json",
-      "sha256": "eb4f893dd2f45b5f009ab00a70077a9b558841e10732781f333923a1745c4cc6"
-    },
-    {
       "path": "pi-c4/pi-run-1.json",
       "sha256": "4e4a8a0d74728aa76518c2a1eda2b6946b9e65b39f7128bafa3edf0a7ff7aa9a"
     },
@@ -313,32 +297,48 @@
       "sha256": "4e4a8a0d74728aa76518c2a1eda2b6946b9e65b39f7128bafa3edf0a7ff7aa9a"
     },
     {
-      "path": "pisharp-c4-observations.json",
-      "sha256": "ec34f1b95462ca8f04fef9d0b442f858e691fe7e5efa1bde95b477a658f34c4e"
+      "path": "pi-c4/pi-oracle.json",
+      "sha256": "eb4f893dd2f45b5f009ab00a70077a9b558841e10732781f333923a1745c4cc6"
+    },
+    {
+      "path": "pi-c4.stdout.log",
+      "sha256": "5f2d53f2f2386ddd20fc95ce747bd99c3f74e80f28672b83670058ef0a3434dd"
+    },
+    {
+      "path": "pi-c4.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
       "path": "pisharp-c4-run-1.json",
       "sha256": "496791ddc512386020b98099ae4ffd48bfaa436a41f5a3a6df77a629f002fa35"
     },
     {
-      "path": "pisharp-c4-run-1.stderr.log",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
       "path": "pisharp-c4-run-1.stdout.log",
       "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
+    },
+    {
+      "path": "pisharp-c4-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
       "path": "pisharp-c4-run-2.json",
       "sha256": "496791ddc512386020b98099ae4ffd48bfaa436a41f5a3a6df77a629f002fa35"
     },
     {
+      "path": "pisharp-c4-run-2.stdout.log",
+      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
+    },
+    {
       "path": "pisharp-c4-run-2.stderr.log",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
-      "path": "pisharp-c4-run-2.stdout.log",
-      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
+      "path": "pi-c4-observations.json",
+      "sha256": "f94e4562f25ef78c7ab23815b625c60baacb41c0245d61f4100392927ee6f2c8"
+    },
+    {
+      "path": "pisharp-c4-observations.json",
+      "sha256": "ec34f1b95462ca8f04fef9d0b442f858e691fe7e5efa1bde95b477a658f34c4e"
     }
   ]
 }

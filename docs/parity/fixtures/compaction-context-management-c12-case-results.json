@@ -3,13 +3,13 @@
   "milestone": "compaction-context-management-parity",
   "checkpointId": "C12",
   "contractSha256": "c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6",
-  "evidenceDirectory": "artifacts/parity/20261028T-final-source-7480e81d/runs/C12/differential",
-  "generatedReportSha256": "9ff525f0a3214a72a7be1ab4d4adb14be2581e7a6782e727473402e76937e469",
+  "evidenceDirectory": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C12/differential",
+  "generatedReportSha256": "26c9fe042f14ccd78ccef63af57374a4a3473387a26e47e907745a56f95d8b98",
   "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-  "pisharpSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
+  "pisharpSourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2",
   "sourceTreeClean": true,
-  "piCalibrationStable": false,
-  "pisharpCalibrationStable": false,
+  "piCalibrationStable": true,
+  "pisharpCalibrationStable": true,
   "pairedObservationsEqual": true,
   "acceptedSafetyDifferenceCount": 1,
   "normalization": [
@@ -18,9 +18,9 @@
   "safetyDifferences": [
     {
       "caseId": "C12.invalid-boundary-and-unbalanced-tools-are-rejected",
-      "reason": "PiSharp rejects invalid compaction boundaries and unbalanced tool-call histories before publishing a compaction.",
+      "reason": "Pinned Pi accepts extension-provided stale and tool-unbalanced retained boundaries. PiSharp rejects both before summarization or persistence to prevent corrupted canonical context.",
       "regression": "NativeExtensionCompactionEventTests.InvalidCustomCompactionIsAttributedAndLeavesCanonicalSessionUnchanged; CustomCompactionCannotSplitAnIncompleteToolCallResultPair",
-      "safetyEvidence": "pisharp-c12-observations.json"
+      "evidence": "pisharp-c12-observations.json"
     }
   ],
   "executedCaseCount": 8,
@@ -173,68 +173,68 @@
   ],
   "rawArtifacts": [
     {
-      "path": "pi-c12-observations.json",
-      "sha256": "d80cb11b099f7c56c8faabcbe5d68ba8d05b5517d5e9f0c7988b8fd71a1e650c"
-    },
-    {
-      "path": "pinned-pi-c12-boundary-run-1.json",
-      "sha256": "78a2a75538e6312c1d8718c5ae00f53124f484f87fcfcf277bda3d213c7148e3"
-    },
-    {
-      "path": "pinned-pi-c12-boundary-run-1.stderr.log",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
-      "path": "pinned-pi-c12-boundary-run-1.stdout.log",
-      "sha256": "161e44aca664540a24ef6f2fe7ac6617338abf1d262f2effd38ae926dbecefe5"
-    },
-    {
-      "path": "pinned-pi-c12-boundary-run-2.json",
-      "sha256": "78a2a75538e6312c1d8718c5ae00f53124f484f87fcfcf277bda3d213c7148e3"
-    },
-    {
-      "path": "pinned-pi-c12-boundary-run-2.stderr.log",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
-      "path": "pinned-pi-c12-boundary-run-2.stdout.log",
-      "sha256": "8bbe0a2ff639981592b927180c29061f73637a598321e3a70f8d753e29fdb74d"
+      "path": "pinned-pi-c12-tests-run-1.stdout.log",
+      "sha256": "c048e9282cf4a0315bdcc03e92b0dc89bcb2b681bb2655ed7a54c42a2a0d77f3"
     },
     {
       "path": "pinned-pi-c12-tests-run-1.stderr.log",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
-      "path": "pinned-pi-c12-tests-run-1.stdout.log",
-      "sha256": "b7d3bbb5df6b5adfcdc1d5daed66655d762e88fa5edfc69561a82fea2ed44d62"
-    },
-    {
-      "path": "pinned-pi-c12-tests-run-2.stderr.log",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
-      "path": "pinned-pi-c12-tests-run-2.stdout.log",
-      "sha256": "3c81e71e3360bbea64852aca83fe7c6b413cadf50d0ea08f255c5aa15143d860"
-    },
-    {
-      "path": "pisharp-c12-observations.json",
-      "sha256": "129f5a361bbaa259edbaa02f40c8dc035454b2fad734edd4c5b6c67e5fd44230"
+      "path": "pisharp-c12-tests-run-1.stdout.log",
+      "sha256": "d28b0776e797105fd184a44729e6c77060a10ebe51e05ce5508acd6e307a417f"
     },
     {
       "path": "pisharp-c12-tests-run-1.stderr.log",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
-      "path": "pisharp-c12-tests-run-1.stdout.log",
-      "sha256": "c8a857c2a72cb00a34cc0e352cef169432a1113cf1cdfa90dd185da64dc24af7"
+      "path": "pinned-pi-c12-tests-run-2.stdout.log",
+      "sha256": "9b76ef7927dc54b3eac0ee5aa6b68c74be74d2f87f5231c4341f1c051ce2d861"
+    },
+    {
+      "path": "pinned-pi-c12-tests-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-c12-tests-run-2.stdout.log",
+      "sha256": "0bf7980477725c8dba54bbf9e3d5511943de8ade3c4e1d39b375b23646addaad"
     },
     {
       "path": "pisharp-c12-tests-run-2.stderr.log",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
-      "path": "pisharp-c12-tests-run-2.stdout.log",
-      "sha256": "17e3ff49a70f18b49d9b34573ff1a22d15f36800092a14b46b36daa60cb44e8f"
+      "path": "pinned-pi-c12-boundary-run-1.json",
+      "sha256": "78a2a75538e6312c1d8718c5ae00f53124f484f87fcfcf277bda3d213c7148e3"
+    },
+    {
+      "path": "pinned-pi-c12-boundary-run-1.stdout.log",
+      "sha256": "de4804a1b5f59426030e637cc7830959495f1e1662522f5901db65a7331f21ad"
+    },
+    {
+      "path": "pinned-pi-c12-boundary-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pinned-pi-c12-boundary-run-2.json",
+      "sha256": "78a2a75538e6312c1d8718c5ae00f53124f484f87fcfcf277bda3d213c7148e3"
+    },
+    {
+      "path": "pinned-pi-c12-boundary-run-2.stdout.log",
+      "sha256": "5ac78315534802f02d68b953f9bd11b7397dfbf9f219f2d1479dfeaaca17f280"
+    },
+    {
+      "path": "pinned-pi-c12-boundary-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-c12-observations.json",
+      "sha256": "d80cb11b099f7c56c8faabcbe5d68ba8d05b5517d5e9f0c7988b8fd71a1e650c"
+    },
+    {
+      "path": "pisharp-c12-observations.json",
+      "sha256": "129f5a361bbaa259edbaa02f40c8dc035454b2fad734edd4c5b6c67e5fd44230"
     }
   ]
 }

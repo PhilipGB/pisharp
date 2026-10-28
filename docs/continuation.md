@@ -1,16 +1,16 @@
 # Continuation — PiSharp capability parity
 
-## Completed milestone — Compaction, Context Budget, Overflow and Usage Parity — 2026-10-28
+## Review correction in progress — Compaction, Context Budget, Overflow and Usage Parity — 2026-10-28
 
 PR #27 is merged at `12064420179f4119bdaf37479c7cba0f5ca40717`. Pi is pinned to `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; the frozen contract has 22 checkpoints and 211 required cases.
 
-The final implementation source is `7480e81dcba48ca2861596789c6f39fecbc6ad2b`. C1-C13 pass 135/135; D0 passes 9/9; Q0 passes 10/10. The paired C corpus has 121 equivalent cases, 14 verified intentional safety differences, and zero unresolved mismatches. P0/P1 pass 10/10; V0/V1 pass 28/28; E0 passes 9/9; CI0 passes 5/5; PUB0 passes 5/5. All 22/22 contract checkpoints and 211/211 cases pass, with zero failed or skipped cases.
+The native branch-summary usage omission in RPC `get_session_stats` is fixed at implementation source `41e9b7e7ebdea70b878e409204cd8b3d177144e2`. Regressions cover native generation, persisted reload, imported summaries, and mixed sessions. Current refreshed evidence passes 18/22 checkpoints and 187/211 cases: C1-C13 135/135, D0 9/9, Q0 10/10, P0 5/5, V0 14/14, and V1 14/14. The paired C corpus has 121 equivalent cases, 14 intentional safety differences, and zero unresolved mismatches.
 
-Q0 records 3,959/3,959 .NET tests, focused compaction/session/provider 114/114, focused RPC/TUI/extension 52/52, terminal Python 66/66, compaction Python 27/27, built-in parity Python 27/27, terminal Node 24/24, and 200 pinned Pi passes with 20 exact credential-dependent skips. Q0 recorded 156 documents / 700 references; final documentation path validation passes for 156 documents / 690 references.
+P1 is incomplete because its clean-tree check ran while evidence docs were modified. E0, CI0, and PUB0 have not run for the corrected source. The remaining required work is to commit the refreshed evidence, rerun P1 on the clean committed tree, refresh D0 if compact inputs change, push the final head, verify automatic exact-head push and PR workflows, then run E0 and PUB0. PR #28 is open, draft, and unmerged; its published head has not yet received this correction.
 
-All 22 checkpoints and 211 cases pass. CI0 confirms successful automatic push and pull-request workflows on the exact final head; E0 verifies committed source-bound evidence; PUB0 independently verifies the full aggregate. PR #28 remains open, draft, and unmerged.
+Q0 records 3,963/3,963 .NET tests, focused compaction/session/provider 114/114, focused RPC/TUI/extension 56/56, terminal Python 66/66, compaction helper Python 27/27, built-in parity Python 27/27, and terminal Node 24/24. It records 200 pinned Pi passes and 20 exact credential-gated skips. Q0 documentation validation recorded 156 documents / 700 references; final post-evidence path validation recorded 156 / 690.
 
-Provider-boundary tests use local loopback fixtures; no live model endpoint was called. The pinned Pi upstream suite skips 20 credential-gated interactive/LLM tests and validates their exact names. The local NuGet audit cache is read-only; Q0 suppresses only NU1900 while keeping --warnaserror for all other warnings. The automatic CI build uses the normal clean cache.
+Provider-boundary tests use local loopback fixtures; no live model endpoint was called. The 20 pinned Pi skips are limited to credential-dependent interactive/LLM cases and their identities are checked. Q0 suppresses only NU1900 because the local NuGet audit cache is read-only; the exact-head CI build uses a clean cache. The managed-package corpus remains scoped to its historical milestone branch, as documented separately in the review notes.
 
 See the [source-pinned inventory](parity/fixtures/compaction-context-management-inventory.json), [compact evidence](parity/fixtures/compaction-context-management-c1-case-results.json), [case index](parity/fixtures/compaction-context-management/evidence-summary.json), and [execution ledger](parity/execution-ledger.json).
 

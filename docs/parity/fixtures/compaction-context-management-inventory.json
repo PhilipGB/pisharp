@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
   "milestone": "compaction-context-management-parity",
-  "phase": "Complete: all 22/22 checkpoints and 211/211 contract cases pass at implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b; 121 paired cases equivalent, 14 verified safety differences, zero unresolved mismatches; 0 failed or skipped cases.",
+  "phase": "Complete after independent review: all 22/22 checkpoints and 211/211 contract cases pass at implementation source 41e9b7e7ebdea70b878e409204cd8b3d177144e2; 121 paired cases equivalent, 14 verified safety differences, zero unresolved mismatches; 0 failed or skipped cases.",
   "sourcePins": {
     "piCommit": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
     "pisharpBaselineCommit": "12064420179f4119bdaf37479c7cba0f5ca40717",
     "pisharpWorkingBranch": "milestone/compaction-context-management-parity",
-    "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
-    "currentEvidenceDirectory": "artifacts/parity/20261028T-final-source-7480e81d"
+    "implementationSourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2",
+    "currentEvidenceDirectory": "artifacts/parity/20261028T-review-fix-41e9b7e7"
   },
   "framework": {
     "package": "Microsoft.Agents.AI",
@@ -91,7 +91,7 @@
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#ManualCompactionUsesPiDefaultRecentTokenBudgetWithoutAContextWindow",
         "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcCompactionProcessTests.cs#RpcProcessUsesPiSplitTurnCompactionAndCustomInstructionsForHistoryOnly"
       ],
-      "baseline": "C1 passes 9/9 on final implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b: 9 equivalent and 0 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c1-case-results.json; raw captures are ignored under artifacts/parity/20261028T-final-source-7480e81d/runs/C1/differential/.",
+      "baseline": "C1 passes 9/9 on final implementation source 41e9b7e7ebdea70b878e409204cd8b3d177144e2: 9 equivalent and 0 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c1-case-results.json; raw captures are ignored under artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C1/differential/.",
       "differences": [],
       "evidenceGaps": [],
       "cases": [
@@ -110,7 +110,7 @@
         "packages/coding-agent/test/suite/agent-session-compaction.test.ts"
       ],
       "pairedEvidenceRecord": "docs/parity/fixtures/compaction-context-management-c1-case-results.json",
-      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b"
+      "implementationSourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2"
     },
     {
       "id": "automatic-compaction",
@@ -132,7 +132,7 @@
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#AutomaticCompactionUsesTheSplitTurnCoordinatorBeforeAcceptingTheNextPrompt",
         "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcActiveModelSelectionProcessTests.cs#RpcModelSelectionAndCycleDuringBlockedToolTurnChangeTheNextProviderRequest"
       ],
-      "baseline": "C2 passes 10/10 on final implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b: 9 equivalent and 1 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c2-case-results.json; raw captures are ignored under artifacts/parity/20261028T-final-source-7480e81d/runs/C2/differential/.",
+      "baseline": "C2 passes 10/10 on final implementation source 41e9b7e7ebdea70b878e409204cd8b3d177144e2: 9 equivalent and 1 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c2-case-results.json; raw captures are ignored under artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C2/differential/.",
       "differences": [],
       "evidenceGaps": [
         "Refresh C2 and C5 after later source changes; broader contexts/providers outside the frozen cases remain outside this checkpoint evidence."
@@ -160,7 +160,7 @@
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#CachedInputCountAlreadyIncludedInInputDoesNotFalseClassifySilentOverflow"
       ],
       "pairedEvidenceRecord": "docs/parity/fixtures/compaction-context-management-c2-case-results.json",
-      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b"
+      "implementationSourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2"
     },
     {
       "id": "cut-points-retention",
@@ -182,7 +182,7 @@
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#CompactionMovesBoundaryPastClosedRecoveryOmissionSuffix",
         "tests/PiSharp.Tests/Runtime/Agents/CompactionNestedToolCallsTests.cs"
       ],
-      "baseline": "C3 passes 14/14 on final implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b: 14 equivalent and 0 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c3-case-results.json; raw captures are ignored under artifacts/parity/20261028T-final-source-7480e81d/runs/C3/differential/.",
+      "baseline": "C3 passes 14/14 on final implementation source 41e9b7e7ebdea70b878e409204cd8b3d177144e2: 14 equivalent and 0 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c3-case-results.json; raw captures are ignored under artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C3/differential/.",
       "differences": [],
       "evidenceGaps": [],
       "cases": [
@@ -206,7 +206,7 @@
         "packages/coding-agent/test/compaction-nested-calls.test.ts"
       ],
       "pairedEvidenceRecord": "docs/parity/fixtures/compaction-context-management-c3-case-results.json",
-      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b"
+      "implementationSourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2"
     },
     {
       "id": "context-budgets-estimation",
@@ -228,7 +228,7 @@
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#AutoBudgetIsDisabledWithoutKnownContextWindowAndRejectsInvalidLimits",
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#TransientContextEstimateIsConservativeSerializedCharacterHeuristicNotTokenizer"
       ],
-      "baseline": "C4 passes 12/12 on final implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b: 11 equivalent and 1 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c4-case-results.json; raw captures are ignored under artifacts/parity/20261028T-final-source-7480e81d/runs/C4/differential/.",
+      "baseline": "C4 passes 12/12 on final implementation source 41e9b7e7ebdea70b878e409204cd8b3d177144e2: 11 equivalent and 1 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c4-case-results.json; raw captures are ignored under artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C4/differential/.",
       "differences": [
         "Current Pi source uses per-message chars/4 and a 4,800-character image heuristic. PiSharp has a separate transient AutoCompactionPolicy estimator that serializes JSON and uses chars/2 plus per-message framing and fixed overhead. This conservative overestimate is accepted only for the bounded ephemeral request projection; the canonical history and durable Pi-compatible estimate remain unchanged. C6 records both estimates and links the dedicated regression.",
         "Prior RPC compact captures at Pi 2b0a123 and current Pi main are not the requested b06 oracle and used different system/tool context; their estimate deltas are not final evidence."
@@ -253,7 +253,7 @@
         "packages/coding-agent/test/settings-manager-compaction.test.ts"
       ],
       "pairedEvidenceRecord": "docs/parity/fixtures/compaction-context-management-c4-case-results.json",
-      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b"
+      "implementationSourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2"
     },
     {
       "id": "provider-overflow-retry",
@@ -275,7 +275,7 @@
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#ProviderOverflowRetriesOnceOnlyBeforeContentWithShortenedRequest",
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#RepeatedProviderOverflowStopsAfterOneRecoveryAttempt"
       ],
-      "baseline": "C5 passes 11/11 on final implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b: 9 equivalent and 2 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c5-case-results.json; raw captures are ignored under artifacts/parity/20261028T-final-source-7480e81d/runs/C5/differential/.",
+      "baseline": "C5 passes 11/11 on final implementation source 41e9b7e7ebdea70b878e409204cd8b3d177144e2: 9 equivalent and 2 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c5-case-results.json; raw captures are ignored under artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C5/differential/.",
       "differences": [],
       "evidenceGaps": [],
       "cases": [
@@ -303,7 +303,7 @@
         "tests/PiSharp.Tests/Cli/Providers/ProviderOverflowLoopbackTests.cs#RealSdkRecoversPreContentHttpOverflowWithoutReplacingCanonicalHistory"
       ],
       "pairedEvidenceRecord": "docs/parity/fixtures/compaction-context-management-c5-case-results.json",
-      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b"
+      "implementationSourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2"
     },
     {
       "id": "tool-continuation-projection",
@@ -325,7 +325,7 @@
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#ParallelToolCallBatchCutsOnlyAfterBothResultsAndRetainsRawHistory",
         "tests/PiSharp.Tests/Runtime/Agents/CompactionNestedToolCallsTests.cs"
       ],
-      "baseline": "C6 passes 10/10 on final implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b: 5 equivalent and 5 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c6-case-results.json; raw captures are ignored under artifacts/parity/20261028T-final-source-7480e81d/runs/C6/differential/.",
+      "baseline": "C6 passes 10/10 on final implementation source 41e9b7e7ebdea70b878e409204cd8b3d177144e2: 5 equivalent and 5 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c6-case-results.json; raw captures are ignored under artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C6/differential/.",
       "differences": [
         "Large and latest tool results remain raw in Pi provider requests; PiSharp bounds the transient request and retains the latest outcome in its summary while leaving canonical history intact.",
         "Pinned Pi sends seeded incomplete and duplicate call/result graphs to the provider hook; PiSharp rejects the projected continuation before send. These are accepted safety differences with per-case regression references.",
@@ -349,7 +349,7 @@
         "packages/coding-agent/test/agent-session-auto-compaction-queue.test.ts"
       ],
       "pairedEvidenceRecord": "docs/parity/fixtures/compaction-context-management-c6-case-results.json",
-      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
+      "implementationSourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2",
       "pairedEvidenceStatus": "Historical C6 evidence passed 10/10 at source 1ff1d67; refresh against the final implementation source."
     },
     {
@@ -371,7 +371,7 @@
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#SummaryRejectsOversizedFocusBeforeProviderAndEmptyProviderOutput",
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#LongSummaryTranscriptRetainsLatestMessageWithinBound"
       ],
-      "baseline": "C7 passes 10/10 on final implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b: 9 equivalent and 1 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c7-case-results.json; raw captures are ignored under artifacts/parity/20261028T-final-source-7480e81d/runs/C7/differential/.",
+      "baseline": "C7 passes 10/10 on final implementation source 41e9b7e7ebdea70b878e409204cd8b3d177144e2: 9 equivalent and 1 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c7-case-results.json; raw captures are ignored under artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C7/differential/.",
       "differences": [
         "The compaction summary thinking-level delta is recorded as open in TODO.md but has not been rechecked against pinned b06."
       ],
@@ -394,7 +394,7 @@
         "packages/coding-agent/test/compaction-summary-reasoning.test.ts"
       ],
       "pairedEvidenceRecord": "docs/parity/fixtures/compaction-context-management-c7-case-results.json",
-      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
+      "implementationSourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2",
       "pairedEvidenceStatus": "Passed 10/10 at source 843d0388; refresh after later source changes."
     },
     {
@@ -417,7 +417,7 @@
         "tests/PiSharp.Tests/Runtime/Sessions/PiJsonlSessionInterchangeTests.cs",
         "tests/PiSharp.Tests/Runtime/Sessions/CrashRecoveryProcessTests.cs"
       ],
-      "baseline": "C8 passes 10/10 on final implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b: 10 equivalent and 0 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c8-case-results.json; raw captures are ignored under artifacts/parity/20261028T-final-source-7480e81d/runs/C8/differential/.",
+      "baseline": "C8 passes 10/10 on final implementation source 41e9b7e7ebdea70b878e409204cd8b3d177144e2: 10 equivalent and 0 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c8-case-results.json; raw captures are ignored under artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C8/differential/.",
       "differences": [],
       "evidenceGaps": [],
       "cases": [
@@ -438,7 +438,7 @@
         "packages/coding-agent/test/session-manager/build-context.test.ts"
       ],
       "pairedEvidenceRecord": "docs/parity/fixtures/compaction-context-management-c8-case-results.json",
-      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
+      "implementationSourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2",
       "pairedEvidenceStatus": "Passed 10/10 at source 843d0388; refresh after later source changes."
     },
     {
@@ -465,7 +465,7 @@
         "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionTreeEventTests.cs",
         "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionProcessTests.cs"
       ],
-      "baseline": "C9 passes 9/9 on final implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b: 9 equivalent and 0 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c9-case-results.json; raw captures are ignored under artifacts/parity/20261028T-final-source-7480e81d/runs/C9/differential/.",
+      "baseline": "C9 passes 9/9 on final implementation source 41e9b7e7ebdea70b878e409204cd8b3d177144e2: 9 equivalent and 0 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c9-case-results.json; raw captures are ignored under artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C9/differential/.",
       "differences": [],
       "evidenceGaps": [],
       "cases": [
@@ -491,7 +491,7 @@
         "tests/PiSharp.Tests/Cli/Tui/TerminalPtyTests.cs#ConversationTreeSearchSelectsAndPersistsABranchThroughLinuxPty"
       ],
       "pairedEvidenceRecord": "docs/parity/fixtures/compaction-context-management-c9-case-results.json",
-      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b"
+      "implementationSourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2"
     },
     {
       "id": "usage-reasoning-costs",
@@ -509,13 +509,17 @@
       ],
       "inputs": "Provider UsageDetails (possibly partially unknown), summary request model/route, cache and reasoning token fields, model pricing and active branch.",
       "outputs": "Per-request usage, compaction aggregate, context usage, billed tokens, per-session/branch totals and cost projections.",
-      "state": "Only provider-supplied counts and known rates may be reported; active-branch totals exclude inactive paths; physical summary routing retains per-model attribution.",
+      "state": "Native generated branch-summary usage is persisted in both native and Pi-compatible forms; RPC statistics select the native record once, preserve imported-Pi summaries, and match after reload and in mixed sessions.",
       "existingTests": [
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#CompactionUsageIsPersistedAndIncludedInSessionBilling",
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#UsageAccountingAppliesRequestWideModelInputPricingTiers",
-        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionStatsProjectorTests.cs"
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionStatsProjectorTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionStatsProjectorTests.cs#ProjectsImportedBranchSummaryUsage",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionStatsProjectorTests.cs#ProjectsNativeBranchSummaryUsageOnceAfterPersistenceReload",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionStatsProjectorTests.cs#AggregatesNativeAndImportedBranchSummaryUsageInMixedSession",
+        "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionTreeEventTests.cs#RequestedBranchSummaryUsesMafAndPersistsItsUsage"
       ],
-      "baseline": "C10 passes 10/10 on final implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b: 8 equivalent and 2 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c10-case-results.json; raw captures are ignored under artifacts/parity/20261028T-final-source-7480e81d/runs/C10/differential/.",
+      "baseline": "C10 passes 10/10 at source 41e9b7e7ebdea70b878e409204cd8b3d177144e2; native generated summary usage is counted once in RPC stats after reload and agrees with the paired Pi usage observation. 8 cases are equivalent and 2 are intentional safety differences, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c10-case-results.json; raw captures are ignored under artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C10/differential/.",
       "differences": [
         "Pinned Pi usage fields are required numeric values and appear as zero when source fields are absent; PiSharp preserves absent provider counts as unknown at the Microsoft.Extensions.AI boundary.",
         "Pinned Pi requires numeric pricing rates and reports a zero-rate fixture as free; PiSharp preserves missing model pricing as unknown cost."
@@ -547,9 +551,13 @@
         "tests/PiSharp.Tests/Cli/Providers/Anthropic/PiMessagesProviderTests.cs",
         "tests/PiSharp.Tests/Cli/Providers/Bedrock/BedrockProviderTests.cs",
         "tests/PiSharp.Tests/Cli/Providers/Google/GoogleGenAiProviderTests.cs",
-        "tests/PiSharp.Tests/Cli/Providers/Mistral/MistralProviderCompatibilityTests.cs"
+        "tests/PiSharp.Tests/Cli/Providers/Mistral/MistralProviderCompatibilityTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionStatsProjectorTests.cs#ProjectsImportedBranchSummaryUsage",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionStatsProjectorTests.cs#ProjectsNativeBranchSummaryUsageOnceAfterPersistenceReload",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionStatsProjectorTests.cs#AggregatesNativeAndImportedBranchSummaryUsageInMixedSession",
+        "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionTreeEventTests.cs#RequestedBranchSummaryUsesMafAndPersistsItsUsage"
       ],
-      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
+      "implementationSourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2",
       "pairedEvidenceRecord": "docs/parity/fixtures/compaction-context-management-c10-case-results.json"
     },
     {
@@ -572,13 +580,14 @@
       ],
       "inputs": "CLI/TUI/RPC/JSON command, current session state, compact result/lifecycle, provider protocol and restored history.",
       "outputs": "Commands, messages, events, state queries, JSON output, status and physical provider requests.",
-      "state": "The canonical compaction entry is separate from projected provider request; visible output reflects persisted usage/boundary, not fabricated detail.",
+      "state": "RPC get_session_stats includes native branch-summary usage once after persistence reload while retaining imported-Pi handling; mixed native/imported summaries sum exactly once. CLI/TUI/JSON/provider compaction surfaces retain their prior behavior.",
       "existingTests": [
         "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcCompactionProcessTests.cs",
         "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionStatsProjectorTests.cs",
-        "tests/PiSharp.Tests/Cli/Tui/TerminalPtyTests.cs"
+        "tests/PiSharp.Tests/Cli/Tui/TerminalPtyTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcModeTests.cs#GetSessionStatsIncludesNativeBranchSummaryUsageAfterReload"
       ],
-      "baseline": "C11 passes 10/10 on final implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b: 10 equivalent and 0 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c11-case-results.json; raw captures are ignored under artifacts/parity/20261028T-final-source-7480e81d/runs/C11/differential/.",
+      "baseline": "C11 passes 10/10 at source 41e9b7e7ebdea70b878e409204cd8b3d177144e2; the RPC get_session_stats process regression covers native usage after persistence reload. 10 cases are equivalent, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c11-case-results.json; raw captures are ignored under artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C11/differential/.",
       "differences": [],
       "evidenceGaps": [],
       "cases": [
@@ -598,8 +607,11 @@
         "packages/coding-agent/test/interactive-mode-tree-navigation.test.ts",
         "packages/coding-agent/test/agent-session-tree-navigation.test.ts"
       ],
-      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
-      "pairedEvidenceRecord": "docs/parity/fixtures/compaction-context-management-c11-case-results.json"
+      "implementationSourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2",
+      "pairedEvidenceRecord": "docs/parity/fixtures/compaction-context-management-c11-case-results.json",
+      "implementationTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcModeTests.cs#GetSessionStatsIncludesNativeBranchSummaryUsageAfterReload"
+      ]
     },
     {
       "id": "native-extension-hooks",
@@ -620,7 +632,7 @@
         "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionCompactionEventTests.cs",
         "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionTreeEventTests.cs"
       ],
-      "baseline": "C12 passes 8/8 on final implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b: 7 equivalent and 1 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c12-case-results.json; raw captures are ignored under artifacts/parity/20261028T-final-source-7480e81d/runs/C12/differential/.",
+      "baseline": "C12 passes 8/8 on final implementation source 41e9b7e7ebdea70b878e409204cd8b3d177144e2: 7 equivalent and 1 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c12-case-results.json; raw captures are ignored under artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C12/differential/.",
       "differences": [],
       "evidenceGaps": [],
       "cases": [
@@ -643,7 +655,7 @@
         "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionTreeEventTests.cs#RequestedBranchSummaryUsesMafAndPersistsItsUsage",
         "tests/PiSharp.Tests/Runtime/Extensions/NativeExtensionTreeEventTests.cs#BranchSummaryFailureLeavesCanonicalSelectionAndPersistenceUnchanged"
       ],
-      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
+      "implementationSourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2",
       "pairedEvidenceRecord": "docs/parity/fixtures/compaction-context-management-c12-case-results.json"
     },
     {
@@ -668,7 +680,7 @@
         "tests/PiSharp.Tests/Runtime/Sessions/CrashRecoveryProcessTests.cs",
         "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcCompactionProcessTests.cs#RpcProcessAbortCancelsAnInFlightCompactionAndReportsItsLifecycle"
       ],
-      "baseline": "C13 passes 12/12 on final implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b: 11 equivalent and 1 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c13-case-results.json; raw captures are ignored under artifacts/parity/20261028T-final-source-7480e81d/runs/C13/differential/.",
+      "baseline": "C13 passes 12/12 on final implementation source 41e9b7e7ebdea70b878e409204cd8b3d177144e2: 11 equivalent and 1 intentional safety-difference cases, with stable two-run Pi/PiSharp observations and zero unresolved mismatches. Source-bound compact evidence: docs/parity/fixtures/compaction-context-management-c13-case-results.json; raw captures are ignored under artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C13/differential/.",
       "differences": [],
       "evidenceGaps": [],
       "cases": [
@@ -690,7 +702,7 @@
         "packages/coding-agent/test/agent-session-auto-compaction-queue.test.ts",
         "packages/coding-agent/test/suite/regressions/9340-9777-auto-compaction-cancellation.test.ts"
       ],
-      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
+      "implementationSourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2",
       "pairedEvidenceRecord": "docs/parity/fixtures/compaction-context-management-c13-case-results.json"
     },
     {
@@ -816,7 +828,7 @@
         "tools/parity/compaction_context/test_verifier.py",
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#RecoverableLengthStopCompactsOnceAndContinuesWithoutPartialOutput"
       ],
-      "baseline": "C1-C13 pass 135/135 on 7480e81dcba48ca2861596789c6f39fecbc6ad2b; 121 are equivalent and 14 are explicitly classified safety differences. D0 independently passes 9/9 with two-run Pi stability, all 135 paired cases, raw artifact hashes, and zero unresolved mismatches.",
+      "baseline": "C1-C13 pass 135/135 on 41e9b7e7ebdea70b878e409204cd8b3d177144e2; 121 are equivalent and 14 are explicitly classified safety differences. D0 independently passes 9/9 with two-run Pi stability, all 135 paired cases, raw artifact hashes, and zero unresolved mismatches.",
       "differences": [],
       "evidenceGaps": [],
       "cases": [
@@ -837,8 +849,8 @@
         "tools/parity/compaction_context/pi_oracle.mjs",
         "tools/parity/compaction_context/c5_oracle.py"
       ],
-      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
-      "pairedEvidenceRecord": "artifacts/parity/20261028T-final-source-7480e81d/runs/D0/d0-case-results.json"
+      "implementationSourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2",
+      "pairedEvidenceRecord": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/D0/d0-case-results.json"
     },
     {
       "id": "quality-and-regression-gates",
@@ -858,7 +870,7 @@
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs",
         "tests/PiSharp.Tests/Cli/Providers/ProviderOverflowLoopbackTests.cs"
       ],
-      "baseline": "Q0 passes 10/10. Full .NET: 3,959/3,959; compaction/session/provider 114/114; RPC/TUI/extensions 52/52; terminal Python 66/66; compaction verifier/helper 27/27; built-in parity Python 27/27; terminal Node 24/24; pinned Pi 200 passed and 20 exact credential-gated skips. Final docs path validation passes 156/690.",
+      "baseline": "Q0 passes 10/10. Full .NET: 3,963/3,963; compaction/session/provider 114/114; RPC/TUI/extensions 56/56; terminal Python 66/66; compaction verifier/helper 27/27; built-in parity Python 27/27; terminal Node 24/24; pinned Pi 200 passed and 20 exact credential-gated skips. Final docs path validation passes 156/690.",
       "differences": [
         "One pinned queue-test expectation differs for an unknown model/context window; this is classified as a case-level safety difference in the confirmed unknown-window record. The selected pinned Pi suite passes 200 tests and has 20 exact credential-gated skips."
       ],
@@ -886,8 +898,8 @@
         "PiSharp.slnx",
         "tools/parity/compaction_context/runner.py"
       ],
-      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
-      "pairedEvidenceRecord": "artifacts/parity/20261028T-final-source-7480e81d/runs/Q0/q0-case-results.json"
+      "implementationSourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2",
+      "pairedEvidenceRecord": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/Q0/q0-case-results.json"
     },
     {
       "id": "committed-source-bound-evidence",
@@ -900,7 +912,7 @@
       ],
       "inputs": "Implementation source SHA, test source SHA, frozen contract digest, raw artifact hashes and explicit evidence directory.",
       "outputs": "Committed compact evidence, stale-source rejection and receipt/source linkage.",
-      "state": "At implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b, 154 C/D/Q case records are source-bound; P0/P1/V0/V1 add 38 compact records. The 211-case contract index and 192 reviewed compact case-result records are committed; E0, CI0 and PUB0 outputs are retained in the ignored explicit evidence directory because they include final-head publication state.",
+      "state": "At implementation source 41e9b7e7ebdea70b878e409204cd8b3d177144e2, 154 C/D/Q case records are source-bound; P0/P1/V0/V1 add 38 compact records. The 211-case contract index and 192 reviewed compact case-result records are committed; E0, CI0 and PUB0 outputs are retained in the ignored explicit evidence directory because they include final-head publication state.",
       "existingTests": [
         "tools/parity/compaction_context/test_verifier.py#test_stale_implementation_source_is_rejected",
         "tools/parity/compaction_context/test_verifier.py#test_missing_raw_artifact_is_rejected"
@@ -1020,7 +1032,7 @@
     "C8 persistence and provider-after-reload coverage: compaction usage/metadata round-trip, canonical history recovery, branch/fork/clone restoration, restart continuation, and live SDK request comparison for Responses, Chat Completions, and Anthropic.",
     "C9 branch navigation: branch-summary prompts now match Pi, including custom summarization instructions; the summary preamble and navigation result are covered by paired pinned observations.",
     "C10 usage accounting preserves unknown provider counts and costs, separates uncached input from cached reads, carries cache writes and reasoning tokens, and projects canonical totals across compaction, active branch, CLI, TUI, and RPC surfaces.",
-    "C11 integration: RPC compaction cost components remain unknown when provider usage omits them; JSON compaction lifecycle events expose Pi-shaped reason/result/aborted/willRetry payloads. The paired C11 adapter and case evidence pass within C1-C13 135/135 at final implementation source 7480e81dcba48ca2861596789c6f39fecbc6ad2b."
+    "C11 integration: RPC compaction cost components remain unknown when provider usage omits them; JSON compaction lifecycle events expose Pi-shaped reason/result/aborted/willRetry payloads. The paired C11 adapter and case evidence pass within C1-C13 135/135 at final implementation source 41e9b7e7ebdea70b878e409204cd8b3d177144e2."
   ],
   "formalAcceptance": {
     "contractPath": "tools/parity/compaction_context/contract.json",
@@ -1032,8 +1044,8 @@
     "reason": "All 22/22 checkpoints and 211/211 required cases pass with zero failed or skipped cases. The contract-derived 211-case index and 192 reviewed compact case-result records are committed; final-head E0/CI0/PUB0 outputs and run identities are preserved in the ignored explicit evidence directory and PR description.",
     "perCaseArtifactsCommitted": 192,
     "currentSourceCheckpointEvidence": {
-      "sourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
-      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
+      "sourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2",
+      "implementationSourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2",
       "checkpointIds": [
         "C1",
         "C2",
@@ -1058,24 +1070,24 @@
       "requiredCases": 173,
       "status": "passed",
       "runnerRecords": [
-        "artifacts/parity/20261028T-final-source-7480e81d/runs/C1/checkpoint-run.json",
-        "artifacts/parity/20261028T-final-source-7480e81d/runs/C2/checkpoint-run.json",
-        "artifacts/parity/20261028T-final-source-7480e81d/runs/C3/checkpoint-run.json",
-        "artifacts/parity/20261028T-final-source-7480e81d/runs/C4/checkpoint-run.json",
-        "artifacts/parity/20261028T-final-source-7480e81d/runs/C5/checkpoint-run.json",
-        "artifacts/parity/20261028T-final-source-7480e81d/runs/C6/checkpoint-run.json",
-        "artifacts/parity/20261028T-final-source-7480e81d/runs/C7/checkpoint-run.json",
-        "artifacts/parity/20261028T-final-source-7480e81d/runs/C8/checkpoint-run.json",
-        "artifacts/parity/20261028T-final-source-7480e81d/runs/C9/checkpoint-run.json",
-        "artifacts/parity/20261028T-final-source-7480e81d/runs/C10/checkpoint-run.json",
-        "artifacts/parity/20261028T-final-source-7480e81d/runs/C11/checkpoint-run.json",
-        "artifacts/parity/20261028T-final-source-7480e81d/runs/C12/checkpoint-run.json",
-        "artifacts/parity/20261028T-final-source-7480e81d/runs/C13/checkpoint-run.json",
-        "artifacts/parity/20261028T-final-source-7480e81d/runs/D0/checkpoint-run.json",
-        "artifacts/parity/20261028T-final-source-7480e81d/runs/Q0/checkpoint-run.json",
-        "artifacts/parity/20261028T-final-source-7480e81d/runs/E0/checkpoint-run.json",
-        "artifacts/parity/20261028T-final-source-7480e81d/runs/CI0/checkpoint-run.json",
-        "artifacts/parity/20261028T-final-source-7480e81d/runs/PUB0/checkpoint-run.json"
+        "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C1/checkpoint-run.json",
+        "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C2/checkpoint-run.json",
+        "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C3/checkpoint-run.json",
+        "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C4/checkpoint-run.json",
+        "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C5/checkpoint-run.json",
+        "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C6/checkpoint-run.json",
+        "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C7/checkpoint-run.json",
+        "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C8/checkpoint-run.json",
+        "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C9/checkpoint-run.json",
+        "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C10/checkpoint-run.json",
+        "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C11/checkpoint-run.json",
+        "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C12/checkpoint-run.json",
+        "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C13/checkpoint-run.json",
+        "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/D0/checkpoint-run.json",
+        "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/Q0/checkpoint-run.json",
+        "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/E0/checkpoint-run.json",
+        "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/CI0/checkpoint-run.json",
+        "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/PUB0/checkpoint-run.json"
       ],
       "compactRecords": [
         "docs/parity/fixtures/compaction-context-management-c1-case-results.json",
@@ -1097,14 +1109,14 @@
       "documentationOnlyCommitAfterImplementation": true
     },
     "lastSourceBoundCheckpointEvidence": {
-      "sourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
-      "implementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
+      "sourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2",
+      "implementationSourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2",
       "checkpointId": "PUB0",
       "passedCases": 5,
       "requiredCases": 5,
       "status": "passed",
       "runnerRecords": [
-        "artifacts/parity/20261028T-final-source-7480e81d/runs/PUB0/checkpoint-run.json"
+        "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/PUB0/checkpoint-run.json"
       ],
       "compactRecords": [],
       "documentationOnlyCommitAfterImplementation": true
@@ -1121,10 +1133,10 @@
       "requiredCases": 38,
       "status": "passed",
       "runnerRecords": [
-        "artifacts/parity/20261028T-final-source-7480e81d/runs/P0/checkpoint-run.json",
-        "artifacts/parity/20261028T-final-source-7480e81d/runs/P1/checkpoint-run.json",
-        "artifacts/parity/20261028T-final-source-7480e81d/runs/V0/checkpoint-run.json",
-        "artifacts/parity/20261028T-final-source-7480e81d/runs/V1/checkpoint-run.json"
+        "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/P0/checkpoint-run.json",
+        "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/P1/checkpoint-run.json",
+        "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/V0/checkpoint-run.json",
+        "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/V1/checkpoint-run.json"
       ],
       "compactRecords": [
         "docs/parity/fixtures/compaction-context-management-p0-case-results.json",
@@ -1143,15 +1155,15 @@
       "requiredCases": 19,
       "status": "passed",
       "runnerRecords": [
-        "artifacts/parity/20261028T-final-source-7480e81d/runs/E0/checkpoint-run.json",
-        "artifacts/parity/20261028T-final-source-7480e81d/runs/CI0/checkpoint-run.json",
-        "artifacts/parity/20261028T-final-source-7480e81d/runs/PUB0/checkpoint-run.json"
+        "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/E0/checkpoint-run.json",
+        "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/CI0/checkpoint-run.json",
+        "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/PUB0/checkpoint-run.json"
       ],
-      "aggregateEvidence": "artifacts/parity/20261028T-final-source-7480e81d/evidence.json"
+      "aggregateEvidence": "artifacts/parity/20261028T-review-fix-41e9b7e7/evidence.json"
     }
   },
   "validationSoFar": {
-    "finalImplementationSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
+    "finalImplementationSourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2",
     "pairedC1ThroughC13": "135/135 passed: 121 equivalent, 14 intentional safety differences, 0 unresolved.",
     "independentD0": "9/9 passed; 135 paired C cases, 14 safety differences, stable Pi/PiSharp observations, raw hashes verified.",
     "qualityQ0": "10/10 passed; full .NET suite 3,959/3,959; focused compaction/session/provider 114/114; focused RPC/TUI/extension 52/52.",

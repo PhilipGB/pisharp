@@ -1,61 +1,35 @@
-# Compaction and Context Management Parity — 2026-10-28
+# Compaction and Context Management Parity — Review Correction Refresh — 2026-10-28
 
 ## Scope and source pins
 
-This completed milestone is based on the verified PR #27 merge `12064420179f4119bdaf37479c7cba0f5ca40717`.
-The pinned Pi source is `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The frozen contract at
-[contract.json](../../../tools/parity/compaction_context/contract.json) has SHA-256
-`c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6` and contains 22 checkpoints / 211 required cases. The final
-implementation source SHA is `7480e81dcba48ca2861596789c6f39fecbc6ad2b` on branch
-`milestone/compaction-context-management-parity`.
+The milestone is based on PR #27 merge `12064420179f4119bdaf37479c7cba0f5ca40717` and pinned Pi source `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The frozen contract at [contract.json](../../../tools/parity/compaction_context/contract.json) has SHA-256 `c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6` and defines 22 checkpoints / 211 required cases.
 
-## Verified implementation and parity
+The native branch-summary usage omission from RPC `get_session_stats` is fixed at implementation source `41e9b7e7ebdea70b878e409204cd8b3d177144e2` on branch `milestone/compaction-context-management-parity`. Regression coverage verifies native generation, persisted reload, imported Pi summaries, mixed sessions, and exactly-once accounting.
 
-All 22/22 checkpoints and 211/211 required cases pass, with zero failed or skipped cases.
-C1-C13 pass 135/135 at the final implementation source; D0 passes 9/9; Q0 passes 10/10;
-P0/P1 pass 10/10; V0/V1 pass 28/28; E0 passes 9/9; CI0 passes 5/5; PUB0 passes 5/5.
-The paired C corpus has 121 equivalent observations and 14 case-level intentional safety
-differences. Each safety difference has dedicated regression evidence, and there are no
-unresolved mismatches. D0 verifies stable same-Pi observations and artifact hashes.
+## Current verified results
 
-Implemented behavior covers manual and automatic compaction, cut-point retention,
-context-window and usage accounting, provider overflow and bounded retry, transient
-tool-context projection with canonical-history preservation, summary generation, JSONL
-persistence and branch recovery, branch-summary hooks, CLI/RPC/JSON/TUI projection,
-provider request boundaries, and cancellation/crash recovery. The C6 transient estimator
-is separate from Pi's persistent message estimate; its conservative character-based formula
-is limited to an ephemeral outbound safety projection.
+Current refreshed evidence passes 18/22 checkpoints and 187/211 required cases:
 
-The 14 accepted safety cases cover unknown context windows and limits, partial-output
-no-replay, conservative transient estimation and bounded tool results, malformed tool
-histories, empty summaries, unknown usage/prices, invalid compaction boundaries, and unknown
-tool outcomes. Compact source-pinned result records include normalized observations,
-SHA-256 digests, regression references, and raw artifact hashes.
+- C1-C13: 135/135, with 121 equivalent observations, 14 verified intentional safety differences, and zero unresolved mismatches.
+- D0: 9/9, including two-run pinned-Pi stability and hashes for current compact C evidence.
+- Q0: 10/10.
+- P0: 5/5; V0: 14/14; V1: 14/14.
 
-## Quality and publication evidence
+P1 is incomplete because it ran while documentation files were modified. E0, CI0, and PUB0 have not run for the corrected source. The corrected commit has not yet been pushed, and PR #28 still publishes the prior head `763f008a347282078b86946b398e9229dd930f06`. The pending steps are a clean-tree P1 rerun, refreshed P1/D0 compact evidence, push, automatic exact-head CI, E0, PR-description update, and PUB0 aggregation.
 
-- Full .NET suite: **3,959 passed, 0 failed, 0 skipped**.
-- Focused compaction/session/provider tests: **114/114**; focused RPC/TUI/extension: **52/52**.
-- Terminal Python: **66/66**; compaction verifier/helper tests: **27/27**; built-in parity Python: **27/27**; terminal Node: **24/24**.
-- MCP conformance reports no regressions against its classified baseline; three existing scenarios remain classified.
-- Pinned Pi suite: **200 passed, 0 failed, 20 credential-gated skips**, with exact skip identities verified.
-- Formatting and warnings-as-errors solution build passed. Q0 suppresses only NU1900 because the local NuGet audit cache is read-only; all other warnings remain errors. Exact-head CI passed the standard build with a clean cache.
-- Q0 recorded **156 documents / 700 references**. Final post-evidence documentation path validation passes for **156 documents / 690 references**.
-- Both automatic exact-head workflows passed with every required job successful and no manual dispatch. Their run IDs and the final PR head SHA are recorded in the PR description and ignored CI0 evidence.
-- E0 validated the committed inventory, evidence index, source identity and raw artifact hashes. PUB0 validated the current explicit evidence directory and independently aggregated all 22 checkpoints / 211 cases.
+## Quality evidence
 
-Raw process streams remain Git-ignored under
-`artifacts/parity/20261028T-final-source-7480e81d/`. The 211-case contract-derived index and
-reviewed compact source-bound case results are committed under `docs/parity/fixtures/`.
+- Full .NET suite: **3,963 passed, 0 failed, 0 skipped**.
+- Focused compaction/session/provider: **114/114**; RPC/TUI/extensions: **56/56**.
+- Terminal Python: **66/66**; compaction helper Python: **27/27**; built-in parity Python: **27/27**; terminal Node: **24/24**.
+- MCP conformance has no regressions against the classified baseline; three existing scenarios remain classified.
+- Pinned Pi suite: **200 passed, 0 failed, 20 exact credential-gated skips**.
+- Formatting and warnings-as-errors build passed. Q0 suppresses only NU1900 because the local NuGet audit cache is read-only.
+- Q0 recorded **156 documents / 700 references**; post-evidence documentation path validation recorded **156 / 690**.
+- Provider-boundary checks use local loopback fixtures; no live model endpoint was called.
 
-## Limitations and review status
+Raw process streams remain Git-ignored under `artifacts/parity/20261028T-review-fix-41e9b7e7/`. Compact source-bound reports and the 211-case contract index are tracked under `docs/parity/fixtures/`.
 
-Twenty pinned Pi interactive/LLM integration cases are credential-gated and skipped; their
-identities are checked. No live model endpoint was called. Provider behavior outside the
-frozen cases and broader model/provider matrices are outside this milestone's scope. The
-local Q0 build suppresses only NU1900 because the managed NuGet audit cache is read-only;
-exact-head CI passes the standard build in its clean environment.
+## Limitations and separate follow-up
 
-The PR #27 prerequisite publication records a historical archived CLI binary hash that
-was not reproduced by a fresh standalone local build; the caveat is retained in the
-prerequisite evidence. PR #28 remains **open, draft, and unmerged** for independent review.
+Twenty pinned Pi interactive/LLM tests require credentials and were skipped with their exact identities verified. Broader provider behavior outside the frozen contract remains out of scope. The CI managed-package corpus remains scoped to its historical milestone branch; the independent review identified this as a separate verification concern. PR #28 remains **open, draft, and unmerged** pending the final acceptance refresh.

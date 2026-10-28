@@ -3,10 +3,10 @@
   "milestone": "compaction-context-management-parity",
   "checkpointId": "C5",
   "contractSha256": "c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6",
-  "evidenceDirectory": "artifacts/parity/20261028T-final-source-7480e81d/runs/C5/differential",
-  "generatedReportSha256": "26be7479a9aabc3daf99ba8cb3ecb2d95ace05f8a833e6d1b8e556465e87554e",
+  "evidenceDirectory": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/C5/differential",
+  "generatedReportSha256": "d3f8fe93538af7ec1178635f2c77a79b235301d86b8980db57a864d4394b04c7",
   "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-  "pisharpSourceSha": "7480e81dcba48ca2861596789c6f39fecbc6ad2b",
+  "pisharpSourceSha": "41e9b7e7ebdea70b878e409204cd8b3d177144e2",
   "sourceTreeClean": true,
   "piCalibrationStable": true,
   "pisharpCalibrationStable": true,
@@ -20,13 +20,13 @@
   "safetyDifferences": [
     {
       "caseId": "C5.partial-content-overflow-does-not-duplicate-request",
-      "reason": "PiSharp avoids replay after partial visible provider output and preserves the failed response outside the retried request.",
+      "reason": "Pinned Pi retries once after explicit context overflow with partial output; PiSharp surfaces the partial response and does not replay an already visible provider stream.",
       "regression": "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#ProviderOverflowRetriesOnceOnlyBeforeContentWithShortenedRequest (afterContent=true)",
       "safetyEvidence": "pisharp-partial-content-overflow-run-1.json"
     },
     {
       "caseId": "C5.unknown-model-window-does-not-fabricate-capacity",
-      "reason": "PiSharp fails closed when the provider model has no known context window.",
+      "reason": "Pinned Pi treats contextWindow=0 as a threshold of minus reserve and compacts; PiSharp does not invent a budget when no context policy is known.",
       "regression": "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#UnknownContextWindowDoesNotInventCapacityFromReportedUsage",
       "safetyEvidence": "pisharp-unknown-model-window-run-1.json"
     }
@@ -471,144 +471,260 @@
   ],
   "rawArtifacts": [
     {
-      "path": "pi-c5-observations.json",
-      "sha256": "f8b8c6a4f9fbcbc0798e2e68ac32dbf2685b2ad995c8d33f92d378e8131a5c0f"
+      "path": "pi-context-boundary-length/pi-run-1.json",
+      "sha256": "cb494fdaa3d5de919c6847f80a1cdbda49164777a9f47aead3570c6e1c50693e"
     },
     {
-      "path": "pi-context-boundary-length-normalized.json",
-      "sha256": "5c436bc685612bf7c30a2062e9615f746078812fc4a60031faa5ff727ab4ec4d"
+      "path": "pi-context-boundary-length/pi-run-2.json",
+      "sha256": "cb494fdaa3d5de919c6847f80a1cdbda49164777a9f47aead3570c6e1c50693e"
+    },
+    {
+      "path": "pi-context-boundary-length/pi-oracle.json",
+      "sha256": "3c6dbb4fb59c23e72fa24f0ce0fd25d91ee7cd7bb028fe4ac4e06d32a1d1b671"
+    },
+    {
+      "path": "pi-context-boundary-length.stdout.log",
+      "sha256": "1cd9d123b20f21044d07a18727f6f8e45ab913e12526219baa17118723f7524b"
     },
     {
       "path": "pi-context-boundary-length.stderr.log",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
-      "path": "pi-context-boundary-length.stdout.log",
-      "sha256": "8ada3e45d317c3e3169ac2dc0ce345beb14d6ce0de80a9ef18c0b94e12c4a114"
+      "path": "pisharp-context-boundary-length-run-1.json",
+      "sha256": "94cfd1a9fc0a63d2118bafeb1c10095b2adb3a4c14abbe7bb2e67206f4af8ebe"
     },
     {
-      "path": "pi-context-boundary-length/pi-oracle.json",
-      "sha256": "fb2b5b5461a0a04b9bd55b98e962a32592bc3a0736fa0dc5282e2b14af995b0e"
+      "path": "pisharp-context-boundary-length-run-1.stdout.log",
+      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
     },
     {
-      "path": "pi-context-boundary-length/pi-run-1.json",
-      "sha256": "fdfe7ce8fd7fdf91822fc12ed4a8a8fc1b3816524d5ad8a13383910007dc8150"
-    },
-    {
-      "path": "pi-context-boundary-length/pi-run-2.json",
-      "sha256": "fdfe7ce8fd7fdf91822fc12ed4a8a8fc1b3816524d5ad8a13383910007dc8150"
-    },
-    {
-      "path": "pi-length-recovery-normalized.json",
-      "sha256": "e09cf433a61a2941715b8a89ce7f9b42ed357be11a907aa39e849d416bfabb3e"
-    },
-    {
-      "path": "pi-length-recovery.stderr.log",
+      "path": "pisharp-context-boundary-length-run-1.stderr.log",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
-      "path": "pi-length-recovery.stdout.log",
-      "sha256": "033d89ac1858114eac08e12ed590d2b34da0c1dd11e89d031f7f1e0209ed5345"
+      "path": "pisharp-context-boundary-length-run-2.json",
+      "sha256": "94cfd1a9fc0a63d2118bafeb1c10095b2adb3a4c14abbe7bb2e67206f4af8ebe"
     },
     {
-      "path": "pi-length-recovery/pi-oracle.json",
-      "sha256": "199df05d721c6831799bb279bf76c54e5a5c769c19736a095ac2066316237b3d"
+      "path": "pisharp-context-boundary-length-run-2.stdout.log",
+      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
     },
     {
-      "path": "pi-length-recovery/pi-run-1.json",
-      "sha256": "24aada49ba1cc82d2623895a76d0d81f3aeb0fa41cfb4b3225ad361fbfd47f6e"
-    },
-    {
-      "path": "pi-length-recovery/pi-run-2.json",
-      "sha256": "24aada49ba1cc82d2623895a76d0d81f3aeb0fa41cfb4b3225ad361fbfd47f6e"
-    },
-    {
-      "path": "pi-partial-content-overflow-normalized.json",
-      "sha256": "7c6b57d624f30631ac733cd336cffe8459ecc814bc24e4f97c0e538bba942496"
-    },
-    {
-      "path": "pi-partial-content-overflow.stderr.log",
+      "path": "pisharp-context-boundary-length-run-2.stderr.log",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
-      "path": "pi-partial-content-overflow.stdout.log",
-      "sha256": "ee6180d9cea289cea1ff9cbad7053264b4cd67ba782c7705f6f083c63c24d5ca"
+      "path": "pi-context-boundary-length-normalized.json",
+      "sha256": "5c436bc685612bf7c30a2062e9615f746078812fc4a60031faa5ff727ab4ec4d"
     },
     {
-      "path": "pi-partial-content-overflow/pi-oracle.json",
-      "sha256": "dde2089798d2b0c38ea821308f750bbd325752cc8c7ff4cd24dccd6f415b5559"
+      "path": "pisharp-context-boundary-length-normalized.json",
+      "sha256": "314a67f2732017e9d5f91db7f34a3b0d1527fb7a34b868ac150f172d70efc30c"
     },
     {
-      "path": "pi-partial-content-overflow/pi-run-1.json",
-      "sha256": "4f6d0f8be0f632dc9765653de2243b33d341a69e571fbf63b8173df7af0d768d"
+      "path": "pi-c5-observations.json",
+      "sha256": "f8b8c6a4f9fbcbc0798e2e68ac32dbf2685b2ad995c8d33f92d378e8131a5c0f"
     },
     {
-      "path": "pi-partial-content-overflow/pi-run-2.json",
-      "sha256": "4f6d0f8be0f632dc9765653de2243b33d341a69e571fbf63b8173df7af0d768d"
+      "path": "pisharp-c5-observations.json",
+      "sha256": "a3498c48ca4b7b6341e53ed23608e006777c11b2748a638f2975047550171871"
     },
     {
-      "path": "pi-pre-content-overflow-normalized.json",
-      "sha256": "282d6967aea33f74acbfeb30a2f3e474b4da93f48d217e8a2c5cdedaaa1c1b9b"
+      "path": "provider-format-test-run-1.stdout.log",
+      "sha256": "9b3e9489ef2e86122bac3e2145d8decab8575e1a4d5a1f94dcd1398c648d4bae"
+    },
+    {
+      "path": "provider-format-test-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-provider-format-run-1/openai-responses.json",
+      "sha256": "5d4584c1fab122372ae632c21abb29b095606c270fef7ed07cddbfcf1c73587f"
+    },
+    {
+      "path": "pisharp-provider-format-run-1/openai-completions.json",
+      "sha256": "728eeadc80cdbbf47b74d39adf037e718ee6148fd762071974b0eccd43ce46db"
+    },
+    {
+      "path": "pisharp-provider-format-run-1/anthropic-messages.json",
+      "sha256": "1cdecc55b4eeb55f755d36dbd9f9cdd212b108136821525d3b694915da2b567f"
+    },
+    {
+      "path": "provider-format-test-run-2.stdout.log",
+      "sha256": "49daac9948f1f9b0bd866e2b8230abe534d4ed352f94fc066ab65a4f77d4ebc4"
+    },
+    {
+      "path": "provider-format-test-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-provider-format-run-2/openai-responses.json",
+      "sha256": "5d4584c1fab122372ae632c21abb29b095606c270fef7ed07cddbfcf1c73587f"
+    },
+    {
+      "path": "pisharp-provider-format-run-2/openai-completions.json",
+      "sha256": "728eeadc80cdbbf47b74d39adf037e718ee6148fd762071974b0eccd43ce46db"
+    },
+    {
+      "path": "pisharp-provider-format-run-2/anthropic-messages.json",
+      "sha256": "1cdecc55b4eeb55f755d36dbd9f9cdd212b108136821525d3b694915da2b567f"
+    },
+    {
+      "path": "pi-pre-content-overflow/pi-run-1.json",
+      "sha256": "56e555b4bbcd9647e83c0f018904e82d50c032c7b14aa48f4289efb0b6b35fb9"
+    },
+    {
+      "path": "pi-pre-content-overflow/pi-run-2.json",
+      "sha256": "56e555b4bbcd9647e83c0f018904e82d50c032c7b14aa48f4289efb0b6b35fb9"
+    },
+    {
+      "path": "pi-pre-content-overflow/pi-oracle.json",
+      "sha256": "4f8517cd4922e86e113fc202dd3c6b3a243e29d76d9718296de4db0fa105f7bf"
+    },
+    {
+      "path": "pi-pre-content-overflow.stdout.log",
+      "sha256": "d4ba55b4b329f0e34469ad9a99c048d86d7f458bb76d8cce3f1ae7f3eaf75fa1"
     },
     {
       "path": "pi-pre-content-overflow.stderr.log",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
-      "path": "pi-pre-content-overflow.stdout.log",
-      "sha256": "cb6bddb5512e87e7161d79e7d41c86488d15ec82e4865bfc79673e7adc9baac0"
+      "path": "pisharp-pre-content-overflow-run-1.json",
+      "sha256": "5247bc1f4bd4880eadfc60c629bb9d7a927280394499d10cb984308320fb242f"
     },
     {
-      "path": "pi-pre-content-overflow/pi-oracle.json",
-      "sha256": "64127adb78f78b87aa9986e2d85ac2536435bedee87163467c570b8ebfdfa870"
+      "path": "pisharp-pre-content-overflow-run-1.stdout.log",
+      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
     },
     {
-      "path": "pi-pre-content-overflow/pi-run-1.json",
-      "sha256": "447c67a5b4e7258939f614163c67c82d50f47930ca704fc614e4a018d588bd9f"
-    },
-    {
-      "path": "pi-pre-content-overflow/pi-run-2.json",
-      "sha256": "447c67a5b4e7258939f614163c67c82d50f47930ca704fc614e4a018d588bd9f"
-    },
-    {
-      "path": "pi-second-length-stop-normalized.json",
-      "sha256": "9e1f7a2ad9b223269ba29f5301bd513f023de8bad810abcd0fc3f37204825cfd"
-    },
-    {
-      "path": "pi-second-length-stop.stderr.log",
+      "path": "pisharp-pre-content-overflow-run-1.stderr.log",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
-      "path": "pi-second-length-stop.stdout.log",
-      "sha256": "6f5d471f0d57abad85e76bfb33c883a78321e4dece68a903e1d07deb9e026432"
+      "path": "pisharp-pre-content-overflow-run-2.json",
+      "sha256": "5247bc1f4bd4880eadfc60c629bb9d7a927280394499d10cb984308320fb242f"
     },
     {
-      "path": "pi-second-length-stop/pi-oracle.json",
-      "sha256": "a0bf5690f8f7caf5558ebc07a6febf86cf17dbf343259a63a70510e6c58f7c1e"
+      "path": "pisharp-pre-content-overflow-run-2.stdout.log",
+      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
     },
     {
-      "path": "pi-second-length-stop/pi-run-1.json",
-      "sha256": "64f6ddb1acab2ffbee79dad4fd847447938d22d2b09b442de54a02c3879e40ba"
-    },
-    {
-      "path": "pi-second-length-stop/pi-run-2.json",
-      "sha256": "64f6ddb1acab2ffbee79dad4fd847447938d22d2b09b442de54a02c3879e40ba"
-    },
-    {
-      "path": "pi-silent-usage-overflow-normalized.json",
-      "sha256": "6fffdae39fae484aabb41947a89753182b85d2b229015e3452bde2c14fcb78d3"
-    },
-    {
-      "path": "pi-silent-usage-overflow.stderr.log",
+      "path": "pisharp-pre-content-overflow-run-2.stderr.log",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
-      "path": "pi-silent-usage-overflow.stdout.log",
-      "sha256": "fbf97d6ccf928752ff315939a0e199dfb1687151abdb66b8bf6b5b24363997d3"
+      "path": "pi-pre-content-overflow-normalized.json",
+      "sha256": "282d6967aea33f74acbfeb30a2f3e474b4da93f48d217e8a2c5cdedaaa1c1b9b"
     },
     {
-      "path": "pi-silent-usage-overflow/pi-oracle.json",
-      "sha256": "b62a3a9e50e57b684060b7b4b7d5cffbd2c592101207d0cb2bba3ff7d889d6fe"
+      "path": "pisharp-pre-content-overflow-normalized.json",
+      "sha256": "b7f09a6873ab045701d3906310e5b2483df493158692e889af4ef99e44221a2c"
+    },
+    {
+      "path": "pi-partial-content-overflow/pi-run-1.json",
+      "sha256": "6b88726b3ee5d08975df2e96799c87849636d92ce21efb3b5d0be96a9d795e96"
+    },
+    {
+      "path": "pi-partial-content-overflow/pi-run-2.json",
+      "sha256": "6b88726b3ee5d08975df2e96799c87849636d92ce21efb3b5d0be96a9d795e96"
+    },
+    {
+      "path": "pi-partial-content-overflow/pi-oracle.json",
+      "sha256": "f9889ba9b95623a7707f63271ced4a277efcd3b494654995fe9c622f74c4df8f"
+    },
+    {
+      "path": "pi-partial-content-overflow.stdout.log",
+      "sha256": "b2b708db39c04f5ec2ccf1b9fb732f79cc7fe4675178bc43bbe64201513ffd66"
+    },
+    {
+      "path": "pi-partial-content-overflow.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-partial-content-overflow-run-1.json",
+      "sha256": "9ad9f56ac4594bd6913c4f543b18acbf56c2722eca90eadad1486e16e287cd1e"
+    },
+    {
+      "path": "pisharp-partial-content-overflow-run-1.stdout.log",
+      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
+    },
+    {
+      "path": "pisharp-partial-content-overflow-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-partial-content-overflow-run-2.json",
+      "sha256": "9ad9f56ac4594bd6913c4f543b18acbf56c2722eca90eadad1486e16e287cd1e"
+    },
+    {
+      "path": "pisharp-partial-content-overflow-run-2.stdout.log",
+      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
+    },
+    {
+      "path": "pisharp-partial-content-overflow-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-partial-content-overflow-normalized.json",
+      "sha256": "7c6b57d624f30631ac733cd336cffe8459ecc814bc24e4f97c0e538bba942496"
+    },
+    {
+      "path": "pisharp-partial-content-overflow-normalized.json",
+      "sha256": "094e292bad86d885cd31609cb6555d67defaa33e67da72b0ea0e7c436f62b81c"
+    },
+    {
+      "path": "pi-length-recovery/pi-run-1.json",
+      "sha256": "2238d061ff934fe9cb958347f49adcd2fecfe0d6bc4dbbc5f326707e9ef0d1bf"
+    },
+    {
+      "path": "pi-length-recovery/pi-run-2.json",
+      "sha256": "2238d061ff934fe9cb958347f49adcd2fecfe0d6bc4dbbc5f326707e9ef0d1bf"
+    },
+    {
+      "path": "pi-length-recovery/pi-oracle.json",
+      "sha256": "6961d1da89ec2289f8aaa2a7bfff5864eaaa7dfcde98fb55a3df9b5b4bf4916c"
+    },
+    {
+      "path": "pi-length-recovery.stdout.log",
+      "sha256": "7e7d74a9eb73c259b6056ce682f820a99029fdbe4b6d4ccbf69eca09eec306af"
+    },
+    {
+      "path": "pi-length-recovery.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-length-recovery-run-1.json",
+      "sha256": "76f24eeb549f0a534f6ac8805071263e2fa3e0015adef9e4ccc9be796e6e0131"
+    },
+    {
+      "path": "pisharp-length-recovery-run-1.stdout.log",
+      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
+    },
+    {
+      "path": "pisharp-length-recovery-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-length-recovery-run-2.json",
+      "sha256": "76f24eeb549f0a534f6ac8805071263e2fa3e0015adef9e4ccc9be796e6e0131"
+    },
+    {
+      "path": "pisharp-length-recovery-run-2.stdout.log",
+      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
+    },
+    {
+      "path": "pisharp-length-recovery-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-length-recovery-normalized.json",
+      "sha256": "e09cf433a61a2941715b8a89ce7f9b42ed357be11a907aa39e849d416bfabb3e"
+    },
+    {
+      "path": "pisharp-length-recovery-normalized.json",
+      "sha256": "88eeb5a8b38157385d94f35f7d2ed6dc2bc80084663f953f0f3cca95df39b0f2"
     },
     {
       "path": "pi-silent-usage-overflow/pi-run-1.json",
@@ -619,20 +735,100 @@
       "sha256": "9ed1574ddd35bad1a76d503bff279cf90c5d9ede8381b26573faa20dac86bacc"
     },
     {
-      "path": "pi-stale-old-model-overflow-normalized.json",
-      "sha256": "662ce0a4849d8152827edbbf848c9dad30e0b511b775a2cfe718e4cd7232a580"
+      "path": "pi-silent-usage-overflow/pi-oracle.json",
+      "sha256": "b62a3a9e50e57b684060b7b4b7d5cffbd2c592101207d0cb2bba3ff7d889d6fe"
     },
     {
-      "path": "pi-stale-old-model-overflow.stderr.log",
+      "path": "pi-silent-usage-overflow.stdout.log",
+      "sha256": "fbf97d6ccf928752ff315939a0e199dfb1687151abdb66b8bf6b5b24363997d3"
+    },
+    {
+      "path": "pi-silent-usage-overflow.stderr.log",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
-      "path": "pi-stale-old-model-overflow.stdout.log",
-      "sha256": "432b7a2d7a5a85c63f3571f73b976f596d074766847d9e10774b4b3a96987bb7"
+      "path": "pisharp-silent-usage-overflow-run-1.json",
+      "sha256": "329ee375a1f73d964c62c022ebf14427fa9417bce6ae3e646ff94f78f2f04194"
     },
     {
-      "path": "pi-stale-old-model-overflow/pi-oracle.json",
-      "sha256": "7b1eb282a71370a80906c5476cb749e0b1caa8f8edbd91f026ad56efe7dd6edf"
+      "path": "pisharp-silent-usage-overflow-run-1.stdout.log",
+      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
+    },
+    {
+      "path": "pisharp-silent-usage-overflow-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-silent-usage-overflow-run-2.json",
+      "sha256": "329ee375a1f73d964c62c022ebf14427fa9417bce6ae3e646ff94f78f2f04194"
+    },
+    {
+      "path": "pisharp-silent-usage-overflow-run-2.stdout.log",
+      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
+    },
+    {
+      "path": "pisharp-silent-usage-overflow-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-silent-usage-overflow-normalized.json",
+      "sha256": "6fffdae39fae484aabb41947a89753182b85d2b229015e3452bde2c14fcb78d3"
+    },
+    {
+      "path": "pisharp-silent-usage-overflow-normalized.json",
+      "sha256": "155ac16180494cb46ad3d552cc7c1a1eb2b7efd88d135845060d12f8e3d78054"
+    },
+    {
+      "path": "pi-second-length-stop/pi-run-1.json",
+      "sha256": "07747e7125bac4765e6cd706be7432009b6e04aa64c6f15e49fbb3fa77c98a5a"
+    },
+    {
+      "path": "pi-second-length-stop/pi-run-2.json",
+      "sha256": "07747e7125bac4765e6cd706be7432009b6e04aa64c6f15e49fbb3fa77c98a5a"
+    },
+    {
+      "path": "pi-second-length-stop/pi-oracle.json",
+      "sha256": "09c2ec14145910cdf6a869681d4f3cbd7fdc9f86349d7c2abd128cc078d981c3"
+    },
+    {
+      "path": "pi-second-length-stop.stdout.log",
+      "sha256": "b96cf4fc2eb8474179d2d34a9d34b308cf2b92055ace304076094f62903bc941"
+    },
+    {
+      "path": "pi-second-length-stop.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-second-length-stop-run-1.json",
+      "sha256": "3309c2f6e11c1e4bdbd3980eb584d0c39892fd2f048fc05bedc05d57202f0de3"
+    },
+    {
+      "path": "pisharp-second-length-stop-run-1.stdout.log",
+      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
+    },
+    {
+      "path": "pisharp-second-length-stop-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-second-length-stop-run-2.json",
+      "sha256": "3309c2f6e11c1e4bdbd3980eb584d0c39892fd2f048fc05bedc05d57202f0de3"
+    },
+    {
+      "path": "pisharp-second-length-stop-run-2.stdout.log",
+      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
+    },
+    {
+      "path": "pisharp-second-length-stop-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-second-length-stop-normalized.json",
+      "sha256": "9e1f7a2ad9b223269ba29f5301bd513f023de8bad810abcd0fc3f37204825cfd"
+    },
+    {
+      "path": "pisharp-second-length-stop-normalized.json",
+      "sha256": "9b851ac6be8ab8129693539abbfb6e2761ab2c27c7791d04017250b59b0d6f55"
     },
     {
       "path": "pi-stale-old-model-overflow/pi-run-1.json",
@@ -643,20 +839,48 @@
       "sha256": "4dcfc81427536128442b9564697af12d57c583b86256e7a60e368b9caf9275f0"
     },
     {
-      "path": "pi-unknown-model-window-normalized.json",
-      "sha256": "a00d17ce3c9505955e4b3f907a7ba1cf79a78463222305c3f6f50345f363d1c9"
+      "path": "pi-stale-old-model-overflow/pi-oracle.json",
+      "sha256": "7b1eb282a71370a80906c5476cb749e0b1caa8f8edbd91f026ad56efe7dd6edf"
     },
     {
-      "path": "pi-unknown-model-window.stderr.log",
+      "path": "pi-stale-old-model-overflow.stdout.log",
+      "sha256": "432b7a2d7a5a85c63f3571f73b976f596d074766847d9e10774b4b3a96987bb7"
+    },
+    {
+      "path": "pi-stale-old-model-overflow.stderr.log",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
-      "path": "pi-unknown-model-window.stdout.log",
-      "sha256": "1719fff77ab5b912b63fed6ad9d5bbc712b94c2ae9362e86ab9c0736be46625a"
+      "path": "pisharp-stale-old-model-overflow-run-1.json",
+      "sha256": "23cf1163cd67db8ccbdb74673c4d16f92e033d210bfa7617b4036defdaf780b9"
     },
     {
-      "path": "pi-unknown-model-window/pi-oracle.json",
-      "sha256": "9d32de53a87149f1dcebb52a23e0c0287f9663d9f8e0877ac8114d1181013097"
+      "path": "pisharp-stale-old-model-overflow-run-1.stdout.log",
+      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
+    },
+    {
+      "path": "pisharp-stale-old-model-overflow-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-stale-old-model-overflow-run-2.json",
+      "sha256": "23cf1163cd67db8ccbdb74673c4d16f92e033d210bfa7617b4036defdaf780b9"
+    },
+    {
+      "path": "pisharp-stale-old-model-overflow-run-2.stdout.log",
+      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
+    },
+    {
+      "path": "pisharp-stale-old-model-overflow-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-stale-old-model-overflow-normalized.json",
+      "sha256": "662ce0a4849d8152827edbbf848c9dad30e0b511b775a2cfe718e4cd7232a580"
+    },
+    {
+      "path": "pisharp-stale-old-model-overflow-normalized.json",
+      "sha256": "662ce0a4849d8152827edbbf848c9dad30e0b511b775a2cfe718e4cd7232a580"
     },
     {
       "path": "pi-unknown-model-window/pi-run-1.json",
@@ -667,272 +891,48 @@
       "sha256": "e5746fe8a6d7653a56baeb20572ffeccb4aa91ac6bdd5ad9a9454bfaf62692e2"
     },
     {
-      "path": "pisharp-c5-observations.json",
-      "sha256": "a3498c48ca4b7b6341e53ed23608e006777c11b2748a638f2975047550171871"
+      "path": "pi-unknown-model-window/pi-oracle.json",
+      "sha256": "9d32de53a87149f1dcebb52a23e0c0287f9663d9f8e0877ac8114d1181013097"
     },
     {
-      "path": "pisharp-context-boundary-length-normalized.json",
-      "sha256": "314a67f2732017e9d5f91db7f34a3b0d1527fb7a34b868ac150f172d70efc30c"
+      "path": "pi-unknown-model-window.stdout.log",
+      "sha256": "1719fff77ab5b912b63fed6ad9d5bbc712b94c2ae9362e86ab9c0736be46625a"
     },
     {
-      "path": "pisharp-context-boundary-length-run-1.json",
-      "sha256": "94cfd1a9fc0a63d2118bafeb1c10095b2adb3a4c14abbe7bb2e67206f4af8ebe"
-    },
-    {
-      "path": "pisharp-context-boundary-length-run-1.stderr.log",
+      "path": "pi-unknown-model-window.stderr.log",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
-      "path": "pisharp-context-boundary-length-run-1.stdout.log",
-      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
-    },
-    {
-      "path": "pisharp-context-boundary-length-run-2.json",
-      "sha256": "94cfd1a9fc0a63d2118bafeb1c10095b2adb3a4c14abbe7bb2e67206f4af8ebe"
-    },
-    {
-      "path": "pisharp-context-boundary-length-run-2.stderr.log",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
-      "path": "pisharp-context-boundary-length-run-2.stdout.log",
-      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
-    },
-    {
-      "path": "pisharp-length-recovery-normalized.json",
-      "sha256": "88eeb5a8b38157385d94f35f7d2ed6dc2bc80084663f953f0f3cca95df39b0f2"
-    },
-    {
-      "path": "pisharp-length-recovery-run-1.json",
-      "sha256": "76f24eeb549f0a534f6ac8805071263e2fa3e0015adef9e4ccc9be796e6e0131"
-    },
-    {
-      "path": "pisharp-length-recovery-run-1.stderr.log",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
-      "path": "pisharp-length-recovery-run-1.stdout.log",
-      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
-    },
-    {
-      "path": "pisharp-length-recovery-run-2.json",
-      "sha256": "76f24eeb549f0a534f6ac8805071263e2fa3e0015adef9e4ccc9be796e6e0131"
-    },
-    {
-      "path": "pisharp-length-recovery-run-2.stderr.log",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
-      "path": "pisharp-length-recovery-run-2.stdout.log",
-      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
-    },
-    {
-      "path": "pisharp-partial-content-overflow-normalized.json",
-      "sha256": "094e292bad86d885cd31609cb6555d67defaa33e67da72b0ea0e7c436f62b81c"
-    },
-    {
-      "path": "pisharp-partial-content-overflow-run-1.json",
-      "sha256": "9ad9f56ac4594bd6913c4f543b18acbf56c2722eca90eadad1486e16e287cd1e"
-    },
-    {
-      "path": "pisharp-partial-content-overflow-run-1.stderr.log",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
-      "path": "pisharp-partial-content-overflow-run-1.stdout.log",
-      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
-    },
-    {
-      "path": "pisharp-partial-content-overflow-run-2.json",
-      "sha256": "9ad9f56ac4594bd6913c4f543b18acbf56c2722eca90eadad1486e16e287cd1e"
-    },
-    {
-      "path": "pisharp-partial-content-overflow-run-2.stderr.log",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
-      "path": "pisharp-partial-content-overflow-run-2.stdout.log",
-      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
-    },
-    {
-      "path": "pisharp-pre-content-overflow-normalized.json",
-      "sha256": "b7f09a6873ab045701d3906310e5b2483df493158692e889af4ef99e44221a2c"
-    },
-    {
-      "path": "pisharp-pre-content-overflow-run-1.json",
-      "sha256": "5247bc1f4bd4880eadfc60c629bb9d7a927280394499d10cb984308320fb242f"
-    },
-    {
-      "path": "pisharp-pre-content-overflow-run-1.stderr.log",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
-      "path": "pisharp-pre-content-overflow-run-1.stdout.log",
-      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
-    },
-    {
-      "path": "pisharp-pre-content-overflow-run-2.json",
-      "sha256": "5247bc1f4bd4880eadfc60c629bb9d7a927280394499d10cb984308320fb242f"
-    },
-    {
-      "path": "pisharp-pre-content-overflow-run-2.stderr.log",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
-      "path": "pisharp-pre-content-overflow-run-2.stdout.log",
-      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
-    },
-    {
-      "path": "pisharp-provider-format-run-1/anthropic-messages.json",
-      "sha256": "1cdecc55b4eeb55f755d36dbd9f9cdd212b108136821525d3b694915da2b567f"
-    },
-    {
-      "path": "pisharp-provider-format-run-1/openai-completions.json",
-      "sha256": "728eeadc80cdbbf47b74d39adf037e718ee6148fd762071974b0eccd43ce46db"
-    },
-    {
-      "path": "pisharp-provider-format-run-1/openai-responses.json",
-      "sha256": "5d4584c1fab122372ae632c21abb29b095606c270fef7ed07cddbfcf1c73587f"
-    },
-    {
-      "path": "pisharp-provider-format-run-2/anthropic-messages.json",
-      "sha256": "1cdecc55b4eeb55f755d36dbd9f9cdd212b108136821525d3b694915da2b567f"
-    },
-    {
-      "path": "pisharp-provider-format-run-2/openai-completions.json",
-      "sha256": "728eeadc80cdbbf47b74d39adf037e718ee6148fd762071974b0eccd43ce46db"
-    },
-    {
-      "path": "pisharp-provider-format-run-2/openai-responses.json",
-      "sha256": "5d4584c1fab122372ae632c21abb29b095606c270fef7ed07cddbfcf1c73587f"
-    },
-    {
-      "path": "pisharp-second-length-stop-normalized.json",
-      "sha256": "9b851ac6be8ab8129693539abbfb6e2761ab2c27c7791d04017250b59b0d6f55"
-    },
-    {
-      "path": "pisharp-second-length-stop-run-1.json",
-      "sha256": "3309c2f6e11c1e4bdbd3980eb584d0c39892fd2f048fc05bedc05d57202f0de3"
-    },
-    {
-      "path": "pisharp-second-length-stop-run-1.stderr.log",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
-      "path": "pisharp-second-length-stop-run-1.stdout.log",
-      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
-    },
-    {
-      "path": "pisharp-second-length-stop-run-2.json",
-      "sha256": "3309c2f6e11c1e4bdbd3980eb584d0c39892fd2f048fc05bedc05d57202f0de3"
-    },
-    {
-      "path": "pisharp-second-length-stop-run-2.stderr.log",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
-      "path": "pisharp-second-length-stop-run-2.stdout.log",
-      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
-    },
-    {
-      "path": "pisharp-silent-usage-overflow-normalized.json",
-      "sha256": "155ac16180494cb46ad3d552cc7c1a1eb2b7efd88d135845060d12f8e3d78054"
-    },
-    {
-      "path": "pisharp-silent-usage-overflow-run-1.json",
-      "sha256": "329ee375a1f73d964c62c022ebf14427fa9417bce6ae3e646ff94f78f2f04194"
-    },
-    {
-      "path": "pisharp-silent-usage-overflow-run-1.stderr.log",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
-      "path": "pisharp-silent-usage-overflow-run-1.stdout.log",
-      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
-    },
-    {
-      "path": "pisharp-silent-usage-overflow-run-2.json",
-      "sha256": "329ee375a1f73d964c62c022ebf14427fa9417bce6ae3e646ff94f78f2f04194"
-    },
-    {
-      "path": "pisharp-silent-usage-overflow-run-2.stderr.log",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
-      "path": "pisharp-silent-usage-overflow-run-2.stdout.log",
-      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
-    },
-    {
-      "path": "pisharp-stale-old-model-overflow-normalized.json",
-      "sha256": "662ce0a4849d8152827edbbf848c9dad30e0b511b775a2cfe718e4cd7232a580"
-    },
-    {
-      "path": "pisharp-stale-old-model-overflow-run-1.json",
-      "sha256": "23cf1163cd67db8ccbdb74673c4d16f92e033d210bfa7617b4036defdaf780b9"
-    },
-    {
-      "path": "pisharp-stale-old-model-overflow-run-1.stderr.log",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
-      "path": "pisharp-stale-old-model-overflow-run-1.stdout.log",
-      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
-    },
-    {
-      "path": "pisharp-stale-old-model-overflow-run-2.json",
-      "sha256": "23cf1163cd67db8ccbdb74673c4d16f92e033d210bfa7617b4036defdaf780b9"
-    },
-    {
-      "path": "pisharp-stale-old-model-overflow-run-2.stderr.log",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
-      "path": "pisharp-stale-old-model-overflow-run-2.stdout.log",
-      "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
-    },
-    {
-      "path": "pisharp-unknown-model-window-normalized.json",
-      "sha256": "ad0f8dcabd749e1728b7c353b92a26352e40757b852b6068a93dbd6f8af09534"
     },
     {
       "path": "pisharp-unknown-model-window-run-1.json",
       "sha256": "4ef59b2f6a3150b593659c070c441d0ed0bc9e1b7ccdd2ba593e7e76988376fc"
     },
     {
-      "path": "pisharp-unknown-model-window-run-1.stderr.log",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
       "path": "pisharp-unknown-model-window-run-1.stdout.log",
       "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
+    },
+    {
+      "path": "pisharp-unknown-model-window-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
       "path": "pisharp-unknown-model-window-run-2.json",
       "sha256": "4ef59b2f6a3150b593659c070c441d0ed0bc9e1b7ccdd2ba593e7e76988376fc"
     },
     {
-      "path": "pisharp-unknown-model-window-run-2.stderr.log",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
       "path": "pisharp-unknown-model-window-run-2.stdout.log",
       "sha256": "cee34189aa8c943bcad61293fcaf13f48767e35fb5cbebb293ea393e37f79f2c"
     },
     {
-      "path": "provider-format-test-run-1.stderr.log",
+      "path": "pisharp-unknown-model-window-run-2.stderr.log",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
-      "path": "provider-format-test-run-1.stdout.log",
-      "sha256": "578b2970ed8f3c18f0fe9ae95b635f0618254f128c35d05e27f10d36559721db"
+      "path": "pi-unknown-model-window-normalized.json",
+      "sha256": "a00d17ce3c9505955e4b3f907a7ba1cf79a78463222305c3f6f50345f363d1c9"
     },
     {
-      "path": "provider-format-test-run-2.stderr.log",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
-      "path": "provider-format-test-run-2.stdout.log",
-      "sha256": "258489f222f7e7e9a81c35e4e508e04d28cdc70414f02fb2ce6c60bec0b3adf0"
+      "path": "pisharp-unknown-model-window-normalized.json",
+      "sha256": "ad0f8dcabd749e1728b7c353b92a26352e40757b852b6068a93dbd6f8af09534"
     }
   ]
 }
