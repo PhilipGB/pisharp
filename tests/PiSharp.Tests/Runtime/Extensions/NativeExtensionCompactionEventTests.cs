@@ -77,6 +77,43 @@ public sealed class NativeExtensionCompactionEventTests
     }
 
     [Fact]
+    public async Task ManualCompactionAfterHookObservesDurableEntry()
+    {
+        var workingDirectory = Path.Combine(Path.GetTempPath(), "pisharp-compact-durable-hook-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workingDirectory);
+        try
+        {
+            var store = new ConversationStore(workingDirectory, Path.Combine(workingDirectory, "sessions"));
+            var conversation = Seed(workingDirectory);
+            var path = store.NewPath(conversation);
+            await store.SaveAsync(conversation, path);
+
+            string? persistedEntryId = null;
+            string? publishedEntryId = null;
+            var registration = new ExtensionRegistration();
+            var adapter = new NativeExtensionRegistrationAdapter(registration);
+            adapter.AddSessionCompactHandler(async (eventData, _, cancellationToken) =>
+            {
+                publishedEntryId = eventData.EntryId;
+                var persisted = await store.LoadAsync(path, cancellationToken);
+                persistedEntryId = persisted.Tree.ActivePath()
+                    .SingleOrDefault(entry => entry.Type == "compaction")?.Id;
+            });
+            adapter.Close();
+
+            var run = await ConversationRun.OpenAsync(new PiAgent(new SummaryClient(), new CodingTools(workingDirectory),
+                    liveExtensionRegistration: registration), conversation,
+                save: token => store.SaveAsync(conversation, path, token), sessionFile: path);
+
+            await run.CompactWithResultAsync(cancellationToken: CancellationToken.None);
+
+            Assert.NotNull(publishedEntryId);
+            Assert.Equal(publishedEntryId, persistedEntryId);
+        }
+        finally { Directory.Delete(workingDirectory, recursive: true); }
+    }
+
+    [Fact]
     public async Task ManualCompactionUsesAndPersistsValidatedExtensionSummary()
     {
         var workingDirectory = Path.Combine(Path.GetTempPath(), "pisharp-custom-compact-event-" + Guid.NewGuid().ToString("N"));
@@ -202,6 +239,50 @@ public sealed class NativeExtensionCompactionEventTests
             Assert.NotNull(failed);
             Assert.True(failed.FromExtension);
             Assert.Contains(source.Path, failed.ErrorMessage, StringComparison.Ordinal);
+        }
+        finally { Directory.Delete(workingDirectory, recursive: true); }
+    }
+
+    [Fact]
+    public async Task CustomCompactionCannotSplitAnIncompleteToolCallResultPair()
+    {
+        var workingDirectory = Path.Combine(Path.GetTempPath(), "pisharp-invalid-tool-boundary-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workingDirectory);
+        try
+        {
+            var registration = new ExtensionRegistration();
+            var adapter = new NativeExtensionRegistrationAdapter(registration);
+            var conversation = new ConversationSession(workingDirectory, "fixture", null);
+            conversation.Append(new ChatMessage(ChatRole.User, "read the notes"));
+            conversation.Append(new ChatMessage(ChatRole.Assistant,
+                [new FunctionCallContent("read-call", "read", new Dictionary<string, object?> { ["path"] = "notes.md" })]));
+            var toolCallEntry = conversation.Tree.HeadId!;
+            conversation.Append(new ChatMessage(ChatRole.User, "next question"));
+            var retainedEntry = conversation.Tree.HeadId!;
+            conversation.Append(new ChatMessage(ChatRole.Assistant, "next answer"));
+
+            adapter.AddSessionBeforeCompactHandler((eventData, _, _) =>
+            {
+                Assert.Contains(eventData.BranchEntries, entry => entry.Id == toolCallEntry);
+                return ValueTask.FromResult<PiSharpExtensionSessionBeforeCompactResult?>(new(Compaction:
+                    new PiSharpExtensionCustomCompaction("invalid tool boundary", retainedEntry,
+                        eventData.Preparation.TokensBefore)));
+            });
+            adapter.Close();
+
+            var original = conversation.ToJson();
+            var summaryRequests = 0;
+            var run = await ConversationRun.OpenAsync(new PiAgent(
+                    new SummaryClient(onRequest: () => summaryRequests++), new CodingTools(workingDirectory),
+                    liveExtensionRegistration: registration), conversation, keepRecentTokens: 1);
+
+            var error = await Assert.ThrowsAsync<InvalidDataException>(() =>
+                run.CompactWithResultAsync(cancellationToken: CancellationToken.None));
+
+            Assert.Contains("incomplete tool call/result pair", error.Message, StringComparison.Ordinal);
+            Assert.Equal(original, conversation.ToJson());
+            Assert.Equal(0, summaryRequests);
+            Assert.DoesNotContain(conversation.Tree.ActivePath(), entry => entry.Type == "compaction");
         }
         finally { Directory.Delete(workingDirectory, recursive: true); }
     }
