@@ -50,6 +50,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         Func<string?, PiSharpExtensionSessionContext?, PiSharpExtensionCapabilities?>>>? installExtensionCapabilitiesFactory = null,
     Func<string?>? getSystemPrompt = null)
 {
+    private const int MaxRpcRecordLength = 16 * 1024 * 1024;
     private readonly JsonLineWriter _writer = new(output);
     private RpcEventWriter? _events;
     private readonly ConcurrentDictionary<Guid, BashOperation> _bashOperations = new();
@@ -107,14 +108,18 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             }
             while (await input.ReadLineAsync(serveCancellation.Token) is { } line)
             {
-                if (line.Length > 1024 * 1024)
+                if (line.Length > MaxRpcRecordLength)
                 {
-                    await RespondAsync(null, "unknown", false, "Command exceeds 1MB.");
+                    await RespondAsync(null, "parse", false, "Command exceeds the 16 MiB RPC record limit.");
                     continue;
                 }
                 JsonDocument document;
                 try { document = JsonDocument.Parse(line); }
-                catch (JsonException error) { await RespondAsync(null, "unknown", false, error.Message); continue; }
+                catch (JsonException error)
+                {
+                    await RespondAsync(null, "parse", false, $"Failed to parse command: {error.Message}");
+                    continue;
+                }
                 using (document)
                 {
                     var root = document.RootElement;

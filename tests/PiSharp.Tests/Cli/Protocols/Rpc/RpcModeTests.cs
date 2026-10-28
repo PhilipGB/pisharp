@@ -2636,6 +2636,56 @@ public sealed class RpcModeTests
         finally { foreach (var record in appended) record.Dispose(); }
     }
 
+    [Fact]
+    public async Task RpcParserAcceptsOneMiBRequestAndUsesParseCommandForMalformedJson()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-rpc-large-record-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        Task? serving = null;
+        try
+        {
+            var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(cwd)),
+                new ConversationSession(cwd, "large-record-fixture", null));
+            serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
+
+            var largeName = new string('x', 1024 * 1024);
+            channel.Writer.TryWrite(JsonSerializer.Serialize(new { id = "large", type = "set_session_name", name = largeName }));
+            await WaitForAsync(output, "\"id\":\"large\"");
+            channel.Writer.TryWrite("{");
+            await WaitForAsync(output, "\"command\":\"parse\"");
+            channel.Writer.TryWrite("{\"id\":\"after-parse\",\"type\":\"get_state\"}");
+            await WaitForAsync(output, "\"id\":\"after-parse\"");
+            channel.Writer.Complete();
+            await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+            var records = output.Lines().Select(line => JsonDocument.Parse(line)).ToArray();
+            try
+            {
+                var largeResponse = Assert.Single(records, document =>
+                    document.RootElement.TryGetProperty("id", out var id) && id.GetString() == "large" &&
+                    document.RootElement.GetProperty("type").GetString() == "response");
+                Assert.True(largeResponse.RootElement.GetProperty("success").GetBoolean());
+                var parseResponse = Assert.Single(records, document =>
+                    document.RootElement.TryGetProperty("command", out var command) && command.GetString() == "parse");
+                Assert.False(parseResponse.RootElement.GetProperty("success").GetBoolean());
+                Assert.False(parseResponse.RootElement.TryGetProperty("id", out _));
+                Assert.False(string.IsNullOrWhiteSpace(parseResponse.RootElement.GetProperty("error").GetString()));
+                var recoveryResponse = Assert.Single(records, document =>
+                    document.RootElement.TryGetProperty("id", out var id) && id.GetString() == "after-parse");
+                Assert.True(recoveryResponse.RootElement.GetProperty("success").GetBoolean());
+            }
+            finally { foreach (var record in records) record.Dispose(); }
+        }
+        finally
+        {
+            channel.Writer.TryComplete();
+            if (serving is not null) await serving.WaitAsync(TimeSpan.FromSeconds(5));
+            Directory.Delete(cwd, recursive: true);
+        }
+    }
+
     private sealed class OrderedRpcQueueClient : IChatClient
     {
         public List<string> LatestUserByRequest { get; } = [];

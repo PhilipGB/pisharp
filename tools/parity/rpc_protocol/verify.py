@@ -262,6 +262,18 @@ def validate_case_results(results: list[dict[str, Any]], checkpoint_id: str, evi
             raise VerificationError(f"case has no observable assertions: {case_id}")
         for assertion in assertions:
             _validate_assertion(assertion, case, evidence_dir, available)
+        if checkpoint_id in PROCESS_CHECKPOINTS:
+            calibration = result.get("independentPiCalibration")
+            if not isinstance(calibration, dict) or calibration.get("matched") is not True:
+                raise VerificationError(f"case {case_id} lacks a passing independent Pi calibration")
+            pi1_path = calibration.get("pi1Artifact")
+            pi2_path = calibration.get("pi2Artifact")
+            if pi1_path not in available or pi2_path not in available:
+                raise VerificationError(f"case {case_id} lacks independent Pi observation artifacts")
+            pi1_value = _read_json(_relative_artifact(evidence_dir, pi1_path))
+            pi2_value = _read_json(_relative_artifact(evidence_dir, pi2_path))
+            if pi1_value != pi2_value:
+                raise VerificationError(f"independent Pi calibration differs for {case_id}")
         counts["passed"] += 1
     if require_complete and seen != set(case_by_id):
         missing = sorted(set(case_by_id) - seen)
@@ -408,6 +420,20 @@ def validate_v1_control_evidence(control: Any, evidence_dir: Path) -> dict[str, 
     return {"required": len(case_ids), "executed": len(case_ids), "passed": len(case_ids), "failed": 0, "skipped": 0}
 
 
+def validate_process_build_evidence(build: Any, evidence_dir: Path) -> None:
+    if not isinstance(build, dict) or build.get("exitCode") != 0:
+        raise VerificationError("PiSharp process evidence lacks a successful source build")
+    if not SHA256.fullmatch(str(build.get("assemblySha256", ""))):
+        raise VerificationError("PiSharp build evidence lacks an assembly digest")
+    log_path = build.get("logPath")
+    log_sha = build.get("logSha256")
+    if not isinstance(log_path, str) or not SHA256.fullmatch(str(log_sha or "")):
+        raise VerificationError("PiSharp build evidence lacks a build log and digest")
+    path = _relative_artifact(evidence_dir, log_path)
+    if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != log_sha:
+        raise VerificationError("PiSharp build log is missing or its digest changed")
+
+
 def validate_source_identity(source_sha: str, head_sha: str, *, cwd: Path = ROOT) -> None:
     if not SHA1.fullmatch(source_sha) or not SHA1.fullmatch(head_sha):
         raise VerificationError("implementation source and head must be full lowercase Git SHAs")
@@ -440,6 +466,7 @@ def main() -> int:
     contract_parser.add_argument("--pi-checkout", type=Path, default=ROOT / "artifacts/parity/pi-ownership-oracle")
     check_parser = subparsers.add_parser("check", help="validate checkpoint results in an evidence directory")
     check_parser.add_argument("--checkpoint", required=True)
+    check_parser.add_argument("--case-id")
     check_parser.add_argument("--evidence-dir", type=Path, required=True)
     args = parser.parse_args()
     try:
@@ -453,6 +480,8 @@ def main() -> int:
         current_head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()
         validate_evidence_header(evidence, current_head=current_head)
         if args.checkpoint == "V1":
+            if args.case_id:
+                raise VerificationError("V1 evidence is validated as a complete control checkpoint")
             counts = validate_v1_control_evidence(evidence.get("v1ControlEvidence"), args.evidence_dir)
             print(json.dumps(counts, sort_keys=True))
             return 0
@@ -462,8 +491,19 @@ def main() -> int:
                 final_head_sha=evidence["finalHeadCommit"],
                 milestone_base_sha=contract["sourcePins"]["pisharpBaseCommit"],
             )
+        if args.checkpoint in PROCESS_CHECKPOINTS:
+            validate_process_build_evidence(evidence.get("build"), args.evidence_dir)
         results = evidence.get("caseResults", [])
-        counts = validate_case_results(results, args.checkpoint, args.evidence_dir)
+        if args.case_id:
+            if not args.case_id.startswith(f"{args.checkpoint}."):
+                raise VerificationError("case ID does not belong to the requested checkpoint")
+            results = [result for result in results if result.get("caseId") == args.case_id]
+            if len(results) != 1:
+                raise VerificationError("evidence does not contain exactly the requested case ID")
+        counts = validate_case_results(
+            results, args.checkpoint, args.evidence_dir,
+            require_complete=args.case_id is None,
+        )
         print(json.dumps(counts, sort_keys=True))
         return 0
     except (VerificationError, OSError, KeyError, TypeError) as error:
