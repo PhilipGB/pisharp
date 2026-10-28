@@ -16,11 +16,12 @@ projection and JSON compaction event output were corrected, with 17/17 focused
 .NET tests and format verification passing. These are implementation checks,
 not paired C11 case evidence.
 
-Across revisions, 105/211 cases have paired results, but none is bound to
-current source `83ea0c30`. Refresh C1-C10, complete all ten C11 paired cases,
-then implement and execute C12-C13 and final gates D0, Q0, E0, CI0, and PUB0.
-The transient estimator formula still needs classification. Rerun the full
-.NET suite at final source. PR #28 remains open and draft.
+Across revisions, 105/211 distinct cases have paired results. C10 has now been
+refreshed 10/10 at report source `a6262c89`; commits after implementation SHA
+`83ea0c30` changed documentation only. Refresh C1-C9, complete all ten C11
+paired cases, then implement and execute C12-C13 and final gates D0, Q0, E0,
+CI0, and PUB0. The transient estimator formula still needs classification.
+Rerun the full .NET suite at final source. PR #28 remains open and draft.
 See the
 [inventory](parity/fixtures/compaction-context-management-inventory.json),
 [receipt](parity/fixtures/compaction-context-management-parity-2026-10-28.md),

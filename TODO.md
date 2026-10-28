@@ -6,16 +6,18 @@ to `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; this milestone's contract has
 22 checkpoints and 211 required cases.
 
 C1-C8 passed 86/86 on source `843d0388`; C9 passed 9/9 on clean source
-`1deb1748`; C10 passed 10/10 on clean source `2fce38db`. Historical checkpoint
+`1deb1748`; C10 first passed 10/10 at `2fce38db` and was refreshed at
+`a6262c89`. Historical checkpoint
 implementation has reached 10 of 13 areas. C11 is in progress: RPC compaction
 results now omit unknown cost components, and JSON compaction events expose
 Pi-shaped reason/result/abort/retry fields. Its focused .NET filter passes
 17/17 and format verification passes at source `83ea0c30`.
 
-Cumulative paired evidence is 105/211 cases across earlier revisions; none is
-bound to current source `83ea0c30`. Refresh C1-C10, complete C11's ten paired
-cases (including provider boundaries and TUI/CLI comparisons), then implement
-and execute C12-C13. D0, Q0, E0, CI0, and PUB0 remain. The transient context
+Cumulative paired evidence covers 105/211 distinct cases across revisions.
+C10 has now been refreshed 10/10 at source `a6262c89`; C1-C9 still need current
+source runs. C11 has implementation fixes but no paired case results yet.
+Complete C11's ten cases (including provider boundaries and TUI/CLI comparisons),
+then implement and execute C12-C13. D0, Q0, E0, CI0, and PUB0 remain. The transient context
 estimator formula still needs case-level classification. PR #28 remains open
 and draft. See the
 [inventory](docs/parity/fixtures/compaction-context-management-inventory.json),

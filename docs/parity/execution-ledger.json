@@ -13638,7 +13638,7 @@
   },
   "compaction_context_management_parity_milestone": {
     "status": "in_progress",
-    "phase": "C11_implementation_slice_at_83ea0c30_C1-C10_refresh_C11-C13_and_final_gates_pending",
+    "phase": "C10_refreshed_10_cases_at_a6262c89_C1-C9_refresh_C11-C13_and_final_gates_pending",
     "branch": "milestone/compaction-context-management-parity",
     "branch_base_sha": "12064420179f4119bdaf37479c7cba0f5ca40717",
     "pi_reference": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
@@ -13648,7 +13648,7 @@
     "required_cases": 211,
     "implementation_source_sha": "83ea0c300121d80b53e320f2c16fcb53253430b8",
     "case_evidence_produced": 105,
-    "status_reason": "C10 passed 10/10 on clean source 2fce38db. C11 RPC/JSON implementation slice is committed at 83ea0c30 and passes the focused filter 17/17 plus format verification, but has no paired case artifacts yet. C1-C10 evidence must be refreshed at current source; C11-C13 and D0/Q0/E0/CI0/PUB0 remain.",
+    "status_reason": "C10 was refreshed 10/10 at report source a6262c89 with sourceTreeClean true and raw artifacts verified; implementation source is 83ea0c30, followed by a documentation-only commit. Across revisions, 105/211 distinct cases have paired evidence. C1-C9 require refresh; C11-C13 and D0/Q0/E0/CI0/PUB0 remain.",
     "implemented": [
       "Pi-style branch summary navigation, extension decisions, details and usage/cost persistence",
       "Cached-read and cached-write context-token fallback when provider total is missing or zero",
@@ -13705,17 +13705,18 @@
       "c9_paired_oracle": "C9 passed 9/9 on source 1deb174887151679db19339c5bffbe660bc2e8c5; stable observations over two pinned-Pi and two PiSharp runs.",
       "c9_pinned_pi_ui_test": "Pinned Pi interactive-mode-tree-navigation.test.ts: 5 passed, 0 failed.",
       "c9_checkpoint_runner": "runner.py passed at source 1deb1748 with clean source tree, 9/9 cases, 0 failures/skips; raw artifacts hash-verified.",
-      "c10_focused_dotnet": "98 passed, 0 failed, 0 skipped for CompactionTests, RpcSessionStatsProjectorTests, and CodemodeModelTests at clean source 2fce38db.",
+      "c10_focused_dotnet": "98 passed, 0 failed, 0 skipped at report source a6262c89 for CompactionTests, RpcSessionStatsProjectorTests, and CodemodeModelTests.",
       "c10_provider_tests": "39 passed, 0 failed, 0 skipped across Pi Messages, Bedrock, Google GenAI, and Mistral provider mapping tests.",
-      "c10_paired_oracle": "C10 passed 10/10 at clean source 2fce38db; stable Pi and PiSharp observations across two runs per side; two intentional safety differences preserve unknown usage and pricing.",
-      "c10_checkpoint_runner": "runner.py passed at source 2fce38db: 10 required, 10 executed, 10 passed, zero failed/skipped; raw artifacts hash-verified under artifacts/parity/20261028-c10-2fce38db/runs/C10/.",
-      "c10_pinned_pi_tests": "35 passed, 0 failed, 2 skipped in the pinned Pi usage-totals and compaction suites.",
+      "c10_paired_oracle": "C10 passed 10/10 at report source a6262c89; pinned-Pi and PiSharp observations were stable across two runs per side; two intentional safety differences preserve unknown usage and pricing; raw artifacts independently validated.",
+      "c10_checkpoint_runner": "runner.py passed at report source a6262c89: 10 required, 10 executed, 10 passed, zero failures/skips, sourceTreeClean true; raw artifacts under artifacts/parity/20261028-c10-a6262c89-refresh/runs/C10/.",
+      "c10_pinned_pi_tests": "35 passed, 0 failed, 2 skipped in the pinned Pi usage-totals and compaction suites on this refresh.",
       "c10_format": "dotnet format PiSharp.slnx --verify-no-changes --no-restore passed; workspace loading emitted a non-fatal warning.",
       "c11_focused_dotnet": "17 passed, 0 failed, 0 skipped at source 83ea0c30 for RpcCompactionProcessTests, RpcSessionStatsProjectorTests, RpcEventProjectorTests, and JsonEventModeTests.",
-      "c11_format": "dotnet format PiSharp.slnx --verify-no-changes passed at source 83ea0c30; workspace loading emitted a non-fatal warning."
+      "c11_format": "dotnet format PiSharp.slnx --verify-no-changes passed at source 83ea0c30; workspace loading emitted a non-fatal warning.",
+      "current_source_binding": "Production, tests, and tools/parity are unchanged between implementation source 83ea0c30 and report source a6262c89; verified with git diff --quiet across those paths."
     },
     "open_requirements": [
-      "Refresh C1-C10 paired case evidence and focused validation at current source 83ea0c30.",
+      "Refresh C1-C9 paired case evidence and focused validation at current implementation source 83ea0c30.",
       "Complete the C11 differential adapter and all ten required cases, including CLI/TUI/RPC/JSON observations and actual Responses, Chat Completions, and Anthropic post-compaction requests.",
       "Implement and execute C12-C13 for native extension lifecycle and failure/cancellation/crash recovery.",
       "Classify the separate transient estimator formula difference per frozen C4 requirements.",
