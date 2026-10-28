@@ -769,6 +769,8 @@ public sealed partial class ConversationRun
                                 .ConfigureAwait(false);
                             _terminalBoundaryTurn = null;
                         }
+                        if (outcome == AgentTurnOutcome.Failed)
+                            await CompactAfterFailedTurnAsync(linked.Token, Publish).ConfigureAwait(false);
                     }
                     if (!stopRun && _boundaryContinuationRequested)
                     {
@@ -2212,8 +2214,20 @@ public sealed partial class ConversationRun
         return (int)Math.Min(int.MaxValue, measured.Value + pending);
     }
 
+    private Task CompactAfterFailedTurnAsync(CancellationToken cancellationToken,
+        Action<AgentLifecycleEvent>? publish)
+    {
+        var projection = Conversation.ProjectContextUsageForEstimate();
+        var estimate = projection.HasValidAssistantUsage && !projection.IsInvalidated
+            ? _agent.EstimateContextTokens(projection.UsageTokens, projection.TrailingMessages)
+            : _agent.EstimateContextTokens(Conversation.ContextMessages());
+        return CompactAfterCompletedTurnAsync(cancellationToken, publish, latestProviderUsage: null,
+            contextEstimateOverride: estimate);
+    }
+
     private async Task CompactAfterCompletedTurnAsync(CancellationToken cancellationToken,
-        Action<AgentLifecycleEvent>? publish, UsageRecord? latestProviderUsage)
+        Action<AgentLifecycleEvent>? publish, UsageRecord? latestProviderUsage,
+        int? contextEstimateOverride = null)
     {
         var policy = _autoCompaction;
         var activePath = Conversation.Tree.ActivePath();
@@ -2228,7 +2242,7 @@ public sealed partial class ConversationRun
             : NativeExtensions.PiSharpExtensionCompactionReason.Threshold;
         var reasonText = silentOverflow ? "overflow" : "threshold";
         if (hasTransientProjection || !AutoCompactionEnabled || policy is null || policy.TriggerTokens <= 0 ||
-            (!silentOverflow && EstimateNextContext("") <= policy.TriggerTokens) ||
+            (!silentOverflow && (contextEstimateOverride ?? EstimateNextContext("")) <= policy.TriggerTokens) ||
             ConversationCompactionCoordinator.PreparePlan(Conversation,
                 policy.KeepRecentTokens ?? _keepRecentTokens) is null)
             return;
