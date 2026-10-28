@@ -3,10 +3,10 @@
   "milestone": "compaction-context-management-parity",
   "checkpointId": "C6",
   "contractSha256": "c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6",
-  "evidenceDirectory": "artifacts/parity/20261028-c6-1ff1d67d/runs/C6/differential",
-  "generatedReportSha256": "f8348417b36c97d678ccc55556167b41360daa56a290b608a2ddc7be7cfca567",
+  "evidenceDirectory": "artifacts/parity/20261028-c6-843d0388/runs/C6/differential",
+  "generatedReportSha256": "9a2991cad986a5ddf96c78fb3c5716e6b93d281440b83f0028d6649d9e3a607f",
   "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-  "pisharpSourceSha": "1ff1d67d85d4ef76995700e0e345632c9c6ec16f",
+  "pisharpSourceSha": "843d0388ceca2adbe2725397c48e0e45b98cba7e",
   "sourceTreeClean": true,
   "piCalibrationStable": true,
   "pisharpCalibrationStable": true,
@@ -61,6 +61,12 @@
       "contractExpectedObservation": "transient projection does not change canonical history",
       "classification": "equivalent",
       "passed": true,
+      "expected": {
+        "canonicalHistoryUnchanged": true
+      },
+      "actual": {
+        "canonicalHistoryUnchanged": true
+      },
       "normalizedExpected": {
         "canonicalHistoryUnchanged": true
       },
@@ -73,6 +79,15 @@
       "contractExpectedObservation": "single large current tool result is bounded",
       "classification": "intentional-safety-difference",
       "passed": true,
+      "expected": {
+        "canonicalResultPreserved": true,
+        "providerResultCharacters": 8000
+      },
+      "actual": {
+        "canonicalResultPreserved": true,
+        "providerResultCharacters": 0,
+        "summaryRetained": true
+      },
       "normalizedExpected": {
         "canonicalResultPreserved": true,
         "providerResultCharacters": 8000
@@ -82,6 +97,7 @@
         "providerResultCharacters": 0,
         "summaryRetained": true
       },
+      "safetyEvidence": "pisharp-c6-run-1.json",
       "safetyRegression": "tests/PiSharp.Tests/Runtime/Sessions/InFlightContextBudgetTests.cs#OversizedActiveToolResultIsSummarizedInsteadOfKeptInTransientRequest"
     },
     {
@@ -89,6 +105,26 @@
       "contractExpectedObservation": "sequential tool cycles preserve order",
       "classification": "equivalent",
       "passed": true,
+      "expected": {
+        "orderedCallIds": [
+          "sequence-1",
+          "sequence-2"
+        ],
+        "orderedResultCallIds": [
+          "sequence-1",
+          "sequence-2"
+        ]
+      },
+      "actual": {
+        "orderedCallIds": [
+          "sequence-1",
+          "sequence-2"
+        ],
+        "orderedResultCallIds": [
+          "sequence-1",
+          "sequence-2"
+        ]
+      },
       "normalizedExpected": {
         "orderedCallIds": [
           "sequence-1",
@@ -115,6 +151,18 @@
       "contractExpectedObservation": "parallel calls and results remain matched",
       "classification": "equivalent",
       "passed": true,
+      "expected": {
+        "matchedCallResultIds": [
+          "parallel-1",
+          "parallel-2"
+        ]
+      },
+      "actual": {
+        "matchedCallResultIds": [
+          "parallel-1",
+          "parallel-2"
+        ]
+      },
       "normalizedExpected": {
         "matchedCallResultIds": [
           "parallel-1",
@@ -133,6 +181,14 @@
       "contractExpectedObservation": "large tool output summary retains latest outcome",
       "classification": "intentional-safety-difference",
       "passed": true,
+      "expected": {
+        "latestOutcomeRetained": true,
+        "providerResultCharacters": 8019
+      },
+      "actual": {
+        "latestOutcomeRetained": true,
+        "providerResultCharacters": 0
+      },
       "normalizedExpected": {
         "latestOutcomeRetained": true,
         "providerResultCharacters": 8019
@@ -141,6 +197,7 @@
         "latestOutcomeRetained": true,
         "providerResultCharacters": 0
       },
+      "safetyEvidence": "pisharp-c6-run-1.json",
       "safetyRegression": "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#LongSummaryTranscriptRetainsLatestMessageWithinBound"
     },
     {
@@ -148,6 +205,24 @@
       "contractExpectedObservation": "nested tool call sequence is closed before cut",
       "classification": "equivalent",
       "passed": true,
+      "expected": {
+        "nestedExecutionComplete": true,
+        "nestedCallIds": [
+          "outer-call/1"
+        ],
+        "closedParentCallIds": [
+          "outer-call"
+        ]
+      },
+      "actual": {
+        "nestedExecutionComplete": true,
+        "nestedCallIds": [
+          "outer-call/1"
+        ],
+        "closedParentCallIds": [
+          "outer-call"
+        ]
+      },
       "normalizedExpected": {
         "nestedExecutionComplete": true,
         "nestedCallIds": [
@@ -172,6 +247,14 @@
       "contractExpectedObservation": "incomplete call graph fails before provider send",
       "classification": "intentional-safety-difference",
       "passed": true,
+      "expected": {
+        "providerSendCount": 1,
+        "providerHistoryValid": false
+      },
+      "actual": {
+        "providerSendCount": 0,
+        "providerHistoryValid": false
+      },
       "normalizedExpected": {
         "providerSendCount": 1,
         "providerHistoryValid": false
@@ -180,6 +263,7 @@
         "providerSendCount": 0,
         "providerHistoryValid": false
       },
+      "safetyEvidence": "pisharp-c6-run-1.json",
       "safetyRegression": "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#OverflowProjectionRefusesMalformedEarlierToolGraph"
     },
     {
@@ -187,6 +271,14 @@
       "contractExpectedObservation": "duplicate or unmatched results never replay tools",
       "classification": "intentional-safety-difference",
       "passed": true,
+      "expected": {
+        "providerSendCount": 1,
+        "providerHistoryValid": false
+      },
+      "actual": {
+        "providerSendCount": 0,
+        "providerHistoryValid": false
+      },
       "normalizedExpected": {
         "providerSendCount": 1,
         "providerHistoryValid": false
@@ -195,6 +287,7 @@
         "providerSendCount": 0,
         "providerHistoryValid": false
       },
+      "safetyEvidence": "pisharp-c6-run-1.json",
       "safetyRegression": "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#OverflowProjectionRefusesMalformedEarlierToolGraph"
     },
     {
@@ -202,6 +295,12 @@
       "contractExpectedObservation": "steering after tool result keeps active turn",
       "classification": "equivalent",
       "passed": true,
+      "expected": {
+        "steeringPromptPreserved": true
+      },
+      "actual": {
+        "steeringPromptPreserved": true
+      },
       "normalizedExpected": {
         "steeringPromptPreserved": true
       },
@@ -214,6 +313,14 @@
       "contractExpectedObservation": "post compaction request contains valid provider history",
       "classification": "equivalent",
       "passed": true,
+      "expected": {
+        "providerHistoryValid": true,
+        "closedCallResultGroupCount": 2
+      },
+      "actual": {
+        "providerHistoryValid": true,
+        "closedCallResultGroupCount": 2
+      },
       "normalizedExpected": {
         "providerHistoryValid": true,
         "closedCallResultGroupCount": 2

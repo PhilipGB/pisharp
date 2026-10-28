@@ -4,11 +4,10 @@
 
 This branch starts at the verified PR #27 merge `12064420179f4119bdaf37479c7cba0f5ca40717`.
 The Pi oracle is pinned to `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; the installed
-`Microsoft.Agents.AI` version is 1.21.0. C5 recovery observations were first
-captured at source `b22f7e7bad940a1dd0a26d716628f6739a8a9abf`; C6 passed at
-`1ff1d67d85d4ef76995700e0e345632c9c6ec16f`. The most recent clean
-source-bound checkpoint was C7 at `d274475f25512c9568112985896a17136586a2a6`;
-the C8 checkpoint source is `5a3be74a91edac8cd8d295bb59a8c69cfc1232a2`.
+`Microsoft.Agents.AI` version is 1.21.0. C1-C8 checkpoint evidence is now bound to clean source
+`843d0388ceca2adbe2725397c48e0e45b98cba7e`. Older C5-C7 captures remain in
+Git-ignored run folders as historical context; the current compact case records
+below bind the fresh runs.
 
 The frozen contract is [contract.json](../../../tools/parity/compaction_context/contract.json),
 SHA-256 `c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6`:
@@ -41,67 +40,61 @@ replace the frozen per-case differential corpus.
 
 ## Paired evidence
 
-The deterministic C5 oracle ran pinned Pi twice and PiSharp twice at the
-implementation source pin. Both runs were stable on each side, and the two
-paired cases passed as equivalent:
+C1-C8 passed all **86 required cases** on source `843d0388` with clean source
+trees and stable Pi/PiSharp reruns. Nine case-level safety differences are
+explicitly classified and linked to regression evidence; none of these eight
+checkpoints has an unresolved mismatch. Compact records bind each generated
+report and its raw artifact hashes:
 
-- `C5.recoverable-length-stop-retries-once`
-- `C5.retry-request-uses-compacted-transcript`
+- [C1 manual compaction](compaction-context-management-c1-case-results.json): 9/9.
+- [C2 automatic compaction](compaction-context-management-c2-case-results.json): 10/10; one unknown-window safety difference.
+- [C3 cut points and retained history](compaction-context-management-c3-case-results.json): 14/14.
+- [C4 context limits and estimates](compaction-context-management-c4-case-results.json): 12/12; one unknown-limit safety difference.
+- [C5 provider overflow and retry](compaction-context-management-c5-case-results.json): 11/11; two safety differences.
+- [C6 in-flight tool continuation](compaction-context-management-c6-case-results.json): 10/10; four safety differences.
+- [C7 summary generation](compaction-context-management-c7-case-results.json): 10/10; one whitespace-only-summary safety difference.
+- [C8 persistence and reload](compaction-context-management-c8-case-results.json): 10/10.
 
-The only normalization removes a provider transcript's absent-versus-empty
-system message. Provider requests, compaction events, retry transcript,
-continuation state, and session projection remain compared. The compact,
-hash-bound case record is [compaction-context-management-c5-case-results.json](compaction-context-management-c5-case-results.json).
-Raw Pi/PiSharp process, request, event, and session captures remain in the
-Git-ignored local directory
-`artifacts/parity/20261028T062543Z-c5-length-recovery/`. The committed record
-contains their paths and SHA-256 hashes; the raw captures are not in Git.
+C1 pairs manual eligibility, focus, retained history, split-turn summaries,
+usage/details, failure rollback, cancellation, and queued follow-up ordering.
+The oracle's terminal failure uses the same non-transient exception category
+on both implementations. C2 and C4 classify Pi's `contextWindow=0` threshold
+trigger versus PiSharp's no-speculation policy as a safety difference. C3
+covers recent-message selection, assistant/tool boundaries, and retained
+history. C4 also keeps Pi's context estimator separate from PiSharp's transient
+request-budget estimator; the latter formula difference remains unclassified.
 
-The runner validated 2 of C5's 11 cases at that earlier source: 2 executed, 2
-passed, 0 failed, and 9 unexecuted. These observations are historical after
-later parity-oracle changes and must be refreshed at the final source head.
+C5 includes actual OpenAI Responses, OpenAI Chat Completions, and Anthropic SDK
+overflow exchanges. It matches the recognized pre-content overflow and
+compacted retry. Two accepted safety differences are recorded: Pi can retry
+after partial visible output while PiSharp avoids replay, and PiSharp does not
+invent capacity for an unknown window. C8 independently compares actual
+post-reload provider requests on all three adapters.
 
 ## C6 in-flight tool continuation
 
-The C6 adapter drives pinned Pi's actual `AgentSession` tool loop and records
-provider-hook requests and canonical session projection. Its PiSharp side calls
-the in-flight projector directly and checks the transient request separately
-from unchanged raw history. Sequential and parallel tool groups, a nested
-`executeTool` call, steering after a result, large results, incomplete graphs,
-duplicate results, and the valid post-projection history case all ran twice per
-side with stable observations.
-
-At source `1ff1d67d85d4ef76995700e0e345632c9c6ec16f`, C6 passes 10/10 required
-cases. Four accepted safety differences are classified: Pi sends the full
-large tool result while PiSharp bounds only the transient request; Pi retains
-large raw tool outputs while PiSharp's summary preserves the latest outcome;
-and Pi sends seeded incomplete or duplicate call/result graphs that PiSharp
-rejects before sending the projected continuation. The compact record is
-[compaction-context-management-c6-case-results.json](compaction-context-management-c6-case-results.json).
-The raw request/process captures remain Git-ignored under
-`artifacts/parity/20261028-c6-1ff1d67d/runs/C6/differential/`; the committed
-record binds their paths and SHA-256 hashes.
+C6 passes 10/10 at source `843d0388`. The adapter drives pinned Pi's actual
+`AgentSession` tool loop and records provider-hook requests and canonical
+session projection. PiSharp's in-flight projector is checked separately from
+unchanged raw history. Sequential, parallel, nested, steering, large-result,
+incomplete-graph, duplicate-result, and post-compaction cases are stable across
+two runs per side. Four accepted safety differences cover bounded transient
+results and rejection of malformed call/result graphs while retaining canonical
+history. The compact record includes the regression links and hashes.
 
 ## C7 summary generation
 
-The C7 runner at source
-`d274475f25512c9568112985896a17136586a2a6` passes all 10 required cases. Nine
-cases are equivalent: initial prompts, prior-summary updates, manual focus,
-split-turn requests, tool serialization, file details, transient retry, usage,
-and routed model/reasoning options. The remaining case is an intentional safety
-difference: pinned Pi accepts a whitespace-only summary and appends compaction;
-PiSharp rejects it and preserves canonical history. Length-stop behavior and
-state preservation match. The compact hash-bound record is
-[compaction-context-management-c7-case-results.json](compaction-context-management-c7-case-results.json).
-Raw captures remain Git-ignored under
-`artifacts/parity/20261028-c7-d274475f/runs/C7/differential/`.
-The later C8 source change at `472daccd` makes this C7 result historical under
-the exact-source gate; rerun C7 before final acceptance.
+C7 passes 10/10 at source `843d0388`: nine equivalent cases and one intentional
+safety difference. Summary prompts, previous-summary updates, split-turn focus,
+tool serialization, file details, transient retries, usage, and routed
+reasoning match. Pinned Pi accepts a whitespace-only summary and appends a
+compaction; PiSharp rejects it and preserves canonical history. The compact
+record includes the regression link and raw hashes.
 
 ## C8 persistence and reload
 
 C8 passed all 10 required paired cases on clean source
-`5a3be74a91edac8cd8d295bb59a8c69cfc1232a2`. Pinned Pi and PiSharp runs were
+`843d0388ceca2adbe2725397c48e0e45b98cba7e`. Pinned Pi and PiSharp runs were
 stable across two executions per side. The comparison covers compaction usage
 and metadata, native/Pi JSONL round-trips, branch reconstruction, fork/clone,
 restart continuation, and provider requests after reload. The actual SDK
@@ -114,55 +107,48 @@ boundary is used on both sides because C3 owns cut-point selection.
 The compact source-bound record is
 [compaction-context-management-c8-case-results.json](compaction-context-management-c8-case-results.json).
 Raw captures remain Git-ignored under
-`artifacts/parity/20261028-c8-5a3be74a/runs/C8/differential/`.
+`artifacts/parity/20261028-c8-843d0388/runs/C8/differential/`.
 
 ## Local validation
 
-- C6 checkpoint runner: **10/10 passed**; focused C6 .NET filter: **85/85 passed**.
-- C6 parity Python validation: **20/20 passed**; frozen contract: 22 checkpoints
-  and 211 cases; format verification passed.
-- C7 checkpoint runner: **10/10 passed** at `d274475f`; focused C7 .NET filter:
-  **80/80 passed**; format verification passed. Nine cases are equivalent and
-  one whitespace-only-summary case is an intentional safety difference.
-- C8 focused .NET filter: **140/140 passed** at `5a3be74a`; post-reload
-  provider tests: **3/3 passed** across Responses, Chat Completions, and
-  Anthropic. The integrated C8 checkpoint passed **10/10** with
-  `sourceTreeClean=true`; format verification passed at `5a3be74a`.
-
+- C1-C8 focused checkpoint filters: **80/80, 78/78, 79/79, 82/82, 87/87,
+  86/86, 80/80, and 140/140 passed**, respectively, at source `843d0388`.
+- C1-C8 paired runners: **86/86 passed**, zero failures/skips; nine accepted
+  case-level safety differences; Pi and PiSharp observations stable across two
+  runs per side.
+- C8 post-reload provider tests: **3/3 passed** for OpenAI Responses, Chat
+  Completions, and Anthropic Messages.
+- `dotnet format PiSharp.slnx --verify-no-changes --no-restore` passed at the
+  prior C8 source; rerun during final Q0 after implementation changes stop.
 - Full .NET suite: **3,939 passed, 0 failed, 0 skipped** at source `472daccd`;
-  this predates the three C8 provider-after-reload tests, so the full suite must
-  be rerun at final source.
-- Focused compaction and provider loopback tests: **82/82 passed** before the C8
-  provider tests were added.
-- `dotnet format PiSharp.slnx --verify-no-changes --no-restore`: passed.
-- Warning-as-error solution build: passed with 0 warnings and 0 errors using
-  `NuGetAudit=false`; the default vulnerability-audit cache is read-only here.
+  it predates the C8 provider tests and is not final-source Q0 evidence.
+- Warning-as-error solution build previously passed with `NuGetAudit=false`;
+  the default vulnerability-audit cache is read-only in this environment.
 - Terminal Python: 66 passed; built-in parity Python: 27 passed; compaction
-  verifier controls: 20 passed; terminal Node: 24 passed.
-- MCP conformance: no regressions against the classified baseline; three known
-  scenarios remain classified.
-- Documentation paths: **156 documents and 694 references verified** after the
-  C8 evidence and progress updates.
-- Pinned Pi AI overflow tests: 20/20 passed. Selected pinned Pi compaction and
-  queue tests: 34 passed and 1 failed. The failing test uses model ID `unknown`
-  and context window 0; the pinned `shouldCompact` formula triggers while that
-  queue test expects no compaction. This source/test discrepancy remains open.
+  verifier controls: 20 passed; terminal Node: 24 passed (earlier validation).
+- MCP conformance had no regressions against the classified baseline; three
+  known scenarios remain classified.
+- Documentation paths: **156 documents and 699 references verified** before
+  this final C1-C8 progress update; rerun after these documentation edits.
+- The selected pinned Pi compaction/queue suites reported 34 passed and 1
+  failing upstream test because the unknown model has context window zero. C2,
+  C4, and C5 now classify the observed behavior as an intentional safety
+  difference; the upstream fixture expectation itself remains unchanged.
 
 ## Acceptance remains open
 
-The latest source-bound result is C8 10/10 at `5a3be74a`, or 10/211 cases
-(4.7%). C1-C7 evidence predates the current source and must be refreshed. C9-C13
-and final acceptance gates remain; 201 cases still lack evidence on this source. Open work covers refreshing C1-C7, implementing/evidencing C9-C13, the remaining
-provider overflow matrix, manual and automatic compaction, cut points, estimates,
-usage surfaces, CLI/RPC/TUI, extensions, failures, cancellation, and publication. The frozen denominator remains 22 checkpoints / 211 cases, and
-full acceptance is not claimed.
+C1-C8 pass 86/86 at source `843d0388`, or 86/211 cases (40.8%). C9-C13 and
+final acceptance gates remain; 125 required cases have no evidence on this
+source. Remaining work covers branch summaries, usage/accounting surfaces,
+CLI/RPC/TUI, native extensions, cancellation/crash recovery, independent
+acceptance, full quality, committed-source validation, exact-head CI, and
+publication. The separate transient estimator formula still needs a
+case-level classification. Unknown-window behavior is already classified as a
+safety difference in C2, C4, and C5. Full acceptance is not claimed.
 
-Also open are the complete Responses, Chat Completions, and Anthropic
-compaction-continuation wire corpus; classification of the separate transient
-estimator formula; and case-level classification of the pinned unknown-window
-discrepancy. PR #28 remains open, draft, and unmerged against `main`; its final
-exact-head push and PR checks are tracked after the source-bound evidence and
-documentation update.
+PR #28 remains open, draft, and unmerged against `main`; its final exact-head
+push and PR checks are tracked after the remaining implementation and evidence.
+
 
 PR #27's merge, exact-head workflows, and 27/27 checkpoint / 240/240 case
 publication evidence are verified as the prerequisite. Its fresh local

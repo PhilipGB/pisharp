@@ -1,0 +1,894 @@
+{
+  "schemaVersion": 1,
+  "milestone": "compaction-context-management-parity",
+  "checkpointId": "C1",
+  "contractSha256": "c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6",
+  "evidenceDirectory": "artifacts/parity/20261028-c1-843d0388/runs/C1/differential",
+  "generatedReportSha256": "4edd6420cd5906bdb1a151654d1ec17b9fd7f9a929c76a13df8c80da604a4ef8",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "pisharpSourceSha": "843d0388ceca2adbe2725397c48e0e45b98cba7e",
+  "sourceTreeClean": true,
+  "piCalibrationStable": true,
+  "pisharpCalibrationStable": true,
+  "pairedObservationsEqual": true,
+  "acceptedSafetyDifferenceCount": 0,
+  "normalization": [
+    "strip generated session entry IDs by comparing the retained entry index",
+    "compare cached-excluded provider input tokens and cached input separately",
+    "compare explicit summary and focus observables rather than framework request wrappers",
+    "Use the same non-transient provider failure category on both sides when comparing rollback behavior."
+  ],
+  "safetyDifferences": [],
+  "executedCaseCount": 9,
+  "requiredC1CaseCount": 9,
+  "unexecutedCaseIds": [],
+  "verifierCounts": {
+    "required": 9,
+    "executed": 9,
+    "passed": 9,
+    "failed": 0,
+    "skipped": 0
+  },
+  "cases": [
+    {
+      "caseId": "C1.eligible-manual-request-persists-one-entry",
+      "contractExpectedObservation": "eligible manual request persists one entry",
+      "classification": "equivalent",
+      "passed": true,
+      "expected": {
+        "C1.eligible-manual-request-persists-one-entry": {
+          "compactionSucceeded": true,
+          "compactionCount": 1,
+          "summary": "compacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary"
+        },
+        "C1.custom-focus-changes-history-prompt-only": {
+          "focusInHistorySummaryRequest": true,
+          "focusAbsentFromTurnPrefixRequest": true
+        },
+        "C1.recent-context-and-full-history-retained": {
+          "firstKeptEntryIndex": 3,
+          "fullHistoryRetained": true,
+          "latestAnswerInContext": true
+        },
+        "C1.summary-usage-details-persist": {
+          "inputTokens": 20,
+          "outputTokens": 40,
+          "cachedInputTokens": 60,
+          "cachedWriteTokens": 80,
+          "totalTokens": 200,
+          "cost": 2
+        }
+      },
+      "actual": {
+        "C1.eligible-manual-request-persists-one-entry": {
+          "compactionSucceeded": true,
+          "compactionCount": 1,
+          "summary": "compacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary"
+        },
+        "C1.custom-focus-changes-history-prompt-only": {
+          "focusInHistorySummaryRequest": true,
+          "focusAbsentFromTurnPrefixRequest": true
+        },
+        "C1.recent-context-and-full-history-retained": {
+          "firstKeptEntryIndex": 3,
+          "fullHistoryRetained": true,
+          "latestAnswerInContext": true
+        },
+        "C1.summary-usage-details-persist": {
+          "inputTokens": 20,
+          "outputTokens": 40,
+          "cachedInputTokens": 60,
+          "cachedWriteTokens": 80,
+          "totalTokens": 200,
+          "cost": 2.0
+        }
+      },
+      "normalizedExpected": {
+        "C1.eligible-manual-request-persists-one-entry": {
+          "compactionSucceeded": true,
+          "compactionCount": 1,
+          "summary": "compacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary"
+        },
+        "C1.custom-focus-changes-history-prompt-only": {
+          "focusInHistorySummaryRequest": true,
+          "focusAbsentFromTurnPrefixRequest": true
+        },
+        "C1.recent-context-and-full-history-retained": {
+          "firstKeptEntryIndex": 3,
+          "fullHistoryRetained": true,
+          "latestAnswerInContext": true
+        },
+        "C1.summary-usage-details-persist": {
+          "inputTokens": 20,
+          "outputTokens": 40,
+          "cachedInputTokens": 60,
+          "cachedWriteTokens": 80,
+          "totalTokens": 200,
+          "cost": 2
+        }
+      },
+      "normalizedActual": {
+        "C1.eligible-manual-request-persists-one-entry": {
+          "compactionSucceeded": true,
+          "compactionCount": 1,
+          "summary": "compacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary"
+        },
+        "C1.custom-focus-changes-history-prompt-only": {
+          "focusInHistorySummaryRequest": true,
+          "focusAbsentFromTurnPrefixRequest": true
+        },
+        "C1.recent-context-and-full-history-retained": {
+          "firstKeptEntryIndex": 3,
+          "fullHistoryRetained": true,
+          "latestAnswerInContext": true
+        },
+        "C1.summary-usage-details-persist": {
+          "inputTokens": 20,
+          "outputTokens": 40,
+          "cachedInputTokens": 60,
+          "cachedWriteTokens": 80,
+          "totalTokens": 200,
+          "cost": 2.0
+        }
+      }
+    },
+    {
+      "caseId": "C1.ineligible-short-history-is-no-op",
+      "contractExpectedObservation": "ineligible short history is no op",
+      "classification": "equivalent",
+      "passed": true,
+      "expected": {
+        "compactionSucceeded": false,
+        "compactionCount": 0,
+        "summaryRequestCount": 0,
+        "canonicalStateUnchanged": true,
+        "failureEventPublished": true
+      },
+      "actual": {
+        "compactionSucceeded": false,
+        "compactionCount": 0,
+        "summaryRequestCount": 0,
+        "canonicalStateUnchanged": true,
+        "failureEventPublished": true
+      },
+      "normalizedExpected": {
+        "compactionSucceeded": false,
+        "compactionCount": 0,
+        "summaryRequestCount": 0,
+        "canonicalStateUnchanged": true,
+        "failureEventPublished": true
+      },
+      "normalizedActual": {
+        "compactionSucceeded": false,
+        "compactionCount": 0,
+        "summaryRequestCount": 0,
+        "canonicalStateUnchanged": true,
+        "failureEventPublished": true
+      }
+    },
+    {
+      "caseId": "C1.custom-focus-changes-history-prompt-only",
+      "contractExpectedObservation": "custom focus changes history prompt only",
+      "classification": "equivalent",
+      "passed": true,
+      "expected": {
+        "C1.eligible-manual-request-persists-one-entry": {
+          "compactionSucceeded": true,
+          "compactionCount": 1,
+          "summary": "compacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary"
+        },
+        "C1.custom-focus-changes-history-prompt-only": {
+          "focusInHistorySummaryRequest": true,
+          "focusAbsentFromTurnPrefixRequest": true
+        },
+        "C1.recent-context-and-full-history-retained": {
+          "firstKeptEntryIndex": 3,
+          "fullHistoryRetained": true,
+          "latestAnswerInContext": true
+        },
+        "C1.summary-usage-details-persist": {
+          "inputTokens": 20,
+          "outputTokens": 40,
+          "cachedInputTokens": 60,
+          "cachedWriteTokens": 80,
+          "totalTokens": 200,
+          "cost": 2
+        }
+      },
+      "actual": {
+        "C1.eligible-manual-request-persists-one-entry": {
+          "compactionSucceeded": true,
+          "compactionCount": 1,
+          "summary": "compacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary"
+        },
+        "C1.custom-focus-changes-history-prompt-only": {
+          "focusInHistorySummaryRequest": true,
+          "focusAbsentFromTurnPrefixRequest": true
+        },
+        "C1.recent-context-and-full-history-retained": {
+          "firstKeptEntryIndex": 3,
+          "fullHistoryRetained": true,
+          "latestAnswerInContext": true
+        },
+        "C1.summary-usage-details-persist": {
+          "inputTokens": 20,
+          "outputTokens": 40,
+          "cachedInputTokens": 60,
+          "cachedWriteTokens": 80,
+          "totalTokens": 200,
+          "cost": 2.0
+        }
+      },
+      "normalizedExpected": {
+        "C1.eligible-manual-request-persists-one-entry": {
+          "compactionSucceeded": true,
+          "compactionCount": 1,
+          "summary": "compacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary"
+        },
+        "C1.custom-focus-changes-history-prompt-only": {
+          "focusInHistorySummaryRequest": true,
+          "focusAbsentFromTurnPrefixRequest": true
+        },
+        "C1.recent-context-and-full-history-retained": {
+          "firstKeptEntryIndex": 3,
+          "fullHistoryRetained": true,
+          "latestAnswerInContext": true
+        },
+        "C1.summary-usage-details-persist": {
+          "inputTokens": 20,
+          "outputTokens": 40,
+          "cachedInputTokens": 60,
+          "cachedWriteTokens": 80,
+          "totalTokens": 200,
+          "cost": 2
+        }
+      },
+      "normalizedActual": {
+        "C1.eligible-manual-request-persists-one-entry": {
+          "compactionSucceeded": true,
+          "compactionCount": 1,
+          "summary": "compacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary"
+        },
+        "C1.custom-focus-changes-history-prompt-only": {
+          "focusInHistorySummaryRequest": true,
+          "focusAbsentFromTurnPrefixRequest": true
+        },
+        "C1.recent-context-and-full-history-retained": {
+          "firstKeptEntryIndex": 3,
+          "fullHistoryRetained": true,
+          "latestAnswerInContext": true
+        },
+        "C1.summary-usage-details-persist": {
+          "inputTokens": 20,
+          "outputTokens": 40,
+          "cachedInputTokens": 60,
+          "cachedWriteTokens": 80,
+          "totalTokens": 200,
+          "cost": 2.0
+        }
+      }
+    },
+    {
+      "caseId": "C1.recent-context-and-full-history-retained",
+      "contractExpectedObservation": "recent context and full history retained",
+      "classification": "equivalent",
+      "passed": true,
+      "expected": {
+        "C1.eligible-manual-request-persists-one-entry": {
+          "compactionSucceeded": true,
+          "compactionCount": 1,
+          "summary": "compacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary"
+        },
+        "C1.custom-focus-changes-history-prompt-only": {
+          "focusInHistorySummaryRequest": true,
+          "focusAbsentFromTurnPrefixRequest": true
+        },
+        "C1.recent-context-and-full-history-retained": {
+          "firstKeptEntryIndex": 3,
+          "fullHistoryRetained": true,
+          "latestAnswerInContext": true
+        },
+        "C1.summary-usage-details-persist": {
+          "inputTokens": 20,
+          "outputTokens": 40,
+          "cachedInputTokens": 60,
+          "cachedWriteTokens": 80,
+          "totalTokens": 200,
+          "cost": 2
+        }
+      },
+      "actual": {
+        "C1.eligible-manual-request-persists-one-entry": {
+          "compactionSucceeded": true,
+          "compactionCount": 1,
+          "summary": "compacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary"
+        },
+        "C1.custom-focus-changes-history-prompt-only": {
+          "focusInHistorySummaryRequest": true,
+          "focusAbsentFromTurnPrefixRequest": true
+        },
+        "C1.recent-context-and-full-history-retained": {
+          "firstKeptEntryIndex": 3,
+          "fullHistoryRetained": true,
+          "latestAnswerInContext": true
+        },
+        "C1.summary-usage-details-persist": {
+          "inputTokens": 20,
+          "outputTokens": 40,
+          "cachedInputTokens": 60,
+          "cachedWriteTokens": 80,
+          "totalTokens": 200,
+          "cost": 2.0
+        }
+      },
+      "normalizedExpected": {
+        "C1.eligible-manual-request-persists-one-entry": {
+          "compactionSucceeded": true,
+          "compactionCount": 1,
+          "summary": "compacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary"
+        },
+        "C1.custom-focus-changes-history-prompt-only": {
+          "focusInHistorySummaryRequest": true,
+          "focusAbsentFromTurnPrefixRequest": true
+        },
+        "C1.recent-context-and-full-history-retained": {
+          "firstKeptEntryIndex": 3,
+          "fullHistoryRetained": true,
+          "latestAnswerInContext": true
+        },
+        "C1.summary-usage-details-persist": {
+          "inputTokens": 20,
+          "outputTokens": 40,
+          "cachedInputTokens": 60,
+          "cachedWriteTokens": 80,
+          "totalTokens": 200,
+          "cost": 2
+        }
+      },
+      "normalizedActual": {
+        "C1.eligible-manual-request-persists-one-entry": {
+          "compactionSucceeded": true,
+          "compactionCount": 1,
+          "summary": "compacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary"
+        },
+        "C1.custom-focus-changes-history-prompt-only": {
+          "focusInHistorySummaryRequest": true,
+          "focusAbsentFromTurnPrefixRequest": true
+        },
+        "C1.recent-context-and-full-history-retained": {
+          "firstKeptEntryIndex": 3,
+          "fullHistoryRetained": true,
+          "latestAnswerInContext": true
+        },
+        "C1.summary-usage-details-persist": {
+          "inputTokens": 20,
+          "outputTokens": 40,
+          "cachedInputTokens": 60,
+          "cachedWriteTokens": 80,
+          "totalTokens": 200,
+          "cost": 2.0
+        }
+      }
+    },
+    {
+      "caseId": "C1.split-turn-summary-retains-interrupted-assistant",
+      "contractExpectedObservation": "split turn summary retains interrupted assistant",
+      "classification": "equivalent",
+      "passed": true,
+      "expected": {
+        "compactionSucceeded": true,
+        "compactionCount": 1,
+        "summaryRequestCount": 2,
+        "firstKeptEntryIndex": 5,
+        "splitTurnSummaryCreated": true,
+        "historySummaryIncludesOlderQuestion": false,
+        "turnPrefixSummaryIncludesCurrentRequest": true,
+        "interruptedAssistantRetainedOnce": true
+      },
+      "actual": {
+        "compactionSucceeded": true,
+        "compactionCount": 1,
+        "summaryRequestCount": 2,
+        "firstKeptEntryIndex": 5,
+        "splitTurnSummaryCreated": true,
+        "historySummaryIncludesOlderQuestion": false,
+        "turnPrefixSummaryIncludesCurrentRequest": true,
+        "interruptedAssistantRetainedOnce": true
+      },
+      "normalizedExpected": {
+        "compactionSucceeded": true,
+        "compactionCount": 1,
+        "summaryRequestCount": 2,
+        "firstKeptEntryIndex": 5,
+        "splitTurnSummaryCreated": true,
+        "historySummaryIncludesOlderQuestion": false,
+        "turnPrefixSummaryIncludesCurrentRequest": true,
+        "interruptedAssistantRetainedOnce": true
+      },
+      "normalizedActual": {
+        "compactionSucceeded": true,
+        "compactionCount": 1,
+        "summaryRequestCount": 2,
+        "firstKeptEntryIndex": 5,
+        "splitTurnSummaryCreated": true,
+        "historySummaryIncludesOlderQuestion": false,
+        "turnPrefixSummaryIncludesCurrentRequest": true,
+        "interruptedAssistantRetainedOnce": true
+      }
+    },
+    {
+      "caseId": "C1.summary-usage-details-persist",
+      "contractExpectedObservation": "summary usage details persist",
+      "classification": "equivalent",
+      "passed": true,
+      "expected": {
+        "C1.eligible-manual-request-persists-one-entry": {
+          "compactionSucceeded": true,
+          "compactionCount": 1,
+          "summary": "compacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary"
+        },
+        "C1.custom-focus-changes-history-prompt-only": {
+          "focusInHistorySummaryRequest": true,
+          "focusAbsentFromTurnPrefixRequest": true
+        },
+        "C1.recent-context-and-full-history-retained": {
+          "firstKeptEntryIndex": 3,
+          "fullHistoryRetained": true,
+          "latestAnswerInContext": true
+        },
+        "C1.summary-usage-details-persist": {
+          "inputTokens": 20,
+          "outputTokens": 40,
+          "cachedInputTokens": 60,
+          "cachedWriteTokens": 80,
+          "totalTokens": 200,
+          "cost": 2
+        }
+      },
+      "actual": {
+        "C1.eligible-manual-request-persists-one-entry": {
+          "compactionSucceeded": true,
+          "compactionCount": 1,
+          "summary": "compacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary"
+        },
+        "C1.custom-focus-changes-history-prompt-only": {
+          "focusInHistorySummaryRequest": true,
+          "focusAbsentFromTurnPrefixRequest": true
+        },
+        "C1.recent-context-and-full-history-retained": {
+          "firstKeptEntryIndex": 3,
+          "fullHistoryRetained": true,
+          "latestAnswerInContext": true
+        },
+        "C1.summary-usage-details-persist": {
+          "inputTokens": 20,
+          "outputTokens": 40,
+          "cachedInputTokens": 60,
+          "cachedWriteTokens": 80,
+          "totalTokens": 200,
+          "cost": 2.0
+        }
+      },
+      "normalizedExpected": {
+        "C1.eligible-manual-request-persists-one-entry": {
+          "compactionSucceeded": true,
+          "compactionCount": 1,
+          "summary": "compacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary"
+        },
+        "C1.custom-focus-changes-history-prompt-only": {
+          "focusInHistorySummaryRequest": true,
+          "focusAbsentFromTurnPrefixRequest": true
+        },
+        "C1.recent-context-and-full-history-retained": {
+          "firstKeptEntryIndex": 3,
+          "fullHistoryRetained": true,
+          "latestAnswerInContext": true
+        },
+        "C1.summary-usage-details-persist": {
+          "inputTokens": 20,
+          "outputTokens": 40,
+          "cachedInputTokens": 60,
+          "cachedWriteTokens": 80,
+          "totalTokens": 200,
+          "cost": 2
+        }
+      },
+      "normalizedActual": {
+        "C1.eligible-manual-request-persists-one-entry": {
+          "compactionSucceeded": true,
+          "compactionCount": 1,
+          "summary": "compacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary"
+        },
+        "C1.custom-focus-changes-history-prompt-only": {
+          "focusInHistorySummaryRequest": true,
+          "focusAbsentFromTurnPrefixRequest": true
+        },
+        "C1.recent-context-and-full-history-retained": {
+          "firstKeptEntryIndex": 3,
+          "fullHistoryRetained": true,
+          "latestAnswerInContext": true
+        },
+        "C1.summary-usage-details-persist": {
+          "inputTokens": 20,
+          "outputTokens": 40,
+          "cachedInputTokens": 60,
+          "cachedWriteTokens": 80,
+          "totalTokens": 200,
+          "cost": 2.0
+        }
+      }
+    },
+    {
+      "caseId": "C1.summary-failure-rolls-back-and-reports",
+      "contractExpectedObservation": "summary failure rolls back and reports",
+      "classification": "equivalent",
+      "passed": true,
+      "expected": {
+        "compactionCount": 0,
+        "summaryRequestCount": 1,
+        "canonicalStateUnchanged": true,
+        "failureEventPublished": true,
+        "providerFailureReported": true
+      },
+      "actual": {
+        "compactionCount": 0,
+        "summaryRequestCount": 1,
+        "canonicalStateUnchanged": true,
+        "failureEventPublished": true,
+        "providerFailureReported": true
+      },
+      "normalizedExpected": {
+        "compactionCount": 0,
+        "summaryRequestCount": 1,
+        "canonicalStateUnchanged": true,
+        "failureEventPublished": true,
+        "providerFailureReported": true
+      },
+      "normalizedActual": {
+        "compactionCount": 0,
+        "summaryRequestCount": 1,
+        "canonicalStateUnchanged": true,
+        "failureEventPublished": true,
+        "providerFailureReported": true
+      }
+    },
+    {
+      "caseId": "C1.cancellation-publishes-no-entry",
+      "contractExpectedObservation": "cancellation publishes no entry",
+      "classification": "equivalent",
+      "passed": true,
+      "expected": {
+        "compactionSucceeded": false,
+        "compactionCount": 0,
+        "summaryRequestCount": 0,
+        "canonicalStateUnchanged": true,
+        "abortedEventPublished": true
+      },
+      "actual": {
+        "compactionSucceeded": false,
+        "compactionCount": 0,
+        "summaryRequestCount": 0,
+        "canonicalStateUnchanged": true,
+        "abortedEventPublished": true
+      },
+      "normalizedExpected": {
+        "compactionSucceeded": false,
+        "compactionCount": 0,
+        "summaryRequestCount": 0,
+        "canonicalStateUnchanged": true,
+        "abortedEventPublished": true
+      },
+      "normalizedActual": {
+        "compactionSucceeded": false,
+        "compactionCount": 0,
+        "summaryRequestCount": 0,
+        "canonicalStateUnchanged": true,
+        "abortedEventPublished": true
+      }
+    },
+    {
+      "caseId": "C1.active-run-and-queued-follow-up-order",
+      "contractExpectedObservation": "active run and queued follow up order",
+      "classification": "equivalent",
+      "passed": true,
+      "expected": {
+        "compactionCount": 1,
+        "compactionPrecedesFollowUp": true,
+        "followUpPrecedesResponse": true,
+        "followUpResponsePresent": true
+      },
+      "actual": {
+        "compactionCount": 1,
+        "compactionPrecedesFollowUp": true,
+        "followUpPrecedesResponse": true,
+        "followUpResponsePresent": true
+      },
+      "normalizedExpected": {
+        "compactionCount": 1,
+        "compactionPrecedesFollowUp": true,
+        "followUpPrecedesResponse": true,
+        "followUpResponsePresent": true
+      },
+      "normalizedActual": {
+        "compactionCount": 1,
+        "compactionPrecedesFollowUp": true,
+        "followUpPrecedesResponse": true,
+        "followUpResponsePresent": true
+      }
+    }
+  ],
+  "rawArtifacts": [
+    {
+      "path": "manual-cancel-test-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "manual-cancel-test-run-1.stdout.log",
+      "sha256": "be92f51b09135d399f4c27ff58f7033257c2cfc1313a96926bf62b5cd43d5158"
+    },
+    {
+      "path": "manual-cancel-test-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "manual-cancel-test-run-2.stdout.log",
+      "sha256": "4ed19991457c732330854e6f26145796ec66d2c29bcffa57d7bfea43a8b46056"
+    },
+    {
+      "path": "pi-c1-observations.json",
+      "sha256": "f3f32d947cfa93dc83966a471a2c7f9dac75ecdc61abb60e8367506a833fdc3b"
+    },
+    {
+      "path": "pi-manual-cancel.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-manual-cancel.stdout.log",
+      "sha256": "d967c91961f5e59d46994c5ca51e23c5551065b4aec332083192e06fea4db855"
+    },
+    {
+      "path": "pi-manual-cancel/pi-oracle.json",
+      "sha256": "568b8a8af1dec0bfb3575b51cce81809d9225b806184c39037cdd085e7de3ff0"
+    },
+    {
+      "path": "pi-manual-cancel/pi-run-1.json",
+      "sha256": "dcb77c53f6eb662ccb85c203f097f5971755abec8486bb25bd53b1142b7d4871"
+    },
+    {
+      "path": "pi-manual-cancel/pi-run-2.json",
+      "sha256": "dcb77c53f6eb662ccb85c203f097f5971755abec8486bb25bd53b1142b7d4871"
+    },
+    {
+      "path": "pi-manual-eligible.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-manual-eligible.stdout.log",
+      "sha256": "bc67dd26500b311d3bd18bd2d9c6c87996a2b9ad9510ea1cd1e42b988b106578"
+    },
+    {
+      "path": "pi-manual-eligible/pi-oracle.json",
+      "sha256": "01823fa77dd1940c9f57f0eb3018b44c1cdc29fc30e1a34eb456b0ba7d730d84"
+    },
+    {
+      "path": "pi-manual-eligible/pi-run-1.json",
+      "sha256": "37ebacc9755ff6227edd32ddb8dcdd6ffc099be49cd8e42352795c4f05210f73"
+    },
+    {
+      "path": "pi-manual-eligible/pi-run-2.json",
+      "sha256": "37ebacc9755ff6227edd32ddb8dcdd6ffc099be49cd8e42352795c4f05210f73"
+    },
+    {
+      "path": "pi-manual-failure.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-manual-failure.stdout.log",
+      "sha256": "4d751364fb6fa48e761d00c76f2a56b1d9c6784405c8ca39a4053d6ab7b0ef2d"
+    },
+    {
+      "path": "pi-manual-failure/pi-oracle.json",
+      "sha256": "59729a0e54f78aa8818637b7536d2c07ae728d32ca9d93540c25f861b2caacde"
+    },
+    {
+      "path": "pi-manual-failure/pi-run-1.json",
+      "sha256": "c57615787e80871bff79ac7c6452152239558ca65158f3ba2e7352d131415e52"
+    },
+    {
+      "path": "pi-manual-failure/pi-run-2.json",
+      "sha256": "c57615787e80871bff79ac7c6452152239558ca65158f3ba2e7352d131415e52"
+    },
+    {
+      "path": "pi-manual-ineligible.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-manual-ineligible.stdout.log",
+      "sha256": "3334e614cc4eb8fb09f1a1653c4d0bb101a5a01d04204c19ed3db23bd9bcc22a"
+    },
+    {
+      "path": "pi-manual-ineligible/pi-oracle.json",
+      "sha256": "1f649f207695af65ee488b4eff87f83071d14c3287ba85bd9e81baab4f99182e"
+    },
+    {
+      "path": "pi-manual-ineligible/pi-run-1.json",
+      "sha256": "0420896553ea11c8ae2f91a96fb4be144caea6ec4eca2df919ec3b21aa194aab"
+    },
+    {
+      "path": "pi-manual-ineligible/pi-run-2.json",
+      "sha256": "0420896553ea11c8ae2f91a96fb4be144caea6ec4eca2df919ec3b21aa194aab"
+    },
+    {
+      "path": "pi-manual-queue-order.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-manual-queue-order.stdout.log",
+      "sha256": "7e4200c97cf854dde5810f08cbe4b5ed534eee435998d9b37a29b610a70ca6d2"
+    },
+    {
+      "path": "pi-manual-queue-order/pi-oracle.json",
+      "sha256": "3e5290b92a1b596aef9b5136fbc5604ca797206750deb1c53c26cc407aacdeb9"
+    },
+    {
+      "path": "pi-manual-queue-order/pi-run-1.json",
+      "sha256": "1b7fbed02df566e26e731bd76e2beb97ff67649083ccd253edc8f859f4d10c2e"
+    },
+    {
+      "path": "pi-manual-queue-order/pi-run-2.json",
+      "sha256": "1b7fbed02df566e26e731bd76e2beb97ff67649083ccd253edc8f859f4d10c2e"
+    },
+    {
+      "path": "pi-manual-split-turn.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-manual-split-turn.stdout.log",
+      "sha256": "5affbb9e206368ddbf6d2f38b17ecf3e9c56aa06db472ce186b364fa2b9a820a"
+    },
+    {
+      "path": "pi-manual-split-turn/pi-oracle.json",
+      "sha256": "21f6c290cae7b66698ceb0d1e80df2d0c82ab415d229fc66a8d2e3e8bdb0f7f6"
+    },
+    {
+      "path": "pi-manual-split-turn/pi-run-1.json",
+      "sha256": "25a63fbd6ca5db14af1bb73ef997224c591e8fe5188086bd574e00a45b9df98f"
+    },
+    {
+      "path": "pi-manual-split-turn/pi-run-2.json",
+      "sha256": "25a63fbd6ca5db14af1bb73ef997224c591e8fe5188086bd574e00a45b9df98f"
+    },
+    {
+      "path": "pisharp-c1-observations.json",
+      "sha256": "2b67dfb1dee1b52fbf2f9bb640cd83511270b55d9f29098a8319301c42dd9599"
+    },
+    {
+      "path": "pisharp-manual-cancel-run-1/manual-cancel.json",
+      "sha256": "8168e530ebdbb1cdd0f3d5c3d674a3ffebfde74e5b75991ee79c58dd689bc310"
+    },
+    {
+      "path": "pisharp-manual-cancel-run-2/manual-cancel.json",
+      "sha256": "8168e530ebdbb1cdd0f3d5c3d674a3ffebfde74e5b75991ee79c58dd689bc310"
+    },
+    {
+      "path": "pisharp-manual-eligible-run-1.json",
+      "sha256": "cb23826461f44c4bc08ede95a11d13e9e81230e2d28c00a21eab2d25857f3987"
+    },
+    {
+      "path": "pisharp-manual-eligible-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-manual-eligible-run-1.stdout.log",
+      "sha256": "1289a2fb759af4cddd27e7128e9e6fa9d173901eb7567fbd33324e7d698c31ab"
+    },
+    {
+      "path": "pisharp-manual-eligible-run-2.json",
+      "sha256": "cb23826461f44c4bc08ede95a11d13e9e81230e2d28c00a21eab2d25857f3987"
+    },
+    {
+      "path": "pisharp-manual-eligible-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-manual-eligible-run-2.stdout.log",
+      "sha256": "8122f1a142dbfe7c477a2ba086389b5ced5d10aa49017a14c7c08ff272a464e0"
+    },
+    {
+      "path": "pisharp-manual-failure-run-1.json",
+      "sha256": "7ace400f2e941e7d7cd25a46dd1d127d58ce41ffabc15c7a49feec4b5bf812c9"
+    },
+    {
+      "path": "pisharp-manual-failure-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-manual-failure-run-1.stdout.log",
+      "sha256": "8122f1a142dbfe7c477a2ba086389b5ced5d10aa49017a14c7c08ff272a464e0"
+    },
+    {
+      "path": "pisharp-manual-failure-run-2.json",
+      "sha256": "7ace400f2e941e7d7cd25a46dd1d127d58ce41ffabc15c7a49feec4b5bf812c9"
+    },
+    {
+      "path": "pisharp-manual-failure-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-manual-failure-run-2.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-manual-ineligible-run-1.json",
+      "sha256": "fcc6b89a0ad27c930f2ca14588fe0707f13fc45242af3dc06f68e3c11f605c71"
+    },
+    {
+      "path": "pisharp-manual-ineligible-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-manual-ineligible-run-1.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-manual-ineligible-run-2.json",
+      "sha256": "fcc6b89a0ad27c930f2ca14588fe0707f13fc45242af3dc06f68e3c11f605c71"
+    },
+    {
+      "path": "pisharp-manual-ineligible-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-manual-ineligible-run-2.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-manual-queue-order-run-1.json",
+      "sha256": "bed98711ccc8acab1e0ec52db15a009997e7359a5dbb785df944183aea6e09fe"
+    },
+    {
+      "path": "pisharp-manual-queue-order-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-manual-queue-order-run-1.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-manual-queue-order-run-2.json",
+      "sha256": "bed98711ccc8acab1e0ec52db15a009997e7359a5dbb785df944183aea6e09fe"
+    },
+    {
+      "path": "pisharp-manual-queue-order-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-manual-queue-order-run-2.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-manual-split-turn-run-1.json",
+      "sha256": "5749aa602b51ce53df90685879dc647f2357b08ff8bbaa4555c1d093f2a832ed"
+    },
+    {
+      "path": "pisharp-manual-split-turn-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-manual-split-turn-run-1.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-manual-split-turn-run-2.json",
+      "sha256": "5749aa602b51ce53df90685879dc647f2357b08ff8bbaa4555c1d093f2a832ed"
+    },
+    {
+      "path": "pisharp-manual-split-turn-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-manual-split-turn-run-2.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    }
+  ]
+}

@@ -3,287 +3,1212 @@
   "milestone": "compaction-context-management-parity",
   "checkpointId": "C5",
   "contractSha256": "c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6",
-  "evidenceDirectory": "artifacts/parity/20261028T062543Z-c5-length-recovery/runs/C5/differential",
-  "generatedReportSha256": "cc1baae526d17cdbcd70014484ce3734bb1f9bd3c193d610d1aa95c1dc1508f9",
+  "evidenceDirectory": "artifacts/parity/20261028-c5-843d0388/runs/C5/differential",
+  "generatedReportSha256": "b066381787a553d46858311c595d692d1d9589c165fa41db780a79e043c46c09",
   "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-  "pisharpSourceSha": "b22f7e7bad940a1dd0a26d716628f6739a8a9abf",
+  "pisharpSourceSha": "843d0388ceca2adbe2725397c48e0e45b98cba7e",
   "sourceTreeClean": true,
   "piCalibrationStable": true,
   "pisharpCalibrationStable": true,
-  "pairedObservationsEqual": true,
+  "pairedObservationsEqual": false,
+  "acceptedSafetyDifferenceCount": 2,
   "normalization": [
-    "remove empty system message from provider transcript"
+    "remove empty system message from provider transcript",
+    "omit fixture-selected model labels except where stale-model behavior is under test",
+    "render Pi compactionSummary and branchSummary objects by their summary field"
   ],
-  "classification": "equivalent",
-  "completedCaseIds": [
-    "C5.recoverable-length-stop-retries-once",
-    "C5.retry-request-uses-compacted-transcript"
+  "safetyDifferences": [
+    {
+      "caseId": "C5.partial-content-overflow-does-not-duplicate-request",
+      "reason": "Pinned Pi retries once after explicit context overflow with partial output; PiSharp surfaces the partial response and does not replay an already visible provider stream.",
+      "regression": "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#ProviderOverflowRetriesOnceOnlyBeforeContentWithShortenedRequest (afterContent=true)",
+      "safetyEvidence": "pisharp-partial-content-overflow-run-1.json"
+    },
+    {
+      "caseId": "C5.unknown-model-window-does-not-fabricate-capacity",
+      "reason": "Pinned Pi treats contextWindow=0 as a threshold of minus reserve and compacts; PiSharp does not invent a budget when no context policy is known.",
+      "regression": "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#UnknownContextWindowDoesNotInventCapacityFromReportedUsage",
+      "safetyEvidence": "pisharp-unknown-model-window-run-1.json"
+    }
   ],
-  "executedCaseCount": 2,
+  "executedCaseCount": 11,
   "requiredC5CaseCount": 11,
-  "unexecutedCaseIds": [
-    "C5.length-stop-at-context-boundary-recognized",
-    "C5.overflow-for-responses-chat-and-anthropic",
-    "C5.partial-content-overflow-does-not-duplicate-request",
-    "C5.post-compaction-provider-continuation-succeeds",
-    "C5.pre-content-context-error-recognized",
-    "C5.provider-silent-overflow-from-reported-usage",
-    "C5.second-overflow-stops-with-clear-error",
-    "C5.stale-old-model-overflow-does-not-compact-new-model",
-    "C5.unknown-model-window-does-not-fabricate-capacity"
-  ],
+  "unexecutedCaseIds": [],
+  "verifierCounts": {
+    "required": 11,
+    "executed": 11,
+    "passed": 11,
+    "failed": 0,
+    "skipped": 0
+  },
   "cases": [
     {
-      "caseId": "C5.recoverable-length-stop-retries-once",
-      "checkpointId": "C5",
-      "contractExpectedObservation": "recoverable length stop retries once",
-      "executed": true,
-      "passed": true,
-      "skipped": false,
+      "caseId": "C5.length-stop-at-context-boundary-recognized",
+      "contractExpectedObservation": "length stop at context boundary recognized",
       "classification": "equivalent",
-      "assertions": [
-        {
-          "name": "paired-normalized-observation",
-          "caseId": "C5.recoverable-length-stop-retries-once",
-          "contractObservation": "recoverable length stop retries once",
-          "comparison": "equivalent",
-          "baselineArtifact": "pi-c5-observations.json",
-          "baselinePointer": "/observations/C5.recoverable-length-stop-retries-once",
-          "implementationArtifact": "pisharp-c5-observations.json",
-          "implementationPointer": "/observations/C5.recoverable-length-stop-retries-once",
-          "expected": {
-            "providerAttempts": 2,
-            "overflowCompactions": [
-              {
-                "reason": "overflow",
-                "willRetry": true
-              }
-            ],
-            "summaryRequestCount": 2,
-            "continuationCompleted": true
+      "passed": true,
+      "expected": {
+        "providerAttempts": 2,
+        "summaryRequestCount": 2,
+        "compactionEndEvents": [
+          {
+            "reason": "overflow",
+            "willRetry": true
+          }
+        ],
+        "compactionCount": 1,
+        "responseUsage": [
+          {
+            "inputTokens": 10000,
+            "outputTokens": 0
           },
-          "actual": {
-            "providerAttempts": 2,
-            "overflowCompactions": [
-              {
-                "reason": "overflow",
-                "willRetry": true
-              }
-            ],
-            "summaryRequestCount": 2,
-            "continuationCompleted": true
+          {
+            "inputTokens": 60,
+            "outputTokens": 12
+          }
+        ],
+        "responsePersisted": false
+      },
+      "actual": {
+        "providerAttempts": 2,
+        "summaryRequestCount": 2,
+        "compactionEndEvents": [
+          {
+            "reason": "overflow",
+            "willRetry": true
+          }
+        ],
+        "compactionCount": 1,
+        "responseUsage": [
+          {
+            "inputTokens": 10000,
+            "outputTokens": 0
           },
-          "normalizedExpected": {
-            "providerAttempts": 2,
-            "overflowCompactions": [
-              {
-                "reason": "overflow",
-                "willRetry": true
-              }
-            ],
-            "summaryRequestCount": 2,
-            "continuationCompleted": true
+          {
+            "inputTokens": 60,
+            "outputTokens": 12
+          }
+        ],
+        "responsePersisted": false
+      },
+      "normalizedExpected": {
+        "providerAttempts": 2,
+        "summaryRequestCount": 2,
+        "compactionEndEvents": [
+          {
+            "reason": "overflow",
+            "willRetry": true
+          }
+        ],
+        "compactionCount": 1,
+        "responseUsage": [
+          {
+            "inputTokens": 10000,
+            "outputTokens": 0
           },
-          "normalizedActual": {
-            "providerAttempts": 2,
-            "overflowCompactions": [
-              {
-                "reason": "overflow",
-                "willRetry": true
-              }
-            ],
-            "summaryRequestCount": 2,
-            "continuationCompleted": true
+          {
+            "inputTokens": 60,
+            "outputTokens": 12
+          }
+        ],
+        "responsePersisted": false
+      },
+      "normalizedActual": {
+        "providerAttempts": 2,
+        "summaryRequestCount": 2,
+        "compactionEndEvents": [
+          {
+            "reason": "overflow",
+            "willRetry": true
+          }
+        ],
+        "compactionCount": 1,
+        "responseUsage": [
+          {
+            "inputTokens": 10000,
+            "outputTokens": 0
           },
-          "passed": true
-        }
-      ],
-      "rawArtifacts": [
-        {
-          "path": "pi-c5-length-stop/pi-run-1.json",
-          "sha256": "5d24937559dd3c07d5a8588b1473eb13d6f66dd70ce2c8c34c0dea9c3e3f0a96"
-        },
-        {
-          "path": "pi-c5-length-stop/pi-run-2.json",
-          "sha256": "5d24937559dd3c07d5a8588b1473eb13d6f66dd70ce2c8c34c0dea9c3e3f0a96"
-        },
-        {
-          "path": "pi-c5-length-stop/pi-oracle.json",
-          "sha256": "aabc167d36fd4895d75d8ea67d67478ba8eb354d64606df3acaa2603cba2b2e3"
-        },
-        {
-          "path": "pi-c5.stdout.log",
-          "sha256": "6a8073db40fdda50d855d52e58ec7b0e4a6fa964e35bfa466e98e1a53c318f60"
-        },
-        {
-          "path": "pi-c5.stderr.log",
-          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-        },
-        {
-          "path": "pisharp-c5-run-1.json",
-          "sha256": "c9e974a99bd3bdf261e86ffe0c636feeaf73cb4f5e6001f25d7ba1192b43a266"
-        },
-        {
-          "path": "pisharp-c5-run-2.json",
-          "sha256": "c9e974a99bd3bdf261e86ffe0c636feeaf73cb4f5e6001f25d7ba1192b43a266"
-        },
-        {
-          "path": "pisharp-c5-run-1.stdout.log",
-          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-        },
-        {
-          "path": "pisharp-c5-run-2.stdout.log",
-          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-        },
-        {
-          "path": "pisharp-c5-run-1.stderr.log",
-          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-        },
-        {
-          "path": "pisharp-c5-run-2.stderr.log",
-          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-        },
-        {
-          "path": "pi-c5-normalized.json",
-          "sha256": "b40071ae4eac4ac4e03e98e2c35622b87a86ec4cd08f0daa5ecfb493b207acaa"
-        },
-        {
-          "path": "pisharp-c5-normalized.json",
-          "sha256": "b40071ae4eac4ac4e03e98e2c35622b87a86ec4cd08f0daa5ecfb493b207acaa"
-        },
-        {
-          "path": "pi-c5-observations.json",
-          "sha256": "b648bd614828373b2b64d56695c3e9b1c75eaafeb259b17cff73aad45f659b99"
-        },
-        {
-          "path": "pisharp-c5-observations.json",
-          "sha256": "b648bd614828373b2b64d56695c3e9b1c75eaafeb259b17cff73aad45f659b99"
-        }
-      ]
+          {
+            "inputTokens": 60,
+            "outputTokens": 12
+          }
+        ],
+        "responsePersisted": false
+      }
+    },
+    {
+      "caseId": "C5.overflow-for-responses-chat-and-anthropic",
+      "contractExpectedObservation": "overflow for responses chat and anthropic",
+      "classification": "equivalent",
+      "passed": true,
+      "expected": {
+        "providerAttempts": 2,
+        "overflowRecoveryCount": 1,
+        "retryContainsCompactedSummary": true,
+        "partialResponsePersisted": false,
+        "continuationCompleted": true
+      },
+      "actual": {
+        "providerAttempts": 2,
+        "overflowRecoveryCount": 1,
+        "retryContainsCompactedSummary": true,
+        "partialResponsePersisted": false,
+        "continuationCompleted": true
+      },
+      "normalizedExpected": {
+        "providerAttempts": 2,
+        "overflowRecoveryCount": 1,
+        "retryContainsCompactedSummary": true,
+        "partialResponsePersisted": false,
+        "continuationCompleted": true
+      },
+      "normalizedActual": {
+        "providerAttempts": 2,
+        "overflowRecoveryCount": 1,
+        "retryContainsCompactedSummary": true,
+        "partialResponsePersisted": false,
+        "continuationCompleted": true
+      }
+    },
+    {
+      "caseId": "C5.partial-content-overflow-does-not-duplicate-request",
+      "contractExpectedObservation": "partial content overflow does not duplicate request",
+      "classification": "intentional-safety-difference",
+      "passed": true,
+      "expected": {
+        "providerAttempts": 2,
+        "summaryRequestCount": 2,
+        "compactionEndEvents": [
+          {
+            "reason": "overflow",
+            "willRetry": true
+          }
+        ],
+        "partialResponsePersisted": true,
+        "retryContainsPartialResponse": false,
+        "recoveryErrors": []
+      },
+      "actual": {
+        "providerAttempts": 1,
+        "summaryRequestCount": 0,
+        "compactionEndEvents": [],
+        "partialResponsePersisted": true,
+        "retryContainsPartialResponse": false,
+        "recoveryErrors": []
+      },
+      "normalizedExpected": {
+        "providerAttempts": 2,
+        "summaryRequestCount": 2,
+        "compactionEndEvents": [
+          {
+            "reason": "overflow",
+            "willRetry": true
+          }
+        ],
+        "partialResponsePersisted": true,
+        "retryContainsPartialResponse": false,
+        "recoveryErrors": []
+      },
+      "normalizedActual": {
+        "providerAttempts": 1,
+        "summaryRequestCount": 0,
+        "compactionEndEvents": [],
+        "partialResponsePersisted": true,
+        "retryContainsPartialResponse": false,
+        "recoveryErrors": []
+      },
+      "safetyEvidence": "pisharp-partial-content-overflow-run-1.json",
+      "safetyRegression": "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#ProviderOverflowRetriesOnceOnlyBeforeContentWithShortenedRequest (afterContent=true)"
+    },
+    {
+      "caseId": "C5.post-compaction-provider-continuation-succeeds",
+      "contractExpectedObservation": "post compaction provider continuation succeeds",
+      "classification": "equivalent",
+      "passed": true,
+      "expected": {
+        "providerAttempts": 2,
+        "summaryRequestCount": 2,
+        "compactionEndEvents": [
+          {
+            "reason": "overflow",
+            "willRetry": true
+          }
+        ],
+        "responseUsage": [
+          {
+            "inputTokens": 80,
+            "outputTokens": 16
+          },
+          {
+            "inputTokens": 60,
+            "outputTokens": 12
+          }
+        ],
+        "retryUsesCompactedSummary": true,
+        "continuationCompleted": true
+      },
+      "actual": {
+        "providerAttempts": 2,
+        "summaryRequestCount": 2,
+        "compactionEndEvents": [
+          {
+            "reason": "overflow",
+            "willRetry": true
+          }
+        ],
+        "responseUsage": [
+          {
+            "inputTokens": 80,
+            "outputTokens": 16
+          },
+          {
+            "inputTokens": 60,
+            "outputTokens": 12
+          }
+        ],
+        "retryUsesCompactedSummary": true,
+        "continuationCompleted": true
+      },
+      "normalizedExpected": {
+        "providerAttempts": 2,
+        "summaryRequestCount": 2,
+        "compactionEndEvents": [
+          {
+            "reason": "overflow",
+            "willRetry": true
+          }
+        ],
+        "responseUsage": [
+          {
+            "inputTokens": 80,
+            "outputTokens": 16
+          },
+          {
+            "inputTokens": 60,
+            "outputTokens": 12
+          }
+        ],
+        "retryUsesCompactedSummary": true,
+        "continuationCompleted": true
+      },
+      "normalizedActual": {
+        "providerAttempts": 2,
+        "summaryRequestCount": 2,
+        "compactionEndEvents": [
+          {
+            "reason": "overflow",
+            "willRetry": true
+          }
+        ],
+        "responseUsage": [
+          {
+            "inputTokens": 80,
+            "outputTokens": 16
+          },
+          {
+            "inputTokens": 60,
+            "outputTokens": 12
+          }
+        ],
+        "retryUsesCompactedSummary": true,
+        "continuationCompleted": true
+      }
+    },
+    {
+      "caseId": "C5.pre-content-context-error-recognized",
+      "contractExpectedObservation": "pre content context error recognized",
+      "classification": "equivalent",
+      "passed": true,
+      "expected": {
+        "providerAttempts": 2,
+        "compactionEndEvents": [
+          {
+            "reason": "overflow",
+            "willRetry": true
+          }
+        ],
+        "retryUsesCompactedSummary": true,
+        "partialResponsePersisted": false,
+        "continuationCompleted": true
+      },
+      "actual": {
+        "providerAttempts": 2,
+        "compactionEndEvents": [
+          {
+            "reason": "overflow",
+            "willRetry": true
+          }
+        ],
+        "retryUsesCompactedSummary": true,
+        "partialResponsePersisted": false,
+        "continuationCompleted": true
+      },
+      "normalizedExpected": {
+        "providerAttempts": 2,
+        "compactionEndEvents": [
+          {
+            "reason": "overflow",
+            "willRetry": true
+          }
+        ],
+        "retryUsesCompactedSummary": true,
+        "partialResponsePersisted": false,
+        "continuationCompleted": true
+      },
+      "normalizedActual": {
+        "providerAttempts": 2,
+        "compactionEndEvents": [
+          {
+            "reason": "overflow",
+            "willRetry": true
+          }
+        ],
+        "retryUsesCompactedSummary": true,
+        "partialResponsePersisted": false,
+        "continuationCompleted": true
+      }
+    },
+    {
+      "caseId": "C5.provider-silent-overflow-from-reported-usage",
+      "contractExpectedObservation": "provider silent overflow from reported usage",
+      "classification": "equivalent",
+      "passed": true,
+      "expected": {
+        "providerAttempts": 1,
+        "responseUsage": [
+          {
+            "inputTokens": 10001,
+            "outputTokens": 16
+          }
+        ],
+        "compactionEndEvents": [
+          {
+            "reason": "overflow",
+            "willRetry": false
+          }
+        ],
+        "continuationCompleted": false
+      },
+      "actual": {
+        "providerAttempts": 1,
+        "responseUsage": [
+          {
+            "inputTokens": 10001,
+            "outputTokens": 16
+          }
+        ],
+        "compactionEndEvents": [
+          {
+            "reason": "overflow",
+            "willRetry": false
+          }
+        ],
+        "continuationCompleted": false
+      },
+      "normalizedExpected": {
+        "providerAttempts": 1,
+        "responseUsage": [
+          {
+            "inputTokens": 10001,
+            "outputTokens": 16
+          }
+        ],
+        "compactionEndEvents": [
+          {
+            "reason": "overflow",
+            "willRetry": false
+          }
+        ],
+        "continuationCompleted": false
+      },
+      "normalizedActual": {
+        "providerAttempts": 1,
+        "responseUsage": [
+          {
+            "inputTokens": 10001,
+            "outputTokens": 16
+          }
+        ],
+        "compactionEndEvents": [
+          {
+            "reason": "overflow",
+            "willRetry": false
+          }
+        ],
+        "continuationCompleted": false
+      }
+    },
+    {
+      "caseId": "C5.recoverable-length-stop-retries-once",
+      "contractExpectedObservation": "recoverable length stop retries once",
+      "classification": "equivalent",
+      "passed": true,
+      "expected": {
+        "providerAttempts": 2,
+        "compactionEndEvents": [
+          {
+            "reason": "overflow",
+            "willRetry": true
+          }
+        ],
+        "summaryRequestCount": 2,
+        "continuationCompleted": true
+      },
+      "actual": {
+        "providerAttempts": 2,
+        "compactionEndEvents": [
+          {
+            "reason": "overflow",
+            "willRetry": true
+          }
+        ],
+        "summaryRequestCount": 2,
+        "continuationCompleted": true
+      },
+      "normalizedExpected": {
+        "providerAttempts": 2,
+        "compactionEndEvents": [
+          {
+            "reason": "overflow",
+            "willRetry": true
+          }
+        ],
+        "summaryRequestCount": 2,
+        "continuationCompleted": true
+      },
+      "normalizedActual": {
+        "providerAttempts": 2,
+        "compactionEndEvents": [
+          {
+            "reason": "overflow",
+            "willRetry": true
+          }
+        ],
+        "summaryRequestCount": 2,
+        "continuationCompleted": true
+      }
     },
     {
       "caseId": "C5.retry-request-uses-compacted-transcript",
-      "checkpointId": "C5",
       "contractExpectedObservation": "retry request uses compacted transcript",
-      "executed": true,
-      "passed": true,
-      "skipped": false,
       "classification": "equivalent",
-      "assertions": [
-        {
-          "name": "paired-normalized-observation",
-          "caseId": "C5.retry-request-uses-compacted-transcript",
-          "contractObservation": "retry request uses compacted transcript",
-          "comparison": "equivalent",
-          "baselineArtifact": "pi-c5-observations.json",
-          "baselinePointer": "/observations/C5.retry-request-uses-compacted-transcript",
-          "implementationArtifact": "pisharp-c5-observations.json",
-          "implementationPointer": "/observations/C5.retry-request-uses-compacted-transcript",
-          "expected": {
-            "retryMessages": [
-              {
-                "role": "user",
-                "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\ncompacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary\n</summary>"
-              }
-            ],
-            "partialResponseOmitted": true,
-            "compactedSummaryIncluded": true
+      "passed": true,
+      "expected": {
+        "retryMessages": [
+          {
+            "role": "user",
+            "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\ncompacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary\n</summary>"
+          }
+        ],
+        "partialResponseOmitted": true,
+        "compactedSummaryIncluded": true
+      },
+      "actual": {
+        "retryMessages": [
+          {
+            "role": "user",
+            "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\ncompacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary\n</summary>"
+          }
+        ],
+        "partialResponseOmitted": true,
+        "compactedSummaryIncluded": true
+      },
+      "normalizedExpected": {
+        "retryMessages": [
+          {
+            "role": "user",
+            "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\ncompacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary\n</summary>"
+          }
+        ],
+        "partialResponseOmitted": true,
+        "compactedSummaryIncluded": true
+      },
+      "normalizedActual": {
+        "retryMessages": [
+          {
+            "role": "user",
+            "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\ncompacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary\n</summary>"
+          }
+        ],
+        "partialResponseOmitted": true,
+        "compactedSummaryIncluded": true
+      }
+    },
+    {
+      "caseId": "C5.second-overflow-stops-with-clear-error",
+      "contractExpectedObservation": "second overflow stops with clear error",
+      "classification": "equivalent",
+      "passed": true,
+      "expected": {
+        "providerAttempts": 2,
+        "summaryRequestCount": 2,
+        "compactionEndEvents": [
+          {
+            "reason": "overflow",
+            "willRetry": true
           },
-          "actual": {
-            "retryMessages": [
-              {
-                "role": "user",
-                "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\ncompacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary\n</summary>"
-              }
-            ],
-            "partialResponseOmitted": true,
-            "compactedSummaryIncluded": true
+          {
+            "reason": "overflow",
+            "willRetry": false
+          }
+        ],
+        "recoveryErrors": [
+          "Truncated response recovery failed after one compact-and-retry attempt."
+        ]
+      },
+      "actual": {
+        "providerAttempts": 2,
+        "summaryRequestCount": 2,
+        "compactionEndEvents": [
+          {
+            "reason": "overflow",
+            "willRetry": true
           },
-          "normalizedExpected": {
-            "retryMessages": [
-              {
-                "role": "user",
-                "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\ncompacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary\n</summary>"
-              }
-            ],
-            "partialResponseOmitted": true,
-            "compactedSummaryIncluded": true
+          {
+            "reason": "overflow",
+            "willRetry": false
+          }
+        ],
+        "recoveryErrors": [
+          "Truncated response recovery failed after one compact-and-retry attempt."
+        ]
+      },
+      "normalizedExpected": {
+        "providerAttempts": 2,
+        "summaryRequestCount": 2,
+        "compactionEndEvents": [
+          {
+            "reason": "overflow",
+            "willRetry": true
           },
-          "normalizedActual": {
-            "retryMessages": [
-              {
-                "role": "user",
-                "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\ncompacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary\n</summary>"
-              }
-            ],
-            "partialResponseOmitted": true,
-            "compactedSummaryIncluded": true
+          {
+            "reason": "overflow",
+            "willRetry": false
+          }
+        ],
+        "recoveryErrors": [
+          "Truncated response recovery failed after one compact-and-retry attempt."
+        ]
+      },
+      "normalizedActual": {
+        "providerAttempts": 2,
+        "summaryRequestCount": 2,
+        "compactionEndEvents": [
+          {
+            "reason": "overflow",
+            "willRetry": true
           },
-          "passed": true
-        }
-      ],
-      "rawArtifacts": [
-        {
-          "path": "pi-c5-length-stop/pi-run-1.json",
-          "sha256": "5d24937559dd3c07d5a8588b1473eb13d6f66dd70ce2c8c34c0dea9c3e3f0a96"
-        },
-        {
-          "path": "pi-c5-length-stop/pi-run-2.json",
-          "sha256": "5d24937559dd3c07d5a8588b1473eb13d6f66dd70ce2c8c34c0dea9c3e3f0a96"
-        },
-        {
-          "path": "pi-c5-length-stop/pi-oracle.json",
-          "sha256": "aabc167d36fd4895d75d8ea67d67478ba8eb354d64606df3acaa2603cba2b2e3"
-        },
-        {
-          "path": "pi-c5.stdout.log",
-          "sha256": "6a8073db40fdda50d855d52e58ec7b0e4a6fa964e35bfa466e98e1a53c318f60"
-        },
-        {
-          "path": "pi-c5.stderr.log",
-          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-        },
-        {
-          "path": "pisharp-c5-run-1.json",
-          "sha256": "c9e974a99bd3bdf261e86ffe0c636feeaf73cb4f5e6001f25d7ba1192b43a266"
-        },
-        {
-          "path": "pisharp-c5-run-2.json",
-          "sha256": "c9e974a99bd3bdf261e86ffe0c636feeaf73cb4f5e6001f25d7ba1192b43a266"
-        },
-        {
-          "path": "pisharp-c5-run-1.stdout.log",
-          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-        },
-        {
-          "path": "pisharp-c5-run-2.stdout.log",
-          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-        },
-        {
-          "path": "pisharp-c5-run-1.stderr.log",
-          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-        },
-        {
-          "path": "pisharp-c5-run-2.stderr.log",
-          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-        },
-        {
-          "path": "pi-c5-normalized.json",
-          "sha256": "b40071ae4eac4ac4e03e98e2c35622b87a86ec4cd08f0daa5ecfb493b207acaa"
-        },
-        {
-          "path": "pisharp-c5-normalized.json",
-          "sha256": "b40071ae4eac4ac4e03e98e2c35622b87a86ec4cd08f0daa5ecfb493b207acaa"
-        },
-        {
-          "path": "pi-c5-observations.json",
-          "sha256": "b648bd614828373b2b64d56695c3e9b1c75eaafeb259b17cff73aad45f659b99"
-        },
-        {
-          "path": "pisharp-c5-observations.json",
-          "sha256": "b648bd614828373b2b64d56695c3e9b1c75eaafeb259b17cff73aad45f659b99"
-        }
-      ]
+          {
+            "reason": "overflow",
+            "willRetry": false
+          }
+        ],
+        "recoveryErrors": [
+          "Truncated response recovery failed after one compact-and-retry attempt."
+        ]
+      }
+    },
+    {
+      "caseId": "C5.stale-old-model-overflow-does-not-compact-new-model",
+      "contractExpectedObservation": "stale old model overflow does not compact new model",
+      "classification": "equivalent",
+      "passed": true,
+      "expected": {
+        "modelSwitchApplied": true,
+        "selectedModel": "new-model",
+        "providerAttempts": 1,
+        "responseUsage": [
+          {
+            "inputTokens": 1000,
+            "outputTokens": 0
+          }
+        ],
+        "compactionEndEvents": [],
+        "partialResponsePersisted": true
+      },
+      "actual": {
+        "modelSwitchApplied": true,
+        "selectedModel": "new-model",
+        "providerAttempts": 1,
+        "responseUsage": [
+          {
+            "inputTokens": 1000,
+            "outputTokens": 0
+          }
+        ],
+        "compactionEndEvents": [],
+        "partialResponsePersisted": true
+      },
+      "normalizedExpected": {
+        "modelSwitchApplied": true,
+        "selectedModel": "new-model",
+        "providerAttempts": 1,
+        "responseUsage": [
+          {
+            "inputTokens": 1000,
+            "outputTokens": 0
+          }
+        ],
+        "compactionEndEvents": [],
+        "partialResponsePersisted": true
+      },
+      "normalizedActual": {
+        "modelSwitchApplied": true,
+        "selectedModel": "new-model",
+        "providerAttempts": 1,
+        "responseUsage": [
+          {
+            "inputTokens": 1000,
+            "outputTokens": 0
+          }
+        ],
+        "compactionEndEvents": [],
+        "partialResponsePersisted": true
+      }
+    },
+    {
+      "caseId": "C5.unknown-model-window-does-not-fabricate-capacity",
+      "contractExpectedObservation": "unknown model window does not fabricate capacity",
+      "classification": "intentional-safety-difference",
+      "passed": true,
+      "expected": {
+        "providerAttempts": 1,
+        "summaryRequestCount": 4,
+        "compactionEndEvents": [
+          {
+            "reason": "threshold",
+            "willRetry": false
+          },
+          {
+            "reason": "threshold",
+            "willRetry": false
+          }
+        ],
+        "responseUsage": [
+          {
+            "inputTokens": 60,
+            "outputTokens": 12
+          }
+        ],
+        "compactionCount": 2,
+        "responsePersisted": false
+      },
+      "actual": {
+        "providerAttempts": 1,
+        "summaryRequestCount": 0,
+        "compactionEndEvents": [],
+        "responseUsage": [
+          {
+            "inputTokens": 20000,
+            "outputTokens": 16
+          }
+        ],
+        "compactionCount": 0,
+        "responsePersisted": true
+      },
+      "normalizedExpected": {
+        "providerAttempts": 1,
+        "summaryRequestCount": 4,
+        "compactionEndEvents": [
+          {
+            "reason": "threshold",
+            "willRetry": false
+          },
+          {
+            "reason": "threshold",
+            "willRetry": false
+          }
+        ],
+        "responseUsage": [
+          {
+            "inputTokens": 60,
+            "outputTokens": 12
+          }
+        ],
+        "compactionCount": 2,
+        "responsePersisted": false
+      },
+      "normalizedActual": {
+        "providerAttempts": 1,
+        "summaryRequestCount": 0,
+        "compactionEndEvents": [],
+        "responseUsage": [
+          {
+            "inputTokens": 20000,
+            "outputTokens": 16
+          }
+        ],
+        "compactionCount": 0,
+        "responsePersisted": true
+      },
+      "safetyEvidence": "pisharp-unknown-model-window-run-1.json",
+      "safetyRegression": "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#UnknownContextWindowDoesNotInventCapacityFromReportedUsage"
+    }
+  ],
+  "rawArtifacts": [
+    {
+      "path": "pi-c5-observations.json",
+      "sha256": "f8b8c6a4f9fbcbc0798e2e68ac32dbf2685b2ad995c8d33f92d378e8131a5c0f"
+    },
+    {
+      "path": "pi-context-boundary-length-normalized.json",
+      "sha256": "5c436bc685612bf7c30a2062e9615f746078812fc4a60031faa5ff727ab4ec4d"
+    },
+    {
+      "path": "pi-context-boundary-length.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-context-boundary-length.stdout.log",
+      "sha256": "875e8c7df5e50898ebdd30cf9b1bc2973e2ab11b6a302292e30fd6009f32b536"
+    },
+    {
+      "path": "pi-context-boundary-length/pi-oracle.json",
+      "sha256": "0c4197ab98dac76eb6003bf66738cb8f5d6b4a9d4928e1cc4b88b7dd742c9b33"
+    },
+    {
+      "path": "pi-context-boundary-length/pi-run-1.json",
+      "sha256": "45de076106b472cc1e13e543e06cbc78e133a370ec8e0355d2ca77834e0655bd"
+    },
+    {
+      "path": "pi-context-boundary-length/pi-run-2.json",
+      "sha256": "45de076106b472cc1e13e543e06cbc78e133a370ec8e0355d2ca77834e0655bd"
+    },
+    {
+      "path": "pi-length-recovery-normalized.json",
+      "sha256": "e09cf433a61a2941715b8a89ce7f9b42ed357be11a907aa39e849d416bfabb3e"
+    },
+    {
+      "path": "pi-length-recovery.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-length-recovery.stdout.log",
+      "sha256": "b0e7122039c748d3b8c08923f46c9dd8bc66906c408958139a189e3157e0d6b4"
+    },
+    {
+      "path": "pi-length-recovery/pi-oracle.json",
+      "sha256": "575e6b92f7d5d48f9af1c14235b57fddc184656895ee9b8bcfae0fb4b0bd9925"
+    },
+    {
+      "path": "pi-length-recovery/pi-run-1.json",
+      "sha256": "f744914d1d479a0e944bb1110d52df6bad4db50750278f0d868ab050d15c137b"
+    },
+    {
+      "path": "pi-length-recovery/pi-run-2.json",
+      "sha256": "f744914d1d479a0e944bb1110d52df6bad4db50750278f0d868ab050d15c137b"
+    },
+    {
+      "path": "pi-partial-content-overflow-normalized.json",
+      "sha256": "7c6b57d624f30631ac733cd336cffe8459ecc814bc24e4f97c0e538bba942496"
+    },
+    {
+      "path": "pi-partial-content-overflow.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-partial-content-overflow.stdout.log",
+      "sha256": "2deb7795e568d0c9b5009d336951b5eeca2978ea9d3ce65faf3afe4e77981c1a"
+    },
+    {
+      "path": "pi-partial-content-overflow/pi-oracle.json",
+      "sha256": "25b0db90a8a0c5a7e4d3c4fa0d211f527aa53979a5ca089142d14822acefbf8b"
+    },
+    {
+      "path": "pi-partial-content-overflow/pi-run-1.json",
+      "sha256": "0d9b964675538d123e2ea0348cedf52060197659afc4c415756731d7254f3343"
+    },
+    {
+      "path": "pi-partial-content-overflow/pi-run-2.json",
+      "sha256": "0d9b964675538d123e2ea0348cedf52060197659afc4c415756731d7254f3343"
+    },
+    {
+      "path": "pi-pre-content-overflow-normalized.json",
+      "sha256": "282d6967aea33f74acbfeb30a2f3e474b4da93f48d217e8a2c5cdedaaa1c1b9b"
+    },
+    {
+      "path": "pi-pre-content-overflow.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-pre-content-overflow.stdout.log",
+      "sha256": "b4b8cb2364dd4145d37d61d849d0a58e5b0ee58016ace771a512ea930c42aa52"
+    },
+    {
+      "path": "pi-pre-content-overflow/pi-oracle.json",
+      "sha256": "9d961e1185a2ab6c4750d8432427b14276c8dcf68e7be12673f1a3c7645ec1cf"
+    },
+    {
+      "path": "pi-pre-content-overflow/pi-run-1.json",
+      "sha256": "80e424e07b3cba9268de00735a8eaa52390a3c741d290ea4ee5a3c444173e35d"
+    },
+    {
+      "path": "pi-pre-content-overflow/pi-run-2.json",
+      "sha256": "80e424e07b3cba9268de00735a8eaa52390a3c741d290ea4ee5a3c444173e35d"
+    },
+    {
+      "path": "pi-second-length-stop-normalized.json",
+      "sha256": "9e1f7a2ad9b223269ba29f5301bd513f023de8bad810abcd0fc3f37204825cfd"
+    },
+    {
+      "path": "pi-second-length-stop.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-second-length-stop.stdout.log",
+      "sha256": "10824ee42954768e45e4ffcc11e097ac3ec348026c3c1155b426c5d25b2e254c"
+    },
+    {
+      "path": "pi-second-length-stop/pi-oracle.json",
+      "sha256": "fd0c2655cf6c38cc3ea0ef6df46f75a9d395d9582d46bd030b7e09c4e13738d9"
+    },
+    {
+      "path": "pi-second-length-stop/pi-run-1.json",
+      "sha256": "9a8bc383e0e60de1a8a2cd9f93fe3b5e3d3c05dc3c590f0f5e1741be23557f92"
+    },
+    {
+      "path": "pi-second-length-stop/pi-run-2.json",
+      "sha256": "9a8bc383e0e60de1a8a2cd9f93fe3b5e3d3c05dc3c590f0f5e1741be23557f92"
+    },
+    {
+      "path": "pi-silent-usage-overflow-normalized.json",
+      "sha256": "6fffdae39fae484aabb41947a89753182b85d2b229015e3452bde2c14fcb78d3"
+    },
+    {
+      "path": "pi-silent-usage-overflow.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-silent-usage-overflow.stdout.log",
+      "sha256": "fbf97d6ccf928752ff315939a0e199dfb1687151abdb66b8bf6b5b24363997d3"
+    },
+    {
+      "path": "pi-silent-usage-overflow/pi-oracle.json",
+      "sha256": "b62a3a9e50e57b684060b7b4b7d5cffbd2c592101207d0cb2bba3ff7d889d6fe"
+    },
+    {
+      "path": "pi-silent-usage-overflow/pi-run-1.json",
+      "sha256": "9ed1574ddd35bad1a76d503bff279cf90c5d9ede8381b26573faa20dac86bacc"
+    },
+    {
+      "path": "pi-silent-usage-overflow/pi-run-2.json",
+      "sha256": "9ed1574ddd35bad1a76d503bff279cf90c5d9ede8381b26573faa20dac86bacc"
+    },
+    {
+      "path": "pi-stale-old-model-overflow-normalized.json",
+      "sha256": "662ce0a4849d8152827edbbf848c9dad30e0b511b775a2cfe718e4cd7232a580"
+    },
+    {
+      "path": "pi-stale-old-model-overflow.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-stale-old-model-overflow.stdout.log",
+      "sha256": "432b7a2d7a5a85c63f3571f73b976f596d074766847d9e10774b4b3a96987bb7"
+    },
+    {
+      "path": "pi-stale-old-model-overflow/pi-oracle.json",
+      "sha256": "7b1eb282a71370a80906c5476cb749e0b1caa8f8edbd91f026ad56efe7dd6edf"
+    },
+    {
+      "path": "pi-stale-old-model-overflow/pi-run-1.json",
+      "sha256": "4dcfc81427536128442b9564697af12d57c583b86256e7a60e368b9caf9275f0"
+    },
+    {
+      "path": "pi-stale-old-model-overflow/pi-run-2.json",
+      "sha256": "4dcfc81427536128442b9564697af12d57c583b86256e7a60e368b9caf9275f0"
+    },
+    {
+      "path": "pi-unknown-model-window-normalized.json",
+      "sha256": "a00d17ce3c9505955e4b3f907a7ba1cf79a78463222305c3f6f50345f363d1c9"
+    },
+    {
+      "path": "pi-unknown-model-window.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-unknown-model-window.stdout.log",
+      "sha256": "1719fff77ab5b912b63fed6ad9d5bbc712b94c2ae9362e86ab9c0736be46625a"
+    },
+    {
+      "path": "pi-unknown-model-window/pi-oracle.json",
+      "sha256": "9d32de53a87149f1dcebb52a23e0c0287f9663d9f8e0877ac8114d1181013097"
+    },
+    {
+      "path": "pi-unknown-model-window/pi-run-1.json",
+      "sha256": "e5746fe8a6d7653a56baeb20572ffeccb4aa91ac6bdd5ad9a9454bfaf62692e2"
+    },
+    {
+      "path": "pi-unknown-model-window/pi-run-2.json",
+      "sha256": "e5746fe8a6d7653a56baeb20572ffeccb4aa91ac6bdd5ad9a9454bfaf62692e2"
+    },
+    {
+      "path": "pisharp-c5-observations.json",
+      "sha256": "a3498c48ca4b7b6341e53ed23608e006777c11b2748a638f2975047550171871"
+    },
+    {
+      "path": "pisharp-context-boundary-length-normalized.json",
+      "sha256": "314a67f2732017e9d5f91db7f34a3b0d1527fb7a34b868ac150f172d70efc30c"
+    },
+    {
+      "path": "pisharp-context-boundary-length-run-1.json",
+      "sha256": "94cfd1a9fc0a63d2118bafeb1c10095b2adb3a4c14abbe7bb2e67206f4af8ebe"
+    },
+    {
+      "path": "pisharp-context-boundary-length-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-context-boundary-length-run-1.stdout.log",
+      "sha256": "8122f1a142dbfe7c477a2ba086389b5ced5d10aa49017a14c7c08ff272a464e0"
+    },
+    {
+      "path": "pisharp-context-boundary-length-run-2.json",
+      "sha256": "94cfd1a9fc0a63d2118bafeb1c10095b2adb3a4c14abbe7bb2e67206f4af8ebe"
+    },
+    {
+      "path": "pisharp-context-boundary-length-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-context-boundary-length-run-2.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-length-recovery-normalized.json",
+      "sha256": "88eeb5a8b38157385d94f35f7d2ed6dc2bc80084663f953f0f3cca95df39b0f2"
+    },
+    {
+      "path": "pisharp-length-recovery-run-1.json",
+      "sha256": "76f24eeb549f0a534f6ac8805071263e2fa3e0015adef9e4ccc9be796e6e0131"
+    },
+    {
+      "path": "pisharp-length-recovery-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-length-recovery-run-1.stdout.log",
+      "sha256": "8122f1a142dbfe7c477a2ba086389b5ced5d10aa49017a14c7c08ff272a464e0"
+    },
+    {
+      "path": "pisharp-length-recovery-run-2.json",
+      "sha256": "76f24eeb549f0a534f6ac8805071263e2fa3e0015adef9e4ccc9be796e6e0131"
+    },
+    {
+      "path": "pisharp-length-recovery-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-length-recovery-run-2.stdout.log",
+      "sha256": "8122f1a142dbfe7c477a2ba086389b5ced5d10aa49017a14c7c08ff272a464e0"
+    },
+    {
+      "path": "pisharp-partial-content-overflow-normalized.json",
+      "sha256": "094e292bad86d885cd31609cb6555d67defaa33e67da72b0ea0e7c436f62b81c"
+    },
+    {
+      "path": "pisharp-partial-content-overflow-run-1.json",
+      "sha256": "9ad9f56ac4594bd6913c4f543b18acbf56c2722eca90eadad1486e16e287cd1e"
+    },
+    {
+      "path": "pisharp-partial-content-overflow-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-partial-content-overflow-run-1.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-partial-content-overflow-run-2.json",
+      "sha256": "9ad9f56ac4594bd6913c4f543b18acbf56c2722eca90eadad1486e16e287cd1e"
+    },
+    {
+      "path": "pisharp-partial-content-overflow-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-partial-content-overflow-run-2.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-pre-content-overflow-normalized.json",
+      "sha256": "b7f09a6873ab045701d3906310e5b2483df493158692e889af4ef99e44221a2c"
+    },
+    {
+      "path": "pisharp-pre-content-overflow-run-1.json",
+      "sha256": "5247bc1f4bd4880eadfc60c629bb9d7a927280394499d10cb984308320fb242f"
+    },
+    {
+      "path": "pisharp-pre-content-overflow-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-pre-content-overflow-run-1.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-pre-content-overflow-run-2.json",
+      "sha256": "5247bc1f4bd4880eadfc60c629bb9d7a927280394499d10cb984308320fb242f"
+    },
+    {
+      "path": "pisharp-pre-content-overflow-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-pre-content-overflow-run-2.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-provider-format-run-1/anthropic-messages.json",
+      "sha256": "913bc86edac10a98f3955863da05f0318c3bffca22fb4975c7e3aa74ae754f21"
+    },
+    {
+      "path": "pisharp-provider-format-run-1/openai-completions.json",
+      "sha256": "728eeadc80cdbbf47b74d39adf037e718ee6148fd762071974b0eccd43ce46db"
+    },
+    {
+      "path": "pisharp-provider-format-run-1/openai-responses.json",
+      "sha256": "5d4584c1fab122372ae632c21abb29b095606c270fef7ed07cddbfcf1c73587f"
+    },
+    {
+      "path": "pisharp-provider-format-run-2/anthropic-messages.json",
+      "sha256": "913bc86edac10a98f3955863da05f0318c3bffca22fb4975c7e3aa74ae754f21"
+    },
+    {
+      "path": "pisharp-provider-format-run-2/openai-completions.json",
+      "sha256": "728eeadc80cdbbf47b74d39adf037e718ee6148fd762071974b0eccd43ce46db"
+    },
+    {
+      "path": "pisharp-provider-format-run-2/openai-responses.json",
+      "sha256": "5d4584c1fab122372ae632c21abb29b095606c270fef7ed07cddbfcf1c73587f"
+    },
+    {
+      "path": "pisharp-second-length-stop-normalized.json",
+      "sha256": "9b851ac6be8ab8129693539abbfb6e2761ab2c27c7791d04017250b59b0d6f55"
+    },
+    {
+      "path": "pisharp-second-length-stop-run-1.json",
+      "sha256": "3309c2f6e11c1e4bdbd3980eb584d0c39892fd2f048fc05bedc05d57202f0de3"
+    },
+    {
+      "path": "pisharp-second-length-stop-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-second-length-stop-run-1.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-second-length-stop-run-2.json",
+      "sha256": "3309c2f6e11c1e4bdbd3980eb584d0c39892fd2f048fc05bedc05d57202f0de3"
+    },
+    {
+      "path": "pisharp-second-length-stop-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-second-length-stop-run-2.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-silent-usage-overflow-normalized.json",
+      "sha256": "155ac16180494cb46ad3d552cc7c1a1eb2b7efd88d135845060d12f8e3d78054"
+    },
+    {
+      "path": "pisharp-silent-usage-overflow-run-1.json",
+      "sha256": "329ee375a1f73d964c62c022ebf14427fa9417bce6ae3e646ff94f78f2f04194"
+    },
+    {
+      "path": "pisharp-silent-usage-overflow-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-silent-usage-overflow-run-1.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-silent-usage-overflow-run-2.json",
+      "sha256": "329ee375a1f73d964c62c022ebf14427fa9417bce6ae3e646ff94f78f2f04194"
+    },
+    {
+      "path": "pisharp-silent-usage-overflow-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-silent-usage-overflow-run-2.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-stale-old-model-overflow-normalized.json",
+      "sha256": "662ce0a4849d8152827edbbf848c9dad30e0b511b775a2cfe718e4cd7232a580"
+    },
+    {
+      "path": "pisharp-stale-old-model-overflow-run-1.json",
+      "sha256": "23cf1163cd67db8ccbdb74673c4d16f92e033d210bfa7617b4036defdaf780b9"
+    },
+    {
+      "path": "pisharp-stale-old-model-overflow-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-stale-old-model-overflow-run-1.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-stale-old-model-overflow-run-2.json",
+      "sha256": "23cf1163cd67db8ccbdb74673c4d16f92e033d210bfa7617b4036defdaf780b9"
+    },
+    {
+      "path": "pisharp-stale-old-model-overflow-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-stale-old-model-overflow-run-2.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-unknown-model-window-normalized.json",
+      "sha256": "ad0f8dcabd749e1728b7c353b92a26352e40757b852b6068a93dbd6f8af09534"
+    },
+    {
+      "path": "pisharp-unknown-model-window-run-1.json",
+      "sha256": "4ef59b2f6a3150b593659c070c441d0ed0bc9e1b7ccdd2ba593e7e76988376fc"
+    },
+    {
+      "path": "pisharp-unknown-model-window-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-unknown-model-window-run-1.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-unknown-model-window-run-2.json",
+      "sha256": "4ef59b2f6a3150b593659c070c441d0ed0bc9e1b7ccdd2ba593e7e76988376fc"
+    },
+    {
+      "path": "pisharp-unknown-model-window-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-unknown-model-window-run-2.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "provider-format-test-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provider-format-test-run-1.stdout.log",
+      "sha256": "41b8687e1a692f06aa0c293979cb9d8f92cb0daaa917d18f9c852371c2cdcaa2"
+    },
+    {
+      "path": "provider-format-test-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provider-format-test-run-2.stdout.log",
+      "sha256": "5ef98e7686624987dfe7df661b1b0bc3349cbfb386fff4fd3bb535365decaee9"
     }
   ]
 }

@@ -1,20 +1,25 @@
 ## Active milestone — Compaction, Context Budget, Overflow and Usage Parity — 2026-10-28
 
 PR #27 is merged at `12064420179f4119bdaf37479c7cba0f5ca40717`; its verified
-publication evidence covers 27/27 checkpoints and 240/240 cases. This branch is
-based on that merge. Pi is pinned to `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`;
-the compaction contract remains 22 checkpoints / 211 cases.
+publication evidence covers 27/27 checkpoints and 240/240 cases. Pi is pinned
+to `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; this milestone's contract has
+22 checkpoints and 211 required cases.
 
-C8 passed 10/10 paired cases at clean source
-`5a3be74a91edac8cd8d295bb59a8c69cfc1232a2`. The checkpoint covers native and
-Pi JSONL persistence, branch and fork/clone restoration, restart continuation,
-and post-reload provider requests through Responses, Chat Completions, and
-Anthropic. Its focused .NET filter passed 140/140 and post-reload provider tests
-passed 3/3. The committed C8 case record binds the normalized observations and
-raw artifact hashes. C1-C7 evidence predates this source and must be refreshed;
-C9-C13 and the final acceptance gates remain open. C8 is the only checkpoint
-currently source-bound: 10/211 cases (4.7%). PR #28 remains open and draft.
-See the
+C1-C8 now pass **86/86 paired cases** on clean source
+`843d0388ceca2adbe2725397c48e0e45b98cba7e`. The focused .NET filters pass
+**712/712** tests across these checkpoints; C8 also passes three post-reload
+provider tests across Responses, Chat Completions, and Anthropic. Nine cases are
+classified as accepted safety differences with regression evidence. C1-C8
+covers manual/automatic compaction, cut points, context estimates, provider
+overflow/retry, in-flight tool continuation, summary generation, and persisted
+session reload. The committed compact records pin the observations and raw
+artifact hashes.
+
+C9-C13 and final gates D0, Q0, E0, CI0, and PUB0 remain. The transient context
+estimator formula still needs case-level classification; the unknown-window
+behavior is now classified as a safety difference in C2, C4, and C5. The full
+.NET suite result predates the three new provider tests and must be rerun for
+final acceptance. PR #28 remains open and draft. See the
 [inventory](docs/parity/fixtures/compaction-context-management-inventory.json),
 [receipt](docs/parity/fixtures/compaction-context-management-parity-2026-10-28.md),
 and [execution ledger](docs/parity/execution-ledger.json).

@@ -1,0 +1,1178 @@
+{
+  "schemaVersion": 1,
+  "milestone": "compaction-context-management-parity",
+  "checkpointId": "C2",
+  "contractSha256": "c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6",
+  "evidenceDirectory": "artifacts/parity/20261028-c2-843d0388/runs/C2/differential",
+  "generatedReportSha256": "044d34c74c8569f52aef783fe87829122dc07c3c80652e666cc302fa487e97d8",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "pisharpSourceSha": "843d0388ceca2adbe2725397c48e0e45b98cba7e",
+  "sourceTreeClean": true,
+  "piCalibrationStable": true,
+  "pisharpCalibrationStable": true,
+  "pairedObservationsEqual": false,
+  "acceptedSafetyDifferenceCount": 1,
+  "normalization": [],
+  "safetyDifferences": [
+    {
+      "caseId": "C2.unknown-window-does-not-speculate",
+      "reason": "Pinned Pi treats an unknown context window as zero and triggers compaction; PiSharp does not invent a budget.",
+      "regression": "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#UnknownContextWindowDoesNotInventCapacityFromReportedUsage",
+      "safetyEvidence": "pisharp-unknown-model-window-run-1.json"
+    }
+  ],
+  "executedCaseCount": 10,
+  "requiredC2CaseCount": 10,
+  "unexecutedCaseIds": [],
+  "verifierCounts": {
+    "required": 10,
+    "executed": 10,
+    "passed": 10,
+    "failed": 0,
+    "skipped": 0
+  },
+  "cases": [
+    {
+      "caseId": "C2.threshold-after-turn-compacts-without-retry",
+      "contractExpectedObservation": "threshold after turn compacts without retry",
+      "classification": "equivalent",
+      "passed": true,
+      "expected": {
+        "providerAttemptCount": 1,
+        "compactionEndEvents": [
+          {
+            "reason": "threshold",
+            "willRetry": false
+          }
+        ],
+        "compactionCount": 1,
+        "completedResponsePersisted": true
+      },
+      "actual": {
+        "providerAttemptCount": 1,
+        "compactionEndEvents": [
+          {
+            "reason": "threshold",
+            "willRetry": false
+          }
+        ],
+        "compactionCount": 1,
+        "completedResponsePersisted": true
+      },
+      "normalizedExpected": {
+        "providerAttemptCount": 1,
+        "compactionEndEvents": [
+          {
+            "reason": "threshold",
+            "willRetry": false
+          }
+        ],
+        "compactionCount": 1,
+        "completedResponsePersisted": true
+      },
+      "normalizedActual": {
+        "providerAttemptCount": 1,
+        "compactionEndEvents": [
+          {
+            "reason": "threshold",
+            "willRetry": false
+          }
+        ],
+        "compactionCount": 1,
+        "completedResponsePersisted": true
+      }
+    },
+    {
+      "caseId": "C2.pre-prompt-compaction-does-not-replay-turn",
+      "contractExpectedObservation": "pre prompt compaction does not replay turn",
+      "classification": "equivalent",
+      "passed": true,
+      "expected": {
+        "providerAttemptCount": 1,
+        "compactionEndEvents": [
+          {
+            "reason": "threshold",
+            "willRetry": false
+          }
+        ],
+        "compactionCount": 1,
+        "providerRequests": [
+          [
+            {
+              "role": "user",
+              "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\ncompacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary\n</summary>"
+            },
+            {
+              "role": "assistant",
+              "text": "answer two"
+            },
+            {
+              "role": "user",
+              "text": "continue"
+            }
+          ]
+        ],
+        "completedResponsePersisted": true
+      },
+      "actual": {
+        "providerAttemptCount": 1,
+        "compactionEndEvents": [
+          {
+            "reason": "threshold",
+            "willRetry": false
+          }
+        ],
+        "compactionCount": 1,
+        "providerRequests": [
+          [
+            {
+              "role": "user",
+              "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\ncompacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary\n</summary>"
+            },
+            {
+              "role": "assistant",
+              "text": "answer two"
+            },
+            {
+              "role": "user",
+              "text": "continue"
+            }
+          ]
+        ],
+        "completedResponsePersisted": true
+      },
+      "normalizedExpected": {
+        "providerAttemptCount": 1,
+        "compactionEndEvents": [
+          {
+            "reason": "threshold",
+            "willRetry": false
+          }
+        ],
+        "compactionCount": 1,
+        "providerRequests": [
+          [
+            {
+              "role": "user",
+              "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\ncompacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary\n</summary>"
+            },
+            {
+              "role": "assistant",
+              "text": "answer two"
+            },
+            {
+              "role": "user",
+              "text": "continue"
+            }
+          ]
+        ],
+        "completedResponsePersisted": true
+      },
+      "normalizedActual": {
+        "providerAttemptCount": 1,
+        "compactionEndEvents": [
+          {
+            "reason": "threshold",
+            "willRetry": false
+          }
+        ],
+        "compactionCount": 1,
+        "providerRequests": [
+          [
+            {
+              "role": "user",
+              "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\ncompacted history summary\n\n---\n\n**Turn Context (split turn):**\n\ncompacted history summary\n</summary>"
+            },
+            {
+              "role": "assistant",
+              "text": "answer two"
+            },
+            {
+              "role": "user",
+              "text": "continue"
+            }
+          ]
+        ],
+        "completedResponsePersisted": true
+      }
+    },
+    {
+      "caseId": "C2.unknown-window-does-not-speculate",
+      "contractExpectedObservation": "unknown window does not speculate",
+      "classification": "intentional-safety-difference",
+      "passed": true,
+      "expected": {
+        "providerAttemptCount": 1,
+        "compactionEndEvents": [
+          {
+            "reason": "threshold",
+            "willRetry": false
+          },
+          {
+            "reason": "threshold",
+            "willRetry": false
+          }
+        ],
+        "compactionCount": 2,
+        "completedResponsePersisted": false
+      },
+      "actual": {
+        "providerAttemptCount": 1,
+        "compactionEndEvents": [],
+        "compactionCount": 0,
+        "completedResponsePersisted": true
+      },
+      "normalizedExpected": {
+        "providerAttemptCount": 1,
+        "compactionEndEvents": [
+          {
+            "reason": "threshold",
+            "willRetry": false
+          },
+          {
+            "reason": "threshold",
+            "willRetry": false
+          }
+        ],
+        "compactionCount": 2,
+        "completedResponsePersisted": false
+      },
+      "normalizedActual": {
+        "providerAttemptCount": 1,
+        "compactionEndEvents": [],
+        "compactionCount": 0,
+        "completedResponsePersisted": true
+      },
+      "safetyEvidence": "pisharp-unknown-model-window-run-1.json",
+      "safetyRegression": "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#UnknownContextWindowDoesNotInventCapacityFromReportedUsage"
+    },
+    {
+      "caseId": "C2.disabled-setting-prevents-trigger",
+      "contractExpectedObservation": "disabled setting prevents trigger",
+      "classification": "equivalent",
+      "passed": true,
+      "expected": {
+        "providerAttemptCount": 1,
+        "compactionEndEvents": [],
+        "compactionCount": 0,
+        "completedResponsePersisted": true
+      },
+      "actual": {
+        "providerAttemptCount": 1,
+        "compactionEndEvents": [],
+        "compactionCount": 0,
+        "completedResponsePersisted": true
+      },
+      "normalizedExpected": {
+        "providerAttemptCount": 1,
+        "compactionEndEvents": [],
+        "compactionCount": 0,
+        "completedResponsePersisted": true
+      },
+      "normalizedActual": {
+        "providerAttemptCount": 1,
+        "compactionEndEvents": [],
+        "compactionCount": 0,
+        "completedResponsePersisted": true
+      }
+    },
+    {
+      "caseId": "C2.strict-greater-than-reserve-threshold",
+      "contractExpectedObservation": "strict greater than reserve threshold",
+      "classification": "equivalent",
+      "passed": true,
+      "expected": {
+        "atThreshold": {
+          "providerAttemptCount": 1,
+          "compactionEndEvents": [],
+          "compactionCount": 0,
+          "completedResponsePersisted": true
+        },
+        "oneTokenAbove": {
+          "providerAttemptCount": 1,
+          "compactionEndEvents": [
+            {
+              "reason": "threshold",
+              "willRetry": false
+            }
+          ],
+          "compactionCount": 1,
+          "completedResponsePersisted": true
+        }
+      },
+      "actual": {
+        "atThreshold": {
+          "providerAttemptCount": 1,
+          "compactionEndEvents": [],
+          "compactionCount": 0,
+          "completedResponsePersisted": true
+        },
+        "oneTokenAbove": {
+          "providerAttemptCount": 1,
+          "compactionEndEvents": [
+            {
+              "reason": "threshold",
+              "willRetry": false
+            }
+          ],
+          "compactionCount": 1,
+          "completedResponsePersisted": true
+        }
+      },
+      "normalizedExpected": {
+        "atThreshold": {
+          "providerAttemptCount": 1,
+          "compactionEndEvents": [],
+          "compactionCount": 0,
+          "completedResponsePersisted": true
+        },
+        "oneTokenAbove": {
+          "providerAttemptCount": 1,
+          "compactionEndEvents": [
+            {
+              "reason": "threshold",
+              "willRetry": false
+            }
+          ],
+          "compactionCount": 1,
+          "completedResponsePersisted": true
+        }
+      },
+      "normalizedActual": {
+        "atThreshold": {
+          "providerAttemptCount": 1,
+          "compactionEndEvents": [],
+          "compactionCount": 0,
+          "completedResponsePersisted": true
+        },
+        "oneTokenAbove": {
+          "providerAttemptCount": 1,
+          "compactionEndEvents": [
+            {
+              "reason": "threshold",
+              "willRetry": false
+            }
+          ],
+          "compactionCount": 1,
+          "completedResponsePersisted": true
+        }
+      }
+    },
+    {
+      "caseId": "C2.model-switch-uses-selected-window-and-overrides",
+      "contractExpectedObservation": "model switch uses selected window and overrides",
+      "classification": "equivalent",
+      "passed": true,
+      "expected": {
+        "modelSwitchApplied": true,
+        "selectedModel": "new-model",
+        "providerAttemptCount": 1,
+        "compactionEndEvents": [],
+        "compactionCount": 0
+      },
+      "actual": {
+        "modelSwitchApplied": true,
+        "selectedModel": "new-model",
+        "providerAttemptCount": 1,
+        "compactionEndEvents": [],
+        "compactionCount": 0
+      },
+      "normalizedExpected": {
+        "modelSwitchApplied": true,
+        "selectedModel": "new-model",
+        "providerAttemptCount": 1,
+        "compactionEndEvents": [],
+        "compactionCount": 0
+      },
+      "normalizedActual": {
+        "modelSwitchApplied": true,
+        "selectedModel": "new-model",
+        "providerAttemptCount": 1,
+        "compactionEndEvents": [],
+        "compactionCount": 0
+      }
+    },
+    {
+      "caseId": "C2.physical-route-change-refreshes-budget",
+      "contractExpectedObservation": "physical route change refreshes budget",
+      "classification": "equivalent",
+      "passed": true,
+      "expected": {
+        "providerAttemptCount": 2,
+        "physicalRouteModels": [
+          "large",
+          "small"
+        ],
+        "compactionEndEvents": [
+          {
+            "reason": "threshold",
+            "willRetry": false
+          }
+        ],
+        "compactionCount": 1,
+        "secondRequestContainsSummary": true,
+        "secondRequestOmitsOldContext": true
+      },
+      "actual": {
+        "providerAttemptCount": 2,
+        "physicalRouteModels": [
+          "large",
+          "small"
+        ],
+        "compactionEndEvents": [
+          {
+            "reason": "threshold",
+            "willRetry": false
+          }
+        ],
+        "compactionCount": 1,
+        "secondRequestContainsSummary": true,
+        "secondRequestOmitsOldContext": true
+      },
+      "normalizedExpected": {
+        "providerAttemptCount": 2,
+        "physicalRouteModels": [
+          "large",
+          "small"
+        ],
+        "compactionEndEvents": [
+          {
+            "reason": "threshold",
+            "willRetry": false
+          }
+        ],
+        "compactionCount": 1,
+        "secondRequestContainsSummary": true,
+        "secondRequestOmitsOldContext": true
+      },
+      "normalizedActual": {
+        "providerAttemptCount": 2,
+        "physicalRouteModels": [
+          "large",
+          "small"
+        ],
+        "compactionEndEvents": [
+          {
+            "reason": "threshold",
+            "willRetry": false
+          }
+        ],
+        "compactionCount": 1,
+        "secondRequestContainsSummary": true,
+        "secondRequestOmitsOldContext": true
+      }
+    },
+    {
+      "caseId": "C2.queued-steering-survives-auto-compaction",
+      "contractExpectedObservation": "queued steering survives auto compaction",
+      "classification": "equivalent",
+      "passed": true,
+      "expected": {
+        "providerAttemptCount": 2,
+        "compactionEndEvents": [
+          {
+            "reason": "threshold",
+            "willRetry": false
+          }
+        ],
+        "compactionCount": 1,
+        "queuedSteerAccepted": true,
+        "steeringInResumedRequest": true
+      },
+      "actual": {
+        "providerAttemptCount": 2,
+        "compactionEndEvents": [
+          {
+            "reason": "threshold",
+            "willRetry": false
+          }
+        ],
+        "compactionCount": 1,
+        "queuedSteerAccepted": true,
+        "steeringInResumedRequest": true
+      },
+      "normalizedExpected": {
+        "providerAttemptCount": 2,
+        "compactionEndEvents": [
+          {
+            "reason": "threshold",
+            "willRetry": false
+          }
+        ],
+        "compactionCount": 1,
+        "queuedSteerAccepted": true,
+        "steeringInResumedRequest": true
+      },
+      "normalizedActual": {
+        "providerAttemptCount": 2,
+        "compactionEndEvents": [
+          {
+            "reason": "threshold",
+            "willRetry": false
+          }
+        ],
+        "compactionCount": 1,
+        "queuedSteerAccepted": true,
+        "steeringInResumedRequest": true
+      }
+    },
+    {
+      "caseId": "C2.overflow-retry-is-one-bounded-attempt",
+      "contractExpectedObservation": "overflow retry is one bounded attempt",
+      "classification": "equivalent",
+      "passed": true,
+      "expected": {
+        "providerAttemptCount": 2,
+        "compactionEndEvents": [
+          {
+            "reason": "overflow",
+            "willRetry": true
+          }
+        ],
+        "compactionCount": 1,
+        "retryContainsCompactedSummary": true,
+        "retryContainsPartialResponse": false,
+        "continuedResponsePersisted": true
+      },
+      "actual": {
+        "providerAttemptCount": 2,
+        "compactionEndEvents": [
+          {
+            "reason": "overflow",
+            "willRetry": true
+          }
+        ],
+        "compactionCount": 1,
+        "retryContainsCompactedSummary": true,
+        "retryContainsPartialResponse": false,
+        "continuedResponsePersisted": true
+      },
+      "normalizedExpected": {
+        "providerAttemptCount": 2,
+        "compactionEndEvents": [
+          {
+            "reason": "overflow",
+            "willRetry": true
+          }
+        ],
+        "compactionCount": 1,
+        "retryContainsCompactedSummary": true,
+        "retryContainsPartialResponse": false,
+        "continuedResponsePersisted": true
+      },
+      "normalizedActual": {
+        "providerAttemptCount": 2,
+        "compactionEndEvents": [
+          {
+            "reason": "overflow",
+            "willRetry": true
+          }
+        ],
+        "compactionCount": 1,
+        "retryContainsCompactedSummary": true,
+        "retryContainsPartialResponse": false,
+        "continuedResponsePersisted": true
+      }
+    },
+    {
+      "caseId": "C2.error-turn-uses-last-valid-usage-not-stale-usage",
+      "contractExpectedObservation": "error turn uses last valid usage not stale usage",
+      "classification": "equivalent",
+      "passed": true,
+      "expected": {
+        "lastValidUsageTriggersThreshold": {
+          "providerAttemptCount": 2,
+          "compactionCountBeforeError": 0,
+          "compactionCount": 1,
+          "thresholdCompactionEvents": [
+            {
+              "reason": "threshold",
+              "willRetry": false
+            }
+          ]
+        },
+        "failedResponseUsageDoesNotReplaceLastValid": {
+          "providerAttemptCount": 2,
+          "compactionCountBeforeError": 0,
+          "compactionCount": 0,
+          "thresholdCompactionEvents": []
+        },
+        "keptPreCompactionUsageIsIgnored": {
+          "providerAttemptCount": 2,
+          "compactionCountBeforeError": 1,
+          "compactionCount": 1,
+          "thresholdCompactionEvents": []
+        }
+      },
+      "actual": {
+        "lastValidUsageTriggersThreshold": {
+          "providerAttemptCount": 2,
+          "compactionCountBeforeError": 0,
+          "compactionCount": 1,
+          "thresholdCompactionEvents": [
+            {
+              "reason": "threshold",
+              "willRetry": false
+            }
+          ]
+        },
+        "failedResponseUsageDoesNotReplaceLastValid": {
+          "providerAttemptCount": 2,
+          "compactionCountBeforeError": 0,
+          "compactionCount": 0,
+          "thresholdCompactionEvents": []
+        },
+        "keptPreCompactionUsageIsIgnored": {
+          "providerAttemptCount": 2,
+          "compactionCountBeforeError": 1,
+          "compactionCount": 1,
+          "thresholdCompactionEvents": []
+        }
+      },
+      "normalizedExpected": {
+        "lastValidUsageTriggersThreshold": {
+          "providerAttemptCount": 2,
+          "compactionCountBeforeError": 0,
+          "compactionCount": 1,
+          "thresholdCompactionEvents": [
+            {
+              "reason": "threshold",
+              "willRetry": false
+            }
+          ]
+        },
+        "failedResponseUsageDoesNotReplaceLastValid": {
+          "providerAttemptCount": 2,
+          "compactionCountBeforeError": 0,
+          "compactionCount": 0,
+          "thresholdCompactionEvents": []
+        },
+        "keptPreCompactionUsageIsIgnored": {
+          "providerAttemptCount": 2,
+          "compactionCountBeforeError": 1,
+          "compactionCount": 1,
+          "thresholdCompactionEvents": []
+        }
+      },
+      "normalizedActual": {
+        "lastValidUsageTriggersThreshold": {
+          "providerAttemptCount": 2,
+          "compactionCountBeforeError": 0,
+          "compactionCount": 1,
+          "thresholdCompactionEvents": [
+            {
+              "reason": "threshold",
+              "willRetry": false
+            }
+          ]
+        },
+        "failedResponseUsageDoesNotReplaceLastValid": {
+          "providerAttemptCount": 2,
+          "compactionCountBeforeError": 0,
+          "compactionCount": 0,
+          "thresholdCompactionEvents": []
+        },
+        "keptPreCompactionUsageIsIgnored": {
+          "providerAttemptCount": 2,
+          "compactionCountBeforeError": 1,
+          "compactionCount": 1,
+          "thresholdCompactionEvents": []
+        }
+      }
+    }
+  ],
+  "rawArtifacts": [
+    {
+      "path": "pi-c2-observations.json",
+      "sha256": "7f41d53d7c8a18218471c9fb02b45bee8a8c3ef36efac26d8fa20d4fe0632905"
+    },
+    {
+      "path": "pi-disabled-setting.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-disabled-setting.stdout.log",
+      "sha256": "1204ba72a87f0c2fa6b5f493624dec5acfdeca2a94241e9dff7d7471c06095eb"
+    },
+    {
+      "path": "pi-disabled-setting/pi-oracle.json",
+      "sha256": "c9cae019f282139c0407ff0d6d99f9dd77b503e139ab48b1986164c1c8f251c2"
+    },
+    {
+      "path": "pi-disabled-setting/pi-run-1.json",
+      "sha256": "cb618794b72ed8c952a38d5cb7429321c37d4af255dd056d8156d1ad010cc6ae"
+    },
+    {
+      "path": "pi-disabled-setting/pi-run-2.json",
+      "sha256": "cb618794b72ed8c952a38d5cb7429321c37d4af255dd056d8156d1ad010cc6ae"
+    },
+    {
+      "path": "pi-error-turn-usage.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-error-turn-usage.stdout.log",
+      "sha256": "e94a455f193055fceee7a0def92ea3285e7384d5be10888671ec3978e87dd658"
+    },
+    {
+      "path": "pi-error-turn-usage/pi-oracle.json",
+      "sha256": "d977753476c94f87a475c7fe57aed86fa36e63502e75b0f8519fdcf528271631"
+    },
+    {
+      "path": "pi-error-turn-usage/pi-run-1.json",
+      "sha256": "c28f614790a3603cf488dc53e54b1e29739f470cbcce56f13eb483931ae91f65"
+    },
+    {
+      "path": "pi-error-turn-usage/pi-run-2.json",
+      "sha256": "c28f614790a3603cf488dc53e54b1e29739f470cbcce56f13eb483931ae91f65"
+    },
+    {
+      "path": "pi-length-recovery.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-length-recovery.stdout.log",
+      "sha256": "729fac156a5986b99dd6e300b0573e625c55ce9854b614a47fc6ae1044769797"
+    },
+    {
+      "path": "pi-length-recovery/pi-oracle.json",
+      "sha256": "d5617a7964f1b1fb0cc531787d837f6e87b5fe95dca2ba6ef2064b7a7ba8a865"
+    },
+    {
+      "path": "pi-length-recovery/pi-run-1.json",
+      "sha256": "8b216766e797391e308e3d14033b00a8eddc4a7ca15e00892e9c73f66002fdbb"
+    },
+    {
+      "path": "pi-length-recovery/pi-run-2.json",
+      "sha256": "8b216766e797391e308e3d14033b00a8eddc4a7ca15e00892e9c73f66002fdbb"
+    },
+    {
+      "path": "pi-physical-route-change.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-physical-route-change.stdout.log",
+      "sha256": "d8dccdd85b1307786f59ebe3285e39ddeb926d59356c16d2387cc7f7ea5e069d"
+    },
+    {
+      "path": "pi-physical-route-change/pi-oracle.json",
+      "sha256": "1d474f16711740fa13f765caccfaae23b7842a72fd52bc46fb10f6a4ae15b3c7"
+    },
+    {
+      "path": "pi-physical-route-change/pi-run-1.json",
+      "sha256": "e6775fbe7a3ee25a1fac4210dc70b4dd7080f4f0e62fd8f29a330d17c74a6679"
+    },
+    {
+      "path": "pi-physical-route-change/pi-run-2.json",
+      "sha256": "e6775fbe7a3ee25a1fac4210dc70b4dd7080f4f0e62fd8f29a330d17c74a6679"
+    },
+    {
+      "path": "pi-pre-prompt-compaction.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-pre-prompt-compaction.stdout.log",
+      "sha256": "13a5a9d47268a7b00d8627babae67a34be4a549f1bdcc66d8c9aa631e3e98d7d"
+    },
+    {
+      "path": "pi-pre-prompt-compaction/pi-oracle.json",
+      "sha256": "9861d058d25080941b8d87c15654b293684a91ac78c54dc3f3463a7664690718"
+    },
+    {
+      "path": "pi-pre-prompt-compaction/pi-run-1.json",
+      "sha256": "e1b8ceef79ee2ede8265dc2d39e1fe588b8bc607a0a03488c5e4d1d735511a32"
+    },
+    {
+      "path": "pi-pre-prompt-compaction/pi-run-2.json",
+      "sha256": "e1b8ceef79ee2ede8265dc2d39e1fe588b8bc607a0a03488c5e4d1d735511a32"
+    },
+    {
+      "path": "pi-queued-steering.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-queued-steering.stdout.log",
+      "sha256": "7b5441cf6893c40e57ad02e73512390caed01170cb9bf15eba3811ff3260f425"
+    },
+    {
+      "path": "pi-queued-steering/pi-oracle.json",
+      "sha256": "f592b9ef6dfe44edc0b1a382a59e540d075164cf7b7ae6c26a59525b37aa3c32"
+    },
+    {
+      "path": "pi-queued-steering/pi-run-1.json",
+      "sha256": "0bd8073bf4412ee9c8b904cdc02d4937534d17a86d68218472070090bb669414"
+    },
+    {
+      "path": "pi-queued-steering/pi-run-2.json",
+      "sha256": "0bd8073bf4412ee9c8b904cdc02d4937534d17a86d68218472070090bb669414"
+    },
+    {
+      "path": "pi-stale-old-model-overflow.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-stale-old-model-overflow.stdout.log",
+      "sha256": "432b7a2d7a5a85c63f3571f73b976f596d074766847d9e10774b4b3a96987bb7"
+    },
+    {
+      "path": "pi-stale-old-model-overflow/pi-oracle.json",
+      "sha256": "7b1eb282a71370a80906c5476cb749e0b1caa8f8edbd91f026ad56efe7dd6edf"
+    },
+    {
+      "path": "pi-stale-old-model-overflow/pi-run-1.json",
+      "sha256": "4dcfc81427536128442b9564697af12d57c583b86256e7a60e368b9caf9275f0"
+    },
+    {
+      "path": "pi-stale-old-model-overflow/pi-run-2.json",
+      "sha256": "4dcfc81427536128442b9564697af12d57c583b86256e7a60e368b9caf9275f0"
+    },
+    {
+      "path": "pi-threshold-after-turn.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-threshold-after-turn.stdout.log",
+      "sha256": "86f120b356f1df12e5770300851e2831bd37bf8c684e26571a1cd989ebcbdead"
+    },
+    {
+      "path": "pi-threshold-after-turn/pi-oracle.json",
+      "sha256": "fff9b7bb2b62c41729cf1a804646e7fb4bc2f8118b3e4122766ef97fc3b79a40"
+    },
+    {
+      "path": "pi-threshold-after-turn/pi-run-1.json",
+      "sha256": "cc31bff868865273398b92086b59b0d0c9e7a8b6ba3891ea47f84788f4a7799f"
+    },
+    {
+      "path": "pi-threshold-after-turn/pi-run-2.json",
+      "sha256": "cc31bff868865273398b92086b59b0d0c9e7a8b6ba3891ea47f84788f4a7799f"
+    },
+    {
+      "path": "pi-threshold-equal.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-threshold-equal.stdout.log",
+      "sha256": "8ae38fb8011b83cf80671643966d617881379b9eb88dedfa094564afab03e8c7"
+    },
+    {
+      "path": "pi-threshold-equal/pi-oracle.json",
+      "sha256": "f67ca2450cc28c55b124121fae2af917719b5028122c5ca6d9b65a8fbd113e71"
+    },
+    {
+      "path": "pi-threshold-equal/pi-run-1.json",
+      "sha256": "f0dc908b42c499a03002814ab1f74071dbbb8d49d9232fcc8db8c20b87b11ab4"
+    },
+    {
+      "path": "pi-threshold-equal/pi-run-2.json",
+      "sha256": "f0dc908b42c499a03002814ab1f74071dbbb8d49d9232fcc8db8c20b87b11ab4"
+    },
+    {
+      "path": "pi-threshold-over.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-threshold-over.stdout.log",
+      "sha256": "087065d4d1aa02f9f26c5223d0e9b683e4ac643df782021f34fada1a325812d7"
+    },
+    {
+      "path": "pi-threshold-over/pi-oracle.json",
+      "sha256": "fde2e0776a38327f771eedfe2f9991cae79648c6f297ccb82263e89bb4348526"
+    },
+    {
+      "path": "pi-threshold-over/pi-run-1.json",
+      "sha256": "efac9f84d4b6cb7ad4248cfd216fab45b97d9d3866a6d93b69d039325c290a2c"
+    },
+    {
+      "path": "pi-threshold-over/pi-run-2.json",
+      "sha256": "efac9f84d4b6cb7ad4248cfd216fab45b97d9d3866a6d93b69d039325c290a2c"
+    },
+    {
+      "path": "pi-unknown-model-window.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pi-unknown-model-window.stdout.log",
+      "sha256": "1719fff77ab5b912b63fed6ad9d5bbc712b94c2ae9362e86ab9c0736be46625a"
+    },
+    {
+      "path": "pi-unknown-model-window/pi-oracle.json",
+      "sha256": "9d32de53a87149f1dcebb52a23e0c0287f9663d9f8e0877ac8114d1181013097"
+    },
+    {
+      "path": "pi-unknown-model-window/pi-run-1.json",
+      "sha256": "e5746fe8a6d7653a56baeb20572ffeccb4aa91ac6bdd5ad9a9454bfaf62692e2"
+    },
+    {
+      "path": "pi-unknown-model-window/pi-run-2.json",
+      "sha256": "e5746fe8a6d7653a56baeb20572ffeccb4aa91ac6bdd5ad9a9454bfaf62692e2"
+    },
+    {
+      "path": "pisharp-c2-observations.json",
+      "sha256": "0ffe59ca517e693198bf7dcb8287de236f5856e7a08c72ad292c9b448f21b33f"
+    },
+    {
+      "path": "pisharp-disabled-setting-run-1.json",
+      "sha256": "38d1c7d5a5b95ef818770ebe6a94ab4bbfcafaf2d8792770b90be6128dc577b5"
+    },
+    {
+      "path": "pisharp-disabled-setting-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-disabled-setting-run-1.stdout.log",
+      "sha256": "8122f1a142dbfe7c477a2ba086389b5ced5d10aa49017a14c7c08ff272a464e0"
+    },
+    {
+      "path": "pisharp-disabled-setting-run-2.json",
+      "sha256": "38d1c7d5a5b95ef818770ebe6a94ab4bbfcafaf2d8792770b90be6128dc577b5"
+    },
+    {
+      "path": "pisharp-disabled-setting-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-disabled-setting-run-2.stdout.log",
+      "sha256": "8122f1a142dbfe7c477a2ba086389b5ced5d10aa49017a14c7c08ff272a464e0"
+    },
+    {
+      "path": "pisharp-error-turn-usage-run-1.json",
+      "sha256": "62f9acb1c84e2c6283c69a41c1809864b599c722f52e6a734a8603b416e837eb"
+    },
+    {
+      "path": "pisharp-error-turn-usage-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-error-turn-usage-run-1.stdout.log",
+      "sha256": "8122f1a142dbfe7c477a2ba086389b5ced5d10aa49017a14c7c08ff272a464e0"
+    },
+    {
+      "path": "pisharp-error-turn-usage-run-2.json",
+      "sha256": "62f9acb1c84e2c6283c69a41c1809864b599c722f52e6a734a8603b416e837eb"
+    },
+    {
+      "path": "pisharp-error-turn-usage-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-error-turn-usage-run-2.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-length-recovery-run-1.json",
+      "sha256": "76f24eeb549f0a534f6ac8805071263e2fa3e0015adef9e4ccc9be796e6e0131"
+    },
+    {
+      "path": "pisharp-length-recovery-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-length-recovery-run-1.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-length-recovery-run-2.json",
+      "sha256": "76f24eeb549f0a534f6ac8805071263e2fa3e0015adef9e4ccc9be796e6e0131"
+    },
+    {
+      "path": "pisharp-length-recovery-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-length-recovery-run-2.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-physical-route-change-run-1.json",
+      "sha256": "27e3625475826b04c878b62020751c4491d5ba0c859725279e80cec1b19bf810"
+    },
+    {
+      "path": "pisharp-physical-route-change-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-physical-route-change-run-1.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-physical-route-change-run-2.json",
+      "sha256": "27e3625475826b04c878b62020751c4491d5ba0c859725279e80cec1b19bf810"
+    },
+    {
+      "path": "pisharp-physical-route-change-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-physical-route-change-run-2.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-pre-prompt-compaction-run-1.json",
+      "sha256": "2d2f56e1ea930d4c5e8047b86b552f837e9369d554bcf7c0e9c7086d4c8409c0"
+    },
+    {
+      "path": "pisharp-pre-prompt-compaction-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-pre-prompt-compaction-run-1.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-pre-prompt-compaction-run-2.json",
+      "sha256": "2d2f56e1ea930d4c5e8047b86b552f837e9369d554bcf7c0e9c7086d4c8409c0"
+    },
+    {
+      "path": "pisharp-pre-prompt-compaction-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-pre-prompt-compaction-run-2.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-queued-steering-run-1.json",
+      "sha256": "5c58b752d1400c18d00502043a7215d51ad1d4fed32d165a70cddc755adf7c7f"
+    },
+    {
+      "path": "pisharp-queued-steering-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-queued-steering-run-1.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-queued-steering-run-2.json",
+      "sha256": "5c58b752d1400c18d00502043a7215d51ad1d4fed32d165a70cddc755adf7c7f"
+    },
+    {
+      "path": "pisharp-queued-steering-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-queued-steering-run-2.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-stale-old-model-overflow-run-1.json",
+      "sha256": "23cf1163cd67db8ccbdb74673c4d16f92e033d210bfa7617b4036defdaf780b9"
+    },
+    {
+      "path": "pisharp-stale-old-model-overflow-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-stale-old-model-overflow-run-1.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-stale-old-model-overflow-run-2.json",
+      "sha256": "23cf1163cd67db8ccbdb74673c4d16f92e033d210bfa7617b4036defdaf780b9"
+    },
+    {
+      "path": "pisharp-stale-old-model-overflow-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-stale-old-model-overflow-run-2.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-threshold-after-turn-run-1.json",
+      "sha256": "a2bd4cc945216967f79e877ad93ea107d121da4bff7a3780705eb7ca79737c81"
+    },
+    {
+      "path": "pisharp-threshold-after-turn-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-threshold-after-turn-run-1.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-threshold-after-turn-run-2.json",
+      "sha256": "a2bd4cc945216967f79e877ad93ea107d121da4bff7a3780705eb7ca79737c81"
+    },
+    {
+      "path": "pisharp-threshold-after-turn-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-threshold-after-turn-run-2.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-threshold-equal-run-1.json",
+      "sha256": "543cd86c7cf81053494bf8d11561a38c2a8cd4eb3f757ff3cfdd1f7244152482"
+    },
+    {
+      "path": "pisharp-threshold-equal-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-threshold-equal-run-1.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-threshold-equal-run-2.json",
+      "sha256": "543cd86c7cf81053494bf8d11561a38c2a8cd4eb3f757ff3cfdd1f7244152482"
+    },
+    {
+      "path": "pisharp-threshold-equal-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-threshold-equal-run-2.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-threshold-over-run-1.json",
+      "sha256": "144b57040af784cab42dbd8021e0494c63f52e056043db57a35af621a4068951"
+    },
+    {
+      "path": "pisharp-threshold-over-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-threshold-over-run-1.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-threshold-over-run-2.json",
+      "sha256": "144b57040af784cab42dbd8021e0494c63f52e056043db57a35af621a4068951"
+    },
+    {
+      "path": "pisharp-threshold-over-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-threshold-over-run-2.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-unknown-model-window-run-1.json",
+      "sha256": "4ef59b2f6a3150b593659c070c441d0ed0bc9e1b7ccdd2ba593e7e76988376fc"
+    },
+    {
+      "path": "pisharp-unknown-model-window-run-1.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-unknown-model-window-run-1.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    },
+    {
+      "path": "pisharp-unknown-model-window-run-2.json",
+      "sha256": "4ef59b2f6a3150b593659c070c441d0ed0bc9e1b7ccdd2ba593e7e76988376fc"
+    },
+    {
+      "path": "pisharp-unknown-model-window-run-2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pisharp-unknown-model-window-run-2.stdout.log",
+      "sha256": "ef7e041b541e8c9419881309efeab2adaa33a9c34c4ce5ab41f279251862829e"
+    }
+  ]
+}
