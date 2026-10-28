@@ -5,13 +5,14 @@ publication evidence covers 27/27 checkpoints and 240/240 cases. Pi is pinned
 to `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; this milestone's contract has
 22 checkpoints and 211 required cases.
 
-C1-C8 passed 86/86 on source `843d0388`; C9 passed 9/9 on clean source
-`1deb1748`. Implementation has reached 9/13 checkpoints. Across revisions,
-95/211 paired cases have results, while only 9/211 are currently bound to the
-latest source; C1-C8 must be refreshed. C9’s focused .NET filter passes 27/27
-and pinned Pi navigation UI tests pass 5/5.
+C1-C8 passed 86/86 on source `843d0388`; C9 passed 9/9 at `1deb1748`; C10
+passed 10/10 on clean source `2fce38db`. Implementation has reached 10/13
+checkpoints. Across revisions, 105/211 paired cases have results, while only
+10/211 are currently bound to the latest source; C1-C9 must be refreshed.
+C10's focused .NET filter passes 98/98, provider mapping tests pass 39/39, and
+format verification passes. Two unknown-value safety differences are recorded.
 
-C10-C13 and final gates D0, Q0, E0, CI0, and PUB0 remain. The transient
+C11-C13 and final gates D0, Q0, E0, CI0, and PUB0 remain. The transient
 estimator formula still needs case-level classification. PR #28 remains open
 and draft.
 

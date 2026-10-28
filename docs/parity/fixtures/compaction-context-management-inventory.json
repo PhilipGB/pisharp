@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "milestone": "compaction-context-management-parity",
-  "phase": "C1-C8 passed at source 843d0388 (refresh required); C9 passed 9/9 at source 1deb1748; C10-C13 and final gates remain",
+  "phase": "C10 passed 10/10 on clean source 2fce38db; C1-C9 require refresh at current source; C11-C13 and final gates remain",
   "sourcePins": {
     "piCommit": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
     "pisharpBaselineCommit": "12064420179f4119bdaf37479c7cba0f5ca40717",
@@ -522,12 +522,13 @@
         "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#UsageAccountingAppliesRequestWideModelInputPricingTiers",
         "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionStatsProjectorTests.cs"
       ],
-      "baseline": "Cached-token fallback is corrected and tested. Usage/reasoning/cache/pricing projections otherwise exist; unknown nullable usage fields and all visible-surface/source-pinned semantics remain unverified.",
+      "baseline": "C10 passes 10/10 on clean source 2fce38db. Provider usage fields, per-model compaction accounting, active-branch totals, and CLI/TUI/RPC projections now have focused regression and paired evidence; earlier C1-C9 evidence predates this source and must be refreshed.",
       "differences": [
-        "UsageRecord.Create still maps missing input/output/cache/reasoning fields to zero; determine provider-boundary unknown semantics before changing this behavior."
+        "Pinned Pi usage fields are required numeric values and appear as zero when source fields are absent; PiSharp preserves absent provider counts as unknown at the Microsoft.Extensions.AI boundary.",
+        "Pinned Pi requires numeric pricing rates and reports a zero-rate fixture as free; PiSharp preserves missing model pricing as unknown cost."
       ],
       "evidenceGaps": [
-        "Provider-specific partial usage, missing totals with cache tokens, missing costs, priced/unpriced models and per-branch reports across all visible surfaces."
+        "C10 covers the frozen usage/accounting cases and current provider mapping regressions; broader live provider-wire comparisons for partially supplied usage fields remain outside this checkpoint."
       ],
       "cases": [
         "C10.summary-request-usage-persists-on-active-branch",
@@ -546,7 +547,14 @@
         "packages/coding-agent/test/compaction.test.ts"
       ],
       "implementationTests": [
-        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#UsageRecordCreateFallsBackToAllProviderContextTokenCategories"
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#UsageRecordCreatePreservesMissingUsageFieldsAsUnknown",
+        "tests/PiSharp.Tests/Runtime/Agents/CompactionTests.cs#UsageRecordCreateLeavesCostUnknownWithoutModelPricing",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionStatsProjectorTests.cs",
+        "tests/PiSharp.Tests/Runtime/Codemode/CodemodeModelTests.cs",
+        "tests/PiSharp.Tests/Cli/Providers/Anthropic/PiMessagesProviderTests.cs",
+        "tests/PiSharp.Tests/Cli/Providers/Bedrock/BedrockProviderTests.cs",
+        "tests/PiSharp.Tests/Cli/Providers/Google/GoogleGenAiProviderTests.cs",
+        "tests/PiSharp.Tests/Cli/Providers/Mistral/MistralProviderCompatibilityTests.cs"
       ]
     },
     {
@@ -995,10 +1003,10 @@
     }
   ],
   "crossCuttingEvidenceGaps": [
-    "C1-C8 passed 86/86 at source 843d0388; refresh these checkpoints after C9 source changes. C9 passes 9/9 at source 1deb1748; execute C10-C13 and final gates.",
+    "C1-C8 passed 86/86 at source 843d0388; C9 passed 9/9 at source 1deb1748; C10 passed 10/10 at clean source 2fce38db. Refresh C1-C9 at the current source, then execute C11-C13 and final gates.",
     "The separate transient AutoCompactionPolicy estimator formula remains distinct from Pi estimateTokens and still needs a case-level classification.",
     "The three provider adapters have paired overflow recovery and post-reload compacted-session continuation coverage; broader provider semantics outside these cases remain open.",
-    "C10-C13 still cover usage surfaces, CLI/RPC/TUI integration, extension lifecycle, and failure/cancellation/crash scenarios."
+    "C11-C13 still cover public usage surfaces, native extension lifecycle, and failure/cancellation/crash scenarios."
   ],
   "prerequisiteEvidence": {
     "pullRequest": 27,
@@ -1028,41 +1036,42 @@
     "C7 paired summary-generation behavior: prompt serialization, prior summaries, split-turn focus, tool/file details, reserve-aware output caps, length-stop failure, transient retry policy, usage and routed reasoning; reject whitespace-only summaries.",
     "C8 compaction usage persistence: aggregate summary usage is retained on compaction entries for Pi JSONL export/import while native per-request billing entries remain authoritative.",
     "C8 persistence and provider-after-reload coverage: compaction usage/metadata round-trip, canonical history recovery, branch/fork/clone restoration, restart continuation, and live SDK request comparison for Responses, Chat Completions, and Anthropic.",
-    "C9 branch navigation: branch-summary prompts now match Pi, including custom summarization instructions; the summary preamble and navigation result are covered by paired pinned observations."
+    "C9 branch navigation: branch-summary prompts now match Pi, including custom summarization instructions; the summary preamble and navigation result are covered by paired pinned observations.",
+    "C10 usage accounting preserves unknown provider counts and costs, separates uncached input from cached reads, carries cache writes and reasoning tokens, and projects canonical totals across compaction, active branch, CLI, TUI, and RPC surfaces."
   ],
   "formalAcceptance": {
     "contractPath": "tools/parity/compaction_context/contract.json",
     "contractSha256": "c774819bdb78f537ba75c80243891187128f7fae7d1e392c31a1bd24868a2cf6",
     "requiredCheckpoints": 22,
     "requiredCases": 211,
-    "perCaseArtifactsProduced": 95,
+    "perCaseArtifactsProduced": 105,
     "status": "incomplete",
-    "reason": "C9 passed 9/9 on clean source 1deb1748. C1-C8 passed 86/86 on earlier source 843d0388 and must be refreshed after C9 source changes; C10-C13 and final gates remain.",
-    "perCaseArtifactsCommitted": 95,
+    "reason": "C10 passed 10/10 on clean source 2fce38db. C1-C9 evidence is bound to earlier source revisions and must be refreshed; C11-C13 and D0/Q0/E0/CI0/PUB0 remain.",
+    "perCaseArtifactsCommitted": 105,
     "currentSourceCheckpointEvidence": {
-      "sourceSha": "1deb174887151679db19339c5bffbe660bc2e8c5",
-      "checkpointId": "C9",
-      "passedCases": 9,
-      "requiredCases": 9,
+      "sourceSha": "2fce38dbf548fc62323412c4441f141668649b6f",
+      "checkpointId": "C10",
+      "passedCases": 10,
+      "requiredCases": 10,
       "status": "passed",
       "runnerRecords": [
-        "artifacts/parity/20261028-c9-1deb1748/runs/C9/checkpoint-run.json"
+        "artifacts/parity/20261028-c10-2fce38db/runs/C10/checkpoint-run.json"
       ],
       "compactRecords": [
-        "docs/parity/fixtures/compaction-context-management-c9-case-results.json"
+        "docs/parity/fixtures/compaction-context-management-c10-case-results.json"
       ]
     },
     "lastSourceBoundCheckpointEvidence": {
-      "sourceSha": "1deb174887151679db19339c5bffbe660bc2e8c5",
-      "checkpointId": "C9",
-      "passedCases": 9,
-      "requiredCases": 9,
+      "sourceSha": "2fce38dbf548fc62323412c4441f141668649b6f",
+      "checkpointId": "C10",
+      "passedCases": 10,
+      "requiredCases": 10,
       "status": "passed",
       "runnerRecords": [
-        "artifacts/parity/20261028-c9-1deb1748/runs/C9/checkpoint-run.json"
+        "artifacts/parity/20261028-c10-2fce38db/runs/C10/checkpoint-run.json"
       ],
       "compactRecords": [
-        "docs/parity/fixtures/compaction-context-management-c9-case-results.json"
+        "docs/parity/fixtures/compaction-context-management-c10-case-results.json"
       ]
     }
   },
@@ -1096,6 +1105,12 @@
     "c9_dotnet_focused": "27 passed, 0 failed, 0 skipped at source 1deb1748; C9 tree navigation, native extension tree events, RPC sessions, and Linux PTY test filter.",
     "c9_paired_oracle": "C9 passed 9/9 paired cases on clean source 1deb174887151679db19339c5bffbe660bc2e8c5; Pi and PiSharp observations were stable across two runs per side.",
     "c9_pinned_pi_ui_test": "Pinned Pi packages/coding-agent/test/interactive-mode-tree-navigation.test.ts: 5 passed, 0 failed.",
-    "c9_checkpoint_runner": "runner.py recorded C9 passed at source 1deb1748 with sourceTreeClean true, 9 required, 9 executed, 9 passed, 0 failed/skipped; raw artifacts hash-verified."
+    "c9_checkpoint_runner": "runner.py recorded C9 passed at source 1deb1748 with sourceTreeClean true, 9 required, 9 executed, 9 passed, 0 failed/skipped; raw artifacts hash-verified.",
+    "c10FocusedDotnet": "98 passed, 0 failed, 0 skipped for CompactionTests, RpcSessionStatsProjectorTests, and CodemodeModelTests at clean source 2fce38db.",
+    "c10ProviderTests": "39 passed, 0 failed, 0 skipped for Pi Messages, Bedrock, Google GenAI, and Mistral provider mapping tests.",
+    "c10PairedOracle": "C10 passed 10/10 on clean source 2fce38db; Pi and PiSharp observations were stable across two runs each. Two source-bound intentional safety differences preserve unknown usage and unknown prices.",
+    "c10CheckpointRunner": "runner.py recorded C10 passed: 10 required, 10 executed, 10 passed, 0 failed/skipped; sourceTreeClean true. Raw artifacts and command logs are hash-bound under artifacts/parity/20261028-c10-2fce38db/runs/C10/.",
+    "c10PinnedPiTests": "Pinned Pi usage-totals and compaction suites: 35 passed, 0 failed, 2 skipped.",
+    "c10Format": "dotnet format PiSharp.slnx --verify-no-changes --no-restore passed after C10; workspace loading emitted a non-fatal warning."
   }
 }

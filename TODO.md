@@ -5,14 +5,15 @@ publication evidence covers 27/27 checkpoints and 240/240 cases. Pi is pinned
 to `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; this milestone's contract has
 22 checkpoints and 211 required cases.
 
-C1-C8 passed 86/86 on source `843d0388`; C9 passes 9/9 on clean source
-`1deb1748`. That brings implementation through 9 of 13 checkpoints. C1-C8
-results need a fresh source-bound rerun after the C9 changes; the C9 focused
-filter passes 27/27 .NET tests and pinned Pi navigation UI tests pass 5/5.
-Cumulative paired evidence is 95/211 cases across these source revisions, with
-9/211 currently bound to the latest source.
+C1-C8 passed 86/86 on source `843d0388`; C9 passed 9/9 on clean source
+`1deb1748`; C10 passed 10/10 on clean source `2fce38db`. Implementation has
+reached 10 of 13 checkpoints. C1-C9 need fresh source-bound runs after C10;
+C10's focused .NET filter passes 98/98, provider mapping tests pass 39/39, and
+the format check passes. Its paired oracle has two documented safety
+differences for unknown usage and pricing. Cumulative paired evidence is
+105/211 cases across revisions, with 10/211 bound to the latest source.
 
-C10-C13 and final gates D0, Q0, E0, CI0, and PUB0 remain. The transient context
+C11-C13 and final gates D0, Q0, E0, CI0, and PUB0 remain. The transient context
 estimator formula still needs case-level classification. The full .NET suite
 must be rerun at final source. PR #28 remains open and draft. See the
 [inventory](docs/parity/fixtures/compaction-context-management-inventory.json),

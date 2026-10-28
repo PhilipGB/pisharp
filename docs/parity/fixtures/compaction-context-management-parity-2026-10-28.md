@@ -5,9 +5,10 @@
 This branch starts at the verified PR #27 merge `12064420179f4119bdaf37479c7cba0f5ca40717`.
 The Pi oracle is pinned to `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; the installed
 `Microsoft.Agents.AI` version is 1.21.0. C1-C8 passed on clean source
-`843d0388ceca2adbe2725397c48e0e45b98cba7e`; C9 now passes on clean source
-`1deb174887151679db19339c5bffbe660bc2e8c5`. C1-C8 need refreshing after the C9
-source changes. Older C5-C7 captures remain in Git-ignored run folders as
+`843d0388ceca2adbe2725397c48e0e45b98cba7e`; C9 passed on clean source
+`1deb174887151679db19339c5bffbe660bc2e8c5`; C10 passes on clean source
+`2fce38dbf548fc62323412c4441f141668649b6f`. C1-C9 need refreshing after the
+C10 source changes. Older C5-C7 captures remain in Git-ignored run folders as
 historical context; compact case records bind the observations and raw hashes.
 
 The frozen contract is [contract.json](../../../tools/parity/compaction_context/contract.json),
@@ -56,6 +57,7 @@ report and its raw artifact hashes:
 - [C7 summary generation](compaction-context-management-c7-case-results.json): 10/10; one whitespace-only-summary safety difference.
 - [C8 persistence and reload](compaction-context-management-c8-case-results.json): 10/10.
 - [C9 branch summary and navigation](compaction-context-management-c9-case-results.json): 9/9 at source `1deb1748`.
+- [C10 usage accounting](compaction-context-management-c10-case-results.json): 10/10 at source `2fce38db`; two intentional safety differences preserve unknown usage and pricing.
 
 C1 pairs manual eligibility, focus, retained history, split-turn summaries,
 usage/details, failure rollback, cancellation, and queued follow-up ordering.
@@ -132,8 +134,10 @@ Raw captures remain Git-ignored under
   known scenarios remain classified.
 - C9 focused checkpoint filter: **27/27 passed** at source `1deb1748`, including the Linux PTY tree-navigation test.
 - Pinned Pi `interactive-mode-tree-navigation.test.ts`: **5/5 passed**.
-- `dotnet format PiSharp.slnx --verify-no-changes --no-restore` passed after the C9 implementation changes.
-- Documentation paths: rerun after this C9 receipt and progress update.
+- C10 focused .NET filter: **98/98 passed** at source `2fce38db`; provider mapping tests: **39/39 passed**.
+- C10 pinned Pi usage/compaction suites: **35 passed, 0 failed, 2 skipped**; C10 paired oracle: **10/10 passed**, with two intentional safety differences.
+- `dotnet format PiSharp.slnx --verify-no-changes --no-restore` passed after the C10 implementation changes.
+- Documentation paths: rerun after this C10 receipt and progress update.
 - The selected pinned Pi compaction/queue suites reported 34 passed and 1
   failing upstream test because the unknown model has context window zero. C2,
   C4, and C5 now classify the observed behavior as an intentional safety
@@ -141,14 +145,14 @@ Raw captures remain Git-ignored under
 
 ## Acceptance remains open
 
-C1-C8 passed 86/86 at source `843d0388`; C9 passed 9/9 at source `1deb1748`.
-Across revisions, 95/211 cases have paired results, but only C9's 9 cases are
-bound to the latest source. Refresh C1-C8 after the C9 changes; 202 cases lack
-latest-source evidence. C10-C13 and final acceptance gates remain. Remaining
-work covers usage/accounting surfaces, CLI/RPC/TUI, native extensions,
-cancellation/crash recovery, independent acceptance, full quality,
-committed-source validation, exact-head CI, and publication. The separate
-transient estimator formula still needs a case-level classification.
+C1-C8 passed 86/86 at source `843d0388`; C9 passed 9/9 at `1deb1748`; C10
+passed 10/10 at `2fce38db`. Across revisions, 105/211 cases have paired
+results, but only C10's 10 cases are bound to the latest source. Refresh C1-C9;
+201 cases lack latest-source evidence and 106 cases have not yet been paired.
+C11-C13 and final acceptance gates remain. Remaining work covers extension
+lifecycle and cancellation/crash recovery, independent acceptance, full
+quality, committed-source validation, exact-head CI, and publication. The
+separate transient estimator formula still needs a case-level classification.
 Unknown-window behavior is already classified as a safety difference in C2,
 C4, and C5. Full acceptance is not claimed.
 
@@ -182,3 +186,20 @@ The compact record is
 [compaction-context-management-c9-case-results.json](compaction-context-management-c9-case-results.json).
 Raw captures are Git-ignored under
 `artifacts/parity/20261028-c9-1deb1748/runs/C9/differential/`.
+
+## C10 token, reasoning, cost, and usage accounting
+
+C10 passed all ten required paired cases on clean source
+`2fce38dbf548fc62323412c4441f141668649b6f`. The cases cover summary-request
+usage persistence, cached-token context fallback, distinct input/output/cache
+categories, reasoning preservation, unknown usage and price handling,
+request-wide price tiers, multi-model compaction costs, active-branch totals,
+and CLI/TUI/RPC projections. Two intentional safety differences preserve
+unknown values where the pinned Pi usage and pricing contracts require numeric
+fields. Focused .NET tests pass 98/98; provider mapping tests pass 39/39; the
+pinned Pi usage and compaction suites report 35 passed and 2 skipped.
+
+The compact record is
+[compaction-context-management-c10-case-results.json](compaction-context-management-c10-case-results.json).
+Raw captures and command logs are Git-ignored under
+`artifacts/parity/20261028-c10-2fce38db/runs/C10/`.
