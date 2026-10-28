@@ -13727,7 +13727,7 @@
   },
   "rpc_protocol_command_parity_milestone": {
     "status": "in_progress",
-    "phase": "r2_complete_r3_pending_final_source_evidence_refresh",
+    "phase": "r4_complete_r5_pending_final_source_evidence_refresh",
     "branch": "milestone/rpc-protocol-command-parity",
     "branch_base_sha": "646db89bd396b8089b1b9a058fa96b1489f4d0cd",
     "prerequisite_pr28": {
@@ -13752,11 +13752,25 @@
     "r2_implementation_source_sha": "44a360fc8bcdf36e935068127f6e39c422ec4d8d",
     "r2_evidence_directory": "artifacts/parity/rpc-protocol-command-parity/r2-44a360fc",
     "r2_evidence_sha256": "03131c5120a57e43af54c587a6581f88be1270a26447548bd4b099fc2de90f46",
-    "r2_case_result": "12/12 passed; zero failures/skips; two calibrated pinned-Pi process runs and one PiSharp process run per case",
+    "r2_case_result": "12/12 passed at its recorded source; stale after later source changes; zero failures/skips across two calibrated pinned-Pi runs and one PiSharp run per case",
     "r2_build_assembly_sha256": "dfb90cf3e8fd3e2e25d27d801baa63e8845b7dac1429bf499a50663e39de82c3",
     "r2_focused_dotnet_tests": "4/4 passed; zero failures/skips",
     "r2_verifier_unit_tests": "16/16 passed; zero failures/skips",
     "r2_format_verification": "dotnet format PiSharp.slnx --verify-no-changes --no-restore passed",
+    "r3_implementation_source_sha": "cfa79eeb08945295ce16c6e99c0c7ffe2a2868d9",
+    "r3_evidence_directory": "artifacts/parity/rpc-protocol-command-parity/r3-cfa79eeb08945295ce16c6e99c0c7ffe2a2868d9",
+    "r3_evidence_sha256": "e371737e5490b68a919aa2eae892ce30fa2abd8b6ab79689348a7b48299f5da9",
+    "r3_case_result": "10/10 passed at its recorded source with matching repeated pinned-Pi observations; stale after later production and parity-tool changes, rerun after final freeze",
+    "r3_build_assembly_sha256": "434e19a7e6df6f8b01ff33eefb91e710ca956f57119dccecd0bd65b5871d1224",
+    "r4_implementation_source_sha": "413ebc6e8773996048c1dd3315594f4e00973857",
+    "r4_evidence_directory": "artifacts/parity/rpc-protocol-command-parity/r4-413ebc6e",
+    "r4_evidence_sha256": "85c6739292fae752db99d3d2cf4c7e6268aa33578dff68f8e51f18c0a4b61d5a",
+    "r4_case_result": "12/12 passed; zero failures/skips; each case matched two calibrated pinned-Pi processes and one PiSharp process",
+    "r4_build_assembly_sha256": "49cd6864c3ceb1fa6fb69cf0f2c06ce2ffd8cde172736759a7f77cea8a701988",
+    "r4_focused_dotnet_tests": "5/5 passed; zero failures/skips",
+    "r4_verifier_unit_tests": "16/16 passed; zero failures/skips",
+    "r4_format_verification": "dotnet format PiSharp.slnx --verify-no-changes --no-restore passed",
+    "r4_compact_case_results": "docs/parity/fixtures/rpc-protocol-command-parity/r4-case-results.json",
     "contract": "tools/parity/rpc_protocol/contract.json",
     "inventory_contract_commit": "ac85aa2a0f59566115eb0109cc9022dc64f4d8fe",
     "contract_sha256": "036c369054fbb50887629666f6b25ef76d8a9fbe856d00d4a79a2cf9609f0761",
@@ -13774,7 +13788,7 @@
     "maf_package_version": "1.21.0",
     "dotnet_sdk": "10.0.113",
     "production_changes_started": true,
-    "process_case_results_produced": 23,
+    "process_case_results_produced": 45,
     "baseline_validation": {
       "contract_source_verifier": "passed",
       "contract_integrity_tests": "16/16 passed; positive control and all 22 frozen mutations are covered",
@@ -13783,7 +13797,9 @@
       "runner_behavior": "fails closed when a process scenario adapter is not registered",
       "interim_evidence_revalidation": "Current-head verification rejects historical V1 and R1 evidence as stale after later parity-tool changes; both must be rerun after implementation and harness freeze",
       "r1_source_bound_process_run": "initial 11/11 passed with independent report verification; current-head verification rejects the historical report as stale after later parity-tool changes; record limit and malformed-JSON command corrections are included in source",
-      "r2_source_bound_process_run": "12/12 passed; independent report verification passed; response IDs/shapes, validation, long-command acceptance and active-compaction behavior are captured from two pinned-Pi runs and one PiSharp process"
+      "r2_source_bound_process_run": "12/12 passed; independent report verification passed; response IDs/shapes, validation, long-command acceptance and active-compaction behavior are captured from two pinned-Pi runs and one PiSharp process",
+      "r3_source_bound_process_run": "10/10 passed at cfa79eeb; stale after later production and parity-tool changes and requires final rerun",
+      "r4_source_bound_process_run": "12/12 passed at 413ebc6e; independent report verification passed, including cancellation restoration, tool completion ordering and persisted queue modes"
     },
     "historical_mismatch_ids_to_revalidate": [
       "RPC-SYSMSG-SECTIONS",
@@ -13795,11 +13811,11 @@
       "RPC-ACTIVE-SESSION-REPLACEMENT"
     ],
     "open_requirements": [
-      "Rerun V1 and R1 after production, tests and parity tooling are frozen; current-head source checks reject their historical evidence as stale.",
-      "Implement actual paired Pi/PiSharp process runners for R3-R15 and capture repeated pinned-Pi baselines.",
-      "Capture two stable pinned-Pi process baselines and independent PiSharp process observations for R3-R15.",
+      "Rerun V1 and R1-R4 after production, tests and parity tooling are frozen; current source checks reject historical evidence after implementation or harness changes.",
+      "Implement actual paired Pi/PiSharp process runners for R5-R15 and capture repeated pinned-Pi baselines.",
+      "Capture two stable pinned-Pi process baselines and independent PiSharp process observations for R5-R15.",
       "Correct confirmed in-scope differences, then complete all quality, source-bound evidence, exact-head CI and draft PR publication gates."
     ],
-    "next_action": "Implement and execute R3 prompt-acceptance and asynchronous-lifecycle process cases."
+    "next_action": "Implement and execute R5 lifecycle event-ordering process cases."
   }
 }

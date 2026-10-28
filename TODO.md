@@ -590,11 +590,11 @@ The detailed entries in this section preserve earlier source/test evidence only;
 
 ## Current priority
 
-Complete the source-bound RPC contract and process-level differential corpus on `milestone/rpc-protocol-command-parity`, retaining Microsoft Agent Framework 1.21.0 as the runtime execution framework. The frozen baseline is committed; R2 passes 12 process cases. Continue with prompt acceptance and asynchronous lifecycle in R3, then implement and execute the remaining checkpoints. Rerun V1 and R1 after production, test and parity-tool changes are frozen so their evidence validates against the final source.
+Complete the source-bound RPC contract and process-level differential corpus on `milestone/rpc-protocol-command-parity`, retaining Microsoft Agent Framework 1.21.0 as the runtime execution framework. The frozen baseline is committed; R2 passed 12/12 at its recorded source, R3 passed 10/10 at an earlier source, and R4 passes 12/12 at `413ebc6e`. Continue with lifecycle event ordering in R5. R1–R4 and V1 need final source-bound reruns after production, test and parity-tool changes are frozen.
 
 ## Exact next action
 
-Implement and execute the R3 prompt-acceptance and asynchronous-lifecycle adapters, preserving acceptance/event ordering under the pinned-Pi process comparison. Then proceed through R4–R15, D0, Q0, E0, CI0 and PUB0. Resolve documented projection differences from exact-pin evidence; keep PR #29 open, draft and unmerged.
+Implement and execute the R5 lifecycle event-ordering adapters under the pinned-Pi process comparison. Then proceed through R6–R15, D0, Q0, E0, CI0 and PUB0. Rerun stale V1/R1–R4 evidence after the implementation and harness freeze; keep PR #29 open, draft and unmerged.
 
 ## Architecture risks to reconcile before completion
 
