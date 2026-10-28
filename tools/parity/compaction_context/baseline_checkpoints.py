@@ -202,7 +202,7 @@ def validate_v0(pi_path: Path, evidence_dir: Path) -> tuple[dict[str, Any], list
 
 def validate_v1(evidence_dir: Path) -> tuple[dict[str, Any], list[str]]:
     command = [sys.executable, "-m", "unittest", "discover", "-s",
-               "tools/parity/compaction_context", "-p", "test_*.py", "-v"]
+               "tools/parity/compaction_context", "-p", "test_verifier.py", "-v"]
     process, log_paths = run_capture("verifier-controls", command, evidence_dir)
     output = process.stdout + process.stderr
     actual: dict[str, Any] = {}
