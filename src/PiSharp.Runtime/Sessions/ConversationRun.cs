@@ -32,6 +32,7 @@ public sealed partial class ConversationRun
     private string? _reasoningLevel;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private int _manualCompactionActive;
+    private int _failedInFlightContextProjection;
     private readonly object _runtimeStateGate = new();
     private readonly PromptDeliveryController _promptDelivery;
     private readonly Queue<PendingRuntimeChange> _pendingRuntimeChanges = new();
@@ -769,7 +770,8 @@ public sealed partial class ConversationRun
                                 .ConfigureAwait(false);
                             _terminalBoundaryTurn = null;
                         }
-                        if (outcome == AgentTurnOutcome.Failed)
+                        if (outcome == AgentTurnOutcome.Failed &&
+                            Interlocked.Exchange(ref _failedInFlightContextProjection, 0) == 0)
                             await CompactAfterFailedTurnAsync(linked.Token, Publish).ConfigureAwait(false);
                     }
                     if (!stopRun && _boundaryContinuationRequested)
@@ -1553,6 +1555,7 @@ public sealed partial class ConversationRun
         IReadOnlyList<ChatMessage>? acceptedPromptMessages = null)
     {
         await _gate.WaitAsync(cancellationToken);
+        Interlocked.Exchange(ref _failedInFlightContextProjection, 0);
         var previousGateOwner = s_currentGateOwner.Value;
         s_currentGateOwner.Value = this;
         var completed = false;
@@ -1985,10 +1988,24 @@ public sealed partial class ConversationRun
             {
                 if (inFlightBudget is null)
                     return messages;
+                async Task<IReadOnlyList<ChatMessage>> ProjectInFlightBudgetAsync(
+                    IReadOnlyList<ChatMessage> requestMessages, bool forceProjection, CancellationToken projectionToken)
+                {
+                    try
+                    {
+                        return await inFlightBudget.ProjectAsync(requestMessages, forceProjection, projectionToken)
+                            .ConfigureAwait(false);
+                    }
+                    catch
+                    {
+                        Interlocked.Exchange(ref _failedInFlightContextProjection, 1);
+                        throw;
+                    }
+                }
                 var keepRecentTokens = _autoCompaction?.KeepRecentTokens ?? _keepRecentTokens;
                 if (!force || !HasSessionBeforeCompactHandlers ||
                     ConversationCompactionCoordinator.PreparePlan(Conversation, keepRecentTokens) is null)
-                    return await inFlightBudget.ProjectAsync(messages, force, token).ConfigureAwait(false);
+                    return await ProjectInFlightBudgetAsync(messages, force, token).ConfigureAwait(false);
 
                 var instructionPrefix = messages.TakeWhile(message => message.Role == ChatRole.System ||
                     message.Role == new ChatRole("developer")).ToArray();
@@ -1998,7 +2015,7 @@ public sealed partial class ConversationRun
                     !JsonElement.DeepEquals(
                         JsonSerializer.SerializeToElement(ChatMessageProperties.WithoutRequestAttribution(requestHistory[index]), AIJsonUtilities.DefaultOptions),
                         JsonSerializer.SerializeToElement(ChatMessageProperties.WithoutRequestAttribution(canonicalHistory[index]), AIJsonUtilities.DefaultOptions))))
-                    return await inFlightBudget.ProjectAsync(messages, force, token).ConfigureAwait(false);
+                    return await ProjectInFlightBudgetAsync(messages, force, token).ConfigureAwait(false);
 
                 expectedProviderPrefix ??= _agent.GetHistory(_execution).Take(_historyCount)
                     .Select(message => JsonSerializer.SerializeToElement(message, AIJsonUtilities.DefaultOptions)).ToArray();
@@ -2012,7 +2029,7 @@ public sealed partial class ConversationRun
                         adoptExecutionHistory: false, NativeExtensions.PiSharpExtensionCompactionReason.Overflow,
                         willRetry: true).ConfigureAwait(false);
                     if (compactedResult is null)
-                        return await inFlightBudget.ProjectAsync(messages, force, token).ConfigureAwait(false);
+                        return await ProjectInFlightBudgetAsync(messages, force, token).ConfigureAwait(false);
 
                     physicalOverflowCompacted = true;
                     compactionCompleted = true;
