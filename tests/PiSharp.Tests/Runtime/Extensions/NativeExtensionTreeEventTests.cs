@@ -56,18 +56,32 @@ public sealed class NativeExtensionTreeEventTests
             Assert.Equal(oldLeaf, summaryEntry.Payload.GetProperty("fromId").GetString());
             Assert.Equal("extension branch summary", summaryEntry.Payload.GetProperty("summary").GetString());
             Assert.Contains("extension branch summary", conversation.ContextMessages().Last().Text, StringComparison.Ordinal);
-            Assert.Equal(9, Assert.Single(conversation.ActiveUsage()).TotalTokens);
-            Assert.Equal(0.000017m, Assert.Single(conversation.ActiveUsage()).Cost);
+            var summaryUsage = Assert.Single(conversation.ActiveUsage());
+            Assert.Equal(9, summaryUsage.TotalTokens);
+            Assert.Equal(0.000021m, summaryUsage.Cost);
+            Assert.Equal(0.000004m, summaryUsage.InputCost);
+            Assert.Equal(0.000009m, summaryUsage.OutputCost);
+            Assert.Equal(0.000004m, summaryUsage.CachedInputCost);
+            Assert.Equal(0.000004m, summaryUsage.CachedWriteCost);
 
             var loaded = await store.LoadAsync(path);
             Assert.Contains("extension branch summary", loaded.ContextMessages().Last().Text, StringComparison.Ordinal);
-            Assert.Equal(0.000017m, Assert.Single(loaded.ActiveUsage()).Cost);
+            var loadedUsage = Assert.Single(loaded.ActiveUsage());
+            Assert.Equal(0.000021m, loadedUsage.Cost);
+            Assert.Equal(0.000004m, loadedUsage.InputCost);
+            Assert.Equal(0.000009m, loadedUsage.OutputCost);
+            Assert.Equal(0.000004m, loadedUsage.CachedInputCost);
+            Assert.Equal(0.000004m, loadedUsage.CachedWriteCost);
             var exported = PiJsonlSessionInterchange.Export(loaded);
             var roundTripped = PiJsonlSessionInterchange.Import(exported, workingDirectoryOverride: workingDirectory);
             Assert.Contains("extension branch summary", roundTripped.ContextMessages().Last().Text, StringComparison.Ordinal);
-            Assert.Equal(9, Assert.Single(roundTripped.ActiveUsage()).TotalTokens);
-            Assert.Equal(0.000017m, Assert.Single(roundTripped.ActiveUsage()).Cost);
-            Assert.Equal(0.000009m, Assert.Single(roundTripped.ActiveUsage()).OutputCost);
+            var roundTrippedUsage = Assert.Single(roundTripped.ActiveUsage());
+            Assert.Equal(9, roundTrippedUsage.TotalTokens);
+            Assert.Equal(0.000021m, roundTrippedUsage.Cost);
+            Assert.Equal(0.000004m, roundTrippedUsage.InputCost);
+            Assert.Equal(0.000009m, roundTrippedUsage.OutputCost);
+            Assert.Equal(0.000004m, roundTrippedUsage.CachedInputCost);
+            Assert.Equal(0.000004m, roundTrippedUsage.CachedWriteCost);
         }
         finally { Directory.Delete(workingDirectory, recursive: true); }
     }

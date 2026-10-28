@@ -194,9 +194,29 @@ internal static class PiJsonlEntryCodec
         {
             if (TryProperty(node.Payload, "nativeUsage", out var nativeUsage) &&
                 nativeUsage.ValueKind == JsonValueKind.Object)
-                return nativeUsage.Deserialize<UsageRecord>() is { } nativeRecord
-                    ? nativeRecord with { Source = "branch_summary" }
-                    : null;
+            {
+                if (nativeUsage.Deserialize<UsageRecord>() is not { } nativeRecord) return null;
+                if (!TryProperty(node.Payload, "usage", out var projectedUsage) ||
+                    projectedUsage.ValueKind != JsonValueKind.Object ||
+                    !TryProperty(projectedUsage, "cost", out var projectedCost) ||
+                    projectedCost.ValueKind != JsonValueKind.Object)
+                    return nativeRecord with { Source = "branch_summary" };
+
+                if (!TryReadOptionalCost(projectedCost, "input", out var projectedInputCost) ||
+                    !TryReadOptionalCost(projectedCost, "output", out var projectedOutputCost) ||
+                    !TryReadOptionalCost(projectedCost, "cacheRead", out var projectedCachedInputCost) ||
+                    !TryReadOptionalCost(projectedCost, "cacheWrite", out var projectedCachedWriteCost))
+                    return null;
+
+                return nativeRecord with
+                {
+                    Source = "branch_summary",
+                    InputCost = projectedInputCost,
+                    OutputCost = projectedOutputCost,
+                    CachedInputCost = projectedCachedInputCost,
+                    CachedWriteCost = projectedCachedWriteCost
+                };
+            }
             var entry = OriginalEntry(node) ?? node.Payload;
             if (!TryProperty(entry, "usage", out usage) || usage.ValueKind != JsonValueKind.Object) return null;
             model = StringProperty(entry, "model") ?? "unknown";
