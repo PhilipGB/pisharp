@@ -187,9 +187,11 @@ internal sealed class PromptDeliveryController
                 if (!_firstProviderRequestPending && !contextContinuation) return [];
                 _firstProviderRequestPending = false;
             }
+            var before = _queue.Snapshot();
             var prompts = _queue.TakeSteeringForProvider();
             if (prompts.Count == 0) return [];
-            _events?.Invoke(QueueEvent(_queue.Snapshot()));
+            foreach (var pending in RemainingQueueSnapshots(before, steering: true, prompts))
+                _events?.Invoke(QueueEvent(pending));
             var messages = new ChatMessage[prompts.Count];
             for (var index = 0; index < prompts.Count; index++)
             {
@@ -211,9 +213,11 @@ internal sealed class PromptDeliveryController
         {
             if (!ReferenceEquals(_owner, owner)) return new(null, Closed: true, PendingContextMessagesAppended: false);
             var pendingContextMessagesAppended = beforeTake();
+            var before = _queue.Snapshot();
             if (_queue.TakeNextBatch() is { } batch)
             {
-                _events?.Invoke(QueueEvent(_queue.Snapshot()));
+                foreach (var pending in RemainingQueueSnapshots(before, batch.IsSteering, batch.Messages))
+                    _events?.Invoke(QueueEvent(pending));
                 return new(batch, Closed: false, pendingContextMessagesAppended);
             }
             if (pendingContextMessagesAppended)
@@ -240,6 +244,19 @@ internal sealed class PromptDeliveryController
 
     private static AgentLifecycleEvent QueueEvent(PendingPrompts pending) => new("queue_update",
         Text: System.Text.Json.JsonSerializer.Serialize(new { steering = pending.Steering, followUp = pending.FollowUp }));
+
+    private static IEnumerable<PendingPrompts> RemainingQueueSnapshots(PendingPrompts before, bool steering,
+        IReadOnlyList<QueuedPrompt> removed)
+    {
+        var remainingSteering = before.Steering.ToList();
+        var remainingFollowUp = before.FollowUp.ToList();
+        var queue = steering ? remainingSteering : remainingFollowUp;
+        foreach (var _ in removed)
+        {
+            queue.RemoveAt(0);
+            yield return new(remainingSteering.ToArray(), remainingFollowUp.ToArray());
+        }
+    }
 
     private void ReleaseIdle(object token)
     {

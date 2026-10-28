@@ -2194,7 +2194,8 @@ public sealed partial class ConversationRun
                     _execution = await RestoreExecutionAsync(interruptedHistory, CancellationToken.None);
                     _historyCount = interruptedHistory.Count;
                 }
-                if (started) await durable!.FinishAsync(completed);
+                if (started) await durable!.FinishAsync(completed,
+                    aborted: !completed && attemptStream.InterruptionType == "turn_interrupted");
                 if (nativeTurnOpen)
                 {
                     var turn = providerTurns.SnapshotTurn();

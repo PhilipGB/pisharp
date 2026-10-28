@@ -38,6 +38,8 @@ public sealed class DurableExecutionTests
                 session.Tree.Entries.ToList().FindIndex(node => node.Type == "tool_intent"));
             var document = await store.LoadAsync(path);
             Assert.Contains(document.Tree.Entries, node => node.Type == "tool_outcome");
+            var finish = Assert.Single(document.Tree.Entries, node => node.Type == "run_finished");
+            Assert.True(finish.Payload.GetProperty("aborted").GetBoolean());
             Assert.True(document.RecoverIncomplete()); // A settled but failed continuation still needs a no-replay warning.
             Assert.False(document.RecoverIncomplete());
             Assert.Contains("No tool outcome is unknown", document.ActiveMessages().Last().Text);
@@ -58,6 +60,28 @@ public sealed class DurableExecutionTests
             Assert.Contains("Recovery notice", client.Requests.Single().Last(m => m.Role == ChatRole.User && m.Text!.Contains("Recovery")).Text);
         }
         finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
+    public void ExplicitAbortWithoutToolActivityDoesNotCreateRecoveryNotice()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        var runId = Guid.NewGuid().ToString("N");
+        session.Tree.Append("run_started", System.Text.Json.JsonSerializer.SerializeToElement(new
+        { runId, prompt = "cancel a request" }));
+        session.Tree.Append("interrupted", System.Text.Json.JsonSerializer.SerializeToElement(new
+        {
+            prompt = "cancel a request",
+            partialText = "",
+            partialAssistantText = "",
+            events = Array.Empty<string>()
+        }));
+        session.Tree.Append("run_finished", System.Text.Json.JsonSerializer.SerializeToElement(new
+        { runId, completed = false, aborted = true }));
+
+        Assert.False(session.RecoverIncomplete());
+        Assert.DoesNotContain(session.Tree.ActivePath(), node => node.Type == "run_recovered");
+        Assert.DoesNotContain(session.ActiveMessages(), message => message.Text?.Contains("Recovery notice") == true);
     }
 
     [Fact]

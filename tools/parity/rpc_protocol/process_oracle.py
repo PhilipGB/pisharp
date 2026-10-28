@@ -43,6 +43,7 @@ class FixtureProviderStep:
     tool_name: str | None = None
     tool_arguments: str | None = None
     hold_after_partial: bool = False
+    hold_before_response: bool = False
 
 
 @dataclass(frozen=True)
@@ -61,9 +62,13 @@ class InputRun:
     provider_waits: tuple[tuple[int, int, float], ...] = ()
     stdout_waits: tuple[tuple[int, str, int, float], ...] = ()
     release_tool_gate_after_input_index: int | None = None
+    release_provider_after_input_index: int | None = None
+    resume_session: bool = False
+    reuse_workspace_previous: bool = False
     expected_min_provider_requests: int = 0
     lifecycle_event_types: tuple[str, ...] = ()
     preserve_event_payloads: bool = False
+    preserve_event_payload_types: tuple[str, ...] = ()
     preserve_system_message_payloads: bool = False
     forbidden_lifecycle_event_types: tuple[str, ...] = ()
     minimum_lifecycle_event_counts: tuple[tuple[str, int], ...] = ()
@@ -75,7 +80,10 @@ class InputRun:
     compare_provider_requests: bool = False
     model_context_window: int = 4096
     preserve_state_flags: bool = False
+    preserve_queue_state: bool = False
+    preserve_queue_response_data: bool = False
     state_flag_expectations: tuple[tuple[str, str, bool], ...] = ()
+    state_expectations: tuple[tuple[str, str, Any], ...] = ()
     expected_marker_order: tuple[str, ...] = ()
     all_responses_succeed: bool = False
     require_diagnostic: bool = False
@@ -529,6 +537,451 @@ for _case_id, _runs in tuple(R3_SCENARIOS.items()):
     R3_SCENARIOS[_case_id] = tuple(replace(run, model_context_window=65_536) for run in _runs)
 
 
+R4_SCENARIOS: dict[str, tuple[InputRun, ...]] = {}
+for _command, _case_id in (("steer", "R4.steer-command-idle"),
+                           ("follow_up", "R4.followup-command-idle")):
+    _prefix = "steer" if _command == "steer" else "followup"
+    _expected_requests = 1 if _command == "steer" else 2
+    R4_SCENARIOS[_case_id] = (
+        InputRun(
+            chunks=(
+                (_line(f"{_prefix}-idle", _command, message=f"queued {_prefix} while idle"), 0.0),
+                (_line(f"{_prefix}-idle-state", "get_state"), 0.0),
+                (_line(f"{_prefix}-idle-prompt", "prompt", message="start queued work"), 0.0),
+                (b"", 0.0),
+            ),
+            expected_response_ids=(f"{_prefix}-idle", f"{_prefix}-idle-state", f"{_prefix}-idle-prompt"),
+            expected_response_commands=(_command, "get_state", "prompt"),
+            expected_successes=(True, True, True), expected_data_presence=(True, True, True),
+            expected_error_presence=(False, False, False),
+            expected_response_dispositions=("queued", None, "started"),
+            provider_steps=(FixtureProviderStep(text="initial response"),
+                            FixtureProviderStep(text="processed queued input")),
+            provider_waits=((2, _expected_requests, 10.0),),
+            stdout_waits=((0, f'"id":"{_prefix}-idle"', 1, 10.0),
+                          (1, f'"id":"{_prefix}-idle-state"', 1, 10.0),
+                          (3, '"type":"agent_settled"', 1, 15.0)),
+            expected_min_provider_requests=_expected_requests, compare_provider_requests=True,
+            model_context_window=65_536,
+            lifecycle_event_types=("queue_update", "agent_start", "agent_settled"),
+            preserve_event_payload_types=("queue_update",), preserve_queue_state=True,
+            minimum_lifecycle_event_counts=(("queue_update", 2), ("agent_start", 1), ("agent_settled", 1)),
+            state_expectations=((f"{_prefix}-idle-state", "pendingMessageCount", 1),),
+            expected_marker_order=(f"event:queue_update", f"response:{_prefix}-idle",
+                                   f"response:{_prefix}-idle-state", f"response:{_prefix}-idle-prompt",
+                                   "event:agent_start", "event:agent_settled"),
+        ),
+    )
+
+for _steering_mode, _case_id in (("all", "R4.steering-all-mode"),
+                                ("one-at-a-time", "R4.steering-one-at-a-time-mode")):
+    _expected_requests = 2 if _steering_mode == "all" else 3
+    R4_SCENARIOS[_case_id] = (
+        InputRun(
+            chunks=(
+                (_line("steering-mode", "set_steering_mode", mode=_steering_mode), 0.0),
+                (_line("steering-start", "prompt", message="start delayed steering turn"), 0.0),
+                (_line("steering-a", "steer", message="first steering message"), 0.0),
+                (_line("steering-b", "steer", message="second steering message"), 0.0),
+                (_line("steering-pending", "get_state"), 0.0),
+                (b"", 0.0),
+                (_line("steering-state", "get_state"), 0.0),
+                (b"", 0.0),
+            ),
+            expected_response_ids=("steering-mode", "steering-start", "steering-a", "steering-b",
+                                   "steering-pending", "steering-state"),
+            expected_response_commands=("set_steering_mode", "prompt", "steer", "steer",
+                                        "get_state", "get_state"),
+            expected_successes=(True,) * 6, expected_data_presence=(False, True, True, True, True, True),
+            expected_error_presence=(False,) * 6,
+            expected_response_dispositions=(None, "started", "queued", "queued", None, None),
+            provider_steps=(FixtureProviderStep(hold_before_response=True, text="first completed turn"),
+                            FixtureProviderStep(text="processed queued steering"),
+                            FixtureProviderStep(text="processed next steering")),
+            provider_waits=((1, 1, 10.0), (5, _expected_requests, 20.0)),
+            stdout_waits=((0, '"id":"steering-mode"', 1, 10.0),
+                          (1, '"id":"steering-start"', 1, 10.0),
+                          (2, '"id":"steering-a"', 1, 10.0),
+                          (3, '"id":"steering-b"', 1, 10.0),
+                          (4, '"id":"steering-pending"', 1, 10.0),
+                          (5, '"type":"agent_settled"', 1, 20.0),
+                          (6, '"id":"steering-state"', 1, 10.0)),
+            expected_min_provider_requests=_expected_requests, compare_provider_requests=True,
+            release_provider_after_input_index=4,
+            model_context_window=65_536,
+            lifecycle_event_types=("queue_update", "agent_start", "agent_settled"),
+            preserve_event_payload_types=("queue_update",), preserve_queue_state=True,
+            minimum_lifecycle_event_counts=(("queue_update", 3), ("agent_start", 1), ("agent_settled", 1)),
+            state_expectations=(("steering-pending", "steeringMode", _steering_mode),
+                                ("steering-pending", "pendingMessageCount", 2),
+                                ("steering-state", "pendingMessageCount", 0)),
+            expected_marker_order=("response:steering-mode", "response:steering-start",
+                                   "event:agent_start", "response:steering-a", "response:steering-b",
+                                   "response:steering-pending", "event:agent_settled",
+                                   "response:steering-state"),
+        ),
+    )
+
+for _followup_mode, _case_id in (("all", "R4.followup-all-mode"),
+                                ("one-at-a-time", "R4.followup-one-at-a-time-mode")):
+    _expected_requests = 2 if _followup_mode == "all" else 3
+    R4_SCENARIOS[_case_id] = (
+        InputRun(
+            chunks=(
+                (_line("followup-mode", "set_follow_up_mode", mode=_followup_mode), 0.0),
+                (_line("followup-start", "prompt", message="start delayed follow-up turn"), 0.0),
+                (_line("followup-a", "follow_up", message="first follow-up message"), 0.0),
+                (_line("followup-b", "follow_up", message="second follow-up message"), 0.0),
+                (_line("followup-pending", "get_state"), 0.0),
+                (b"", 0.0),
+                (_line("followup-state", "get_state"), 0.0),
+                (b"", 0.0),
+            ),
+            expected_response_ids=("followup-mode", "followup-start", "followup-a", "followup-b",
+                                   "followup-pending", "followup-state"),
+            expected_response_commands=("set_follow_up_mode", "prompt", "follow_up", "follow_up",
+                                        "get_state", "get_state"),
+            expected_successes=(True,) * 6, expected_data_presence=(False, True, True, True, True, True),
+            expected_error_presence=(False,) * 6,
+            expected_response_dispositions=(None, "started", "queued", "queued", None, None),
+            provider_steps=(FixtureProviderStep(hold_before_response=True, text="first completed turn"),
+                            FixtureProviderStep(text="processed queued follow-up"),
+                            FixtureProviderStep(text="processed next follow-up")),
+            provider_waits=((1, 1, 10.0), (5, _expected_requests, 20.0)),
+            stdout_waits=((0, '"id":"followup-mode"', 1, 10.0),
+                          (1, '"id":"followup-start"', 1, 10.0),
+                          (2, '"id":"followup-a"', 1, 10.0),
+                          (3, '"id":"followup-b"', 1, 10.0),
+                          (4, '"id":"followup-pending"', 1, 10.0),
+                          (5, '"type":"agent_settled"', 1, 25.0),
+                          (6, '"id":"followup-state"', 1, 10.0)),
+            expected_min_provider_requests=_expected_requests, compare_provider_requests=True,
+            release_provider_after_input_index=4, model_context_window=65_536,
+            lifecycle_event_types=("queue_update", "agent_start", "agent_settled"),
+            preserve_event_payload_types=("queue_update",), preserve_queue_state=True,
+            minimum_lifecycle_event_counts=(("queue_update", 4), ("agent_start", 1), ("agent_settled", 1)),
+            state_expectations=(("followup-pending", "followUpMode", _followup_mode),
+                                ("followup-pending", "pendingMessageCount", 2),
+                                ("followup-state", "pendingMessageCount", 0)),
+            expected_marker_order=("response:followup-mode", "response:followup-start",
+                                   "event:agent_start", "response:followup-a", "response:followup-b",
+                                   "response:followup-pending", "event:agent_settled",
+                                   "response:followup-state"),
+        ),
+    )
+
+R4_SCENARIOS["R4.steer-followup-precedence"] = (
+    InputRun(
+        chunks=(
+            (_line("precedence-start", "prompt", message="start precedence turn"), 0.0),
+            (_line("precedence-steer", "steer", message="steering must arrive first"), 0.0),
+            (_line("precedence-followup", "follow_up", message="follow-up arrives after steering"), 0.0),
+            (_line("precedence-pending", "get_state"), 0.0),
+            (b"", 0.0),
+            (b"", 0.0),
+            (_line("precedence-state", "get_state"), 0.0),
+            (b"", 0.0),
+        ),
+        expected_response_ids=("precedence-start", "precedence-steer", "precedence-followup",
+                               "precedence-pending", "precedence-state"),
+        expected_response_commands=("prompt", "steer", "follow_up", "get_state", "get_state"),
+        expected_successes=(True,) * 5, expected_data_presence=(True,) * 5,
+        expected_error_presence=(False,) * 5,
+        expected_response_dispositions=("started", "queued", "queued", None, None),
+        provider_steps=(FixtureProviderStep(hold_before_response=True, text="first completed turn"),
+                        FixtureProviderStep(text="processed steering"),
+                        FixtureProviderStep(text="processed follow-up")),
+        provider_waits=((0, 1, 10.0), (4, 3, 20.0)),
+        stdout_waits=((0, '"id":"precedence-start"', 1, 10.0),
+                      (1, '"id":"precedence-steer"', 1, 10.0),
+                      (2, '"id":"precedence-followup"', 1, 10.0),
+                      (3, '"id":"precedence-pending"', 1, 10.0),
+                      (5, '"type":"agent_settled"', 1, 25.0),
+                      (6, '"id":"precedence-state"', 1, 10.0)),
+        expected_min_provider_requests=3, compare_provider_requests=True,
+        release_provider_after_input_index=3, model_context_window=65_536,
+        lifecycle_event_types=("queue_update", "agent_start", "agent_settled"),
+        preserve_event_payload_types=("queue_update",), preserve_queue_state=True,
+        minimum_lifecycle_event_counts=(("queue_update", 4), ("agent_start", 1), ("agent_settled", 1)),
+        state_expectations=(("precedence-pending", "pendingMessageCount", 2),
+                            ("precedence-state", "pendingMessageCount", 0)),
+        expected_marker_order=("response:precedence-start", "event:agent_start",
+                               "response:precedence-steer", "response:precedence-followup",
+                               "response:precedence-pending", "event:agent_settled",
+                               "response:precedence-state"),
+    ),
+)
+
+R4_SCENARIOS["R4.multiple-concurrent-queue-updates"] = (
+    InputRun(
+        chunks=(
+            (_line("multi-queue-start", "prompt", message="start queue update run"), 0.0),
+            (_line("multi-queue-steer-a", "steer", message="steer alpha"), 0.0),
+            (_line("multi-queue-followup-b", "follow_up", message="follow beta"), 0.0),
+            (_line("multi-queue-steer-c", "steer", message="steer gamma"), 0.0),
+            (_line("multi-queue-pending", "get_state"), 0.0),
+            (b"", 0.0),
+            (b"", 0.0),
+            (_line("multi-queue-state", "get_state"), 0.0),
+            (b"", 0.0),
+        ),
+        expected_response_ids=("multi-queue-start", "multi-queue-steer-a", "multi-queue-followup-b",
+                               "multi-queue-steer-c", "multi-queue-pending", "multi-queue-state"),
+        expected_response_commands=("prompt", "steer", "follow_up", "steer", "get_state", "get_state"),
+        expected_successes=(True,) * 6, expected_data_presence=(True,) * 6,
+        expected_error_presence=(False,) * 6,
+        expected_response_dispositions=("started", "queued", "queued", "queued", None, None),
+        provider_steps=(FixtureProviderStep(hold_before_response=True, text="initial queue turn"),
+                        FixtureProviderStep(text="processed steer alpha"),
+                        FixtureProviderStep(text="processed steer gamma"),
+                        FixtureProviderStep(text="processed follow beta")),
+        provider_waits=((0, 1, 10.0), (5, 4, 25.0)),
+        stdout_waits=((0, '"id":"multi-queue-start"', 1, 10.0),
+                      (1, '"id":"multi-queue-steer-a"', 1, 10.0),
+                      (2, '"id":"multi-queue-followup-b"', 1, 10.0),
+                      (3, '"id":"multi-queue-steer-c"', 1, 10.0),
+                      (4, '"id":"multi-queue-pending"', 1, 10.0),
+                      (6, '"type":"agent_settled"', 1, 30.0),
+                      (7, '"id":"multi-queue-state"', 1, 10.0)),
+        expected_min_provider_requests=4, compare_provider_requests=True,
+        release_provider_after_input_index=4, model_context_window=65_536,
+        lifecycle_event_types=("queue_update", "agent_start", "agent_settled"),
+        preserve_event_payload_types=("queue_update",), preserve_queue_state=True,
+        minimum_lifecycle_event_counts=(("queue_update", 6), ("agent_start", 1), ("agent_settled", 1)),
+        state_expectations=(("multi-queue-pending", "pendingMessageCount", 3),
+                            ("multi-queue-state", "pendingMessageCount", 0)),
+        expected_marker_order=("response:multi-queue-start", "event:agent_start",
+                               "response:multi-queue-steer-a", "response:multi-queue-followup-b",
+                               "response:multi-queue-steer-c", "response:multi-queue-pending",
+                               "event:agent_settled", "response:multi-queue-state"),
+    ),
+)
+
+R4_SCENARIOS["R4.clear-queue-snapshot"] = (
+    InputRun(
+        chunks=(
+            (_line("clear-start", "prompt", message="start clear queue run"), 0.0),
+            (_line("clear-steer", "steer", message="remove this steering message"), 0.0),
+            (_line("clear-followup", "follow_up", message="remove this follow-up message"), 0.0),
+            (_line("clear-pending", "get_state"), 0.0),
+            (_line("clear-command", "clear_queue"), 0.0),
+            (_line("clear-empty-state", "get_state"), 0.0),
+            (b"", 0.0),
+        ),
+        expected_response_ids=("clear-start", "clear-steer", "clear-followup", "clear-pending",
+                               "clear-command", "clear-empty-state"),
+        expected_response_commands=("prompt", "steer", "follow_up", "get_state", "clear_queue", "get_state"),
+        expected_successes=(True,) * 6, expected_data_presence=(True,) * 6,
+        expected_error_presence=(False,) * 6,
+        expected_response_dispositions=("started", "queued", "queued", None, None, None),
+        provider_steps=(FixtureProviderStep(hold_before_response=True, text="finished after clearing"),),
+        provider_waits=((0, 1, 10.0),),
+        stdout_waits=((0, '"id":"clear-start"', 1, 10.0),
+                      (1, '"id":"clear-steer"', 1, 10.0),
+                      (2, '"id":"clear-followup"', 1, 10.0),
+                      (3, '"id":"clear-pending"', 1, 10.0),
+                      (4, '"id":"clear-command"', 1, 10.0),
+                      (5, '"id":"clear-empty-state"', 1, 10.0),
+                      (6, '"type":"agent_settled"', 1, 15.0)),
+        expected_min_provider_requests=1, compare_provider_requests=True,
+        release_provider_after_input_index=5, model_context_window=65_536,
+        lifecycle_event_types=("queue_update", "agent_start", "agent_settled"),
+        preserve_event_payload_types=("queue_update",), preserve_queue_state=True,
+        preserve_queue_response_data=True,
+        minimum_lifecycle_event_counts=(("queue_update", 3), ("agent_start", 1), ("agent_settled", 1)),
+        state_expectations=(("clear-pending", "pendingMessageCount", 2),
+                            ("clear-empty-state", "pendingMessageCount", 0)),
+        expected_marker_order=("response:clear-start", "event:agent_start", "response:clear-steer",
+                               "response:clear-followup", "response:clear-pending", "response:clear-command",
+                               "response:clear-empty-state"),
+    ),
+)
+
+R4_SCENARIOS["R4.queue-cancel-and-restore"] = (
+    InputRun(
+        chunks=(
+            (_line("cancel-start", "prompt", message="start abort-with-queues run"), 0.0),
+            (_line("cancel-steer", "steer", message="steering survives abort"), 0.0),
+            (_line("cancel-followup", "follow_up", message="follow-up survives abort"), 0.0),
+            (_line("cancel-abort", "abort"), 0.0),
+            (_line("cancel-state", "get_state"), 0.0),
+            (_line("cancel-next-prompt", "prompt", message="start the next prompt"), 0.0),
+            (b"", 0.0),
+            (_line("cancel-final-state", "get_state"), 0.0),
+            (b"", 0.0),
+        ),
+        expected_response_ids=("cancel-start", "cancel-steer", "cancel-followup", "cancel-abort",
+                               "cancel-state", "cancel-next-prompt", "cancel-final-state"),
+        expected_response_commands=("prompt", "steer", "follow_up", "abort", "get_state", "prompt", "get_state"),
+        expected_successes=(True,) * 7, expected_data_presence=(True, True, True, False, True, True, True),
+        expected_error_presence=(False,) * 7,
+        expected_response_dispositions=("started", "queued", "queued", None, None, "started", None),
+        provider_steps=(FixtureProviderStep(hold_before_response=True, text="aborted response"),
+                        FixtureProviderStep(text="processed after abort"),
+                        FixtureProviderStep(text="finished next prompt"),
+                        FixtureProviderStep(text="processed restored follow-up")),
+        provider_waits=((0, 1, 10.0), (5, 2, 15.0)),
+        stdout_waits=((0, '"id":"cancel-start"', 1, 10.0),
+                      (1, '"id":"cancel-steer"', 1, 10.0),
+                      (2, '"id":"cancel-followup"', 1, 10.0),
+                      (3, '"id":"cancel-abort"', 1, 20.0),
+                      (4, '"id":"cancel-state"', 1, 10.0),
+                      (5, '"id":"cancel-next-prompt"', 1, 10.0),
+                      (5, '"type":"agent_settled"', 2, 20.0),
+                      (7, '"id":"cancel-final-state"', 1, 10.0)),
+        expected_min_provider_requests=1, compare_provider_requests=True,
+        model_context_window=65_536,
+        lifecycle_event_types=("queue_update", "agent_start", "agent_settled"),
+        preserve_event_payload_types=("queue_update",), preserve_queue_state=True,
+        minimum_lifecycle_event_counts=(("queue_update", 3), ("agent_start", 2), ("agent_settled", 2)),
+        preserve_queue_response_data=True,
+        state_expectations=(("cancel-state", "pendingMessageCount", 2),
+                            ("cancel-final-state", "pendingMessageCount", 0)),
+        expected_marker_order=("response:cancel-start", "event:agent_start", "response:cancel-steer",
+                               "response:cancel-followup", "event:agent_settled", "response:cancel-abort",
+                               "response:cancel-state", "response:cancel-next-prompt"),
+    ),
+)
+
+R4_SCENARIOS["R4.mode-change-persistence"] = (
+    InputRun(
+        chunks=(
+            (_line("mode-set-steering", "set_steering_mode", mode="all"), 0.0),
+            (_line("mode-set-followup", "set_follow_up_mode", mode="all"), 0.0),
+            (_line("mode-seed-prompt", "prompt", message="save a resumable mode session"), 0.0),
+            (b"", 0.0),
+            (_line("mode-seed-state", "get_state"), 0.0),
+            (b"", 0.0),
+        ),
+        expected_response_ids=("mode-set-steering", "mode-set-followup", "mode-seed-prompt", "mode-seed-state"),
+        expected_response_commands=("set_steering_mode", "set_follow_up_mode", "prompt", "get_state"),
+        expected_successes=(True,) * 4, expected_data_presence=(False, False, True, True),
+        expected_error_presence=(False,) * 4,
+        expected_response_dispositions=(None, None, "started", None),
+        provider_steps=(FixtureProviderStep(text="session ready"),),
+        provider_waits=((2, 1, 10.0),),
+        stdout_waits=((0, '"id":"mode-set-steering"', 1, 10.0),
+                      (1, '"id":"mode-set-followup"', 1, 10.0),
+                      (2, '"id":"mode-seed-prompt"', 1, 10.0),
+                      (2, '"type":"agent_settled"', 1, 15.0),
+                      (4, '"id":"mode-seed-state"', 1, 10.0)),
+        expected_min_provider_requests=1, compare_provider_requests=True,
+        model_context_window=65_536,
+        lifecycle_event_types=("agent_start", "agent_settled"),
+        state_expectations=(("mode-seed-state", "steeringMode", "all"),
+                            ("mode-seed-state", "followUpMode", "all"),
+                            ("mode-seed-state", "pendingMessageCount", 0)),
+        expected_marker_order=("response:mode-set-steering", "response:mode-set-followup",
+                               "response:mode-seed-prompt", "event:agent_start",
+                               "event:agent_settled", "response:mode-seed-state"),
+    ),
+    InputRun(
+        chunks=(
+            (_line("resume-mode-state", "get_state"), 0.0),
+            (_line("resume-mode-prompt", "prompt", message="probe persisted queue modes"), 0.0),
+            (_line("resume-mode-steer-a", "steer", message="persisted steering alpha"), 0.0),
+            (_line("resume-mode-steer-b", "steer", message="persisted steering beta"), 0.0),
+            (_line("resume-mode-followup-a", "follow_up", message="persisted follow-up alpha"), 0.0),
+            (_line("resume-mode-followup-b", "follow_up", message="persisted follow-up beta"), 0.0),
+            (_line("resume-mode-pending", "get_state"), 0.0),
+            (b"", 0.0),
+            (_line("resume-mode-final-state", "get_state"), 0.0),
+            (b"", 0.0),
+        ),
+        expected_response_ids=("resume-mode-state", "resume-mode-prompt", "resume-mode-steer-a",
+                               "resume-mode-steer-b", "resume-mode-followup-a", "resume-mode-followup-b",
+                               "resume-mode-pending", "resume-mode-final-state"),
+        expected_response_commands=("get_state", "prompt", "steer", "steer", "follow_up", "follow_up",
+                                    "get_state", "get_state"),
+        expected_successes=(True,) * 8, expected_data_presence=(True,) * 8,
+        expected_error_presence=(False,) * 8,
+        expected_response_dispositions=(None, "started", "queued", "queued", "queued", "queued", None, None),
+        provider_steps=(FixtureProviderStep(hold_before_response=True, text="resumed mode probe"),
+                        FixtureProviderStep(text="processed both steering messages"),
+                        FixtureProviderStep(text="processed both follow-up messages")),
+        provider_waits=((1, 1, 15.0), (7, 3, 20.0)),
+        stdout_waits=((0, '"id":"resume-mode-state"', 1, 10.0),
+                      (1, '"id":"resume-mode-prompt"', 1, 10.0),
+                      (2, '"id":"resume-mode-steer-a"', 1, 10.0),
+                      (3, '"id":"resume-mode-steer-b"', 1, 10.0),
+                      (4, '"id":"resume-mode-followup-a"', 1, 10.0),
+                      (5, '"id":"resume-mode-followup-b"', 1, 10.0),
+                      (6, '"id":"resume-mode-pending"', 1, 10.0),
+                      (7, '"type":"agent_settled"', 1, 25.0),
+                      (8, '"id":"resume-mode-final-state"', 1, 10.0)),
+        release_provider_after_input_index=6,
+        resume_session=True, reuse_workspace_previous=True,
+        expected_min_provider_requests=3, compare_provider_requests=True,
+        model_context_window=65_536,
+        lifecycle_event_types=("queue_update", "agent_start", "agent_settled"),
+        preserve_event_payload_types=("queue_update",), preserve_queue_state=True,
+        minimum_lifecycle_event_counts=(("queue_update", 8), ("agent_start", 1), ("agent_settled", 1)),
+        state_expectations=(("resume-mode-state", "steeringMode", "all"),
+                            ("resume-mode-state", "followUpMode", "all"),
+                            ("resume-mode-state", "pendingMessageCount", 0),
+                            ("resume-mode-pending", "pendingMessageCount", 4),
+                            ("resume-mode-final-state", "pendingMessageCount", 0)),
+        expected_marker_order=("response:resume-mode-state", "response:resume-mode-prompt",
+                               "event:agent_start", "response:resume-mode-steer-a",
+                               "response:resume-mode-steer-b", "response:resume-mode-followup-a",
+                               "response:resume-mode-followup-b", "response:resume-mode-pending",
+                               "event:agent_settled", "response:resume-mode-final-state"),
+    ),
+)
+
+R4_SCENARIOS["R4.tool-finishes-before-next-request"] = (
+    InputRun(
+        chunks=(
+            (_line("tool-queue-start", "prompt", message="call the queue barrier tool"), 0.0),
+            (_line("tool-queue-steer", "steer", message="steering behind tool result"), 0.0),
+            (_line("tool-queue-followup", "follow_up", message="follow-up after steering turn"), 0.0),
+            (_line("tool-queue-pending", "get_state"), 0.0),
+            (b"", 0.0),
+            (_line("tool-queue-final-state", "get_state"), 0.0),
+            (b"", 0.0),
+        ),
+        expected_response_ids=("tool-queue-start", "tool-queue-steer", "tool-queue-followup",
+                               "tool-queue-pending", "tool-queue-final-state"),
+        expected_response_commands=("prompt", "steer", "follow_up", "get_state", "get_state"),
+        expected_successes=(True,) * 5, expected_data_presence=(True,) * 5,
+        expected_error_presence=(False,) * 5,
+        expected_response_dispositions=("started", "queued", "queued", None, None),
+        enable_bash_tool=True,
+        provider_steps=(
+            FixtureProviderStep(tool_name="bash", tool_arguments=json.dumps({
+                "command": 'gate=__RPC_TOOL_GATE__; echo started > "$gate.started"; '
+                           'while [ ! -f "$gate.release" ]; do sleep 0.01; done; '
+                           'echo barrier-released',
+            })),
+            FixtureProviderStep(text="tool result recorded before steering request"),
+            FixtureProviderStep(text="follow-up delivered after steering turn"),
+        ),
+        provider_waits=((0, 1, 10.0), (4, 3, 25.0)),
+        stdout_waits=((0, '"id":"tool-queue-start"', 1, 10.0),
+                      (0, '"type":"tool_execution_start"', 1, 15.0),
+                      (1, '"id":"tool-queue-steer"', 1, 10.0),
+                      (2, '"id":"tool-queue-followup"', 1, 10.0),
+                      (3, '"id":"tool-queue-pending"', 1, 10.0),
+                      (4, '"type":"agent_settled"', 1, 30.0),
+                      (5, '"id":"tool-queue-final-state"', 1, 10.0)),
+        release_tool_gate_after_input_index=3,
+        expected_min_provider_requests=3, compare_provider_requests=True,
+        model_context_window=65_536,
+        lifecycle_event_types=("tool_execution_start", "tool_execution_end", "queue_update",
+                               "agent_start", "agent_settled"),
+        preserve_event_payload_types=("queue_update",), preserve_queue_state=True,
+        minimum_lifecycle_event_counts=(("tool_execution_start", 1), ("tool_execution_end", 1),
+                                        ("queue_update", 4), ("agent_start", 1), ("agent_settled", 1)),
+        state_expectations=(("tool-queue-pending", "pendingMessageCount", 2),
+                            ("tool-queue-final-state", "pendingMessageCount", 0)),
+        expected_marker_order=("response:tool-queue-start", "event:agent_start", "event:tool_execution_start",
+                               "response:tool-queue-steer", "response:tool-queue-followup",
+                               "response:tool-queue-pending", "event:tool_execution_end",
+                               "event:agent_settled", "response:tool-queue-final-state"),
+    ),
+)
+
+
 class _FixtureProvider:
     def __init__(self, response_delays: tuple[float, ...], provider_steps: tuple[FixtureProviderStep, ...],
                  tool_gate_path: Path):
@@ -556,6 +1009,8 @@ class _FixtureProvider:
                     step = fixture.provider_step(request_index)
                     if step.delay_seconds:
                         time.sleep(step.delay_seconds)
+                    if step.hold_before_response:
+                        fixture._release_stream.wait(60)
                     streaming = request.get("stream") is True
                     if streaming and step.hold_after_partial:
                         self.send_response(step.status_code)
@@ -631,6 +1086,9 @@ class _FixtureProvider:
                     return False
                 self._condition.wait(remaining)
             return True
+
+    def release_held_response(self) -> None:
+        self._release_stream.set()
 
     def provider_step(self, request_index: int) -> FixtureProviderStep:
         if request_index < len(self._provider_steps):
@@ -712,8 +1170,8 @@ def _prepare_product(product: str, pi: Path, workspace: Path,
     product_root = workspace / product
     agent = product_root / "agent"
     sessions = product_root / "sessions"
-    agent.mkdir(parents=True)
-    sessions.mkdir(parents=True)
+    agent.mkdir(parents=True, exist_ok=True)
+    sessions.mkdir(parents=True, exist_ok=True)
     model = {
         "id": "fixture-model", "name": "fixture-model", "api": "openai-completions",
         "reasoning": False, "input": ["text"], "contextWindow": input_run.model_context_window, "maxTokens": 128,
@@ -728,8 +1186,9 @@ def _prepare_product(product: str, pi: Path, workspace: Path,
     else:
         provider["apiKeyEnv"] = "PISHARP_RPC_FIXTURE_KEY"
     (agent / "models.json").write_text(json.dumps({"providers": {"fixture": provider}}) + "\n", encoding="utf-8")
-    if provider_base_url is not None:
-        (agent / "settings.json").write_text('{"compaction":{"keepRecentTokens":1}}\n', encoding="utf-8")
+    settings_path = agent / "settings.json"
+    if provider_base_url is not None and not settings_path.exists():
+        settings_path.write_text('{"compaction":{"keepRecentTokens":1}}\n', encoding="utf-8")
     environment = _base_environment()
     environment.update({
         "HOME": str(agent), "PI_CODING_AGENT_DIR": str(agent), "PI_OFFLINE": "1",
@@ -739,6 +1198,8 @@ def _prepare_product(product: str, pi: Path, workspace: Path,
     common = ["--mode", "rpc", "--provider", "fixture", "--model", "fixture-model",
               "--session-dir", str(sessions), "--no-context-files", "--no-extensions", "--no-skills",
               "--no-prompt-templates", "--system-prompt", "You are a deterministic RPC fixture assistant."]
+    if input_run.resume_session:
+        common.append("--continue")
     if input_run.enable_bash_tool:
         common.extend(("--tools", "bash"))
     else:
@@ -776,7 +1237,10 @@ def _read_all(stream, destination: list[bytes], condition: threading.Condition |
                 condition.notify_all()
 
 
-def _execute(product: str, pi: Path, workspace: Path, input_run: InputRun) -> dict[str, Any]:
+def _execute(product: str, pi: Path, workspace: Path, input_run: InputRun,
+             shared_provider: _FixtureProvider | None = None) -> dict[str, Any]:
+    if shared_provider is not None:
+        return _execute_with_provider(product, pi, workspace, input_run, shared_provider)
     uses_provider = bool(input_run.provider_response_delays or input_run.provider_steps)
     gate_path = workspace.parent.parent / "rpc-tool-gate"
     provider = (_FixtureProvider(input_run.provider_response_delays, input_run.provider_steps, gate_path)
@@ -790,6 +1254,7 @@ def _execute(product: str, pi: Path, workspace: Path, input_run: InputRun) -> di
 
 def _execute_with_provider(product: str, pi: Path, workspace: Path, input_run: InputRun,
                            provider: _FixtureProvider | None) -> dict[str, Any]:
+    provider_request_baseline = provider.request_count if provider is not None else 0
     command, cwd, environment = _prepare_product(
         product, pi, workspace, input_run, provider.base_url if provider is not None else None,
     )
@@ -837,13 +1302,19 @@ def _execute_with_provider(product: str, pi: Path, workspace: Path, input_run: I
                 input_error = f"{type(error).__name__}: {error}"
                 break
             for count, timeout_seconds in provider_waits.get(index, []):
-                if provider is None or not provider.wait_for_requests(count, timeout_seconds):
+                if provider is None or not provider.wait_for_requests(provider_request_baseline + count,
+                                                                      timeout_seconds):
                     scenario_failures.append(f"provider did not receive request {count} after input chunk {index}")
             for marker, occurrence, timeout_seconds in stdout_waits.get(index, []):
                 if not wait_for_stdout(marker, occurrence, timeout_seconds):
                     scenario_failures.append(
                         f"stdout marker {marker!r} occurrence {occurrence} was not observed after input chunk {index}"
                     )
+            if input_run.release_provider_after_input_index == index:
+                if provider is None:
+                    scenario_failures.append("provider release requested without a local fixture provider")
+                else:
+                    provider.release_held_response()
             if input_run.release_tool_gate_after_input_index == index:
                 if provider is None:
                     scenario_failures.append("tool gate release requested without a local fixture provider")
@@ -885,17 +1356,20 @@ def _execute_with_provider(product: str, pi: Path, workspace: Path, input_run: I
         "stdin": b"".join(input_chunks), "stdout": stdout, "stderr": stderr,
         "exitCode": exit_code, "timedOut": timed_out, "inputError": input_error,
         "records": lines, "parseFailures": parse_failures, "scenarioFailures": scenario_failures,
-        "providerRequestCount": provider.request_count if provider is not None else 0,
-        "providerRequests": provider.request_bodies if provider is not None else [],
+        "providerRequestCount": provider.request_count - provider_request_baseline if provider is not None else 0,
+        "providerRequests": provider.request_bodies[provider_request_baseline:] if provider is not None else [],
         "providerErrors": provider.errors if provider is not None else [],
     }
 
 
 def _project(value: Any, *, preserve_response_error_text: bool = False,
-             preserve_state_flags: bool = False) -> Any:
+             preserve_state_flags: bool = False, preserve_queue_state: bool = False,
+             preserve_queue_response_data: bool = False) -> Any:
     if isinstance(value, list):
         return [_project(item, preserve_response_error_text=preserve_response_error_text,
-                         preserve_state_flags=preserve_state_flags) for item in value]
+                         preserve_state_flags=preserve_state_flags,
+                         preserve_queue_state=preserve_queue_state,
+                         preserve_queue_response_data=preserve_queue_response_data) for item in value]
     if not isinstance(value, dict):
         return value
     result: dict[str, Any] = {}
@@ -910,14 +1384,22 @@ def _project(value: Any, *, preserve_response_error_text: bool = False,
             continue
         if key == "data" and value.get("type") == "response":
             result["dataPresent"] = True
-            if (preserve_state_flags and value.get("command") == "get_state" and
-                    isinstance(item, dict)):
-                result["stateFlags"] = {
-                    name: item[name] for name in ("isStreaming", "isCompacting") if name in item
-                }
+            if value.get("command") == "get_state" and isinstance(item, dict):
+                state: dict[str, Any] = {}
+                if preserve_state_flags:
+                    state.update({name: item[name] for name in ("isStreaming", "isCompacting") if name in item})
+                if preserve_queue_state:
+                    state.update({name: item[name] for name in
+                                  ("steeringMode", "followUpMode", "pendingMessageCount") if name in item})
+                if state:
+                    result["state"] = state
+            if preserve_queue_response_data and value.get("command") == "clear_queue" and isinstance(item, dict):
+                result["queueData"] = item
             continue
         result[key] = _project(item, preserve_response_error_text=preserve_response_error_text,
-                               preserve_state_flags=preserve_state_flags)
+                               preserve_state_flags=preserve_state_flags,
+                               preserve_queue_state=preserve_queue_state,
+                               preserve_queue_response_data=preserve_queue_response_data)
     if value.get("type") == "response" and "data" not in value:
         result["dataPresent"] = False
     if value.get("type") == "response" and "error" not in value:
@@ -995,6 +1477,8 @@ def _observation(run_results: list[dict[str, Any]], input_runs: tuple[InputRun, 
                             } if message.get("role") == "assistant" else {}),
                         },
                     })
+                elif input_run.preserve_event_payloads or event_type in input_run.preserve_event_payload_types:
+                    projected.append(record)
                 else:
                     projected.append(record if input_run.preserve_event_payloads else {"type": event_type})
         return projected
@@ -1009,6 +1493,8 @@ def _observation(run_results: list[dict[str, Any]], input_runs: tuple[InputRun, 
                     records_for(result, input_run),
                     preserve_response_error_text=input_run.preserve_response_error_text,
                     preserve_state_flags=input_run.preserve_state_flags,
+                    preserve_queue_state=input_run.preserve_queue_state,
+                    preserve_queue_response_data=input_run.preserve_queue_response_data,
                 ),
                 "stderr": result["stderr"].decode("utf-8", errors="replace"),
                 "parseFailures": result["parseFailures"],
@@ -1113,6 +1599,12 @@ def _check_run(input_run: InputRun, result: dict[str, Any]) -> list[str]:
         if not isinstance(data, dict) or data.get(field) is not expected:
             observed = data.get(field) if isinstance(data, dict) else None
             errors.append(f"response {response_id!r} state flag {field!r} was {observed!r}, expected {expected!r}")
+    for response_id, field, expected in input_run.state_expectations:
+        response = next((record for record in responses if record.get("id") == response_id), None)
+        data = response.get("data") if response is not None else None
+        if not isinstance(data, dict) or data.get(field) != expected:
+            observed = data.get(field) if isinstance(data, dict) else None
+            errors.append(f"response {response_id!r} state field {field!r} was {observed!r}, expected {expected!r}")
     if input_run.expected_marker_order:
         markers = []
         for record in result["records"]:
@@ -1219,7 +1711,8 @@ def _store_observation(evidence_dir: Path, case_id: str, product_run: str,
 
 def run_process_case(case: dict[str, Any], *, pi: Path, evidence_dir: Path) -> dict[str, Any]:
     case_id = case["id"]
-    scenarios = R1_SCENARIOS.get(case_id) or R2_SCENARIOS.get(case_id) or R3_SCENARIOS.get(case_id)
+    scenarios = R1_SCENARIOS.get(case_id) or R2_SCENARIOS.get(case_id) or R3_SCENARIOS.get(case_id) or \
+        R4_SCENARIOS.get(case_id)
     if case_id in R2_SCENARIOS and case_id not in {
         "R2.long-command-acceptance", "R2.active-compaction-command",
     }:
@@ -1236,11 +1729,32 @@ def run_process_case(case: dict[str, Any], *, pi: Path, evidence_dir: Path) -> d
         for product_run, product in (("pi1", "pi"), ("pi2", "pi"), ("pisharp", "pisharp")):
             run_results = []
             product_failures: list[str] = []
-            for index, input_run in enumerate(scenarios):
-                result = _execute(product, pi, workspace / product_run / str(index), input_run)
-                artifacts.extend(_write_capture(evidence_dir, case_id, product_run, index, result))
-                product_failures.extend(f"run {index}: {error}" for error in _check_run(input_run, result))
-                run_results.append(result)
+            shared_session = any(input_run.resume_session or input_run.reuse_workspace_previous
+                                 for input_run in scenarios)
+            shared_provider = None
+            if shared_session:
+                if any(input_run.provider_response_delays for input_run in scenarios):
+                    raise VerificationError("shared-session process scenarios must use indexed fixture provider steps")
+                shared_provider = _FixtureProvider((),
+                    tuple(step for input_run in scenarios for step in input_run.provider_steps),
+                    workspace / "rpc-tool-gate")
+            previous_workspace: Path | None = None
+            try:
+                for index, input_run in enumerate(scenarios):
+                    if input_run.reuse_workspace_previous:
+                        if previous_workspace is None:
+                            raise VerificationError("a shared-session scenario must have a preceding process workspace")
+                        run_workspace = previous_workspace
+                    else:
+                        run_workspace = workspace / product_run / str(index)
+                        previous_workspace = run_workspace
+                    result = _execute(product, pi, run_workspace, input_run, shared_provider)
+                    artifacts.extend(_write_capture(evidence_dir, case_id, product_run, index, result))
+                    product_failures.extend(f"run {index}: {error}" for error in _check_run(input_run, result))
+                    run_results.append(result)
+            finally:
+                if shared_provider is not None:
+                    shared_provider.close()
             observations[product_run] = _observation(run_results, scenarios)
             failures[product_run] = product_failures
     observation_paths: dict[str, tuple[str, str]] = {
@@ -1285,4 +1799,4 @@ def run_process_case(case: dict[str, Any], *, pi: Path, evidence_dir: Path) -> d
 
 
 def scenario_case_ids() -> set[str]:
-    return set(R1_SCENARIOS) | set(R2_SCENARIOS) | set(R3_SCENARIOS)
+    return set(R1_SCENARIOS) | set(R2_SCENARIOS) | set(R3_SCENARIOS) | set(R4_SCENARIOS)

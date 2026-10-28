@@ -580,6 +580,8 @@ public sealed class ConversationSession
         if (path.Any(node => node.Type == "run_recovered" && node.Payload.GetProperty("runId").GetString() == runId) ||
             path.Any(node => node.Type == "run_finished" && node.Payload.GetProperty("runId").GetString() == runId &&
                 node.Payload.GetProperty("completed").GetBoolean())) return false;
+        var finished = path.LastOrDefault(node => node.Type == "run_finished" &&
+            node.Payload.GetProperty("runId").GetString() == runId);
         var prompt = start.Payload.GetProperty("prompt").GetString();
         var intents = path.SkipWhile(node => node.Id != start.Id).Where(node => node.Type == "tool_intent" &&
             node.Payload.GetProperty("runId").GetString() == runId).ToArray();
@@ -588,11 +590,23 @@ public sealed class ConversationSession
             .Select(node => node.Payload.GetProperty("operationId").GetString()).ToHashSet();
         var unknown = intents.Where(node => !outcomes.Contains(node.Payload.GetProperty("operationId").GetString()))
             .Select(node => node.Payload.GetProperty("name").GetString()).ToArray();
-        Tree.Append("run_recovered", JsonSerializer.SerializeToElement(new { runId, unknownOperations = unknown }));
         var warning = unknown.Length == 0 ? "No tool outcome is unknown."
             : $"Outcome UNKNOWN for {string.Join(", ", unknown)}; a side effect may already have happened. Inspect before repeating any operation.";
         var progress = path.LastOrDefault(node => node.Type == "assistant_progress" &&
             node.Payload.GetProperty("runId").GetString() == runId)?.Payload.GetProperty("text").GetString();
+        var hasUncheckpointedOutput = path.SkipWhile(node => node.Id != start.Id).Any(node =>
+            node.Type == "interrupted" && node.Payload.TryGetProperty("prompt", out var interruptedPrompt) &&
+            interruptedPrompt.ValueKind == JsonValueKind.String && interruptedPrompt.GetString() == prompt &&
+            ((node.Payload.TryGetProperty("partialText", out var partialText) &&
+              partialText.ValueKind == JsonValueKind.String && !string.IsNullOrEmpty(partialText.GetString())) ||
+             (node.Payload.TryGetProperty("partialAssistantText", out var partialAssistantText) &&
+              partialAssistantText.ValueKind == JsonValueKind.String &&
+              !string.IsNullOrEmpty(partialAssistantText.GetString()))));
+        if (finished is not null && finished.Payload.TryGetProperty("aborted", out var aborted) &&
+            aborted.ValueKind == JsonValueKind.True && intents.Length == 0 && string.IsNullOrEmpty(progress) &&
+            !hasUncheckpointedOutput)
+            return false;
+        Tree.Append("run_recovered", JsonSerializer.SerializeToElement(new { runId, unknownOperations = unknown }));
         var fragment = string.IsNullOrEmpty(progress) ? "" : $" Last checkpointed assistant text: {progress[..Math.Min(progress.Length, 2048)]}.";
         Append(new ChatMessage(ChatRole.User,
             $"[Recovery notice: the previous request '{prompt}' was interrupted. {warning}{fragment} Uncheckpointed output may be missing. Do not automatically repeat it.]"));
