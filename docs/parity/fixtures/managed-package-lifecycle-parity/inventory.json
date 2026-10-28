@@ -720,8 +720,8 @@
       "capabilityId": "concurrency",
       "classifications": {
         "equivalent": 0,
-        "intentional-safety-difference": 1,
-        "strict": 8
+        "intentional-safety-difference": 2,
+        "strict": 7
       },
       "confirmedBaselineDifferences": [],
       "description": "Verify bounded terminal outcomes and durable integrity under concurrent package operations.",

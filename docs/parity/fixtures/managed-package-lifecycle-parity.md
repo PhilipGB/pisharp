@@ -10,7 +10,7 @@ resource loading, startup/reload, failure recovery, and concurrency.
 - Actual PR #26 merge SHA: `d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9`.
 - New branch base SHA: `d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9`.
 - Branch: `milestone/managed-package-lifecycle-parity`.
-- Implementation source SHA: `f71a2272b28c837b4526db5085824a082d30c3d1`.
+- Implementation source SHA: `a760d65efdbcb2192c648336b10c4dd34cd3a6e9`.
 - Pinned Pi SHA: `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 
 The reviewed source inventory records 15 capability families and the Pi/PiSharp
@@ -83,7 +83,7 @@ unclassified mismatches in the accepted corpus.
 ## Required case inventory
 
 The committed contract contains 27 checkpoints and 240 required cases. On
-implementation source `f71a2272b28c837b4526db5085824a082d30c3d1`, local
+implementation source `a760d65efdbcb2192c648336b10c4dd34cd3a6e9`, local
 execution passes 24/27 checkpoints and 218/240 cases, with zero failures or
 skips. The committed-evidence checkpoint passes 7/7 against the committed
 bundle. CI integration, draft-publication, and exact-head CI remain pending on
@@ -177,7 +177,7 @@ that exact observed alternative is recorded without relaxing PiSharp safety.
 ## Local quality results
 
 The local quality checkpoint at implementation source SHA
-`f71a2272b28c837b4526db5085824a082d30c3d1` passed formatting, a
+`a760d65efdbcb2192c648336b10c4dd34cd3a6e9` passed formatting, a
 warnings-as-errors build, all 3,910 .NET tests with zero failures/skips, focused
 package tests 118/118, architecture tests 7/7, managed-package Python tests
 60/60, terminal Python 66/66, built-in differential Python tests 27/27, terminal

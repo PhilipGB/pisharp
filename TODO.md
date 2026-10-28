@@ -6,7 +6,7 @@ PR #26 was verified merged at `d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9`;
 this branch is based on that merge, with Pi pinned at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The machine-verifiable acceptance
 contract contains 27 checkpoints and 240 cases. At implementation source SHA
-`f71a2272b28c837b4526db5085824a082d30c3d1`, 24/27 checkpoints and 218/240
+`a760d65efdbcb2192c648336b10c4dd34cd3a6e9`, 24/27 checkpoints and 218/240
 cases pass locally with zero failures or skips. The committed-evidence
 checkpoint passes 7/7; CI integration, draft-publication, and exact-head CI
 remain pending. The mixed local and managed CLI extension ordering correction
