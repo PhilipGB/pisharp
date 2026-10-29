@@ -60,6 +60,8 @@ internal static class ConversationStartup
                 startupConversation.StartReason == PiSharpExtensionSessionStartReason.Startup &&
                 conversation.Tree.Entries.Count == 0)
             {
+                conversation.SelectModel(selection.Connection.Model, selection.Connection.Endpoint?.ToString(),
+                    selection.Provider.Id);
                 conversation.AppendThinkingLevelChange(thinking);
             }
             conversationRun = await runComposition.OpenAsync(modelBinding, agent, conversation, initialPath);
