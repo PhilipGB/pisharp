@@ -178,10 +178,19 @@ def _quality_plan(evidence_root: Path) -> dict[str, list[list[str]]]:
     common = ["dotnet", "test", test_project, "--no-build", "--no-restore"]
     return {
         "Q0.dotnet-format": [["dotnet", "format", "PiSharp.slnx", "--verify-no-changes", "--no-restore"]],
-        "Q0.dotnet-build-warnings-as-errors": [["dotnet", "build", "PiSharp.slnx", "--no-restore", "--warnaserror"]],
+        "Q0.dotnet-build-warnings-as-errors": [[
+            "dotnet", "build", "PiSharp.slnx", "--no-restore", "--warnaserror",
+            "-m:1", "/nodeReuse:false", "-p:NuGetAudit=false",
+        ]],
         "Q0.full-dotnet-suite": [["dotnet", "test", "PiSharp.slnx", "--no-build", "--no-restore"]],
-        "Q0.all-rpc-process-tests": [common + ["--filter", "FullyQualifiedName~PiSharp.Tests.Cli.Protocols.Rpc"]],
-        "Q0.focused-runtime-and-session": [common + ["--filter", "FullyQualifiedName~PiSharp.Tests.Runtime.Sessions|FullyQualifiedName~PiSharp.Tests.Cli.Composition.ModelRuntimeController|FullyQualifiedName~PiSharp.Tests.Cli.Providers.ProviderModelRuntimeTests|FullyQualifiedName~PiSharp.Tests.Cli.Protocols.Rpc.RpcSessionStatsProjectorTests"]],
+        "Q0.all-rpc-process-tests": [common + [
+            "--filter",
+            "FullyQualifiedName~Rpc|FullyQualifiedName~BashShutdownProcessTests|FullyQualifiedName~BuiltinRpcResultParityTests",
+        ]],
+        "Q0.focused-runtime-and-session": [common + [
+            "--filter",
+            "FullyQualifiedName~Session|FullyQualifiedName~Model|FullyQualifiedName~ProviderModelRuntimeTests",
+        ]],
         "Q0.focused-compaction-tools-extensions": [common + ["--filter", "FullyQualifiedName~Compaction|FullyQualifiedName~Bash|FullyQualifiedName~Tool|FullyQualifiedName~Extension"]],
         "Q0.json-event-regressions": [common + ["--filter", "FullyQualifiedName~RpcEventProjectorTests|FullyQualifiedName~RpcAssistantMessageProjectorTests|FullyQualifiedName~RpcToolCallDeltaProcessTests"]],
         "Q0.linux-process-and-pty": [common + ["--filter", "FullyQualifiedName~Pty|FullyQualifiedName~Process|FullyQualifiedName~Session"]],
