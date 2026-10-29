@@ -380,6 +380,84 @@ def validate_ci_evidence(ci_evidence: Any, *, final_head_sha: str, milestone_bas
         raise VerificationError("pull_request CI base does not contain the prerequisite merge")
 
 
+def _github_json(arguments: list[str], *, cwd: Path = ROOT) -> Any:
+    result = subprocess.run(["gh", *arguments], cwd=cwd, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise VerificationError(f"GitHub query failed: {' '.join(arguments)}: {result.stderr.strip()}")
+    try:
+        return json.loads(result.stdout)
+    except json.JSONDecodeError as error:
+        raise VerificationError(f"GitHub query returned invalid JSON: {' '.join(arguments)}") from error
+
+
+def validate_live_ci_evidence(ci_evidence: Any, *, final_head_sha: str, cwd: Path = ROOT) -> None:
+    """Re-read each accepted workflow run and its job conclusions from GitHub."""
+    if not isinstance(ci_evidence, dict) or not isinstance(ci_evidence.get("runs"), list):
+        raise VerificationError("live CI verification has no run records")
+    for recorded in ci_evidence["runs"]:
+        run_id = recorded.get("runId")
+        if not isinstance(run_id, str) or not run_id.isdigit():
+            raise VerificationError("CI run ID is not a numeric GitHub Actions ID")
+        live = _github_json(["run", "view", run_id, "--json", "databaseId,event,headSha,conclusion,jobs"], cwd=cwd)
+        live_jobs = {job.get("name"): job.get("conclusion") for job in live.get("jobs", [])}
+        recorded_jobs = recorded.get("jobs")
+        if (str(live.get("databaseId")) != run_id or live.get("event") != recorded.get("event")
+                or live.get("headSha") != final_head_sha or live.get("headSha") != recorded.get("headSha")
+                or live.get("conclusion") != recorded.get("conclusion")
+                or live_jobs != recorded_jobs):
+            raise VerificationError(f"GitHub Actions run {run_id} differs from the exact-head CI receipt")
+
+
+def validate_live_publication_evidence(publication: Any, *, final_head_sha: str,
+                                      cwd: Path = ROOT) -> None:
+    """Verify the recorded PR remains the current open draft on the latest main head."""
+    if not isinstance(publication, dict):
+        raise VerificationError("publication receipt is missing")
+    number = publication.get("number")
+    if not isinstance(number, int) or number <= 0:
+        raise VerificationError("publication receipt has no valid PR number")
+    pull = _github_json(["api", f"repos/PhilipGB/pisharp/pulls/{number}"], cwd=cwd)
+    main = _github_json(["api", "repos/PhilipGB/pisharp/branches/main"], cwd=cwd)
+    head = pull.get("head", {})
+    base = pull.get("base", {})
+    author = pull.get("user", {}).get("login")
+    if (pull.get("state") != "open" or pull.get("merged") is True or pull.get("draft") is not True
+            or head.get("sha") != final_head_sha or head.get("ref") != "milestone/rpc-protocol-command-parity"
+            or base.get("ref") != "main" or base.get("sha") != main.get("commit", {}).get("sha")
+            or base.get("sha") != publication.get("baseSha") or author != publication.get("author")):
+        raise VerificationError("published PR is closed, merged, not a draft, or stale against main/head")
+    if publication.get("url") != pull.get("html_url") or publication.get("headSha") != head.get("sha"):
+        raise VerificationError("publication URL or head SHA differs from the live pull request")
+    body = pull.get("body") or ""
+    body_digest = hashlib.sha256(body.encode("utf-8")).hexdigest()
+    if body_digest != publication.get("bodySha256"):
+        raise VerificationError("PR description changed after the publication receipt was captured")
+    contract = load_contract()
+    source_sha = publication.get("implementationSourceCommit")
+    mode_counts = {
+        mode: sum(case["comparisonRules"]["mode"] == mode for case in contract["cases"])
+        for mode in ("strict", "equivalent", "intentional-safety-difference")
+    }
+    dotnet_count = publication.get("fullDotnetTestCount")
+    mandatory_tokens = [
+        "24/24", "252/252", PINNED_PI_SHA, BASE_SHA, str(source_sha), final_head_sha,
+        str(publication.get("pushRunId")), str(publication.get("pullRequestRunId")),
+        f"strict: {mode_counts['strict']}", f"equivalent: {mode_counts['equivalent']}",
+        f"intentional safety differences: {mode_counts['intentional-safety-difference']}",
+        f"{dotnet_count:,}/{dotnet_count:,}" if isinstance(dotnet_count, int) else "",
+        "20 credential-gated", "unverified", "managed-package parity corpus",
+    ]
+    if not source_sha or any(token.lower() not in body.lower() for token in mandatory_tokens):
+        raise VerificationError("PR description omits required exact results, pins, CI IDs or limitations")
+    if not all(case["comparisonRules"]["mode"] in {"strict", "equivalent", "intentional-safety-difference"}
+               for case in contract["cases"]):
+        raise VerificationError("publication includes unresolved comparison cases")
+    reviews = _github_json(["api", f"repos/PhilipGB/pisharp/pulls/{number}/reviews"], cwd=cwd)
+    if any(review.get("user", {}).get("login") == author and review.get("state") == "APPROVED"
+           for review in reviews):
+        raise VerificationError("single contributor PR has a self-approval recorded")
+
+
 def validate_v1_control_evidence(control: Any, evidence_dir: Path) -> dict[str, int]:
     """Re-run the synthetic positive/mutation corpus and validate its captured report."""
     if not isinstance(control, dict):
@@ -419,6 +497,90 @@ def validate_v1_control_evidence(control: Any, evidence_dir: Path) -> dict[str, 
     if rerun.returncode != 0 or "Ran " not in rerun_text or "OK" not in rerun_text:
         raise VerificationError("V1 positive/mutation control suite did not pass when independently rerun")
     return {"required": len(case_ids), "executed": len(case_ids), "passed": len(case_ids), "failed": 0, "skipped": 0}
+
+
+def validate_e0_evidence(evidence: dict[str, Any], evidence_dir: Path, *, current_head: str) -> None:
+    """Independently validate every source-bound checkpoint and its complete raw-artifact manifest."""
+    root = evidence_dir.parent
+    source_commit = evidence.get("implementationSourceCommit")
+    source_bound = evidence.get("sourceBoundEvidence")
+    if not isinstance(source_commit, str) or not isinstance(source_bound, dict):
+        raise VerificationError("E0 evidence lacks its source-bound checkpoint manifest")
+    if source_bound.get("implementationSourceCommit") != source_commit:
+        raise VerificationError("E0 source-bound manifest has a different implementation SHA")
+    required_checkpoints = ["P0", "P1", "V0", "V1", *[f"R{i}" for i in range(1, 16)], "D0", "Q0"]
+    checkpoint_records = source_bound.get("checkpoints")
+    if not isinstance(checkpoint_records, list) or [item.get("checkpointId") for item in checkpoint_records] != required_checkpoints:
+        raise VerificationError("E0 checkpoint manifest is incomplete or out of contract order")
+    manifest_ref = source_bound.get("artifactManifest")
+    if not isinstance(manifest_ref, dict):
+        raise VerificationError("E0 raw-artifact manifest reference is missing")
+    manifest_rel = manifest_ref.get("path")
+    manifest_sha = manifest_ref.get("sha256")
+    if not isinstance(manifest_rel, str) or not SHA256.fullmatch(str(manifest_sha or "")):
+        raise VerificationError("E0 raw-artifact manifest reference is malformed")
+    manifest_path = _relative_artifact(root, manifest_rel)
+    if not manifest_path.is_file() or hashlib.sha256(manifest_path.read_bytes()).hexdigest() != manifest_sha:
+        raise VerificationError("E0 raw-artifact manifest is missing or has a hash mismatch")
+    manifest = _read_json(manifest_path)
+    if manifest.get("implementationSourceCommit") != source_commit or manifest.get("piCommit") != PINNED_PI_SHA:
+        raise VerificationError("E0 artifact manifest has a different source pin")
+    if manifest.get("checkpoints") != checkpoint_records:
+        raise VerificationError("E0 source evidence and raw-artifact manifest list different checkpoints")
+
+    expected_artifacts: list[dict[str, str]] = []
+    for record in checkpoint_records:
+        checkpoint_id = record.get("checkpointId")
+        relative = record.get("evidencePath")
+        digest = record.get("evidenceSha256")
+        if not isinstance(relative, str) or not SHA256.fullmatch(str(digest or "")):
+            raise VerificationError(f"E0 {checkpoint_id} evidence reference is malformed")
+        evidence_path = _relative_artifact(root, relative)
+        if not evidence_path.is_file() or hashlib.sha256(evidence_path.read_bytes()).hexdigest() != digest:
+            raise VerificationError(f"E0 {checkpoint_id} evidence is missing or has a hash mismatch")
+        child_dir = evidence_path.parent
+        child = _read_json(evidence_path)
+        if record.get("implementationSourceCommit") != child.get("implementationSourceCommit"):
+            raise VerificationError(f"E0 {checkpoint_id} manifest source SHA differs from its evidence")
+        validate_evidence_header(child, current_head=current_head)
+        if child.get("implementationSourceCommit") != source_commit:
+            raise VerificationError(f"E0 {checkpoint_id} was not tested at the shared implementation source")
+        if checkpoint_id == "V1":
+            validate_v1_control_evidence(child.get("v1ControlEvidence"), child_dir)
+        else:
+            if checkpoint_id in PROCESS_CHECKPOINTS:
+                validate_process_build_evidence(child.get("build"), child_dir)
+            validate_case_results(child.get("caseResults", []), checkpoint_id, child_dir)
+        for result in child.get("caseResults", []):
+            for artifact in result.get("rawArtifacts", []):
+                expected_artifacts.append({
+                    "checkpointId": checkpoint_id,
+                    "caseId": result["caseId"],
+                    "path": f"{checkpoint_id}/{artifact['path']}",
+                    "role": artifact["role"],
+                    "sha256": artifact["sha256"],
+                })
+        if checkpoint_id == "V1":
+            control = child["v1ControlEvidence"]["report"]
+            expected_artifacts.append({
+                "checkpointId": "V1", "caseId": "V1", "path": f"V1/{control['path']}",
+                "role": "verifier-control-report", "sha256": control["sha256"],
+            })
+
+    actual_artifacts = manifest.get("artifacts")
+    artifact_key = lambda item: (
+        item.get("checkpointId"), item.get("caseId"), item.get("path"), item.get("role"), item.get("sha256"),
+    )
+    if not isinstance(actual_artifacts, list) or sorted(map(artifact_key, actual_artifacts)) != sorted(map(artifact_key, expected_artifacts)):
+        raise VerificationError("E0 artifact manifest differs from the checkpoint raw-artifact references")
+    for artifact in actual_artifacts:
+        relative = artifact.get("path")
+        digest = artifact.get("sha256")
+        if not isinstance(relative, str) or not SHA256.fullmatch(str(digest or "")):
+            raise VerificationError("E0 manifest contains a malformed artifact record")
+        path = _relative_artifact(root, relative)
+        if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != digest:
+            raise VerificationError(f"E0 manifest artifact is missing or has a hash mismatch: {relative}")
 
 
 def validate_process_build_evidence(build: Any, evidence_dir: Path) -> None:
@@ -486,11 +648,17 @@ def main() -> int:
             counts = validate_v1_control_evidence(evidence.get("v1ControlEvidence"), args.evidence_dir)
             print(json.dumps(counts, sort_keys=True))
             return 0
+        if args.checkpoint == "E0":
+            validate_e0_evidence(evidence, args.evidence_dir, current_head=current_head)
         if args.checkpoint in {"CI0", "PUB0"}:
             validate_ci_evidence(
                 evidence.get("ciEvidence"),
                 final_head_sha=evidence["finalHeadCommit"],
                 milestone_base_sha=contract["sourcePins"]["pisharpBaseCommit"],
+            )
+            validate_live_ci_evidence(evidence.get("ciEvidence"), final_head_sha=evidence["finalHeadCommit"])
+            validate_live_publication_evidence(
+                evidence.get("publicationEvidence"), final_head_sha=evidence["finalHeadCommit"],
             )
         if args.checkpoint in PROCESS_CHECKPOINTS:
             validate_process_build_evidence(evidence.get("build"), args.evidence_dir)

@@ -27,6 +27,7 @@ from verify import (
     validate_v1_control_evidence,
 )
 from process_oracle import run_process_case, scenario_case_ids
+from finalization_oracle import run_ci0_checkpoint, run_e0_checkpoint, run_pub0_checkpoint
 from quality_oracle import run_quality_checkpoint
 from source_oracle import run_source_checkpoint
 
@@ -192,6 +193,18 @@ def main() -> int:
             return 0
         if checkpoint_id == "Q0":
             counts = run_quality_checkpoint(args.pi_checkout, args.evidence_dir)
+            print(json.dumps(counts, sort_keys=True))
+            return 0
+        if checkpoint_id == "E0":
+            counts = run_e0_checkpoint(args.pi_checkout, args.evidence_dir)
+            print(json.dumps(counts, sort_keys=True))
+            return 0
+        if checkpoint_id == "CI0":
+            counts = run_ci0_checkpoint(args.evidence_dir)
+            print(json.dumps(counts, sort_keys=True))
+            return 0
+        if checkpoint_id == "PUB0":
+            counts = run_pub0_checkpoint(args.evidence_dir)
             print(json.dumps(counts, sort_keys=True))
             return 0
         if selected and all(case["id"] in scenario_case_ids() for case in selected):

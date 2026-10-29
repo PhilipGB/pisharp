@@ -11,6 +11,7 @@ import verify
 from process_oracle import _D0_SCENARIO_CASES, scenario_case_ids
 from quality_oracle import quality_case_ids
 from source_oracle import SOURCE_CASE_IDS, source_case_ids
+from finalization_oracle import CI0_CASE_IDS, E0_CHILD_CHECKPOINTS, PUB0_CASE_IDS
 
 
 class FrozenRpcContractTests(unittest.TestCase):
@@ -102,6 +103,40 @@ class FrozenRpcContractTests(unittest.TestCase):
         contract = verify.load_contract()
         q0 = next(item for item in contract["checkpoints"] if item["id"] == "Q0")
         self.assertEqual(quality_case_ids(), tuple(case["id"] for case in q0["caseDefinitions"]))
+
+    def test_e0_reverifies_every_prepublication_checkpoint(self) -> None:
+        contract = verify.load_contract()
+        self.assertEqual(("P0", "P1", "V0", "V1", *[f"R{i}" for i in range(1, 16)], "D0", "Q0"),
+                         E0_CHILD_CHECKPOINTS)
+        self.assertEqual(24, contract["checkpointCount"])
+        self.assertEqual("E0", contract["checkpoints"][-3]["id"])
+
+    def test_e0_rejects_a_missing_or_mutated_artifact_manifest(self) -> None:
+        checkpoint_ids = ["P0", "P1", "V0", "V1", *[f"R{i}" for i in range(1, 16)], "D0", "Q0"]
+        source = "a" * 40
+        evidence = {
+            "implementationSourceCommit": source,
+            "sourceBoundEvidence": {
+                "implementationSourceCommit": source,
+                "checkpoints": [{"checkpointId": checkpoint_id} for checkpoint_id in checkpoint_ids],
+                "artifactManifest": {"path": "E0/evidence-manifest.json", "sha256": "0" * 64},
+            },
+        }
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            with self.assertRaisesRegex(verify.VerificationError, "raw-artifact manifest is missing or has a hash mismatch"):
+                verify.validate_e0_evidence(evidence, root / "E0", current_head=source)
+
+    def test_ci0_cases_cover_automatic_exact_head_workflows(self) -> None:
+        contract = verify.load_contract()
+        ci0 = next(item for item in contract["checkpoints"] if item["id"] == "CI0")
+        self.assertEqual(CI0_CASE_IDS, tuple(case["id"] for case in ci0["caseDefinitions"]))
+
+    def test_pub0_cases_keep_the_pr_open_as_a_draft(self) -> None:
+        contract = verify.load_contract()
+        pub0 = next(item for item in contract["checkpoints"] if item["id"] == "PUB0")
+        self.assertEqual(PUB0_CASE_IDS, tuple(case["id"] for case in pub0["caseDefinitions"]))
+        self.assertIn("PUB0.draft-pr-open-unmerged", PUB0_CASE_IDS)
 
     def test_strict_case_cannot_declare_normalization(self) -> None:
         changed = json.loads(verify.CONTRACT_PATH.read_text(encoding="utf-8"))
