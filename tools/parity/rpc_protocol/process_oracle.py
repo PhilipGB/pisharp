@@ -1165,7 +1165,7 @@ R5_SCENARIOS["R5.streaming-reasoning-fragments"] = (
         expected_successes=(True,), expected_data_presence=(True,), expected_error_presence=(False,),
         expected_response_dispositions=("started",), reasoning=True,
         provider_steps=(FixtureProviderStep(reasoning_fragments=("think first ", "think second"),
-                                            flush_stream_chunks=True),),
+                                            flush_stream_chunks=True, role_only_chunk=True),),
         provider_waits=((0, 1, 10.0),),
         stdout_waits=((0, '"id":"reasoning-fragments"', 1, 10.0),
                       (0, '"type":"agent_settled"', 1, 15.0)),
