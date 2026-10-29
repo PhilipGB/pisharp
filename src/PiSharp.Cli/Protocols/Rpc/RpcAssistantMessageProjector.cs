@@ -332,7 +332,6 @@ internal sealed class RpcAssistantMessageProjector
     private void ProjectToolCallDelta(ProviderToolCallDelta delta, List<object> records,
         ConversationSession conversation, string? api)
     {
-        EnsureStarted(records, conversation, api);
         if (!_streamedToolCalls.TryGetValue(delta.Index, out var call))
         {
             call = new ActiveToolCall();
@@ -351,8 +350,12 @@ internal sealed class RpcAssistantMessageProjector
                 ["type"] = "toolCall",
                 ["id"] = call.CallId,
                 ["name"] = call.Name,
-                ["arguments"] = new JsonObject()
+                ["arguments"] = new JsonObject(),
+                ["partialArgs"] = string.Concat(call.ArgumentFragments),
+                ["streamIndex"] = delta.Index
             });
+            RefreshPartialToolArguments(call);
+            EnsureStarted(records, conversation, api);
             records.Add(MessageUpdate(new JsonObject
             {
                 ["type"] = "toolcall_start",
@@ -363,9 +366,17 @@ internal sealed class RpcAssistantMessageProjector
             foreach (var fragment in call.ArgumentFragments)
                 records.Add(ToolCallDeltaUpdate(call.ContentIndex, fragment));
         }
-        else if (call.Started && !string.IsNullOrEmpty(delta.Arguments))
-            records.Add(ToolCallDeltaUpdate(call.ContentIndex, delta.Arguments));
-        if (call.Started) RefreshPartialToolArguments(call);
+        else
+        {
+            EnsureStarted(records, conversation, api);
+            if (call.Started)
+            {
+                _content[call.ContentIndex]["partialArgs"] = string.Concat(call.ArgumentFragments);
+                RefreshPartialToolArguments(call);
+                if (!string.IsNullOrEmpty(delta.Arguments))
+                    records.Add(ToolCallDeltaUpdate(call.ContentIndex, delta.Arguments));
+            }
+        }
     }
 
     private void CompleteStreamedToolCall(FunctionCallContent completed, ActiveToolCall streamed, List<object> records)
