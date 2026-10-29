@@ -1792,6 +1792,8 @@ R8_SCENARIOS["R8.empty-and-zero-usage"] = (
                   preserve_session_identity=False),
 )
 
+_R8_GENERATED_FIXTURE_CACHE: dict[str, tuple[str, str, list[dict[str, str]]]] = {}
+
 
 class _FixtureProvider:
     def __init__(self, response_delays: tuple[float, ...], provider_steps: tuple[FixtureProviderStep, ...],
@@ -2792,6 +2794,88 @@ def _store_observation(evidence_dir: Path, case_id: str, product_run: str,
     return relative, hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _generate_r8_native_summary_fixture(evidence_dir: Path) -> tuple[str, str, list[dict[str, str]]]:
+    cache_key = str(evidence_dir.resolve())
+    if cache_key in _R8_GENERATED_FIXTURE_CACHE:
+        return _R8_GENERATED_FIXTURE_CACHE[cache_key]
+
+    output_dir = (evidence_dir / "generated" / "native-summary").resolve()
+    if output_dir.exists():
+        shutil.rmtree(output_dir)
+    output_dir.mkdir(parents=True)
+    environment = os.environ.copy()
+    environment["PISHARP_RPC_R8_FIXTURE_OUTPUT_DIR"] = str(output_dir)
+    command = [
+        "dotnet", "test", str(TEST_EXTENSION_PROJECT), "--no-restore",
+        "--filter", "FullyQualifiedName~NativeExtensionTreeEventTests.RequestedBranchSummaryUsesMafAndPersistsItsUsage",
+    ]
+    log_path = output_dir / "summary-generation-test.log"
+    try:
+        with log_path.open("w", encoding="utf-8") as log_stream:
+            completed = subprocess.run(command, cwd=ROOT, env=environment, stdout=log_stream,
+                                       stderr=subprocess.STDOUT, text=True, timeout=180)
+    except subprocess.TimeoutExpired as error:
+        log_text = log_path.read_text(encoding="utf-8", errors="replace")
+        raise VerificationError(f"native branch-summary generator regression timed out: {log_text[-4000:]}") from error
+    log_text = log_path.read_text(encoding="utf-8", errors="replace")
+    log_text = f"$ {' '.join(command)}\nexit code: {completed.returncode}\n\n{log_text}"
+    log_path.write_text(log_text, encoding="utf-8")
+    if completed.returncode != 0:
+        raise VerificationError(f"native branch-summary generator regression failed: {log_text[-4000:]}")
+
+    native_path = output_dir / "generated.session.json"
+    exported_pi_path = output_dir / "generated.jsonl"
+    if not native_path.is_file() or not exported_pi_path.is_file():
+        raise VerificationError("native branch-summary regression did not emit both persisted session formats")
+    native_document = json.loads(native_path.read_text(encoding="utf-8"))
+    native_entries = native_document.get("Entries", [])
+    if not any(entry.get("Type") == "branch_summary" and
+               isinstance(entry.get("Payload", {}).get("nativeUsage"), dict)
+               for entry in native_entries if isinstance(entry, dict)):
+        raise VerificationError("generated native session fixture has no billed branch-summary usage")
+    native_document["Provider"] = "fixture"
+    native_document["Model"] = "fixture-model"
+    native_process_path = output_dir / "pisharp-process-session.session.json"
+    native_process_path.write_text(json.dumps(native_document, ensure_ascii=False, separators=(",", ":")) + "\n",
+                                  encoding="utf-8")
+    pi_entries = [json.loads(line) for line in exported_pi_path.read_text(encoding="utf-8").splitlines() if line]
+    if pi_entries and pi_entries[0].get("type") == "session":
+        pi_entries[0]["provider"] = "fixture"
+        pi_entries[0]["modelId"] = "fixture-model"
+        pi_entries[0]["thinkingLevel"] = "off"
+    # The generator regression's scaffold assistant messages have no provider usage. Pi's
+    # get_session_stats requires a complete Usage record on each assistant message, so project
+    # those unbilled messages as zero usage in the Pi input while preserving the billed summary.
+    for entry in pi_entries:
+        message = entry.get("message")
+        if isinstance(message, dict) and message.get("role") == "assistant" and not message.get("usage"):
+            message["usage"] = {
+                "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "totalTokens": 0,
+                "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "total": 0},
+            }
+    if not any(entry.get("type") == "branch_summary" and isinstance(entry.get("usage"), dict)
+               for entry in pi_entries):
+        raise VerificationError("generated Pi JSONL fixture has no branch-summary usage")
+    pi_path = output_dir / "pinned-pi-session.jsonl"
+    pi_path.write_text("".join(json.dumps(entry, ensure_ascii=False, separators=(",", ":")) + "\n"
+                                for entry in pi_entries), encoding="utf-8")
+
+    artifacts = []
+    for path, role in ((log_path, "summary-generation-test"),
+                       (native_path, "generated-native-session"),
+                       (native_process_path, "pisharp-process-session"),
+                       (exported_pi_path, "generated-pisharp-jsonl-session"),
+                       (pi_path, "pinned-pi-compatible-jsonl-session")):
+        artifacts.append({
+            "path": path.relative_to(evidence_dir).as_posix(),
+            "role": role,
+            "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+        })
+    result = (native_process_path.read_text(encoding="utf-8"), pi_path.read_text(encoding="utf-8"), artifacts)
+    _R8_GENERATED_FIXTURE_CACHE[cache_key] = result
+    return result
+
+
 def run_process_case(case: dict[str, Any], *, pi: Path, evidence_dir: Path) -> dict[str, Any]:
     case_id = case["id"]
     scenarios = R1_SCENARIOS.get(case_id) or R2_SCENARIOS.get(case_id) or R3_SCENARIOS.get(case_id) or \
@@ -2804,6 +2888,15 @@ def run_process_case(case: dict[str, Any], *, pi: Path, evidence_dir: Path) -> d
     if scenarios is None:
         raise VerificationError(f"no process scenario adapter is registered for {case_id}")
     artifacts: list[dict[str, str]] = []
+    if case_id in {"R8.native-summary-generation", "R8.native-summary-persisted-reload"}:
+        native_fixture, pi_fixture, generated_artifacts = _generate_r8_native_summary_fixture(evidence_dir)
+        artifacts.extend(generated_artifacts)
+        scenarios = tuple(
+            replace(run, session_fixture_jsonl=pi_fixture, session_fixture_native_json=native_fixture,
+                    bind_fixture_working_directory=True)
+            if run.session_fixture_jsonl is not None or run.session_fixture_native_json is not None else run
+            for run in scenarios
+        )
     if any(input_run.use_handled_extension_command or input_run.use_rpc_tool_extension
            for input_run in scenarios):
         artifacts.append(_ensure_test_extension_fixture(evidence_dir))

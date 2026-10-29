@@ -149,6 +149,15 @@ public sealed class NativeExtensionTreeEventTests
             Assert.Equal(2, rpcStats["tokens"]!["cacheWrite"]!.GetValue<long>());
             Assert.Equal(loadedUsage.TotalTokens, rpcStats["tokens"]!["total"]!.GetValue<long>());
             Assert.Equal(loadedUsage.Cost, rpcStats["cost"]!.GetValue<decimal>());
+
+            var generatedFixtureDirectory = Environment.GetEnvironmentVariable("PISHARP_RPC_R8_FIXTURE_OUTPUT_DIR");
+            if (!string.IsNullOrWhiteSpace(generatedFixtureDirectory))
+            {
+                Directory.CreateDirectory(generatedFixtureDirectory);
+                File.Copy(path, Path.Combine(generatedFixtureDirectory, "generated.session.json"), overwrite: true);
+                await File.WriteAllTextAsync(Path.Combine(generatedFixtureDirectory, "generated.jsonl"),
+                    PiJsonlSessionInterchange.Export(loaded));
+            }
         }
         finally { Directory.Delete(workingDirectory, recursive: true); }
     }
