@@ -8,6 +8,7 @@ import unittest
 from pathlib import Path
 
 import verify
+from process_oracle import _D0_SCENARIO_CASES, scenario_case_ids
 
 
 class FrozenRpcContractTests(unittest.TestCase):
@@ -76,6 +77,16 @@ class FrozenRpcContractTests(unittest.TestCase):
             path.write_text(json.dumps(changed), encoding="utf-8")
             with self.assertRaisesRegex(verify.VerificationError, "lacks case field runner"):
                 verify.load_contract(path, verify_lock=False)
+
+    def test_d0_calibration_cases_are_backed_by_process_scenarios(self) -> None:
+        contract = verify.load_contract()
+        d0 = next(checkpoint for checkpoint in contract["checkpoints"] if checkpoint["id"] == "D0")
+        case_ids = [case["id"] for case in d0["caseDefinitions"]]
+        registered = scenario_case_ids()
+        self.assertEqual(case_ids, list(_D0_SCENARIO_CASES))
+        self.assertTrue(set(case_ids).issubset(registered))
+        self.assertTrue(all(source in registered for sources in _D0_SCENARIO_CASES.values()
+                            for source in sources))
 
     def test_strict_case_cannot_declare_normalization(self) -> None:
         changed = json.loads(verify.CONTRACT_PATH.read_text(encoding="utf-8"))

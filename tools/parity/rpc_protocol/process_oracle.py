@@ -4895,19 +4895,42 @@ def _generate_r8_native_summary_fixture(evidence_dir: Path) -> tuple[str, str, l
     return result
 
 
-def run_process_case(case: dict[str, Any], *, pi: Path, evidence_dir: Path) -> dict[str, Any]:
-    case_id = case["id"]
+_D0_SCENARIO_CASES = {
+    "D0.calibrate-transport": ("R1.lf-delimited-record",),
+    "D0.calibrate-command-responses": ("R2.success-response-shape", "R2.error-response-shape"),
+    "D0.calibrate-prompt-events": ("R5.streaming-text-fragments", "R6.tool-call-start-arguments"),
+    "D0.calibrate-queue-state": ("R4.multiple-concurrent-queue-updates",),
+    "D0.calibrate-read-projections": ("R7.get-state-idle-schema", "R7.get-entries-full-and-leaf"),
+    "D0.calibrate-model-thinking": ("R9.cycle-model-order-and-null", "R9.thinking-event-response-order"),
+    "D0.calibrate-session-lifecycle": ("R12.new-session-parent-session", "R12.replace-during-provider-stream"),
+    "D0.calibrate-extension-ui": ("R14.ui-select-roundtrip", "R14.ui-confirm-roundtrip"),
+    "D0.paired-independent-observations": ("R1.stdout-stderr-purity", "R14.ui-unique-concurrent-ids"),
+}
+
+
+def _scenario_runs(case_ids: tuple[str, ...]) -> tuple[InputRun, ...] | None:
     from session_scenarios import R12_SCENARIOS, R13_SCENARIOS, R14_SCENARIOS, R15_SCENARIOS
 
-    scenarios = R1_SCENARIOS.get(case_id) or R2_SCENARIOS.get(case_id) or R3_SCENARIOS.get(case_id) or \
-        R4_SCENARIOS.get(case_id) or R5_SCENARIOS.get(case_id) or R6_SCENARIOS.get(case_id) or \
-        R7_SCENARIOS.get(case_id) or R8_SCENARIOS.get(case_id) or R9_SCENARIOS.get(case_id) or \
-        R10_SCENARIOS.get(case_id) or R11_SCENARIOS.get(case_id) or R12_SCENARIOS.get(case_id) or \
-        R13_SCENARIOS.get(case_id) or R14_SCENARIOS.get(case_id) or R15_SCENARIOS.get(case_id)
-    if case_id in R2_SCENARIOS and case_id not in {
-        "R2.long-command-acceptance", "R2.active-compaction-command",
-    }:
-        scenarios = tuple(replace(run, response_only=True) for run in scenarios)
+    scenario_tables = (R1_SCENARIOS, R2_SCENARIOS, R3_SCENARIOS, R4_SCENARIOS, R5_SCENARIOS,
+                       R6_SCENARIOS, R7_SCENARIOS, R8_SCENARIOS, R9_SCENARIOS, R10_SCENARIOS,
+                       R11_SCENARIOS, R12_SCENARIOS, R13_SCENARIOS, R14_SCENARIOS, R15_SCENARIOS)
+    runs: list[InputRun] = []
+    for case_id in case_ids:
+        scenarios = next((table[case_id] for table in scenario_tables if case_id in table), None)
+        if scenarios is None:
+            return None
+        if case_id in R2_SCENARIOS and case_id not in {
+            "R2.long-command-acceptance", "R2.active-compaction-command",
+        }:
+            scenarios = tuple(replace(run, response_only=True) for run in scenarios)
+        runs.extend(scenarios)
+    return tuple(runs)
+
+
+def run_process_case(case: dict[str, Any], *, pi: Path, evidence_dir: Path) -> dict[str, Any]:
+    case_id = case["id"]
+    source_case_ids = _D0_SCENARIO_CASES.get(case_id, (case_id,))
+    scenarios = _scenario_runs(source_case_ids)
     if scenarios is None:
         raise VerificationError(f"no process scenario adapter is registered for {case_id}")
     artifacts: list[dict[str, str]] = []
@@ -5023,4 +5046,5 @@ def scenario_case_ids() -> set[str]:
     return (set(R1_SCENARIOS) | set(R2_SCENARIOS) | set(R3_SCENARIOS) |
             set(R4_SCENARIOS) | set(R5_SCENARIOS) | set(R6_SCENARIOS) | set(R7_SCENARIOS) |
             set(R8_SCENARIOS) | set(R9_SCENARIOS) | set(R10_SCENARIOS) | set(R11_SCENARIOS) |
-            set(R12_SCENARIOS) | set(R13_SCENARIOS) | set(R14_SCENARIOS) | set(R15_SCENARIOS))
+            set(R12_SCENARIOS) | set(R13_SCENARIOS) | set(R14_SCENARIOS) | set(R15_SCENARIOS) |
+            set(_D0_SCENARIO_CASES))
