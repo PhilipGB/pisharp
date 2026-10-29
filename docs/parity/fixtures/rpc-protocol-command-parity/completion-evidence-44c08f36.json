@@ -1,0 +1,1928 @@
+{
+  "schemaVersion": 1,
+  "status": "prepublication_gates_pending",
+  "sourcePins": {
+    "branch": "milestone/rpc-protocol-command-parity",
+    "pisharpBaseCommit": "646db89bd396b8089b1b9a058fa96b1489f4d0cd",
+    "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
+    "piCommit": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "inventoryContractCommit": "ac85aa2a0f59566115eb0109cc9022dc64f4d8fe",
+    "contractSha256": "036c369054fbb50887629666f6b25ef76d8a9fbe856d00d4a79a2cf9609f0761",
+    "runtime": {
+      "microsoftAgentFramework": "1.21.0",
+      "dotnetSdk": "10.0.113"
+    }
+  },
+  "acceptance": {
+    "requiredCheckpoints": 24,
+    "sourceBoundCheckpointsPassed": 21,
+    "requiredCases": 252,
+    "sourceBoundCasesPassed": 231,
+    "failedCases": 0,
+    "skippedCases": 0,
+    "comparisonModes": {
+      "strict": 230,
+      "equivalent": 22,
+      "intentionalSafetyDifferences": 0,
+      "unresolved": 0
+    }
+  },
+  "checkpointEvidence": [
+    {
+      "checkpointId": "P0",
+      "passed": 6,
+      "required": 6,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/P0/evidence.json",
+      "evidenceSha256": "98e601e599f20f0bbc4ad3bd5b341fdd055e1e53046d2fcbbe66acc1ab84ed64"
+    },
+    {
+      "checkpointId": "P1",
+      "passed": 5,
+      "required": 5,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/P1/evidence.json",
+      "evidenceSha256": "ae7877589673df4be7c780f5690ad35124aee903642a4e22ed23c62039c4460e"
+    },
+    {
+      "checkpointId": "V0",
+      "passed": 6,
+      "required": 6,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/V0/evidence.json",
+      "evidenceSha256": "d8c5f49092ec719ecf6bcd41c291333d0e96507c3a6e3ad37dea6252dc67aeef"
+    },
+    {
+      "checkpointId": "V1",
+      "passed": 23,
+      "required": 23,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/V1/evidence.json",
+      "evidenceSha256": "5ead48764a0e461925379f13567bcc92348db6358b895c3b25b08c5d9fdf950c"
+    },
+    {
+      "checkpointId": "R1",
+      "passed": 11,
+      "required": 11,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/R1/evidence.json",
+      "evidenceSha256": "8617e83673ce954c2c140fc4cf9bac9aa40572630116d3dfb22c30c6877388c8"
+    },
+    {
+      "checkpointId": "R2",
+      "passed": 12,
+      "required": 12,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/R2/evidence.json",
+      "evidenceSha256": "bb520c9aed36030647449bd96c7a9612d5a68a11615f37c8cf9e4be0cb2f00c6"
+    },
+    {
+      "checkpointId": "R3",
+      "passed": 10,
+      "required": 10,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/R3/evidence.json",
+      "evidenceSha256": "fe04ac909e1f0255a046c00f728819ffd20edff73ef6bff9da92048275eedd68"
+    },
+    {
+      "checkpointId": "R4",
+      "passed": 12,
+      "required": 12,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/R4/evidence.json",
+      "evidenceSha256": "a1806a3ee734328354aeda0c848cda7b9b6150f6867b5706c8a1672e3563ba07"
+    },
+    {
+      "checkpointId": "R5",
+      "passed": 11,
+      "required": 11,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/R5/evidence.json",
+      "evidenceSha256": "71fe85fa8f49aefcafe628465466c7a917f4314249e263f198224c6c8d1f0ebe"
+    },
+    {
+      "checkpointId": "R6",
+      "passed": 10,
+      "required": 10,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/R6/evidence.json",
+      "evidenceSha256": "44b3b155af1677f48142cfae0138c662f4b71adeaf77492954b174a647304df1"
+    },
+    {
+      "checkpointId": "R7",
+      "passed": 13,
+      "required": 13,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/R7/evidence.json",
+      "evidenceSha256": "951e5dd0929ffe218242770522b1fe2c150eddfe814447cd79a4bc7146fed244"
+    },
+    {
+      "checkpointId": "R8",
+      "passed": 6,
+      "required": 6,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/R8/evidence.json",
+      "evidenceSha256": "912b8d256a2c31e1594af7a5925d0b503db8cd5ee53448d23a082c711fec16ca"
+    },
+    {
+      "checkpointId": "R9",
+      "passed": 12,
+      "required": 12,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/R9/evidence.json",
+      "evidenceSha256": "97b9f8a249a089be5f647cba883cca22483959b7ce9bf0500b5ecc45cc8448ca"
+    },
+    {
+      "checkpointId": "R10",
+      "passed": 9,
+      "required": 9,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/R10/evidence.json",
+      "evidenceSha256": "ca2b1fb4089e498a1a1656092452458c0ddcd6d0d7e31fc2768a6e43018270dc"
+    },
+    {
+      "checkpointId": "R11",
+      "passed": 8,
+      "required": 8,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/R11/evidence.json",
+      "evidenceSha256": "7dadb8bb65e2a77e4322c66bfc4f5acc1254f06363d645833f186f784fc21fc6"
+    },
+    {
+      "checkpointId": "R12",
+      "passed": 15,
+      "required": 15,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/R12/evidence.json",
+      "evidenceSha256": "f7b42357ee63c5e97ea9151310658e5c952bde15acc63bda08d70c340a7fffa2"
+    },
+    {
+      "checkpointId": "R13",
+      "passed": 8,
+      "required": 8,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/R13/evidence.json",
+      "evidenceSha256": "b7156125c2a22ab9f80078b7b462b025126277735ae94101223795af2b567bd7"
+    },
+    {
+      "checkpointId": "R14",
+      "passed": 17,
+      "required": 17,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/R14/evidence.json",
+      "evidenceSha256": "cd23d6098c0ae0a636e5ba548480d807db343a22176972b93401a55519cd1fff"
+    },
+    {
+      "checkpointId": "R15",
+      "passed": 13,
+      "required": 13,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/R15/evidence.json",
+      "evidenceSha256": "e9c05a9445c70ccac29c3ae5c0caa8e6fc4c87de0ae35777100fcb90265e7f57"
+    },
+    {
+      "checkpointId": "D0",
+      "passed": 9,
+      "required": 9,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/D0/evidence.json",
+      "evidenceSha256": "144f58c63861016047a878f8796e540379ef162c529eda607db620eec6cdfa96"
+    },
+    {
+      "checkpointId": "Q0",
+      "passed": 15,
+      "required": 15,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/Q0/evidence.json",
+      "evidenceSha256": "60d366492e5cc83980d4e377b985e0534f00fb24e322a52a1ad23117fe5ec45b"
+    }
+  ],
+  "caseResults": [
+    {
+      "caseId": "P0.reviewed-head",
+      "checkpointId": "P0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "P0.exact-head-ci",
+      "checkpointId": "P0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "P0.published-acceptance",
+      "checkpointId": "P0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "P0.merge-state",
+      "checkpointId": "P0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "P0.reviewed-code-ancestry",
+      "checkpointId": "P0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "P0.merge-base-verification",
+      "checkpointId": "P0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "P1.branch-name-and-base",
+      "checkpointId": "P1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "P1.baseline-main-ancestry",
+      "checkpointId": "P1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "P1.pinned-pi-sha",
+      "checkpointId": "P1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "P1.baseline-tree",
+      "checkpointId": "P1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "P1.maf-version",
+      "checkpointId": "P1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "V0.all-command-schemas",
+      "checkpointId": "V0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "V0.all-event-families",
+      "checkpointId": "V0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "V0.extension-ui-schemas",
+      "checkpointId": "V0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "V0.state-and-error-projections",
+      "checkpointId": "V0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "V0.protocol-operation-coverage",
+      "checkpointId": "V0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "V0.owner-and-gap-register",
+      "checkpointId": "V0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "V1.valid-positive-control",
+      "checkpointId": "V1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "V1.wrong-pi-sha",
+      "checkpointId": "V1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "V1.wrong-implementation-sha",
+      "checkpointId": "V1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "V1.stale-evidence",
+      "checkpointId": "V1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "V1.mutated-jsonl-framing",
+      "checkpointId": "V1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "V1.missing-response",
+      "checkpointId": "V1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "V1.duplicate-response",
+      "checkpointId": "V1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "V1.wrong-correlation-id",
+      "checkpointId": "V1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "V1.reordered-lifecycle",
+      "checkpointId": "V1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "V1.dropped-stream-fragment",
+      "checkpointId": "V1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "V1.altered-tool-arguments",
+      "checkpointId": "V1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "V1.incorrect-queue-state",
+      "checkpointId": "V1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "V1.incorrect-session-selection",
+      "checkpointId": "V1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "V1.incorrect-token-cost-totals",
+      "checkpointId": "V1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "V1.incorrect-cancellation-settlement",
+      "checkpointId": "V1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "V1.unexecuted-case",
+      "checkpointId": "V1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "V1.skipped-case",
+      "checkpointId": "V1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "V1.unexpected-case-id",
+      "checkpointId": "V1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "V1.missing-raw-capture",
+      "checkpointId": "V1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "V1.altered-artifact-hash",
+      "checkpointId": "V1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "V1.failed-ci",
+      "checkpointId": "V1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "V1.wrong-head-ci",
+      "checkpointId": "V1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "V1.changed-contract",
+      "checkpointId": "V1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R1.lf-delimited-record",
+      "checkpointId": "R1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R1.utf8-split-codepoint",
+      "checkpointId": "R1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R1.optional-crlf",
+      "checkpointId": "R1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R1.unicode-separators-in-string",
+      "checkpointId": "R1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R1.incremental-and-multiple-chunks",
+      "checkpointId": "R1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R1.incomplete-record-completion",
+      "checkpointId": "R1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R1.large-valid-record",
+      "checkpointId": "R1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R1.malformed-json-recovery",
+      "checkpointId": "R1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R1.empty-and-blank-input",
+      "checkpointId": "R1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R1.eof-incomplete-final-record",
+      "checkpointId": "R1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R1.stdout-stderr-purity",
+      "checkpointId": "R1",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R2.correlated-response-id",
+      "checkpointId": "R2",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R2.uncorrelated-response-omits-id",
+      "checkpointId": "R2",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R2.id-type-validation",
+      "checkpointId": "R2",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R2.success-response-shape",
+      "checkpointId": "R2",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R2.error-response-shape",
+      "checkpointId": "R2",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R2.absent-versus-null-fields",
+      "checkpointId": "R2",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R2.unknown-command-recovery",
+      "checkpointId": "R2",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R2.invalid-request-shapes",
+      "checkpointId": "R2",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R2.missing-required-properties",
+      "checkpointId": "R2",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R2.overlapping-correlated-requests",
+      "checkpointId": "R2",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R2.long-command-acceptance",
+      "checkpointId": "R2",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R2.active-compaction-command",
+      "checkpointId": "R2",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R3.idle-prompt-started",
+      "checkpointId": "R3",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R3.prompt-handled-without-run",
+      "checkpointId": "R3",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R3.busy-prompt-default-behavior",
+      "checkpointId": "R3",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R3.busy-prompt-explicit-steer",
+      "checkpointId": "R3",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R3.busy-prompt-explicit-followup",
+      "checkpointId": "R3",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R3.prompt-during-tool-execution",
+      "checkpointId": "R3",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R3.subscribe-before-fast-completion",
+      "checkpointId": "R3",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R3.acceptance-before-completion",
+      "checkpointId": "R3",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R3.provider-failure-after-acceptance",
+      "checkpointId": "R3",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R3.abort-prompt-run",
+      "checkpointId": "R3",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R4.steer-command-idle",
+      "checkpointId": "R4",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R4.followup-command-idle",
+      "checkpointId": "R4",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R4.steering-all-mode",
+      "checkpointId": "R4",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R4.steering-one-at-a-time-mode",
+      "checkpointId": "R4",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R4.followup-all-mode",
+      "checkpointId": "R4",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R4.followup-one-at-a-time-mode",
+      "checkpointId": "R4",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R4.steer-followup-precedence",
+      "checkpointId": "R4",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R4.multiple-concurrent-queue-updates",
+      "checkpointId": "R4",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R4.clear-queue-snapshot",
+      "checkpointId": "R4",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R4.queue-cancel-and-restore",
+      "checkpointId": "R4",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R4.tool-finishes-before-next-request",
+      "checkpointId": "R4",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R4.mode-change-persistence",
+      "checkpointId": "R4",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R5.agent-start-end-settled",
+      "checkpointId": "R5",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R5.turn-start-end",
+      "checkpointId": "R5",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R5.message-role-lifecycle",
+      "checkpointId": "R5",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R5.streaming-text-fragments",
+      "checkpointId": "R5",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R5.streaming-reasoning-fragments",
+      "checkpointId": "R5",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R5.cumulative-usage-and-final-message",
+      "checkpointId": "R5",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R5.retry-event-order",
+      "checkpointId": "R5",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R5.post-content-failure",
+      "checkpointId": "R5",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R5.cancellation-lifecycle",
+      "checkpointId": "R5",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R5.session-and-model-event-order",
+      "checkpointId": "R5",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R5.session-entry-event-payload",
+      "checkpointId": "R5",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R6.tool-call-start-arguments",
+      "checkpointId": "R6",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R6.tool-argument-fragments",
+      "checkpointId": "R6",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R6.tool-call-end-authoritative",
+      "checkpointId": "R6",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R6.tool-execution-start-update-end",
+      "checkpointId": "R6",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R6.sequential-tool-continuation",
+      "checkpointId": "R6",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R6.parallel-tool-continuation",
+      "checkpointId": "R6",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R6.tool-error-continuation",
+      "checkpointId": "R6",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R6.provider-failure-after-tool",
+      "checkpointId": "R6",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R6.partial-assistant-with-tool",
+      "checkpointId": "R6",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R6.tool-call-id-and-parent-fields",
+      "checkpointId": "R6",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R7.get-state-idle-schema",
+      "checkpointId": "R7",
+      "comparisonMode": "equivalent",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R7.get-state-active-stream",
+      "checkpointId": "R7",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R7.get-messages-system-projection",
+      "checkpointId": "R7",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R7.get-messages-compacted-context-edits",
+      "checkpointId": "R7",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R7.get-messages-active-partial",
+      "checkpointId": "R7",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R7.get-entries-full-and-leaf",
+      "checkpointId": "R7",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R7.get-entries-cursor-boundaries",
+      "checkpointId": "R7",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R7.get-tree-branches-and-labels",
+      "checkpointId": "R7",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R7.get-fork-messages-content",
+      "checkpointId": "R7",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R7.get-last-assistant-text-values",
+      "checkpointId": "R7",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R7.session-read-during-provider-work",
+      "checkpointId": "R7",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R7.session-read-after-reload",
+      "checkpointId": "R7",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R7.read-command-error-cursors",
+      "checkpointId": "R7",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R8.native-summary-generation",
+      "checkpointId": "R8",
+      "comparisonMode": "equivalent",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R8.native-summary-persisted-reload",
+      "checkpointId": "R8",
+      "comparisonMode": "equivalent",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R8.imported-pi-summary",
+      "checkpointId": "R8",
+      "comparisonMode": "equivalent",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R8.mixed-native-imported-summaries",
+      "checkpointId": "R8",
+      "comparisonMode": "equivalent",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R8.cost-and-token-fields",
+      "checkpointId": "R8",
+      "comparisonMode": "equivalent",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R8.empty-and-zero-usage",
+      "checkpointId": "R8",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R9.available-model-schema-order",
+      "checkpointId": "R9",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R9.set-model-exact-and-invalid",
+      "checkpointId": "R9",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R9.cycle-model-order-and-null",
+      "checkpointId": "R9",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R9.scoped-thinking-suffix",
+      "checkpointId": "R9",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R9.per-model-thinking-defaults",
+      "checkpointId": "R9",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R9.supported-and-unsupported-levels",
+      "checkpointId": "R9",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R9.sparse-thinking-level-map",
+      "checkpointId": "R9",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R9.busy-model-change",
+      "checkpointId": "R9",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R9.thinking-event-response-order",
+      "checkpointId": "R9",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R9.model-persistence-restart",
+      "checkpointId": "R9",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R9.invalid-model-no-mutation",
+      "checkpointId": "R9",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R9.catalog-boundary",
+      "checkpointId": "R9",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R10.manual-compact-success",
+      "checkpointId": "R10",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R10.manual-compact-failure-rollback",
+      "checkpointId": "R10",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R10.manual-compact-abort",
+      "checkpointId": "R10",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R10.auto-compaction-setting",
+      "checkpointId": "R10",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R10.threshold-and-overflow-compaction",
+      "checkpointId": "R10",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R10.auto-retry-events",
+      "checkpointId": "R10",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R10.abort-retry",
+      "checkpointId": "R10",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R10.compaction-and-retry-restart",
+      "checkpointId": "R10",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R10.summarization-retry-events",
+      "checkpointId": "R10",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R11.bash-success-result",
+      "checkpointId": "R11",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R11.bash-stream-id-and-chunks",
+      "checkpointId": "R11",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R11.bash-without-command-id",
+      "checkpointId": "R11",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R11.bash-exclude-from-context",
+      "checkpointId": "R11",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R11.bash-failure-semantics",
+      "checkpointId": "R11",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R11.abort-active-bash",
+      "checkpointId": "R11",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R11.bash-during-agent-run",
+      "checkpointId": "R11",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R11.shutdown-active-bash",
+      "checkpointId": "R11",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R12.new-session-empty",
+      "checkpointId": "R12",
+      "comparisonMode": "equivalent",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R12.new-session-parent-session",
+      "checkpointId": "R12",
+      "comparisonMode": "equivalent",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R12.switch-native-session",
+      "checkpointId": "R12",
+      "comparisonMode": "equivalent",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R12.switch-pi-jsonl-session",
+      "checkpointId": "R12",
+      "comparisonMode": "equivalent",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R12.switch-missing-or-malformed-target",
+      "checkpointId": "R12",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R12.cross-project-rebind-trust",
+      "checkpointId": "R12",
+      "comparisonMode": "equivalent",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R12.fork-entry-and-branch-point",
+      "checkpointId": "R12",
+      "comparisonMode": "equivalent",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R12.clone-current-branch",
+      "checkpointId": "R12",
+      "comparisonMode": "equivalent",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R12.replace-during-provider-stream",
+      "checkpointId": "R12",
+      "comparisonMode": "equivalent",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R12.replace-during-active-tool",
+      "checkpointId": "R12",
+      "comparisonMode": "equivalent",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R12.aborted-turn-settlement-order",
+      "checkpointId": "R12",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R12.no-stale-session-writes",
+      "checkpointId": "R12",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R12.session-file-ownership",
+      "checkpointId": "R12",
+      "comparisonMode": "equivalent",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R12.subsequent-provider-history",
+      "checkpointId": "R12",
+      "comparisonMode": "equivalent",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R12.failed-replacement-recovery",
+      "checkpointId": "R12",
+      "comparisonMode": "equivalent",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R13.set-session-name-and-clear",
+      "checkpointId": "R13",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R13.session-info-event-order",
+      "checkpointId": "R13",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R13.export-default-path",
+      "checkpointId": "R13",
+      "comparisonMode": "equivalent",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R13.export-explicit-path",
+      "checkpointId": "R13",
+      "comparisonMode": "equivalent",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R13.export-errors",
+      "checkpointId": "R13",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R13.get-commands-builtins",
+      "checkpointId": "R13",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R13.get-commands-extension",
+      "checkpointId": "R13",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R13.commands-after-reload",
+      "checkpointId": "R13",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R14.ui-select-roundtrip",
+      "checkpointId": "R14",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R14.ui-confirm-roundtrip",
+      "checkpointId": "R14",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R14.ui-input-roundtrip",
+      "checkpointId": "R14",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R14.ui-editor-roundtrip",
+      "checkpointId": "R14",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R14.ui-notify-fire-and-forget",
+      "checkpointId": "R14",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R14.ui-set-status",
+      "checkpointId": "R14",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R14.ui-set-widget",
+      "checkpointId": "R14",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R14.ui-set-title",
+      "checkpointId": "R14",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R14.ui-set-editor-text",
+      "checkpointId": "R14",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R14.ui-unique-concurrent-ids",
+      "checkpointId": "R14",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R14.ui-out-of-order-responses",
+      "checkpointId": "R14",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R14.ui-timeout-default",
+      "checkpointId": "R14",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R14.ui-cancel-late-unknown",
+      "checkpointId": "R14",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R14.ui-unload-and-shutdown",
+      "checkpointId": "R14",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R14.ui-unsupported-methods",
+      "checkpointId": "R14",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R14.extension-handler-error-event",
+      "checkpointId": "R14",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R14.ui-isolated-from-command-correlation",
+      "checkpointId": "R14",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R15.normal-eof",
+      "checkpointId": "R15",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R15.explicit-process-termination",
+      "checkpointId": "R15",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R15.cancel-provider-turn-on-shutdown",
+      "checkpointId": "R15",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R15.pending-command-shutdown",
+      "checkpointId": "R15",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R15.pending-extension-dialog-shutdown",
+      "checkpointId": "R15",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R15.active-tool-cancellation",
+      "checkpointId": "R15",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R15.partial-input-shutdown",
+      "checkpointId": "R15",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R15.output-backpressure",
+      "checkpointId": "R15",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R15.broken-pipe-handling",
+      "checkpointId": "R15",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R15.rapid-command-burst",
+      "checkpointId": "R15",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R15.multiple-pending-shutdown",
+      "checkpointId": "R15",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R15.process-disposal-repeat",
+      "checkpointId": "R15",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "R15.partial-write-record-integrity",
+      "checkpointId": "R15",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "D0.calibrate-transport",
+      "checkpointId": "D0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "D0.calibrate-command-responses",
+      "checkpointId": "D0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "D0.calibrate-prompt-events",
+      "checkpointId": "D0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "D0.calibrate-queue-state",
+      "checkpointId": "D0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "D0.calibrate-read-projections",
+      "checkpointId": "D0",
+      "comparisonMode": "equivalent",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "D0.calibrate-model-thinking",
+      "checkpointId": "D0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "D0.calibrate-session-lifecycle",
+      "checkpointId": "D0",
+      "comparisonMode": "equivalent",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "D0.calibrate-extension-ui",
+      "checkpointId": "D0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "D0.paired-independent-observations",
+      "checkpointId": "D0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "Q0.dotnet-format",
+      "checkpointId": "Q0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "Q0.dotnet-build-warnings-as-errors",
+      "checkpointId": "Q0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "Q0.full-dotnet-suite",
+      "checkpointId": "Q0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "Q0.all-rpc-process-tests",
+      "checkpointId": "Q0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "Q0.focused-runtime-and-session",
+      "checkpointId": "Q0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "Q0.focused-compaction-tools-extensions",
+      "checkpointId": "Q0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "Q0.json-event-regressions",
+      "checkpointId": "Q0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "Q0.linux-process-and-pty",
+      "checkpointId": "Q0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "Q0.python-parity-suites",
+      "checkpointId": "Q0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "Q0.node-parity-suites",
+      "checkpointId": "Q0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "Q0.mcp-conformance",
+      "checkpointId": "Q0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "Q0.pinned-pi-rpc-suites",
+      "checkpointId": "Q0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "Q0.new-rpc-differential-and-controls",
+      "checkpointId": "Q0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "Q0.docs-link-validation",
+      "checkpointId": "Q0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "caseId": "Q0.prior-milestone-regression-audit",
+      "checkpointId": "Q0",
+      "comparisonMode": "strict",
+      "passed": true,
+      "skipped": false
+    }
+  ],
+  "quality": {
+    "checkpoint": "Q0",
+    "passed": 15,
+    "required": 15,
+    "failed": 0,
+    "skipped": 0,
+    "dotnet": {
+      "fullSuite": 3998,
+      "rpcRelated": 178,
+      "runtimeAndSession": 595,
+      "compactionToolsExtensions": 1348,
+      "jsonEventRegressions": 15,
+      "linuxProcessAndPty": 684,
+      "buildWarnings": 0,
+      "buildErrors": 0,
+      "formatVerification": "passed"
+    },
+    "pythonSuitePassCounts": [
+      66,
+      23,
+      27,
+      62,
+      27
+    ],
+    "nodeSuitePassCount": 24,
+    "pinnedPi": {
+      "passed": 582,
+      "skipped": 20,
+      "total": 602,
+      "credentialSkipSetMatchesInventory": true,
+      "credentialSkippedTestIdentities": 20,
+      "offlineMode": "PI_OFFLINE=1 from the pinned Pi Vitest config",
+      "credentialVariablesRemoved": true
+    },
+    "documentationValidation": {
+      "atQ0SourceEvidence": "157 documents, 712 references",
+      "afterReceiptUpdate": "157 documents, 699 references"
+    },
+    "modelEndpointCalls": 0,
+    "managedPackageCorpus": "Intentionally scoped to its historical milestone branch; skipped on this branch and not claimed as rerun."
+  },
+  "remaining": {
+    "gates": [
+      {
+        "checkpointId": "E0",
+        "requiredCases": 10,
+        "purpose": "committed evidence integrity and repo ledger checks"
+      },
+      {
+        "checkpointId": "CI0",
+        "requiredCases": 5,
+        "purpose": "automatic exact-head push and PR CI"
+      },
+      {
+        "checkpointId": "PUB0",
+        "requiredCases": 6,
+        "purpose": "final publication verification"
+      }
+    ],
+    "publication": "Create PR #29 as draft, leave it open and unmerged, record workflow runs, and verify the final exact head."
+  },
+  "rawEvidenceRoot": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36",
+  "notes": [
+    "All listed checkpoint and case receipts are source-bound to the implementation commit.",
+    "The 20 credential-dependent pinned-Pi tests are explicitly skipped and remain unverified.",
+    "No live model endpoint was called."
+  ]
+}

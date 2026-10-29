@@ -12,9 +12,9 @@ See the [source-pinned inventory](parity/fixtures/compaction-context-management-
 
 ## Active milestone — Complete RPC Protocol and Command Parity — 2026-10-29
 
-PR #28 is verified merged at `646db89bd396b8089b1b9a058fa96b1489f4d0cd`; the milestone branch starts from that commit and pins Pi at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The frozen inventory and contract define 33 commands, 24 event families, 9 extension UI methods, 24 checkpoints and 252 case IDs. R8 passed formal source-bound acceptance 6/6 at `223f8f071b0aba831e0e74d0e7127771a4cc34fb`; R9 passed 12/12 at `74d9370b02045b562376f3ebdca8973cd2cb870a`. The R9 result includes 61 focused .NET tests, 16 parity verifier tests, targeted formatting and a warnings-as-errors CLI build. R1–R7 and V1 have earlier passes but need final source-bound reruns after the implementation and harness freeze. R10–R15, final evidence refresh, quality gates and draft PR #29 remain open.
+PR #28 is merged at `646db89bd396b8089b1b9a058fa96b1489f4d0cd`. The RPC protocol and command milestone pins Pi at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` and uses Microsoft Agent Framework 1.21.0 on .NET 10.0.113. The frozen contract has 24 checkpoints and 252 cases. At source `44c08f366395ec4f9c80a79fea1f6e5f635fbcc5`, 21/24 checkpoints and 231/252 cases pass with zero failures/skips; comparison modes are 230 strict, 22 equivalent, 0 intentional safety differences and 0 unresolved. P0/P1/V0/V1, R1-R15, D0 and Q0 pass. Q0 passes 3,998 .NET tests and records 20 credential-dependent pinned-Pi test skips that remain unverified. The managed-package parity corpus remains scoped to its historical milestone branch. No live model endpoint was called. E0, CI0 and PUB0 and open draft PR #29 remain.
 
-See the [milestone receipt](docs/parity/fixtures/rpc-protocol-command-parity/README.md), [source-pinned inventory](docs/parity/fixtures/rpc-protocol-command-parity/inventory.json), [case index](docs/parity/fixtures/rpc-protocol-command-parity/required-case-index.json), and [contract](tools/parity/rpc_protocol/contract.json).
+See the [milestone receipt](docs/parity/fixtures/rpc-protocol-command-parity/README.md), [completion evidence](docs/parity/fixtures/rpc-protocol-command-parity/completion-evidence-44c08f36.json), [source-pinned inventory](docs/parity/fixtures/rpc-protocol-command-parity/inventory.json), [case index](docs/parity/fixtures/rpc-protocol-command-parity/required-case-index.json), and [contract](tools/parity/rpc_protocol/contract.json).
 
 ## Active milestone — Complete Managed Package Lifecycle and Resource Distribution Parity — 2026-10-27
 
@@ -590,11 +590,11 @@ The detailed entries in this section preserve earlier source/test evidence only;
 
 ## Current priority
 
-Complete the source-bound RPC contract and process-level differential corpus on `milestone/rpc-protocol-command-parity`, retaining Microsoft Agent Framework 1.21.0 as the runtime execution framework. The frozen baseline is committed. R8 passed 6/6 at `223f8f07`, and R9 passed 12/12 at `74d9370b`, for 2/24 checkpoints and 18/252 required cases currently source-bound. R1–R7 and V1 have prior passes but need final source-bound revalidation.
+Complete the source-bound RPC protocol and command parity milestone. Current evidence passes 21/24 checkpoints and 231/252 cases at source `44c08f36`; E0, CI0, PUB0 and exact-head automatic CI remain. Keep PR #29 open, draft and unmerged.
 
 ## Exact next action
 
-Implement and execute R10 compaction and retry process cases under the pinned-Pi comparison. Then proceed through R11–R15, Q0, D0, E0, CI0 and PUB0. Rerun stale V1/R1–R7 evidence after the implementation and harness freeze; keep PR #29 open, draft and unmerged.
+Commit the updated completion evidence and ledgers, run E0, push the final branch and create draft PR #29. Let push and pull-request CI run automatically, then verify CI0 and PUB0. The 20 credential-dependent pinned-Pi cases remain unverified; the managed-package corpus remains scoped to its historical milestone branch.
 
 ## Architecture risks to reconcile before completion
 
