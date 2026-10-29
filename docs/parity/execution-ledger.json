@@ -13726,8 +13726,8 @@
     "published_head_before_review_correction": "763f008a347282078b86946b398e9229dd930f06"
   },
   "rpc_protocol_command_parity_milestone": {
-    "status": "in_progress",
-    "phase": "automatic_exact_head_ci_and_publication",
+    "status": "complete",
+    "phase": "final_head_ci_and_publication_verified_open_draft",
     "branch": "milestone/rpc-protocol-command-parity",
     "branch_base_sha": "646db89bd396b8089b1b9a058fa96b1489f4d0cd",
     "prerequisite_pr28": {
@@ -13815,11 +13815,8 @@
       "RPC-EXTENSION-UI-LIFECYCLE",
       "RPC-ACTIVE-SESSION-REPLACEMENT"
     ],
-    "open_requirements": [
-      "Automatic push and pull-request workflows must pass at the final exact head; then CI0 passes.",
-      "PUB0 passes and PR #29 remains open, draft and unmerged."
-    ],
-    "next_action": "Push the final evidence commit to PR #29, wait for automatic push and PR workflows, then pass CI0 and PUB0. Keep the PR open, draft and unmerged.",
+    "open_requirements": [],
+    "next_action": "Keep PR #29 open, draft and unmerged for review.",
     "r5_implementation_source_sha": "8e7e16f37e420645fc852cb8cef8bf0ba761778d",
     "r5_evidence_directory": "artifacts/parity/rpc-protocol-command-parity/r5-8e7e16f3",
     "r5_evidence_sha256": "9bac9415beaad090519ca680c3ad77ce6511a9e7f4bcd8654ef57994731bb57b",
@@ -14087,12 +14084,40 @@
         "evidenceSha256": "70b9182c7754dc73327c9c6defec9689cab1d4dbce96d0aa564f2d054aa5caf4"
       }
     ],
-    "contract_scope": "24/24 checkpoints and 252/252 cases; source-bound results are 21/24 checkpoints and 231/252 cases.",
+    "contract_scope": "24/24 checkpoints and 252/252 mandatory cases pass. Source-bound results are 21/24 checkpoints and 231/252 cases; E0 is 10/10, CI0 is 5/5 and PUB0 is 6/6.",
     "e0_checkpoint": {
       "result": "10/10 passed; zero failures or skips; independent verifier passed.",
       "evidence_directory": "artifacts/parity/rpc-protocol-command-parity/run-1481f15f/E0",
       "source_bound_checkpoint_count": 21,
       "implementation_source_sha": "1481f15fb7f01217be9e41f256df94975532013b"
+    },
+    "finalization_evidence": {
+      "e0": {
+        "passed": 10,
+        "required": 10,
+        "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-1481f15f/E0/evidence.json",
+        "independentVerifier": "passed"
+      },
+      "ci0": {
+        "passed": 5,
+        "required": 5,
+        "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-1481f15f/CI0/evidence.json",
+        "automaticPushAndPullRequestWorkflows": "both passed all five required jobs on the exact final head",
+        "independentVerifier": "passed"
+      },
+      "pub0": {
+        "passed": 6,
+        "required": 6,
+        "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-1481f15f/PUB0/evidence.json",
+        "publicationState": "PR #29 open, draft and unmerged",
+        "independentVerifier": "passed"
+      },
+      "dotnetTestCountNormalization": {
+        "sourceObservation": "Q0/cases/Q0.full-dotnet-suite/observation.json",
+        "booleanPassedMarker": true,
+        "measuredTotal": 3998,
+        "note": "Finalization receipts use the measured Q0 total because its passed marker is Boolean."
+      }
     }
   }
 }

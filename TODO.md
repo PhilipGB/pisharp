@@ -12,7 +12,7 @@ See the [source-pinned inventory](parity/fixtures/compaction-context-management-
 
 ## Active milestone — Complete RPC Protocol and Command Parity — 2026-10-29
 
-PR #28 is merged at `646db89bd396b8089b1b9a058fa96b1489f4d0cd`. The RPC protocol and command milestone pins Pi at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` and uses Microsoft Agent Framework 1.21.0 on .NET 10.0.113. The frozen acceptance contract is 24/24 checkpoints and 252/252 cases. At implementation source `1481f15fb7f01217be9e41f256df94975532013b`, 21/24 source-bound checkpoints and 231/252 cases pass with zero failures or skips. Comparison modes are 230 strict, 22 equivalent, 0 intentional safety differences and 0 unresolved. P0/P1/V0/V1, R1-R15, D0 and Q0 pass. Q0 passes 3,998 .NET tests; 178 RPC-related, 595 runtime/session, 1,348 compaction/tools/extensions, 15 JSON event, and 684 Linux process/PTY tests; Python suites 66/23/27/62/27; and Node 24/24. The clone process regression now creates a deterministic skill fixture rather than depending on home-directory state. Exactly 20 credential-dependent pinned-Pi test identities remain unverified; the managed-package parity corpus remains scoped to its historical milestone branch. No live model endpoint was called. E0/CI0/PUB0 finalization and exact-head automatic CI are recorded in the open draft PR #29, which remains unmerged.
+PR #28 is merged at `646db89bd396b8089b1b9a058fa96b1489f4d0cd`. The RPC protocol and command milestone pins Pi at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` and uses Microsoft Agent Framework 1.21.0 on .NET 10.0.113. The frozen acceptance contract is 24/24 checkpoints and 252/252 cases. At implementation source `1481f15fb7f01217be9e41f256df94975532013b`, 21/24 source-bound checkpoints and 231/252 cases pass with zero failures or skips. Comparison modes are 230 strict, 22 equivalent, 0 intentional safety differences and 0 unresolved. P0/P1/V0/V1, R1-R15, D0 and Q0 pass. Q0 passes 3,998 .NET tests; 178 RPC-related, 595 runtime/session, 1,348 compaction/tools/extensions, 15 JSON event, and 684 Linux process/PTY tests; Python suites 66/23/27/62/27; and Node 24/24. The clone process regression now creates a deterministic skill fixture rather than depending on home-directory state. Exactly 20 credential-dependent pinned-Pi test identities remain unverified; the managed-package parity corpus remains scoped to its historical milestone branch. No live model endpoint was called. Final acceptance passes 24/24 checkpoints and 252/252 cases with zero failures or skips; E0 is 10/10, CI0 is 5/5 and PUB0 is 6/6, with both automatic exact-head workflows passing all five jobs. PR #29 remains open, draft and unmerged.
 
 See the [milestone receipt](docs/parity/fixtures/rpc-protocol-command-parity/README.md), [completion evidence](docs/parity/fixtures/rpc-protocol-command-parity/completion-evidence-1481f15f.json), [source-pinned inventory](docs/parity/fixtures/rpc-protocol-command-parity/inventory.json), [case index](docs/parity/fixtures/rpc-protocol-command-parity/required-case-index.json), and [contract](tools/parity/rpc_protocol/contract.json).
 
@@ -590,11 +590,11 @@ The detailed entries in this section preserve earlier source/test evidence only;
 
 ## Current priority
 
-Keep the RPC protocol and command parity evidence source-bound at `1481f15f`. The final exact-head CI and E0/CI0/PUB0 receipts are recorded on PR #29; keep it open, draft and unmerged.
+RPC protocol and command parity acceptance is complete at implementation source `1481f15f`: 24/24 checkpoints and 252/252 cases pass. Keep PR #29 open, draft and unmerged for review.
 
 ## Exact next action
 
-Run E0 against the committed ledgers, push the evidence update, let automatic push and PR workflows finish, then record CI0/PUB0 in PR #29. The 20 credential-dependent pinned-Pi cases remain unverified; the managed-package corpus remains scoped to its historical milestone branch.
+Keep PR #29 open, draft and unmerged for review. The 20 credential-dependent pinned-Pi cases remain unverified; the managed-package parity corpus remains scoped to its historical milestone branch.
 
 ## Architecture risks to reconcile before completion
 

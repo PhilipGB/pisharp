@@ -18,6 +18,6 @@ Q0 passed the full .NET suite (3,998/3,998), RPC tests (178/178), runtime/sessio
 
 ## Finalization record
 
-E0, CI0 and PUB0, along with automatic exact-head push and PR workflow results, are tracked in [PR #29](https://github.com/PhilipGB/pisharp/pull/29). The repository has a single contributor, so there is no self-approval; the PR remains open, draft and unmerged.
+Final acceptance passes 24/24 checkpoints and 252/252 mandatory cases: the 21 source-bound checkpoints cover 231 cases, E0 passes 10/10, CI0 passes 5/5 and PUB0 passes 6/6. Both automatic exact-head workflows pass all five jobs. Finalization receipts are recorded in the ignored run directory and summarized in [PR #29](https://github.com/PhilipGB/pisharp/pull/29), which remains open, draft and unmerged. The Q0 `passed` marker is Boolean; publication receipts use its measured `total` of 3,998 for the test count.
 
 The frozen [contract](../../../../tools/parity/rpc_protocol/contract.json), [source-pinned inventory](inventory.json) and [required case index](required-case-index.json) define acceptance scope.
