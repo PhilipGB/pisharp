@@ -104,9 +104,16 @@ class InputRun:
     active_tool_names: tuple[str, ...] = ()
     use_rpc_tool_extension: bool = False
     compare_provider_requests: bool = False
+    expected_provider_model_ids: tuple[str, ...] | None = None
     compare_stderr: bool = True
     model_context_window: int | None = 4096
     bind_fixture_working_directory: bool = False
+    model_catalog: tuple[dict[str, Any], ...] | None = None
+    model_scope: tuple[str, ...] = ()
+    settings_fixture: dict[str, Any] | None = None
+    initial_model_id: str | None = None
+    initial_model_provider: str = "fixture"
+    omit_cli_model_selection: bool = False
     preserve_state_flags: bool = False
     preserve_queue_state: bool = False
     preserve_queue_response_data: bool = False
@@ -1792,6 +1799,355 @@ R8_SCENARIOS["R8.empty-and-zero-usage"] = (
                   preserve_session_identity=False),
 )
 
+def _r9_model(model_id: str, *, name: str | None = None, reasoning: bool = False,
+              thinking_level_map: dict[str, str | None] | None = None) -> dict[str, Any]:
+    model: dict[str, Any] = {
+        "id": model_id, "name": name or model_id, "api": "openai-completions",
+        "reasoning": reasoning, "input": ["text"], "contextWindow": 8192, "maxTokens": 2048,
+        "cost": {"input": 1.25, "output": 4, "cacheRead": 0.2, "cacheWrite": 0.5},
+    }
+    if thinking_level_map is not None:
+        model["thinkingLevelMap"] = thinking_level_map
+    return model
+
+
+_R9_BASIC_MODELS = (
+    _r9_model("model-one", name="Model One", reasoning=True),
+    _r9_model("model-two", name="Model Two", reasoning=True),
+    _r9_model("model-three", name="Model Three", reasoning=True),
+)
+_R9_THINKING_EVENTS = ("thinking_level_changed",)
+R9_SCENARIOS: dict[str, tuple[InputRun, ...]] = {}
+
+R9_SCENARIOS["R9.available-model-schema-order"] = (
+    InputRun(
+        chunks=((_line("models", "get_available_models"), 0.0),),
+        expected_response_ids=("models",), expected_response_commands=("get_available_models",),
+        expected_successes=(True,), expected_data_presence=(True,), response_only=True,
+        preserve_response_data_commands=("get_available_models",), model_catalog=_R9_BASIC_MODELS,
+        initial_model_id="model-one", model_scope=("fixture/model-three", "fixture/model-one"),
+    ),
+)
+
+R9_SCENARIOS["R9.set-model-exact-and-invalid"] = (
+    InputRun(
+        chunks=(
+            (_line("select-exact", "set_model", provider="fixture", modelId="model-two"), 0.0),
+            (_line("after-exact", "get_state"), 0.0),
+            (_line("select-missing", "set_model", provider="fixture", modelId="missing"), 0.0),
+            (_line("after-invalid", "get_state"), 0.0),
+        ),
+        expected_response_ids=("select-exact", "after-exact", "select-missing", "after-invalid"),
+        expected_response_commands=("set_model", "get_state", "set_model", "get_state"),
+        expected_successes=(True, True, False, True), expected_data_presence=(True, True, False, True),
+        expected_error_presence=(False, False, True, False), preserve_response_error_text=True,
+        preserve_response_data_commands=("set_model", "get_state"),
+        stdout_waits=((0, '"id":"select-exact"', 1, 10.0),
+                      (1, '"id":"after-exact"', 1, 10.0),
+                      (2, '"id":"select-missing"', 1, 10.0),
+                      (3, '"id":"after-invalid"', 1, 10.0)),
+        state_expectations=(("after-exact", "thinkingLevel", "low"),
+                            ("after-invalid", "thinkingLevel", "low")),
+        model_catalog=_R9_BASIC_MODELS[:2], initial_model_id="model-one",
+        settings_fixture={"defaultThinkingLevel": "low"},
+    ),
+)
+
+R9_SCENARIOS["R9.cycle-model-order-and-null"] = (
+    InputRun(
+        chunks=((_line("cycle-scoped", "cycle_model"), 0.0),
+                (_line("cycle-state", "get_state"), 0.0)),
+        expected_response_ids=("cycle-scoped", "cycle-state"),
+        expected_response_commands=("cycle_model", "get_state"), expected_successes=(True, True),
+        expected_data_presence=(True, True), preserve_response_data_commands=("cycle_model", "get_state"),
+        lifecycle_event_types=_R9_THINKING_EVENTS, preserve_event_payloads=True,
+        stdout_waits=((0, '"id":"cycle-scoped"', 1, 10.0), (1, '"id":"cycle-state"', 1, 10.0)),
+        state_expectations=(("cycle-state", "thinkingLevel", "high"),),
+        model_catalog=_R9_BASIC_MODELS[:2], initial_model_id="model-one",
+        model_scope=("fixture/model-two:high", "fixture/model-one:low"),
+        settings_fixture={"defaultThinkingLevel": "low"},
+    ),
+    InputRun(
+        chunks=((_line("cycle-single", "cycle_model"), 0.0),),
+        expected_response_ids=("cycle-single",), expected_response_commands=("cycle_model",),
+        expected_successes=(True,), expected_data_presence=(True,), response_only=True,
+        preserve_response_data_commands=("cycle_model",),
+        model_catalog=_R9_BASIC_MODELS[:1], initial_model_id="model-one",
+    ),
+    InputRun(
+        chunks=((_line("cycle-empty", "cycle_model"), 0.0),),
+        expected_response_ids=("cycle-empty",), expected_response_commands=("cycle_model",),
+        expected_successes=(True,), expected_data_presence=(True,), response_only=True,
+        preserve_response_data_commands=("cycle_model",), model_catalog=(), omit_cli_model_selection=True,
+    ),
+)
+
+R9_SCENARIOS["R9.scoped-thinking-suffix"] = (
+    InputRun(
+        chunks=((_line("scope-before", "get_state"), 0.0),
+                (_line("scope-cycle", "cycle_model"), 0.0),
+                (_line("scope-after", "get_state"), 0.0)),
+        expected_response_ids=("scope-before", "scope-cycle", "scope-after"),
+        expected_response_commands=("get_state", "cycle_model", "get_state"),
+        expected_successes=(True, True, True), expected_data_presence=(True, True, True),
+        preserve_response_data_commands=("get_state", "cycle_model"),
+        stdout_waits=((0, '"id":"scope-before"', 1, 10.0),
+                      (1, '"id":"scope-cycle"', 1, 10.0),
+                      (2, '"id":"scope-after"', 1, 10.0)),
+        state_expectations=(("scope-before", "thinkingLevel", "low"),
+                            ("scope-after", "thinkingLevel", "high")),
+        model_catalog=_R9_BASIC_MODELS[:2], initial_model_id="model-one",
+        model_scope=("fixture/model-one:low", "fixture/model-two:high"), omit_cli_model_selection=True,
+        settings_fixture={"defaultThinkingLevel": "medium"},
+    ),
+)
+
+R9_SCENARIOS["R9.per-model-thinking-defaults"] = (
+    InputRun(
+        chunks=((_line("defaults-before", "get_state"), 0.0),
+                (_line("defaults-select", "set_model", provider="fixture", modelId="model-two"), 0.0),
+                (_line("defaults-after", "get_state"), 0.0)),
+        expected_response_ids=("defaults-before", "defaults-select", "defaults-after"),
+        expected_response_commands=("get_state", "set_model", "get_state"),
+        expected_successes=(True, True, True), expected_data_presence=(True, True, True),
+        preserve_response_data_commands=("get_state", "set_model"),
+        stdout_waits=((0, '"id":"defaults-before"', 1, 10.0),
+                      (1, '"id":"defaults-select"', 1, 10.0),
+                      (2, '"id":"defaults-after"', 1, 10.0)),
+        lifecycle_event_types=_R9_THINKING_EVENTS, preserve_event_payloads=True,
+        state_expectations=(("defaults-before", "thinkingLevel", "low"),
+                            ("defaults-after", "thinkingLevel", "high")),
+        model_catalog=_R9_BASIC_MODELS[:2], initial_model_id="model-one",
+        settings_fixture={"defaultThinkingLevel": "minimal",
+                          "modelThinkingLevels": {"fixture/model-one": "low", "fixture/model-two": "high"}},
+    ),
+)
+
+_R9_SPARSE_MAP = {"off": None, "high": None, "xhigh": None, "max": "max"}
+_R9_SPARSE_MODEL = _r9_model("sparse-model", name="Sparse Model", reasoning=True,
+                             thinking_level_map=_R9_SPARSE_MAP)
+
+R9_SCENARIOS["R9.supported-and-unsupported-levels"] = (
+    InputRun(
+        chunks=((_line("levels", "get_available_thinking_levels"), 0.0),
+                (_line("set-high", "set_thinking_level", level="high"), 0.0),
+                (_line("high-state", "get_state"), 0.0),
+                (_line("set-off", "set_thinking_level", level="off"), 0.0),
+                (_line("off-state", "get_state"), 0.0)),
+        expected_response_ids=("levels", "set-high", "high-state", "set-off", "off-state"),
+        expected_response_commands=("get_available_thinking_levels", "set_thinking_level", "get_state",
+                                    "set_thinking_level", "get_state"),
+        expected_successes=(True,) * 5, expected_data_presence=(True, False, True, False, True),
+        preserve_response_data_commands=("get_available_thinking_levels", "get_state"),
+        lifecycle_event_types=_R9_THINKING_EVENTS, preserve_event_payloads=True,
+        stdout_waits=((0, '"id":"levels"', 1, 10.0), (1, '"id":"set-high"', 1, 10.0),
+                      (2, '"id":"high-state"', 1, 10.0), (3, '"id":"set-off"', 1, 10.0),
+                      (4, '"id":"off-state"', 1, 10.0)),
+        state_expectations=(("high-state", "thinkingLevel", "max"),
+                            ("off-state", "thinkingLevel", "minimal")),
+        model_catalog=(_R9_SPARSE_MODEL,), initial_model_id="sparse-model",
+        settings_fixture={"defaultThinkingLevel": "low"},
+    ),
+)
+
+R9_SCENARIOS["R9.sparse-thinking-level-map"] = (
+    InputRun(
+        chunks=((_line("sparse-levels", "get_available_thinking_levels"), 0.0),
+                (_line("sparse-cycle", "cycle_thinking_level"), 0.0),
+                (_line("sparse-state", "get_state"), 0.0),
+                (_line("sparse-persist-prompt", "prompt", message="persist sparse thinking level"), 0.0)),
+        expected_response_ids=("sparse-levels", "sparse-cycle", "sparse-state", "sparse-persist-prompt"),
+        expected_response_commands=("get_available_thinking_levels", "cycle_thinking_level", "get_state", "prompt"),
+        expected_successes=(True, True, True, True), expected_data_presence=(True, True, True, True),
+        preserve_response_data_commands=("get_available_thinking_levels", "cycle_thinking_level", "get_state"),
+        lifecycle_event_types=(*_R9_THINKING_EVENTS, "agent_settled"), preserve_event_payloads=True,
+        stdout_waits=((0, '"id":"sparse-levels"', 1, 10.0),
+                      (1, '"id":"sparse-cycle"', 1, 10.0),
+                      (2, '"id":"sparse-state"', 1, 10.0),
+                      (3, '"id":"sparse-persist-prompt"', 1, 10.0),
+                      (3, '"type":"agent_settled"', 1, 25.0)),
+        provider_steps=(FixtureProviderStep(text="persisted sparse response"),),
+        expected_min_provider_requests=1, compare_provider_requests=True,
+        expected_provider_model_ids=("sparse-model",), provider_waits=((3, 1, 15.0),),
+        state_expectations=(("sparse-state", "thinkingLevel", "medium"),),
+        model_catalog=(_R9_SPARSE_MODEL,), initial_model_id="sparse-model",
+        settings_fixture={"defaultThinkingLevel": "low", "compaction": {"enabled": False}},
+    ),
+    InputRun(
+        chunks=((_line("sparse-restarted-state", "get_state"), 0.0),),
+        expected_response_ids=("sparse-restarted-state",), expected_response_commands=("get_state",),
+        expected_successes=(True,), expected_data_presence=(True,), response_only=True,
+        preserve_response_data_commands=("get_state",),
+        state_expectations=(("sparse-restarted-state", "thinkingLevel", "medium"),),
+        resume_session=True, reuse_workspace_previous=True, omit_cli_model_selection=True,
+        model_catalog=(_R9_SPARSE_MODEL,),
+        settings_fixture={"defaultThinkingLevel": "low", "compaction": {"enabled": False}},
+    ),
+)
+
+_R9_BUSY_TOOL = FixtureProviderStep(
+    tool_name="bash",
+    tool_arguments=json.dumps({
+        "command": 'gate=__RPC_TOOL_GATE__; echo started > "$gate.started"; '
+                   'while [ ! -f "$gate.release" ]; do sleep 0.01; done; echo barrier-released',
+    }),
+)
+
+R9_SCENARIOS["R9.busy-model-change"] = (
+    InputRun(
+        chunks=(
+            (_line("model-run", "prompt", message="call the fixture bash tool"), 0.0),
+            (_line("model-set-busy", "set_model", provider="fixture", modelId="model-two"), 0.0),
+            (_line("model-cycle-busy", "cycle_model"), 0.0),
+            (_line("model-after-busy", "get_state"), 0.0),
+            (b"", 0.0),
+        ),
+        expected_response_ids=("model-run", "model-set-busy", "model-cycle-busy", "model-after-busy"),
+        expected_response_commands=("prompt", "set_model", "cycle_model", "get_state"),
+        expected_successes=(True, True, True, True), expected_data_presence=(True, True, True, True),
+        expected_error_presence=(False, False, False, False),
+        preserve_response_data_commands=("set_model", "cycle_model", "get_state"),
+        lifecycle_event_types=("tool_execution_start", "tool_execution_end", "agent_settled",
+                               "thinking_level_changed"),
+        enable_bash_tool=True,
+        provider_steps=(_R9_BUSY_TOOL, FixtureProviderStep(text="tool and model transition completed")),
+        provider_waits=((0, 1, 10.0), (3, 2, 25.0)),
+        stdout_waits=((0, '"id":"model-run"', 1, 10.0), (0, '"type":"tool_execution_start"', 1, 15.0),
+                      (1, '"id":"model-set-busy"', 1, 10.0), (2, '"id":"model-cycle-busy"', 1, 10.0),
+                      (3, '"id":"model-after-busy"', 1, 10.0), (4, '"type":"agent_settled"', 1, 25.0)),
+        release_tool_gate_after_input_index=2, expected_min_provider_requests=2, compare_provider_requests=True,
+        expected_provider_model_ids=("model-one", "model-three"),
+        state_expectations=(("model-after-busy", "thinkingLevel", "medium"),),
+        model_catalog=_R9_BASIC_MODELS, initial_model_id="model-one",
+        model_scope=("fixture/model-one", "fixture/model-two", "fixture/model-three"),
+        settings_fixture={"compaction": {"enabled": False}},
+    ),
+)
+
+R9_SCENARIOS["R9.thinking-event-response-order"] = (
+    InputRun(
+        chunks=(
+            (_line("event-model", "set_model", provider="fixture", modelId="model-two"), 0.0),
+            (_line("event-level", "set_thinking_level", level="medium"), 0.0),
+        ),
+        expected_response_ids=("event-model", "event-level"),
+        expected_response_commands=("set_model", "set_thinking_level"),
+        expected_successes=(True, True), expected_data_presence=(True, False),
+        preserve_response_data_commands=("set_model",),
+        lifecycle_event_types=_R9_THINKING_EVENTS, preserve_event_payloads=True,
+        stdout_waits=((0, '"id":"event-model"', 1, 10.0), (1, '"id":"event-level"', 1, 10.0)),
+        expected_marker_order=("event:thinking_level_changed", "response:event-model",
+                               "event:thinking_level_changed", "response:event-level"),
+        model_catalog=_R9_BASIC_MODELS[:2], initial_model_id="model-one",
+        settings_fixture={"defaultThinkingLevel": "medium",
+                          "modelThinkingLevels": {"fixture/model-one": "low", "fixture/model-two": "high"}},
+    ),
+)
+
+R9_SCENARIOS["R9.model-persistence-restart"] = (
+    InputRun(
+        chunks=(
+            (_line("persist-model", "set_model", provider="fixture", modelId="model-two"), 0.0),
+            (_line("persist-level", "set_thinking_level", level="high"), 0.0),
+            (_line("persist-first-prompt", "prompt", message="first persisted turn"), 0.0),
+        ),
+        expected_response_ids=("persist-model", "persist-level", "persist-first-prompt"),
+        expected_response_commands=("set_model", "set_thinking_level", "prompt"),
+        expected_successes=(True, True, True), expected_data_presence=(True, False, True),
+        preserve_response_data_commands=("set_model",),
+        preserve_event_payload_types=("thinking_level_changed",),
+        provider_steps=(FixtureProviderStep(text="first persisted response"),),
+        expected_min_provider_requests=1, compare_provider_requests=True,
+        expected_provider_model_ids=("model-two",),
+        provider_waits=((2, 1, 15.0),),
+        stdout_waits=((0, '"id":"persist-model"', 1, 10.0),
+                      (1, '"id":"persist-level"', 1, 10.0),
+                      (2, '"id":"persist-first-prompt"', 1, 10.0),
+                      (2, '"type":"agent_settled"', 1, 25.0)),
+        lifecycle_event_types=("thinking_level_changed", "agent_settled"),
+        model_catalog=_R9_BASIC_MODELS[:2], initial_model_id="model-one",
+        model_scope=("fixture/model-one:low", "fixture/model-two:medium"),
+        settings_fixture={"defaultThinkingLevel": "low", "compaction": {"enabled": False}},
+    ),
+    InputRun(
+        chunks=((_line("restarted-state", "get_state"), 0.0),
+                (_line("restarted-prompt", "prompt", message="second persisted turn"), 0.0)),
+        expected_response_ids=("restarted-state", "restarted-prompt"),
+        expected_response_commands=("get_state", "prompt"), expected_successes=(True, True),
+        expected_data_presence=(True, True), preserve_response_data_commands=("get_state",),
+        state_expectations=(("restarted-state", "thinkingLevel", "high"),),
+        provider_steps=(FixtureProviderStep(text="second persisted response"),),
+        expected_min_provider_requests=1, compare_provider_requests=True,
+        expected_provider_model_ids=("model-two",),
+        provider_waits=((1, 1, 15.0),),
+        stdout_waits=((0, '"id":"restarted-state"', 1, 10.0),
+                      (1, '"id":"restarted-prompt"', 1, 10.0),
+                      (1, '"type":"agent_settled"', 1, 25.0)),
+        lifecycle_event_types=("agent_settled",),
+        resume_session=True, reuse_workspace_previous=True, omit_cli_model_selection=True,
+        model_catalog=_R9_BASIC_MODELS[:2],
+        model_scope=("fixture/model-one:low", "fixture/model-two:medium"),
+        settings_fixture={"defaultThinkingLevel": "low", "compaction": {"enabled": False}},
+    ),
+)
+
+R9_SCENARIOS["R9.invalid-model-no-mutation"] = (
+    InputRun(
+        chunks=(
+            (_line("invalid-run", "prompt", message="call the fixture bash tool"), 0.0),
+            (_line("invalid-busy-model", "set_model", provider="fixture", modelId="missing"), 0.0),
+            (_line("invalid-busy-state", "get_state"), 0.0),
+            (_line("invalid-after-release", "get_state"), 0.0),
+            (b"", 0.0),
+        ),
+        expected_response_ids=("invalid-run", "invalid-busy-model", "invalid-busy-state", "invalid-after-release"),
+        expected_response_commands=("prompt", "set_model", "get_state", "get_state"),
+        expected_successes=(True, False, True, True), expected_data_presence=(True, False, True, True),
+        expected_error_presence=(False, True, False, False), preserve_response_error_text=True,
+        preserve_response_data_commands=("get_state",),
+        lifecycle_event_types=("tool_execution_start", "tool_execution_end", "agent_settled"),
+        enable_bash_tool=True,
+        provider_steps=(_R9_BUSY_TOOL, FixtureProviderStep(text="invalid selection left model unchanged")),
+        provider_waits=((0, 1, 10.0), (3, 2, 25.0)),
+        stdout_waits=((0, '"id":"invalid-run"', 1, 10.0), (0, '"type":"tool_execution_start"', 1, 15.0),
+                      (1, '"id":"invalid-busy-model"', 1, 10.0),
+                      (2, '"id":"invalid-busy-state"', 1, 10.0),
+                      (3, '"id":"invalid-after-release"', 1, 10.0),
+                      (4, '"type":"agent_settled"', 1, 25.0)),
+        release_tool_gate_after_input_index=2, expected_min_provider_requests=2, compare_provider_requests=True,
+        expected_provider_model_ids=("model-one", "model-one"),
+        model_catalog=_R9_BASIC_MODELS[:2], initial_model_id="model-one",
+        settings_fixture={"compaction": {"enabled": False}},
+    ),
+)
+
+R9_SCENARIOS["R9.catalog-boundary"] = (
+    InputRun(
+        chunks=(
+            (_line("catalog-local", "get_available_models"), 0.0),
+            (_line("catalog-select", "set_model", provider="fixture", modelId="model-two"), 0.0),
+            (_line("catalog-thinking", "get_available_thinking_levels"), 0.0),
+            (_line("catalog-cycle-thinking", "cycle_thinking_level"), 0.0),
+            (_line("catalog-cycle-model", "cycle_model"), 0.0),
+        ),
+        expected_response_ids=("catalog-local", "catalog-select", "catalog-thinking",
+                               "catalog-cycle-thinking", "catalog-cycle-model"),
+        expected_response_commands=("get_available_models", "set_model", "get_available_thinking_levels",
+                                    "cycle_thinking_level", "cycle_model"),
+        expected_successes=(True,) * 5, expected_data_presence=(True, True, True, True, True),
+        preserve_response_data_commands=("get_available_models", "set_model", "get_available_thinking_levels",
+                                         "cycle_thinking_level", "cycle_model"),
+        stdout_waits=((0, '"id":"catalog-local"', 1, 10.0),
+                      (1, '"id":"catalog-select"', 1, 10.0),
+                      (2, '"id":"catalog-thinking"', 1, 10.0),
+                      (3, '"id":"catalog-cycle-thinking"', 1, 10.0),
+                      (4, '"id":"catalog-cycle-model"', 1, 10.0)),
+        response_only=True, compare_provider_requests=True,
+        model_catalog=_R9_BASIC_MODELS[:2], initial_model_id="model-one",
+    ),
+)
+
+
 _R8_GENERATED_FIXTURE_CACHE: dict[str, tuple[str, str, list[dict[str, str]]]] = {}
 
 
@@ -2057,7 +2413,8 @@ def _prepare_product(product: str, pi: Path, workspace: Path,
         model["contextWindow"] = input_run.model_context_window
     provider: dict[str, Any] = {
         "baseUrl": provider_base_url or "http://127.0.0.1:9/v1",
-        "models": [model],
+        "models": [dict(configured) for configured in input_run.model_catalog] if input_run.model_catalog is not None
+        else [model],
     }
     if product == "pi":
         provider["apiKey"] = "fixture-only-key"
@@ -2066,7 +2423,9 @@ def _prepare_product(product: str, pi: Path, workspace: Path,
     (agent / "models.json").write_text(json.dumps({"providers": {"fixture": provider}}) + "\n", encoding="utf-8")
     settings_path = agent / "settings.json"
     settings = json.loads(settings_path.read_text(encoding="utf-8")) if settings_path.exists() else {}
-    if provider_base_url is not None and not settings_path.exists():
+    if input_run.settings_fixture is not None:
+        settings.update(input_run.settings_fixture)
+    if provider_base_url is not None and not settings_path.exists() and "compaction" not in settings:
         settings["compaction"] = {"keepRecentTokens": 1}
     if input_run.retry_settings:
         settings["retry"] = dict(input_run.retry_settings)
@@ -2082,9 +2441,16 @@ def _prepare_product(product: str, pi: Path, workspace: Path,
         environment["PISHARP_RPC_TOOL_FIXTURE"] = "true"
     has_session_fixture = input_run.session_fixture_jsonl is not None or \
         input_run.session_fixture_native_json is not None or input_run.reuse_session_fixture_path
-    model_arguments = [] if has_session_fixture else [
-        "--provider", "fixture", "--model", "fixture-model",
-    ]
+    if has_session_fixture or input_run.omit_cli_model_selection:
+        model_arguments = []
+    else:
+        model_id = input_run.initial_model_id
+        if model_id is None:
+            model_id = (input_run.model_catalog[0]["id"] if input_run.model_catalog else
+                        "fixture-model" if input_run.model_catalog is None else None)
+        model_arguments = [] if model_id is None else [
+            "--provider", input_run.initial_model_provider, "--model", model_id,
+        ]
     common = ["--mode", "rpc", *model_arguments,
               "--session-dir", str(sessions), "--no-context-files", "--no-extensions", "--no-skills",
               "--no-prompt-templates", "--system-prompt", "You are a deterministic RPC fixture assistant."]
@@ -2092,6 +2458,8 @@ def _prepare_product(product: str, pi: Path, workspace: Path,
         common.remove("--no-extensions")
     if input_run.resume_session:
         common.append("--continue")
+    if input_run.model_scope:
+        common.extend(("--models", ",".join(input_run.model_scope)))
     fixture_content = (input_run.session_fixture_native_json
                        if product == "pisharp" and input_run.session_fixture_native_json is not None
                        else input_run.session_fixture_jsonl)
@@ -2580,6 +2948,15 @@ def _check_run(input_run: InputRun, result: dict[str, Any]) -> list[str]:
     provider_requests = result.get("providerRequests", [])
     if provider_count != len(provider_requests):
         errors.append(f"provider received {provider_count} requests but {len(provider_requests)} request bodies were captured")
+    if input_run.expected_provider_model_ids is not None:
+        observed_models = tuple(
+            json.loads(body.decode("utf-8")).get("model") for body in provider_requests
+        )
+        if observed_models != input_run.expected_provider_model_ids:
+            errors.append(
+                f"provider request models {observed_models!r} differ from "
+                f"{input_run.expected_provider_model_ids!r}"
+            )
     if provider_count < input_run.expected_min_provider_requests:
         errors.append(
             f"local provider received {provider_count} requests; expected at least "
@@ -2881,7 +3258,7 @@ def run_process_case(case: dict[str, Any], *, pi: Path, evidence_dir: Path) -> d
     case_id = case["id"]
     scenarios = R1_SCENARIOS.get(case_id) or R2_SCENARIOS.get(case_id) or R3_SCENARIOS.get(case_id) or \
         R4_SCENARIOS.get(case_id) or R5_SCENARIOS.get(case_id) or R6_SCENARIOS.get(case_id) or \
-        R7_SCENARIOS.get(case_id) or R8_SCENARIOS.get(case_id)
+        R7_SCENARIOS.get(case_id) or R8_SCENARIOS.get(case_id) or R9_SCENARIOS.get(case_id)
     if case_id in R2_SCENARIOS and case_id not in {
         "R2.long-command-acceptance", "R2.active-compaction-command",
     }:
@@ -2994,4 +3371,4 @@ def run_process_case(case: dict[str, Any], *, pi: Path, evidence_dir: Path) -> d
 def scenario_case_ids() -> set[str]:
     return (set(R1_SCENARIOS) | set(R2_SCENARIOS) | set(R3_SCENARIOS) |
             set(R4_SCENARIOS) | set(R5_SCENARIOS) | set(R6_SCENARIOS) | set(R7_SCENARIOS) |
-            set(R8_SCENARIOS))
+            set(R8_SCENARIOS) | set(R9_SCENARIOS))

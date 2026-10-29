@@ -173,7 +173,10 @@ public sealed class PiJsonlSessionInterchangeTests
         var messages = PiSessionRunProjection.ProjectRunMessages(session, runStart, "openai-completions");
 
         Assert.Equal(3, messages.Count);
-        Assert.Equal("new prompt", messages[0]!["content"]!.GetValue<string>());
+        var userContent = messages[0]!["content"]!.AsArray();
+        var userText = Assert.Single(userContent);
+        Assert.Equal("text", userText!["type"]!.GetValue<string>());
+        Assert.Equal("new prompt", userText["text"]!.GetValue<string>());
         Assert.Equal("toolUse", messages[1]!["stopReason"]!.GetValue<string>());
         Assert.Equal("openai-completions", messages[1]!["api"]!.GetValue<string>());
         Assert.Equal("read", messages[2]!["toolName"]!.GetValue<string>());
