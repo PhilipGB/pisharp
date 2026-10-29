@@ -1388,7 +1388,7 @@ R6_SCENARIOS["R6.partial-assistant-with-tool"] = _r6_case(
     "R6.partial-assistant-with-tool", "mix assistant text and a tool call",
     (FixtureProviderStep(text_fragments=("assistant text before tool",),
                          tool_name="rpc_parity_tool", tool_arguments=_rpc_tool_arguments("mixed-content"),
-                         flush_stream_chunks=True, stream_chunk_delay_seconds=0.02),
+                         role_only_chunk=True, flush_stream_chunks=True, stream_chunk_delay_seconds=0.2),
      FixtureProviderStep(text="mixed assistant and tool call complete")))
 R6_SCENARIOS["R6.tool-call-id-and-parent-fields"] = _r6_case(
     "R6.tool-call-id-and-parent-fields", "execute one nested tool call",
