@@ -9,6 +9,7 @@ from pathlib import Path
 
 import verify
 from process_oracle import _D0_SCENARIO_CASES, scenario_case_ids
+from quality_oracle import quality_case_ids
 from source_oracle import SOURCE_CASE_IDS, source_case_ids
 
 
@@ -96,6 +97,11 @@ class FrozenRpcContractTests(unittest.TestCase):
             self.assertEqual(registered_ids, tuple(case["id"] for case in checkpoint["caseDefinitions"]))
         self.assertEqual(set(SOURCE_CASE_IDS["P0"] + SOURCE_CASE_IDS["P1"] + SOURCE_CASE_IDS["V0"]),
                          source_case_ids())
+
+    def test_quality_cases_have_an_executable_gate_in_frozen_order(self) -> None:
+        contract = verify.load_contract()
+        q0 = next(item for item in contract["checkpoints"] if item["id"] == "Q0")
+        self.assertEqual(quality_case_ids(), tuple(case["id"] for case in q0["caseDefinitions"]))
 
     def test_strict_case_cannot_declare_normalization(self) -> None:
         changed = json.loads(verify.CONTRACT_PATH.read_text(encoding="utf-8"))
