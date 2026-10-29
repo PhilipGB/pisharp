@@ -46,6 +46,12 @@ internal static class PiContextUsageEstimator
         return (int)Math.Min(int.MaxValue, tokens);
     }
 
+    internal static int EstimateMessage(ChatMessage message) =>
+        (int)Math.Min(int.MaxValue, EstimateTokens(MessageCharacters(message)));
+
+    internal static int EstimateCharacters(long characters) =>
+        (int)Math.Min(int.MaxValue, EstimateTokens(characters));
+
     private static List<Dictionary<string, object?>> ToolDeclarations(IEnumerable<AITool> tools)
     {
         var declarations = new List<Dictionary<string, object?>>();

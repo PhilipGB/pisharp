@@ -144,6 +144,19 @@ public sealed class RpcSessionStatsProjectorTests
     }
 
     [Fact]
+    public void ProjectsZeroCostForSessionWithoutUsageLikePi()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        using var model = JsonDocument.Parse("{\"contextWindow\":4096}");
+
+        var stats = RpcSessionStatsProjector.Project(session, null, model.RootElement, null);
+
+        Assert.Equal(0m, stats["cost"]!.GetValue<decimal>());
+        Assert.Equal(0, stats["contextUsage"]!["tokens"]!.GetValue<long>());
+        Assert.Equal(4096, stats["contextUsage"]!["contextWindow"]!.GetValue<int>());
+    }
+
+    [Fact]
     public void UsesReportedTotalWhenProviderCacheTokenSplitsAreUnknown()
     {
         var session = new ConversationSession(Path.GetTempPath(), "fixture", null);

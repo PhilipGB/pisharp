@@ -82,6 +82,8 @@ class InputRun:
     resume_session: bool = False
     reuse_workspace_previous: bool = False
     session_fixture_jsonl: str | None = None
+    session_fixture_native_json: str | None = None
+    reuse_session_fixture_path: bool = False
     expected_min_provider_requests: int = 0
     lifecycle_event_types: tuple[str, ...] = ()
     preserve_event_payloads: bool = False
@@ -103,7 +105,8 @@ class InputRun:
     use_rpc_tool_extension: bool = False
     compare_provider_requests: bool = False
     compare_stderr: bool = True
-    model_context_window: int = 4096
+    model_context_window: int | None = 4096
+    bind_fixture_working_directory: bool = False
     preserve_state_flags: bool = False
     preserve_queue_state: bool = False
     preserve_queue_response_data: bool = False
@@ -1632,6 +1635,164 @@ R7_SCENARIOS["R7.read-command-error-cursors"] = (
 )
 
 
+def _r8_usage(input_tokens: int, output_tokens: int, cache_read: int, cache_write: int,
+              input_cost: float, output_cost: float, cache_read_cost: float,
+              cache_write_cost: float) -> dict[str, Any]:
+    return {
+        "input": input_tokens,
+        "output": output_tokens,
+        "cacheRead": cache_read,
+        "cacheWrite": cache_write,
+        "totalTokens": input_tokens + output_tokens + cache_read + cache_write,
+        "cost": {
+            "input": input_cost,
+            "output": output_cost,
+            "cacheRead": cache_read_cost,
+            "cacheWrite": cache_write_cost,
+            "total": input_cost + output_cost + cache_read_cost + cache_write_cost,
+        },
+    }
+
+
+def _r8_native_usage(usage: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "Model": "fixture-model",
+        "Source": "branch_summary",
+        "InputTokens": usage["input"],
+        "OutputTokens": usage["output"],
+        "CachedInputTokens": usage["cacheRead"],
+        "ReasoningTokens": 0,
+        "TotalTokens": usage["totalTokens"],
+        "Cost": usage["cost"]["total"],
+        "CachedWriteTokens": usage["cacheWrite"],
+        "InputIncludingCachedTokens": usage["input"] + usage["cacheRead"],
+    }
+
+
+def _r8_pi_summary(entry_id: str, parent_id: str | None, usage: dict[str, Any] | None) -> dict[str, Any]:
+    entry: dict[str, Any] = {
+        "type": "branch_summary", "id": entry_id, "parentId": parent_id,
+        "timestamp": "2025-01-01T00:01:00.000Z", "fromId": "root", "summary": "fixture summary",
+    }
+    if usage is not None:
+        entry["usage"] = usage
+    return entry
+
+
+def _r8_native_summary(entry_id: str, parent_id: str | None, usage: dict[str, Any] | None) -> dict[str, Any]:
+    payload: dict[str, Any] = {"fromId": "root", "summary": "fixture summary"}
+    if usage is not None:
+        payload["usage"] = usage
+        payload["nativeUsage"] = _r8_native_usage(usage)
+    return {
+        "Id": entry_id, "ParentId": parent_id, "Type": "branch_summary", "Payload": payload,
+        "Timestamp": "2025-01-01T00:01:00.000Z",
+    }
+
+
+def _r8_pi_fixture(entries: tuple[dict[str, Any], ...]) -> str:
+    records = [{
+        "type": "session", "version": 3, "id": "rpc-r8-session",
+        "timestamp": "2025-01-01T00:00:00.000Z", "cwd": "/tmp",
+        "provider": "fixture", "modelId": "fixture-model", "thinkingLevel": "off",
+    }, *entries]
+    return "".join(json.dumps(record, ensure_ascii=False, separators=(",", ":")) + "\n" for record in records)
+
+
+def _r8_native_fixture(entries: tuple[dict[str, Any], ...]) -> str:
+    document = {
+        "Version": 2, "Id": "rpc-r8-session", "WorkingDirectory": "/tmp", "Model": "fixture-model",
+        "Endpoint": None, "Name": None, "HeadId": entries[-1]["Id"] if entries else None,
+        "Entries": entries, "Provider": "fixture", "PiHeader": None, "ParentSessionPath": None,
+    }
+    return json.dumps(document, ensure_ascii=False, separators=(",", ":")) + "\n"
+
+
+def _r8_stats_run(request_id: str, pi_entries: tuple[dict[str, Any], ...],
+                  native_entries: tuple[dict[str, Any], ...] | None, *,
+                  preserve_session_identity: bool = True) -> InputRun:
+    return InputRun(
+        chunks=((_line(request_id, "get_session_stats"), 0.0),),
+        expected_response_ids=(request_id,), expected_response_commands=("get_session_stats",),
+        expected_successes=(True,), expected_data_presence=(True,), response_only=True,
+        preserve_response_data_commands=("get_session_stats",),
+        preserve_session_identity=preserve_session_identity,
+        session_fixture_jsonl=_r8_pi_fixture(pi_entries),
+        session_fixture_native_json=None if native_entries is None else _r8_native_fixture(native_entries),
+        model_context_window=4096, bind_fixture_working_directory=True,
+    )
+
+
+R8_SCENARIOS: dict[str, tuple[InputRun, ...]] = {}
+_R8_GENERATED_USAGE = _r8_usage(17, 3, 5, 2, 0.000034, 0.000009, 0.000005, 0.000008)
+R8_SCENARIOS["R8.native-summary-generation"] = (
+    _r8_stats_run("native-summary-stats",
+                  (_r8_pi_summary("native-summary", None, _R8_GENERATED_USAGE),),
+                  (_r8_native_summary("native-summary", None, _R8_GENERATED_USAGE),)),
+)
+
+R8_SCENARIOS["R8.native-summary-persisted-reload"] = (
+    InputRun(
+        chunks=((_line("summary-seed", "set_session_name", name="persisted summary"), 0.0),),
+        expected_response_ids=("summary-seed",), expected_response_commands=("set_session_name",),
+        expected_successes=(True,), response_only=True,
+        session_fixture_jsonl=_r8_pi_fixture((_r8_pi_summary("native-summary", None, _R8_GENERATED_USAGE),)),
+        session_fixture_native_json=_r8_native_fixture(
+            (_r8_native_summary("native-summary", None, _R8_GENERATED_USAGE),)),
+        model_context_window=4096, bind_fixture_working_directory=True,
+    ),
+    InputRun(
+        chunks=((_line("summary-after-reload", "get_session_stats"), 0.0),),
+        expected_response_ids=("summary-after-reload",), expected_response_commands=("get_session_stats",),
+        expected_successes=(True,), expected_data_presence=(True,), response_only=True,
+        preserve_response_data_commands=("get_session_stats",), preserve_session_identity=True,
+        reuse_session_fixture_path=True, reuse_workspace_previous=True, model_context_window=4096,
+    ),
+)
+
+_R8_IMPORTED_USAGE = _r8_usage(7, 4, 2, 3, 0.000014, 0.000012, 0.000002, 0.000012)
+R8_SCENARIOS["R8.imported-pi-summary"] = (
+    _r8_stats_run("imported-summary-stats",
+                  (_r8_pi_summary("imported-summary", None, _R8_IMPORTED_USAGE),), None),
+)
+
+_R8_MIXED_NATIVE_USAGE = _r8_usage(5, 2, 3, 1, 0.000010, 0.000006, 0.000003, 0.000003)
+_R8_MIXED_IMPORTED_USAGE = _r8_usage(7, 4, 2, 3, 0.000014, 0.000012, 0.000002, 0.000012)
+_R8_MIXED_IMPORTED_PI_ENTRY = _r8_pi_summary("mixed-imported", "mixed-native", _R8_MIXED_IMPORTED_USAGE)
+R8_SCENARIOS["R8.mixed-native-imported-summaries"] = (
+    _r8_stats_run("mixed-summary-stats",
+                  (_r8_pi_summary("mixed-native", None, _R8_MIXED_NATIVE_USAGE), _R8_MIXED_IMPORTED_PI_ENTRY),
+                  (
+                      _r8_native_summary("mixed-native", None, _R8_MIXED_NATIVE_USAGE),
+                      {
+                          "Id": "mixed-imported", "ParentId": "mixed-native", "Type": "branch_summary",
+                          "Payload": {"piOriginalEntry": _R8_MIXED_IMPORTED_PI_ENTRY},
+                          "Timestamp": "2025-01-01T00:02:00.000Z",
+                      },
+                  )),
+)
+
+_R8_ALL_FIELDS_USAGE = _r8_usage(31, 7, 11, 13, 0.000062, 0.000021, 0.000011, 0.000065)
+R8_SCENARIOS["R8.cost-and-token-fields"] = (
+    _r8_stats_run("all-usage-fields-stats",
+                  (_r8_pi_summary("all-usage-fields", None, _R8_ALL_FIELDS_USAGE),),
+                  (_r8_native_summary("all-usage-fields", None, _R8_ALL_FIELDS_USAGE),)),
+)
+
+_R8_ZERO_USAGE = _r8_usage(0, 0, 0, 0, 0, 0, 0, 0)
+R8_SCENARIOS["R8.empty-and-zero-usage"] = (
+    _r8_stats_run("empty-session-stats", (), (), preserve_session_identity=False),
+    _r8_stats_run("zero-summary-stats",
+                  (_r8_pi_summary("zero-summary", None, _R8_ZERO_USAGE),),
+                  (_r8_native_summary("zero-summary", None, _R8_ZERO_USAGE),),
+                  preserve_session_identity=False),
+    _r8_stats_run("absent-summary-stats",
+                  (_r8_pi_summary("absent-summary", None, None),),
+                  (_r8_native_summary("absent-summary", None, None),),
+                  preserve_session_identity=False),
+)
+
+
 class _FixtureProvider:
     def __init__(self, response_delays: tuple[float, ...], provider_steps: tuple[FixtureProviderStep, ...],
                  tool_gate_path: Path):
@@ -1887,9 +2048,11 @@ def _prepare_product(product: str, pi: Path, workspace: Path,
     model = {
         "id": "fixture-model", "name": "fixture-model", "api": input_run.provider_api,
         "reasoning": input_run.reasoning, "input": ["text"],
-        "contextWindow": input_run.model_context_window, "maxTokens": 128,
+        "maxTokens": 128,
         "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0},
     }
+    if input_run.model_context_window is not None:
+        model["contextWindow"] = input_run.model_context_window
     provider: dict[str, Any] = {
         "baseUrl": provider_base_url or "http://127.0.0.1:9/v1",
         "models": [model],
@@ -1915,7 +2078,9 @@ def _prepare_product(product: str, pi: Path, workspace: Path,
     })
     if input_run.use_rpc_tool_extension and product == "pisharp":
         environment["PISHARP_RPC_TOOL_FIXTURE"] = "true"
-    model_arguments = [] if input_run.session_fixture_jsonl is not None else [
+    has_session_fixture = input_run.session_fixture_jsonl is not None or \
+        input_run.session_fixture_native_json is not None or input_run.reuse_session_fixture_path
+    model_arguments = [] if has_session_fixture else [
         "--provider", "fixture", "--model", "fixture-model",
     ]
     common = ["--mode", "rpc", *model_arguments,
@@ -1925,9 +2090,31 @@ def _prepare_product(product: str, pi: Path, workspace: Path,
         common.remove("--no-extensions")
     if input_run.resume_session:
         common.append("--continue")
-    if input_run.session_fixture_jsonl is not None:
-        session_path = sessions / "rpc-session-fixture.jsonl"
-        session_path.write_text(input_run.session_fixture_jsonl, encoding="utf-8")
+    fixture_content = (input_run.session_fixture_native_json
+                       if product == "pisharp" and input_run.session_fixture_native_json is not None
+                       else input_run.session_fixture_jsonl)
+    if fixture_content is not None:
+        if input_run.bind_fixture_working_directory:
+            working_directory = str(workspace.parents[1])
+            if product == "pisharp" and input_run.session_fixture_native_json is not None:
+                document = json.loads(fixture_content)
+                document["WorkingDirectory"] = working_directory
+                fixture_content = json.dumps(document, ensure_ascii=False, separators=(",", ":")) + "\n"
+            else:
+                records = [json.loads(line) for line in fixture_content.splitlines() if line]
+                records[0]["cwd"] = working_directory
+                fixture_content = "".join(json.dumps(record, ensure_ascii=False, separators=(",", ":")) + "\n"
+                                           for record in records)
+        fixture_name = "rpc-session-fixture.session.json" if product == "pisharp" and \
+            input_run.session_fixture_native_json is not None else "rpc-session-fixture.jsonl"
+        session_path = sessions / fixture_name
+        session_path.write_text(fixture_content, encoding="utf-8")
+        common.extend(("--session", str(session_path)))
+    elif input_run.reuse_session_fixture_path:
+        fixture_name = "rpc-session-fixture.session.json" if product == "pisharp" else "rpc-session-fixture.jsonl"
+        session_path = sessions / fixture_name
+        if not session_path.is_file():
+            raise VerificationError(f"persisted RPC fixture is missing: {session_path}")
         common.extend(("--session", str(session_path)))
     if input_run.active_tool_names:
         common.extend(("--tools", ",".join(input_run.active_tool_names)))
@@ -2609,7 +2796,7 @@ def run_process_case(case: dict[str, Any], *, pi: Path, evidence_dir: Path) -> d
     case_id = case["id"]
     scenarios = R1_SCENARIOS.get(case_id) or R2_SCENARIOS.get(case_id) or R3_SCENARIOS.get(case_id) or \
         R4_SCENARIOS.get(case_id) or R5_SCENARIOS.get(case_id) or R6_SCENARIOS.get(case_id) or \
-        R7_SCENARIOS.get(case_id)
+        R7_SCENARIOS.get(case_id) or R8_SCENARIOS.get(case_id)
     if case_id in R2_SCENARIOS and case_id not in {
         "R2.long-command-acceptance", "R2.active-compaction-command",
     }:
@@ -2712,4 +2899,5 @@ def run_process_case(case: dict[str, Any], *, pi: Path, evidence_dir: Path) -> d
 
 def scenario_case_ids() -> set[str]:
     return (set(R1_SCENARIOS) | set(R2_SCENARIOS) | set(R3_SCENARIOS) |
-            set(R4_SCENARIOS) | set(R5_SCENARIOS) | set(R6_SCENARIOS) | set(R7_SCENARIOS))
+            set(R4_SCENARIOS) | set(R5_SCENARIOS) | set(R6_SCENARIOS) | set(R7_SCENARIOS) |
+            set(R8_SCENARIOS))

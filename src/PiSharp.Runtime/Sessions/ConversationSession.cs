@@ -524,6 +524,35 @@ public sealed class ConversationSession
         return projection.HasValidAssistantUsage && !projection.IsInvalidated ? projection.UsageTokens : null;
     }
 
+    /// <summary>Estimates context usage from the selected persisted history, matching Pi's session projection.</summary>
+    public long? EstimatedContextUsageTokens()
+    {
+        var projection = ProjectContextUsageForEstimate();
+        if (projection.HasCompaction && !projection.HasValidAssistantUsage) return null;
+        if (projection.HasValidAssistantUsage && !projection.IsInvalidated)
+            return PiContextUsageEstimator.EstimateAfterUsage(projection.UsageTokens, projection.TrailingMessages);
+
+        var path = Tree.ActivePath();
+        if (path.Any(node => node.Type is "compaction" or "context_edit"))
+            return PiContextUsageEstimator.EstimateAfterUsage(0, ContextMessages());
+
+        long tokens = 0;
+        foreach (var node in path)
+        {
+            if (node.Type == "branch_summary")
+            {
+                var summaryEntry = PiJsonlEntryCodec.OriginalEntry(node) ?? node.Payload;
+                if (summaryEntry.TryGetProperty("summary", out var summary) && summary.ValueKind == JsonValueKind.String)
+                    tokens += PiContextUsageEstimator.EstimateCharacters(summary.GetString()!.Length);
+                continue;
+            }
+
+            if (ConversationContextProjection.ContextMessageForNode(node) is { } message)
+                tokens += PiContextUsageEstimator.EstimateMessage(message);
+        }
+        return Math.Min(int.MaxValue, tokens);
+    }
+
     /// <summary>Plan against context-visible entry boundaries while retaining the canonical tree as source.</summary>
     public CompactionPlan? PrepareCompaction(int? keepRecentTokens = null) =>
         ConversationCompactionCoordinator.PreparePlan(this, keepRecentTokens);
