@@ -332,12 +332,13 @@ public sealed class NativeExtensionInputBashProcessTests
         Directory.CreateDirectory(sessions);
         var logPath = Path.Combine(fixture.Root, "extension-sources.log");
         using var process = Start(fixture, sessions, logPath, providerConfigured: true);
+        var rpcOutput = new JsonLineProcessOutput(process);
         var errors = process.StandardError.ReadToEndAsync(timeout.Token);
         try
         {
             await WriteAsync(process, new { id = "extension-idle", type = "prompt", message = "/native-send idle" },
                 timeout.Token);
-            using (var idleResponse = await ReadResponseAsync(process, "extension-idle", timeout.Token))
+            using (var idleResponse = await rpcOutput.ReadResponseAsync("extension-idle", timeout.Token))
                 Assert.True(idleResponse.RootElement.GetProperty("success").GetBoolean());
             var idleBody = await idleRequest.Task.WaitAsync(timeout.Token);
             Assert.Contains("native-package-extension-idle-final", idleBody, StringComparison.Ordinal);
@@ -345,14 +346,14 @@ public sealed class NativeExtensionInputBashProcessTests
 
             await WriteAsync(process, new { id = "blocker", type = "prompt", message = "native-package-blocker" },
                 timeout.Token);
-            using (var blockerResponse = await ReadResponseAsync(process, "blocker", timeout.Token))
+            using (var blockerResponse = await rpcOutput.ReadResponseAsync("blocker", timeout.Token))
                 Assert.True(blockerResponse.RootElement.GetProperty("success").GetBoolean());
             var blockerBody = await activeRequest.Task.WaitAsync(timeout.Token);
             Assert.Contains("native-package-blocker", blockerBody, StringComparison.Ordinal);
 
             await WriteAsync(process, new { id = "extension-active", type = "prompt", message = "/native-send active" },
                 timeout.Token);
-            using (var extensionCommandResponse = await ReadResponseAsync(process, "extension-active", timeout.Token))
+            using (var extensionCommandResponse = await rpcOutput.ReadResponseAsync("extension-active", timeout.Token))
                 Assert.True(extensionCommandResponse.RootElement.GetProperty("success").GetBoolean());
             releaseBlocker.TrySetResult();
 
@@ -363,6 +364,7 @@ public sealed class NativeExtensionInputBashProcessTests
 
             process.StandardInput.Close();
             await process.WaitForExitAsync(timeout.Token);
+            await rpcOutput.Completion.WaitAsync(timeout.Token);
             Assert.Equal(0, process.ExitCode);
             Assert.Equal(string.Empty, await errors.WaitAsync(timeout.Token));
         }
@@ -370,6 +372,7 @@ public sealed class NativeExtensionInputBashProcessTests
         {
             releaseBlocker.TrySetResult();
             await StopAsync(process);
+            await rpcOutput.Completion;
         }
 
         var records = (await File.ReadAllLinesAsync(logPath, timeout.Token))
