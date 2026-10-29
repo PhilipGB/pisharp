@@ -1,0 +1,147 @@
+{
+  "schemaVersion": 1,
+  "reviewedHead": "01b901058497abe0be13cbe53a5b255c0175e26d",
+  "implementationSourceCommit": "62c650449f59be8cce7bedb2ecacbbec7770b015",
+  "pinnedPiCommit": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "correctionCommits": [
+    "942ed5cc",
+    "9df8d346",
+    "c9b137bf",
+    "d991cb17",
+    "62c65044"
+  ],
+  "rootCauses": {
+    "P2-A": "RPC Bash completion resolved CurrentRun after async execution and used the dynamic save callback, permitting result transfer after session adoption.",
+    "P2-B": "Q0 replaced the numeric summary passed count with Boolean gate status; publication code read that Boolean as the suite total."
+  },
+  "failFirst": {
+    "bashOwnership": {
+      "command": "dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --filter FullyQualifiedName~RpcBashSessionOwnershipProcessTests --no-restore",
+      "failedCases": 4,
+      "totalCases": 4,
+      "artifactPath": "artifacts/parity/rpc-protocol-command-parity/remediation-reviewhead-01b901058497/fail-first/bash-ownership-red.log",
+      "sha256": "53db649ff95d16da84931393e73c7678876e9d3c79f4ab383649ff86f5275d0b"
+    },
+    "q0Schema": {
+      "artifactPath": "artifacts/parity/rpc-protocol-command-parity/remediation-reviewhead-01b901058497/fail-first/q0-boolean-overwrite.json",
+      "sha256": "ba065de10edf804fc1534c978d66addee284b555358c243c856f49a5b63e6ec7",
+      "legacySummaryPassedJsonType": "bool",
+      "legacyHasTestCounts": false,
+      "correctedVerifierRejectedLegacyEvidence": true
+    }
+  },
+  "pinnedPiTransitionPolicy": {
+    "summaryPath": "artifacts/parity/rpc-protocol-command-parity/remediation-reviewhead-01b901058497/pinned-pi/summary.json",
+    "summarySha256": "76204e1e083289586a440da52164b8c2ef3f0854f77c5ff1a3f07e5266ff7a4e",
+    "policy": "For switch_session, new_session, fork and clone, cancel outgoing-run Bash and persist its cancelled result to the origin before the transition response; after EOF closes stdout, persist cancellation without writing a terminal response.",
+    "transitions": [
+      {
+        "transition": "switch_session",
+        "exitCode": 0,
+        "responseOrder": [
+          "owner-bash",
+          "owner-transition"
+        ],
+        "bashCancelled": true,
+        "bashOutput": "pinned-owner-ready\n",
+        "transitionSuccess": true,
+        "resultPersistedToOrigin": true,
+        "resultSessionFiles": [
+          "/home/philip/Projects/pisharp/artifacts/parity/rpc-protocol-command-parity/remediation-reviewhead-01b901058497/pinned-pi/switch_session-1_05ql2c/sessions/origin.jsonl"
+        ],
+        "captureHashes": [
+          {
+            "path": "artifacts/parity/rpc-protocol-command-parity/remediation-reviewhead-01b901058497/pinned-pi/switch_session-1_05ql2c/capture.json",
+            "sha256": "3fa06535756aa396c1c672141115564c7067582ef6c15944a0630c83292a4954"
+          }
+        ]
+      },
+      {
+        "transition": "new_session",
+        "exitCode": 0,
+        "responseOrder": [
+          "owner-bash",
+          "owner-transition"
+        ],
+        "bashCancelled": true,
+        "bashOutput": "pinned-owner-ready\n",
+        "transitionSuccess": true,
+        "resultPersistedToOrigin": true,
+        "resultSessionFiles": [
+          "/home/philip/Projects/pisharp/artifacts/parity/rpc-protocol-command-parity/remediation-reviewhead-01b901058497/pinned-pi/new_session-0e1b0tx6/sessions/origin.jsonl"
+        ],
+        "captureHashes": [
+          {
+            "path": "artifacts/parity/rpc-protocol-command-parity/remediation-reviewhead-01b901058497/pinned-pi/new_session-0e1b0tx6/capture.json",
+            "sha256": "6b1679d28083338a93ffcf8d3b8019db411038abb0638238ffb513e56f7ed895"
+          }
+        ]
+      },
+      {
+        "transition": "fork",
+        "exitCode": 0,
+        "responseOrder": [
+          "owner-bash",
+          "owner-transition"
+        ],
+        "bashCancelled": true,
+        "bashOutput": "pinned-owner-ready\n",
+        "transitionSuccess": true,
+        "resultPersistedToOrigin": true,
+        "resultSessionFiles": [
+          "/home/philip/Projects/pisharp/artifacts/parity/rpc-protocol-command-parity/remediation-reviewhead-01b901058497/pinned-pi/fork-ln73iuvf/sessions/origin.jsonl"
+        ],
+        "captureHashes": [
+          {
+            "path": "artifacts/parity/rpc-protocol-command-parity/remediation-reviewhead-01b901058497/pinned-pi/fork-ln73iuvf/capture.json",
+            "sha256": "2a0c1d1fd9db8e3855f89ac338e8604de0be9674c277cb4c1137ed539765c718"
+          }
+        ]
+      },
+      {
+        "transition": "clone",
+        "exitCode": 0,
+        "responseOrder": [
+          "owner-bash",
+          "owner-transition"
+        ],
+        "bashCancelled": true,
+        "bashOutput": "pinned-owner-ready\n",
+        "transitionSuccess": true,
+        "resultPersistedToOrigin": true,
+        "resultSessionFiles": [
+          "/home/philip/Projects/pisharp/artifacts/parity/rpc-protocol-command-parity/remediation-reviewhead-01b901058497/pinned-pi/clone-4jm0hpcp/sessions/origin.jsonl"
+        ],
+        "captureHashes": [
+          {
+            "path": "artifacts/parity/rpc-protocol-command-parity/remediation-reviewhead-01b901058497/pinned-pi/clone-4jm0hpcp/capture.json",
+            "sha256": "a744240d5280bbf682b12d330a94e4f55776788d5de99ce0111ef1325bfc3cfc"
+          }
+        ]
+      }
+    ]
+  },
+  "regressions": {
+    "ownershipFocusedDotnet": "7/7 passed",
+    "fullDotnet": "4005/4005 passed, zero failed or skipped",
+    "rpcParityPython": "32/32 passed",
+    "Q0": "15/15 passed",
+    "pinnedPi": "582 passed, 20 credential-gated unverified skips"
+  },
+  "authoritativeQ0": {
+    "schema": "summary.testCounts {passed,failed,skipped,total}",
+    "counts": {
+      "failed": 0,
+      "passed": 4005,
+      "skipped": 0,
+      "total": 4005
+    },
+    "commandArtifactSha256": "9d2afbeae3adf99d1698e1e49ab519587d5f5a445ddebcb38fa6ad519876fa89",
+    "observationArtifactSha256": "d253f3fcca142784a7c1e85df85121012fcd0ea7a0c246b16f4ff70f2d1b1ce3",
+    "rawOutputVerified": true
+  },
+  "limitations": {
+    "credentialGatedPinnedPi": "20 exact credential-dependent tests remain unverified and are not counted as passing.",
+    "managedPackage": "The managed-package parity corpus remains scoped to its historical milestone branch and was not rerun here."
+  }
+}

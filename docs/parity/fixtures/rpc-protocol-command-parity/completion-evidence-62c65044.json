@@ -1,0 +1,1721 @@
+{
+  "schemaVersion": 1,
+  "status": "corrected_source_bound_acceptance_passes; finalization pending",
+  "sourcePins": {
+    "branch": "milestone/rpc-protocol-command-parity",
+    "pisharpBaseCommit": "646db89bd396b8089b1b9a058fa96b1489f4d0cd",
+    "implementationSourceCommit": "62c650449f59be8cce7bedb2ecacbbec7770b015",
+    "finalHeadAtSourceRun": "62c650449f59be8cce7bedb2ecacbbec7770b015",
+    "piCommit": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "inventoryContractCommit": "ac85aa2a0f59566115eb0109cc9022dc64f4d8fe",
+    "contractSha256": "036c369054fbb50887629666f6b25ef76d8a9fbe856d00d4a79a2cf9609f0761",
+    "runtime": {
+      "microsoftAgentFramework": "1.21.0",
+      "dotnetSdk": "10.0.113"
+    }
+  },
+  "acceptance": {
+    "requiredCheckpoints": 24,
+    "sourceBoundCheckpointsPassed": 21,
+    "sourceBoundCasesPassed": 231,
+    "requiredCases": 252,
+    "failedCases": 0,
+    "skippedCases": 0,
+    "comparisonModes": {
+      "strict": 230,
+      "equivalent": 22,
+      "intentional-safety-difference": 0,
+      "unresolved": 0
+    },
+    "finalizationPending": [
+      "E0",
+      "CI0",
+      "PUB0"
+    ]
+  },
+  "checkpointEvidence": [
+    {
+      "checkpointId": "P0",
+      "passed": 6,
+      "required": 6,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "62c650449f59be8cce7bedb2ecacbbec7770b015",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-62c65044/P0/evidence.json",
+      "evidenceSha256": "66bed76a2c5db2d96d62ee6920f7db011d6c21eb54a75b4e46704bfb2ad0f0ea"
+    },
+    {
+      "checkpointId": "P1",
+      "passed": 5,
+      "required": 5,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "62c650449f59be8cce7bedb2ecacbbec7770b015",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-62c65044/P1/evidence.json",
+      "evidenceSha256": "e8116676a66d8b46d174ae278ce3d4417d6b705237efd5829cb1c19174b90478"
+    },
+    {
+      "checkpointId": "V0",
+      "passed": 6,
+      "required": 6,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "62c650449f59be8cce7bedb2ecacbbec7770b015",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-62c65044/V0/evidence.json",
+      "evidenceSha256": "1cffdf097f9b5f0c9e7c92fdb442ca92e9836c996ed2ae01e5f9fbbb4e02e97d"
+    },
+    {
+      "checkpointId": "V1",
+      "passed": 23,
+      "required": 23,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "62c650449f59be8cce7bedb2ecacbbec7770b015",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-62c65044/V1/evidence.json",
+      "evidenceSha256": "d2249369cff8ae6bcba69f640ea174033e9a843ced4c4769885a51142b8b3931"
+    },
+    {
+      "checkpointId": "R1",
+      "passed": 11,
+      "required": 11,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "62c650449f59be8cce7bedb2ecacbbec7770b015",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-62c65044/R1/evidence.json",
+      "evidenceSha256": "61aabcd584d3879182e845719f68fbffe602602b67faeef4ca64438276ab7100"
+    },
+    {
+      "checkpointId": "R2",
+      "passed": 12,
+      "required": 12,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "62c650449f59be8cce7bedb2ecacbbec7770b015",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-62c65044/R2/evidence.json",
+      "evidenceSha256": "44c30726e04299b4222bb120b2d40722e6d4a0ac2bab0939053b98321e9e8b61"
+    },
+    {
+      "checkpointId": "R3",
+      "passed": 10,
+      "required": 10,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "62c650449f59be8cce7bedb2ecacbbec7770b015",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-62c65044/R3/evidence.json",
+      "evidenceSha256": "484c671b0d97b76d6a72a99fd4a8dc1139283685a6466a57d51ac18205cb6579"
+    },
+    {
+      "checkpointId": "R4",
+      "passed": 12,
+      "required": 12,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "62c650449f59be8cce7bedb2ecacbbec7770b015",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-62c65044/R4/evidence.json",
+      "evidenceSha256": "9e6990b5fe76b8cc5502cbf477c11346d93d01dc9ba85e71c30cfcc2c2e08c6e"
+    },
+    {
+      "checkpointId": "R5",
+      "passed": 11,
+      "required": 11,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "62c650449f59be8cce7bedb2ecacbbec7770b015",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-62c65044/R5/evidence.json",
+      "evidenceSha256": "2b1eea9f8d1b99b70d09dbd43556f8694f5a4d94d0a98e2ca9da96ddbf98f4bb"
+    },
+    {
+      "checkpointId": "R6",
+      "passed": 10,
+      "required": 10,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "62c650449f59be8cce7bedb2ecacbbec7770b015",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-62c65044/R6/evidence.json",
+      "evidenceSha256": "2306e20f2d11fa76cea524663d93ed42a2886a81e456475f33ca2da452028ad0"
+    },
+    {
+      "checkpointId": "R7",
+      "passed": 13,
+      "required": 13,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "62c650449f59be8cce7bedb2ecacbbec7770b015",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-62c65044/R7/evidence.json",
+      "evidenceSha256": "bb4e25a08421991fcf14fd584002c462a3e2172b0c81811e95e3dc4ed0bc8784"
+    },
+    {
+      "checkpointId": "R8",
+      "passed": 6,
+      "required": 6,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "62c650449f59be8cce7bedb2ecacbbec7770b015",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-62c65044/R8/evidence.json",
+      "evidenceSha256": "12b67cf5bb09c105e49de5a7318fecd2bc1cd924dc192517d36939df5d9b7853"
+    },
+    {
+      "checkpointId": "R9",
+      "passed": 12,
+      "required": 12,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "62c650449f59be8cce7bedb2ecacbbec7770b015",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-62c65044/R9/evidence.json",
+      "evidenceSha256": "791445a49ccb6a90c9b36bd95eb50819c28f82ca5d32ab4dbdd545f7edd587a5"
+    },
+    {
+      "checkpointId": "R10",
+      "passed": 9,
+      "required": 9,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "62c650449f59be8cce7bedb2ecacbbec7770b015",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-62c65044/R10/evidence.json",
+      "evidenceSha256": "83f599168ff2a82c6013efcbe6710770fcc4ce466998e24565a3cfcdeb32cb28"
+    },
+    {
+      "checkpointId": "R11",
+      "passed": 8,
+      "required": 8,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "62c650449f59be8cce7bedb2ecacbbec7770b015",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-62c65044/R11/evidence.json",
+      "evidenceSha256": "b3b6f5a69c9667fb909bde340b217cf6353139c1fbbb068356fe8ee0ee148bf6"
+    },
+    {
+      "checkpointId": "R12",
+      "passed": 15,
+      "required": 15,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "62c650449f59be8cce7bedb2ecacbbec7770b015",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-62c65044/R12/evidence.json",
+      "evidenceSha256": "a6c6c7df9a24c50693b946b3844924702d23864e94e66e65baf6c8a7a653053c"
+    },
+    {
+      "checkpointId": "R13",
+      "passed": 8,
+      "required": 8,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "62c650449f59be8cce7bedb2ecacbbec7770b015",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-62c65044/R13/evidence.json",
+      "evidenceSha256": "b5dedf787f742e99ecb4f54e4969f61f9f34510583f04a66c2df035874384ebd"
+    },
+    {
+      "checkpointId": "R14",
+      "passed": 17,
+      "required": 17,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "62c650449f59be8cce7bedb2ecacbbec7770b015",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-62c65044/R14/evidence.json",
+      "evidenceSha256": "0ecbdf3a4c2c776a5e67bd33d611d5997742b4e823d50db4e0ffc7ec50715070"
+    },
+    {
+      "checkpointId": "R15",
+      "passed": 13,
+      "required": 13,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "62c650449f59be8cce7bedb2ecacbbec7770b015",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-62c65044/R15/evidence.json",
+      "evidenceSha256": "64217f3d65f6812304b07c714b0107fd669644379f0b0ea8ab9f8c00971175a2"
+    },
+    {
+      "checkpointId": "D0",
+      "passed": 9,
+      "required": 9,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "62c650449f59be8cce7bedb2ecacbbec7770b015",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-62c65044/D0/evidence.json",
+      "evidenceSha256": "30ed3a9db86158b8847a538ff18d0d5904c3ac6fabc67d20405d5599f78149a0"
+    },
+    {
+      "checkpointId": "Q0",
+      "passed": 15,
+      "required": 15,
+      "failed": 0,
+      "skipped": 0,
+      "implementationSourceCommit": "62c650449f59be8cce7bedb2ecacbbec7770b015",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-62c65044/Q0/evidence.json",
+      "evidenceSha256": "e0ddf62fe835f402a0e127beb0fedf8ad2a2aabb46ba9d17a1582e3daed55896",
+      "fullDotnetTestCounts": {
+        "failed": 0,
+        "passed": 4005,
+        "skipped": 0,
+        "total": 4005
+      },
+      "fullDotnetCommandArtifactSha256": "9d2afbeae3adf99d1698e1e49ab519587d5f5a445ddebcb38fa6ad519876fa89",
+      "fullDotnetObservationArtifactSha256": "d253f3fcca142784a7c1e85df85121012fcd0ea7a0c246b16f4ff70f2d1b1ce3",
+      "rawExitCode": 0,
+      "rawArgv": [
+        "dotnet",
+        "test",
+        "PiSharp.slnx"
+      ]
+    }
+  ],
+  "caseResults": [
+    {
+      "checkpointId": "P0",
+      "caseId": "P0.reviewed-head",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "P0",
+      "caseId": "P0.exact-head-ci",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "P0",
+      "caseId": "P0.published-acceptance",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "P0",
+      "caseId": "P0.merge-state",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "P0",
+      "caseId": "P0.reviewed-code-ancestry",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "P0",
+      "caseId": "P0.merge-base-verification",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "P1",
+      "caseId": "P1.branch-name-and-base",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "P1",
+      "caseId": "P1.baseline-main-ancestry",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "P1",
+      "caseId": "P1.pinned-pi-sha",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "P1",
+      "caseId": "P1.baseline-tree",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "P1",
+      "caseId": "P1.maf-version",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "V0",
+      "caseId": "V0.all-command-schemas",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "V0",
+      "caseId": "V0.all-event-families",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "V0",
+      "caseId": "V0.extension-ui-schemas",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "V0",
+      "caseId": "V0.state-and-error-projections",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "V0",
+      "caseId": "V0.protocol-operation-coverage",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "V0",
+      "caseId": "V0.owner-and-gap-register",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "V1",
+      "caseId": "V1.valid-positive-control",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "V1",
+      "caseId": "V1.wrong-pi-sha",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "V1",
+      "caseId": "V1.wrong-implementation-sha",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "V1",
+      "caseId": "V1.stale-evidence",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "V1",
+      "caseId": "V1.mutated-jsonl-framing",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "V1",
+      "caseId": "V1.missing-response",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "V1",
+      "caseId": "V1.duplicate-response",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "V1",
+      "caseId": "V1.wrong-correlation-id",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "V1",
+      "caseId": "V1.reordered-lifecycle",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "V1",
+      "caseId": "V1.dropped-stream-fragment",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "V1",
+      "caseId": "V1.altered-tool-arguments",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "V1",
+      "caseId": "V1.incorrect-queue-state",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "V1",
+      "caseId": "V1.incorrect-session-selection",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "V1",
+      "caseId": "V1.incorrect-token-cost-totals",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "V1",
+      "caseId": "V1.incorrect-cancellation-settlement",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "V1",
+      "caseId": "V1.unexecuted-case",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "V1",
+      "caseId": "V1.skipped-case",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "V1",
+      "caseId": "V1.unexpected-case-id",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "V1",
+      "caseId": "V1.missing-raw-capture",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "V1",
+      "caseId": "V1.altered-artifact-hash",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "V1",
+      "caseId": "V1.failed-ci",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "V1",
+      "caseId": "V1.wrong-head-ci",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "V1",
+      "caseId": "V1.changed-contract",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R1",
+      "caseId": "R1.lf-delimited-record",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R1",
+      "caseId": "R1.utf8-split-codepoint",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R1",
+      "caseId": "R1.optional-crlf",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R1",
+      "caseId": "R1.unicode-separators-in-string",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R1",
+      "caseId": "R1.incremental-and-multiple-chunks",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R1",
+      "caseId": "R1.incomplete-record-completion",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R1",
+      "caseId": "R1.large-valid-record",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R1",
+      "caseId": "R1.malformed-json-recovery",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R1",
+      "caseId": "R1.empty-and-blank-input",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R1",
+      "caseId": "R1.eof-incomplete-final-record",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R1",
+      "caseId": "R1.stdout-stderr-purity",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R2",
+      "caseId": "R2.correlated-response-id",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R2",
+      "caseId": "R2.uncorrelated-response-omits-id",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R2",
+      "caseId": "R2.id-type-validation",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R2",
+      "caseId": "R2.success-response-shape",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R2",
+      "caseId": "R2.error-response-shape",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R2",
+      "caseId": "R2.absent-versus-null-fields",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R2",
+      "caseId": "R2.unknown-command-recovery",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R2",
+      "caseId": "R2.invalid-request-shapes",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R2",
+      "caseId": "R2.missing-required-properties",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R2",
+      "caseId": "R2.overlapping-correlated-requests",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R2",
+      "caseId": "R2.long-command-acceptance",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R2",
+      "caseId": "R2.active-compaction-command",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R3",
+      "caseId": "R3.idle-prompt-started",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R3",
+      "caseId": "R3.prompt-handled-without-run",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R3",
+      "caseId": "R3.busy-prompt-default-behavior",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R3",
+      "caseId": "R3.busy-prompt-explicit-steer",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R3",
+      "caseId": "R3.busy-prompt-explicit-followup",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R3",
+      "caseId": "R3.prompt-during-tool-execution",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R3",
+      "caseId": "R3.subscribe-before-fast-completion",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R3",
+      "caseId": "R3.acceptance-before-completion",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R3",
+      "caseId": "R3.provider-failure-after-acceptance",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R3",
+      "caseId": "R3.abort-prompt-run",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R4",
+      "caseId": "R4.steer-command-idle",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R4",
+      "caseId": "R4.followup-command-idle",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R4",
+      "caseId": "R4.steering-all-mode",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R4",
+      "caseId": "R4.steering-one-at-a-time-mode",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R4",
+      "caseId": "R4.followup-all-mode",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R4",
+      "caseId": "R4.followup-one-at-a-time-mode",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R4",
+      "caseId": "R4.steer-followup-precedence",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R4",
+      "caseId": "R4.multiple-concurrent-queue-updates",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R4",
+      "caseId": "R4.clear-queue-snapshot",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R4",
+      "caseId": "R4.queue-cancel-and-restore",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R4",
+      "caseId": "R4.tool-finishes-before-next-request",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R4",
+      "caseId": "R4.mode-change-persistence",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R5",
+      "caseId": "R5.agent-start-end-settled",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R5",
+      "caseId": "R5.turn-start-end",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R5",
+      "caseId": "R5.message-role-lifecycle",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R5",
+      "caseId": "R5.streaming-text-fragments",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R5",
+      "caseId": "R5.streaming-reasoning-fragments",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R5",
+      "caseId": "R5.cumulative-usage-and-final-message",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R5",
+      "caseId": "R5.retry-event-order",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R5",
+      "caseId": "R5.post-content-failure",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R5",
+      "caseId": "R5.cancellation-lifecycle",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R5",
+      "caseId": "R5.session-and-model-event-order",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R5",
+      "caseId": "R5.session-entry-event-payload",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R6",
+      "caseId": "R6.tool-call-start-arguments",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R6",
+      "caseId": "R6.tool-argument-fragments",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R6",
+      "caseId": "R6.tool-call-end-authoritative",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R6",
+      "caseId": "R6.tool-execution-start-update-end",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R6",
+      "caseId": "R6.sequential-tool-continuation",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R6",
+      "caseId": "R6.parallel-tool-continuation",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R6",
+      "caseId": "R6.tool-error-continuation",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R6",
+      "caseId": "R6.provider-failure-after-tool",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R6",
+      "caseId": "R6.partial-assistant-with-tool",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R6",
+      "caseId": "R6.tool-call-id-and-parent-fields",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R7",
+      "caseId": "R7.get-state-idle-schema",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R7",
+      "caseId": "R7.get-state-active-stream",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R7",
+      "caseId": "R7.get-messages-system-projection",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R7",
+      "caseId": "R7.get-messages-compacted-context-edits",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R7",
+      "caseId": "R7.get-messages-active-partial",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R7",
+      "caseId": "R7.get-entries-full-and-leaf",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R7",
+      "caseId": "R7.get-entries-cursor-boundaries",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R7",
+      "caseId": "R7.get-tree-branches-and-labels",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R7",
+      "caseId": "R7.get-fork-messages-content",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R7",
+      "caseId": "R7.get-last-assistant-text-values",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R7",
+      "caseId": "R7.session-read-during-provider-work",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R7",
+      "caseId": "R7.session-read-after-reload",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R7",
+      "caseId": "R7.read-command-error-cursors",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R8",
+      "caseId": "R8.native-summary-generation",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R8",
+      "caseId": "R8.native-summary-persisted-reload",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R8",
+      "caseId": "R8.imported-pi-summary",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R8",
+      "caseId": "R8.mixed-native-imported-summaries",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R8",
+      "caseId": "R8.cost-and-token-fields",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R8",
+      "caseId": "R8.empty-and-zero-usage",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R9",
+      "caseId": "R9.available-model-schema-order",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R9",
+      "caseId": "R9.set-model-exact-and-invalid",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R9",
+      "caseId": "R9.cycle-model-order-and-null",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R9",
+      "caseId": "R9.scoped-thinking-suffix",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R9",
+      "caseId": "R9.per-model-thinking-defaults",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R9",
+      "caseId": "R9.supported-and-unsupported-levels",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R9",
+      "caseId": "R9.sparse-thinking-level-map",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R9",
+      "caseId": "R9.busy-model-change",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R9",
+      "caseId": "R9.thinking-event-response-order",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R9",
+      "caseId": "R9.model-persistence-restart",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R9",
+      "caseId": "R9.invalid-model-no-mutation",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R9",
+      "caseId": "R9.catalog-boundary",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R10",
+      "caseId": "R10.manual-compact-success",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R10",
+      "caseId": "R10.manual-compact-failure-rollback",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R10",
+      "caseId": "R10.manual-compact-abort",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R10",
+      "caseId": "R10.auto-compaction-setting",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R10",
+      "caseId": "R10.threshold-and-overflow-compaction",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R10",
+      "caseId": "R10.auto-retry-events",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R10",
+      "caseId": "R10.abort-retry",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R10",
+      "caseId": "R10.compaction-and-retry-restart",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R10",
+      "caseId": "R10.summarization-retry-events",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R11",
+      "caseId": "R11.bash-success-result",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R11",
+      "caseId": "R11.bash-stream-id-and-chunks",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R11",
+      "caseId": "R11.bash-without-command-id",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R11",
+      "caseId": "R11.bash-exclude-from-context",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R11",
+      "caseId": "R11.bash-failure-semantics",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R11",
+      "caseId": "R11.abort-active-bash",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R11",
+      "caseId": "R11.bash-during-agent-run",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R11",
+      "caseId": "R11.shutdown-active-bash",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R12",
+      "caseId": "R12.new-session-empty",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R12",
+      "caseId": "R12.new-session-parent-session",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R12",
+      "caseId": "R12.switch-native-session",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R12",
+      "caseId": "R12.switch-pi-jsonl-session",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R12",
+      "caseId": "R12.switch-missing-or-malformed-target",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R12",
+      "caseId": "R12.cross-project-rebind-trust",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R12",
+      "caseId": "R12.fork-entry-and-branch-point",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R12",
+      "caseId": "R12.clone-current-branch",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R12",
+      "caseId": "R12.replace-during-provider-stream",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R12",
+      "caseId": "R12.replace-during-active-tool",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R12",
+      "caseId": "R12.aborted-turn-settlement-order",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R12",
+      "caseId": "R12.no-stale-session-writes",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R12",
+      "caseId": "R12.session-file-ownership",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R12",
+      "caseId": "R12.subsequent-provider-history",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R12",
+      "caseId": "R12.failed-replacement-recovery",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R13",
+      "caseId": "R13.set-session-name-and-clear",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R13",
+      "caseId": "R13.session-info-event-order",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R13",
+      "caseId": "R13.export-default-path",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R13",
+      "caseId": "R13.export-explicit-path",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R13",
+      "caseId": "R13.export-errors",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R13",
+      "caseId": "R13.get-commands-builtins",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R13",
+      "caseId": "R13.get-commands-extension",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R13",
+      "caseId": "R13.commands-after-reload",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R14",
+      "caseId": "R14.ui-select-roundtrip",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R14",
+      "caseId": "R14.ui-confirm-roundtrip",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R14",
+      "caseId": "R14.ui-input-roundtrip",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R14",
+      "caseId": "R14.ui-editor-roundtrip",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R14",
+      "caseId": "R14.ui-notify-fire-and-forget",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R14",
+      "caseId": "R14.ui-set-status",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R14",
+      "caseId": "R14.ui-set-widget",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R14",
+      "caseId": "R14.ui-set-title",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R14",
+      "caseId": "R14.ui-set-editor-text",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R14",
+      "caseId": "R14.ui-unique-concurrent-ids",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R14",
+      "caseId": "R14.ui-out-of-order-responses",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R14",
+      "caseId": "R14.ui-timeout-default",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R14",
+      "caseId": "R14.ui-cancel-late-unknown",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R14",
+      "caseId": "R14.ui-unload-and-shutdown",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R14",
+      "caseId": "R14.ui-unsupported-methods",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R14",
+      "caseId": "R14.extension-handler-error-event",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R14",
+      "caseId": "R14.ui-isolated-from-command-correlation",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R15",
+      "caseId": "R15.normal-eof",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R15",
+      "caseId": "R15.explicit-process-termination",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R15",
+      "caseId": "R15.cancel-provider-turn-on-shutdown",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R15",
+      "caseId": "R15.pending-command-shutdown",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R15",
+      "caseId": "R15.pending-extension-dialog-shutdown",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R15",
+      "caseId": "R15.active-tool-cancellation",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R15",
+      "caseId": "R15.partial-input-shutdown",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R15",
+      "caseId": "R15.output-backpressure",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R15",
+      "caseId": "R15.broken-pipe-handling",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R15",
+      "caseId": "R15.rapid-command-burst",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R15",
+      "caseId": "R15.multiple-pending-shutdown",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R15",
+      "caseId": "R15.process-disposal-repeat",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "R15",
+      "caseId": "R15.partial-write-record-integrity",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "D0",
+      "caseId": "D0.calibrate-transport",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "D0",
+      "caseId": "D0.calibrate-command-responses",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "D0",
+      "caseId": "D0.calibrate-prompt-events",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "D0",
+      "caseId": "D0.calibrate-queue-state",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "D0",
+      "caseId": "D0.calibrate-read-projections",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "D0",
+      "caseId": "D0.calibrate-model-thinking",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "D0",
+      "caseId": "D0.calibrate-session-lifecycle",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "D0",
+      "caseId": "D0.calibrate-extension-ui",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "D0",
+      "caseId": "D0.paired-independent-observations",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "Q0",
+      "caseId": "Q0.dotnet-format",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "Q0",
+      "caseId": "Q0.dotnet-build-warnings-as-errors",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "Q0",
+      "caseId": "Q0.full-dotnet-suite",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "Q0",
+      "caseId": "Q0.all-rpc-process-tests",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "Q0",
+      "caseId": "Q0.focused-runtime-and-session",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "Q0",
+      "caseId": "Q0.focused-compaction-tools-extensions",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "Q0",
+      "caseId": "Q0.json-event-regressions",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "Q0",
+      "caseId": "Q0.linux-process-and-pty",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "Q0",
+      "caseId": "Q0.python-parity-suites",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "Q0",
+      "caseId": "Q0.node-parity-suites",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "Q0",
+      "caseId": "Q0.mcp-conformance",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "Q0",
+      "caseId": "Q0.pinned-pi-rpc-suites",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "Q0",
+      "caseId": "Q0.new-rpc-differential-and-controls",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "Q0",
+      "caseId": "Q0.docs-link-validation",
+      "passed": true,
+      "skipped": false
+    },
+    {
+      "checkpointId": "Q0",
+      "caseId": "Q0.prior-milestone-regression-audit",
+      "passed": true,
+      "skipped": false
+    }
+  ],
+  "quality": {
+    "q0Cases": "15/15",
+    "fullDotnetTestCounts": {
+      "failed": 0,
+      "passed": 4005,
+      "skipped": 0,
+      "total": 4005
+    },
+    "fullDotnetCommandArtifactSha256": "9d2afbeae3adf99d1698e1e49ab519587d5f5a445ddebcb38fa6ad519876fa89",
+    "fullDotnetObservationArtifactSha256": "d253f3fcca142784a7c1e85df85121012fcd0ea7a0c246b16f4ff70f2d1b1ce3",
+    "rpcAndQualityDetails": {
+      "Q0.all-rpc-process-tests": {
+        "passed": true,
+        "failed": 0,
+        "skipped": 0,
+        "total": 185
+      },
+      "Q0.focused-runtime-and-session": {
+        "passed": true,
+        "failed": 0,
+        "skipped": 0,
+        "total": 602
+      },
+      "Q0.focused-compaction-tools-extensions": {
+        "passed": true,
+        "failed": 0,
+        "skipped": 0,
+        "total": 1355
+      },
+      "Q0.json-event-regressions": {
+        "passed": true,
+        "failed": 0,
+        "skipped": 0,
+        "total": 15
+      },
+      "Q0.linux-process-and-pty": {
+        "passed": true,
+        "failed": 0,
+        "skipped": 0,
+        "total": 691
+      }
+    },
+    "pinnedPi": {
+      "passed": 582,
+      "failed": 0,
+      "skipped": 20,
+      "skipSetMatchesInventory": true
+    },
+    "pythonSuites": [
+      66,
+      32,
+      27,
+      62,
+      27
+    ],
+    "nodeTests": {
+      "passed": 24,
+      "total": 24
+    },
+    "documentation": "157 documents, 699 references",
+    "noLiveModelEndpointCalls": true,
+    "fullDotnetCommandEnvironmentOverride": {
+      "NuGetAudit": "false",
+      "reason": "NuGet vulnerability cache is read-only in the managed workspace"
+    }
+  },
+  "limitations": {
+    "credentialGatedPinnedPi": "20 exact credential-dependent tests remain unverified and are not counted as passing.",
+    "managedPackage": "The managed-package parity corpus remains scoped to its historical milestone branch and was not rerun here."
+  },
+  "frozenContract": "tools/parity/rpc_protocol/contract.json"
+}
