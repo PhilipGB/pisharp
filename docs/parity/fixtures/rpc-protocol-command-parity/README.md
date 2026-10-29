@@ -1,6 +1,6 @@
 # RPC Protocol and Command Parity — frozen baseline
 
-**Status:** inventory and acceptance contract were frozen before production changes in commit `ac85aa2a0f59566115eb0109cc9022dc64f4d8fe`. R8 passed 6/6 at source `223f8f071b0aba831e0e74d0e7127771a4cc34fb`, with repeated pinned-Pi and independent PiSharp process matches and zero failures/skips. R1–R7 and V1 have historical passes but are stale after later source or parity-tool changes. Final source-bound reruns are required after implementation and harness freeze. R9–R15, final quality and publication gates remain open.
+**Status:** inventory and acceptance contract were frozen before production changes in commit `ac85aa2a0f59566115eb0109cc9022dc64f4d8fe`. R8 passed 6/6 at source `223f8f071b0aba831e0e74d0e7127771a4cc34fb`; R9 passed 12/12 at source `74d9370b02045b562376f3ebdca8973cd2cb870a`. Both have stable repeated pinned-Pi and independent PiSharp process matches, with zero failures or skips. R1–R7 and V1 have historical passes but are stale after later source or parity-tool changes. R10–R15, final quality and publication gates remain open.
 
 ## Verified base
 
@@ -42,7 +42,9 @@ R5 source-bound evidence: [compact case results](r5-case-results.json) record 11
 
 R8 source-bound evidence: [compact case results](r8-case-results.json) record 6/6 cases passing at `223f8f071b0aba831e0e74d0e7127771a4cc34fb`, zero failures/skips, and matching two stable pinned-Pi processes with an independent PiSharp process per case. The formal report SHA-256 is `e97cd871be28bb6c0d976c690e7300d305669c7c1ef4a876cdff0c19b17b0bd3`; the warnings-as-errors CLI build and independent R8 verifier both pass. Focused session-statistics and native-extension tests pass 20/20, the parity verifier suite passes 16/16, and changed C# files pass targeted formatting verification. The runner executes `RequestedBranchSummaryUsesMafAndPersistsItsUsage` to generate the billed summary with a fake MAF client, then uses its hashed native and Pi JSONL sessions for the process comparison; all usage and cost values remain exact.
 
-Raw captures and the full manifest remain under ignored evidence directories. Full-solution formatting still reports three whitespace findings in untouched `RpcAssistantMessageProjectorTests.cs` and `RpcEventProjectorTests.cs`. V1 and R1–R7 need final source-bound reruns; continue with R9–R15, then complete quality and publication gates.
+R9 source-bound evidence: [compact case results](r9-case-results.json) record 12/12 cases passing at `74d9370b02045b562376f3ebdca8973cd2cb870a`, with zero failures/skips and matched repeated pinned-Pi and independent PiSharp process observations. The formal report SHA-256 is `a6bf68c8c06a9a6b459724dbbe0e2b70b84a8645a0249da39bd556fa427919d6`; the warnings-as-errors CLI build and independent R9 verifier pass. Focused RPC model/thinking/session tests pass 61/61 and parity verifier tests pass 16/16. The sparse thinking-map restart case executes a provider-backed turn before restart so Pi persists the session state being compared.
+
+Raw captures and the full manifest remain under ignored evidence directories. Full-solution formatting still reports three whitespace findings in untouched `RpcAssistantMessageProjectorTests.cs` and `RpcEventProjectorTests.cs`. V1 and R1–R7 need final source-bound reruns; continue with R10–R15, then complete quality and publication gates.
 
 ## Known differences and limitations to revalidate
 
@@ -55,4 +57,4 @@ Raw captures and the full manifest remain under ignored evidence directories. Fu
 
 ## Next work
 
-The inventory and contract are committed before production changes. R8 passes 6/6 at source `223f8f07`; R1–R7 and V1 have historical passes but their reports are stale at this head. Continue with R9–R15, capture repeated pinned-Pi and PiSharp process observations, then rerun stale checkpoints and complete quality/source-bound evidence and exact-head CI. Final publication is PR #29, open, draft and unmerged.
+The inventory and contract are committed before production changes. R8 passes 6/6 at source `223f8f07` and R9 passes 12/12 at source `74d9370b`; R1–R7 and V1 have historical passes but their reports are stale after R9. Continue with R10–R15, capture repeated pinned-Pi and PiSharp process observations, then rerun stale checkpoints and complete quality/source-bound evidence and exact-head CI. Final publication is PR #29, open, draft and unmerged.

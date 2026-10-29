@@ -13727,7 +13727,7 @@
   },
   "rpc_protocol_command_parity_milestone": {
     "status": "in_progress",
-    "phase": "r9_pending",
+    "phase": "r10_pending",
     "branch": "milestone/rpc-protocol-command-parity",
     "branch_base_sha": "646db89bd396b8089b1b9a058fa96b1489f4d0cd",
     "prerequisite_pr28": {
@@ -13788,7 +13788,7 @@
     "maf_package_version": "1.21.0",
     "dotnet_sdk": "10.0.113",
     "production_changes_started": true,
-    "process_case_results_produced": 85,
+    "process_case_results_produced": 97,
     "baseline_validation": {
       "contract_source_verifier": "passed",
       "contract_integrity_tests": "16/16 passed; positive control and all 22 frozen mutations are covered",
@@ -13816,11 +13816,11 @@
       "RPC-ACTIVE-SESSION-REPLACEMENT"
     ],
     "open_requirements": [
-      "Implement actual paired Pi/PiSharp process runners for R9-R15 and capture repeated pinned-Pi baselines.",
-      "Rerun V1 and R1-R7 after production, tests and parity tooling are frozen; their reports are stale at the R8 source head.",
+      "Implement actual paired Pi/PiSharp process runners for R10-R15 and capture repeated pinned-Pi baselines.",
+      "Rerun V1 and R1-R7 after production, tests and parity tooling are frozen; their reports are stale after R9.",
       "Complete Q0, D0, E0, CI0 and PUB0, then capture exact-head CI and prepare draft PR #29 without merging it."
     ],
-    "next_action": "Implement and execute R9 model-selection and thinking-command process cases.",
+    "next_action": "Implement and execute R10 compaction and retry process cases.",
     "r5_implementation_source_sha": "8e7e16f37e420645fc852cb8cef8bf0ba761778d",
     "r5_evidence_directory": "artifacts/parity/rpc-protocol-command-parity/r5-8e7e16f3",
     "r5_evidence_sha256": "9bac9415beaad090519ca680c3ad77ce6511a9e7f4bcd8654ef57994731bb57b",
@@ -13843,8 +13843,8 @@
     "r7_verifier_unit_tests": "16/16 passed; zero failures/skips",
     "r7_changed_file_format_verification": "Passed with dotnet format whitespace --verify-no-changes --include changed C# files.",
     "r7_full_solution_format_note": "Full-solution format verification reports three whitespace findings in untouched RpcAssistantMessageProjectorTests.cs:20 and RpcEventProjectorTests.cs:154,169; changed C# files pass targeted verification.",
-    "current_source_bound_checkpoint_count": 1,
-    "current_source_bound_case_count": 6,
+    "current_source_bound_checkpoint_count": 2,
+    "current_source_bound_case_count": 18,
     "r8_implementation_source_sha": "223f8f071b0aba831e0e74d0e7127771a4cc34fb",
     "r8_evidence_directory": "artifacts/parity/rpc-protocol-command-parity/r8-223f8f07",
     "r8_evidence_sha256": "e97cd871be28bb6c0d976c690e7300d305669c7c1ef4a876cdff0c19b17b0bd3",
@@ -13854,6 +13854,15 @@
     "r8_summary_generation_test": "RequestedBranchSummaryUsesMafAndPersistsItsUsage passed in the runner and emitted native and Pi JSONL sessions with billed summary usage",
     "r8_verifier_unit_tests": "16/16 passed; zero failures/skips",
     "r8_changed_file_format_verification": "Changed C# files passed targeted dotnet format whitespace verification",
-    "r8_compact_case_results": "docs/parity/fixtures/rpc-protocol-command-parity/r8-case-results.json"
+    "r8_compact_case_results": "docs/parity/fixtures/rpc-protocol-command-parity/r8-case-results.json",
+    "r9_implementation_source_sha": "74d9370b02045b562376f3ebdca8973cd2cb870a",
+    "r9_evidence_directory": "artifacts/parity/rpc-protocol-command-parity/r9-74d9370b",
+    "r9_evidence_sha256": "a6bf68c8c06a9a6b459724dbbe0e2b70b84a8645a0249da39bd556fa427919d6",
+    "r9_case_result": "12/12 passed; zero failures/skips; each case matched two stable pinned-Pi processes and one PiSharp process; independent verifier passed",
+    "r9_build_assembly_sha256": "78c961118b9d7dce5362d149007c288abc86425bb5d2cf5593db795b05bcf269",
+    "r9_focused_dotnet_tests": "61/61 passed; zero failures/skips",
+    "r9_verifier_unit_tests": "16/16 passed; zero failures/skips",
+    "r9_changed_file_format_verification": "Passed with targeted dotnet format whitespace verification for changed C# files.",
+    "r9_compact_case_results": "docs/parity/fixtures/rpc-protocol-command-parity/r9-case-results.json"
   }
 }
