@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "status": "prepublication_gates_pending",
+  "status": "source_bound_acceptance_passes_at_implementation_source",
   "sourcePins": {
     "branch": "milestone/rpc-protocol-command-parity",
     "pisharpBaseCommit": "646db89bd396b8089b1b9a058fa96b1489f4d0cd",
-    "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
+    "implementationSourceCommit": "1481f15fb7f01217be9e41f256df94975532013b",
     "piCommit": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
     "inventoryContractCommit": "ac85aa2a0f59566115eb0109cc9022dc64f4d8fe",
     "contractSha256": "036c369054fbb50887629666f6b25ef76d8a9fbe856d00d4a79a2cf9609f0761",
@@ -34,9 +34,9 @@
       "required": 6,
       "failed": 0,
       "skipped": 0,
-      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
-      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/P0/evidence.json",
-      "evidenceSha256": "98e601e599f20f0bbc4ad3bd5b341fdd055e1e53046d2fcbbe66acc1ab84ed64"
+      "implementationSourceCommit": "1481f15fb7f01217be9e41f256df94975532013b",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-1481f15f/P0/evidence.json",
+      "evidenceSha256": "a575b1e6457eed71a5d3229f10af05e7c0eefe33868ab6098e07a4edc34f5610"
     },
     {
       "checkpointId": "P1",
@@ -44,9 +44,9 @@
       "required": 5,
       "failed": 0,
       "skipped": 0,
-      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
-      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/P1/evidence.json",
-      "evidenceSha256": "ae7877589673df4be7c780f5690ad35124aee903642a4e22ed23c62039c4460e"
+      "implementationSourceCommit": "1481f15fb7f01217be9e41f256df94975532013b",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-1481f15f/P1/evidence.json",
+      "evidenceSha256": "749a4f25379973dcae74ebc2864b3b0a57b5a7699ef4d6bb6732379b6a085f03"
     },
     {
       "checkpointId": "V0",
@@ -54,9 +54,9 @@
       "required": 6,
       "failed": 0,
       "skipped": 0,
-      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
-      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/V0/evidence.json",
-      "evidenceSha256": "d8c5f49092ec719ecf6bcd41c291333d0e96507c3a6e3ad37dea6252dc67aeef"
+      "implementationSourceCommit": "1481f15fb7f01217be9e41f256df94975532013b",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-1481f15f/V0/evidence.json",
+      "evidenceSha256": "4819fa80de84ba64f6a5542e8242f9ba9027f9f13c82d0a16d9c9b1fb2756303"
     },
     {
       "checkpointId": "V1",
@@ -64,9 +64,9 @@
       "required": 23,
       "failed": 0,
       "skipped": 0,
-      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
-      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/V1/evidence.json",
-      "evidenceSha256": "5ead48764a0e461925379f13567bcc92348db6358b895c3b25b08c5d9fdf950c"
+      "implementationSourceCommit": "1481f15fb7f01217be9e41f256df94975532013b",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-1481f15f/V1/evidence.json",
+      "evidenceSha256": "663d65cf94e13872c942fb029a6e14dcc072714a8b03e497a81fdfef9d7819e8"
     },
     {
       "checkpointId": "R1",
@@ -74,9 +74,9 @@
       "required": 11,
       "failed": 0,
       "skipped": 0,
-      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
-      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/R1/evidence.json",
-      "evidenceSha256": "8617e83673ce954c2c140fc4cf9bac9aa40572630116d3dfb22c30c6877388c8"
+      "implementationSourceCommit": "1481f15fb7f01217be9e41f256df94975532013b",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-1481f15f/R1/evidence.json",
+      "evidenceSha256": "5060b961becdbecb2f2b2f83485e783ce0f46a6472d59687e1e382dc4700db4c"
     },
     {
       "checkpointId": "R2",
@@ -84,9 +84,9 @@
       "required": 12,
       "failed": 0,
       "skipped": 0,
-      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
-      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/R2/evidence.json",
-      "evidenceSha256": "bb520c9aed36030647449bd96c7a9612d5a68a11615f37c8cf9e4be0cb2f00c6"
+      "implementationSourceCommit": "1481f15fb7f01217be9e41f256df94975532013b",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-1481f15f/R2/evidence.json",
+      "evidenceSha256": "3ac3d493b9252d027c4d6959d5ab763126477602a76ec9f2e7a19db4f8d9045f"
     },
     {
       "checkpointId": "R3",
@@ -94,9 +94,9 @@
       "required": 10,
       "failed": 0,
       "skipped": 0,
-      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
-      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/R3/evidence.json",
-      "evidenceSha256": "fe04ac909e1f0255a046c00f728819ffd20edff73ef6bff9da92048275eedd68"
+      "implementationSourceCommit": "1481f15fb7f01217be9e41f256df94975532013b",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-1481f15f/R3/evidence.json",
+      "evidenceSha256": "2cd216b70984deda969ff467527c4a768bbc19335f70e60256eaf80a7a6f2d73"
     },
     {
       "checkpointId": "R4",
@@ -104,9 +104,9 @@
       "required": 12,
       "failed": 0,
       "skipped": 0,
-      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
-      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/R4/evidence.json",
-      "evidenceSha256": "a1806a3ee734328354aeda0c848cda7b9b6150f6867b5706c8a1672e3563ba07"
+      "implementationSourceCommit": "1481f15fb7f01217be9e41f256df94975532013b",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-1481f15f/R4/evidence.json",
+      "evidenceSha256": "6fecb64417bcf080415abfff1f62db5b0bbb4fc709914e87d95068369bf9ade6"
     },
     {
       "checkpointId": "R5",
@@ -114,9 +114,9 @@
       "required": 11,
       "failed": 0,
       "skipped": 0,
-      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
-      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/R5/evidence.json",
-      "evidenceSha256": "71fe85fa8f49aefcafe628465466c7a917f4314249e263f198224c6c8d1f0ebe"
+      "implementationSourceCommit": "1481f15fb7f01217be9e41f256df94975532013b",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-1481f15f/R5/evidence.json",
+      "evidenceSha256": "68809f88b422c6a2b6eab63a0e57f364641bed56a4aa081d89f6c5d86326eefe"
     },
     {
       "checkpointId": "R6",
@@ -124,9 +124,9 @@
       "required": 10,
       "failed": 0,
       "skipped": 0,
-      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
-      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/R6/evidence.json",
-      "evidenceSha256": "44b3b155af1677f48142cfae0138c662f4b71adeaf77492954b174a647304df1"
+      "implementationSourceCommit": "1481f15fb7f01217be9e41f256df94975532013b",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-1481f15f/R6/evidence.json",
+      "evidenceSha256": "c321181451cfa4c6be3fe6f13d6c0549a5a370f820b558251f568ec8d48259c3"
     },
     {
       "checkpointId": "R7",
@@ -134,9 +134,9 @@
       "required": 13,
       "failed": 0,
       "skipped": 0,
-      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
-      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/R7/evidence.json",
-      "evidenceSha256": "951e5dd0929ffe218242770522b1fe2c150eddfe814447cd79a4bc7146fed244"
+      "implementationSourceCommit": "1481f15fb7f01217be9e41f256df94975532013b",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-1481f15f/R7/evidence.json",
+      "evidenceSha256": "8df8ddfdda19d020d3ee8201da1f7a982c5570b892980e2d735dca8fb705f8a4"
     },
     {
       "checkpointId": "R8",
@@ -144,9 +144,9 @@
       "required": 6,
       "failed": 0,
       "skipped": 0,
-      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
-      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/R8/evidence.json",
-      "evidenceSha256": "912b8d256a2c31e1594af7a5925d0b503db8cd5ee53448d23a082c711fec16ca"
+      "implementationSourceCommit": "1481f15fb7f01217be9e41f256df94975532013b",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-1481f15f/R8/evidence.json",
+      "evidenceSha256": "a8a61b671e7cf324cb3f190a25d7f81a9ab921e884dc873b9120577583af1b9c"
     },
     {
       "checkpointId": "R9",
@@ -154,9 +154,9 @@
       "required": 12,
       "failed": 0,
       "skipped": 0,
-      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
-      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/R9/evidence.json",
-      "evidenceSha256": "97b9f8a249a089be5f647cba883cca22483959b7ce9bf0500b5ecc45cc8448ca"
+      "implementationSourceCommit": "1481f15fb7f01217be9e41f256df94975532013b",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-1481f15f/R9/evidence.json",
+      "evidenceSha256": "d2ccf1ac73194fcf1aa73f0d6acedce683135cd73ebf711234206000dffdb45d"
     },
     {
       "checkpointId": "R10",
@@ -164,9 +164,9 @@
       "required": 9,
       "failed": 0,
       "skipped": 0,
-      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
-      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/R10/evidence.json",
-      "evidenceSha256": "ca2b1fb4089e498a1a1656092452458c0ddcd6d0d7e31fc2768a6e43018270dc"
+      "implementationSourceCommit": "1481f15fb7f01217be9e41f256df94975532013b",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-1481f15f/R10/evidence.json",
+      "evidenceSha256": "8d34edb59b623690d4a8064c4c4317f3e2d6777f12b365eab5d8bace41859076"
     },
     {
       "checkpointId": "R11",
@@ -174,9 +174,9 @@
       "required": 8,
       "failed": 0,
       "skipped": 0,
-      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
-      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/R11/evidence.json",
-      "evidenceSha256": "7dadb8bb65e2a77e4322c66bfc4f5acc1254f06363d645833f186f784fc21fc6"
+      "implementationSourceCommit": "1481f15fb7f01217be9e41f256df94975532013b",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-1481f15f/R11/evidence.json",
+      "evidenceSha256": "abe792b562fb6ea6e86487622ec850b0d37527e5e5eb4add7eb0faea0837b9a0"
     },
     {
       "checkpointId": "R12",
@@ -184,9 +184,9 @@
       "required": 15,
       "failed": 0,
       "skipped": 0,
-      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
-      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/R12/evidence.json",
-      "evidenceSha256": "f7b42357ee63c5e97ea9151310658e5c952bde15acc63bda08d70c340a7fffa2"
+      "implementationSourceCommit": "1481f15fb7f01217be9e41f256df94975532013b",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-1481f15f/R12/evidence.json",
+      "evidenceSha256": "ae849a0af858b48e652403f3266d133d06435e7cd13c9bdb559820852a5b0ae4"
     },
     {
       "checkpointId": "R13",
@@ -194,9 +194,9 @@
       "required": 8,
       "failed": 0,
       "skipped": 0,
-      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
-      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/R13/evidence.json",
-      "evidenceSha256": "b7156125c2a22ab9f80078b7b462b025126277735ae94101223795af2b567bd7"
+      "implementationSourceCommit": "1481f15fb7f01217be9e41f256df94975532013b",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-1481f15f/R13/evidence.json",
+      "evidenceSha256": "87a57e790ecd930160b4581a1782bc3b1d339131beb238b16995520a845a49f1"
     },
     {
       "checkpointId": "R14",
@@ -204,9 +204,9 @@
       "required": 17,
       "failed": 0,
       "skipped": 0,
-      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
-      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/R14/evidence.json",
-      "evidenceSha256": "cd23d6098c0ae0a636e5ba548480d807db343a22176972b93401a55519cd1fff"
+      "implementationSourceCommit": "1481f15fb7f01217be9e41f256df94975532013b",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-1481f15f/R14/evidence.json",
+      "evidenceSha256": "e410340527827122ffb7d8bd31ab6510176181f99e52e79360ccd0c687654b2f"
     },
     {
       "checkpointId": "R15",
@@ -214,9 +214,9 @@
       "required": 13,
       "failed": 0,
       "skipped": 0,
-      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
-      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/R15/evidence.json",
-      "evidenceSha256": "e9c05a9445c70ccac29c3ae5c0caa8e6fc4c87de0ae35777100fcb90265e7f57"
+      "implementationSourceCommit": "1481f15fb7f01217be9e41f256df94975532013b",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-1481f15f/R15/evidence.json",
+      "evidenceSha256": "7776a554c5735d7a7d0cc1bd238ffe5daf4b0e51de13acd29cac86db364f903c"
     },
     {
       "checkpointId": "D0",
@@ -224,9 +224,9 @@
       "required": 9,
       "failed": 0,
       "skipped": 0,
-      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
-      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/D0/evidence.json",
-      "evidenceSha256": "144f58c63861016047a878f8796e540379ef162c529eda607db620eec6cdfa96"
+      "implementationSourceCommit": "1481f15fb7f01217be9e41f256df94975532013b",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-1481f15f/D0/evidence.json",
+      "evidenceSha256": "60f51531220822f8560ba0723f441de7d9892297925e3097168b0f61c073cb39"
     },
     {
       "checkpointId": "Q0",
@@ -234,9 +234,9 @@
       "required": 15,
       "failed": 0,
       "skipped": 0,
-      "implementationSourceCommit": "44c08f366395ec4f9c80a79fea1f6e5f635fbcc5",
-      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/Q0/evidence.json",
-      "evidenceSha256": "60d366492e5cc83980d4e377b985e0534f00fb24e322a52a1ad23117fe5ec45b"
+      "implementationSourceCommit": "1481f15fb7f01217be9e41f256df94975532013b",
+      "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-1481f15f/Q0/evidence.json",
+      "evidenceSha256": "70b9182c7754dc73327c9c6defec9689cab1d4dbce96d0aa564f2d054aa5caf4"
     }
   ],
   "caseResults": [
@@ -1892,37 +1892,26 @@
       "offlineMode": "PI_OFFLINE=1 from the pinned Pi Vitest config",
       "credentialVariablesRemoved": true
     },
-    "documentationValidation": {
-      "atQ0SourceEvidence": "157 documents, 712 references",
-      "afterReceiptUpdate": "157 documents, 699 references"
-    },
+    "documentationValidationAtQ0": "Documentation paths verified: 157 documents, 699 references",
     "modelEndpointCalls": 0,
-    "managedPackageCorpus": "Intentionally scoped to its historical milestone branch; skipped on this branch and not claimed as rerun."
+    "managedPackageCorpus": "Intentionally scoped to its historical milestone branch; skipped on this branch and not claimed as rerun.",
+    "documentationValidationAfterReceiptUpdate": "157 documents, 699 references; passed with tools/validate_doc_paths.py."
   },
-  "remaining": {
-    "gates": [
-      {
-        "checkpointId": "E0",
-        "requiredCases": 10,
-        "purpose": "committed evidence integrity and repo ledger checks"
-      },
-      {
-        "checkpointId": "CI0",
-        "requiredCases": 5,
-        "purpose": "automatic exact-head push and PR CI"
-      },
-      {
-        "checkpointId": "PUB0",
-        "requiredCases": 6,
-        "purpose": "final publication verification"
-      }
+  "finalization": {
+    "prNumber": 29,
+    "expectedPrState": "open draft and unmerged",
+    "checkpoints": [
+      "E0",
+      "CI0",
+      "PUB0"
     ],
-    "publication": "Create PR #29 as draft, leave it open and unmerged, record workflow runs, and verify the final exact head."
+    "authoritativeRunAndFinalizerRecord": "PR #29 description"
   },
-  "rawEvidenceRoot": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36",
+  "rawEvidenceRoot": "artifacts/parity/rpc-protocol-command-parity/run-1481f15f",
   "notes": [
-    "All listed checkpoint and case receipts are source-bound to the implementation commit.",
-    "The 20 credential-dependent pinned-Pi tests are explicitly skipped and remain unverified.",
+    "All source-bound receipts are pinned to the implementation commit above.",
+    "The RPC clone process test now creates its own skills fixture, removing dependence on ambient home-directory skills.",
+    "Exactly 20 credential-dependent pinned-Pi test identities are skipped and remain unverified.",
     "No live model endpoint was called."
   ]
 }

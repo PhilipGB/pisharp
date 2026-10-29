@@ -12,9 +12,9 @@ See the [source-pinned inventory](parity/fixtures/compaction-context-management-
 
 ## Active milestone — Complete RPC Protocol and Command Parity — 2026-10-29
 
-PR #28 is merged at `646db89bd396b8089b1b9a058fa96b1489f4d0cd`. The RPC protocol and command milestone pins Pi at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` and uses Microsoft Agent Framework 1.21.0 on .NET 10.0.113. The frozen contract scope is 24/24 checkpoints and 252/252 cases. At source `44c08f366395ec4f9c80a79fea1f6e5f635fbcc5`, 21/24 checkpoints and 231/252 cases pass with zero failures/skips; comparison modes are 230 strict, 22 equivalent, 0 intentional safety differences and 0 unresolved. P0/P1/V0/V1, R1-R15, D0 and Q0 pass. Q0 passes 3,998 .NET tests and records 20 credential-dependent pinned-Pi test skips that remain unverified. The managed-package parity corpus remains scoped to its historical milestone branch. No live model endpoint was called. E0, CI0 and PUB0 and open draft PR #29 remain.
+PR #28 is merged at `646db89bd396b8089b1b9a058fa96b1489f4d0cd`. The RPC protocol and command milestone pins Pi at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` and uses Microsoft Agent Framework 1.21.0 on .NET 10.0.113. The frozen acceptance contract is 24/24 checkpoints and 252/252 cases. At implementation source `1481f15fb7f01217be9e41f256df94975532013b`, 21/24 source-bound checkpoints and 231/252 cases pass with zero failures or skips. Comparison modes are 230 strict, 22 equivalent, 0 intentional safety differences and 0 unresolved. P0/P1/V0/V1, R1-R15, D0 and Q0 pass. Q0 passes 3,998 .NET tests; 178 RPC-related, 595 runtime/session, 1,348 compaction/tools/extensions, 15 JSON event, and 684 Linux process/PTY tests; Python suites 66/23/27/62/27; and Node 24/24. The clone process regression now creates a deterministic skill fixture rather than depending on home-directory state. Exactly 20 credential-dependent pinned-Pi test identities remain unverified; the managed-package parity corpus remains scoped to its historical milestone branch. No live model endpoint was called. E0/CI0/PUB0 finalization and exact-head automatic CI are recorded in the open draft PR #29, which remains unmerged.
 
-See the [milestone receipt](docs/parity/fixtures/rpc-protocol-command-parity/README.md), [completion evidence](docs/parity/fixtures/rpc-protocol-command-parity/completion-evidence-44c08f36.json), [source-pinned inventory](docs/parity/fixtures/rpc-protocol-command-parity/inventory.json), [case index](docs/parity/fixtures/rpc-protocol-command-parity/required-case-index.json), and [contract](tools/parity/rpc_protocol/contract.json).
+See the [milestone receipt](docs/parity/fixtures/rpc-protocol-command-parity/README.md), [completion evidence](docs/parity/fixtures/rpc-protocol-command-parity/completion-evidence-1481f15f.json), [source-pinned inventory](docs/parity/fixtures/rpc-protocol-command-parity/inventory.json), [case index](docs/parity/fixtures/rpc-protocol-command-parity/required-case-index.json), and [contract](tools/parity/rpc_protocol/contract.json).
 
 ## Active milestone — Complete Managed Package Lifecycle and Resource Distribution Parity — 2026-10-27
 
@@ -590,11 +590,11 @@ The detailed entries in this section preserve earlier source/test evidence only;
 
 ## Current priority
 
-Complete the source-bound RPC protocol and command parity milestone. Current evidence passes 21/24 checkpoints and 231/252 cases at source `44c08f36`; E0, CI0, PUB0 and exact-head automatic CI remain. Keep PR #29 open, draft and unmerged.
+Keep the RPC protocol and command parity evidence source-bound at `1481f15f`. The final exact-head CI and E0/CI0/PUB0 receipts are recorded on PR #29; keep it open, draft and unmerged.
 
 ## Exact next action
 
-Commit the updated completion evidence and ledgers, run E0, push the final branch and create draft PR #29. Let push and pull-request CI run automatically, then verify CI0 and PUB0. The 20 credential-dependent pinned-Pi cases remain unverified; the managed-package corpus remains scoped to its historical milestone branch.
+Run E0 against the committed ledgers, push the evidence update, let automatic push and PR workflows finish, then record CI0/PUB0 in PR #29. The 20 credential-dependent pinned-Pi cases remain unverified; the managed-package corpus remains scoped to its historical milestone branch.
 
 ## Architecture risks to reconcile before completion
 
