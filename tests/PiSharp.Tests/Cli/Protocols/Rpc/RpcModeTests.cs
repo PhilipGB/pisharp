@@ -1341,9 +1341,11 @@ public sealed class RpcModeTests
             adapter.Close();
             var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(),
                 new CodingTools(root, shellCommandPrefix: "export PISHARP_REMOTE=1"),
-                liveExtensionRegistration: extensions), new ConversationSession(root, "fixture", null));
+                liveExtensionRegistration: extensions), new ConversationSession(root, "fixture", null),
+                save: _ => { saveCalls++; return Task.CompletedTask; });
             var serving = new RpcMode(new CommandReader(channel.Reader), output, run,
-                save: _ => { saveCalls++; return Task.CompletedTask; }, extensions: extensions).ServeAsync();
+                extensions: extensions,
+                persistRun: (origin, token) => origin.PersistAsync(token)).ServeAsync();
             channel.Writer.TryWrite(JsonSerializer.Serialize(new
             {
                 id = "user-bash-operation",
@@ -1381,6 +1383,135 @@ public sealed class RpcModeTests
             Assert.Equal(1, saveCalls);
         }
         finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Theory]
+    [InlineData("full-result")]
+    [InlineData("custom-operation")]
+    public async Task LateExtensionBashCompletionPersistsOnlyToItsOriginAfterSessionAdoption(string kind)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-late-bash-owner-" + Guid.NewGuid().ToString("N"));
+        var sessionDirectory = Path.Combine(root, "sessions");
+        Directory.CreateDirectory(sessionDirectory);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Channel<string>? channel = null;
+        Task? serving = null;
+        try
+        {
+            var store = new ConversationStore(root, sessionDirectory);
+            var source = new ConversationSession(root, "fixture", null);
+            source.Append(new ChatMessage(ChatRole.User, "late-bash-origin"));
+            var sourcePath = store.NewPath(source);
+            await store.SaveAsync(source, sourcePath);
+            var target = new ConversationSession(root, "fixture", null);
+            target.Append(new ChatMessage(ChatRole.User, "late-bash-target"));
+            var targetPath = store.NewPath(target);
+            await store.SaveAsync(target, targetPath);
+
+            var registration = new ExtensionRegistration();
+            var adapter = new NativeExtensionRegistrationAdapter(registration);
+            var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            adapter.AddUserBashHandler((_, _, _) =>
+            {
+                if (kind == "full-result")
+                {
+                    entered.TrySetResult();
+                    return new ValueTask<PiSharpUserBashResult?>(CompleteFullResultAsync(release.Task));
+                }
+
+                return ValueTask.FromResult<PiSharpUserBashResult?>(PiSharpUserBashResult.Custom(
+                    async (_, _, outputSink, _) =>
+                    {
+                        entered.TrySetResult();
+                        await release.Task;
+                        await outputSink(Encoding.UTF8.GetBytes("late-custom-operation"));
+                        return 23;
+                    }));
+            });
+            adapter.Close();
+
+            var originSaveCalls = 0;
+            var targetSaveCalls = 0;
+            var originRun = await ConversationRun.OpenAsync(
+                new PiAgent(new StubClient(), new CodingTools(root), liveExtensionRegistration: registration), source,
+                save: token =>
+                {
+                    Interlocked.Increment(ref originSaveCalls);
+                    return store.SaveAsync(source, sourcePath, token);
+                }, sessionFile: sourcePath);
+            var targetRun = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(root)), target,
+                save: token =>
+                {
+                    Interlocked.Increment(ref targetSaveCalls);
+                    return store.SaveAsync(target, targetPath, token);
+                }, sessionFile: targetPath);
+
+            channel = Channel.CreateUnbounded<string>();
+            using var output = new LockedWriter();
+            var currentRun = originRun;
+            var service = new RpcMode(new CommandReader(channel.Reader), output, originRun,
+                save: token => currentRun.PersistAsync(token), extensions: registration,
+                getCurrentRun: () => currentRun,
+                switchSession: (_, _) =>
+                {
+                    currentRun = targetRun;
+                    return Task.FromResult(false);
+                },
+                persistRun: (origin, token) => origin.PersistAsync(token));
+            serving = service.ServeAsync();
+            const string bashCommand = "extension-owned-command";
+            channel.Writer.TryWrite(JsonSerializer.Serialize(new { id = "late-bash", type = "bash", command = bashCommand }));
+            await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            channel.Writer.TryWrite("{\"id\":\"late-switch\",\"type\":\"switch_session\",\"sessionPath\":\"next.session.json\"}");
+            await WaitForAsync(output, "\"id\":\"late-switch\"");
+            Assert.Same(targetRun, currentRun);
+
+            channel.Writer.TryWrite("{\"id\":\"target-abort-bash\",\"type\":\"abort_bash\"}");
+            await WaitForAsync(output, "\"id\":\"target-abort-bash\"");
+
+            release.TrySetResult();
+            await WaitForAsync(output, "\"id\":\"late-bash\",\"type\":\"response\"");
+            channel.Writer.TryComplete();
+            await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+            using var bashResponse = JsonDocument.Parse(Assert.Single(output.Lines(), line =>
+            {
+                using var record = JsonDocument.Parse(line);
+                return record.RootElement.TryGetProperty("id", out var id) && id.GetString() == "late-bash" &&
+                    record.RootElement.GetProperty("type").GetString() == "response";
+            }));
+            Assert.True(bashResponse.RootElement.GetProperty("success").GetBoolean());
+            Assert.False(bashResponse.RootElement.GetProperty("data").GetProperty("cancelled").GetBoolean());
+            var expectedOutput = kind == "full-result" ? "late-full-result" : "late-custom-operation";
+            Assert.Equal(expectedOutput, bashResponse.RootElement.GetProperty("data").GetProperty("output").GetString());
+
+            var restoredSource = await store.LoadAsync(sourcePath);
+            var sourceResult = Assert.Single(restoredSource.Tree.Entries, entry => entry.Type == "bash_execution" &&
+                entry.Payload.GetProperty("command").GetString() == bashCommand);
+            Assert.Equal(expectedOutput, sourceResult.Payload.GetProperty("output").GetString());
+            var restoredTarget = await store.LoadAsync(targetPath);
+            Assert.DoesNotContain(restoredTarget.Tree.Entries, entry => entry.Type == "bash_execution" &&
+                entry.Payload.GetProperty("command").GetString() == bashCommand);
+            Assert.Equal(1, originSaveCalls);
+            Assert.Equal(0, targetSaveCalls);
+        }
+        finally
+        {
+            release.TrySetResult();
+            channel?.Writer.TryComplete();
+            if (serving is not null)
+            {
+                try { await serving.WaitAsync(TimeSpan.FromSeconds(5)); }
+                catch (TimeoutException) { }
+            }
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    private static async Task<PiSharpUserBashResult?> CompleteFullResultAsync(Task release)
+    {
+        await release;
+        return PiSharpUserBashResult.Full("late-full-result", exitCode: 19);
     }
 
     [Fact]

@@ -26,11 +26,12 @@ internal sealed class ProjectConversationTransitions(string agentDirectory, stri
             (branch, path, _) => runs.OpenAsync(model, model.Agent, branch, path));
 
     public async Task AdoptSessionBranchAsync(SessionBranchResult branch,
-        PiSharpExtensionSessionStartReason reason)
+        PiSharpExtensionSessionStartReason reason, Func<ConversationRun, Task>? beforeAdopt = null)
     {
         ArgumentNullException.ThrowIfNull(branch);
         var outgoingRun = conversationBinding.Run;
         var shutdownError = await NotifyShutdownForCommitAsync(outgoingRun, ToShutdownReason(reason));
+        if (beforeAdopt is not null) await beforeAdopt(outgoingRun);
         conversationBinding.Adopt(branch.Conversation, branch.Run, branch.Path);
         await ExtensionSessionLifecycleHost.NotifyStartAsync(branch.Run, reason);
         ThrowTransitionErrors(shutdownError, null);
@@ -114,7 +115,7 @@ internal sealed class ProjectConversationTransitions(string agentDirectory, stri
     public async Task AdoptAsync(ProjectSessionRuntime replacement, Action<ProjectRuntimeContext> configureMcp,
         Action refreshProjectUi, Action finishSessionUi,
         PiSharpExtensionSessionStartReason reason = PiSharpExtensionSessionStartReason.Resume,
-        Action? afterReplacementPrepared = null)
+        Action? afterReplacementPrepared = null, Func<ConversationRun, Task>? beforeAdopt = null)
     {
         var nextProject = replacement.Project;
         await nextProject.DiscoverExtensionResourcesAsync(agentDirectory, projectBinding.Arguments,
@@ -125,7 +126,9 @@ internal sealed class ProjectConversationTransitions(string agentDirectory, stri
             nextProject.Extensions.Registration.VirtualModels);
         afterReplacementPrepared?.Invoke();
 
-        var shutdownError = await NotifyShutdownForCommitAsync(conversationBinding.Run, ToShutdownReason(reason));
+        var outgoingRun = conversationBinding.Run;
+        var shutdownError = await NotifyShutdownForCommitAsync(outgoingRun, ToShutdownReason(reason));
+        if (beforeAdopt is not null) await beforeAdopt(outgoingRun);
         modelRuntime.SetExtensionProviders(nextProject.Extensions.Registration.ExtensionProviders);
         modelRuntime.SetVirtualModelRegistry(nextProject.Extensions.Registration.VirtualModels);
         if (!projectBinding.Arguments.HasExplicitModelScope)

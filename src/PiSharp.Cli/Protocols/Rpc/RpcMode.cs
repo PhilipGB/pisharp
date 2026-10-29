@@ -51,7 +51,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         Func<string?, PiSharpExtensionSessionContext?, PiSharpExtensionCapabilities?>>>? installExtensionCapabilitiesFactory = null,
     Func<string?>? getSystemPrompt = null,
     string? rpcInvocationDirectory = null,
-    Func<JsonObject?>? getExportSystemMessage = null)
+    Func<JsonObject?>? getExportSystemMessage = null,
+    Func<ConversationRun, CancellationToken, Task>? persistRun = null)
 {
     private const int MaxRpcRecordLength = 16 * 1024 * 1024;
     private readonly string _rpcInvocationDirectory = Path.GetFullPath(
@@ -299,12 +300,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                                 break;
                             }
                         case "abort_bash":
-                            CurrentRun.AbortBash();
-                            foreach (var operation in _bashOperations.Values)
-                            {
-                                try { operation.Cancellation.Cancel(); }
-                                catch (ObjectDisposedException) { }
-                            }
+                            CancelBashOperationsForRun(CurrentRun);
                             await RespondAsync(id, type, true);
                             break;
                         case "steer":
@@ -519,6 +515,28 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     {
         await CancelActivePromptAsync();
         await CancelActiveCompactionsAsync(exceptCompaction);
+    }
+
+    internal async Task CancelBashForSessionTransitionAsync(ConversationRun outgoingRun)
+    {
+        ArgumentNullException.ThrowIfNull(outgoingRun);
+        var operations = _bashOperations.Values.Where(operation =>
+            ReferenceEquals(operation.Owner.Run, outgoingRun)).ToArray();
+        CancelBashOperationsForRun(outgoingRun, operations);
+        if (operations.Length > 0)
+            await Task.WhenAll(operations.Select(operation => operation.Completed.Task));
+    }
+
+    private void CancelBashOperationsForRun(ConversationRun originRun, BashOperation[]? operations = null)
+    {
+        originRun.AbortBash();
+        operations ??= _bashOperations.Values.Where(operation =>
+            ReferenceEquals(operation.Owner.Run, originRun)).ToArray();
+        foreach (var operation in operations)
+        {
+            try { operation.Cancellation.Cancel(); }
+            catch (ObjectDisposedException) { }
+        }
     }
 
     private async Task WaitForRetrySettlementAsync()
@@ -837,7 +855,14 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     private void StartBash(JsonElement? id, string command, bool excludeFromContext, CancellationToken cancellationToken)
     {
         var key = Guid.NewGuid();
-        var operation = new BashOperation(CancellationTokenSource.CreateLinkedTokenSource(cancellationToken));
+        var originRun = CurrentRun;
+        // The general RPC save callback can resolve CurrentRun dynamically; Bash persists through the captured run.
+        Func<CancellationToken, Task> persistOrigin = persistRun is null
+            ? originRun.PersistAsync
+            : token => persistRun(originRun, token);
+        var owner = new BashExecutionOwner(originRun, originRun.Conversation,
+            originRun.Conversation.Id, originRun.Conversation.WorkingDirectory, originRun.SessionFile, persistOrigin);
+        var operation = new BashOperation(owner, CancellationTokenSource.CreateLinkedTokenSource(cancellationToken));
         if (!_bashOperations.TryAdd(key, operation)) throw new InvalidOperationException("Could not register the bash operation.");
         _ = ExecuteBashAsync(key, operation, id, command, excludeFromContext);
     }
@@ -851,7 +876,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             BashExecutionResult result;
             try
             {
-                result = await ExecuteUserBashAsync(correlationId, command, excludeFromContext,
+                result = await ExecuteUserBashAsync(operation.Owner.Run, correlationId, command, excludeFromContext,
                     operation.Cancellation.Token);
             }
             catch (OperationCanceledException) when (operation.Cancellation.IsCancellationRequested)
@@ -859,9 +884,9 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                 result = new BashExecutionResult("", "(command cancelled)", null, true, false, null);
             }
 
-            if (Volatile.Read(ref _serveStopping) != 0) return;
-            var recordedNow = CurrentRun.RecordBashResult(command, result, excludeFromContext);
-            if (recordedNow && save is not null) await save(CancellationToken.None);
+            var recordedNow = operation.Owner.Run.RecordBashResult(command, result, excludeFromContext);
+            if (recordedNow)
+                await operation.Owner.Persist(CancellationToken.None);
             var data = new Dictionary<string, object?>
             {
                 ["output"] = result.Output,
@@ -885,15 +910,15 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         }
     }
 
-    private async Task<BashExecutionResult> ExecuteUserBashAsync(string? correlationId, string command,
+    private async Task<BashExecutionResult> ExecuteUserBashAsync(ConversationRun originRun, string? correlationId, string command,
         bool excludeFromContext, CancellationToken cancellationToken)
     {
         Task EmitUpdateAsync(string delta) => EmitBashUpdateAsync(correlationId, delta);
-        var interception = await CurrentRun.InterceptUserBashAsync(command, excludeFromContext, EmitUpdateAsync,
+        var interception = await originRun.InterceptUserBashAsync(command, excludeFromContext, EmitUpdateAsync,
             cancellationToken);
         if (interception is null)
         {
-            return await CurrentRun.ExecuteBashAsync(command,
+            return await originRun.ExecuteBashAsync(command,
                 delta => EmitBashUpdateAsync(correlationId, delta).GetAwaiter().GetResult(), cancellationToken);
         }
 
@@ -907,7 +932,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         if (interception.Kind == PiSharpUserBashResultKind.CustomOperation &&
             interception.CustomOperation is { } customOperation)
         {
-            return await CurrentRun.ExecuteUserBashOperationAsync(command, customOperation,
+            return await originRun.ExecuteUserBashOperationAsync(command, customOperation,
                 delta => EmitBashUpdateAsync(correlationId, delta).GetAwaiter().GetResult(), cancellationToken);
         }
 
@@ -923,8 +948,13 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         return value.ValueKind == JsonValueKind.String ? value.GetString() : value.GetRawText();
     }
 
-    private sealed class BashOperation(CancellationTokenSource cancellation)
+    private sealed record BashExecutionOwner(ConversationRun Run, ConversationSession Session,
+        string SessionIdentity, string WorkingDirectory, string? PersistenceTarget,
+        Func<CancellationToken, Task> Persist);
+
+    private sealed class BashOperation(BashExecutionOwner owner, CancellationTokenSource cancellation)
     {
+        public BashExecutionOwner Owner { get; } = owner;
         public CancellationTokenSource Cancellation { get; } = cancellation;
         public TaskCompletionSource Completed { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
     }

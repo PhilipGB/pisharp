@@ -50,6 +50,7 @@ internal static class RpcModeComposition
             },
             () => conversationBinding.Run);
 
+        RpcMode? rpcMode = null;
         Task AdoptProjectSession(ProjectSessionRuntime replacement) => projectTransitions.AdoptAsync(replacement,
             presentation.ConfigureMcpAuthorizationUrlPresenter, () =>
             {
@@ -59,7 +60,7 @@ internal static class RpcModeComposition
             {
                 presentation.SetIdleFooter();
                 presentation.LoadSessionTranscript();
-            });
+            }, beforeAdopt: outgoingRun => rpcMode!.CancelBashForSessionTransitionAsync(outgoingRun));
         Task<bool> SwitchProjectSessionAsync(string reference, CancellationToken token) =>
             projectTransitions.SwitchAsync(reference, AdoptProjectSession, token);
         Task ValidateRpcSessionSwitchAsync(string reference, CancellationToken token) =>
@@ -72,7 +73,8 @@ internal static class RpcModeComposition
                 conversationBinding.Path,
                 parentSession?.ValueKind == JsonValueKind.String ? parentSession.Value.GetString() : null,
                 conversationBinding.Run.ThinkingLevel, parentSession);
-            await projectTransitions.AdoptSessionBranchAsync(created, PiSharpExtensionSessionStartReason.New);
+            await projectTransitions.AdoptSessionBranchAsync(created, PiSharpExtensionSessionStartReason.New,
+                outgoingRun => rpcMode!.CancelBashForSessionTransitionAsync(outgoingRun));
             return false;
         }
 
@@ -81,7 +83,8 @@ internal static class RpcModeComposition
         {
             cancellationToken.ThrowIfCancellationRequested();
             var forked = await projectTransitions.Sessions.ForkPreparedAsync(conversationBinding.Conversation, conversationBinding.Path, entryId, branchSnapshot, prompt);
-            await projectTransitions.AdoptSessionBranchAsync(forked, PiSharpExtensionSessionStartReason.Fork);
+            await projectTransitions.AdoptSessionBranchAsync(forked, PiSharpExtensionSessionStartReason.Fork,
+                outgoingRun => rpcMode!.CancelBashForSessionTransitionAsync(outgoingRun));
             return forked.Prompt;
         }
 
@@ -96,12 +99,13 @@ internal static class RpcModeComposition
         {
             cancellationToken.ThrowIfCancellationRequested();
             var cloned = await projectTransitions.Sessions.ActivatePreparedCloneAsync(branchSnapshot, branchPath);
-            await projectTransitions.AdoptSessionBranchAsync(cloned, PiSharpExtensionSessionStartReason.Fork);
+            await projectTransitions.AdoptSessionBranchAsync(cloned, PiSharpExtensionSessionStartReason.Fork,
+                outgoingRun => rpcMode!.CancelBashForSessionTransitionAsync(outgoingRun));
             return false;
         }
 
         using var rpcOutput = CreateRpcOutputWriter();
-        var rpcMode = new RpcMode(Console.In, rpcOutput, conversationBinding.Run,
+        rpcMode = new RpcMode(Console.In, rpcOutput, conversationBinding.Run,
             cancellationToken => conversationBinding.Run.PersistAsync(cancellationToken),
             projectBinding.Resources, GetRpcModelsAsync,
             extensionLease.Current.Registration, () => modelBinding.Selection.Authenticated ? null :
@@ -147,7 +151,8 @@ internal static class RpcModeComposition
             getSystemPrompt: () => modelBinding.Agent.SystemInstructions,
             rpcInvocationDirectory: invocationDirectory,
             getExportSystemMessage: () => RpcSystemMessageProjector.Project(modelBinding.Agent,
-                includeBeforeFirstRun: true));
+                includeBeforeFirstRun: true),
+            persistRun: (originRun, cancellationToken) => originRun.PersistAsync(cancellationToken));
         rpcMode.AfterServeBeforeUiShutdown = token => ExtensionSessionLifecycleHost.NotifyShutdownAsync(
             conversationBinding.Run, PiSharpExtensionSessionShutdownReason.Quit, token);
         try
