@@ -439,8 +439,14 @@ public sealed class RpcSessionProcessTests
             {
                 await process.StandardInput.WriteLineAsync(request);
                 await process.StandardInput.FlushAsync(timeout.Token);
-                var line = await process.StandardOutput.ReadLineAsync(timeout.Token);
-                return JsonDocument.Parse(Assert.IsType<string>(line));
+                while (await process.StandardOutput.ReadLineAsync(timeout.Token) is { } line)
+                {
+                    var record = JsonDocument.Parse(line);
+                    if (record.RootElement.TryGetProperty("type", out var type) && type.GetString() == "response")
+                        return record;
+                    record.Dispose();
+                }
+                throw new EndOfStreamException("The RPC process exited before writing the expected response.");
             }
 
             using var nullParent = await SendAsync("{\"type\":\"new_session\",\"parentSession\":null}");
@@ -454,6 +460,9 @@ public sealed class RpcSessionProcessTests
             Assert.False(nullState.RootElement.TryGetProperty("id", out _));
             Assert.False(nullState.RootElement.TryGetProperty("error", out _));
             var nullSessionPath = nullState.RootElement.GetProperty("data").GetProperty("sessionFile").GetString()!;
+            Assert.False(File.Exists(nullSessionPath));
+            using var nullName = await SendAsync("{\"id\":\"null-name\",\"type\":\"set_session_name\",\"name\":\"null parent\"}");
+            Assert.True(nullName.RootElement.GetProperty("success").GetBoolean());
             var store = new ConversationStore(root, sessionDirectory);
             Assert.Null((await store.LoadAsync(nullSessionPath)).ParentSessionPath);
 
@@ -462,6 +471,9 @@ public sealed class RpcSessionProcessTests
             Assert.False(emptyParent.RootElement.GetProperty("data").GetProperty("cancelled").GetBoolean());
             using var emptyState = await SendAsync("{\"id\":\"empty-state\",\"type\":\"get_state\"}");
             var emptySessionPath = emptyState.RootElement.GetProperty("data").GetProperty("sessionFile").GetString()!;
+            Assert.False(File.Exists(emptySessionPath));
+            using var emptyName = await SendAsync("{\"id\":\"empty-name\",\"type\":\"set_session_name\",\"name\":\"empty parent\"}");
+            Assert.True(emptyName.RootElement.GetProperty("success").GetBoolean());
             Assert.Null((await store.LoadAsync(emptySessionPath)).ParentSessionPath);
 
             process.StandardInput.Close();

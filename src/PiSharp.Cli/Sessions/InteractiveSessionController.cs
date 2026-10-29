@@ -77,7 +77,8 @@ internal sealed class InteractiveSessionController(
         if (thinkingLevel is not null) conversation.AppendThinkingLevelChange(thinkingLevel);
         var path = noSession ? null : store.NewPath(conversation);
         var run = await openRun(conversation, path, PiSharpExtensionSessionStartReason.New);
-        if (path is not null) await store.SaveAsync(conversation, path);
+        if (path is not null && parentSessionPath is not null)
+            await store.SaveAsync(conversation, path);
         return new(conversation, run, path, null, null);
     }
 
