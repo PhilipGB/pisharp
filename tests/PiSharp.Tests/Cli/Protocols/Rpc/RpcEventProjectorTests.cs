@@ -222,11 +222,25 @@ public sealed class RpcEventProjectorTests
         var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
         var end = Assert.Single(projector.Project(new AgentLifecycleEvent("tool_execution_finished", Tool: "fixture",
             Text: "tool failed", IsError: true)
-        { ToolCallId = "fixture-call" }, conversation, null, null,
+        { ToolCallId = "fixture-call", ToolResultIsError = true }, conversation, null, null,
             runAccepted: true, api: null));
 
         using var record = JsonDocument.Parse(JsonSerializer.Serialize(end));
         Assert.True(record.RootElement.GetProperty("isError").GetBoolean());
         Assert.True(record.RootElement.GetProperty("result").GetProperty("isError").GetBoolean());
+    }
+
+    [Fact]
+    public void ToolExecutionEventErrorDoesNotInventResultErrorFlag()
+    {
+        var projector = new RpcEventProjector();
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        var end = Assert.Single(projector.Project(new AgentLifecycleEvent("tool_execution_finished", Tool: "bash",
+            Text: "Command aborted", IsError: true)
+        { ToolCallId = "bash-call" }, conversation, null, null, runAccepted: true, api: null));
+
+        using var record = JsonDocument.Parse(JsonSerializer.Serialize(end));
+        Assert.True(record.RootElement.GetProperty("isError").GetBoolean());
+        Assert.False(record.RootElement.GetProperty("result").TryGetProperty("isError", out _));
     }
 }

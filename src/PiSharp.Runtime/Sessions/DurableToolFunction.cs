@@ -359,6 +359,7 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
             Images = toolImages,
             StructuredContent = contract?.StructuredContent,
             ToolUsage = contract?.Usage,
+            ToolResultIsError = contract?.IsError == true && !builtinCancelled,
             Terminate = contract?.Terminate,
             ToolArguments = displayArguments,
             ToolCallId = toolCallId,

@@ -23,6 +23,9 @@ public sealed record AgentLifecycleEvent(string Type, string? Text = null, strin
     public IReadOnlyDictionary<string, object?>? ToolArguments { get; init; }
 
     [JsonIgnore]
+    public bool? ToolResultIsError { get; init; }
+
+    [JsonIgnore]
     public IReadOnlyList<DataContent>? Images { get; init; }
 
     [JsonIgnore]
