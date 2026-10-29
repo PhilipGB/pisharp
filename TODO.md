@@ -12,7 +12,7 @@ See the [source-pinned inventory](parity/fixtures/compaction-context-management-
 
 ## Active milestone — Complete RPC Protocol and Command Parity — 2026-10-29
 
-PR #28 is verified merged at `646db89bd396b8089b1b9a058fa96b1489f4d0cd`; the milestone branch starts from that commit and pins Pi at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The frozen inventory and contract define 33 commands, 24 event families, 9 extension UI methods, 24 checkpoints and 252 case IDs. R7 passed formal source-bound acceptance 13/13 at `ef1b9d23b83dbcdd9d67de5a8300f4e1d37f9c52`; its changed-file formatting check, 13 focused RPC projector tests, 16 parity verifier tests and warnings-as-errors CLI build pass. Earlier R6 passed 10/10 at `1e1adde9b99d938620d0814e4de8ef4006c6c55c` but is stale at the R7 head. R2 (12/12), R3 (10/10), R4 (12/12), R5 (11/11), V1 (23/23) and R1 (11/11) have historical passes and need final source-bound reruns after the implementation and harness freeze. R8–R15, final evidence refresh, quality gates and draft PR #29 remain open.
+PR #28 is verified merged at `646db89bd396b8089b1b9a058fa96b1489f4d0cd`; the milestone branch starts from that commit and pins Pi at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The frozen inventory and contract define 33 commands, 24 event families, 9 extension UI methods, 24 checkpoints and 252 case IDs. R8 passed formal source-bound acceptance 6/6 at `223f8f071b0aba831e0e74d0e7127771a4cc34fb`; generated-summary process cases, focused 20 .NET tests, 16 parity verifier tests, targeted formatting and the warnings-as-errors CLI build pass. R1–R7 and V1 have earlier passes but need final source-bound reruns after the implementation and harness freeze. R9–R15, final evidence refresh, quality gates and draft PR #29 remain open.
 
 See the [milestone receipt](docs/parity/fixtures/rpc-protocol-command-parity/README.md), [source-pinned inventory](docs/parity/fixtures/rpc-protocol-command-parity/inventory.json), [case index](docs/parity/fixtures/rpc-protocol-command-parity/required-case-index.json), and [contract](tools/parity/rpc_protocol/contract.json).
 
@@ -590,11 +590,11 @@ The detailed entries in this section preserve earlier source/test evidence only;
 
 ## Current priority
 
-Complete the source-bound RPC contract and process-level differential corpus on `milestone/rpc-protocol-command-parity`, retaining Microsoft Agent Framework 1.21.0 as the runtime execution framework. The frozen baseline is committed. R7 is the current source-bound checkpoint at `ef1b9d23`, with 13/13 cases accepted. R6 has a prior 10/10 pass but needs final source-bound revalidation, as do V1 and R1–R5.
+Complete the source-bound RPC contract and process-level differential corpus on `milestone/rpc-protocol-command-parity`, retaining Microsoft Agent Framework 1.21.0 as the runtime execution framework. The frozen baseline is committed. R8 is the current source-bound checkpoint at `223f8f07`, with 6/6 cases accepted. R1–R7 and V1 have prior passes but need final source-bound revalidation.
 
 ## Exact next action
 
-Implement and execute the R8 usage-accounting adapters under the pinned-Pi process comparison. Then proceed through R9–R15, Q0, D0, E0, CI0 and PUB0. Rerun stale V1/R1–R6 evidence after the implementation and harness freeze; keep PR #29 open, draft and unmerged.
+Implement and execute R9 model-selection and thinking-command process cases under the pinned-Pi comparison. Then proceed through R10–R15, Q0, D0, E0, CI0 and PUB0. Rerun stale V1/R1–R7 evidence after the implementation and harness freeze; keep PR #29 open, draft and unmerged.
 
 ## Architecture risks to reconcile before completion
 
