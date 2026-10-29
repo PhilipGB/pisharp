@@ -190,14 +190,15 @@ public sealed class RpcActiveModelSelectionProcessTests
             var entries = session.RootElement.GetProperty("Entries").EnumerateArray().ToArray();
             var modelChanges = entries.Select((entry, index) => (entry, index))
                 .Where(item => item.entry.GetProperty("Type").GetString() == "model_change").ToArray();
-            Assert.Equal(["model-two", "model-one"], modelChanges.Select(item =>
+            Assert.Equal(["model-three", "model-two", "model-one"], modelChanges.Select(item =>
                 item.entry.GetProperty("Payload").GetProperty("model").GetString()));
             Assert.All(modelChanges, item => Assert.Equal("fixture", item.entry.GetProperty("Payload").GetProperty("provider").GetString()));
             var assistantResponseIndex = Array.FindIndex(entries, entry => entry.GetProperty("Type").GetString() == "chat" &&
                 entry.GetProperty("Payload").GetProperty("Message").GetProperty("role").GetString() == "assistant");
             var toolOutcomeIndex = Array.FindIndex(entries, entry => entry.GetProperty("Type").GetString() == "tool_outcome");
-            Assert.True(assistantResponseIndex >= 0 && modelChanges[0].index > assistantResponseIndex &&
-                modelChanges[1].index > modelChanges[0].index && modelChanges[1].index < toolOutcomeIndex);
+            Assert.True(assistantResponseIndex >= 0 && modelChanges[0].index < assistantResponseIndex &&
+                modelChanges[1].index > assistantResponseIndex && modelChanges[2].index > modelChanges[1].index &&
+                modelChanges[2].index < toolOutcomeIndex);
         }
         finally
         {
