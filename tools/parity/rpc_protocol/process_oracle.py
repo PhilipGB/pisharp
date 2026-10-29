@@ -2795,6 +2795,7 @@ def _store_observation(evidence_dir: Path, case_id: str, product_run: str,
 
 
 def _generate_r8_native_summary_fixture(evidence_dir: Path) -> tuple[str, str, list[dict[str, str]]]:
+    evidence_dir = evidence_dir.resolve()
     cache_key = str(evidence_dir.resolve())
     if cache_key in _R8_GENERATED_FIXTURE_CACHE:
         return _R8_GENERATED_FIXTURE_CACHE[cache_key]
