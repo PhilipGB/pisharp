@@ -15,8 +15,10 @@ public sealed class RpcActiveCloneProcessTests
         if (!OperatingSystem.IsLinux()) return;
         var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-active-clone-" + Guid.NewGuid().ToString("N"));
         var agentDirectory = Path.Combine(root, "agent");
+        var skillDirectory = Path.Combine(agentDirectory, "skills", "fixture-skill");
         var sessionDirectory = Path.Combine(root, "sessions");
         Directory.CreateDirectory(agentDirectory);
+        Directory.CreateDirectory(skillDirectory);
         var listener = StartLoopbackListener(out var port);
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         var releaseBlockedResponse = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -49,6 +51,8 @@ public sealed class RpcActiveCloneProcessTests
 
         try
         {
+            await File.WriteAllTextAsync(Path.Combine(skillDirectory, "SKILL.md"),
+                "---\nname: fixture-skill\ndescription: Deterministic fixture skill\n---\nUse the deterministic fixture skill.\n");
             await File.WriteAllTextAsync(Path.Combine(agentDirectory, "models.json"), JsonSerializer.Serialize(new
             {
                 providers = new
@@ -179,6 +183,7 @@ public sealed class RpcActiveCloneProcessTests
             Assert.Equal("", systemMessage.GetProperty("content").GetString());
             Assert.Equal(["preamble", "tools", "rules", "docs", "skills", "cwd"], systemMessage.GetProperty("sections").EnumerateObject()
                 .Select(section => section.Name));
+            Assert.Contains("fixture-skill", systemMessage.GetProperty("sections").GetProperty("skills").GetString());
             Assert.Contains("You are an expert coding assistant operating inside pi",
                 systemMessage.GetProperty("sections").GetProperty("preamble").GetString());
             Assert.Equal($"<cwd>\n{root.Replace('\\', '/')}\n</cwd>",
