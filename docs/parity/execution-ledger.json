@@ -13727,7 +13727,7 @@
   },
   "rpc_protocol_command_parity_milestone": {
     "status": "in_progress",
-    "phase": "final_evidence_and_exact_head_publication",
+    "phase": "automatic_exact_head_ci_and_publication",
     "branch": "milestone/rpc-protocol-command-parity",
     "branch_base_sha": "646db89bd396b8089b1b9a058fa96b1489f4d0cd",
     "prerequisite_pr28": {
@@ -13816,11 +13816,10 @@
       "RPC-ACTIVE-SESSION-REPLACEMENT"
     ],
     "open_requirements": [
-      "Refresh committed evidence and pass E0",
-      "Pass exact-head automatic push/PR CI and CI0",
-      "Pass PUB0; keep PR #29 open, draft and unmerged"
+      "Automatic push and pull-request workflows must pass at the final exact head; then CI0 passes.",
+      "PUB0 passes and PR #29 remains open, draft and unmerged."
     ],
-    "next_action": "Commit the source-bound evidence refresh, run E0, push to PR #29, and record automatic exact-head CI plus CI0/PUB0.",
+    "next_action": "Push the final evidence commit to PR #29, wait for automatic push and PR workflows, then pass CI0 and PUB0. Keep the PR open, draft and unmerged.",
     "r5_implementation_source_sha": "8e7e16f37e420645fc852cb8cef8bf0ba761778d",
     "r5_evidence_directory": "artifacts/parity/rpc-protocol-command-parity/r5-8e7e16f3",
     "r5_evidence_sha256": "9bac9415beaad090519ca680c3ad77ce6511a9e7f4bcd8654ef57994731bb57b",
@@ -14088,6 +14087,12 @@
         "evidenceSha256": "70b9182c7754dc73327c9c6defec9689cab1d4dbce96d0aa564f2d054aa5caf4"
       }
     ],
-    "contract_scope": "24/24 checkpoints and 252/252 cases; source-bound results are 21/24 checkpoints and 231/252 cases."
+    "contract_scope": "24/24 checkpoints and 252/252 cases; source-bound results are 21/24 checkpoints and 231/252 cases.",
+    "e0_checkpoint": {
+      "result": "10/10 passed; zero failures or skips; independent verifier passed.",
+      "evidence_directory": "artifacts/parity/rpc-protocol-command-parity/run-1481f15f/E0",
+      "source_bound_checkpoint_count": 21,
+      "implementation_source_sha": "1481f15fb7f01217be9e41f256df94975532013b"
+    }
   }
 }
