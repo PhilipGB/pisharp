@@ -10,9 +10,9 @@ Limitations: the 20 credential-dependent pinned Pi interactive/LLM cases remain 
 
 See the [source-pinned inventory](parity/fixtures/compaction-context-management-inventory.json), [compact evidence](parity/fixtures/compaction-context-management-c1-case-results.json), [case index](parity/fixtures/compaction-context-management/evidence-summary.json), and [execution ledger](parity/execution-ledger.json).
 
-## Active milestone — Complete RPC Protocol and Command Parity — 2026-10-28
+## Active milestone — Complete RPC Protocol and Command Parity — 2026-10-29
 
-PR #28 is verified merged at `646db89bd396b8089b1b9a058fa96b1489f4d0cd`; the milestone branch starts from that commit and pins Pi at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The frozen inventory and contract define 33 commands, 24 event families, 9 extension UI methods, 24 checkpoints and 252 case IDs. Initial V1 (23/23) and R1 (11/11) reports passed at their recorded sources but the current verifier rejects them as stale after later parity-tool changes; final reruns are required after the implementation and harness freeze. R2 passed 12/12 at `44a360fc8bcdf36e935068127f6e39c422ec4d8d`, R3 passed 10/10 at `cfa79eeb08945295ce16c6e99c0c7ffe2a2868d9`, R4 passed 12/12 at `413ebc6e8773996048c1dd3315594f4e00973857`, and R5 passed 11/11 at `8e7e16f37e420645fc852cb8cef8bf0ba761778d`; these reports are stale after later changes. R6 passed 10/10 at `1e1adde9b99d938620d0814e4de8ef4006c6c55c`, independently verified, with matching repeated pinned-Pi and PiSharp observations. Its focused RPC projector tests pass 9/9, and the warnings-as-errors CLI build passes. R7–R15, final V1/R1–R5 evidence, remaining quality gates and draft PR #29 remain open.
+PR #28 is verified merged at `646db89bd396b8089b1b9a058fa96b1489f4d0cd`; the milestone branch starts from that commit and pins Pi at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The frozen inventory and contract define 33 commands, 24 event families, 9 extension UI methods, 24 checkpoints and 252 case IDs. R7 passed formal source-bound acceptance 13/13 at `ef1b9d23b83dbcdd9d67de5a8300f4e1d37f9c52`; its changed-file formatting check, 13 focused RPC projector tests, 16 parity verifier tests and warnings-as-errors CLI build pass. Earlier R6 passed 10/10 at `1e1adde9b99d938620d0814e4de8ef4006c6c55c` but is stale at the R7 head. R2 (12/12), R3 (10/10), R4 (12/12), R5 (11/11), V1 (23/23) and R1 (11/11) have historical passes and need final source-bound reruns after the implementation and harness freeze. R8–R15, final evidence refresh, quality gates and draft PR #29 remain open.
 
 See the [milestone receipt](docs/parity/fixtures/rpc-protocol-command-parity/README.md), [source-pinned inventory](docs/parity/fixtures/rpc-protocol-command-parity/inventory.json), [case index](docs/parity/fixtures/rpc-protocol-command-parity/required-case-index.json), and [contract](tools/parity/rpc_protocol/contract.json).
 
@@ -590,11 +590,11 @@ The detailed entries in this section preserve earlier source/test evidence only;
 
 ## Current priority
 
-Complete the source-bound RPC contract and process-level differential corpus on `milestone/rpc-protocol-command-parity`, retaining Microsoft Agent Framework 1.21.0 as the runtime execution framework. The frozen baseline is committed; R2 passed 12/12 at its recorded source, R3 passed 10/10 at an earlier source, and R4 passes 12/12 at `413ebc6e`. Continue with lifecycle event ordering in R5. R1–R4 and V1 need final source-bound reruns after production, test and parity-tool changes are frozen.
+Complete the source-bound RPC contract and process-level differential corpus on `milestone/rpc-protocol-command-parity`, retaining Microsoft Agent Framework 1.21.0 as the runtime execution framework. The frozen baseline is committed. R7 is the current source-bound checkpoint at `ef1b9d23`, with 13/13 cases accepted. R6 has a prior 10/10 pass but needs final source-bound revalidation, as do V1 and R1–R5.
 
 ## Exact next action
 
-Implement and execute the R5 lifecycle event-ordering adapters under the pinned-Pi process comparison. Then proceed through R6–R15, D0, Q0, E0, CI0 and PUB0. Rerun stale V1/R1–R4 evidence after the implementation and harness freeze; keep PR #29 open, draft and unmerged.
+Implement and execute the R8 usage-accounting adapters under the pinned-Pi process comparison. Then proceed through R9–R15, Q0, D0, E0, CI0 and PUB0. Rerun stale V1/R1–R6 evidence after the implementation and harness freeze; keep PR #29 open, draft and unmerged.
 
 ## Architecture risks to reconcile before completion
 

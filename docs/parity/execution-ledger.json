@@ -13727,7 +13727,7 @@
   },
   "rpc_protocol_command_parity_milestone": {
     "status": "in_progress",
-    "phase": "r6_complete_r7_pending",
+    "phase": "r7_complete_r8_pending",
     "branch": "milestone/rpc-protocol-command-parity",
     "branch_base_sha": "646db89bd396b8089b1b9a058fa96b1489f4d0cd",
     "prerequisite_pr28": {
@@ -13788,7 +13788,7 @@
     "maf_package_version": "1.21.0",
     "dotnet_sdk": "10.0.113",
     "production_changes_started": true,
-    "process_case_results_produced": 66,
+    "process_case_results_produced": 79,
     "baseline_validation": {
       "contract_source_verifier": "passed",
       "contract_integrity_tests": "16/16 passed; positive control and all 22 frozen mutations are covered",
@@ -13801,7 +13801,8 @@
       "r3_source_bound_process_run": "10/10 passed at cfa79eeb; stale after later production and parity-tool changes and requires final rerun",
       "r4_source_bound_process_run": "12/12 passed at 413ebc6e; independent report verification passed, including cancellation restoration, tool completion ordering and persisted queue modes",
       "r5_source_bound_process_run": "11/11 passed; independent report verification passed; all cases matched repeated pinned-Pi observations and a separate PiSharp process at 8e7e16f37e420645fc852cb8cef8bf0ba761778d",
-      "r6_source_bound_process_run": "10/10 passed; independent report verification passed; each case matched two stable pinned-Pi processes and a separate PiSharp process at 1e1adde9b99d938620d0814e4de8ef4006c6c55c"
+      "r6_source_bound_process_run": "10/10 passed; independent report verification passed; each case matched two stable pinned-Pi processes and a separate PiSharp process at 1e1adde9b99d938620d0814e4de8ef4006c6c55c",
+      "r7_source_bound_process_run": "13/13 passed at ef1b9d23b83dbcdd9d67de5a8300f4e1d37f9c52; independent report verification passed; each case matched repeated pinned-Pi baselines and a separate PiSharp process"
     },
     "historical_mismatch_ids_to_revalidate": [
       "RPC-SYSMSG-SECTIONS",
@@ -13813,12 +13814,11 @@
       "RPC-ACTIVE-SESSION-REPLACEMENT"
     ],
     "open_requirements": [
-      "Rerun V1 and R1-R5 after production, tests and parity tooling are frozen; current source checks reject historical evidence after implementation or harness changes.",
-      "Implement actual paired Pi/PiSharp process runners for R7-R15 and capture repeated pinned-Pi baselines.",
-      "Capture two stable pinned-Pi process baselines and independent PiSharp process observations for R7-R15.",
-      "Correct confirmed in-scope differences, then complete all quality, source-bound evidence, exact-head CI and draft PR publication gates."
+      "Implement actual paired Pi/PiSharp process runners for R8-R15 and capture repeated pinned-Pi baselines.",
+      "Rerun V1 and R1-R6 after production, tests and parity tooling are frozen; their reports are stale at the R7 source head.",
+      "Complete Q0, D0, E0, CI0 and PUB0, then capture exact-head CI and prepare draft PR #29 without merging it."
     ],
-    "next_action": "Implement and execute R7 process cases.",
+    "next_action": "Implement and execute R8 usage-accounting process cases.",
     "r5_implementation_source_sha": "8e7e16f37e420645fc852cb8cef8bf0ba761778d",
     "r5_evidence_directory": "artifacts/parity/rpc-protocol-command-parity/r5-8e7e16f3",
     "r5_evidence_sha256": "9bac9415beaad090519ca680c3ad77ce6511a9e7f4bcd8654ef57994731bb57b",
@@ -13830,6 +13830,18 @@
     "r6_evidence_sha256": "092f05afe6fede2ad8d561883f65717d09d47e104a7bf15a855855404266eb1c",
     "r6_case_result": "10/10 passed; zero failures/skips; each case matched two calibrated pinned-Pi processes and one PiSharp process",
     "r6_build_assembly_sha256": "57b0660c462d87d18eb11066876ea400114f82b050e9d2dd6baa331627c1b428",
-    "r6_compact_case_results": "docs/parity/fixtures/rpc-protocol-command-parity/r6-case-results.json"
+    "r6_compact_case_results": "docs/parity/fixtures/rpc-protocol-command-parity/r6-case-results.json",
+    "r7_implementation_source_sha": "ef1b9d23b83dbcdd9d67de5a8300f4e1d37f9c52",
+    "r7_evidence_directory": "artifacts/parity/rpc-protocol-command-parity/r7-ef1b9d23",
+    "r7_evidence_sha256": "72dbc91f585ad0b6dd58d4b90d47932bdfc40e04688533a9d1a8de67ae970e2f",
+    "r7_case_result": "13/13 passed; zero failures/skips; each case matched two calibrated pinned-Pi processes and one PiSharp process; formal independent verification passed",
+    "r7_build_assembly_sha256": "d098ed0c91fac3b64e29b4cf938db0e83abd1152ddd9818268091141e602b9de",
+    "r7_compact_case_results": "docs/parity/fixtures/rpc-protocol-command-parity/r7-case-results.json",
+    "r7_focused_dotnet_tests": "13/13 passed; zero failures/skips",
+    "r7_verifier_unit_tests": "16/16 passed; zero failures/skips",
+    "r7_changed_file_format_verification": "Passed with dotnet format whitespace --verify-no-changes --include changed C# files.",
+    "r7_full_solution_format_note": "Full-solution format verification reports three whitespace findings in untouched RpcAssistantMessageProjectorTests.cs:20 and RpcEventProjectorTests.cs:154,169; changed C# files pass targeted verification.",
+    "current_source_bound_checkpoint_count": 1,
+    "current_source_bound_case_count": 13
   }
 }
