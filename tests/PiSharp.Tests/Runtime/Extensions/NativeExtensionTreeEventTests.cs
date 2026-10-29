@@ -179,7 +179,7 @@ public sealed class NativeExtensionTreeEventTests
             var exception = await Assert.ThrowsAsync<IOException>(() =>
                 run.NavigateTreeAsync(targetLeaf, new ConversationTreeSelectionOptions(Summarize: true)));
 
-            Assert.Equal("summary failed", exception.Message);
+            Assert.Equal("Summarization failed: summary failed", exception.Message);
             Assert.Equal(oldLeaf, conversation.Tree.HeadId);
             Assert.Equal(oldLeaf, (await store.LoadAsync(path)).Tree.HeadId);
             Assert.DoesNotContain(conversation.Tree.Entries, node => node.Type == "branch_summary");
@@ -628,8 +628,22 @@ public sealed class NativeExtensionTreeEventTests
             ChatOptions? options = null,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            await Task.CompletedTask;
-            yield break;
+            Calls++;
+            LastRequest = messages.ToArray();
+            LastOptions = options;
+            if (failure is not null) throw failure;
+            yield return new ChatResponseUpdate(ChatRole.Assistant, answer);
+            yield return new ChatResponseUpdate(ChatRole.Assistant,
+            [
+                new UsageContent(new UsageDetails
+                {
+                    InputTokenCount = 22,
+                    OutputTokenCount = 3,
+                    CachedInputTokenCount = 5,
+                    TotalTokenCount = 27,
+                    AdditionalCounts = new() { ["cacheWriteTokens"] = 2 }
+                })
+            ]);
         }
 
         public object? GetService(Type serviceType, object? serviceKey = null) => null;

@@ -4,6 +4,7 @@ using PiSharp.Extensions.Abstractions;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Sessions;
 using PiSharp.Runtime.Tools;
+using PiSharp.Tests.TestInfrastructure;
 
 namespace PiSharp.Tests;
 
@@ -81,6 +82,14 @@ public sealed class PiSharpExtensionCompactionTests
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            var requestMessages = messages.ToArray();
+            if (CompactionStreamingTestAdapter.IsSummaryRequest(requestMessages))
+            {
+                var response = await GetResponseAsync(requestMessages, options, cancellationToken).ConfigureAwait(false);
+                foreach (var update in response.ToChatResponseUpdates()) yield return update;
+                yield break;
+            }
+
             await Task.CompletedTask;
             yield break;
         }

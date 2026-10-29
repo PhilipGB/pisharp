@@ -169,4 +169,7 @@ public sealed record AgentLifecycleEvent(string Type, string? Text = null, strin
 
     [JsonPropertyName("finalError"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? RetryFinalError { get; init; }
+
+    [JsonIgnore]
+    public string? SummarizationRetrySource { get; init; }
 }

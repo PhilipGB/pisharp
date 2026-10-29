@@ -31,7 +31,11 @@ internal sealed class RpcEventProjector
     {
         var canonical = RpcSessionMessageProjector.Project(conversation, api);
         var messages = _assistantMessages.ReconcileRunMessages(canonical, includeUnpersisted: true);
-        if (messages.Count > 0 && systemMessage is not null)
+        var systemMessageAlreadyProjected = systemMessage is not null && messages.OfType<JsonObject>().Any(message =>
+            message["role"]?.GetValue<string>() == "system" &&
+            JsonNode.DeepEquals(message["content"], systemMessage["content"]) &&
+            JsonNode.DeepEquals(message["sections"], systemMessage["sections"]));
+        if (messages.Count > 0 && systemMessage is not null && !systemMessageAlreadyProjected)
             messages.Insert(0, systemMessage.DeepClone());
         return messages;
     }
@@ -108,14 +112,31 @@ internal sealed class RpcEventProjector
         if ((item.Type is "turn_failed" or "turn_interrupted") && runAccepted)
         {
             var terminalType = item.Type == "turn_interrupted" ? item.Type : "turn_failed";
+            var completedAssistant = _assistantMessages.LastCompletedAssistantMessage;
             var projected = FlushPendingToolResults();
+            var abortedToolContinuation = item.Type == "turn_interrupted" &&
+                HasCompletedToolResult(completedAssistant);
             projected.AddRange(_assistantMessages.FailProviderMessage(item, conversation, api));
+            var terminalAssistant = _assistantMessages.LastCompletedAssistantMessage ?? completedAssistant;
             if (turnOpen && ProjectTurnEnd(conversation, turnStartHead, api, terminalType, item.Error,
-                    item.TurnEndHead, _assistantMessages.LastCompletedAssistantMessage,
+                    item.TurnEndHead, terminalAssistant,
                     item.TurnMessage, item.TurnToolResults) is { } turnEnd)
                 projected.Add(turnEnd);
-            projected.Add(ProjectAgentEnd(conversation, runStartHead, api, terminalType, item.Error,
-                item.TurnEndHead, item.WillRetry ?? false));
+            var agentEnd = ProjectAgentEnd(conversation, runStartHead, api, terminalType, item.Error,
+                item.TurnEndHead, item.WillRetry ?? false, abortedToolContinuation);
+            if (abortedToolContinuation && LastAssistant(agentEnd) is { } errorMessage)
+            {
+                projected.Add(new JsonObject { ["type"] = "turn_start" });
+                projected.Add(new JsonObject { ["type"] = "message_start", ["message"] = errorMessage.DeepClone() });
+                projected.Add(new JsonObject { ["type"] = "message_end", ["message"] = errorMessage.DeepClone() });
+                projected.Add(new JsonObject
+                {
+                    ["type"] = "turn_end",
+                    ["message"] = errorMessage.DeepClone(),
+                    ["toolResults"] = new JsonArray()
+                });
+            }
+            projected.Add(agentEnd);
             return projected;
         }
 
@@ -149,7 +170,8 @@ internal sealed class RpcEventProjector
             "prompt_queued" or "prompt_accepted" or "agent_attempt_started" or "prompt_rejected" or "agent_run_completed" or "agent_settled" or
                 "steering_message_accepted" or "turn_completed" or "turn_failed" or "turn_interrupted" or "assistant_turn_started" or
                 "assistant_turn_completed" or "model_request_started" or "model_request_completed" or
-                "model_request_failed" or "model_request_interrupted" or "model_text_delta" or "model_content_update" => null,
+                "model_request_failed" or "model_request_interrupted" or "model_text_delta" or "model_content_update" or
+                "usage" => null,
             "queue_update" => ProjectQueueUpdate(item),
             "entry_appended" => ProjectAppendedEntry(item),
             "auto_retry_start" => new
@@ -161,10 +183,58 @@ internal sealed class RpcEventProjector
                 errorMessage = ProjectRetryError(item.Error)
             },
             "auto_retry_end" => ProjectRetryEnd(item),
+            "extension_error" => ProjectExtensionError(item),
+            "bash_execution_update" => ProjectBashExecutionUpdate(item),
+            "summarization_retry_scheduled" => new
+            {
+                type = "summarization_retry_scheduled",
+                attempt = item.RetryAttempt,
+                maxAttempts = item.RetryMaxAttempts,
+                delayMs = item.RetryDelayMs,
+                errorMessage = ProjectRetryError(item.Error)
+            },
+            "summarization_retry_attempt_start" => item.SummarizationRetrySource == "branchSummary"
+                ? new { type = "summarization_retry_attempt_start", source = "branchSummary" }
+                : new { type = "summarization_retry_attempt_start", source = "compaction", reason = item.CompactionReason },
+            "summarization_retry_finished" => new { type = "summarization_retry_finished" },
             "compaction_start" => RpcCompactionResultProjector.ProjectStart(item.CompactionReason ?? "manual"),
             "compaction_end" => RpcCompactionResultProjector.ProjectEnd(item),
             _ => new { type = "event", format = "pisharp", data = item }
         };
+
+    private static JsonObject ProjectExtensionError(AgentLifecycleEvent item)
+    {
+        var result = new JsonObject { ["type"] = "extension_error" };
+        if (item.Details is not null)
+        {
+            var details = JsonSerializer.SerializeToElement(item.Details);
+            if (details.ValueKind == JsonValueKind.Object)
+            {
+                if (details.TryGetProperty("extensionPath", out var path) && path.ValueKind == JsonValueKind.String)
+                    result["extensionPath"] = path.GetString();
+                if (details.TryGetProperty("eventType", out var eventType) && eventType.ValueKind == JsonValueKind.String)
+                    result["event"] = eventType.GetString();
+                else if (details.TryGetProperty("event", out eventType) && eventType.ValueKind == JsonValueKind.String)
+                    result["event"] = eventType.GetString();
+            }
+        }
+        if (item.Error is not null) result["error"] = item.Error;
+        return result;
+    }
+
+    private static JsonObject ProjectBashExecutionUpdate(AgentLifecycleEvent item) =>
+        ProjectBashExecutionUpdate(item.OperationId, item.Text ?? "");
+
+    internal static JsonObject ProjectBashExecutionUpdate(string? id, string delta)
+    {
+        var record = new JsonObject
+        {
+            ["type"] = "bash_execution_update",
+            ["delta"] = delta
+        };
+        if (id is not null) record["id"] = id;
+        return record;
+    }
 
     private static object ProjectAppendedEntry(AgentLifecycleEvent item) => new
     {
@@ -187,6 +257,7 @@ internal sealed class RpcEventProjector
             toolResults.Add(projectedResult ?? PiJsonlEntryCodec.ProjectRuntimeMessage(conversation, result,
                 toolName: callId is not null && toolNames.TryGetValue(callId, out var name) ? name : "tool"));
         }
+        AppendCachedToolResults(toolResults, _assistantMessages.LastCompletedAssistantMessage);
 
         return new JsonObject
         {
@@ -260,7 +331,6 @@ internal sealed class RpcEventProjector
         };
         if (item.Details is not null)
             result["details"] = JsonSerializer.SerializeToNode(item.Details);
-        if (item.IsError == true) result["isError"] = true;
         if (item.StructuredContent is { } structured) result["structuredContent"] = JsonNode.Parse(structured.GetRawText());
         if (item.ToolUsage is { } usage) result["usage"] = PiJsonlEntryCodec.ProjectToolUsage(usage, item.Cost);
         if (item.Terminate == true) result["terminate"] = true;
@@ -299,6 +369,7 @@ internal sealed class RpcEventProjector
             toolResults.Add(projected ?? PiJsonlEntryCodec.ProjectRuntimeMessage(conversation, result,
                 toolName: callId is not null && toolNames.TryGetValue(callId, out var name) ? name : "tool"));
         }
+        AppendCachedToolResults(toolResults, completedAssistantMessage);
         if (completedAssistantMessage is null && results.Count == 0)
             foreach (var message in messages.Skip(assistantIndex + 1)
                          .Where(message => message["role"]?.GetValue<string>() == "toolResult"))
@@ -312,14 +383,42 @@ internal sealed class RpcEventProjector
         };
     }
 
-    private object ProjectAgentEnd(ConversationSession conversation, string? runStartHead, string? api,
-        string? terminalType, string? errorMessage, string? runEndHead, bool willRetry)
+    private JsonObject ProjectAgentEnd(ConversationSession conversation, string? runStartHead, string? api,
+        string? terminalType, string? errorMessage, string? runEndHead, bool willRetry,
+        bool projectAbortedToolContinuation = false)
     {
         var canonicalMessages = PiSessionRunProjection.ProjectRunMessages(conversation, runStartHead, api,
             terminalType, errorMessage, runEndHead);
         var messages = _assistantMessages.ReconcileRunMessages(canonicalMessages);
+        if (projectAbortedToolContinuation)
+        {
+            AppendCachedToolMessages(messages);
+            if (messages.LastOrDefault(message => message?["role"]?.GetValue<string>() == "assistant") is { } assistant)
+            {
+                assistant["stopReason"] = "error";
+                assistant["errorMessage"] = "This operation was aborted";
+                assistant["usage"] = new JsonObject
+                {
+                    ["input"] = 0,
+                    ["output"] = 0,
+                    ["cacheRead"] = 0,
+                    ["cacheWrite"] = 0,
+                    ["totalTokens"] = 0,
+                    ["cost"] = new JsonObject
+                    {
+                        ["input"] = 0,
+                        ["output"] = 0,
+                        ["cacheRead"] = 0,
+                        ["cacheWrite"] = 0,
+                        ["total"] = 0
+                    }
+                };
+                assistant["thinkingLevel"] = _assistantMessages.ThinkingLevel;
+                assistant["durationMs"] = 0;
+            }
+        }
         if (_systemMessage is not null && messages.Count > 0)
-            messages.Insert(0, _systemMessage.DeepClone());
+            messages.Insert(0, _systemMessage.DeepClone().AsObject());
         return new JsonObject
         {
             ["type"] = "agent_end",
@@ -327,6 +426,54 @@ internal sealed class RpcEventProjector
             ["willRetry"] = willRetry
         };
     }
+
+    private bool HasCompletedToolResult(JsonObject? assistantMessage)
+    {
+        if (assistantMessage?["content"] is not JsonArray content) return false;
+        return content.OfType<JsonObject>().Any(part => part["type"]?.GetValue<string>() == "toolCall" &&
+            part["id"]?.GetValue<string>() is { } callId && _assistantMessages.GetToolResult(callId) is not null);
+    }
+
+    private void AppendCachedToolMessages(JsonArray messages)
+    {
+        for (var index = 0; index < messages.Count; index++)
+        {
+            var assistant = messages[index] as JsonObject;
+            if (assistant is null || assistant["role"]?.GetValue<string>() != "assistant" ||
+                assistant["content"] is not JsonArray content)
+                continue;
+            var missing = content.OfType<JsonObject>()
+                .Where(part => part["type"]?.GetValue<string>() == "toolCall")
+                .Select(part => part["id"]?.GetValue<string>())
+                .Where(callId => callId is not null)
+                .Select(callId => (CallId: callId!, Result: _assistantMessages.GetToolResult(callId!)))
+                .Where(item => item.Result is not null && !messages.Any(message =>
+                    message is JsonObject candidate && candidate["role"]?.GetValue<string>() == "toolResult" &&
+                    candidate["toolCallId"]?.GetValue<string>() == item.CallId))
+                .Select(item => item.Result!.DeepClone().AsObject())
+                .ToArray();
+            if (missing.Length == 0) continue;
+            for (var offset = 0; offset < missing.Length; offset++)
+                messages.Insert(index + 1 + offset, missing[offset]);
+            index += missing.Length;
+        }
+    }
+
+    private void AppendCachedToolResults(JsonArray toolResults, JsonObject? assistantMessage)
+    {
+        if (assistantMessage?["content"] is not JsonArray content) return;
+        foreach (var part in content.OfType<JsonObject>())
+        {
+            if (part["type"]?.GetValue<string>() != "toolCall" || part["id"]?.GetValue<string>() is not { } callId ||
+                toolResults.OfType<JsonObject>().Any(result => result["toolCallId"]?.GetValue<string>() == callId))
+                continue;
+            if (_assistantMessages.GetToolResult(callId) is { } result) toolResults.Add(result);
+        }
+    }
+
+    private static JsonObject? LastAssistant(JsonObject agentEnd) => agentEnd["messages"] is JsonArray messages
+        ? messages.OfType<JsonObject>().LastOrDefault(message => message["role"]?.GetValue<string>() == "assistant")
+        : null;
 
     private static object ProjectQueueUpdate(AgentLifecycleEvent item)
     {

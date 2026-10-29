@@ -8,12 +8,15 @@ namespace PiSharp.Runtime.Sessions;
 public static class SessionExport
 {
     public static async Task ExportHtmlAsync(ConversationSession session, string path,
-        CancellationToken cancellationToken = default, JsonElement? sharePresentation = null)
+        CancellationToken cancellationToken = default, JsonElement? sharePresentation = null,
+        bool overwriteExisting = false, IReadOnlyList<JsonElement>? projectedEntries = null,
+        string? projectedLeafId = null)
     {
         var target = Path.GetFullPath(path);
         var folder = Path.GetDirectoryName(target)!;
         Directory.CreateDirectory(folder);
-        if (File.Exists(target)) throw new IOException("Export destination already exists; choose a new path.");
+        if (!overwriteExisting && File.Exists(target))
+            throw new IOException("Export destination already exists; choose a new path.");
         var temp = Path.Combine(folder, ".pisharp-export-" + Guid.NewGuid().ToString("N") + ".tmp");
         try
         {
@@ -91,13 +94,13 @@ public static class SessionExport
                     await Line("</article>");
                 }
                 if (sharePresentation is { } presentation)
-                    await Line($"<script id=\"session-data\" type=\"application/json\">{SessionShareExport.ViewerDataBase64(session, presentation)}</script>");
+                    await Line($"<script id=\"session-data\" type=\"application/json\">{SessionShareExport.ViewerDataBase64(session, presentation, projectedEntries, projectedLeafId)}</script>");
                 await Line("</html>");
                 await writer.FlushAsync(cancellationToken);
                 stream.Flush(flushToDisk: true);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            File.Move(temp, target); // Never overwrite an unrelated user file or follow a destination symlink.
+            File.Move(temp, target, overwriteExisting); // Replaces atomically when the RPC caller explicitly exports.
         }
         finally { if (File.Exists(temp)) File.Delete(temp); }
     }

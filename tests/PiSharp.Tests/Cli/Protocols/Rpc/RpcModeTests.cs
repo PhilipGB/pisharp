@@ -603,8 +603,9 @@ public sealed class RpcModeTests
             var service = new RpcMode(reader, output, previousRun, getCurrentRun: () => currentRun,
                 newSession: async (parentSession, token) =>
                 {
-                    Assert.Equal("/sessions/parent.jsonl", parentSession);
-                    var next = new ConversationSession(cwd, "fixture", null, parentSessionPath: parentSession);
+                    Assert.Equal("/sessions/parent.jsonl", parentSession?.GetString());
+                    var next = new ConversationSession(cwd, "fixture", null,
+                        parentSessionPath: parentSession?.GetString(), parentSessionValue: parentSession);
                     currentRun = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(cwd)), next);
                     return false;
                 });
@@ -1163,9 +1164,9 @@ public sealed class RpcModeTests
             foreach (var index in updateIndices)
             {
                 using var update = JsonDocument.Parse(lines[index]);
-                var eventData = update.RootElement.GetProperty("data");
-                Assert.Equal("bash-1", eventData.GetProperty("OperationId").GetString());
-                streamed.Append(eventData.GetProperty("Text").GetString());
+                Assert.Equal("bash_execution_update", update.RootElement.GetProperty("type").GetString());
+                Assert.Equal("bash-1", update.RootElement.GetProperty("id").GetString());
+                streamed.Append(update.RootElement.GetProperty("delta").GetString());
             }
             Assert.Contains("stdout-marker", streamed.ToString());
             Assert.Contains("stderr-marker", streamed.ToString());
@@ -1192,7 +1193,7 @@ public sealed class RpcModeTests
             var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
 
             channel.Writer.TryWrite(JsonSerializer.Serialize(new { id = "bash-prefix", type = "bash", command }));
-            await WaitForAsync(output, "\"id\":\"bash-prefix\"");
+            await WaitForAsync(output, "\"id\":\"bash-prefix\",\"type\":\"response\",\"command\":\"bash\"");
             channel.Writer.Complete();
             await serving.WaitAsync(TimeSpan.FromSeconds(5));
 
@@ -1259,8 +1260,9 @@ public sealed class RpcModeTests
                 {
                     using (document)
                     {
-                        Assert.Equal("user-bash", document.RootElement.GetProperty("data").GetProperty("OperationId").GetString());
-                        return document.RootElement.GetProperty("data").GetProperty("Text").GetString()!;
+                        Assert.Equal("bash_execution_update", document.RootElement.GetProperty("type").GetString());
+                        Assert.Equal("user-bash", document.RootElement.GetProperty("id").GetString());
+                        return document.RootElement.GetProperty("delta").GetString()!;
                     }
                 }).ToArray();
             Assert.Equal(["extension-first", "extension-second"], updateTexts);
@@ -1366,8 +1368,9 @@ public sealed class RpcModeTests
             var update = Assert.Single(output.Lines(), line => line.Contains("bash_execution_update", StringComparison.Ordinal));
             using (var updateEvent = JsonDocument.Parse(update))
             {
-                Assert.Equal("remote-output\n", updateEvent.RootElement.GetProperty("data").GetProperty("Text").GetString());
-                Assert.Equal("user-bash-operation", updateEvent.RootElement.GetProperty("data").GetProperty("OperationId").GetString());
+                Assert.Equal("bash_execution_update", updateEvent.RootElement.GetProperty("type").GetString());
+                Assert.Equal("remote-output\n", updateEvent.RootElement.GetProperty("delta").GetString());
+                Assert.Equal("user-bash-operation", updateEvent.RootElement.GetProperty("id").GetString());
             }
             var bashEntry = Assert.Single(run.Conversation.Tree.ActivePath(), item => item.Type == "bash_execution");
             Assert.Equal(command, bashEntry.Payload.GetProperty("command").GetString());
@@ -1528,9 +1531,10 @@ public sealed class RpcModeTests
             var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
 
             channel.Writer.TryWrite("{\"id\":\"bash-excluded\",\"type\":\"bash\",\"command\":\"printf excluded-marker\",\"excludeFromContext\":true}");
-            await WaitForAsync(output, "\"command\":\"bash\"");
+            await WaitForAsync(output, "\"id\":\"bash-excluded\",\"type\":\"response\"");
             using (var response = JsonDocument.Parse(Assert.Single(output.Lines(), line =>
-                       line.Contains("\"id\":\"bash-excluded\"", StringComparison.Ordinal))))
+                       line.Contains("\"id\":\"bash-excluded\"", StringComparison.Ordinal) &&
+                       line.Contains("\"type\":\"response\"", StringComparison.Ordinal))))
             {
                 Assert.True(response.RootElement.GetProperty("success").GetBoolean());
                 Assert.Equal("excluded-marker", response.RootElement.GetProperty("data").GetProperty("output").GetString());
@@ -1720,7 +1724,7 @@ public sealed class RpcModeTests
                 Assert.Equal(["one", "first reply", "two", "second reply"], agentEnd.RootElement.GetProperty("messages")
                     .EnumerateArray().Select(message => message.GetProperty("role").GetString() == "assistant"
                         ? message.GetProperty("content")[0].GetProperty("text").GetString()
-                        : message.GetProperty("content").GetString()));
+                        : message.GetProperty("content")[0].GetProperty("text").GetString()));
             }
             Assert.Contains(lines, line => line.Contains("\"type\":\"queue_update\"", StringComparison.Ordinal) &&
                 line.Contains("\"followUp\":[\"two\"]", StringComparison.Ordinal));
@@ -1947,7 +1951,8 @@ public sealed class RpcModeTests
             .Select(line =>
             {
                 using var record = JsonDocument.Parse(line);
-                return record.RootElement.GetProperty("message").GetProperty("content").GetString()!;
+                return record.RootElement.GetProperty("message").GetProperty("content")[0]
+                    .GetProperty("text").GetString()!;
             }).ToArray();
         Assert.Equal(["initial", "steer first", "steer second", "follow first", "follow second"], projectedUserMessages);
         using var steeringResponse = JsonDocument.Parse(Assert.Single(lines, line => line.Contains("\"id\":\"steering-mode\"", StringComparison.Ordinal)));
@@ -2026,13 +2031,13 @@ public sealed class RpcModeTests
                 line.Contains("\"type\":\"agent_end\"", StringComparison.Ordinal)));
             Assert.Equal(1, agentEnd.RootElement.GetProperty("messages").EnumerateArray().Count(message =>
                 message.GetProperty("role").GetString() == "user" &&
-                message.GetProperty("content").GetString() == "inspect the result"));
+                message.GetProperty("content")[0].GetProperty("text").GetString() == "inspect the result"));
         }
         finally { Directory.Delete(cwd, recursive: true); }
     }
 
     [Fact]
-    public async Task RpcHtmlExportIsPrivateIncludesBranchesAndNeverOverwrites()
+    public async Task RpcHtmlExportIncludesBranchesUsesPiPathAndOverwritesExistingFile()
     {
         var dir = Path.Combine(Path.GetTempPath(), "pisharp-rpc-export-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(dir);
@@ -2044,10 +2049,15 @@ public sealed class RpcModeTests
             session.Append(new ChatMessage(ChatRole.Assistant, "inactive <script>"));
             session.Tree.Select(root);
             session.Append(new ChatMessage(ChatRole.Assistant, "active"));
-            var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(dir)), session);
+            var sessionPath = Path.Combine(dir, "rpc-export-fixture.jsonl");
+            var store = new ConversationStore(dir, dir);
+            await store.SaveAsync(session, sessionPath);
+            var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(dir)), session,
+                save: token => store.SaveAsync(session, sessionPath, token), sessionFile: sessionPath);
             var channel = Channel.CreateUnbounded<string>();
             using var output = new LockedWriter();
-            var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
+            var serving = new RpcMode(new CommandReader(channel.Reader), output, run,
+                rpcInvocationDirectory: dir).ServeAsync();
             channel.Writer.TryWrite("{\"id\":1,\"type\":\"export_html\"}");
             channel.Writer.TryWrite("{\"id\":2,\"type\":\"export_html\"}");
             channel.Writer.TryWrite("{\"id\":3,\"type\":\"export_html\",\"outputPath\":null}");
@@ -2055,20 +2065,20 @@ public sealed class RpcModeTests
             channel.Writer.TryWrite(JsonSerializer.Serialize(new { id = 4, type = "export_html", outputPath = customPath }));
             channel.Writer.Complete();
             await serving.WaitAsync(TimeSpan.FromSeconds(5));
-            var path = Path.Combine(dir, $"pisharp-{session.Id[..12]}.html");
+            var path = Path.Combine(dir, "pi-session-rpc-export-fixture.html");
             var html = await File.ReadAllTextAsync(path);
             Assert.Contains("inactive", html);
             Assert.DoesNotContain("<script>", html);
             Assert.Contains("active", html);
             using var first = JsonDocument.Parse(output.Lines()[0]);
             Assert.True(first.RootElement.GetProperty("success").GetBoolean());
-            Assert.Equal(path, first.RootElement.GetProperty("data").GetProperty("path").GetString());
+            Assert.Equal("pi-session-rpc-export-fixture.html",
+                first.RootElement.GetProperty("data").GetProperty("path").GetString());
             Assert.Equal(4, output.Lines().Length);
-            foreach (var line in output.Lines().Skip(1).Take(2))
-            {
-                using var response = JsonDocument.Parse(line);
-                Assert.False(response.RootElement.GetProperty("success").GetBoolean());
-            }
+            using (var repeated = JsonDocument.Parse(output.Lines()[1]))
+                Assert.True(repeated.RootElement.GetProperty("success").GetBoolean());
+            using (var invalid = JsonDocument.Parse(output.Lines()[2]))
+                Assert.False(invalid.RootElement.GetProperty("success").GetBoolean());
             using var custom = JsonDocument.Parse(output.Lines()[3]);
             Assert.True(custom.RootElement.GetProperty("success").GetBoolean());
             Assert.Equal(customPath, custom.RootElement.GetProperty("data").GetProperty("path").GetString());
@@ -2113,7 +2123,7 @@ public sealed class RpcModeTests
         Assert.Equal(1, data.GetProperty("toolResults").GetInt32());
         Assert.Equal(4, data.GetProperty("totalMessages").GetInt32());
         Assert.Equal(0, data.GetProperty("tokens").GetProperty("total").GetInt64());
-        Assert.Equal(JsonValueKind.Null, data.GetProperty("cost").ValueKind);
+        Assert.Equal(0m, data.GetProperty("cost").GetDecimal());
     }
 
     [Fact]
@@ -2531,7 +2541,9 @@ public sealed class RpcModeTests
         Assert.Equal("Retry cancelled", end.RootElement.GetProperty("finalError").GetString());
         var settledIndex = Array.FindIndex(lines, line => line.Contains("\"type\":\"agent_settled\"", StringComparison.Ordinal));
         Assert.True(settledIndex > Array.IndexOf(lines, endLine));
-        Assert.Contains(lines, line => line.Contains("\"command\":\"abort_retry\",\"success\":true", StringComparison.Ordinal));
+        var abortResponseIndex = Array.FindIndex(lines, line =>
+            line.Contains("\"command\":\"abort_retry\",\"success\":true", StringComparison.Ordinal));
+        Assert.True(abortResponseIndex > Array.IndexOf(lines, endLine));
         Assert.Contains(lines, line => line.Contains("\"command\":\"set_auto_retry\",\"success\":true", StringComparison.Ordinal));
         Assert.Contains(lines, line => line.Contains("\"command\":\"set_auto_retry\",\"success\":false", StringComparison.Ordinal));
         Assert.False(persistedRetryEnabled);
@@ -2855,7 +2867,12 @@ public sealed class RpcModeTests
             CancellationToken cancellationToken = default) => Task.FromResult(new ChatResponse([new ChatMessage(ChatRole.Assistant, "summary")]));
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
-        { yield return new ChatResponseUpdate(ChatRole.Assistant, "reply"); await Task.CompletedTask; }
+        {
+            var isSummary = messages.Any(message => message.Role == ChatRole.User &&
+                message.Text?.Contains("<conversation>", StringComparison.Ordinal) == true);
+            yield return new ChatResponseUpdate(ChatRole.Assistant, isSummary ? "summary" : "reply");
+            await Task.CompletedTask;
+        }
         public object? GetService(Type serviceType, object? serviceKey = null) => null;
         public void Dispose() { }
     }
@@ -3039,6 +3056,13 @@ public sealed class RpcModeTests
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
+            if (messages.Any(message => message.Role == ChatRole.User &&
+                message.Text?.Contains("<conversation>", StringComparison.Ordinal) == true))
+            {
+                yield return new ChatResponseUpdate(ChatRole.Assistant, "summary");
+                yield break;
+            }
+
             await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
             yield break;
         }
@@ -3062,6 +3086,9 @@ public sealed class RpcModeTests
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
+            if (messages.Any(message => message.Role == ChatRole.User &&
+                message.Text?.Contains("<conversation>", StringComparison.Ordinal) == true))
+                SummaryStarted.TrySetResult();
             await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
             yield break;
         }

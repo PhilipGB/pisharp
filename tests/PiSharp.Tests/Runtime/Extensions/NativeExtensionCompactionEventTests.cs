@@ -397,7 +397,7 @@ public sealed class NativeExtensionCompactionEventTests
             Assert.Equal(PiSharpExtensionCompactionReason.Manual, failed.Reason);
             Assert.False(failed.WillRetry);
             Assert.False(failed.Aborted);
-            Assert.Equal("Compaction failed: summary failed", failed.ErrorMessage);
+            Assert.Equal("Compaction failed: Summarization failed: summary failed", failed.ErrorMessage);
             Assert.False(failed.FromExtension);
         }
         finally { Directory.Delete(workingDirectory, recursive: true); }

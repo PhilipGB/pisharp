@@ -17,7 +17,8 @@ public sealed class RpcAssistantMessageProjectorTests
             [new PiSharpNestedToolCall("root/1", "child", "root", "ok")], Complete: true);
         var resultMessage = new ChatMessage(ChatRole.Tool, [new FunctionResultContent("root", "complete")]);
         var projected = projector.ProjectToolResult(new AgentLifecycleEvent("tool_execution_finished",
-            Tool: "orchestrator") { ToolResultMessage = resultMessage, NestedToolCalls = nestedCalls }, conversation);
+            Tool: "orchestrator")
+        { ToolResultMessage = resultMessage, NestedToolCalls = nestedCalls }, conversation);
 
         using var json = JsonDocument.Parse(JsonSerializer.Serialize(projected[0]));
         var call = json.RootElement.GetProperty("message").GetProperty("nestedCalls")

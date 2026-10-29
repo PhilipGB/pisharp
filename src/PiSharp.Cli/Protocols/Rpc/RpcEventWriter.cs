@@ -7,9 +7,28 @@ namespace PiSharp.Cli.Protocols;
 internal sealed class RpcEventWriter(JsonLineWriter output, Func<JsonObject?>? getSystemMessage = null)
 {
     private readonly object _projectorGate = new();
+    private readonly object _retryEndGate = new();
+    private readonly List<(long AfterVersion, TaskCompletionSource Completion)> _retryEndWaiters = [];
     private RpcEventProjector? _activeProjector;
     private string? _activeApi;
     private JsonObject? _lastSystemMessage;
+    private long _retryEndVersion;
+
+    public long RetryEndVersion
+    {
+        get { lock (_retryEndGate) return _retryEndVersion; }
+    }
+
+    public Task WaitForRetryEndAfterAsync(long version)
+    {
+        lock (_retryEndGate)
+        {
+            if (_retryEndVersion > version) return Task.CompletedTask;
+            var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            _retryEndWaiters.Add((version, completion));
+            return completion.Task;
+        }
+    }
 
     public JsonArray ProjectMessagesSnapshot(ConversationSession conversation, JsonObject? systemMessage = null)
     {
@@ -34,6 +53,7 @@ internal sealed class RpcEventWriter(JsonLineWriter output, Func<JsonObject?>? g
         var projector = new RpcEventProjector();
         foreach (var record in projector.Project(item, run.Conversation, null, null, false, null))
             await output.EmitAsync(record, CancellationToken.None);
+        if (item.Type == "auto_retry_end") SignalRetryEndEmitted();
     }
 
     public Task<bool> RunAsync(ConversationRun run, string prompt, CancellationToken cancellationToken = default,
@@ -138,6 +158,7 @@ internal sealed class RpcEventWriter(JsonLineWriter output, Func<JsonObject?>? g
                         accepted, api, turnOpen);
                 foreach (var record in records)
                     await output.EmitAsync(record, CancellationToken.None);
+                if (item.Type == "auto_retry_end") SignalRetryEndEmitted();
                 if (item.Type == "assistant_turn_started") turnOpen = true;
                 if (item.Type is "assistant_turn_completed" or "turn_failed" or "turn_interrupted") turnOpen = false;
                 if (item.Type == "agent_run_completed") succeeded = true;
@@ -155,5 +176,18 @@ internal sealed class RpcEventWriter(JsonLineWriter output, Func<JsonObject?>? g
             }
         }
         return succeeded;
+    }
+
+    private void SignalRetryEndEmitted()
+    {
+        TaskCompletionSource[] ready;
+        lock (_retryEndGate)
+        {
+            _retryEndVersion++;
+            ready = _retryEndWaiters.Where(waiter => _retryEndVersion > waiter.AfterVersion)
+                .Select(waiter => waiter.Completion).ToArray();
+            _retryEndWaiters.RemoveAll(waiter => _retryEndVersion > waiter.AfterVersion);
+        }
+        foreach (var completion in ready) completion.TrySetResult();
     }
 }

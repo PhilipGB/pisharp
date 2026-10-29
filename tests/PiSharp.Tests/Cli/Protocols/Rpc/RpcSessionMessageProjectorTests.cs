@@ -9,6 +9,28 @@ namespace PiSharp.Tests;
 public sealed class RpcSessionMessageProjectorTests
 {
     [Fact]
+    public void ProjectMessagesSnapshotDoesNotDuplicateCompactionSystemMessage()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        session.Append(new ChatMessage(ChatRole.User, "old question"));
+        session.Append(new ChatMessage(ChatRole.Assistant, "old answer"));
+        session.Append(new ChatMessage(ChatRole.User, "retained question"));
+        session.Append(new ChatMessage(ChatRole.Assistant, "retained answer"));
+        var plan = Assert.IsType<ConversationSession.CompactionPlan>(session.PrepareCompaction(1));
+        using var systemDocument = JsonDocument.Parse("""
+            {"role":"system","content":"fixture instructions","sections":{"preamble":"fixture instructions"}}
+            """);
+        var systemMessage = JsonNode.Parse(systemDocument.RootElement.GetRawText())!.AsObject();
+        session.AppendCompaction(plan, "summary", keepRecentTokens: 1, tokensBefore: 42,
+            systemMessage: systemDocument.RootElement);
+
+        var messages = new RpcEventProjector().ProjectMessagesSnapshot(session, "openai-completions", systemMessage);
+
+        Assert.Single(messages.OfType<JsonObject>(), message =>
+            message["role"]?.GetValue<string>() == "system");
+    }
+
+    [Fact]
     public void ProjectCompactedContextPreservesPiSummaryRoleAndAppliesContextEdit()
     {
         var session = new ConversationSession(Path.GetTempPath(), "fixture", null);

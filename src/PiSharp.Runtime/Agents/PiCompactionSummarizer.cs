@@ -1,3 +1,4 @@
+using System.Text;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using PiSharp.Runtime.Providers;
@@ -140,15 +141,18 @@ internal sealed class PiCompactionSummarizer
     private readonly RoutedChatClient _routedChatClient;
     private readonly Func<ReasoningOptions?> _getReasoning;
     private readonly Func<int?> _getDesiredMaxOutputTokens;
-    private readonly ProviderRetryPolicy _retryPolicy;
+    private readonly AgentRunRetryPolicy _retryPolicy;
+    private readonly Func<AgentLifecycleEvent, Task> _publishLifecycleEvent;
 
     public PiCompactionSummarizer(RoutedChatClient client, Func<ReasoningOptions?> getReasoning,
-        Func<int?> getDesiredMaxOutputTokens, ProviderRetryPolicy retryPolicy)
+        Func<int?> getDesiredMaxOutputTokens, AgentRunRetryPolicy retryPolicy,
+        Func<AgentLifecycleEvent, Task> publishLifecycleEvent)
     {
         _routedChatClient = client;
         _getReasoning = getReasoning;
         _getDesiredMaxOutputTokens = getDesiredMaxOutputTokens;
         _retryPolicy = retryPolicy;
+        _publishLifecycleEvent = publishLifecycleEvent;
         _summarizer = new ChatClientAgent(_routedChatClient, new ChatClientAgentOptions
         {
             Name = "PiSharpCompaction",
@@ -161,7 +165,8 @@ internal sealed class PiCompactionSummarizer
 
     public async Task<PiAgent.CompactionSummary> SummarizeAsync(IReadOnlyList<ChatMessage> messages, string? focus,
         CancellationToken cancellationToken = default, string? previousSummary = null, bool turnPrefix = false,
-        int? reserveTokens = null)
+        int? reserveTokens = null, string compactionReason = "manual",
+        Func<AgentLifecycleEvent, Task>? publishLifecycleEvent = null)
     {
         if (focus?.Length > 4096) throw new ArgumentException("Compaction instructions exceed 4096 characters.", nameof(focus));
         var transcript = BuildTranscript(messages);
@@ -171,12 +176,14 @@ internal sealed class PiCompactionSummarizer
                 (previousSummary is null ? "" : $"<previous-summary>\n{previousSummary}\n</previous-summary>\n\n") +
                 (previousSummary is null ? SummarizationPrompt : UpdateSummarizationPrompt) +
                 (string.IsNullOrEmpty(focus) ? "" : $"\n\nAdditional focus: {focus}");
-        return await RunSummaryAsync(request, messages, "compaction", cancellationToken, reserveTokens, turnPrefix)
+        return await RunSummaryAsync(request, messages, "compaction", cancellationToken, reserveTokens, turnPrefix,
+            "compaction", compactionReason, publishLifecycleEvent)
             .ConfigureAwait(false);
     }
 
     public async Task<PiAgent.CompactionSummary> SummarizeBranchAsync(IReadOnlyList<ChatMessage> messages,
-        string? customInstructions, bool replaceInstructions, CancellationToken cancellationToken = default)
+        string? customInstructions, bool replaceInstructions, CancellationToken cancellationToken = default,
+        Func<AgentLifecycleEvent, Task>? publishLifecycleEvent = null)
     {
         if (customInstructions?.Length > 4096)
             throw new ArgumentException("Branch summary instructions exceed 4096 characters.", nameof(customInstructions));
@@ -186,13 +193,17 @@ internal sealed class PiCompactionSummarizer
                 ? BranchSummaryPrompt
                 : $"{BranchSummaryPrompt}\n\nAdditional focus: {customInstructions}";
         var request = $"<conversation>\n{BuildTranscript(messages)}\n</conversation>\n\n{instructions}";
-        var summary = await RunSummaryAsync(request, messages, "branch_summary", cancellationToken).ConfigureAwait(false);
+        var summary = await RunSummaryAsync(request, messages, "branch_summary", cancellationToken,
+            retrySource: "branchSummary", publishLifecycleEvent: publishLifecycleEvent).ConfigureAwait(false);
         return summary with { Text = BranchSummaryPreamble + summary.Text };
     }
 
     private async Task<PiAgent.CompactionSummary> RunSummaryAsync(string request, IReadOnlyList<ChatMessage> messages,
-        string usageSource, CancellationToken cancellationToken, int? reserveTokens = null, bool turnPrefix = false)
+        string usageSource, CancellationToken cancellationToken, int? reserveTokens = null, bool turnPrefix = false,
+        string? retrySource = null, string? compactionReason = null,
+        Func<AgentLifecycleEvent, Task>? publishLifecycleEvent = null)
     {
+        publishLifecycleEvent ??= _publishLifecycleEvent;
         var directOptions = _routedChatClient.HasRouter ? _routedChatClient.CreateDirectRequestOptions(messages) : null;
         var reasoning = directOptions is null ? _getReasoning() : null;
         var requestOptions = directOptions ?? (reasoning is null ? null : new ChatOptions { Reasoning = reasoning });
@@ -208,30 +219,86 @@ internal sealed class PiCompactionSummarizer
             requestOptions = requestOptions?.Clone() ?? new ChatOptions();
             requestOptions.MaxOutputTokens = maxOutputTokens;
         }
-        var response = await RunWithRetryAsync(() => _summarizer.RunAsync(request,
-            options: requestOptions is null ? null : new ChatClientAgentRunOptions(requestOptions),
-            cancellationToken: cancellationToken), retryCount: 0).ConfigureAwait(false);
-
-        async Task<TResponse> RunWithRetryAsync<TResponse>(Func<Task<TResponse>> operation, int retryCount)
+        var responseText = new StringBuilder();
+        UsageDetails? responseUsage = null;
+        ChatFinishReason? finishReason = null;
+        var retryCount = 0;
+        try
         {
-            try
+            while (true)
             {
-                return await operation().ConfigureAwait(false);
-            }
-            catch (Exception error) when (_retryPolicy.CanRetry(error, retryCount, producedOutput: false))
-            {
-                await Task.Delay(_retryPolicy.Delay, cancellationToken).ConfigureAwait(false);
-                return await RunWithRetryAsync(operation, retryCount + 1).ConfigureAwait(false);
+                try
+                {
+                    var updates = _summarizer.RunStreamingAsync(request,
+                        options: requestOptions is null ? null : new ChatClientAgentRunOptions(requestOptions),
+                        cancellationToken: cancellationToken);
+                    await foreach (var update in updates.ConfigureAwait(false))
+                    {
+                        responseText.Append(update.Text);
+                        if (update.FinishReason is { } updateFinishReason) finishReason = updateFinishReason;
+                        if (update.Contents is null) continue;
+                        foreach (var content in update.Contents)
+                            if (content is UsageContent usageContent) responseUsage = usageContent.Details;
+                    }
+
+                    break;
+                }
+                catch (Exception error) when (responseText.Length == 0 &&
+                    _retryPolicy.CanRetry(error, error.Message, retryCount, _retryPolicy.Enabled))
+                {
+                    retryCount++;
+                    var delay = _retryPolicy.DelayForAttempt(retryCount);
+                    var errorMessage = PiProviderErrorFormatter.Format(error.Message) ?? error.Message;
+                    await publishLifecycleEvent(new AgentLifecycleEvent("summarization_retry_scheduled", Error: errorMessage)
+                    {
+                        RetryAttempt = retryCount,
+                        RetryMaxAttempts = _retryPolicy.MaxRetries,
+                        RetryDelayMs = (long)delay.TotalMilliseconds
+                    }).ConfigureAwait(false);
+                    try
+                    {
+                        await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        await publishLifecycleEvent(new AgentLifecycleEvent("summarization_retry_finished"))
+                            .ConfigureAwait(false);
+                        throw;
+                    }
+                    await publishLifecycleEvent(new AgentLifecycleEvent("summarization_retry_attempt_start")
+                    {
+                        SummarizationRetrySource = retrySource,
+                        CompactionReason = compactionReason
+                    }).ConfigureAwait(false);
+                    responseText.Clear();
+                    responseUsage = null;
+                    finishReason = null;
+                }
             }
         }
+        catch (Exception error) when (error is not OperationCanceledException)
+        {
+            if (retryCount > 0)
+                await publishLifecycleEvent(new AgentLifecycleEvent("summarization_retry_finished"))
+                    .ConfigureAwait(false);
+            var message = PiProviderErrorFormatter.Format(error.Message) ?? error.Message;
+            if (!message.StartsWith("Summarization failed:", StringComparison.Ordinal))
+                message = $"Summarization failed: {message}";
+            throw new IOException(message, error);
+        }
 
-        if (response.FinishReason == ChatFinishReason.Length)
+        if (retryCount > 0)
+            await publishLifecycleEvent(new AgentLifecycleEvent("summarization_retry_finished"))
+                .ConfigureAwait(false);
+
+        if (finishReason == ChatFinishReason.Length)
             throw new InvalidDataException("Summarization failed: generation hit the token cap and the summary is incomplete");
-        if (string.IsNullOrWhiteSpace(response.Text)) throw new InvalidDataException("Summarizer returned an empty response.");
+        if (string.IsNullOrWhiteSpace(responseText.ToString()))
+            throw new InvalidDataException("Summarizer returned an empty response.");
         var route = VirtualModelRequestHints.ReadHint(directOptions)?.Execution?.Route;
-        return new PiAgent.CompactionSummary(response.Text, response.Usage,
-            route is not null && response.Usage is { } usage
-                ? [UsageRecord.Create(route.Model.Id, usageSource, usage, route.Pricing)] : null);
+        return new PiAgent.CompactionSummary(responseText.ToString(), responseUsage,
+            route is not null && responseUsage is { } usageDetails
+                ? [UsageRecord.Create(route.Model.Id, usageSource, usageDetails, route.Pricing)] : null);
     }
 
     private static string BuildTranscript(IReadOnlyList<ChatMessage> messages)

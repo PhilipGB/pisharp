@@ -59,7 +59,7 @@ public sealed record UsageRecord(string Model, string Source, long? InputTokens,
     {
         var inputIncludingCached = details.InputTokenCount;
         var output = details.OutputTokenCount;
-        var cached = details.CachedInputTokenCount;
+        var cached = details.CachedInputTokenCount ?? (inputIncludingCached is null ? null : 0);
         var cachedWriteCounts = details.AdditionalCounts?.Where(count => count.Key.Equals("cacheWriteTokens", StringComparison.OrdinalIgnoreCase) ||
                 count.Key.Equals("cacheWriteTokenCount", StringComparison.OrdinalIgnoreCase) ||
                 count.Key.Equals("cache_write_tokens", StringComparison.OrdinalIgnoreCase) ||
@@ -67,10 +67,11 @@ public sealed record UsageRecord(string Model, string Source, long? InputTokens,
                 count.Key.Equals("piMessages.cacheWrite", StringComparison.OrdinalIgnoreCase) ||
                 count.Key.Equals("bedrock.cacheWriteInputTokenCount", StringComparison.OrdinalIgnoreCase))
             .ToArray();
-        long? cachedWrite = cachedWriteCounts is { Length: > 0 } ? cachedWriteCounts.Sum(count => count.Value) : null;
-        long? input = inputIncludingCached is long inputTotal && cached is long cacheRead
-            ? inputTotal - cacheRead : null;
-        var reasoning = details.ReasoningTokenCount;
+        long? cachedWrite = cachedWriteCounts is { Length: > 0 } ? cachedWriteCounts.Sum(count => count.Value) :
+            inputIncludingCached is null ? null : 0;
+        long? input = inputIncludingCached is long inputTotal ? inputTotal - (cached ?? 0) : null;
+        var reasoning = details.ReasoningTokenCount ??
+            (inputIncludingCached is not null || details.OutputTokenCount is not null ? 0 : null);
         var reportedTotal = details.TotalTokenCount;
         long? total = reportedTotal is > 0 ? reportedTotal :
             inputIncludingCached is long knownInput && output is long knownOutput && cachedWrite is long knownWrite

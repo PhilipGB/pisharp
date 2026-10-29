@@ -22,8 +22,8 @@ internal static class PiContextUsageEstimator
         ArgumentNullException.ThrowIfNull(tools);
         ArgumentNullException.ThrowIfNull(messages);
 
-        var toolJson = SerializeToolDeclarations(tools);
-        var toolCharacters = toolJson.Length;
+        var declarations = tools.ToArray();
+        var toolCharacters = declarations.Length == 0 ? 0 : SerializeToolDeclarations(declarations).Length;
         var messageCharacters = messages.Select(MessageCharacters).ToArray();
         long tokens = EstimateTokens(systemPromptCharacters + toolCharacters);
         foreach (var characters in messageCharacters) tokens += EstimateTokens(characters);

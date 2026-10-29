@@ -134,7 +134,8 @@ public sealed class RpcActiveToolForkProcessTests
                 record.TryGetProperty("id", out var id) && id.GetString() == "fork-active-tool");
             Assert.True(agentEndIndex >= 0 && settledIndex > agentEndIndex && responseIndex > settledIndex);
             var abortedMessages = forkEvents[agentEndIndex].GetProperty("messages").EnumerateArray().ToArray();
-            Assert.Equal("aborted", abortedMessages[^1].GetProperty("stopReason").GetString());
+            Assert.Equal("error", abortedMessages[^1].GetProperty("stopReason").GetString());
+            Assert.Equal("This operation was aborted", abortedMessages[^1].GetProperty("errorMessage").GetString());
         }
         finally
         {

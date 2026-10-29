@@ -108,6 +108,37 @@ public sealed class RpcSessionEntryProjectorTests
     }
 
     [Fact]
+    public void RpcProjectionDoesNotRepeatSystemMessageAfterCompactionSnapshot()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null, "openai");
+        session.Tree.Append("run_started", JsonSerializer.SerializeToElement(new { runId = "fixture-run" }));
+        session.Append(new ChatMessage(ChatRole.User, "hello"));
+        var user = session.Tree.ActivePath().Last();
+        var systemMessage = JsonNode.Parse("""
+            {"role":"system","content":"fixture instructions","sections":{"preamble":"fixture instructions"}}
+            """)!.AsObject();
+        session.Tree.Append("compaction", JsonSerializer.SerializeToElement(new
+        {
+            summary = "fixture summary",
+            firstKeptEntryId = user.Id,
+            tokensBefore = 10,
+            systemMessage = JsonSerializer.Deserialize<JsonElement>(systemMessage.ToJsonString())
+        }));
+        session.Tree.Append("run_finished", JsonSerializer.SerializeToElement(new { runId = "fixture-run" }));
+        session.Tree.Append("run_started", JsonSerializer.SerializeToElement(new { runId = "fixture-retry" }));
+
+        var entries = RpcSessionEntryProjector.ProjectEntries(session, systemMessage: systemMessage);
+
+        var systemEntries = entries.Where(entry => entry.TryGetProperty("message", out var message) &&
+            message.GetProperty("role").GetString() == "system").ToArray();
+        Assert.Single(systemEntries);
+        Assert.Equal("rpc-system-fixture-run", systemEntries[0].GetProperty("id").GetString());
+        var compaction = Assert.Single(entries, entry => entry.GetProperty("type").GetString() == "compaction");
+        Assert.Equal(compaction.GetProperty("id").GetString(),
+            RpcSessionEntryProjector.ProjectLeafId(session, systemMessage));
+    }
+
+    [Fact]
     public void RpcEntryProjectionUsesPiUserContentArrayForNativeMessages()
     {
         var session = new ConversationSession(Path.GetTempPath(), "fixture", null, "openai");

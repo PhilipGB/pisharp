@@ -95,5 +95,5 @@ internal static class NativeSessionDocumentCodec
 
     internal sealed record Document(int Version, string Id, string WorkingDirectory, string Model, string? Endpoint,
         string? Name, string? HeadId, ConversationNode[] Entries, string? Provider = null, JsonElement? PiHeader = null,
-        string? ParentSessionPath = null);
+        JsonElement? ParentSessionPath = null);
 }

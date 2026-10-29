@@ -10,6 +10,117 @@ namespace PiSharp.Tests;
 public sealed class RpcExportHtmlProcessTests
 {
     [Fact]
+    public async Task RelativeExportPathsUseInvocationDirectoryWhenSessionWorkingDirectoryDiffers()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-export-cwd-" + Guid.NewGuid().ToString("N"));
+        var invocationDirectory = Path.Combine(root, "invocation");
+        var sessionWorkingDirectory = Path.Combine(root, "session-cwd");
+        var sessionDirectory = Path.Combine(root, "sessions");
+        var agentDirectory = Path.Combine(root, "agent");
+        Directory.CreateDirectory(invocationDirectory);
+        Directory.CreateDirectory(sessionWorkingDirectory);
+        Directory.CreateDirectory(sessionDirectory);
+        Directory.CreateDirectory(agentDirectory);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        Process? process = null;
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(agentDirectory, "models.json"), JsonSerializer.Serialize(new
+            {
+                providers = new
+                {
+                    fixture = new
+                    {
+                        baseUrl = "http://127.0.0.1:9/v1",
+                        apiKeyEnv = "PISHARP_FIXTURE_KEY",
+                        models = new[] { new { id = "rpc-export-cwd-fixture", api = "openai-completions" } }
+                    }
+                }
+            }));
+            var sessionPath = Path.Combine(sessionDirectory, "rpc-export-cwd.session.json");
+            var session = new ConversationSession(sessionWorkingDirectory, "rpc-export-cwd-fixture",
+                "http://127.0.0.1:9/v1", "fixture");
+            session.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User,
+                "relative export content"));
+            await new ConversationStore(sessionWorkingDirectory, sessionDirectory)
+                .SaveAsync(session, sessionPath, timeout.Token);
+
+            var start = new ProcessStartInfo("dotnet")
+            {
+                WorkingDirectory = invocationDirectory,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            start.ArgumentList.Add(typeof(CliArguments).Assembly.Location);
+            foreach (var argument in new[] { "--mode", "rpc", "--provider", "fixture", "--model",
+                "rpc-export-cwd-fixture", "--offline", "--session", sessionPath })
+                start.ArgumentList.Add(argument);
+            foreach (var name in new[] { "OPENAI_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_MODEL",
+                "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH", "PISHARP_SETTINGS_PATH", "PISHARP_PROVIDER",
+                "PISHARP_FIXTURE_KEY" })
+                start.Environment.Remove(name);
+            start.Environment["PISHARP_AGENT_DIR"] = agentDirectory;
+            start.Environment["PISHARP_SESSION_DIR"] = sessionDirectory;
+            start.Environment["PISHARP_FIXTURE_KEY"] = "fixture-only-key";
+            process = Process.Start(start)!;
+            var stderr = process.StandardError.ReadToEndAsync();
+            var lines = new List<string>();
+
+            await WriteCommandAsync(process, new { id = "default-export", type = "export_html" }, timeout.Token);
+            JsonDocument defaultResponse;
+            try { defaultResponse = await ReadResponseAsync(process, lines, "default-export", timeout.Token); }
+            catch (EndOfStreamException error)
+            {
+                throw new InvalidOperationException(await stderr.WaitAsync(timeout.Token), error);
+            }
+            using (defaultResponse)
+            {
+                Assert.True(defaultResponse.RootElement.GetProperty("success").GetBoolean());
+                var path = defaultResponse.RootElement.GetProperty("data").GetProperty("path").GetString();
+                Assert.StartsWith("pi-session-", path, StringComparison.Ordinal);
+                Assert.EndsWith(".html", path, StringComparison.Ordinal);
+                Assert.True(File.Exists(Path.Combine(invocationDirectory, path!)));
+                Assert.Contains("relative export content", await File.ReadAllTextAsync(
+                    Path.Combine(invocationDirectory, path!), timeout.Token));
+                Assert.False(File.Exists(Path.Combine(sessionWorkingDirectory, path!)));
+            }
+
+            const string relativeExplicitPath = "relative-exports/active.html";
+            await WriteCommandAsync(process, new
+            {
+                id = "explicit-export",
+                type = "export_html",
+                outputPath = relativeExplicitPath
+            }, timeout.Token);
+            using (var response = await ReadResponseAsync(process, lines, "explicit-export", timeout.Token))
+            {
+                Assert.True(response.RootElement.GetProperty("success").GetBoolean());
+                Assert.Equal(relativeExplicitPath,
+                    response.RootElement.GetProperty("data").GetProperty("path").GetString());
+            }
+            Assert.True(File.Exists(Path.Combine(invocationDirectory, relativeExplicitPath)));
+            Assert.False(File.Exists(Path.Combine(sessionWorkingDirectory, relativeExplicitPath)));
+
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+            Assert.Equal(0, process.ExitCode);
+            Assert.Equal(string.Empty, await stderr.WaitAsync(timeout.Token));
+        }
+        finally
+        {
+            if (process is { HasExited: false })
+            {
+                process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync();
+            }
+            process?.Dispose();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task ExportHtmlDuringBlockedRunWritesTheAcceptedSessionSnapshot()
     {
         if (!OperatingSystem.IsLinux()) return;

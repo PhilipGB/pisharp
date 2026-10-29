@@ -162,13 +162,38 @@ public sealed class RpcCompactionProcessTests
                 using (var reader = new StreamReader(context.Request.InputStream))
                     providerBodies.Add(await reader.ReadToEndAsync(timeout.Token));
                 context.Response.StatusCode = (int)HttpStatusCode.OK;
-                context.Response.ContentType = "application/json";
+                context.Response.ContentType = "text/event-stream";
                 await using (var writer = new StreamWriter(context.Response.OutputStream))
                 {
-                    var response = index == 0
-                        ? """{"id":"compact-history","object":"chat.completion","created":1,"model":"rpc-compact-fixture","choices":[{"index":0,"message":{"role":"assistant","content":"history summary from provider"},"finish_reason":"stop"}],"usage":{"prompt_tokens":14,"completion_tokens":4,"total_tokens":18}}"""
-                        : """{"id":"compact-turn","object":"chat.completion","created":1,"model":"rpc-compact-fixture","choices":[{"index":0,"message":{"role":"assistant","content":"turn summary from provider"},"finish_reason":"stop"}],"usage":{"prompt_tokens":16,"completion_tokens":3,"total_tokens":19}}""";
-                    await writer.WriteAsync(response);
+                    var id = index == 0 ? "compact-history" : "compact-turn";
+                    var text = index == 0 ? "history summary from provider" : "turn summary from provider";
+                    var promptTokens = index == 0 ? 14 : 16;
+                    var completionTokens = index == 0 ? 4 : 3;
+                    var contentChunk = JsonSerializer.Serialize(new
+                    {
+                        id,
+                        @object = "chat.completion.chunk",
+                        created = 1,
+                        model = "rpc-compact-fixture",
+                        choices = new[] { new { index = 0, delta = new { role = "assistant", content = text }, finish_reason = (string?)null } }
+                    });
+                    var finishChunk = JsonSerializer.Serialize(new
+                    {
+                        id,
+                        @object = "chat.completion.chunk",
+                        created = 1,
+                        model = "rpc-compact-fixture",
+                        choices = new[] { new { index = 0, delta = new { }, finish_reason = "stop" } },
+                        usage = new
+                        {
+                            prompt_tokens = promptTokens,
+                            completion_tokens = completionTokens,
+                            total_tokens = promptTokens + completionTokens
+                        }
+                    });
+                    await writer.WriteAsync($"data: {contentChunk}\n\n");
+                    await writer.WriteAsync($"data: {finishChunk}\n\n");
+                    await writer.WriteAsync("data: [DONE]\n\n");
                     await writer.FlushAsync(timeout.Token);
                 }
                 context.Response.Close();
@@ -230,9 +255,14 @@ public sealed class RpcCompactionProcessTests
             start.Environment["PISHARP_FIXTURE_KEY"] = "fixture-only-key";
             start.Environment["PISHARP_CONTEXT_WINDOW_TOKENS"] = "32768";
             process = Process.Start(start)!;
-            var output = process.StandardOutput.ReadToEndAsync();
             var error = process.StandardError.ReadToEndAsync();
             await process.StandardInput.WriteLineAsync("{\"id\":\"compact\",\"type\":\"compact\",\"customInstructions\":\"preserve decisions\"}");
+            var outputLines = new List<string>();
+            while (await process.StandardOutput.ReadLineAsync().WaitAsync(timeout.Token) is { } line)
+            {
+                outputLines.Add(line);
+                if (line.Contains("\"id\":\"compact\"", StringComparison.Ordinal)) break;
+            }
             process.StandardInput.Close();
             await process.WaitForExitAsync(timeout.Token);
             await provider;
@@ -246,8 +276,9 @@ public sealed class RpcCompactionProcessTests
             Assert.DoesNotContain("preserve decisions", providerBodies[1], StringComparison.Ordinal);
             Assert.Contains("Original Request", providerBodies[1], StringComparison.Ordinal);
             Assert.Contains("current.txt", providerBodies[1], StringComparison.Ordinal);
-            var records = (await output.WaitAsync(timeout.Token)).Split('\n', StringSplitOptions.RemoveEmptyEntries)
-                .Select(line => JsonDocument.Parse(line)).ToArray();
+            var trailingOutput = await process.StandardOutput.ReadToEndAsync(timeout.Token);
+            outputLines.AddRange(trailingOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries));
+            var records = outputLines.Select(line => JsonDocument.Parse(line)).ToArray();
             try
             {
                 var response = Assert.Single(records, record => record.RootElement.TryGetProperty("id", out var id) &&
@@ -260,9 +291,9 @@ public sealed class RpcCompactionProcessTests
                 Assert.True(data.GetProperty("tokensBefore").GetInt32() > 0);
                 Assert.True(data.GetProperty("estimatedTokensAfter").GetInt32() > 0);
                 Assert.True(data.TryGetProperty("usage", out var summaryUsage), data.GetRawText());
-                Assert.False(summaryUsage.TryGetProperty("input", out _));
-                Assert.False(summaryUsage.TryGetProperty("cacheRead", out _));
-                Assert.False(summaryUsage.TryGetProperty("cacheWrite", out _));
+                Assert.Equal(30, summaryUsage.GetProperty("input").GetInt64());
+                Assert.Equal(0, summaryUsage.GetProperty("cacheRead").GetInt64());
+                Assert.Equal(0, summaryUsage.GetProperty("cacheWrite").GetInt64());
                 Assert.Equal(7, summaryUsage.GetProperty("output").GetInt64());
                 Assert.Equal(37, summaryUsage.GetProperty("totalTokens").GetInt64());
                 Assert.True(data.GetProperty("details").ValueKind == JsonValueKind.Object);

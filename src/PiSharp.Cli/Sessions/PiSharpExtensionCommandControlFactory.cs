@@ -16,7 +16,8 @@ internal static class PiSharpExtensionCommandControlFactory
         ConversationModelTransitions modelTransitions,
         Action abortCurrentRun,
         Func<CancellationToken, Task> cancelCurrentRunAsync,
-        Action requestShutdown)
+        Action requestShutdown,
+        Func<AgentLifecycleEvent, Task>? publishLifecycleEvent = null)
     {
         ArgumentNullException.ThrowIfNull(getRun);
         ArgumentNullException.ThrowIfNull(getCommands);
@@ -113,7 +114,24 @@ internal static class PiSharpExtensionCommandControlFactory
                     return new PiSharpCompactionResult(PiSharpCompactionStatus.Failed, error.Message);
                 }
             },
-            requestShutdown);
+            requestShutdown,
+            async (targetId, options, cancellationToken) =>
+            {
+                options ??= new PiSharpTreeNavigationOptions();
+                try
+                {
+                    await getRun().NavigateTreeAsync(targetId,
+                        new ConversationTreeSelectionOptions(options.Summarize, options.CustomInstructions,
+                            options.ReplaceInstructions, options.Label), cancellationToken,
+                        publishLifecycleEvent).ConfigureAwait(false);
+                    return new PiSharpTreeNavigationResult();
+                }
+                catch (InvalidOperationException error) when
+                    (error.Message == "Session tree navigation was cancelled by an extension.")
+                {
+                    return new PiSharpTreeNavigationResult(Cancelled: true);
+                }
+            });
     }
 
     private static PiSharpThinkingLevel ToPublicThinkingLevel(string level) => level switch

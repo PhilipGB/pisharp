@@ -37,6 +37,8 @@ internal sealed class RpcAssistantMessageProjector
 
     public JsonObject? LastCompletedAssistantMessage { get; private set; }
 
+    public string ThinkingLevel => _thinkingLevel;
+
     public void SetThinkingLevel(string? thinkingLevel) => _thinkingLevel = thinkingLevel ?? "off";
 
     public void BeginAgent()

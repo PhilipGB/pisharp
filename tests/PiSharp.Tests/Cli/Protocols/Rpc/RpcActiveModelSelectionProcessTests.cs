@@ -64,14 +64,8 @@ public sealed class RpcActiveModelSelectionProcessTests
             {
                 Assert.Equal("model-one", request.RootElement.GetProperty("model").GetString());
             }
-            compact.Response.StatusCode = (int)HttpStatusCode.OK;
-            compact.Response.ContentType = "application/json";
-            await using (var writer = new StreamWriter(compact.Response.OutputStream))
-            {
-                await writer.WriteAsync("""{"id":"model-one-compaction","object":"chat.completion","created":1,"model":"model-one","choices":[{"index":0,"message":{"role":"assistant","content":"compacted current model"},"finish_reason":"stop"}],"usage":{"prompt_tokens":12,"completion_tokens":4,"total_tokens":16}}""");
-                await writer.FlushAsync();
-            }
-            compact.Response.Close();
+            await WriteSseResponseAsync(compact, "model-one-compaction", "model-one",
+                new { role = "assistant", content = "compacted current model" }, "stop");
         }, timeout.Token);
 
         try

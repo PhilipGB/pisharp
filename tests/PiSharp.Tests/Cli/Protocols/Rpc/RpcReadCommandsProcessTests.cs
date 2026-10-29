@@ -289,7 +289,7 @@ public sealed class RpcReadCommandsProcessTests
                 var entries = entriesData.GetProperty("entries");
                 Assert.Contains(entries.EnumerateArray(), entry => entry.GetProperty("type").GetString() == "message" &&
                     entry.GetProperty("message").GetProperty("role").GetString() == "user" &&
-                    entry.GetProperty("message").GetProperty("content").GetString() == "current pending prompt");
+                    ReadMessageText(entry.GetProperty("message").GetProperty("content")) == "current pending prompt");
                 var leafId = entriesData.GetProperty("leafId").GetString();
                 Assert.Equal(entries[entries.GetArrayLength() - 1].GetProperty("id").GetString(), leafId);
 

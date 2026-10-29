@@ -35,10 +35,10 @@ public sealed class CrashRecoveryProcessTests
             var store = new ConversationStore(workingDirectory, Path.GetDirectoryName(sessionPath));
             var recovered = await store.LoadAsync(sessionPath, timeout.Token);
             var compaction = Assert.Single(recovered.Tree.ActivePath(), node => node.Type == "compaction");
-            Assert.Contains("process compaction summary", compaction.Payload.GetProperty("summary").GetString(),
+            Assert.Contains("deterministic response", compaction.Payload.GetProperty("summary").GetString(),
                 StringComparison.Ordinal);
             Assert.Contains(recovered.ContextMessages(), message =>
-                message.Text.Contains("process compaction summary", StringComparison.Ordinal));
+                message.Text.Contains("deterministic response", StringComparison.Ordinal));
             Assert.Equal(4, recovered.ActiveMessages().Count);
             Assert.Single(ConversationSession.Parse(recovered.ToJson()).Tree.ActivePath(), node => node.Type == "compaction");
         }

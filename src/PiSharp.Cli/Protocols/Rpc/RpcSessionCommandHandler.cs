@@ -10,7 +10,7 @@ internal sealed class RpcSessionCommandHandler(
     Func<ConversationRun> currentRun,
     Func<bool> isBusy,
     Func<RpcEventWriter> events,
-    Func<string?, CancellationToken, Task<bool>>? newSession,
+    Func<JsonElement?, CancellationToken, Task<bool>>? newSession,
     Func<string, CancellationToken, Task<string?>>? forkSession,
     Func<CancellationToken, Task<bool>>? cloneSession,
     Func<string, CancellationToken, Task<bool>>? switchSession,
@@ -56,12 +56,6 @@ internal sealed class RpcSessionCommandHandler(
                 return true;
 
             case "new_session":
-                if (root.TryGetProperty("parentSession", out var parentSession) &&
-                    parentSession.ValueKind is not (JsonValueKind.String or JsonValueKind.Null))
-                {
-                    await respond(id, command, false, "parentSession must be a string.");
-                    return true;
-                }
                 if (newSession is null)
                 {
                     await respond(id, command, false, "Session replacement is not configured.");
@@ -69,12 +63,9 @@ internal sealed class RpcSessionCommandHandler(
                 }
                 try
                 {
-                    var parentSessionPath = parentSession.ValueKind == JsonValueKind.String
-                        ? parentSession.GetString()
-                        : null;
-                    var cancelled = await newSession(string.IsNullOrEmpty(parentSessionPath)
-                        ? null
-                        : parentSessionPath, cancellationToken);
+                    JsonElement? parentSession = root.TryGetProperty("parentSession", out var value) &&
+                        IsTruthy(value) ? value.Clone() : null;
+                    var cancelled = await newSession(parentSession, cancellationToken);
                     await output.EmitAsync(new
                     {
                         id,
@@ -286,6 +277,14 @@ internal sealed class RpcSessionCommandHandler(
         await respond(id, command, false, "Wait until the active prompt settles.");
         return true;
     }
+
+    private static bool IsTruthy(JsonElement value) => value.ValueKind switch
+    {
+        JsonValueKind.Null or JsonValueKind.False or JsonValueKind.Undefined => false,
+        JsonValueKind.String => !string.IsNullOrEmpty(value.GetString()),
+        JsonValueKind.Number => value.TryGetDouble(out var number) && number != 0,
+        _ => true
+    };
 
     private static int IndexOfEntry(IReadOnlyList<JsonElement> entries, string? id)
     {

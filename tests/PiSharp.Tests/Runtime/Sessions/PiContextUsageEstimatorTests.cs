@@ -7,6 +7,12 @@ namespace PiSharp.Tests;
 public sealed class PiContextUsageEstimatorTests
 {
     [Fact]
+    public void EmptyToolSetDoesNotAddTokensForAnEmptyJsonArray()
+    {
+        Assert.Equal(1, PiContextUsageEstimator.Estimate(4, [], []));
+    }
+
+    [Fact]
     public void SystemPromptEstimateCountsStructuredSectionsWithoutRenderedSeparators()
     {
         const string append = "Additional instructions.";

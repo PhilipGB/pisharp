@@ -6,7 +6,10 @@ namespace PiSharp.Cli.Protocols;
 internal sealed class RpcRetryCommandHandler(
     Func<JsonElement?, string, bool, string?, Task> respond,
     Func<ConversationRun> currentRun,
-    Func<bool, CancellationToken, Task>? persistEnabled)
+    Func<bool, CancellationToken, Task>? persistEnabled,
+    Func<Task>? waitForRetrySettlement = null,
+    Func<long>? getRetryEndVersion = null,
+    Func<long, Task>? waitForRetryEndAfter = null)
 {
     public async Task<bool> TryHandleAsync(string command, JsonElement root, JsonElement? id,
         CancellationToken cancellationToken)
@@ -34,8 +37,15 @@ internal sealed class RpcRetryCommandHandler(
                 return true;
 
             case "abort_retry":
-                currentRun().AbortRetry();
+                var run = currentRun();
+                var wasRetrying = run.IsRetrying;
+                var retryEndVersion = wasRetrying ? getRetryEndVersion?.Invoke() : null;
+                await run.AbortRetryAndWaitAsync();
+                if (retryEndVersion is { } version && waitForRetryEndAfter is not null)
+                    await waitForRetryEndAfter(version);
                 await respond(id, command, true, null);
+                if (wasRetrying && waitForRetrySettlement is not null)
+                    await waitForRetrySettlement();
                 return true;
 
             default:

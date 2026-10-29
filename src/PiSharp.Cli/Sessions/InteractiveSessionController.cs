@@ -1,3 +1,4 @@
+using System.Text.Json;
 using PiSharp.Runtime.Sessions;
 using PiSharp.Extensions.Abstractions;
 
@@ -66,11 +67,14 @@ internal sealed class InteractiveSessionController(
     }
 
     public async Task<SessionBranchResult> NewAsync(ConversationSession source, string? sourcePath,
-        string? parentSessionPath = null)
+        string? parentSessionPath = null, string? thinkingLevel = null,
+        JsonElement? parentSessionValue = null)
     {
         if (sourcePath is not null) await store.SaveAsync(source, sourcePath);
         var conversation = new ConversationSession(source.WorkingDirectory, source.Model, source.Endpoint,
-            source.Provider, parentSessionPath);
+            source.Provider, parentSessionPath, parentSessionValue);
+        conversation.SelectModel(source.Model, source.Endpoint, source.Provider);
+        if (thinkingLevel is not null) conversation.AppendThinkingLevelChange(thinkingLevel);
         var path = noSession ? null : store.NewPath(conversation);
         var run = await openRun(conversation, path, PiSharpExtensionSessionStartReason.New);
         if (path is not null) await store.SaveAsync(conversation, path);

@@ -2,8 +2,11 @@ using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Microsoft.Extensions.AI;
+using PiSharp.Extensions.Abstractions;
 using PiSharp.Runtime;
+using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Sessions;
+using PiSharp.Tests.TestInfrastructure;
 
 namespace PiSharp.Tests;
 
@@ -129,6 +132,34 @@ public sealed class CompactionTests
         var stats = SessionStatistics.Calculate(conversation);
         Assert.Equal(550, stats.BilledTokens);
         Assert.Equal(0.0014m, stats.Cost);
+    }
+
+    [Fact]
+    public async Task NativeCompactionSystemMessageSurvivesReloadAndPiProjection()
+    {
+        var conversation = Seed(Path.GetTempPath());
+        var run = await ConversationRun.OpenAsync(new PiAgent(new SummaryClient(), new CodingTools(Path.GetTempPath())),
+            conversation);
+
+        await foreach (var _ in run.RunEventsAsync("establish the provider context")) { }
+        Assert.True(await run.CompactAsync());
+
+        var compaction = Assert.Single(conversation.Tree.ActivePath(), entry => entry.Type == "compaction");
+        var systemMessage = compaction.Payload.GetProperty("systemMessage");
+        Assert.Equal("system", systemMessage.GetProperty("role").GetString());
+        Assert.True(systemMessage.GetProperty("sections").TryGetProperty("preamble", out _));
+
+        var nativeReloaded = ConversationSession.Parse(conversation.ToJson());
+        var reloadedCompaction = Assert.Single(nativeReloaded.Tree.ActivePath(), entry => entry.Type == "compaction");
+        Assert.Equal(systemMessage.GetRawText(), reloadedCompaction.Payload.GetProperty("systemMessage").GetRawText());
+        Assert.DoesNotContain(nativeReloaded.ContextMessages(), message => message.Role == ChatRole.System);
+
+        var piEntry = Assert.Single(PiJsonlSessionInterchange.ProjectEntries(nativeReloaded),
+            entry => entry.GetProperty("type").GetString() == "compaction");
+        Assert.Equal(systemMessage.GetProperty("sections").GetRawText(),
+            piEntry.GetProperty("systemMessage").GetProperty("sections").GetRawText());
+        Assert.Equal(reloadedCompaction.Timestamp.ToUnixTimeMilliseconds(),
+            piEntry.GetProperty("systemMessage").GetProperty("timestamp").GetInt64());
     }
 
     [Fact]
@@ -262,6 +293,38 @@ public sealed class CompactionTests
             Assert.DoesNotContain(conversation.ContextMessages(), message => message.Text == "partial output");
             Assert.Single(events, item => item.Type == "compaction_end" && item.CompactionReason == "overflow" &&
                 item.CompactionWillRetry == true);
+            Assert.Contains(events, item => item.Type == "turn_completed");
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
+    public async Task RecoverableLengthStopContinuesWhenBeforeCompactHookIsPresent()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-length-recovery-hook-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            var registration = new ExtensionRegistration();
+            var adapter = new NativeExtensionRegistrationAdapter(registration);
+            adapter.AddSessionBeforeCompactHandler((_, _, _) =>
+                ValueTask.FromResult<PiSharpExtensionSessionBeforeCompactResult?>(null));
+            adapter.Close();
+
+            var conversation = Seed(cwd);
+            var client = new LengthRecoveryClient();
+            var agent = new PiAgent(client, new CodingTools(cwd), maxOutputTokens: 100,
+                liveExtensionRegistration: registration);
+            var run = await ConversationRun.OpenAsync(agent, conversation,
+                autoCompaction: new AutoCompactionPolicy(50_000, 10_000, KeepRecentTokens: 1));
+            var events = new List<AgentLifecycleEvent>();
+
+            await foreach (var item in run.RunEventsAsync("continue")) events.Add(item);
+
+            Assert.Equal(2, client.StreamingRequests);
+            Assert.Equal(2, client.SummaryRequests);
+            Assert.True(client.ContinuationSawSummary);
+            Assert.Single(events, item => item.Type == "compaction_end" && item.CompactionWillRetry == true);
             Assert.Contains(events, item => item.Type == "turn_completed");
         }
         finally { Directory.Delete(cwd, recursive: true); }
@@ -715,7 +778,8 @@ public sealed class CompactionTests
             SummaryResponses = ["unused response", "recovered summary"]
         };
         var retryAgent = new PiAgent(retryClient, new CodingTools(Path.GetTempPath()),
-            retryPolicy: new ProviderRetryPolicy(maxRetries: 1));
+            summarizationRetryPolicy: new AgentRunRetryPolicy(maxRetries: 1,
+                baseDelay: TimeSpan.Zero, maxDelay: TimeSpan.Zero));
         var summary = await retryAgent.SummarizeAsync([new ChatMessage(ChatRole.User, "context")], null);
         Assert.Equal("recovered summary", summary.Text);
         Assert.Equal(2, retryClient.SummaryRequests.Count);
@@ -1046,8 +1110,8 @@ public sealed class CompactionTests
             TotalTokenCount = 0
         }, null);
         Assert.Equal(10, usage.InputIncludingCachedTokens);
-        Assert.Null(usage.InputTokens);
-        Assert.Null(usage.TotalTokens);
+        Assert.Equal(10, usage.InputTokens);
+        Assert.Equal(12, usage.TotalTokens);
     }
 
     [Fact]
@@ -1081,7 +1145,7 @@ public sealed class CompactionTests
     }
 
     [Fact]
-    public void UsageRecordCreateSeparatesCachedInputAndKeepsMissingReasoningUnknown()
+    public void UsageRecordCreateSeparatesCachedInputAndDefaultsMissingReasoningToZero()
     {
         var pricing = new ModelPricing(3m, 8m, CachedInput: 1m, CachedWrite: 4m);
         var usage = UsageRecord.Create("fixture", "model", new UsageDetails
@@ -1097,7 +1161,7 @@ public sealed class CompactionTests
         Assert.Equal(25, usage.CachedInputTokens);
         Assert.Equal(7, usage.CachedWriteTokens);
         Assert.Equal(110, usage.TotalTokens);
-        Assert.Null(usage.ReasoningTokens);
+        Assert.Equal(0, usage.ReasoningTokens);
         Assert.Equal(0.000302m, usage.Cost);
     }
 
@@ -1132,7 +1196,7 @@ public sealed class CompactionTests
     }
 
     [Fact]
-    public void UsageRecordCreatePreservesMissingUsageFieldsAsUnknown()
+    public void UsageRecordCreateDefaultsAbsentCategoriesWhenInputUsageIsKnown()
     {
         var usage = UsageRecord.Create("partial", "model", new UsageDetails
         {
@@ -1142,12 +1206,12 @@ public sealed class CompactionTests
             TotalTokenCount = null
         }, pricing: null);
 
-        Assert.Null(usage.InputTokens);
+        Assert.Equal(10, usage.InputTokens);
         Assert.Null(usage.OutputTokens);
-        Assert.Null(usage.CachedInputTokens);
-        Assert.Null(usage.CachedWriteTokens);
+        Assert.Equal(0, usage.CachedInputTokens);
+        Assert.Equal(0, usage.CachedWriteTokens);
         Assert.Null(usage.TotalTokens);
-        Assert.Null(usage.ReasoningTokens);
+        Assert.Equal(0, usage.ReasoningTokens);
         Assert.Equal(10, usage.InputIncludingCachedTokens);
         Assert.Null(usage.Cost);
         Assert.Null(new UsageRecord("manual", "model", 1, 1, 0, 0, 2, null).CachedWriteTokens);
@@ -1289,6 +1353,27 @@ public sealed class CompactionTests
 
         Assert.Null(conversation.RecoveryOmittedAssistantAfter(
             conversation.Tree.ActivePath().ToList().FindIndex(node => node.Id == currentRequestId)));
+    }
+
+    [Fact]
+    public void RecoveryOmissionFallbackKeepsVisibleCurrentTurnBeforeFailedAssistant()
+    {
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        conversation.Append(new ChatMessage(ChatRole.User, "older question"));
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "older answer"));
+        conversation.Append(new ChatMessage(ChatRole.User, "current question"));
+        var currentQuestionId = conversation.Tree.ActivePath().Last().Id;
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "truncated answer"));
+        var failedAssistantId = conversation.Tree.ActivePath().Last().Id;
+        conversation.AppendContextOmission(failedAssistantId);
+
+        var plan = Assert.IsType<ConversationSession.CompactionPlan>(conversation.PrepareCompaction(1));
+
+        Assert.Equal(failedAssistantId, plan.FirstKeptEntryId);
+        Assert.True(plan.IsSplitTurn);
+        Assert.Equal(["older question", "older answer"], plan.MessagesToSummarize.Select(message => message.Text));
+        Assert.Equal(["current question"], plan.TurnPrefixMessages!.Select(message => message.Text));
+        Assert.NotEqual(currentQuestionId, plan.FirstKeptEntryId);
     }
 
     [Fact]
@@ -1473,6 +1558,15 @@ public sealed class CompactionTests
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
+            var requestMessages = messages.ToArray();
+            if (CompactionStreamingTestAdapter.IsSummaryRequest(requestMessages))
+            {
+                await foreach (var update in CompactionStreamingTestAdapter.StreamResponseAsync(
+                    token => GetResponseAsync(requestMessages, options, token), cancellationToken).ConfigureAwait(false))
+                    yield return update;
+                yield break;
+            }
+
             Requests++;
             if (Requests == 1)
             {
@@ -1509,6 +1603,15 @@ public sealed class CompactionTests
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
+            var requestMessages = messages.ToArray();
+            if (CompactionStreamingTestAdapter.IsSummaryRequest(requestMessages))
+            {
+                await foreach (var update in CompactionStreamingTestAdapter.StreamResponseAsync(
+                    token => GetResponseAsync(requestMessages, options, token), cancellationToken).ConfigureAwait(false))
+                    yield return update;
+                yield break;
+            }
+
             var request = Interlocked.Increment(ref _requests);
             _requestSnapshots.Enqueue(string.Join("; ", messages.Select(message =>
             {
@@ -1577,6 +1680,15 @@ public sealed class CompactionTests
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
+            var requestMessages = messages.ToArray();
+            if (CompactionStreamingTestAdapter.IsSummaryRequest(requestMessages))
+            {
+                await foreach (var update in CompactionStreamingTestAdapter.StreamResponseAsync(
+                    token => GetResponseAsync(requestMessages, options, token), cancellationToken).ConfigureAwait(false))
+                    yield return update;
+                yield break;
+            }
+
             Requests++;
             if (Requests == 1)
                 yield return new ChatResponseUpdate(ChatRole.Assistant,
@@ -1621,7 +1733,7 @@ public sealed class CompactionTests
             LastSummaryRequest = messages.Last().Text;
             SummaryRequests.Add(LastSummaryRequest);
             if (FailSummary || FailSummaryNumber == SummaryRequests.Count)
-                throw new IOException("summary provider failed");
+                throw new IOException("summary provider returned HTTP 503 service unavailable");
             var summary = SummaryResponses is { } responses && SummaryRequests.Count <= responses.Count
                 ? responses[SummaryRequests.Count - 1]
                 : "Summary of first turn";
@@ -1659,7 +1771,16 @@ public sealed class CompactionTests
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            SeenMessages = messages.ToList();
+            var requestMessages = messages.ToArray();
+            if (CompactionStreamingTestAdapter.IsSummaryRequest(requestMessages))
+            {
+                await foreach (var update in CompactionStreamingTestAdapter.StreamResponseAsync(
+                    token => GetResponseAsync(requestMessages, options, token), cancellationToken).ConfigureAwait(false))
+                    yield return update;
+                yield break;
+            }
+
+            SeenMessages = requestMessages.ToList();
             yield return new ChatResponseUpdate(ChatRole.Assistant, "continued");
             await Task.CompletedTask;
         }
@@ -1688,17 +1809,18 @@ public sealed class CompactionTests
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            if (messages.Last().Text.Contains("structured context checkpoint summary", StringComparison.Ordinal))
+            var requestMessages = messages.ToArray();
+            if (CompactionStreamingTestAdapter.IsSummaryRequest(requestMessages))
             {
-                SummaryRequests++;
-                yield return new ChatResponseUpdate(ChatRole.Assistant, "post-turn summary");
+                await foreach (var update in CompactionStreamingTestAdapter.StreamResponseAsync(
+                    token => GetResponseAsync(requestMessages, options, token), cancellationToken).ConfigureAwait(false))
+                    yield return update;
+                yield break;
             }
-            else
-            {
-                StreamingRequests++;
-                yield return new ChatResponseUpdate(ChatRole.Assistant, "continued response");
-                yield return new ChatResponseUpdate(ChatRole.Assistant, [new UsageContent(ReportedUsage)]);
-            }
+
+            StreamingRequests++;
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "continued response");
+            yield return new ChatResponseUpdate(ChatRole.Assistant, [new UsageContent(ReportedUsage)]);
             await Task.CompletedTask;
         }
 
@@ -1729,6 +1851,15 @@ public sealed class CompactionTests
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
+            var requestMessages = messages.ToArray();
+            if (CompactionStreamingTestAdapter.IsSummaryRequest(requestMessages))
+            {
+                await foreach (var update in CompactionStreamingTestAdapter.StreamResponseAsync(
+                    token => GetResponseAsync(requestMessages, options, token), cancellationToken).ConfigureAwait(false))
+                    yield return update;
+                yield break;
+            }
+
             StreamingRequests++;
             if (StreamingRequests == 1)
             {

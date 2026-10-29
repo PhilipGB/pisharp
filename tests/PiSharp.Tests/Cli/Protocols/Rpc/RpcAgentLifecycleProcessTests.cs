@@ -134,7 +134,7 @@ public sealed class RpcAgentLifecycleProcessTests
                 Assert.Equal(3, messages.GetArrayLength());
                 Assert.Equal("system", messages[0].GetProperty("role").GetString());
                 Assert.Equal("user", messages[1].GetProperty("role").GetString());
-                Assert.Equal("hello", messages[1].GetProperty("content").GetString());
+                Assert.Equal("hello", messages[1].GetProperty("content")[0].GetProperty("text").GetString());
                 Assert.Equal("assistant", messages[2].GetProperty("role").GetString());
                 Assert.Equal("reply", messages[2].GetProperty("content")[0].GetProperty("text").GetString());
                 Assert.Equal("openai-completions", messages[2].GetProperty("api").GetString());

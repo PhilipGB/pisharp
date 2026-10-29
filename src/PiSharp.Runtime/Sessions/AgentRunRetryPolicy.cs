@@ -78,6 +78,7 @@ internal sealed class AgentRunRetryController
     private readonly AgentRunRetryPolicy _policy;
     private readonly Func<TimeSpan, CancellationToken, Task> _delay;
     private CancellationTokenSource? _activeDelay;
+    private TaskCompletionSource? _activeRetryCompletion;
     private bool _enabled;
 
     public AgentRunRetryController(AgentRunRetryPolicy policy,
@@ -220,6 +221,11 @@ internal sealed class AgentRunRetryController
                             RetryDelayMs = (long)delay.TotalMilliseconds
                         });
                         await omitFailedContext(attemptStartHead, attemptStartPathLength, cancellationToken);
+                    }, () =>
+                    {
+                        publish(new AgentLifecycleEvent("auto_retry_end")
+                        { RetrySuccess = false, RetryAttempt = retries, RetryFinalError = "Retry cancelled" });
+                        return Task.CompletedTask;
                     });
                 }
                 catch (Exception setupError) when (setupError is not OperationCanceledException)
@@ -230,8 +236,6 @@ internal sealed class AgentRunRetryController
                 }
                 if (!ready)
                 {
-                    publish(new AgentLifecycleEvent("auto_retry_end")
-                    { RetrySuccess = false, RetryAttempt = retries, RetryFinalError = "Retry cancelled" });
                     return AgentTurnOutcome.Failed;
                 }
                 try
@@ -256,26 +260,51 @@ internal sealed class AgentRunRetryController
     }
 
     public async Task<bool> WaitAsync(TimeSpan delay, CancellationToken cancellationToken,
-        Func<Task>? onScheduled = null)
+        Func<Task>? onScheduled = null, Func<Task>? onCancelled = null)
     {
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        lock (_gate) _activeDelay = linked;
+        var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        lock (_gate)
+        {
+            _activeDelay = linked;
+            _activeRetryCompletion = completion;
+        }
         try
         {
             if (onScheduled is not null) await onScheduled();
-            if (linked.IsCancellationRequested) return false;
+            if (linked.IsCancellationRequested)
+            {
+                if (onCancelled is not null) await onCancelled();
+                return false;
+            }
             await _delay(delay, linked.Token);
             return true;
         }
         catch (OperationCanceledException) when (linked.IsCancellationRequested)
         {
+            if (onCancelled is not null) await onCancelled();
             return false;
         }
         finally
         {
             lock (_gate)
+            {
                 if (ReferenceEquals(_activeDelay, linked)) _activeDelay = null;
+                if (ReferenceEquals(_activeRetryCompletion, completion)) _activeRetryCompletion = null;
+            }
+            completion.TrySetResult();
         }
+    }
+
+    public async Task AbortRetryAndWaitAsync()
+    {
+        Task? completion;
+        lock (_gate)
+        {
+            _activeDelay?.Cancel();
+            completion = _activeRetryCompletion?.Task;
+        }
+        if (completion is not null) await completion.ConfigureAwait(false);
     }
 
     private static async Task DelayAsync(TimeSpan delay, CancellationToken cancellationToken)

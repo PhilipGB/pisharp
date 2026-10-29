@@ -18,12 +18,7 @@ internal static class RpcSessionEntryProjector
         var usageByAssistantId = RpcSessionMessageProjector.ResolveModelUsageByAssistantId(nodes);
         var projectedById = PiJsonlSessionInterchange.ProjectEntries(session, api)
             .ToDictionary(entry => entry.GetProperty("id").GetString()!, StringComparer.Ordinal);
-        var syntheticSystemIds = systemMessage is null
-            ? new Dictionary<string, string>(StringComparer.Ordinal)
-            : nodes.Where(node => node.Type == "run_started" && node.Payload.TryGetProperty("runId", out var runId) &&
-                    runId.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(runId.GetString()))
-                .ToDictionary(node => node.Id,
-                    node => $"rpc-system-{node.Payload.GetProperty("runId").GetString()}", StringComparer.Ordinal);
+        var syntheticSystemIds = SyntheticSystemIds(session, nodes, nodesById, systemMessage);
         var entries = new List<JsonElement>(nodes.Count - hiddenIds.Count + syntheticSystemIds.Count);
         foreach (var node in nodes)
         {
@@ -77,12 +72,8 @@ internal static class RpcSessionEntryProjector
         var nodes = session.Tree.Entries;
         var hiddenIds = nodes.Where(IsInternalEntry).Select(node => node.Id)
             .ToHashSet(StringComparer.Ordinal);
-        var syntheticSystemIds = systemMessage is null
-            ? new Dictionary<string, string>(StringComparer.Ordinal)
-            : nodes.Where(node => node.Type == "run_started" && node.Payload.TryGetProperty("runId", out var runId) &&
-                    runId.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(runId.GetString()))
-                .ToDictionary(node => node.Id,
-                    node => $"rpc-system-{node.Payload.GetProperty("runId").GetString()}", StringComparer.Ordinal);
+        var nodesById = nodes.ToDictionary(node => node.Id, StringComparer.Ordinal);
+        var syntheticSystemIds = SyntheticSystemIds(session, nodes, nodesById, systemMessage);
         foreach (var node in session.Tree.ActivePath().Reverse())
         {
             if (!hiddenIds.Contains(node.Id)) return node.Id;
@@ -98,6 +89,42 @@ internal static class RpcSessionEntryProjector
         "tool_loadout" or "run_started" or "run_finished" or "run_recovered" or "tool_intent" or
         "tool_outcome" or "tool_skipped" or "assistant_progress" or "usage" or "context_projection" or
         "tool_transcript";
+
+    private static Dictionary<string, string> SyntheticSystemIds(ConversationSession session,
+        IReadOnlyList<ConversationNode> nodes, IReadOnlyDictionary<string, ConversationNode> nodesById,
+        JsonObject? systemMessage)
+    {
+        var result = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (systemMessage is null) return result;
+
+        foreach (var node in nodes)
+        {
+            if (node.Type != "run_started" || !node.Payload.TryGetProperty("runId", out var runId) ||
+                runId.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(runId.GetString()) ||
+                HasSystemMessageAncestor(session, node, nodesById, result)) continue;
+            result[node.Id] = $"rpc-system-{runId.GetString()}";
+        }
+        return result;
+    }
+
+    private static bool HasSystemMessageAncestor(ConversationSession session, ConversationNode node,
+        IReadOnlyDictionary<string, ConversationNode> nodesById,
+        IReadOnlyDictionary<string, string> syntheticSystemIds)
+    {
+        var parentId = node.ParentId;
+        while (parentId is not null && nodesById.TryGetValue(parentId, out var parent))
+        {
+            if (syntheticSystemIds.ContainsKey(parentId) ||
+                parent.Type == "compaction" && PiJsonlEntryCodec.CompactionSystemMessage(parent) is not null)
+                return true;
+            if (parent.Type == "chat" &&
+                PiJsonlEntryCodec.ProjectEntry(session, parent)["message"] is JsonObject message &&
+                message["role"]?.GetValue<string>() == "system")
+                return true;
+            parentId = parent.ParentId;
+        }
+        return false;
+    }
 
     public static IReadOnlyList<RpcSessionTreeNode> ProjectTree(ConversationSession session, string? api = null,
         JsonObject? systemMessage = null)

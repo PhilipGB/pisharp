@@ -157,7 +157,8 @@ internal static class ConversationContextProjection
                 if (role != ChatRole.User && role != ChatRole.Assistant)
                     throw new InvalidDataException("Invalid compaction boundary.");
             }
-            if (PiJsonlEntryCodec.CompactionSystemMessage(path[compactAt]) is { } systemMessage)
+            if (PiJsonlEntryCodec.OriginalEntry(path[compactAt]) is not null &&
+                PiJsonlEntryCodec.CompactionSystemMessage(path[compactAt]) is { } systemMessage)
                 context.Add(systemMessage);
             context.Add(CompactionSummaryMessage(compact.GetProperty("summary").GetString() ?? ""));
             projectedNodes = path.Skip(from).Where((node, offset) => from + offset >= compactAt ||
@@ -293,7 +294,8 @@ internal static class ConversationContextProjection
         }
 
         bool IsIntrinsicallyVisible(ConversationNode node) =>
-            node.Type != "context_edit" && ContextMessageForNode(node) is not null;
+            node.Type != "context_edit" && ContextMessageForNode(node) is { } message &&
+            message.Role != ChatRole.System;
 
         bool IsOmitted(ConversationNode node) =>
             IsIntrinsicallyVisible(node) && Project(node) is null;
@@ -302,14 +304,13 @@ internal static class ConversationContextProjection
         var hasExternalReplacement = suffix.Any(node =>
             PiJsonlEntryCodec.TryGetContextEdit(node, out var targetId, out var replacement) &&
             replacement.ValueKind != JsonValueKind.Null && !omittedIds.Contains(targetId));
-        var hasOmittedAssistant = suffix.Any(node => omittedIds.Contains(node.Id) &&
+        var omittedAssistantIndex = Array.FindIndex(suffix, node => omittedIds.Contains(node.Id) &&
             ContextMessageForNode(node)?.Role == ChatRole.Assistant);
-        if (!hasOmittedAssistant || hasExternalReplacement || suffix.Any(node =>
+        if (omittedAssistantIndex < 0 || hasExternalReplacement || suffix.Skip(omittedAssistantIndex + 1).Any(node =>
                 node.Type == "compaction" || IsIntrinsicallyVisible(node) && !omittedIds.Contains(node.Id)))
             return null;
 
-        return suffix.First(node => omittedIds.Contains(node.Id) &&
-            ContextMessageForNode(node)?.Role == ChatRole.Assistant).Id;
+        return suffix[omittedAssistantIndex].Id;
     }
 
     internal static ChatMessage BashExecutionContextMessage(BashExecutionRecord execution)

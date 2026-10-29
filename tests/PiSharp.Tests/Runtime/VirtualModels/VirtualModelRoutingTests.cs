@@ -172,8 +172,8 @@ public sealed class VirtualModelRoutingTests
         Assert.Equal("auto", session.Model);
         Assert.Equal("router", session.Provider);
         Assert.All(session.ActiveUsage(), usage => Assert.Equal("second", usage.Model));
-        // Cache-write usage is not reported by this fixture, so the total cost is unknown.
-        Assert.All(session.ActiveUsage(), usage => Assert.Null(usage.Cost));
+        // The route has input/output rates and this fixture reports both token counts.
+        Assert.All(session.ActiveUsage(), usage => Assert.Equal(0.00004m, usage.Cost));
         Assert.Equal("second", session.ActiveMessages().Last().AdditionalProperties!["pisharp.model"]!.ToString());
     }
 

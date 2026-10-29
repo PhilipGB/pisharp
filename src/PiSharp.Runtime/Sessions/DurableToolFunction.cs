@@ -165,6 +165,16 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
         var resultArguments = invocationArguments.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
         var resultContext = new PiSharpToolResultContext(Name, toolCallId, parentToolCallId,
             resultArguments, value, failure);
+        var builtinCancellationRequested = failure is OperationCanceledException &&
+            cancellationToken.IsCancellationRequested && CodingToolDeclarations.IsBuiltin(InnerFunction);
+        if (builtinCancellationRequested)
+        {
+            var message = string.IsNullOrWhiteSpace(failure!.Message) ? "Command aborted" : failure.Message;
+            resultContext.Result = new PiSharpToolResult(message, Details: new Dictionary<string, object?>(),
+                IsError: true, Error: message);
+            resultContext.IsError = true;
+            resultContext.Error = message;
+        }
         if (ToolResultOutput.TryReadContract(value, out var returned) && returned.IsError)
         {
             resultContext.IsError = true;
@@ -227,6 +237,17 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
             resultContext.IsError = true;
             resultContext.Error ??= failure.Message;
         }
+        if (builtinCancellationRequested && resultContext.Result is null)
+        {
+            var message = string.IsNullOrWhiteSpace(resultContext.Error) ? "Command aborted" : resultContext.Error;
+            resultContext.Result = new PiSharpToolResult(message, Details: new Dictionary<string, object?>(),
+                IsError: true, Error: message);
+            resultContext.IsError = true;
+            resultContext.Error = message;
+        }
+        value = resultContext.Result;
+        var builtinCancelled = failure is OperationCanceledException && cancellationToken.IsCancellationRequested &&
+            CodingToolDeclarations.IsBuiltin(InnerFunction);
         var builtinFailure = failure is ToolFailureException &&
             !cancellationToken.IsCancellationRequested && CodingToolDeclarations.IsBuiltin(InnerFunction);
         if (builtinFailure)
@@ -345,8 +366,8 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
             NestedToolCalls = toolExecutionContext?.NestedCalls,
             ToolResultMessage = toolResultMessage
         });
-        if (failure is not null && !builtinFailure) ExceptionDispatchInfo.Capture(failure).Throw();
-        if (messageLifecycleCancellation is not null)
+        if (failure is not null && !builtinFailure && !builtinCancelled) ExceptionDispatchInfo.Capture(failure).Throw();
+        if (messageLifecycleCancellation is not null && !builtinCancelled)
             ExceptionDispatchInfo.Capture(messageLifecycleCancellation).Throw();
         return value;
     }
