@@ -14085,6 +14085,7 @@
         "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-44c08f36/Q0/evidence.json",
         "evidenceSha256": "60d366492e5cc83980d4e377b985e0534f00fb24e322a52a1ad23117fe5ec45b"
       }
-    ]
+    ],
+    "contract_scope": "24/24 checkpoints and 252/252 cases; current source-bound results are 21/24 checkpoints and 231/252 cases."
   }
 }
