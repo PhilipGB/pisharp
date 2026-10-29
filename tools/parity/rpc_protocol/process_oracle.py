@@ -64,6 +64,7 @@ class FixtureProviderStep:
     usage_updates: tuple[tuple[int, int, int], ...] = ()
     finish_reason: str = "stop"
     flush_stream_chunks: bool = False
+    role_only_chunk: bool = False
     stream_chunk_delay_seconds: float = 0.0
     fail_after_partial: bool = False
 
@@ -2936,8 +2937,9 @@ class _FixtureProvider:
         deltas: list[dict[str, Any]] = []
         deltas.extend({"reasoning_content": value} for value in step.reasoning_fragments)
         deltas.extend({"content": value} for value in step.text_fragments)
-        emitted_role = False
-        chunks: list[dict[str, Any]] = []
+        emitted_role = step.role_only_chunk
+        chunks: list[dict[str, Any]] = ([self.stream_chunk(request_index, {"role": "assistant"})]
+                                        if step.role_only_chunk else [])
         for delta in deltas:
             if not emitted_role:
                 delta = {"role": "assistant", **delta}

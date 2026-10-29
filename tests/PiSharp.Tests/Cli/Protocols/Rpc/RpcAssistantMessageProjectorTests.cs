@@ -9,32 +9,6 @@ namespace PiSharp.Tests;
 public sealed class RpcAssistantMessageProjectorTests
 {
     [Fact]
-    public void StreamedToolCallMessageStartsWithItsInitialPartialContent()
-    {
-        var projector = new RpcAssistantMessageProjector();
-        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
-        var partialArguments = "{\"command\":\"echo ok\"}";
-
-        var projected = projector.ProjectUpdate(new AgentLifecycleEvent("model_text_delta")
-        {
-            StreamedToolCallDelta = new ProviderToolCallDelta(0, "call-id", "bash", partialArguments)
-        }, conversation, "openai-completions");
-
-        using var start = JsonDocument.Parse(JsonSerializer.Serialize(projected[0]));
-        var toolCall = Assert.Single(start.RootElement.GetProperty("message").GetProperty("content").EnumerateArray());
-        Assert.Equal("toolCall", toolCall.GetProperty("type").GetString());
-        Assert.Equal("call-id", toolCall.GetProperty("id").GetString());
-        Assert.Equal("bash", toolCall.GetProperty("name").GetString());
-        Assert.Equal(partialArguments, toolCall.GetProperty("partialArgs").GetString());
-        Assert.Equal(0, toolCall.GetProperty("streamIndex").GetInt32());
-        Assert.Equal("echo ok", toolCall.GetProperty("arguments").GetProperty("command").GetString());
-
-        using var update = JsonDocument.Parse(JsonSerializer.Serialize(projected[1]));
-        Assert.Equal("toolcall_start", update.RootElement.GetProperty("assistantMessageEvent")
-            .GetProperty("type").GetString());
-    }
-
-    [Fact]
     public void ToolResultNestedCallsOmitRedundantParentCallId()
     {
         var projector = new RpcAssistantMessageProjector();

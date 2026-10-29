@@ -352,6 +352,9 @@ _R12_BLOCKED_TOOL = FixtureProviderStep(
         "command": 'gate=__RPC_TOOL_GATE__; echo effect >> "$gate.effect"; touch "$gate.started"; '
                    'while [ ! -f "$gate.release" ]; do sleep 0.01; done; echo released',
     }),
+    flush_stream_chunks=True,
+    role_only_chunk=True,
+    stream_chunk_delay_seconds=0.05,
 )
 _R12_REPLACE_DURING_ACTIVE_TOOL = InputRun(
     (
