@@ -9,6 +9,7 @@ from pathlib import Path
 
 import verify
 from process_oracle import _D0_SCENARIO_CASES, scenario_case_ids
+from source_oracle import SOURCE_CASE_IDS, source_case_ids
 
 
 class FrozenRpcContractTests(unittest.TestCase):
@@ -87,6 +88,14 @@ class FrozenRpcContractTests(unittest.TestCase):
         self.assertTrue(set(case_ids).issubset(registered))
         self.assertTrue(all(source in registered for sources in _D0_SCENARIO_CASES.values()
                             for source in sources))
+
+    def test_source_audit_cases_are_registered_in_frozen_order(self) -> None:
+        contract = verify.load_contract()
+        for checkpoint_id, registered_ids in SOURCE_CASE_IDS.items():
+            checkpoint = next(item for item in contract["checkpoints"] if item["id"] == checkpoint_id)
+            self.assertEqual(registered_ids, tuple(case["id"] for case in checkpoint["caseDefinitions"]))
+        self.assertEqual(set(SOURCE_CASE_IDS["P0"] + SOURCE_CASE_IDS["P1"] + SOURCE_CASE_IDS["V0"]),
+                         source_case_ids())
 
     def test_strict_case_cannot_declare_normalization(self) -> None:
         changed = json.loads(verify.CONTRACT_PATH.read_text(encoding="utf-8"))

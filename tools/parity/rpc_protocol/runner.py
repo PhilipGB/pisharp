@@ -27,6 +27,7 @@ from verify import (
     validate_v1_control_evidence,
 )
 from process_oracle import run_process_case, scenario_case_ids
+from source_oracle import run_source_checkpoint
 
 ROOT = Path(__file__).resolve().parents[3]
 HERE = Path(__file__).resolve().parent
@@ -179,6 +180,15 @@ def main() -> int:
             print(json.dumps(counts, sort_keys=True))
             return 0
         checkpoint_id = args.checkpoint if args.checkpoint else args.case_id.split(".", 1)[0]
+        if checkpoint_id in {"P0", "P1", "V0"}:
+            counts = run_source_checkpoint(
+                checkpoint_id,
+                args.pi_checkout,
+                args.evidence_dir,
+                selected_case_id=args.case_id,
+            )
+            print(json.dumps(counts, sort_keys=True))
+            return 0
         if selected and all(case["id"] in scenario_case_ids() for case in selected):
             return run_process_cases(
                 checkpoint_id, selected, args.pi_checkout, args.evidence_dir,
