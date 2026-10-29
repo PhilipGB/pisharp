@@ -887,6 +887,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             var recordedNow = operation.Owner.Run.RecordBashResult(command, result, excludeFromContext);
             if (recordedNow)
                 await operation.Owner.Persist(CancellationToken.None);
+            if (Volatile.Read(ref _serveStopping) != 0) return;
             var data = new Dictionary<string, object?>
             {
                 ["output"] = result.Output,

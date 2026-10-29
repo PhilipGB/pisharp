@@ -9,7 +9,7 @@ namespace PiSharp.Tests;
 public sealed class RpcBashSessionOwnershipProcessTests
 {
     [Fact]
-    public async Task EofCancelsAndPersistsAnActiveBashResultToItsOrigin()
+    public async Task EofCancelsAndPersistsAnActiveBashResultWithoutWritingAfterShutdown()
     {
         if (!OperatingSystem.IsLinux()) return;
 
@@ -61,17 +61,23 @@ public sealed class RpcBashSessionOwnershipProcessTests
             await process.WaitForExitAsync(timeout.Token);
             Assert.Equal(0, process.ExitCode);
             Assert.Equal(string.Empty, await stderr.WaitAsync(timeout.Token));
-
-            using var bashResponse = JsonDocument.Parse(Assert.Single(lines, line =>
+            Assert.Contains(lines, line =>
+            {
+                using var record = JsonDocument.Parse(line);
+                return record.RootElement.GetProperty("type").GetString() == "bash_execution_update" &&
+                    record.RootElement.GetProperty("id").GetString() == "eof-bash";
+            });
+            Assert.DoesNotContain(lines, line =>
             {
                 using var record = JsonDocument.Parse(line);
                 return record.RootElement.TryGetProperty("id", out var id) && id.GetString() == "eof-bash" &&
                     record.RootElement.GetProperty("type").GetString() == "response";
-            }));
-            Assert.True(bashResponse.RootElement.GetProperty("success").GetBoolean());
-            Assert.True(bashResponse.RootElement.GetProperty("data").GetProperty("cancelled").GetBoolean());
-            Assert.DoesNotContain("eof-bash-complete", bashResponse.RootElement.GetProperty("data")
-                .GetProperty("output").GetString(), StringComparison.Ordinal);
+            });
+            foreach (var line in lines)
+            {
+                using var record = JsonDocument.Parse(line);
+                Assert.Equal(JsonValueKind.Object, record.RootElement.ValueKind);
+            }
 
             var restoredSource = await store.LoadAsync(sourcePath);
             var originResult = Assert.Single(restoredSource.Tree.ActivePath(), entry =>
