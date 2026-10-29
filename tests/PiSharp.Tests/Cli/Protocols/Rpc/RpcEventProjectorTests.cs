@@ -216,7 +216,7 @@ public sealed class RpcEventProjectorTests
     }
 
     [Fact]
-    public void ToolExecutionErrorMarksEventButNotResultAsError()
+    public void ToolExecutionErrorMarksEventAndResultAsError()
     {
         var projector = new RpcEventProjector();
         var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
@@ -227,6 +227,6 @@ public sealed class RpcEventProjectorTests
 
         using var record = JsonDocument.Parse(JsonSerializer.Serialize(end));
         Assert.True(record.RootElement.GetProperty("isError").GetBoolean());
-        Assert.False(record.RootElement.GetProperty("result").TryGetProperty("isError", out _));
+        Assert.True(record.RootElement.GetProperty("result").GetProperty("isError").GetBoolean());
     }
 }

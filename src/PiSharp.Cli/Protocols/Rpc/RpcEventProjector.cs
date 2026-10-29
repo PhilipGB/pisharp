@@ -334,6 +334,7 @@ internal sealed class RpcEventProjector
         if (item.StructuredContent is { } structured) result["structuredContent"] = JsonNode.Parse(structured.GetRawText());
         if (item.ToolUsage is { } usage) result["usage"] = PiJsonlEntryCodec.ProjectToolUsage(usage, item.Cost);
         if (item.Terminate == true) result["terminate"] = true;
+        if (item.IsError == true) result["isError"] = true;
         var projected = new JsonObject
         {
             ["type"] = "tool_execution_end",
