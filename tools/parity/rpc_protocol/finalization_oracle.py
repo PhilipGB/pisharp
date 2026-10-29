@@ -17,6 +17,7 @@ from verify import (
     VerificationError,
     load_contract,
     required_ci_jobs,
+    validate_q0_authoritative_counts,
     validate_case_results,
     validate_clean_source_tree,
     validate_pi_checkout,
@@ -210,14 +211,18 @@ def run_ci0_checkpoint(evidence_dir: Path) -> dict[str, int]:
         })
     source_evidence_path = evidence_dir.parent / "E0/evidence.json"
     source_evidence = json.loads(source_evidence_path.read_text(encoding="utf-8"))
-    quality_observation_path = evidence_dir.parent / "Q0/cases/Q0.full-dotnet-suite/observation.json"
-    quality_observation = json.loads(quality_observation_path.read_text(encoding="utf-8"))
+    quality_evidence_path = evidence_dir.parent / "Q0/evidence.json"
+    quality_evidence = json.loads(quality_evidence_path.read_text(encoding="utf-8"))
+    quality_counts = validate_q0_authoritative_counts(
+        quality_evidence, evidence_dir.parent / "Q0",
+        expected_source_commit=source_evidence["implementationSourceCommit"],
+    )
     ci_evidence = {"runs": [run for run in (push, pull) if run is not None]}
     publication = {
         "number": pr["number"], "url": pr["url"], "branch": pr["headRef"],
         "headSha": pr["headSha"], "baseSha": pr["baseSha"], "author": pr["author"],
         "implementationSourceCommit": source_evidence["implementationSourceCommit"],
-        "fullDotnetTestCount": quality_observation.get("summary", {}).get("passed"),
+        "fullDotnetTestCount": quality_counts["total"],
         "bodySha256": hashlib.sha256(pr["body"].encode("utf-8")).hexdigest(),
         "pushRunId": push["runId"] if push else None,
         "pullRequestRunId": pull["runId"] if pull else None,
@@ -235,18 +240,19 @@ def run_ci0_checkpoint(evidence_dir: Path) -> dict[str, int]:
 
 
 def _publication_description_check(pr: dict[str, Any], source_sha: str,
-                                   ci_evidence: dict[str, Any], quality: dict[str, Any]) -> tuple[bool, dict[str, Any]]:
+                                   ci_evidence: dict[str, Any], quality_counts: dict[str, int]) -> tuple[bool, dict[str, Any]]:
     contract = load_contract()
     modes = {mode: sum(case["comparisonRules"]["mode"] == mode for case in contract["cases"])
              for mode in ("strict", "equivalent", "intentional-safety-difference")}
     runs = {run["event"]: run for run in ci_evidence.get("runs", [])}
     body = pr.get("body") or ""
-    dotnet_summary = quality.get("summary", {})
-    dotnet_count = dotnet_summary.get("passed", quality.get("passed", ""))
+    dotnet_count = quality_counts.get("total")
+    if type(dotnet_count) is not int or dotnet_count <= 0:
+        raise VerificationError("PUB0 requires the numeric total from authoritative Q0 testCounts")
     required_tokens = [
         "24/24", "252/252", PINNED_PI_SHA, BASE_SHA, source_sha, pr.get("headSha", ""),
         str(runs.get("push", {}).get("runId", "")), str(runs.get("pull_request", {}).get("runId", "")),
-        f"{int(dotnet_count):,}/{int(dotnet_count):,}" if str(dotnet_count).isdigit() else "",
+        f"{dotnet_count:,}/{dotnet_count:,}",
         f"Strict: {modes['strict']}", f"Equivalent: {modes['equivalent']}",
         f"Intentional safety differences: {modes['intentional-safety-difference']}",
         "20 credential-gated", "unverified", "managed-package parity corpus",
@@ -288,11 +294,14 @@ def run_pub0_checkpoint(evidence_dir: Path) -> dict[str, int]:
     no_self_approval = not any(review.get("user", {}).get("login") == pr["author"]
                               and review.get("state") == "APPROVED" for review in reviews)
     open_draft = pr["state"] == "open" and pr["draft"] is True and pr["merged"] is False
-    # Read the actual quality observation, which is the source of the published test count.
-    quality_observation_path = root / "Q0/cases/Q0.full-dotnet-suite/observation.json"
-    quality_observation = json.loads(quality_observation_path.read_text(encoding="utf-8"))
+    # Validate canonical Q0 counts against raw test output before reading the published total.
+    quality_evidence_path = root / "Q0/evidence.json"
+    quality_evidence = json.loads(quality_evidence_path.read_text(encoding="utf-8"))
+    quality_counts = validate_q0_authoritative_counts(
+        quality_evidence, root / "Q0", expected_source_commit=source_sha,
+    )
     body_matches, report = _publication_description_check(
-        pr, source_sha, ci_evidence, quality_observation,
+        pr, source_sha, ci_evidence, quality_counts,
     )
 
     base_latest = pr["baseRef"] == "main" and pr["baseSha"] == snapshot["apiMainSha"] == snapshot["localMainSha"]
@@ -370,7 +379,7 @@ def run_pub0_checkpoint(evidence_dir: Path) -> dict[str, int]:
         "number": pr["number"], "url": pr["url"], "branch": pr["headRef"],
         "headSha": pr["headSha"], "baseSha": pr["baseSha"], "author": pr["author"],
         "implementationSourceCommit": source_sha,
-        "fullDotnetTestCount": quality_observation.get("summary", {}).get("passed"),
+        "fullDotnetTestCount": quality_counts["total"],
         "bodySha256": hashlib.sha256(pr["body"].encode("utf-8")).hexdigest(),
         "pushRunId": next((run.get("runId") for run in ci_evidence.get("runs", []) if run.get("event") == "push"), None),
         "pullRequestRunId": next((run.get("runId") for run in ci_evidence.get("runs", []) if run.get("event") == "pull_request"), None),

@@ -19,7 +19,9 @@ from verify import (
     load_contract,
     validate_case_results,
     validate_clean_source_tree,
+    parse_dotnet_test_counts,
     validate_pi_checkout,
+    validate_q0_authoritative_counts,
 )
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -32,9 +34,6 @@ QUALITY_CASE_IDS = (
     "Q0.python-parity-suites", "Q0.node-parity-suites", "Q0.mcp-conformance",
     "Q0.pinned-pi-rpc-suites", "Q0.new-rpc-differential-and-controls", "Q0.docs-link-validation",
     "Q0.prior-milestone-regression-audit",
-)
-DOTNET_TEST_SUMMARY = re.compile(
-    r"(?:Passed!\s*-\s*)?Failed:\s*([\d,]+),\s*Passed:\s*([\d,]+),\s*Skipped:\s*([\d,]+),\s*Total:\s*([\d,]+)",
 )
 VITEST_SUMMARY = re.compile(r"Tests\s+([\d,]+) passed(?:\s*\|\s*([\d,]+) skipped)?\s*\(([\d,]+)\)")
 NODE_SUMMARY = re.compile(r"(?:#|ℹ)\s+(tests|pass|fail|skipped)\s+(\d+)")
@@ -59,13 +58,9 @@ def _run(argv: list[str], *, cwd: Path = ROOT, env: dict[str, str] | None = None
 
 def _summary(step: dict[str, Any]) -> dict[str, Any]:
     output = step["stdout"] + step["stderr"]
-    dotnet = list(DOTNET_TEST_SUMMARY.finditer(output))
-    if dotnet:
-        match = dotnet[-1]
-        return {"failed": int(match.group(1).replace(",", "")),
-                "passed": int(match.group(2).replace(",", "")),
-                "skipped": int(match.group(3).replace(",", "")),
-                "total": int(match.group(4).replace(",", ""))}
+    dotnet = parse_dotnet_test_counts(output)
+    if dotnet is not None:
+        return dotnet
     vitest = list(VITEST_SUMMARY.finditer(output))
     if vitest:
         match = vitest[-1]
@@ -182,7 +177,7 @@ def _quality_plan(evidence_root: Path) -> dict[str, list[list[str]]]:
             "dotnet", "build", "PiSharp.slnx", "--no-restore", "--warnaserror",
             "-m:1", "/nodeReuse:false", "-p:NuGetAudit=false",
         ]],
-        "Q0.full-dotnet-suite": [["dotnet", "test", "PiSharp.slnx", "--no-build", "--no-restore"]],
+        "Q0.full-dotnet-suite": [["dotnet", "test", "PiSharp.slnx"]],
         "Q0.all-rpc-process-tests": [common + [
             "--filter",
             "FullyQualifiedName~Rpc|FullyQualifiedName~BashShutdownProcessTests|FullyQualifiedName~BuiltinRpcResultParityTests",
@@ -234,6 +229,17 @@ def _step_passed(case_id: str, step: dict[str, Any], summary: dict[str, Any]) ->
     if case_id == "Q0.docs-link-validation":
         return "Documentation paths verified:" in (step["stdout"] + step["stderr"])
     return step.get("exitCode") == 0
+
+
+def _with_gate_result(case_id: str, summary: dict[str, Any], passed: bool) -> dict[str, Any]:
+    """Keep full-suite numbers separate from the Boolean acceptance result."""
+    if case_id == "Q0.full-dotnet-suite":
+        summary["testCounts"] = {
+            field: summary[field] for field in ("passed", "failed", "skipped", "total")
+            if field in summary
+        }
+    summary["passed"] = passed
+    return summary
 
 
 def run_quality_checkpoint(pi_checkout: Path, evidence_dir: Path) -> dict[str, int]:
@@ -304,7 +310,13 @@ def run_quality_checkpoint(pi_checkout: Path, evidence_dir: Path) -> dict[str, i
                 raise VerificationError(f"no quality command plan registered for {case_id}")
             summaries = []
             for command in commands:
-                result = _run(command)
+                if case_id == "Q0.full-dotnet-suite":
+                    # NuGet's audit cache is read-only in some managed workspaces. Keep the
+                    # frozen command line intact and record the environment override used.
+                    result = _run(command, env={**os.environ, "NuGetAudit": "false"})
+                    result["environmentOverrides"] = {"NuGetAudit": "false"}
+                else:
+                    result = _run(command)
                 summaries.append(_summary(result))
                 steps.append(result)
             summary = {"commandsPassed": bool(steps) and all(step["exitCode"] == 0 for step in steps),
@@ -320,7 +332,7 @@ def run_quality_checkpoint(pi_checkout: Path, evidence_dir: Path) -> dict[str, i
             else all(_step_passed(case_id, step, summary if case_id != "Q0.pinned-pi-rpc-suites" else summary)
                      for step in steps)
         )
-        summary["passed"] = passed
+        summary = _with_gate_result(case_id, summary, passed)
         run_summaries[case_id] = summary
 
         step_artifacts = []
@@ -360,5 +372,7 @@ def run_quality_checkpoint(pi_checkout: Path, evidence_dir: Path) -> dict[str, i
         "qualitySourceCommit": source_head, "pinnedPiTestRoot": str(pi_checkout.resolve()),
     }
     (evidence_dir / "evidence.json").write_text(json.dumps(evidence, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    return validate_case_results(case_results, "Q0", evidence_dir)
+    counts = validate_case_results(case_results, "Q0", evidence_dir)
+    validate_q0_authoritative_counts(evidence, evidence_dir, expected_source_commit=source_head)
+    return counts
 

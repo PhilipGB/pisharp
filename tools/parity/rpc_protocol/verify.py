@@ -28,12 +28,29 @@ REQUIRED_CHECKPOINT_IDS = (
 )
 SHA1 = re.compile(r"^[0-9a-f]{40}$")
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
+DOTNET_TEST_SUMMARY = re.compile(
+    r"(?:Passed!\s*-\s*)?Failed:\s*([\d,]+),\s*Passed:\s*([\d,]+),\s*Skipped:\s*([\d,]+),\s*Total:\s*([\d,]+)",
+)
 PROCESS_CHECKPOINTS = {f"R{i}" for i in range(1, 16)} | {"D0"}
 CI_WORKFLOW_PATH = ROOT / ".github/workflows/ci.yml"
 
 
 class VerificationError(ValueError):
     """The contract or evidence violates a frozen acceptance requirement."""
+
+
+def parse_dotnet_test_counts(output: str) -> dict[str, int] | None:
+    """Extract the final .NET test summary from a captured command output."""
+    matches = list(DOTNET_TEST_SUMMARY.finditer(output))
+    if not matches:
+        return None
+    match = matches[-1]
+    return {
+        "passed": int(match.group(2).replace(",", "")),
+        "failed": int(match.group(1).replace(",", "")),
+        "skipped": int(match.group(3).replace(",", "")),
+        "total": int(match.group(4).replace(",", "")),
+    }
 
 
 def _read_json(path: Path) -> Any:
@@ -282,6 +299,90 @@ def validate_case_results(results: list[dict[str, Any]], checkpoint_id: str, evi
     return counts
 
 
+def validate_q0_authoritative_counts(evidence: dict[str, Any], evidence_dir: Path,
+                                    *, expected_source_commit: str | None = None) -> dict[str, int]:
+    """Validate Q0's full-suite count schema against the hashed raw dotnet execution."""
+    if evidence.get("checkpointId") != "Q0":
+        raise VerificationError("full .NET test counts must come from Q0 evidence")
+    source_commit = evidence.get("implementationSourceCommit")
+    quality_source_commit = evidence.get("qualitySourceCommit")
+    if not isinstance(source_commit, str) or not SHA1.fullmatch(source_commit):
+        raise VerificationError("Q0 implementation source SHA is missing or malformed")
+    if quality_source_commit != source_commit:
+        raise VerificationError("Q0 quality source SHA is stale or differs from its implementation SHA")
+    if expected_source_commit is not None and source_commit != expected_source_commit:
+        raise VerificationError("Q0 implementation source SHA differs from the publication source")
+
+    case_id = "Q0.full-dotnet-suite"
+    matches = [item for item in evidence.get("caseResults", [])
+               if isinstance(item, dict) and item.get("caseId") == case_id]
+    if len(matches) != 1:
+        raise VerificationError("Q0 must contain exactly one full .NET suite result")
+    case_result = matches[0]
+    validate_case_results([case_result], "Q0", evidence_dir, require_complete=False)
+
+    artifacts = case_result.get("rawArtifacts", [])
+    observation_refs = [item for item in artifacts if item.get("role") == f"{case_id}.observation"]
+    command_refs = [item for item in artifacts if item.get("role") == f"{case_id}.command-1"]
+    if len(observation_refs) != 1 or len(command_refs) != 1:
+        raise VerificationError("Q0 full .NET suite must reference one observation and one raw command")
+    observation_path = _relative_artifact(evidence_dir, observation_refs[0]["path"])
+    command_path = _relative_artifact(evidence_dir, command_refs[0]["path"])
+    observation = _read_json(observation_path)
+    raw_command = _read_json(command_path)
+    if not isinstance(observation, dict) or not isinstance(raw_command, dict):
+        raise VerificationError("Q0 full .NET suite observation or raw command is not a JSON object")
+
+    if observation.get("accepted") is not True:
+        raise VerificationError("Q0 full .NET suite observation is not accepted")
+    summary = observation.get("summary")
+    if not isinstance(summary, dict) or summary.get("passed") is not True:
+        raise VerificationError("Q0 full .NET suite summary.passed must be Boolean true")
+    if summary.get("commandsPassed") is not True:
+        raise VerificationError("Q0 full .NET suite command gate is not successful")
+    test_counts = summary.get("testCounts")
+    required_fields = {"passed", "failed", "skipped", "total"}
+    if not isinstance(test_counts, dict) or set(test_counts) != required_fields:
+        raise VerificationError("Q0 full .NET suite testCounts must contain passed, failed, skipped and total")
+    if any(type(test_counts[field]) is not int or test_counts[field] < 0 for field in required_fields):
+        raise VerificationError("Q0 testCounts fields must be non-negative JSON integers, excluding Booleans")
+    counts = {field: test_counts[field] for field in ("passed", "failed", "skipped", "total")}
+    if counts["passed"] + counts["failed"] + counts["skipped"] != counts["total"]:
+        raise VerificationError("Q0 testCounts are arithmetically inconsistent")
+    if counts["total"] <= 0 or counts["failed"] != 0 or counts["skipped"] != 0:
+        raise VerificationError("Q0 successful full-suite acceptance requires total > 0 and zero failures/skips")
+
+    if raw_command.get("argv") != ["dotnet", "test", "PiSharp.slnx"]:
+        raise VerificationError("Q0 authoritative counts are not from the full dotnet test PiSharp.slnx suite")
+    cwd = raw_command.get("cwd")
+    if not isinstance(cwd, str) or Path(cwd).resolve() != ROOT.resolve():
+        raise VerificationError("Q0 full .NET suite ran from the wrong implementation directory")
+    if type(raw_command.get("exitCode")) is not int or raw_command["exitCode"] != 0:
+        raise VerificationError("Q0 raw full .NET suite command did not exit successfully")
+    stdout, stderr = raw_command.get("stdout"), raw_command.get("stderr")
+    if not isinstance(stdout, str) or not isinstance(stderr, str):
+        raise VerificationError("Q0 raw full .NET suite output is missing")
+    raw_counts = parse_dotnet_test_counts(stdout + stderr)
+    if raw_counts is None:
+        raise VerificationError("Q0 raw full .NET suite output has no numerical test summary")
+    if counts != raw_counts:
+        raise VerificationError("Q0 testCounts differ from the hashed raw .NET test output")
+    command_paths = observation.get("commandArtifactPaths")
+    if command_paths != [command_refs[0]["path"]]:
+        raise VerificationError("Q0 observation does not reference its authoritative raw test command")
+    return counts
+
+
+def validate_publication_test_count(publication: Any, quality_counts: dict[str, int]) -> int:
+    """Require CI0/PUB0 to publish only Q0's authoritative numeric full-suite total."""
+    if not isinstance(publication, dict):
+        raise VerificationError("publication evidence is missing its Q0 test count")
+    count = publication.get("fullDotnetTestCount")
+    if type(count) is not int or count != quality_counts.get("total"):
+        raise VerificationError("publication test count differs from authoritative Q0 testCounts.total")
+    return count
+
+
 def validate_evidence_header(evidence: dict[str, Any], *, current_head: str | None = None,
                              require_clean_worktree: bool = True) -> None:
     """Validate source identities before interpreting individual case results."""
@@ -439,6 +540,8 @@ def validate_live_publication_evidence(publication: Any, *, final_head_sha: str,
         for mode in ("strict", "equivalent", "intentional-safety-difference")
     }
     dotnet_count = publication.get("fullDotnetTestCount")
+    if type(dotnet_count) is not int or dotnet_count <= 0:
+        raise VerificationError("publication fullDotnetTestCount must be a positive JSON integer")
     mandatory_tokens = [
         "24/24", "252/252", PINNED_PI_SHA, BASE_SHA, str(source_sha), final_head_sha,
         str(publication.get("pushRunId")), str(publication.get("pullRequestRunId")),
@@ -545,6 +648,8 @@ def validate_e0_evidence(evidence: dict[str, Any], evidence_dir: Path, *, curren
         validate_evidence_header(child, current_head=current_head)
         if child.get("implementationSourceCommit") != source_commit:
             raise VerificationError(f"E0 {checkpoint_id} was not tested at the shared implementation source")
+        if checkpoint_id == "Q0":
+            validate_q0_authoritative_counts(child, child_dir, expected_source_commit=source_commit)
         if checkpoint_id == "V1":
             validate_v1_control_evidence(child.get("v1ControlEvidence"), child_dir)
         else:
@@ -642,6 +747,8 @@ def main() -> int:
         evidence = _read_json(evidence_path)
         current_head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()
         validate_evidence_header(evidence, current_head=current_head)
+        if args.checkpoint == "Q0":
+            validate_q0_authoritative_counts(evidence, args.evidence_dir)
         if args.checkpoint == "V1":
             if args.case_id:
                 raise VerificationError("V1 evidence is validated as a complete control checkpoint")
@@ -651,6 +758,13 @@ def main() -> int:
         if args.checkpoint == "E0":
             validate_e0_evidence(evidence, args.evidence_dir, current_head=current_head)
         if args.checkpoint in {"CI0", "PUB0"}:
+            q0_dir = args.evidence_dir.parent / "Q0"
+            q0_evidence = _read_json(q0_dir / "evidence.json")
+            q0_counts = validate_q0_authoritative_counts(
+                q0_evidence, q0_dir,
+                expected_source_commit=evidence.get("implementationSourceCommit"),
+            )
+            validate_publication_test_count(evidence.get("publicationEvidence"), q0_counts)
             validate_ci_evidence(
                 evidence.get("ciEvidence"),
                 final_head_sha=evidence["finalHeadCommit"],
