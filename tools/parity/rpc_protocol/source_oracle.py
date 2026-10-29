@@ -236,9 +236,14 @@ def _v0_observations() -> tuple[dict[str, Any], list[dict[str, Any]]]:
     mismatch_register = inventory.get("mismatchRegister", [])
     owners = inventory.get("pisharpSourceOwners", [])
     owners_complete = all((ROOT / item["path"]).is_file() for item in owners)
+    classifications = [item.get("priorEvidenceClassification", "") for item in commands]
+    classifications.extend(item.get("assessment", "") for item in events)
+    classifications.extend(item.get("assessment", "") for item in ui_methods)
+    baseline_markers = ("baseline", "existing", "unverified", "partial-prior", "require new process")
+    baseline_only = all(any(marker in value.lower() for marker in baseline_markers) for value in classifications)
     gaps_complete = bool(gaps) and all(
         item.get("id") and item.get("classification") and item.get("evidence")
-        and item.get("requiredCheckpoint") in contract["requiredCheckpointIds"]
+        and set(item.get("requiredCheckpoint", "").split("/")).issubset(contract["requiredCheckpointIds"])
         and item.get("resolution") for item in mismatch_register
     )
     facts = {
@@ -247,6 +252,7 @@ def _v0_observations() -> tuple[dict[str, Any], list[dict[str, Any]]]:
         "stateFields": len(projection.get("fields", [])), "records": len(records),
         "operations": len(operations), "owners": len(owners),
         "knownCoverageLimitations": gaps, "mismatchRegister": mismatch_register,
+        "priorEvidenceClassifications": sorted(set(classifications)),
     }
     checks = [
         _check("all-command-schemas", commands_complete, {"count": len(commands), "complete": commands_complete}),
@@ -256,9 +262,10 @@ def _v0_observations() -> tuple[dict[str, Any], list[dict[str, Any]]]:
                "mismatchRegisterCount": len(mismatch_register), "complete": state_complete}),
         _check("protocol-operation-coverage", protocol_complete, {"recordFamilies": len(records),
                "operations": len(operations), "complete": protocol_complete}),
-        _check("owner-and-gap-register", owners_complete and gaps_complete, {
+        _check("owner-and-gap-register", owners_complete and gaps_complete and baseline_only, {
             "existingOwners": owners_complete, "knownLimitations": len(gaps),
-            "mismatchEntries": len(mismatch_register), "complete": owners_complete and gaps_complete}),
+            "mismatchEntries": len(mismatch_register), "baselineOnly": baseline_only,
+            "complete": owners_complete and gaps_complete and baseline_only}),
     ]
     return {"checks": checks, "facts": facts}, []
 
