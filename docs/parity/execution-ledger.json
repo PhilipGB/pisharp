@@ -13726,8 +13726,8 @@
     "published_head_before_review_correction": "763f008a347282078b86946b398e9229dd930f06"
   },
   "rpc_protocol_command_parity_milestone": {
-    "status": "corrected_source_bound_acceptance_and_e0_verified_final_head_receipts_documented_in_pr",
-    "phase": "corrected_source_and_e0_verified_final_head_ci_and_publication_recorded_on_pr",
+    "status": "review_follow_up_source_fixes_committed_final_acceptance_pending",
+    "phase": "source_frozen_awaiting_exact_head_quality_and_published_evidence",
     "branch": "milestone/rpc-protocol-command-parity",
     "branch_base_sha": "646db89bd396b8089b1b9a058fa96b1489f4d0cd",
     "prerequisite_pr28": {
@@ -13744,7 +13744,7 @@
     "v1_evidence_directory": "artifacts/parity/rpc-protocol-command-parity/v1-736574cd",
     "v1_control_report_sha256": "6a040fac6cf795a62914a89d2907c80e2243eab7e4eb00faa4519f9285c7f4f9",
     "v1_case_result": "Initial 23/23 passed at 736574cdf3755340ffa3b340325484a0a0f95025; current-head verification rejects the report as stale after later parity-tool changes; rerun after source freeze",
-    "implementation_source_sha": "3642c9bcbcaac05d6f7735015d8563f920847837",
+    "implementation_source_sha": "f83470d7747f4e0157f8473900b49cc1ccdf8a09",
     "r1_evidence_directory": "artifacts/parity/rpc-protocol-command-parity/r1-3642c9bc",
     "r1_evidence_sha256": "ae4715854e5b519e2f18aadb53a076a6cd02c7808a84a4f98782e758eda650f2",
     "r1_case_result": "Initial 11/11 passed at 3642c9bcbcaac05d6f7735015d8563f920847837; current-head verification rejects the report as stale after later parity-tool changes; rerun after source freeze",
@@ -13860,19 +13860,111 @@
     "r9_verifier_unit_tests": "16/16 passed; zero failures/skips",
     "r9_changed_file_format_verification": "Passed with targeted dotnet format whitespace verification for changed C# files.",
     "r9_compact_case_results": "docs/parity/fixtures/rpc-protocol-command-parity/r9-case-results.json",
-    "current_source_bound_implementation_source_sha": "62c650449f59be8cce7bedb2ecacbbec7770b015",
-    "current_source_bound_evidence_root": "artifacts/parity/rpc-protocol-command-parity/run-62c65044",
-    "current_source_bound_comparison_counts": {
+    "quality_checkpoint": "Pending exact-head rerun. The initial evidence workflow at baea9622 failed Q0 because ANSI-colored Vitest output was not parsed; the verifier fix now reports 582 passed, 20 inventory-matched skips, and RPC parity unit tests pass 38/38.",
+    "credential_limit": "Exactly 20 credential-dependent pinned-Pi test identities are skipped and remain unverified; no live model endpoint was called.",
+    "managed_package_limit": "Managed-package parity corpus remains scoped to its historical milestone branch; it was not rerun on this branch.",
+    "completion_evidence": "docs/parity/fixtures/rpc-protocol-command-parity/completion-evidence-62c65044.json",
+    "contract_scope": "Frozen acceptance contract: 24/24 checkpoints and 252/252 mandatory cases. The earlier 62c65044 source-bound receipt is historical after review-follow-up changes. Final exact-head acceptance and E0 publication are pending.",
+    "e0_checkpoint": {
+      "result": "Pending exact-head source-bound evidence regeneration and independent verification.",
+      "evidence_directory": null,
+      "source_bound_checkpoint_count": 0,
+      "implementation_source_sha": "f83470d7747f4e0157f8473900b49cc1ccdf8a09"
+    },
+    "finalization_evidence": {
+      "recordLocation": "Pending successful exact-head evidence, CI0 and PUB0; final results will be recorded in PR #29.",
+      "requirements": {
+        "e0": "Pending exact-head artifact publication and independent verification.",
+        "ci0": "Pending successful exact-head push and pull-request CI plus the unexpired evidence artifact.",
+        "pub0": "Pending final PR #29 description validation; keep the PR open, draft and unmerged."
+      },
+      "previous_dotnetTestCountNormalization": {
+        "sourceObservation": "Q0/cases/Q0.full-dotnet-suite/observation.json",
+        "booleanPassedMarker": true,
+        "authoritativeNumericField": "summary.testCounts",
+        "measuredTotal": 4005,
+        "measuredCounts": {
+          "passed": 4005,
+          "failed": 0,
+          "skipped": 0,
+          "total": 4005
+        },
+        "rawOutputSha256": "9d2afbeae3adf99d1698e1e49ab519587d5f5a445ddebcb38fa6ad519876fa89",
+        "note": "The numeric testCounts are generated from actual full-suite output and validated against its captured artifact hash; the Boolean passed marker is not a count."
+      }
+    },
+    "independent_review_follow_up": {
+      "status": "source and verifier fixes committed; exact-head acceptance rerun pending",
+      "implementation_source_commit": "f83470d7747f4e0157f8473900b49cc1ccdf8a09",
+      "review_findings": {
+        "concurrent_compaction_deadlock": {
+          "correction": "Serialize compaction handler admission so only one operation can cancel and await sibling operations.",
+          "process_regression": "RpcProcessSerializesOverlappingCompactionsAndSettlesEachAcceptedRequestOnce",
+          "settlements": [
+            "complete",
+            "abort",
+            "eof"
+          ],
+          "terminal_responses_per_accepted_request": 1,
+          "focused_rpc_process_tests": "5/5",
+          "fail_first_without_admission_gate": "New overlapping completion case fails.",
+          "teardown_follow_up": "The first exact-head full suite exposed an HttpListener.Close cleanup race in the EOF process fixture. Teardown now awaits the fixture server before closing the listener; the process class passes 5/5 and the EOF case passed five additional repetitions."
+        },
+        "fresh_checkout_evidence": {
+          "workflow": ".github/workflows/rpc-parity-evidence.yml",
+          "trigger": "Push to milestone/rpc-protocol-command-parity",
+          "generated_checkpoints": "21 source-bound checkpoints plus E0",
+          "independent_verification": "Run verify.py check for every generated checkpoint before upload.",
+          "artifact_name": "rpc-parity-evidence-<final-head>",
+          "artifact_retention_days": 90,
+          "source_binding": "E0 manifests source pins and per-file raw capture hashes; GitHub artifact metadata binds the bundle to the exact head.",
+          "acceptance_rule": "CI0 requires the successful exact-head workflow and an unexpired artifact; E0 validates source pins and raw capture hashes after download."
+        }
+      },
+      "limitations": [
+        "20 credential-dependent pinned-Pi test cases remain unverified.",
+        "Managed-package parity remains scoped to its historical milestone branch.",
+        "No live model endpoint was called."
+      ],
+      "acceptance_requirements": [
+        "Run the frozen RPC corpus and full Q0 suite on the final head.",
+        "Download the exact-head GitHub artifact into a fresh checkout and verify every source checkpoint and E0.",
+        "Pass exact-head push CI, pull-request CI, CI0 and PUB0; keep PR #29 open, draft and unmerged."
+      ],
+      "source_identity_rule": "Pin the latest commit touching src, tests, tools/parity or .github/workflows/ci.yml as implementationSourceCommit; record the tested checkout separately as finalHeadCommit. The docs and dedicated evidence publisher workflow may follow the source commit.",
+      "verifier_fix": {
+        "source_commit": "f83470d7747f4e0157f8473900b49cc1ccdf8a09",
+        "ansiVitestParsing": "Counts and skip identities are parsed after ANSI escape removal.",
+        "rpcParityUnitTests": "38/38 passed, including ANSI-colored summary and skip-identity regressions.",
+        "pinnedPiRun": "582 passed, 20 skipped, zero failed; the 20 skipped identities exactly match the credential-gated inventory."
+      },
+      "previous_evidence_attempt": {
+        "final_head_commit": "baea9622edeed561c305e0d02d16e96f35f9898a",
+        "workflow_run_id": 40990367194,
+        "conclusion": "failure",
+        "passed_source_checkpoints": 20,
+        "failure": "Q0 pinned-Pi acceptance parsing rejected ANSI-colored Vitest output despite 582 passes and 20 inventory-listed credential skips.",
+        "partial_artifact": {
+          "artifact_id": 12949903661,
+          "name": "rpc-parity-evidence-baea9622edeed561c305e0d02d16e96f35f9898a",
+          "digest": "sha256:984eadb9cae8d2b11de89b3cb0c90215d9615a2cac80f1ca41bc4996f3e72f1c",
+          "acceptance": "diagnostic only; failed workflow artifact does not satisfy CI0 or final acceptance"
+        }
+      }
+    },
+    "previous_source_bound_implementation_source_sha": "62c650449f59be8cce7bedb2ecacbbec7770b015",
+    "current_source_bound_implementation_source_sha": "f83470d7747f4e0157f8473900b49cc1ccdf8a09",
+    "previous_source_bound_evidence_root": "artifacts/parity/rpc-protocol-command-parity/run-62c65044",
+    "current_source_bound_evidence_root": null,
+    "previous_source_bound_comparison_counts": {
       "strict": 230,
       "equivalent": 22,
       "intentional-safety-difference": 0,
       "unresolved": 0
     },
-    "quality_checkpoint": "Q0 15/15; full .NET 4,005/4,005; RPC 185/185; runtime/session 602/602; compaction/tools/extensions 1,355/1,355; Python 214/214 across five suites; Node 24/24; docs validated (157 documents, 701 references).",
-    "credential_limit": "Exactly 20 credential-dependent pinned-Pi test identities are skipped and remain unverified; no live model endpoint was called.",
-    "managed_package_limit": "Managed-package parity corpus remains scoped to its historical milestone branch; it was not rerun on this branch.",
-    "completion_evidence": "docs/parity/fixtures/rpc-protocol-command-parity/completion-evidence-62c65044.json",
-    "checkpoint_evidence": [
+    "current_source_bound_comparison_counts": null,
+    "previous_quality_checkpoint": "Q0 15/15; full .NET 4,005/4,005; RPC 185/185; runtime/session 602/602; compaction/tools/extensions 1,355/1,355; Python 214/214 across five suites; Node 24/24; docs validated (157 documents, 701 references).",
+    "previous_checkpoint_evidence": [
       {
         "checkpointId": "P0",
         "passed": 6,
@@ -14098,74 +14190,6 @@
         ]
       }
     ],
-    "contract_scope": "Frozen acceptance contract: 24/24 checkpoints and 252/252 mandatory cases. Corrected source-bound evidence: 21/24 checkpoints and 231/252 cases; E0, exact-head CI0 and PUB0 are recorded in PR #29 after final documentation-head verification.",
-    "e0_checkpoint": {
-      "result": "10/10 passed; zero failures or skips; independent verifier passed against corrected source-bound evidence and ledger pins.",
-      "evidence_directory": "artifacts/parity/rpc-protocol-command-parity/run-62c65044/E0",
-      "source_bound_checkpoint_count": 21,
-      "implementation_source_sha": "62c650449f59be8cce7bedb2ecacbbec7770b015"
-    },
-    "finalization_evidence": {
-      "recordLocation": "Current PR #29 description and ignored artifacts/parity/rpc-protocol-command-parity/run-62c65044/{E0,CI0,PUB0}",
-      "requirements": {
-        "e0": "10/10 passed; independently verified against corrected source-bound receipts and ledger pins.",
-        "ci0": "5/5; automatic push and pull-request workflows must pass all five jobs on the exact final head; current IDs are recorded in PR #29",
-        "pub0": "6/6; PR #29 remains open, draft and unmerged; current result is recorded in PR #29"
-      },
-      "dotnetTestCountNormalization": {
-        "sourceObservation": "Q0/cases/Q0.full-dotnet-suite/observation.json",
-        "booleanPassedMarker": true,
-        "authoritativeNumericField": "summary.testCounts",
-        "measuredTotal": 4005,
-        "measuredCounts": {
-          "passed": 4005,
-          "failed": 0,
-          "skipped": 0,
-          "total": 4005
-        },
-        "rawOutputSha256": "9d2afbeae3adf99d1698e1e49ab519587d5f5a445ddebcb38fa6ad519876fa89",
-        "note": "The numeric testCounts are generated from actual full-suite output and validated against its captured artifact hash; the Boolean passed marker is not a count."
-      }
-    },
-    "independent_review_follow_up": {
-      "status": "review correction committed; exact-head acceptance is recorded in PR #29",
-      "implementation_source_commit": "31963d3d098e8c194b1de68600cedb2d3af237f3",
-      "review_findings": {
-        "concurrent_compaction_deadlock": {
-          "correction": "Serialize compaction handler admission so only one operation can cancel and await sibling operations.",
-          "process_regression": "RpcProcessSerializesOverlappingCompactionsAndSettlesEachAcceptedRequestOnce",
-          "settlements": [
-            "complete",
-            "abort",
-            "eof"
-          ],
-          "terminal_responses_per_accepted_request": 1,
-          "focused_rpc_process_tests": "5/5",
-          "fail_first_without_admission_gate": "New overlapping completion case fails.",
-          "teardown_follow_up": "The first exact-head full suite exposed an HttpListener.Close cleanup race in the EOF process fixture. Teardown now awaits the fixture server before closing the listener; the process class passes 5/5 and the EOF case passed five additional repetitions."
-        },
-        "fresh_checkout_evidence": {
-          "workflow": ".github/workflows/rpc-parity-evidence.yml",
-          "trigger": "Push to milestone/rpc-protocol-command-parity",
-          "generated_checkpoints": "21 source-bound checkpoints plus E0",
-          "independent_verification": "Run verify.py check for every generated checkpoint before upload.",
-          "artifact_name": "rpc-parity-evidence-<final-head>",
-          "artifact_retention_days": 90,
-          "source_binding": "E0 manifests source pins and per-file raw capture hashes; GitHub artifact metadata binds the bundle to the exact head.",
-          "acceptance_rule": "CI0 requires the successful exact-head workflow and an unexpired artifact; E0 validates source pins and raw capture hashes after download."
-        }
-      },
-      "limitations": [
-        "20 credential-dependent pinned-Pi test cases remain unverified.",
-        "Managed-package parity remains scoped to its historical milestone branch.",
-        "No live model endpoint was called."
-      ],
-      "acceptance_requirements": [
-        "Run the frozen RPC corpus and full Q0 suite on the final head.",
-        "Download the exact-head GitHub artifact into a fresh checkout and verify every source checkpoint and E0.",
-        "Pass exact-head push CI, pull-request CI, CI0 and PUB0; keep PR #29 open, draft and unmerged."
-      ],
-      "source_identity_rule": "Pin the latest commit touching src, tests, tools/parity or .github/workflows/ci.yml as implementationSourceCommit; record the tested checkout separately as finalHeadCommit. The docs and dedicated evidence publisher workflow may follow the source commit."
-    }
+    "checkpoint_evidence": []
   }
 }
