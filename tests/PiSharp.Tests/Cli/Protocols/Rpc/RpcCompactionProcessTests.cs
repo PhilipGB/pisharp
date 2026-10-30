@@ -281,17 +281,17 @@ public sealed class RpcCompactionProcessTests
         finally
         {
             releaseProvider.TrySetResult();
-            timeout.Cancel();
-            listener.Close();
-            try { await provider.WaitAsync(TimeSpan.FromSeconds(5)); }
-            catch (Exception exception) when (exception is OperationCanceledException or HttpListenerException or
-                                               ObjectDisposedException or TimeoutException or IOException)
-            { }
             if (process is { HasExited: false })
             {
                 process.Kill(entireProcessTree: true);
                 await process.WaitForExitAsync();
             }
+            timeout.Cancel();
+            try { await provider.WaitAsync(TimeSpan.FromSeconds(5)); }
+            catch (Exception exception) when (exception is OperationCanceledException or HttpListenerException or
+                                               ObjectDisposedException or TimeoutException or IOException)
+            { }
+            listener.Close();
             process?.Dispose();
             Directory.Delete(root, recursive: true);
         }
