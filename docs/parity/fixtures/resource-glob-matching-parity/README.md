@@ -19,7 +19,7 @@ Current evidence is a partial contract run, not milestone completion:
 - Full solution tests: **4,009/4,009**, with no failures or skips. `dotnet format PiSharp.slnx --verify-no-changes` and `dotnet build PiSharp.slnx --warnaserror` pass; build has zero warnings and errors.
 
 Raw reports and their SHA-256 manifest are in the ignored local bundle
-`artifacts/parity/resource-glob-initial/`. The case index and executable matcher
+`artifacts/parity/resource-glob-4fd0c6ab/`. The case index and executable matcher
 harness are in `tools/parity/resource_glob/`.
 
 Still required: theme selection through the interactive CLI process, final independent E0 review,

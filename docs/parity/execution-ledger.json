@@ -14843,7 +14843,7 @@
       }
     },
     "interim_fixture": "docs/parity/fixtures/resource-glob-matching-parity/README.md",
-    "raw_interim_evidence": "artifacts/parity/resource-glob-initial/manifest.json",
+    "raw_evidence": "artifacts/parity/resource-glob-4fd0c6ab/manifest.json",
     "remaining": [
       "interactive CLI process theme comparison",
       "final source-bound E0 receipt",
