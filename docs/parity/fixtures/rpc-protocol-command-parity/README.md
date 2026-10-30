@@ -1,6 +1,6 @@
-# RPC Protocol and Command Parity — corrected source-bound completion receipt
+# RPC Protocol and Command Parity — completion receipt and published evidence
 
-**Status:** Corrected implementation source `62c650449f59be8cce7bedb2ecacbbec7770b015` passes 21/24 source-bound checkpoints and 231/252 required cases, with zero failures or skips. The frozen contract remains 24 checkpoints and 252 mandatory cases. E0 independently passes 10/10. Exact-head CI0 and PUB0 receipts and current workflow IDs are recorded in PR [#29](https://github.com/PhilipGB/pisharp/pull/29), which remains open, draft and unmerged.
+**Prior receipt:** Implementation source `62c650449f59be8cce7bedb2ecacbbec7770b015` passed 21/24 source-bound checkpoints and 231/252 required cases; E0 passed 10/10. That receipt predates the independent review follow-up below and is retained as historical evidence. The frozen contract remains 24 checkpoints and 252 mandatory cases.
 
 ## Source pins and scope
 
@@ -21,5 +21,26 @@ Q0 passed the full .NET suite (4,005/4,005), RPC tests (185/185), runtime/sessio
 
 - **Bash ownership:** each accepted operation retains its originating run, session identity, execution environment, session file and persistence callback. Pinned Pi process comparisons show a blocked Bash returns a cancelled result before the response for `switch_session`, `new_session`, `fork` and `clone`; its result persists only in the original session. EOF cancels and persists without writing a terminal response after stdout closes.
 - **Q0 counts:** `summary.passed` remains a Boolean. Numeric full-suite counts are emitted in `summary.testCounts`, checked against the captured raw `dotnet test PiSharp.slnx` output and its hash, and consumed by CI0/PUB0 only from that schema. The remediation evidence includes fail-first evidence and negative controls.
+
+## PR #29 review follow-up
+
+Source commit `8373b75767117aaf2d799caba05efe2cf55a8bbf` serializes RPC compaction admission. A deterministic CLI process regression overlaps two `compact` requests and covers normal completion, abort and EOF; it checks exactly one terminal response for each accepted request. The focused RPC process class passes 5/5. The fail-first run without the admission gate failed the new completion case.
+
+The new `.github/workflows/rpc-parity-evidence.yml` workflow runs on pushes to the milestone branch. It regenerates all 21 source-bound checkpoints and E0, runs the independent verifier for each, and uploads the raw files as `rpc-parity-evidence-<final-head>` with source-bound hashes. GitHub retains this artifact for 90 days. CI0 and PUB0 now require a successful workflow and an unexpired artifact attached to the exact final head. The final acceptance run is pending publication of the updated head.
+
+To independently verify a published run from a clean checkout, download the artifact into its head-specific evidence directory and run the check for every source checkpoint and E0:
+
+```sh
+HEAD=<final-head-sha>
+RUN_ID=<rpc-parity-evidence-workflow-run-id>
+gh run download "$RUN_ID" --name "rpc-parity-evidence-$HEAD" \
+  --dir "artifacts/parity/rpc-protocol-command-parity/run-$HEAD"
+for checkpoint in P0 P1 V0 V1 R1 R2 R3 R4 R5 R6 R7 R8 R9 R10 R11 R12 R13 R14 R15 D0 Q0 E0; do
+  python3 tools/parity/rpc_protocol/verify.py check --checkpoint "$checkpoint" \
+    --evidence-dir "artifacts/parity/rpc-protocol-command-parity/run-$HEAD/$checkpoint"
+done
+```
+
+E0 checks the source pins and every raw capture hash. The 20 credential-dependent Pi tests remain unverified; the managed-package corpus remains scoped to its historical milestone. No live model endpoint is called.
 
 The frozen [contract](../../../../tools/parity/rpc_protocol/contract.json), [source-pinned inventory](inventory.json) and [required case index](required-case-index.json) define the acceptance scope. Finalization results and exact-head workflow IDs are kept in the current PR description so they track the final documentation head.
