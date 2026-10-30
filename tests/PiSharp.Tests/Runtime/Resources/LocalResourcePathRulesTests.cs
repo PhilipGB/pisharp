@@ -40,6 +40,18 @@ public sealed class LocalResourcePathRulesTests
         Assert.False(LocalResourcePathRules.IsEnabledByOverrides(path, [include, exclude], baseDirectory, skillPath));
     }
 
+    [Fact]
+    public void FileUrlPatternsNormalizeBeforeGlobAndExactOverrideMatching()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-resource file-url");
+        var path = Path.Combine(root, "extensions", "plugin.dll");
+        var fileUrl = new Uri(path).AbsoluteUri;
+
+        Assert.False(LocalResourcePathRules.IsEnabledByOverrides(path, ["!" + fileUrl], root));
+        Assert.True(LocalResourcePathRules.IsEnabledByOverrides(path, ["!extensions/**", "+" + fileUrl], root));
+        Assert.False(LocalResourcePathRules.IsEnabledByOverrides(path, ["+" + fileUrl, "-" + fileUrl], root));
+    }
+
     [Theory]
     [InlineData("docs/.hidden.md", "!docs/**", true)]
     [InlineData("docs/.hidden.md", "!docs/*.md", true)]

@@ -1,0 +1,1776 @@
+[
+  {
+    "id": "repeated-file",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "repeated-file",
+      "files": {
+        "outside/a.md": "---\nname: guide\ndescription: Guide\n---\nbody"
+      },
+      "skillPaths": [
+        "outside/a.md",
+        "outside/a.md"
+      ],
+      "promptPaths": [],
+      "links": {}
+    },
+    "expectedPi": {
+      "id": "repeated-file",
+      "skills": [
+        {
+          "name": "guide",
+          "description": "Guide",
+          "path": "outside/a.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          },
+          "sourceInfo": {
+            "path": "outside/a.md",
+            "source": "local",
+            "scope": "temporary",
+            "origin": "top-level",
+            "baseDir": "outside"
+          }
+        }
+      ],
+      "prompts": [],
+      "skillDiagnostics": [],
+      "promptDiagnostics": []
+    }
+  },
+  {
+    "id": "linked-file",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "linked-file",
+      "files": {
+        "outside/a.md": "---\nname: guide\ndescription: Guide\n---\nbody"
+      },
+      "skillPaths": [
+        "outside/a.md",
+        "outside/alias.md"
+      ],
+      "promptPaths": [],
+      "links": {
+        "outside/alias.md": "a.md"
+      }
+    },
+    "expectedPi": {
+      "id": "linked-file",
+      "skills": [
+        {
+          "name": "guide",
+          "description": "Guide",
+          "path": "outside/a.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          },
+          "sourceInfo": {
+            "path": "outside/a.md",
+            "source": "local",
+            "scope": "temporary",
+            "origin": "top-level",
+            "baseDir": "outside"
+          }
+        }
+      ],
+      "prompts": [],
+      "skillDiagnostics": [],
+      "promptDiagnostics": []
+    }
+  },
+  {
+    "id": "linked-parent",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "linked-parent",
+      "files": {
+        "outside/original/SKILL.md": "---\nname: guide\ndescription: Guide\n---\nbody"
+      },
+      "skillPaths": [
+        "outside/original",
+        "outside/linked"
+      ],
+      "promptPaths": [],
+      "links": {
+        "outside/linked": "original"
+      }
+    },
+    "expectedPi": {
+      "id": "linked-parent",
+      "skills": [
+        {
+          "name": "guide",
+          "description": "Guide",
+          "path": "outside/original/SKILL.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          },
+          "sourceInfo": {
+            "path": "outside/original/SKILL.md",
+            "source": "local",
+            "scope": "temporary",
+            "origin": "top-level",
+            "baseDir": "outside/original"
+          }
+        }
+      ],
+      "prompts": [],
+      "skillDiagnostics": [],
+      "promptDiagnostics": []
+    }
+  },
+  {
+    "id": "linked-loser",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "linked-loser",
+      "files": {
+        "outside/winner.md": "---\nname: guide\ndescription: Guide\n---\nwinner",
+        "outside/loser.md": "---\nname: guide\ndescription: Guide\n---\nloser"
+      },
+      "skillPaths": [
+        "outside/winner.md",
+        "outside/loser.md",
+        "outside/alias.md"
+      ],
+      "promptPaths": [],
+      "links": {
+        "outside/alias.md": "loser.md"
+      }
+    },
+    "expectedPi": {
+      "id": "linked-loser",
+      "skills": [
+        {
+          "name": "guide",
+          "description": "Guide",
+          "path": "outside/winner.md",
+          "body": {
+            "hash": "4221a0fc3dfbfd830dc3a13f6c72d233781179bea27df532ff903f3abdba5586",
+            "characters": 6
+          },
+          "sourceInfo": {
+            "path": "outside/winner.md",
+            "source": "local",
+            "scope": "temporary",
+            "origin": "top-level",
+            "baseDir": "outside"
+          }
+        }
+      ],
+      "prompts": [],
+      "skillDiagnostics": [
+        {
+          "type": "collision",
+          "message": "name \"guide\" collision",
+          "path": "outside/loser.md",
+          "collision": {
+            "resourceType": "skill",
+            "name": "guide",
+            "winnerPath": "outside/winner.md",
+            "loserPath": "outside/loser.md"
+          }
+        }
+      ],
+      "promptDiagnostics": []
+    }
+  },
+  {
+    "id": "linked-root-first-name-fallback",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "linked-root-first-name-fallback",
+      "files": {
+        "outside/real/SKILL.md": "---\ndescription: Guide\n---\nbody"
+      },
+      "skillPaths": [
+        "outside/alias",
+        "outside/real"
+      ],
+      "promptPaths": [],
+      "links": {
+        "outside/alias": "real"
+      }
+    },
+    "expectedPi": {
+      "id": "linked-root-first-name-fallback",
+      "skills": [
+        {
+          "name": "alias",
+          "description": "Guide",
+          "path": "outside/alias/SKILL.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          },
+          "sourceInfo": {
+            "path": "outside/alias/SKILL.md",
+            "source": "local",
+            "scope": "temporary",
+            "origin": "top-level",
+            "baseDir": "outside/alias"
+          }
+        }
+      ],
+      "prompts": [],
+      "skillDiagnostics": [],
+      "promptDiagnostics": []
+    }
+  },
+  {
+    "id": "linked-invalid-name-file",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "linked-invalid-name-file",
+      "files": {
+        "outside/a.md": "---\nname: BAD NAME\ndescription: Guide\n---\nbody"
+      },
+      "skillPaths": [
+        "outside/a.md",
+        "outside/alias.md"
+      ],
+      "promptPaths": [],
+      "links": {
+        "outside/alias.md": "a.md"
+      }
+    },
+    "expectedPi": {
+      "id": "linked-invalid-name-file",
+      "skills": [
+        {
+          "name": "BAD NAME",
+          "description": "Guide",
+          "path": "outside/a.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          },
+          "sourceInfo": {
+            "path": "outside/a.md",
+            "source": "local",
+            "scope": "temporary",
+            "origin": "top-level",
+            "baseDir": "outside"
+          }
+        }
+      ],
+      "prompts": [],
+      "skillDiagnostics": [
+        {
+          "type": "warning",
+          "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+          "path": "outside/a.md",
+          "collision": null
+        }
+      ],
+      "promptDiagnostics": []
+    }
+  },
+  {
+    "id": "distinct-roots-shared-file",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "distinct-roots-shared-file",
+      "files": {
+        "outside/a/SKILL.md": "---\nname: guide\ndescription: Guide\n---\nbody"
+      },
+      "skillPaths": [
+        "outside/a",
+        "outside/b"
+      ],
+      "promptPaths": [],
+      "links": {
+        "outside/b/SKILL.md": "../a/SKILL.md"
+      }
+    },
+    "expectedPi": {
+      "id": "distinct-roots-shared-file",
+      "skills": [
+        {
+          "name": "guide",
+          "description": "Guide",
+          "path": "outside/a/SKILL.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          },
+          "sourceInfo": {
+            "path": "outside/a/SKILL.md",
+            "source": "local",
+            "scope": "temporary",
+            "origin": "top-level",
+            "baseDir": "outside/a"
+          }
+        }
+      ],
+      "prompts": [],
+      "skillDiagnostics": [],
+      "promptDiagnostics": []
+    }
+  },
+  {
+    "id": "distinct-roots-shared-file-warnings",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "distinct-roots-shared-file-warnings",
+      "files": {
+        "outside/a/SKILL.md": "---\nname: BAD NAME\ndescription: Guide\n---\nbody"
+      },
+      "skillPaths": [
+        "outside/a",
+        "outside/b"
+      ],
+      "promptPaths": [],
+      "links": {
+        "outside/b/SKILL.md": "../a/SKILL.md"
+      }
+    },
+    "expectedPi": {
+      "id": "distinct-roots-shared-file-warnings",
+      "skills": [
+        {
+          "name": "BAD NAME",
+          "description": "Guide",
+          "path": "outside/a/SKILL.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          },
+          "sourceInfo": {
+            "path": "outside/a/SKILL.md",
+            "source": "local",
+            "scope": "temporary",
+            "origin": "top-level",
+            "baseDir": "outside/a"
+          }
+        }
+      ],
+      "prompts": [],
+      "skillDiagnostics": [
+        {
+          "type": "warning",
+          "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+          "path": "outside/a/SKILL.md",
+          "collision": null
+        },
+        {
+          "type": "warning",
+          "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+          "path": "outside/b/SKILL.md",
+          "collision": null
+        }
+      ],
+      "promptDiagnostics": []
+    }
+  },
+  {
+    "id": "auto-file-and-directory-warnings",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "auto-file-and-directory-warnings",
+      "files": {
+        "agent/skills/guide/SKILL.md": "---\nname: BAD NAME\ndescription: Guide\n---\nbody"
+      },
+      "skillPaths": [
+        "agent/skills/guide"
+      ],
+      "promptPaths": [],
+      "links": {},
+      "discover": true
+    },
+    "expectedPi": {
+      "id": "auto-file-and-directory-warnings",
+      "skills": [
+        {
+          "name": "BAD NAME",
+          "description": "Guide",
+          "path": "agent/skills/guide/SKILL.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          },
+          "sourceInfo": {
+            "path": "agent/skills/guide/SKILL.md",
+            "source": "auto",
+            "scope": "user",
+            "origin": "top-level",
+            "baseDir": "agent"
+          }
+        }
+      ],
+      "prompts": [],
+      "skillDiagnostics": [
+        {
+          "type": "warning",
+          "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+          "path": "agent/skills/guide/SKILL.md",
+          "collision": null
+        },
+        {
+          "type": "warning",
+          "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+          "path": "agent/skills/guide/SKILL.md",
+          "collision": null
+        }
+      ],
+      "promptDiagnostics": []
+    }
+  },
+  {
+    "id": "skill-warning-before-collision",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "skill-warning-before-collision",
+      "files": {
+        "outside/a.md": "---\nname: guide\ndescription: Guide\n---\nbody",
+        "outside/b.md": "---\nname: guide\ndescription: Guide\n---\nbody",
+        "outside/c.md": "---\nname: BAD NAME\ndescription: Guide\n---\nbody"
+      },
+      "skillPaths": [
+        "outside/a.md",
+        "outside/b.md",
+        "outside/c.md"
+      ],
+      "promptPaths": [],
+      "links": {}
+    },
+    "expectedPi": {
+      "id": "skill-warning-before-collision",
+      "skills": [
+        {
+          "name": "guide",
+          "description": "Guide",
+          "path": "outside/a.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          },
+          "sourceInfo": {
+            "path": "outside/a.md",
+            "source": "local",
+            "scope": "temporary",
+            "origin": "top-level",
+            "baseDir": "outside"
+          }
+        },
+        {
+          "name": "BAD NAME",
+          "description": "Guide",
+          "path": "outside/c.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          },
+          "sourceInfo": {
+            "path": "outside/c.md",
+            "source": "local",
+            "scope": "temporary",
+            "origin": "top-level",
+            "baseDir": "outside"
+          }
+        }
+      ],
+      "prompts": [],
+      "skillDiagnostics": [
+        {
+          "type": "warning",
+          "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+          "path": "outside/c.md",
+          "collision": null
+        },
+        {
+          "type": "collision",
+          "message": "name \"guide\" collision",
+          "path": "outside/b.md",
+          "collision": {
+            "resourceType": "skill",
+            "name": "guide",
+            "winnerPath": "outside/a.md",
+            "loserPath": "outside/b.md"
+          }
+        }
+      ],
+      "promptDiagnostics": []
+    }
+  },
+  {
+    "id": "prompt-invalid-loser",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "prompt-invalid-loser",
+      "files": {
+        "outside/a/review.md": "first body",
+        "outside/b/review.md": "---\ndescription: [broken\n---\nbody"
+      },
+      "skillPaths": [],
+      "promptPaths": [
+        "outside/a/review.md",
+        "outside/b/review.md"
+      ],
+      "links": {}
+    },
+    "expectedPi": {
+      "id": "prompt-invalid-loser",
+      "skills": [],
+      "prompts": [
+        {
+          "name": "review",
+          "description": "first body",
+          "path": "outside/a/review.md",
+          "body": {
+            "hash": "920de5214f0d1366297d417e04180cfe6939c853d544ddfeea9e9c030ced9c41",
+            "characters": 10
+          },
+          "sourceInfo": {
+            "path": "outside/a/review.md",
+            "source": "local",
+            "scope": "temporary",
+            "origin": "top-level",
+            "baseDir": "outside/a"
+          }
+        }
+      ],
+      "skillDiagnostics": [],
+      "promptDiagnostics": [
+        {
+          "type": "warning",
+          "message": "Flow sequence in block collection must be sufficiently indented and end with a ] at line 1, column 21:\n\ndescription: [broken\n                    ^\n",
+          "path": "outside/b/review.md",
+          "collision": null
+        }
+      ]
+    }
+  },
+  {
+    "id": "prompt-warning-before-collision",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "prompt-warning-before-collision",
+      "files": {
+        "outside/a/review.md": "first body",
+        "outside/b/review.md": "second body",
+        "outside/c/error.md": "---\ndescription: [broken\n---\nbody"
+      },
+      "skillPaths": [],
+      "promptPaths": [
+        "outside/a/review.md",
+        "outside/b/review.md",
+        "outside/c/error.md"
+      ],
+      "links": {}
+    },
+    "expectedPi": {
+      "id": "prompt-warning-before-collision",
+      "skills": [],
+      "prompts": [
+        {
+          "name": "review",
+          "description": "first body",
+          "path": "outside/a/review.md",
+          "body": {
+            "hash": "920de5214f0d1366297d417e04180cfe6939c853d544ddfeea9e9c030ced9c41",
+            "characters": 10
+          },
+          "sourceInfo": {
+            "path": "outside/a/review.md",
+            "source": "local",
+            "scope": "temporary",
+            "origin": "top-level",
+            "baseDir": "outside/a"
+          }
+        }
+      ],
+      "skillDiagnostics": [],
+      "promptDiagnostics": [
+        {
+          "type": "warning",
+          "message": "Flow sequence in block collection must be sufficiently indented and end with a ] at line 1, column 21:\n\ndescription: [broken\n                    ^\n",
+          "path": "outside/c/error.md",
+          "collision": null
+        },
+        {
+          "type": "collision",
+          "message": "name \"/review\" collision",
+          "path": "outside/b/review.md",
+          "collision": {
+            "resourceType": "prompt",
+            "name": "review",
+            "winnerPath": "outside/a/review.md",
+            "loserPath": "outside/b/review.md"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "prompt-linked-file-different-name",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "prompt-linked-file-different-name",
+      "files": {
+        "outside/one.md": "body"
+      },
+      "skillPaths": [],
+      "promptPaths": [
+        "outside/one.md",
+        "outside/two.md"
+      ],
+      "links": {
+        "outside/two.md": "one.md"
+      }
+    },
+    "expectedPi": {
+      "id": "prompt-linked-file-different-name",
+      "skills": [],
+      "prompts": [
+        {
+          "name": "one",
+          "description": "body",
+          "path": "outside/one.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          },
+          "sourceInfo": {
+            "path": "outside/one.md",
+            "source": "local",
+            "scope": "temporary",
+            "origin": "top-level",
+            "baseDir": "outside"
+          }
+        }
+      ],
+      "skillDiagnostics": [],
+      "promptDiagnostics": []
+    }
+  },
+  {
+    "id": "prompt-one-directory-aliases",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "prompt-one-directory-aliases",
+      "files": {
+        "outside/one.md": "body"
+      },
+      "skillPaths": [],
+      "promptPaths": [
+        "outside"
+      ],
+      "links": {
+        "outside/two.md": "one.md"
+      }
+    },
+    "expectedPi": {
+      "id": "prompt-one-directory-aliases",
+      "skills": [],
+      "prompts": [
+        {
+          "name": "one",
+          "description": "body",
+          "path": "outside/one.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          },
+          "sourceInfo": {
+            "path": "outside/one.md",
+            "source": "local",
+            "scope": "temporary",
+            "origin": "top-level",
+            "baseDir": "outside"
+          }
+        },
+        {
+          "name": "two",
+          "description": "body",
+          "path": "outside/two.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          },
+          "sourceInfo": {
+            "path": "outside/two.md",
+            "source": "local",
+            "scope": "temporary",
+            "origin": "top-level",
+            "baseDir": "outside"
+          }
+        }
+      ],
+      "skillDiagnostics": [],
+      "promptDiagnostics": []
+    }
+  },
+  {
+    "id": "prompt-distinct-directories-shared-file",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "prompt-distinct-directories-shared-file",
+      "files": {
+        "outside/a/review.md": "body"
+      },
+      "skillPaths": [],
+      "promptPaths": [
+        "outside/a",
+        "outside/b"
+      ],
+      "links": {
+        "outside/b/review.md": "../a/review.md"
+      }
+    },
+    "expectedPi": {
+      "id": "prompt-distinct-directories-shared-file",
+      "skills": [],
+      "prompts": [
+        {
+          "name": "review",
+          "description": "body",
+          "path": "outside/a/review.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          },
+          "sourceInfo": {
+            "path": "outside/a/review.md",
+            "source": "local",
+            "scope": "temporary",
+            "origin": "top-level",
+            "baseDir": "outside/a"
+          }
+        }
+      ],
+      "skillDiagnostics": [],
+      "promptDiagnostics": [
+        {
+          "type": "collision",
+          "message": "name \"/review\" collision",
+          "path": "outside/b/review.md",
+          "collision": {
+            "resourceType": "prompt",
+            "name": "review",
+            "winnerPath": "outside/a/review.md",
+            "loserPath": "outside/b/review.md"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "auto-trust-false",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "auto-trust-false",
+      "files": {
+        "project/.pi/skills/guide/SKILL.md": "---\nname: guide\ndescription: Guide\n---\nproject",
+        "agent/skills/guide/SKILL.md": "---\nname: guide\ndescription: Guide\n---\nuser",
+        "project/.pi/prompts/review.md": "project prompt",
+        "agent/prompts/review.md": "user prompt"
+      },
+      "skillPaths": [],
+      "promptPaths": [],
+      "links": {},
+      "discover": true,
+      "trusted": false
+    },
+    "expectedPi": {
+      "id": "auto-trust-false",
+      "skills": [
+        {
+          "name": "guide",
+          "description": "Guide",
+          "path": "agent/skills/guide/SKILL.md",
+          "body": {
+            "hash": "04f8996da763b7a969b1028ee3007569eaf3a635486ddab211d512c85b9df8fb",
+            "characters": 4
+          },
+          "sourceInfo": {
+            "path": "agent/skills/guide/SKILL.md",
+            "source": "auto",
+            "scope": "user",
+            "origin": "top-level",
+            "baseDir": "agent"
+          }
+        }
+      ],
+      "prompts": [
+        {
+          "name": "review",
+          "description": "user prompt",
+          "path": "agent/prompts/review.md",
+          "body": {
+            "hash": "3c05e0dd8ce331e0f88d615fa58c83c198b07dca2d80a9c8504cd7fbdcd0294f",
+            "characters": 11
+          },
+          "sourceInfo": {
+            "path": "agent/prompts/review.md",
+            "source": "auto",
+            "scope": "user",
+            "origin": "top-level",
+            "baseDir": "agent"
+          }
+        }
+      ],
+      "skillDiagnostics": [],
+      "promptDiagnostics": []
+    }
+  },
+  {
+    "id": "auto-trust-true",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "auto-trust-true",
+      "files": {
+        "project/.pi/skills/guide/SKILL.md": "---\nname: guide\ndescription: Guide\n---\nproject",
+        "agent/skills/guide/SKILL.md": "---\nname: guide\ndescription: Guide\n---\nuser",
+        "project/.pi/prompts/review.md": "project prompt",
+        "agent/prompts/review.md": "user prompt"
+      },
+      "skillPaths": [],
+      "promptPaths": [],
+      "links": {},
+      "discover": true,
+      "trusted": true
+    },
+    "expectedPi": {
+      "id": "auto-trust-true",
+      "skills": [
+        {
+          "name": "guide",
+          "description": "Guide",
+          "path": "project/.pi/skills/guide/SKILL.md",
+          "body": {
+            "hash": "244210e48437b6556980a70249a99369934a352429034cef9d7bd253b3bf2c01",
+            "characters": 7
+          },
+          "sourceInfo": {
+            "path": "project/.pi/skills/guide/SKILL.md",
+            "source": "auto",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "project/.pi"
+          }
+        }
+      ],
+      "prompts": [
+        {
+          "name": "review",
+          "description": "project prompt",
+          "path": "project/.pi/prompts/review.md",
+          "body": {
+            "hash": "ca78f9691e991afc1a746192b367b82751e1d2c1a7b4feffa55ad0b5b29bbe41",
+            "characters": 14
+          },
+          "sourceInfo": {
+            "path": "project/.pi/prompts/review.md",
+            "source": "auto",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "project/.pi"
+          }
+        }
+      ],
+      "skillDiagnostics": [
+        {
+          "type": "collision",
+          "message": "name \"guide\" collision",
+          "path": "agent/skills/guide/SKILL.md",
+          "collision": {
+            "resourceType": "skill",
+            "name": "guide",
+            "winnerPath": "project/.pi/skills/guide/SKILL.md",
+            "loserPath": "agent/skills/guide/SKILL.md"
+          }
+        }
+      ],
+      "promptDiagnostics": [
+        {
+          "type": "collision",
+          "message": "name \"/review\" collision",
+          "path": "agent/prompts/review.md",
+          "collision": {
+            "resourceType": "prompt",
+            "name": "review",
+            "winnerPath": "project/.pi/prompts/review.md",
+            "loserPath": "agent/prompts/review.md"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "configured-user-before-auto-user",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "configured-user-before-auto-user",
+      "files": {
+        "agent/custom/SKILL.md": "---\nname: guide\ndescription: Guide\n---\nconfigured",
+        "agent/skills/guide/SKILL.md": "---\nname: guide\ndescription: Guide\n---\nauto"
+      },
+      "skillPaths": [],
+      "promptPaths": [],
+      "links": {},
+      "discover": true,
+      "user": {
+        "skills": [
+          "custom"
+        ]
+      }
+    },
+    "expectedPi": {
+      "id": "configured-user-before-auto-user",
+      "skills": [
+        {
+          "name": "guide",
+          "description": "Guide",
+          "path": "agent/custom/SKILL.md",
+          "body": {
+            "hash": "20158224750041d653cd8c737d64c2fdce258d4280c9bf2a49fa1db0a7f9f3ac",
+            "characters": 10
+          },
+          "sourceInfo": {
+            "path": "agent/custom/SKILL.md",
+            "source": "local",
+            "scope": "user",
+            "origin": "top-level",
+            "baseDir": null
+          }
+        }
+      ],
+      "prompts": [],
+      "skillDiagnostics": [
+        {
+          "type": "collision",
+          "message": "name \"guide\" collision",
+          "path": "agent/skills/guide/SKILL.md",
+          "collision": {
+            "resourceType": "skill",
+            "name": "guide",
+            "winnerPath": "agent/custom/SKILL.md",
+            "loserPath": "agent/skills/guide/SKILL.md"
+          }
+        }
+      ],
+      "promptDiagnostics": []
+    }
+  },
+  {
+    "id": "configured-project-before-project-auto-user-configured",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "configured-project-before-project-auto-user-configured",
+      "files": {
+        "project/.pi/custom/SKILL.md": "---\nname: guide\ndescription: Guide\n---\nproject configured",
+        "project/.pi/skills/guide/SKILL.md": "---\nname: guide\ndescription: Guide\n---\nproject auto",
+        "agent/custom/SKILL.md": "---\nname: guide\ndescription: Guide\n---\nuser configured"
+      },
+      "skillPaths": [],
+      "promptPaths": [],
+      "links": {},
+      "discover": true,
+      "trusted": true,
+      "user": {
+        "skills": [
+          "custom"
+        ]
+      },
+      "project": {
+        "skills": [
+          "custom"
+        ]
+      }
+    },
+    "expectedPi": {
+      "id": "configured-project-before-project-auto-user-configured",
+      "skills": [
+        {
+          "name": "guide",
+          "description": "Guide",
+          "path": "project/.pi/custom/SKILL.md",
+          "body": {
+            "hash": "044fcf9bf233b7f1a625912e3d3b148ec4cafe74a6b4a8edb3a70db9c7772b3d",
+            "characters": 18
+          },
+          "sourceInfo": {
+            "path": "project/.pi/custom/SKILL.md",
+            "source": "local",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": null
+          }
+        }
+      ],
+      "prompts": [],
+      "skillDiagnostics": [
+        {
+          "type": "collision",
+          "message": "name \"guide\" collision",
+          "path": "project/.pi/skills/guide/SKILL.md",
+          "collision": {
+            "resourceType": "skill",
+            "name": "guide",
+            "winnerPath": "project/.pi/custom/SKILL.md",
+            "loserPath": "project/.pi/skills/guide/SKILL.md"
+          }
+        },
+        {
+          "type": "collision",
+          "message": "name \"guide\" collision",
+          "path": "agent/custom/SKILL.md",
+          "collision": {
+            "resourceType": "skill",
+            "name": "guide",
+            "winnerPath": "project/.pi/custom/SKILL.md",
+            "loserPath": "agent/custom/SKILL.md"
+          }
+        }
+      ],
+      "promptDiagnostics": []
+    }
+  },
+  {
+    "id": "explicit-user-file-defaults-disabled",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "explicit-user-file-defaults-disabled",
+      "files": {
+        "agent/skills/guide/SKILL.md": "---\nname: guide\ndescription: Guide\n---\nbody"
+      },
+      "skillPaths": [
+        "agent/skills/guide/SKILL.md"
+      ],
+      "promptPaths": [],
+      "links": {}
+    },
+    "expectedPi": {
+      "id": "explicit-user-file-defaults-disabled",
+      "skills": [
+        {
+          "name": "guide",
+          "description": "Guide",
+          "path": "agent/skills/guide/SKILL.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          },
+          "sourceInfo": {
+            "path": "agent/skills/guide/SKILL.md",
+            "source": "auto",
+            "scope": "user",
+            "origin": "top-level",
+            "baseDir": "agent"
+          }
+        }
+      ],
+      "prompts": [],
+      "skillDiagnostics": [],
+      "promptDiagnostics": []
+    }
+  },
+  {
+    "id": "explicit-untrusted-project-file",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "explicit-untrusted-project-file",
+      "files": {
+        "project/.pi/skills/guide/SKILL.md": "---\nname: guide\ndescription: Guide\n---\nbody"
+      },
+      "skillPaths": [
+        "project/.pi/skills/guide/SKILL.md"
+      ],
+      "promptPaths": [],
+      "links": {}
+    },
+    "expectedPi": {
+      "id": "explicit-untrusted-project-file",
+      "skills": [
+        {
+          "name": "guide",
+          "description": "Guide",
+          "path": "project/.pi/skills/guide/SKILL.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          },
+          "sourceInfo": {
+            "path": "project/.pi/skills/guide/SKILL.md",
+            "source": "local",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "project/.pi/skills/guide"
+          }
+        }
+      ],
+      "prompts": [],
+      "skillDiagnostics": [],
+      "promptDiagnostics": []
+    }
+  },
+  {
+    "id": "configured-defaults-disabled",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "configured-defaults-disabled",
+      "files": {
+        "agent/custom/SKILL.md": "---\nname: configured\ndescription: Guide\n---\nbody",
+        "outside/selected.md": "---\nname: selected\ndescription: Guide\n---\nbody"
+      },
+      "skillPaths": [
+        "outside/selected.md"
+      ],
+      "promptPaths": [],
+      "links": {},
+      "user": {
+        "skills": [
+          "custom"
+        ]
+      }
+    },
+    "expectedPi": {
+      "id": "configured-defaults-disabled",
+      "skills": [
+        {
+          "name": "selected",
+          "description": "Guide",
+          "path": "outside/selected.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          },
+          "sourceInfo": {
+            "path": "outside/selected.md",
+            "source": "local",
+            "scope": "temporary",
+            "origin": "top-level",
+            "baseDir": "outside"
+          }
+        }
+      ],
+      "prompts": [],
+      "skillDiagnostics": [],
+      "promptDiagnostics": []
+    }
+  },
+  {
+    "id": "auto-prompts-filter-hidden-and-ignored",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "auto-prompts-filter-hidden-and-ignored",
+      "files": {
+        "agent/prompts/.hidden.md": "hidden",
+        "agent/prompts/blocked.md": "blocked",
+        "agent/prompts/keep.md": "keep",
+        "agent/prompts/.ignore": "blocked.md\n"
+      },
+      "skillPaths": [],
+      "promptPaths": [],
+      "links": {},
+      "discover": true
+    },
+    "expectedPi": {
+      "id": "auto-prompts-filter-hidden-and-ignored",
+      "skills": [],
+      "prompts": [
+        {
+          "name": "keep",
+          "description": "keep",
+          "path": "agent/prompts/keep.md",
+          "body": {
+            "hash": "6ca7ea2feefc88ecb5ed6356ed963f47dc9137f82526fdd25d618ea626d0803f",
+            "characters": 4
+          },
+          "sourceInfo": {
+            "path": "agent/prompts/keep.md",
+            "source": "auto",
+            "scope": "user",
+            "origin": "top-level",
+            "baseDir": "agent"
+          }
+        }
+      ],
+      "skillDiagnostics": [],
+      "promptDiagnostics": []
+    }
+  },
+  {
+    "id": "configured-prompts-recurse-with-ignore",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "configured-prompts-recurse-with-ignore",
+      "files": {
+        "agent/custom/a.md": "a",
+        "agent/custom/child/b.md": "b",
+        "agent/custom/child/.hidden.md": "hidden",
+        "agent/custom/child/blocked.md": "blocked",
+        "agent/custom/.ignore": "child/blocked.md\n"
+      },
+      "skillPaths": [],
+      "promptPaths": [],
+      "links": {},
+      "discover": true,
+      "user": {
+        "prompts": [
+          "custom"
+        ]
+      }
+    },
+    "expectedPi": {
+      "id": "configured-prompts-recurse-with-ignore",
+      "skills": [],
+      "prompts": [
+        {
+          "name": "a",
+          "description": "a",
+          "path": "agent/custom/a.md",
+          "body": {
+            "hash": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+            "characters": 1
+          },
+          "sourceInfo": {
+            "path": "agent/custom/a.md",
+            "source": "local",
+            "scope": "user",
+            "origin": "top-level",
+            "baseDir": null
+          }
+        },
+        {
+          "name": "b",
+          "description": "b",
+          "path": "agent/custom/child/b.md",
+          "body": {
+            "hash": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
+            "characters": 1
+          },
+          "sourceInfo": {
+            "path": "agent/custom/child/b.md",
+            "source": "local",
+            "scope": "user",
+            "origin": "top-level",
+            "baseDir": null
+          }
+        }
+      ],
+      "skillDiagnostics": [],
+      "promptDiagnostics": []
+    }
+  },
+  {
+    "id": "agents-root-versus-nested-aliases",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "agents-root-versus-nested-aliases",
+      "files": {
+        "project/.agents/skills/root.md": "---\nname: root\ndescription: Guide\n---\nbody",
+        "project/.agents/skills/pack/guide.md": "---\nname: nested\ndescription: Guide\n---\nbody"
+      },
+      "skillPaths": [],
+      "promptPaths": [],
+      "links": {},
+      "discover": true,
+      "trusted": true
+    },
+    "expectedPi": {
+      "id": "agents-root-versus-nested-aliases",
+      "skills": [
+        {
+          "name": "nested",
+          "description": "Guide",
+          "path": "project/.agents/skills/pack/guide.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          },
+          "sourceInfo": {
+            "path": "project/.agents/skills/pack/guide.md",
+            "source": "auto",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "project/.agents"
+          }
+        }
+      ],
+      "prompts": [],
+      "skillDiagnostics": [],
+      "promptDiagnostics": []
+    }
+  },
+  {
+    "id": "unicode-file-order",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "unicode-file-order",
+      "files": {
+        "outside/\ue000.md": "---\nname: bmp\ndescription: Guide\n---\nbody",
+        "outside/\ud800\udc00.md": "---\nname: astral\ndescription: Guide\n---\nbody"
+      },
+      "skillPaths": [
+        "outside"
+      ],
+      "promptPaths": [],
+      "links": {}
+    },
+    "expectedPi": {
+      "id": "unicode-file-order",
+      "skills": [
+        {
+          "name": "bmp",
+          "description": "Guide",
+          "path": "outside/\ue000.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          },
+          "sourceInfo": {
+            "path": "outside/\ue000.md",
+            "source": "local",
+            "scope": "temporary",
+            "origin": "top-level",
+            "baseDir": "outside"
+          }
+        },
+        {
+          "name": "astral",
+          "description": "Guide",
+          "path": "outside/\ud800\udc00.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          },
+          "sourceInfo": {
+            "path": "outside/\ud800\udc00.md",
+            "source": "local",
+            "scope": "temporary",
+            "origin": "top-level",
+            "baseDir": "outside"
+          }
+        }
+      ],
+      "prompts": [],
+      "skillDiagnostics": [],
+      "promptDiagnostics": []
+    }
+  },
+  {
+    "id": "ancestor-agents-stop-at-git-root",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "ancestor-agents-stop-at-git-root",
+      "files": {
+        "project/.agents/skills/pack/guide.md": "---\nname: ancestor\ndescription: Guide\n---\nbody",
+        ".agents/skills/outside/SKILL.md": "---\nname: outside\ndescription: Guide\n---\nbody"
+      },
+      "skillPaths": [],
+      "promptPaths": [],
+      "links": {},
+      "discover": true,
+      "trusted": true,
+      "cwd": "project/sub"
+    },
+    "expectedPi": {
+      "id": "ancestor-agents-stop-at-git-root",
+      "skills": [
+        {
+          "name": "ancestor",
+          "description": "Guide",
+          "path": "project/.agents/skills/pack/guide.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          },
+          "sourceInfo": {
+            "path": "project/.agents/skills/pack/guide.md",
+            "source": "auto",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "project/.agents"
+          }
+        }
+      ],
+      "prompts": [],
+      "skillDiagnostics": [],
+      "promptDiagnostics": []
+    }
+  },
+  {
+    "id": "cli-before-extension-resources",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "cli-before-extension-resources",
+      "files": {
+        "outside/cli.md": "---\nname: guide\ndescription: Guide\n---\ncli",
+        "outside/extension.md": "---\nname: guide\ndescription: Guide\n---\nextension"
+      },
+      "skillPaths": [
+        "outside/cli.md"
+      ],
+      "promptPaths": [],
+      "links": {},
+      "extensionSkillPaths": [
+        "outside/extension.md"
+      ]
+    },
+    "expectedPi": {
+      "id": "cli-before-extension-resources",
+      "skills": [
+        {
+          "name": "guide",
+          "description": "Guide",
+          "path": "outside/cli.md",
+          "body": {
+            "hash": "99bb88401742848e032fd6f51709415fb6be169a72d2e5d7fc44289255160d3c",
+            "characters": 3
+          },
+          "sourceInfo": {
+            "path": "outside/cli.md",
+            "source": "local",
+            "scope": "temporary",
+            "origin": "top-level",
+            "baseDir": "outside"
+          }
+        }
+      ],
+      "prompts": [],
+      "skillDiagnostics": [
+        {
+          "type": "collision",
+          "message": "name \"guide\" collision",
+          "path": "outside/extension.md",
+          "collision": {
+            "resourceType": "skill",
+            "name": "guide",
+            "winnerPath": "outside/cli.md",
+            "loserPath": "outside/extension.md"
+          }
+        }
+      ],
+      "promptDiagnostics": []
+    }
+  },
+  {
+    "id": "extension-overlays-existing-source-info",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "extension-overlays-existing-source-info",
+      "files": {
+        "agent/skills/guide/SKILL.md": "---\nname: guide\ndescription: Guide\n---\nbody"
+      },
+      "skillPaths": [],
+      "promptPaths": [],
+      "links": {},
+      "discover": true,
+      "extensionSkillPaths": [
+        "agent/skills/guide/SKILL.md"
+      ]
+    },
+    "expectedPi": {
+      "id": "extension-overlays-existing-source-info",
+      "skills": [
+        {
+          "name": "guide",
+          "description": "Guide",
+          "path": "agent/skills/guide/SKILL.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          },
+          "sourceInfo": {
+            "path": "agent/skills/guide/SKILL.md",
+            "source": "fixture-extension",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "outside"
+          }
+        }
+      ],
+      "prompts": [],
+      "skillDiagnostics": [],
+      "promptDiagnostics": []
+    }
+  },
+  {
+    "id": "missing-prompt-app-diagnostic",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "missing-prompt-app-diagnostic",
+      "files": {},
+      "skillPaths": [],
+      "promptPaths": [
+        "outside/missing.md"
+      ],
+      "links": {}
+    },
+    "expectedPi": {
+      "id": "missing-prompt-app-diagnostic",
+      "skills": [],
+      "prompts": [],
+      "skillDiagnostics": [],
+      "promptDiagnostics": [
+        {
+          "type": "error",
+          "message": "Prompt template path does not exist",
+          "path": "outside/missing.md",
+          "collision": null
+        }
+      ]
+    }
+  },
+  {
+    "id": "skill-missing-warning-position",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "skill-missing-warning-position",
+      "files": {
+        "outside/a.md": "---\nname: BAD NAME\ndescription: Guide\n---\nbody"
+      },
+      "skillPaths": [
+        "outside/a.md",
+        "outside/missing.md"
+      ],
+      "promptPaths": [],
+      "links": {}
+    },
+    "expectedPi": {
+      "id": "skill-missing-warning-position",
+      "skills": [
+        {
+          "name": "BAD NAME",
+          "description": "Guide",
+          "path": "outside/a.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          },
+          "sourceInfo": {
+            "path": "outside/a.md",
+            "source": "local",
+            "scope": "temporary",
+            "origin": "top-level",
+            "baseDir": "outside"
+          }
+        }
+      ],
+      "prompts": [],
+      "skillDiagnostics": [
+        {
+          "type": "warning",
+          "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+          "path": "outside/a.md",
+          "collision": null
+        },
+        {
+          "type": "warning",
+          "message": "skill path does not exist",
+          "path": "outside/missing.md",
+          "collision": null
+        }
+      ],
+      "promptDiagnostics": []
+    }
+  },
+  {
+    "id": "prompt-missing-after-warnings-collisions",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "prompt-missing-after-warnings-collisions",
+      "files": {
+        "outside/a/review.md": "first",
+        "outside/b/review.md": "second",
+        "outside/c/error.md": "---\ndescription: [broken\n---\nbody"
+      },
+      "skillPaths": [],
+      "promptPaths": [
+        "outside/a/review.md",
+        "outside/b/review.md",
+        "outside/c/error.md",
+        "outside/missing.md"
+      ],
+      "links": {}
+    },
+    "expectedPi": {
+      "id": "prompt-missing-after-warnings-collisions",
+      "skills": [],
+      "prompts": [
+        {
+          "name": "review",
+          "description": "first",
+          "path": "outside/a/review.md",
+          "body": {
+            "hash": "a7937b64b8caa58f03721bb6bacf5c78cb235febe0e70b1b84cd99541461a08e",
+            "characters": 5
+          },
+          "sourceInfo": {
+            "path": "outside/a/review.md",
+            "source": "local",
+            "scope": "temporary",
+            "origin": "top-level",
+            "baseDir": "outside/a"
+          }
+        }
+      ],
+      "skillDiagnostics": [],
+      "promptDiagnostics": [
+        {
+          "type": "warning",
+          "message": "Flow sequence in block collection must be sufficiently indented and end with a ] at line 1, column 21:\n\ndescription: [broken\n                    ^\n",
+          "path": "outside/c/error.md",
+          "collision": null
+        },
+        {
+          "type": "collision",
+          "message": "name \"/review\" collision",
+          "path": "outside/b/review.md",
+          "collision": {
+            "resourceType": "prompt",
+            "name": "review",
+            "winnerPath": "outside/a/review.md",
+            "loserPath": "outside/b/review.md"
+          }
+        },
+        {
+          "type": "error",
+          "message": "Prompt template path does not exist",
+          "path": "outside/missing.md",
+          "collision": null
+        }
+      ]
+    }
+  },
+  {
+    "id": "settings-theme-user",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "settings-theme-user",
+      "files": {
+        "agent/custom-themes/settings.json": "{\"$schema\": \"https://raw.githubusercontent.com/earendil-works/pi/main/packages/coding-agent/src/modes/interactive/theme/theme-schema.json\", \"name\": \"settings-theme\", \"appearance\": \"dark\", \"vars\": {\"text\": \"okhsl(234 3% 89%)\", \"muted\": \"okhsl(229 6% 67%)\", \"violet\": \"okhsl(295 50% 67%)\", \"blue\": \"okhsl(232 54% 67%)\", \"green\": \"okhsl(159 59% 67%)\", \"red\": \"okhsl(20 72% 67%)\", \"yellow\": \"okhsl(83 88% 67%)\", \"blueBg\": \"okhsl(233 41% 24%)\"}, \"colors\": {\"accent\": \"#112233\", \"border\": \"okhsl(231 57% 65%)\", \"borderAccent\": \"okhsl(295 53% 64%)\", \"borderMuted\": \"okhsl(229 8% 53%)\", \"success\": \"green\", \"error\": \"red\", \"warning\": \"yellow\", \"muted\": \"muted\", \"dim\": \"okhsl(229 8% 56%)\", \"text\": \"text\", \"thinkingText\": \"okhsl(226 7% 65%)\", \"selectedBg\": \"blueBg\", \"scrollbarTrack\": \"okhsl(237 7% 33%)\", \"scrollbarThumb\": \"okhsl(232 7% 65%)\", \"searchMatchBg\": \"okhsl(53 51% 24%)\", \"searchMatchText\": \"muted\", \"userMessageBg\": \"blueBg\", \"userMessageText\": \"text\", \"customMessageBg\": \"okhsl(295 42% 24%)\", \"customMessageText\": \"muted\", \"customMessageLabel\": \"violet\", \"toolPendingBg\": \"okhsl(229 5% 24%)\", \"toolSuccessBg\": \"okhsl(158 46% 25%)\", \"toolErrorBg\": \"okhsl(19 54% 25%)\", \"toolTitle\": \"text\", \"toolOutput\": \"muted\", \"mdHeading\": \"yellow\", \"mdLink\": \"blue\", \"mdLinkUrl\": \"muted\", \"mdCode\": \"violet\", \"mdCodeBlock\": \"green\", \"mdCodeBlockBorder\": \"muted\", \"mdQuote\": \"muted\", \"mdQuoteBorder\": \"muted\", \"mdHr\": \"muted\", \"mdListBullet\": \"violet\", \"toolDiffAdded\": \"green\", \"toolDiffRemoved\": \"red\", \"toolDiffContext\": \"muted\", \"syntaxComment\": \"muted\", \"syntaxKeyword\": \"blue\", \"syntaxFunction\": \"yellow\", \"syntaxVariable\": \"okhsl(202 58% 67%)\", \"syntaxString\": \"okhsl(52 67% 67%)\", \"syntaxNumber\": \"green\", \"syntaxType\": \"violet\", \"syntaxOperator\": \"muted\", \"syntaxPunctuation\": \"muted\", \"thinkingOff\": \"okhsl(229 8% 49%)\", \"thinkingMinimal\": \"okhsl(232 20% 52%)\", \"thinkingLow\": \"okhsl(232 45% 54%)\", \"thinkingMedium\": \"okhsl(263 59% 56%)\", \"thinkingHigh\": \"okhsl(295 73% 59%)\", \"thinkingXhigh\": \"okhsl(337 81% 61%)\", \"thinkingMax\": \"okhsl(20 99% 63%)\", \"bashMode\": \"okhsl(159 64% 65%)\"}, \"export\": {\"pageBg\": \"okhsl(262 14% 16%)\", \"cardBg\": \"okhsl(264 13% 19%)\", \"infoBg\": \"okhsl(53 51% 24%)\"}}",
+        "agent/themes/blocked-theme.json": "{\"$schema\": \"https://raw.githubusercontent.com/earendil-works/pi/main/packages/coding-agent/src/modes/interactive/theme/theme-schema.json\", \"name\": \"blocked-user-theme\", \"appearance\": \"dark\", \"vars\": {\"text\": \"okhsl(234 3% 89%)\", \"muted\": \"okhsl(229 6% 67%)\", \"violet\": \"okhsl(295 50% 67%)\", \"blue\": \"okhsl(232 54% 67%)\", \"green\": \"okhsl(159 59% 67%)\", \"red\": \"okhsl(20 72% 67%)\", \"yellow\": \"okhsl(83 88% 67%)\", \"blueBg\": \"okhsl(233 41% 24%)\"}, \"colors\": {\"accent\": \"violet\", \"border\": \"okhsl(231 57% 65%)\", \"borderAccent\": \"okhsl(295 53% 64%)\", \"borderMuted\": \"okhsl(229 8% 53%)\", \"success\": \"green\", \"error\": \"red\", \"warning\": \"yellow\", \"muted\": \"muted\", \"dim\": \"okhsl(229 8% 56%)\", \"text\": \"text\", \"thinkingText\": \"okhsl(226 7% 65%)\", \"selectedBg\": \"blueBg\", \"scrollbarTrack\": \"okhsl(237 7% 33%)\", \"scrollbarThumb\": \"okhsl(232 7% 65%)\", \"searchMatchBg\": \"okhsl(53 51% 24%)\", \"searchMatchText\": \"muted\", \"userMessageBg\": \"blueBg\", \"userMessageText\": \"text\", \"customMessageBg\": \"okhsl(295 42% 24%)\", \"customMessageText\": \"muted\", \"customMessageLabel\": \"violet\", \"toolPendingBg\": \"okhsl(229 5% 24%)\", \"toolSuccessBg\": \"okhsl(158 46% 25%)\", \"toolErrorBg\": \"okhsl(19 54% 25%)\", \"toolTitle\": \"text\", \"toolOutput\": \"muted\", \"mdHeading\": \"yellow\", \"mdLink\": \"blue\", \"mdLinkUrl\": \"muted\", \"mdCode\": \"violet\", \"mdCodeBlock\": \"green\", \"mdCodeBlockBorder\": \"muted\", \"mdQuote\": \"muted\", \"mdQuoteBorder\": \"muted\", \"mdHr\": \"muted\", \"mdListBullet\": \"violet\", \"toolDiffAdded\": \"green\", \"toolDiffRemoved\": \"red\", \"toolDiffContext\": \"muted\", \"syntaxComment\": \"muted\", \"syntaxKeyword\": \"blue\", \"syntaxFunction\": \"yellow\", \"syntaxVariable\": \"okhsl(202 58% 67%)\", \"syntaxString\": \"okhsl(52 67% 67%)\", \"syntaxNumber\": \"green\", \"syntaxType\": \"violet\", \"syntaxOperator\": \"muted\", \"syntaxPunctuation\": \"muted\", \"thinkingOff\": \"okhsl(229 8% 49%)\", \"thinkingMinimal\": \"okhsl(232 20% 52%)\", \"thinkingLow\": \"okhsl(232 45% 54%)\", \"thinkingMedium\": \"okhsl(263 59% 56%)\", \"thinkingHigh\": \"okhsl(295 73% 59%)\", \"thinkingXhigh\": \"okhsl(337 81% 61%)\", \"thinkingMax\": \"okhsl(20 99% 63%)\", \"bashMode\": \"okhsl(159 64% 65%)\"}, \"export\": {\"pageBg\": \"okhsl(262 14% 16%)\", \"cardBg\": \"okhsl(264 13% 19%)\", \"infoBg\": \"okhsl(53 51% 24%)\"}}"
+      },
+      "links": {},
+      "discover": true,
+      "includeThemes": true,
+      "skillPaths": [],
+      "promptPaths": [],
+      "user": {
+        "themes": [
+          "custom-themes",
+          "!themes/blocked-*"
+        ]
+      },
+      "project": {},
+      "trusted": false
+    },
+    "expectedPi": {
+      "id": "settings-theme-user",
+      "themes": [
+        {
+          "name": "settings-theme",
+          "accent": "\u001b[38;2;17;34;51msample\u001b[39m"
+        }
+      ]
+    }
+  },
+  {
+    "id": "settings-theme-project-trusted",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "settings-theme-project-trusted",
+      "files": {
+        "project/.pi/custom-themes/settings.json": "{\"$schema\": \"https://raw.githubusercontent.com/earendil-works/pi/main/packages/coding-agent/src/modes/interactive/theme/theme-schema.json\", \"name\": \"settings-theme\", \"appearance\": \"dark\", \"vars\": {\"text\": \"okhsl(234 3% 89%)\", \"muted\": \"okhsl(229 6% 67%)\", \"violet\": \"okhsl(295 50% 67%)\", \"blue\": \"okhsl(232 54% 67%)\", \"green\": \"okhsl(159 59% 67%)\", \"red\": \"okhsl(20 72% 67%)\", \"yellow\": \"okhsl(83 88% 67%)\", \"blueBg\": \"okhsl(233 41% 24%)\"}, \"colors\": {\"accent\": \"#445566\", \"border\": \"okhsl(231 57% 65%)\", \"borderAccent\": \"okhsl(295 53% 64%)\", \"borderMuted\": \"okhsl(229 8% 53%)\", \"success\": \"green\", \"error\": \"red\", \"warning\": \"yellow\", \"muted\": \"muted\", \"dim\": \"okhsl(229 8% 56%)\", \"text\": \"text\", \"thinkingText\": \"okhsl(226 7% 65%)\", \"selectedBg\": \"blueBg\", \"scrollbarTrack\": \"okhsl(237 7% 33%)\", \"scrollbarThumb\": \"okhsl(232 7% 65%)\", \"searchMatchBg\": \"okhsl(53 51% 24%)\", \"searchMatchText\": \"muted\", \"userMessageBg\": \"blueBg\", \"userMessageText\": \"text\", \"customMessageBg\": \"okhsl(295 42% 24%)\", \"customMessageText\": \"muted\", \"customMessageLabel\": \"violet\", \"toolPendingBg\": \"okhsl(229 5% 24%)\", \"toolSuccessBg\": \"okhsl(158 46% 25%)\", \"toolErrorBg\": \"okhsl(19 54% 25%)\", \"toolTitle\": \"text\", \"toolOutput\": \"muted\", \"mdHeading\": \"yellow\", \"mdLink\": \"blue\", \"mdLinkUrl\": \"muted\", \"mdCode\": \"violet\", \"mdCodeBlock\": \"green\", \"mdCodeBlockBorder\": \"muted\", \"mdQuote\": \"muted\", \"mdQuoteBorder\": \"muted\", \"mdHr\": \"muted\", \"mdListBullet\": \"violet\", \"toolDiffAdded\": \"green\", \"toolDiffRemoved\": \"red\", \"toolDiffContext\": \"muted\", \"syntaxComment\": \"muted\", \"syntaxKeyword\": \"blue\", \"syntaxFunction\": \"yellow\", \"syntaxVariable\": \"okhsl(202 58% 67%)\", \"syntaxString\": \"okhsl(52 67% 67%)\", \"syntaxNumber\": \"green\", \"syntaxType\": \"violet\", \"syntaxOperator\": \"muted\", \"syntaxPunctuation\": \"muted\", \"thinkingOff\": \"okhsl(229 8% 49%)\", \"thinkingMinimal\": \"okhsl(232 20% 52%)\", \"thinkingLow\": \"okhsl(232 45% 54%)\", \"thinkingMedium\": \"okhsl(263 59% 56%)\", \"thinkingHigh\": \"okhsl(295 73% 59%)\", \"thinkingXhigh\": \"okhsl(337 81% 61%)\", \"thinkingMax\": \"okhsl(20 99% 63%)\", \"bashMode\": \"okhsl(159 64% 65%)\"}, \"export\": {\"pageBg\": \"okhsl(262 14% 16%)\", \"cardBg\": \"okhsl(264 13% 19%)\", \"infoBg\": \"okhsl(53 51% 24%)\"}}",
+        "project/.pi/themes/blocked-theme.json": "{\"$schema\": \"https://raw.githubusercontent.com/earendil-works/pi/main/packages/coding-agent/src/modes/interactive/theme/theme-schema.json\", \"name\": \"blocked-project-theme\", \"appearance\": \"dark\", \"vars\": {\"text\": \"okhsl(234 3% 89%)\", \"muted\": \"okhsl(229 6% 67%)\", \"violet\": \"okhsl(295 50% 67%)\", \"blue\": \"okhsl(232 54% 67%)\", \"green\": \"okhsl(159 59% 67%)\", \"red\": \"okhsl(20 72% 67%)\", \"yellow\": \"okhsl(83 88% 67%)\", \"blueBg\": \"okhsl(233 41% 24%)\"}, \"colors\": {\"accent\": \"violet\", \"border\": \"okhsl(231 57% 65%)\", \"borderAccent\": \"okhsl(295 53% 64%)\", \"borderMuted\": \"okhsl(229 8% 53%)\", \"success\": \"green\", \"error\": \"red\", \"warning\": \"yellow\", \"muted\": \"muted\", \"dim\": \"okhsl(229 8% 56%)\", \"text\": \"text\", \"thinkingText\": \"okhsl(226 7% 65%)\", \"selectedBg\": \"blueBg\", \"scrollbarTrack\": \"okhsl(237 7% 33%)\", \"scrollbarThumb\": \"okhsl(232 7% 65%)\", \"searchMatchBg\": \"okhsl(53 51% 24%)\", \"searchMatchText\": \"muted\", \"userMessageBg\": \"blueBg\", \"userMessageText\": \"text\", \"customMessageBg\": \"okhsl(295 42% 24%)\", \"customMessageText\": \"muted\", \"customMessageLabel\": \"violet\", \"toolPendingBg\": \"okhsl(229 5% 24%)\", \"toolSuccessBg\": \"okhsl(158 46% 25%)\", \"toolErrorBg\": \"okhsl(19 54% 25%)\", \"toolTitle\": \"text\", \"toolOutput\": \"muted\", \"mdHeading\": \"yellow\", \"mdLink\": \"blue\", \"mdLinkUrl\": \"muted\", \"mdCode\": \"violet\", \"mdCodeBlock\": \"green\", \"mdCodeBlockBorder\": \"muted\", \"mdQuote\": \"muted\", \"mdQuoteBorder\": \"muted\", \"mdHr\": \"muted\", \"mdListBullet\": \"violet\", \"toolDiffAdded\": \"green\", \"toolDiffRemoved\": \"red\", \"toolDiffContext\": \"muted\", \"syntaxComment\": \"muted\", \"syntaxKeyword\": \"blue\", \"syntaxFunction\": \"yellow\", \"syntaxVariable\": \"okhsl(202 58% 67%)\", \"syntaxString\": \"okhsl(52 67% 67%)\", \"syntaxNumber\": \"green\", \"syntaxType\": \"violet\", \"syntaxOperator\": \"muted\", \"syntaxPunctuation\": \"muted\", \"thinkingOff\": \"okhsl(229 8% 49%)\", \"thinkingMinimal\": \"okhsl(232 20% 52%)\", \"thinkingLow\": \"okhsl(232 45% 54%)\", \"thinkingMedium\": \"okhsl(263 59% 56%)\", \"thinkingHigh\": \"okhsl(295 73% 59%)\", \"thinkingXhigh\": \"okhsl(337 81% 61%)\", \"thinkingMax\": \"okhsl(20 99% 63%)\", \"bashMode\": \"okhsl(159 64% 65%)\"}, \"export\": {\"pageBg\": \"okhsl(262 14% 16%)\", \"cardBg\": \"okhsl(264 13% 19%)\", \"infoBg\": \"okhsl(53 51% 24%)\"}}"
+      },
+      "links": {},
+      "discover": true,
+      "includeThemes": true,
+      "skillPaths": [],
+      "promptPaths": [],
+      "user": {},
+      "project": {
+        "themes": [
+          "custom-themes",
+          "!themes/blocked-*"
+        ]
+      },
+      "trusted": true
+    },
+    "expectedPi": {
+      "id": "settings-theme-project-trusted",
+      "themes": [
+        {
+          "name": "settings-theme",
+          "accent": "\u001b[38;2;68;85;102msample\u001b[39m"
+        }
+      ]
+    }
+  },
+  {
+    "id": "settings-theme-project-untrusted",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "settings-theme-project-untrusted",
+      "files": {
+        "project/.pi/custom-themes/settings.json": "{\"$schema\": \"https://raw.githubusercontent.com/earendil-works/pi/main/packages/coding-agent/src/modes/interactive/theme/theme-schema.json\", \"name\": \"settings-theme\", \"appearance\": \"dark\", \"vars\": {\"text\": \"okhsl(234 3% 89%)\", \"muted\": \"okhsl(229 6% 67%)\", \"violet\": \"okhsl(295 50% 67%)\", \"blue\": \"okhsl(232 54% 67%)\", \"green\": \"okhsl(159 59% 67%)\", \"red\": \"okhsl(20 72% 67%)\", \"yellow\": \"okhsl(83 88% 67%)\", \"blueBg\": \"okhsl(233 41% 24%)\"}, \"colors\": {\"accent\": \"#445566\", \"border\": \"okhsl(231 57% 65%)\", \"borderAccent\": \"okhsl(295 53% 64%)\", \"borderMuted\": \"okhsl(229 8% 53%)\", \"success\": \"green\", \"error\": \"red\", \"warning\": \"yellow\", \"muted\": \"muted\", \"dim\": \"okhsl(229 8% 56%)\", \"text\": \"text\", \"thinkingText\": \"okhsl(226 7% 65%)\", \"selectedBg\": \"blueBg\", \"scrollbarTrack\": \"okhsl(237 7% 33%)\", \"scrollbarThumb\": \"okhsl(232 7% 65%)\", \"searchMatchBg\": \"okhsl(53 51% 24%)\", \"searchMatchText\": \"muted\", \"userMessageBg\": \"blueBg\", \"userMessageText\": \"text\", \"customMessageBg\": \"okhsl(295 42% 24%)\", \"customMessageText\": \"muted\", \"customMessageLabel\": \"violet\", \"toolPendingBg\": \"okhsl(229 5% 24%)\", \"toolSuccessBg\": \"okhsl(158 46% 25%)\", \"toolErrorBg\": \"okhsl(19 54% 25%)\", \"toolTitle\": \"text\", \"toolOutput\": \"muted\", \"mdHeading\": \"yellow\", \"mdLink\": \"blue\", \"mdLinkUrl\": \"muted\", \"mdCode\": \"violet\", \"mdCodeBlock\": \"green\", \"mdCodeBlockBorder\": \"muted\", \"mdQuote\": \"muted\", \"mdQuoteBorder\": \"muted\", \"mdHr\": \"muted\", \"mdListBullet\": \"violet\", \"toolDiffAdded\": \"green\", \"toolDiffRemoved\": \"red\", \"toolDiffContext\": \"muted\", \"syntaxComment\": \"muted\", \"syntaxKeyword\": \"blue\", \"syntaxFunction\": \"yellow\", \"syntaxVariable\": \"okhsl(202 58% 67%)\", \"syntaxString\": \"okhsl(52 67% 67%)\", \"syntaxNumber\": \"green\", \"syntaxType\": \"violet\", \"syntaxOperator\": \"muted\", \"syntaxPunctuation\": \"muted\", \"thinkingOff\": \"okhsl(229 8% 49%)\", \"thinkingMinimal\": \"okhsl(232 20% 52%)\", \"thinkingLow\": \"okhsl(232 45% 54%)\", \"thinkingMedium\": \"okhsl(263 59% 56%)\", \"thinkingHigh\": \"okhsl(295 73% 59%)\", \"thinkingXhigh\": \"okhsl(337 81% 61%)\", \"thinkingMax\": \"okhsl(20 99% 63%)\", \"bashMode\": \"okhsl(159 64% 65%)\"}, \"export\": {\"pageBg\": \"okhsl(262 14% 16%)\", \"cardBg\": \"okhsl(264 13% 19%)\", \"infoBg\": \"okhsl(53 51% 24%)\"}}",
+        "project/.pi/themes/blocked-theme.json": "{\"$schema\": \"https://raw.githubusercontent.com/earendil-works/pi/main/packages/coding-agent/src/modes/interactive/theme/theme-schema.json\", \"name\": \"blocked-project-theme\", \"appearance\": \"dark\", \"vars\": {\"text\": \"okhsl(234 3% 89%)\", \"muted\": \"okhsl(229 6% 67%)\", \"violet\": \"okhsl(295 50% 67%)\", \"blue\": \"okhsl(232 54% 67%)\", \"green\": \"okhsl(159 59% 67%)\", \"red\": \"okhsl(20 72% 67%)\", \"yellow\": \"okhsl(83 88% 67%)\", \"blueBg\": \"okhsl(233 41% 24%)\"}, \"colors\": {\"accent\": \"violet\", \"border\": \"okhsl(231 57% 65%)\", \"borderAccent\": \"okhsl(295 53% 64%)\", \"borderMuted\": \"okhsl(229 8% 53%)\", \"success\": \"green\", \"error\": \"red\", \"warning\": \"yellow\", \"muted\": \"muted\", \"dim\": \"okhsl(229 8% 56%)\", \"text\": \"text\", \"thinkingText\": \"okhsl(226 7% 65%)\", \"selectedBg\": \"blueBg\", \"scrollbarTrack\": \"okhsl(237 7% 33%)\", \"scrollbarThumb\": \"okhsl(232 7% 65%)\", \"searchMatchBg\": \"okhsl(53 51% 24%)\", \"searchMatchText\": \"muted\", \"userMessageBg\": \"blueBg\", \"userMessageText\": \"text\", \"customMessageBg\": \"okhsl(295 42% 24%)\", \"customMessageText\": \"muted\", \"customMessageLabel\": \"violet\", \"toolPendingBg\": \"okhsl(229 5% 24%)\", \"toolSuccessBg\": \"okhsl(158 46% 25%)\", \"toolErrorBg\": \"okhsl(19 54% 25%)\", \"toolTitle\": \"text\", \"toolOutput\": \"muted\", \"mdHeading\": \"yellow\", \"mdLink\": \"blue\", \"mdLinkUrl\": \"muted\", \"mdCode\": \"violet\", \"mdCodeBlock\": \"green\", \"mdCodeBlockBorder\": \"muted\", \"mdQuote\": \"muted\", \"mdQuoteBorder\": \"muted\", \"mdHr\": \"muted\", \"mdListBullet\": \"violet\", \"toolDiffAdded\": \"green\", \"toolDiffRemoved\": \"red\", \"toolDiffContext\": \"muted\", \"syntaxComment\": \"muted\", \"syntaxKeyword\": \"blue\", \"syntaxFunction\": \"yellow\", \"syntaxVariable\": \"okhsl(202 58% 67%)\", \"syntaxString\": \"okhsl(52 67% 67%)\", \"syntaxNumber\": \"green\", \"syntaxType\": \"violet\", \"syntaxOperator\": \"muted\", \"syntaxPunctuation\": \"muted\", \"thinkingOff\": \"okhsl(229 8% 49%)\", \"thinkingMinimal\": \"okhsl(232 20% 52%)\", \"thinkingLow\": \"okhsl(232 45% 54%)\", \"thinkingMedium\": \"okhsl(263 59% 56%)\", \"thinkingHigh\": \"okhsl(295 73% 59%)\", \"thinkingXhigh\": \"okhsl(337 81% 61%)\", \"thinkingMax\": \"okhsl(20 99% 63%)\", \"bashMode\": \"okhsl(159 64% 65%)\"}, \"export\": {\"pageBg\": \"okhsl(262 14% 16%)\", \"cardBg\": \"okhsl(264 13% 19%)\", \"infoBg\": \"okhsl(53 51% 24%)\"}}"
+      },
+      "links": {},
+      "discover": true,
+      "includeThemes": true,
+      "skillPaths": [],
+      "promptPaths": [],
+      "user": {},
+      "project": {
+        "themes": [
+          "custom-themes",
+          "!themes/blocked-*"
+        ]
+      },
+      "trusted": false
+    },
+    "expectedPi": {
+      "id": "settings-theme-project-untrusted",
+      "themes": []
+    }
+  },
+  {
+    "id": "settings-theme-combined",
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:553-586",
+    "input": {
+      "id": "settings-theme-combined",
+      "files": {
+        "agent/custom-themes/settings.json": "{\"$schema\": \"https://raw.githubusercontent.com/earendil-works/pi/main/packages/coding-agent/src/modes/interactive/theme/theme-schema.json\", \"name\": \"settings-theme\", \"appearance\": \"dark\", \"vars\": {\"text\": \"okhsl(234 3% 89%)\", \"muted\": \"okhsl(229 6% 67%)\", \"violet\": \"okhsl(295 50% 67%)\", \"blue\": \"okhsl(232 54% 67%)\", \"green\": \"okhsl(159 59% 67%)\", \"red\": \"okhsl(20 72% 67%)\", \"yellow\": \"okhsl(83 88% 67%)\", \"blueBg\": \"okhsl(233 41% 24%)\"}, \"colors\": {\"accent\": \"#112233\", \"border\": \"okhsl(231 57% 65%)\", \"borderAccent\": \"okhsl(295 53% 64%)\", \"borderMuted\": \"okhsl(229 8% 53%)\", \"success\": \"green\", \"error\": \"red\", \"warning\": \"yellow\", \"muted\": \"muted\", \"dim\": \"okhsl(229 8% 56%)\", \"text\": \"text\", \"thinkingText\": \"okhsl(226 7% 65%)\", \"selectedBg\": \"blueBg\", \"scrollbarTrack\": \"okhsl(237 7% 33%)\", \"scrollbarThumb\": \"okhsl(232 7% 65%)\", \"searchMatchBg\": \"okhsl(53 51% 24%)\", \"searchMatchText\": \"muted\", \"userMessageBg\": \"blueBg\", \"userMessageText\": \"text\", \"customMessageBg\": \"okhsl(295 42% 24%)\", \"customMessageText\": \"muted\", \"customMessageLabel\": \"violet\", \"toolPendingBg\": \"okhsl(229 5% 24%)\", \"toolSuccessBg\": \"okhsl(158 46% 25%)\", \"toolErrorBg\": \"okhsl(19 54% 25%)\", \"toolTitle\": \"text\", \"toolOutput\": \"muted\", \"mdHeading\": \"yellow\", \"mdLink\": \"blue\", \"mdLinkUrl\": \"muted\", \"mdCode\": \"violet\", \"mdCodeBlock\": \"green\", \"mdCodeBlockBorder\": \"muted\", \"mdQuote\": \"muted\", \"mdQuoteBorder\": \"muted\", \"mdHr\": \"muted\", \"mdListBullet\": \"violet\", \"toolDiffAdded\": \"green\", \"toolDiffRemoved\": \"red\", \"toolDiffContext\": \"muted\", \"syntaxComment\": \"muted\", \"syntaxKeyword\": \"blue\", \"syntaxFunction\": \"yellow\", \"syntaxVariable\": \"okhsl(202 58% 67%)\", \"syntaxString\": \"okhsl(52 67% 67%)\", \"syntaxNumber\": \"green\", \"syntaxType\": \"violet\", \"syntaxOperator\": \"muted\", \"syntaxPunctuation\": \"muted\", \"thinkingOff\": \"okhsl(229 8% 49%)\", \"thinkingMinimal\": \"okhsl(232 20% 52%)\", \"thinkingLow\": \"okhsl(232 45% 54%)\", \"thinkingMedium\": \"okhsl(263 59% 56%)\", \"thinkingHigh\": \"okhsl(295 73% 59%)\", \"thinkingXhigh\": \"okhsl(337 81% 61%)\", \"thinkingMax\": \"okhsl(20 99% 63%)\", \"bashMode\": \"okhsl(159 64% 65%)\"}, \"export\": {\"pageBg\": \"okhsl(262 14% 16%)\", \"cardBg\": \"okhsl(264 13% 19%)\", \"infoBg\": \"okhsl(53 51% 24%)\"}}",
+        "agent/themes/blocked-theme.json": "{\"$schema\": \"https://raw.githubusercontent.com/earendil-works/pi/main/packages/coding-agent/src/modes/interactive/theme/theme-schema.json\", \"name\": \"blocked-user-theme\", \"appearance\": \"dark\", \"vars\": {\"text\": \"okhsl(234 3% 89%)\", \"muted\": \"okhsl(229 6% 67%)\", \"violet\": \"okhsl(295 50% 67%)\", \"blue\": \"okhsl(232 54% 67%)\", \"green\": \"okhsl(159 59% 67%)\", \"red\": \"okhsl(20 72% 67%)\", \"yellow\": \"okhsl(83 88% 67%)\", \"blueBg\": \"okhsl(233 41% 24%)\"}, \"colors\": {\"accent\": \"violet\", \"border\": \"okhsl(231 57% 65%)\", \"borderAccent\": \"okhsl(295 53% 64%)\", \"borderMuted\": \"okhsl(229 8% 53%)\", \"success\": \"green\", \"error\": \"red\", \"warning\": \"yellow\", \"muted\": \"muted\", \"dim\": \"okhsl(229 8% 56%)\", \"text\": \"text\", \"thinkingText\": \"okhsl(226 7% 65%)\", \"selectedBg\": \"blueBg\", \"scrollbarTrack\": \"okhsl(237 7% 33%)\", \"scrollbarThumb\": \"okhsl(232 7% 65%)\", \"searchMatchBg\": \"okhsl(53 51% 24%)\", \"searchMatchText\": \"muted\", \"userMessageBg\": \"blueBg\", \"userMessageText\": \"text\", \"customMessageBg\": \"okhsl(295 42% 24%)\", \"customMessageText\": \"muted\", \"customMessageLabel\": \"violet\", \"toolPendingBg\": \"okhsl(229 5% 24%)\", \"toolSuccessBg\": \"okhsl(158 46% 25%)\", \"toolErrorBg\": \"okhsl(19 54% 25%)\", \"toolTitle\": \"text\", \"toolOutput\": \"muted\", \"mdHeading\": \"yellow\", \"mdLink\": \"blue\", \"mdLinkUrl\": \"muted\", \"mdCode\": \"violet\", \"mdCodeBlock\": \"green\", \"mdCodeBlockBorder\": \"muted\", \"mdQuote\": \"muted\", \"mdQuoteBorder\": \"muted\", \"mdHr\": \"muted\", \"mdListBullet\": \"violet\", \"toolDiffAdded\": \"green\", \"toolDiffRemoved\": \"red\", \"toolDiffContext\": \"muted\", \"syntaxComment\": \"muted\", \"syntaxKeyword\": \"blue\", \"syntaxFunction\": \"yellow\", \"syntaxVariable\": \"okhsl(202 58% 67%)\", \"syntaxString\": \"okhsl(52 67% 67%)\", \"syntaxNumber\": \"green\", \"syntaxType\": \"violet\", \"syntaxOperator\": \"muted\", \"syntaxPunctuation\": \"muted\", \"thinkingOff\": \"okhsl(229 8% 49%)\", \"thinkingMinimal\": \"okhsl(232 20% 52%)\", \"thinkingLow\": \"okhsl(232 45% 54%)\", \"thinkingMedium\": \"okhsl(263 59% 56%)\", \"thinkingHigh\": \"okhsl(295 73% 59%)\", \"thinkingXhigh\": \"okhsl(337 81% 61%)\", \"thinkingMax\": \"okhsl(20 99% 63%)\", \"bashMode\": \"okhsl(159 64% 65%)\"}, \"export\": {\"pageBg\": \"okhsl(262 14% 16%)\", \"cardBg\": \"okhsl(264 13% 19%)\", \"infoBg\": \"okhsl(53 51% 24%)\"}}",
+        "project/.pi/custom-themes/settings.json": "{\"$schema\": \"https://raw.githubusercontent.com/earendil-works/pi/main/packages/coding-agent/src/modes/interactive/theme/theme-schema.json\", \"name\": \"settings-theme\", \"appearance\": \"dark\", \"vars\": {\"text\": \"okhsl(234 3% 89%)\", \"muted\": \"okhsl(229 6% 67%)\", \"violet\": \"okhsl(295 50% 67%)\", \"blue\": \"okhsl(232 54% 67%)\", \"green\": \"okhsl(159 59% 67%)\", \"red\": \"okhsl(20 72% 67%)\", \"yellow\": \"okhsl(83 88% 67%)\", \"blueBg\": \"okhsl(233 41% 24%)\"}, \"colors\": {\"accent\": \"#445566\", \"border\": \"okhsl(231 57% 65%)\", \"borderAccent\": \"okhsl(295 53% 64%)\", \"borderMuted\": \"okhsl(229 8% 53%)\", \"success\": \"green\", \"error\": \"red\", \"warning\": \"yellow\", \"muted\": \"muted\", \"dim\": \"okhsl(229 8% 56%)\", \"text\": \"text\", \"thinkingText\": \"okhsl(226 7% 65%)\", \"selectedBg\": \"blueBg\", \"scrollbarTrack\": \"okhsl(237 7% 33%)\", \"scrollbarThumb\": \"okhsl(232 7% 65%)\", \"searchMatchBg\": \"okhsl(53 51% 24%)\", \"searchMatchText\": \"muted\", \"userMessageBg\": \"blueBg\", \"userMessageText\": \"text\", \"customMessageBg\": \"okhsl(295 42% 24%)\", \"customMessageText\": \"muted\", \"customMessageLabel\": \"violet\", \"toolPendingBg\": \"okhsl(229 5% 24%)\", \"toolSuccessBg\": \"okhsl(158 46% 25%)\", \"toolErrorBg\": \"okhsl(19 54% 25%)\", \"toolTitle\": \"text\", \"toolOutput\": \"muted\", \"mdHeading\": \"yellow\", \"mdLink\": \"blue\", \"mdLinkUrl\": \"muted\", \"mdCode\": \"violet\", \"mdCodeBlock\": \"green\", \"mdCodeBlockBorder\": \"muted\", \"mdQuote\": \"muted\", \"mdQuoteBorder\": \"muted\", \"mdHr\": \"muted\", \"mdListBullet\": \"violet\", \"toolDiffAdded\": \"green\", \"toolDiffRemoved\": \"red\", \"toolDiffContext\": \"muted\", \"syntaxComment\": \"muted\", \"syntaxKeyword\": \"blue\", \"syntaxFunction\": \"yellow\", \"syntaxVariable\": \"okhsl(202 58% 67%)\", \"syntaxString\": \"okhsl(52 67% 67%)\", \"syntaxNumber\": \"green\", \"syntaxType\": \"violet\", \"syntaxOperator\": \"muted\", \"syntaxPunctuation\": \"muted\", \"thinkingOff\": \"okhsl(229 8% 49%)\", \"thinkingMinimal\": \"okhsl(232 20% 52%)\", \"thinkingLow\": \"okhsl(232 45% 54%)\", \"thinkingMedium\": \"okhsl(263 59% 56%)\", \"thinkingHigh\": \"okhsl(295 73% 59%)\", \"thinkingXhigh\": \"okhsl(337 81% 61%)\", \"thinkingMax\": \"okhsl(20 99% 63%)\", \"bashMode\": \"okhsl(159 64% 65%)\"}, \"export\": {\"pageBg\": \"okhsl(262 14% 16%)\", \"cardBg\": \"okhsl(264 13% 19%)\", \"infoBg\": \"okhsl(53 51% 24%)\"}}",
+        "project/.pi/themes/blocked-theme.json": "{\"$schema\": \"https://raw.githubusercontent.com/earendil-works/pi/main/packages/coding-agent/src/modes/interactive/theme/theme-schema.json\", \"name\": \"blocked-project-theme\", \"appearance\": \"dark\", \"vars\": {\"text\": \"okhsl(234 3% 89%)\", \"muted\": \"okhsl(229 6% 67%)\", \"violet\": \"okhsl(295 50% 67%)\", \"blue\": \"okhsl(232 54% 67%)\", \"green\": \"okhsl(159 59% 67%)\", \"red\": \"okhsl(20 72% 67%)\", \"yellow\": \"okhsl(83 88% 67%)\", \"blueBg\": \"okhsl(233 41% 24%)\"}, \"colors\": {\"accent\": \"violet\", \"border\": \"okhsl(231 57% 65%)\", \"borderAccent\": \"okhsl(295 53% 64%)\", \"borderMuted\": \"okhsl(229 8% 53%)\", \"success\": \"green\", \"error\": \"red\", \"warning\": \"yellow\", \"muted\": \"muted\", \"dim\": \"okhsl(229 8% 56%)\", \"text\": \"text\", \"thinkingText\": \"okhsl(226 7% 65%)\", \"selectedBg\": \"blueBg\", \"scrollbarTrack\": \"okhsl(237 7% 33%)\", \"scrollbarThumb\": \"okhsl(232 7% 65%)\", \"searchMatchBg\": \"okhsl(53 51% 24%)\", \"searchMatchText\": \"muted\", \"userMessageBg\": \"blueBg\", \"userMessageText\": \"text\", \"customMessageBg\": \"okhsl(295 42% 24%)\", \"customMessageText\": \"muted\", \"customMessageLabel\": \"violet\", \"toolPendingBg\": \"okhsl(229 5% 24%)\", \"toolSuccessBg\": \"okhsl(158 46% 25%)\", \"toolErrorBg\": \"okhsl(19 54% 25%)\", \"toolTitle\": \"text\", \"toolOutput\": \"muted\", \"mdHeading\": \"yellow\", \"mdLink\": \"blue\", \"mdLinkUrl\": \"muted\", \"mdCode\": \"violet\", \"mdCodeBlock\": \"green\", \"mdCodeBlockBorder\": \"muted\", \"mdQuote\": \"muted\", \"mdQuoteBorder\": \"muted\", \"mdHr\": \"muted\", \"mdListBullet\": \"violet\", \"toolDiffAdded\": \"green\", \"toolDiffRemoved\": \"red\", \"toolDiffContext\": \"muted\", \"syntaxComment\": \"muted\", \"syntaxKeyword\": \"blue\", \"syntaxFunction\": \"yellow\", \"syntaxVariable\": \"okhsl(202 58% 67%)\", \"syntaxString\": \"okhsl(52 67% 67%)\", \"syntaxNumber\": \"green\", \"syntaxType\": \"violet\", \"syntaxOperator\": \"muted\", \"syntaxPunctuation\": \"muted\", \"thinkingOff\": \"okhsl(229 8% 49%)\", \"thinkingMinimal\": \"okhsl(232 20% 52%)\", \"thinkingLow\": \"okhsl(232 45% 54%)\", \"thinkingMedium\": \"okhsl(263 59% 56%)\", \"thinkingHigh\": \"okhsl(295 73% 59%)\", \"thinkingXhigh\": \"okhsl(337 81% 61%)\", \"thinkingMax\": \"okhsl(20 99% 63%)\", \"bashMode\": \"okhsl(159 64% 65%)\"}, \"export\": {\"pageBg\": \"okhsl(262 14% 16%)\", \"cardBg\": \"okhsl(264 13% 19%)\", \"infoBg\": \"okhsl(53 51% 24%)\"}}"
+      },
+      "links": {},
+      "discover": true,
+      "includeThemes": true,
+      "skillPaths": [],
+      "promptPaths": [],
+      "user": {
+        "themes": [
+          "custom-themes",
+          "!themes/blocked-*"
+        ]
+      },
+      "project": {
+        "themes": [
+          "custom-themes",
+          "!themes/blocked-*"
+        ]
+      },
+      "trusted": true
+    },
+    "expectedPi": {
+      "id": "settings-theme-combined",
+      "themes": [
+        {
+          "name": "settings-theme",
+          "accent": "\u001b[38;2;68;85;102msample\u001b[39m"
+        }
+      ]
+    }
+  }
+]

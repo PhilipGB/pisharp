@@ -596,5 +596,114 @@
     "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-750",
     "baseDirectory": "$HOME/resource-glob-contract",
     "expectedPi": true
+  },
+  {
+    "id": "P1-prompt-basename-candidate",
+    "path": "prompts/nested/review.md",
+    "pattern": "review.md",
+    "resourceType": "prompts",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "P1-theme-absolute-candidate",
+    "path": "themes/custom.json",
+    "pattern": "$BASE/themes/custom.json",
+    "resourceType": "themes",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "P1-extension-relative-candidate",
+    "path": "extensions/plugin.dll",
+    "pattern": "extensions/plugin.dll",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "P1-skill-declaration-file-candidate",
+    "path": "skills/guide/SKILL.md",
+    "pattern": "SKILL.md",
+    "resourceType": "skills",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "P2-skill-parent-basename-candidate",
+    "path": "skills/guide/SKILL.md",
+    "pattern": "guide",
+    "resourceType": "skills",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "P1-force-exclude-absolute-candidate",
+    "path": "extensions/plugin.dll",
+    "resourceType": "extensions",
+    "overrides": [
+      "-~/resource-glob-contract/extensions/plugin.dll"
+    ],
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:695-750",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": false
+  },
+  {
+    "id": "P1-force-exclude-basename-is-not-exact",
+    "path": "extensions/plugin.dll",
+    "resourceType": "extensions",
+    "overrides": [
+      "-plugin.dll"
+    ],
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:695-750",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "P1-dot-relative-glob-normalization",
+    "path": "extensions/plugin.dll",
+    "resourceType": "extensions",
+    "overrides": [
+      "!./extensions/plugin.dll"
+    ],
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-750",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "P1-home-tilde-glob-exclusion",
+    "path": "extensions/plugin.dll",
+    "resourceType": "extensions",
+    "overrides": [
+      "!~/resource-glob-contract/extensions/plugin.dll"
+    ],
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-750",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": false
+  },
+  {
+    "id": "P1-file-url-pattern-normalization",
+    "path": "extensions/plugin.dll",
+    "pattern": "file://$BASE/extensions/plugin.dll",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-750",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "P1-file-url-exact-force-exclude",
+    "path": "extensions/plugin.dll",
+    "resourceType": "extensions",
+    "overrides": [
+      "-file://$BASE/extensions/plugin.dll"
+    ],
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:695-750",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": false
   }
 ]

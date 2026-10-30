@@ -302,7 +302,7 @@
         "status": "pending_external_publication_receipt"
       }
     ],
-    "progress_policy": "Fixed twenty mission checkpoints. A–R are complete at this repository receipt; later S/T state, final head and CI are authoritative in PR #22 description. Do not report a later reduced completed count from this frozen snapshot.",
+    "progress_policy": "Fixed twenty mission checkpoints. A\u2013R are complete at this repository receipt; later S/T state, final head and CI are authoritative in PR #22 description. Do not report a later reduced completed count from this frozen snapshot.",
     "required_differential": {
       "minimum_cases": 70,
       "minimum_per_tool": 10,
@@ -670,7 +670,7 @@
           "strict": true
         },
         "receipt": "docs/parity/fixtures/builtin-coding-tool-read-acceptance-2026-10-22.json",
-        "remaining_cross_cutting": "M–P integration, cancellation, concurrency and reliability gates remain open."
+        "remaining_cross_cutting": "M\u2013P integration, cancellation, concurrency and reliability gates remain open."
       }
     },
     "write_contract": {
@@ -683,7 +683,7 @@
       "related_passed_after": 52,
       "pinned_regressions": "docs/parity/fixtures/builtin-coding-tool-write-regressions-2026-10-22.json",
       "legacy_permission_receipt": "docs/parity/fixtures/builtin-coding-tool-write-permission-2026-10-22.json",
-      "status": "supported checkpoint verified with explicit safety exclusions; M–P acceptance pending",
+      "status": "supported checkpoint verified with explicit safety exclusions; M\u2013P acceptance pending",
       "safety_candidates": [
         "private new-file modes",
         "atomic replacement and inode identity",
@@ -732,7 +732,7 @@
       "pre_fix_total": 67,
       "related_passed_after": 332,
       "pinned_fixture": "docs/parity/fixtures/builtin-coding-tool-edit-results-2026-10-22.json",
-      "status": "supported checkpoint verified with explicit safety exclusions; shared M–P acceptance pending",
+      "status": "supported checkpoint verified with explicit safety exclusions; shared M\u2013P acceptance pending",
       "first_correction_source": "2250b589",
       "first_correction_strict_passed": 30,
       "first_correction_total": 68,
@@ -8757,7 +8757,7 @@
       ],
       "evidence": [
         "Current Pi pins @modelcontextprotocol/conformance@0.2.0-alpha.11 and runs modes 2025-03-26, 2025-06-18 and 2025-11-25. Its runner compares each check against a committed baseline. PiSharp has no equivalent harness or baseline yet.",
-        "At current Pi 4270522473e677ddba7b093caa0064a3df51d459, reran packages/coding-agent/test/mcp-conformance/run.ts against @modelcontextprotocol/conformance@0.2.0-alpha.11. All 26 scenarios across protocol versions 2025-03-26, 2025-06-18 and 2025-11-25 match Pi’s committed baseline: 261 checks pass and the same eight checks fail in the three documented cases (six elicitation defaults, CIMD client-id use, and the deliberate three-sign-in limit). PiSharp’s equivalent runner and baseline remain to be implemented and classified.",
+        "At current Pi 4270522473e677ddba7b093caa0064a3df51d459, reran packages/coding-agent/test/mcp-conformance/run.ts against @modelcontextprotocol/conformance@0.2.0-alpha.11. All 26 scenarios across protocol versions 2025-03-26, 2025-06-18 and 2025-11-25 match Pi\u2019s committed baseline: 261 checks pass and the same eight checks fail in the three documented cases (six elicitation defaults, CIMD client-id use, and the deliberate three-sign-in limit). PiSharp\u2019s equivalent runner and baseline remain to be implemented and classified.",
         "PiSharp candidate based on 10ce13a3: the executable official-suite harness drives production McpRuntime, real registered tools and the OAuth loopback callback. Full run against @modelcontextprotocol/conformance@0.2.0-alpha.11 matches current Pi 4270522473e677ddba7b093caa0064a3df51d459 across all 26 scenarios and three protocol modes: 261 checks pass and the same eight known checks fail, each classified. The run verifies selected protocol fallback, SSE reconnect/resume, OAuth scope step-up, tool calls and JSON Schema 2020-12 preservation. Focused MCP tests pass 76/76; terminal tests 24/24; Python tests 38/38; dotnet format passes; warnings-as-errors build has zero warnings/errors; full .NET suite passes 1,343/1,343 with zero skips. See tools/parity/mcp-conformance/README.md.",
         "Exact-head Linux CI run 38212383263 passes on PiSharp 0cfdf05e448192b15b4090406f602027bdfbc95d: standard job passes terminal 24/24, Python 38/38, format, warnings-as-errors build and .NET 1,343/1,343 with zero skips; the dedicated official MCP conformance job builds and passes the full three-mode suite. Current Pi remained at 4270522473e677ddba7b093caa0064a3df51d459 after a fresh fetch. The MCP conformance capability is verified; the overall parity gate remains open.",
         "Exact-head Linux CI 38222962860 on PiSharp e92d592b818cb5655046b98abafbd288a5e375d5 passes the official 26-scenario conformance suite across all three protocol modes with 261 passing checks, the same eight documented failures, and no baseline regressions."
@@ -9266,7 +9266,7 @@
       "status": "verified",
       "source": "earendil-works/pi@eba849739511223c51a62bbd7e3f1c00f99fb1d0: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
       "acceptance": [
-        "Audit and match Download model…, repository search, quantization selection and exact owner/repository[:quant] input.",
+        "Audit and match Download model\u2026, repository search, quantization selection and exact owner/repository[:quant] input.",
         "Match HF_TOKEN and token-file lookup precedence, gated-model warnings/access links, cancellation and unload/retain prompts.",
         "The router downloads the model; deterministic local HTTP/process and full terminal differential evidence is required."
       ],
@@ -12899,7 +12899,7 @@
       "status": "completed",
       "conclusion": "success",
       "exact_head": "548f8cd435c78801663a39ee1156ee34a595ed4c",
-      "note": "Latest completed full exact-head CI before the integrated queues 4–6/9/12 and root queue 5; current wave CI is pending."
+      "note": "Latest completed full exact-head CI before the integrated queues 4\u20136/9/12 and root queue 5; current wave CI is pending."
     },
     "readiness": "READY FOR LUNA HANDOVER",
     "stopping_audit": [
@@ -12989,7 +12989,7 @@
     "starting_sha": "77caa3290a0300e2e02d61039b306260f127872a",
     "base_sha": "21d5e47e5a4b2cf084ed01b0a0ee7cca9efbc538",
     "queue_position": 13,
-    "milestone": "Bounded slices for queues 1–12 are integrated. Queue 7 thinkingBudgets is verified; queue 8 has a six-case Google/Vertex transcript match; queues 10–11 add Azure Responses, Azure Foundry, and Mistral local transport coverage. Broader provider contracts remain in progress; queue 13 is next.",
+    "milestone": "Bounded slices for queues 1\u201312 are integrated. Queue 7 thinkingBudgets is verified; queue 8 has a six-case Google/Vertex transcript match; queues 10\u201311 add Azure Responses, Azure Foundry, and Mistral local transport coverage. Broader provider contracts remain in progress; queue 13 is next.",
     "mode": "parallel-wave",
     "isolation_gates": {
       "two_worker": "not run",
@@ -13016,7 +13016,7 @@
       "sha": "1cdb57f7cfd2723152a3d45b0dd1498052995231",
       "conclusion": "success",
       "url": "https://github.com/PhilipGB/pisharp/actions/runs/38789357300",
-      "note": "Exact-head Linux CI passed for the integrated queue 7–12 product source. The run covered the test and MCP conformance jobs."
+      "note": "Exact-head Linux CI passed for the integrated queue 7\u201312 product source. The run covered the test and MCP conformance jobs."
     },
     "upstream_observed": "5ab7fe74c400097b386662205cd93900695b8a71",
     "upstream_policy": "Configured pin retained at b06c1f2c. Original three-commit review plus resumed eight-commit review through5ab7fe74 are recorded. New error-result image placement is required P2 deferred to existing queue43; no P0/P1 interrupt.",
@@ -13423,7 +13423,7 @@
     "oracle": "docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
     "provider_wire_oracle": "docs/parity/fixtures/model-selection-thinking-provider-wire-oracle-2026-10-24.json",
     "receipt": "docs/parity/fixtures/model-selection-thinking-configuration-2026-10-24.md",
-    "checkpoint_policy": "Fixed 22 checkpoints A–V. A–T are complete with implementation, acceptance, full validation and documentation evidence; U draft PR #24 publication is complete; V exact-head push and PR CI passed on 683a485e43e9f07190d0b5cead56efaafd2a1a84. The PR description is authoritative for the published head and current workflow evidence. A later review correction preserves model-mapped extended reasoning; its wire differential and current exact-head checks are tracked in the PR description.",
+    "checkpoint_policy": "Fixed 22 checkpoints A\u2013V. A\u2013T are complete with implementation, acceptance, full validation and documentation evidence; U draft PR #24 publication is complete; V exact-head push and PR CI passed on 683a485e43e9f07190d0b5cead56efaafd2a1a84. The PR description is authoritative for the published head and current workflow evidence. A later review correction preserves model-mapped extended reasoning; its wire differential and current exact-head checks are tracked in the PR description.",
     "differential": {
       "direct_pi_cases": 93,
       "direct_pi_passed": 93,
@@ -14763,22 +14763,22 @@
     "pi_reference": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
     "minimatch_version": "10.2.6",
     "case_index": "tools/parity/resource_glob/cases.json",
-    "case_index_sha256": "54794e54701d62252e56feb7d84f57c47e0ffaf348d6c7b86320e379e565433c",
+    "case_index_sha256": "274a00c4e5d5da5b751b1babd7b5e81fe3e1872410bec09680f5f763abefb53c",
     "matcher_cases": {
-      "required": 64,
-      "passed": 64,
+      "required": 75,
+      "passed": 75,
       "failed": 0,
       "skipped": 0
     },
     "full_loader_selection": {
-      "required": 72,
-      "passed": 72,
+      "required": 36,
+      "passed": 36,
       "failed": 0,
       "skipped": 0
     },
     "settings_process_cases": {
-      "required": 5,
-      "passed": 5,
+      "required": 8,
+      "passed": 8,
       "failed": 0,
       "skipped": 0,
       "resource_types": [
@@ -14786,14 +14786,14 @@
         "prompts",
         "extensions"
       ],
-      "report": "artifacts/parity/resource-glob-initial/resource-settings-process.json"
+      "report": "artifacts/parity/resource-glob/processes/"
     },
     "local_theme_settings_cases": {
       "required": 4,
       "passed": 4,
       "failed": 0,
       "skipped": 0,
-      "method": "Pi/PiSharp full-loader process probe"
+      "method": "frozen Pi/PiSharp full-loader process cases; trust and palette identity/order checked"
     },
     "explicit_resource_paths": {
       "required": 19,
@@ -14807,9 +14807,14 @@
       "startup_reload_context": "matched"
     },
     "negative_controls": {
-      "required": 7,
-      "passed": 7,
-      "failed": 0
+      "required": 17,
+      "passed": 17,
+      "failed": 0,
+      "skipped": 0,
+      "components": {
+        "matcher": 7,
+        "acceptance": 10
+      }
     },
     "focused_dotnet_tests": {
       "resource_theme": {
@@ -14826,6 +14831,11 @@
         "passed": 15,
         "failed": 0,
         "skipped": 0
+      },
+      "local_resource_path_rules": {
+        "passed": 76,
+        "failed": 0,
+        "skipped": 0
       }
     },
     "quality_gates": {
@@ -14836,19 +14846,49 @@
         "errors": 0
       },
       "full_solution_tests": {
-        "required": 4009,
-        "passed": 4009,
+        "required": 4010,
+        "passed": 4010,
         "failed": 0,
         "skipped": 0
       }
     },
     "interim_fixture": "docs/parity/fixtures/resource-glob-matching-parity/README.md",
-    "raw_evidence": "artifacts/parity/resource-glob-4fd0c6ab/manifest.json",
+    "raw_evidence": "artifacts/parity/resource-glob/manifest.json",
     "remaining": [
-      "interactive CLI process theme comparison",
-      "final source-bound E0 receipt",
-      "exact-head CI0",
-      "draft PR PUB0"
-    ]
+      "full solution test receipt",
+      "source-bound E0 manifest",
+      "exact-head automatic CI0",
+      "draft PR PUB0 receipt"
+    ],
+    "theme_case_index_sha256": "55cac20f6ad2473956b902a311eb25e37fbb9033c21f231435da0d38b2daccc9",
+    "process_case_index_sha256": "b596adb6e1cee1bcc55ce9855799288d3028f2077d6fa21167cc360ef49b863e",
+    "failing_before_fixed_after": {
+      "case_ids": [
+        "P1-file-url-pattern-normalization",
+        "P1-file-url-exact-force-exclude"
+      ],
+      "source_before": "89a111674ed04b9765ae7f2e1457fef7ca4e42da",
+      "receipt": "docs/parity/fixtures/resource-glob-matching-parity/file-url-normalization.json"
+    },
+    "baseline": {
+      "source_sha": "480f058a95713fbc51b6904d4450da68bcda886c",
+      "focused_path_selection_theme_tests": {
+        "required": 114,
+        "passed": 114,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    "interactive_reload": {
+      "required": 1,
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "fixture": "tools/parity/terminal/fixtures/resource-glob-settings-reload.json",
+      "semantic_assertion": "tools/parity/terminal/assert_resource_glob_settings_reload.py",
+      "terminal_render_scope": "visual styling and general TUI rendering are excluded; complete raw/render capture retained"
+    },
+    "path_case_index_sha256": "7bd88472c14c425524d8fa536e8ffcb3d2b7aece7bc7a2e10c102d89eced5a6b",
+    "selection_case_index_sha256": "3d3e29f748236a1c40971924d68e6dd8195120742a67c6801f4b3f96caecbae0"
   }
 }

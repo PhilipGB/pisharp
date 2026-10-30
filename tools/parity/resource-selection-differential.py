@@ -12,6 +12,8 @@ from terminal.thread_limits import apply_test_thread_limit
 
 apply_test_thread_limit()
 ROOT = Path(__file__).resolve().parents[2]
+THEME_CASE_INDEX_SHA256 = '55cac20f6ad2473956b902a311eb25e37fbb9033c21f231435da0d38b2daccc9'
+SELECTION_CASE_INDEX_SHA256 = '3d3e29f748236a1c40971924d68e6dd8195120742a67c6801f4b3f96caecbae0'
 
 
 def skill(name='guide', body='body'):
@@ -220,13 +222,37 @@ def main():
     parser.add_argument('--package-edges', action='store_true', help='Include additional package filesystem edge characterization')
     parser.add_argument('--package-themes', action='store_true', help='Include package theme availability and selected palette comparisons')
     parser.add_argument('--local-themes', action='store_true', help='Include user/project settings theme selection and trust cases')
+    parser.add_argument('--theme-case-index', type=Path,
+                        help='Use and verify frozen local-theme inputs and Pi observations')
+    parser.add_argument('--selection-case-index', type=Path,
+                        help='Use and verify the frozen full-loader integration cases and Pi observations')
     args = parser.parse_args()
     sha = verify_pi_checkout(args.pi)
+    frozen_theme_expected = {}
     cases = scenarios()
+    if args.selection_case_index:
+        if __import__('hashlib').sha256(args.selection_case_index.read_bytes()).hexdigest() != SELECTION_CASE_INDEX_SHA256:
+            raise SystemExit('selection case index SHA-256 mismatch')
+        frozen_selection = json.loads(args.selection_case_index.read_text())
+        ids = [item['id'] for item in frozen_selection]
+        if len(ids) != len(set(ids)):
+            raise SystemExit('duplicate frozen selection case ID')
+        cases = [item['input'] for item in frozen_selection]
+        frozen_theme_expected = {item['id']: item['expectedPi'] for item in frozen_selection}
     if args.packages or args.package_edges:
         cases.extend(package_scenarios(args.package_edges))
     if args.local_themes:
-        cases.extend(local_theme_scenarios())
+        if args.theme_case_index:
+            if __import__('hashlib').sha256(args.theme_case_index.read_bytes()).hexdigest() != THEME_CASE_INDEX_SHA256:
+                raise SystemExit('local-theme case index SHA-256 mismatch')
+            frozen = json.loads(args.theme_case_index.read_text())
+            ids = [item['id'] for item in frozen]
+            if len(ids) != len(set(ids)):
+                raise SystemExit('duplicate local-theme case ID')
+            cases.extend(item['input'] for item in frozen)
+            frozen_theme_expected = {item['id']: item['expectedPi'] for item in frozen}
+        else:
+            cases.extend(local_theme_scenarios())
     if args.package_themes:
         theme = json.loads((ROOT / 'src/PiSharp.Cli/Tui/Themes/dark.json').read_text())
         theme['name'] = 'package-theme'
@@ -288,13 +314,23 @@ def main():
             raise RuntimeError(build.stdout + build.stderr)
         env.update(HOME=str(home), PI_CODING_AGENT_DIR=str(root / 'agent'),
                    TERM='xterm-256color', COLORTERM='truecolor', PI_TRUE_COLOR='1')
-        expected = json.loads(subprocess.check_output(['node', '--experimental-transform-types',
-            str(ROOT / 'tools/parity/resource-selection-probe.mjs'), str(args.pi.resolve()), str(inputs), str(root)], env=env, timeout=60))
+        oracle_command = ['node', '--experimental-transform-types',
+            str(ROOT / 'tools/parity/resource-selection-probe.mjs'), str(args.pi.resolve()), str(inputs), str(root)]
+        expected = json.loads(subprocess.check_output(oracle_command, env=env, timeout=60))
+        if frozen_theme_expected:
+            expected_repeat = json.loads(subprocess.check_output(oracle_command, env=env, timeout=60))
+            if expected != expected_repeat:
+                raise SystemExit('pinned Pi local-theme oracle was nondeterministic')
+            for result in expected:
+                if result.get('id') in frozen_theme_expected and result != frozen_theme_expected[result['id']]:
+                    raise SystemExit(f'frozen Pi local-theme expectation changed: {result["id"]}')
         actual = json.loads(subprocess.check_output(['dotnet', str(root / 'bin/Debug/net10.0/probe.dll'), str(inputs), str(root)],
             env=env, timeout=60))
     differences = [dict(id=p['id'], pi=p, pisharp=n) for p, n in zip(expected, actual, strict=True) if p != n]
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(dict(piSha=sha, scenarios=cases, pi=expected, pisharp=actual,
+    args.output.write_text(json.dumps(dict(piSha=sha, selectionCaseIndexSha256=(
+        __import__('hashlib').sha256(args.selection_case_index.read_bytes()).hexdigest()
+        if args.selection_case_index else None), scenarios=cases, pi=expected, pisharp=actual,
         differences=differences, match=not differences), indent=2) + '\n')
     print(f'{len(cases)} full-loader selection scenarios; {len(differences)} mismatches.', flush=True)
     assert not differences, ', '.join(d['id'] for d in differences)

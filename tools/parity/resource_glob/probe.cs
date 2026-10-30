@@ -13,7 +13,8 @@ foreach (var item in cases.EnumerateArray())
     if (item.TryGetProperty("overrides", out var overrides))
     {
         actual = LocalResourcePathRules.IsEnabledByOverrides(path,
-            overrides.EnumerateArray().Select(value => value.GetString()!).ToArray(), baseDirectory, isSkill);
+            overrides.EnumerateArray().Select(value => value.GetString()!.Replace("$BASE", baseDirectory,
+                StringComparison.Ordinal)).ToArray(), baseDirectory, isSkill);
     }
     else
     {

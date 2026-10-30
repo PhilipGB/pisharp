@@ -9,7 +9,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[3]
 CASE_INDEX = Path(__file__).with_name('cases.json')
-CASE_INDEX_SHA256 = '54794e54701d62252e56feb7d84f57c47e0ffaf348d6c7b86320e379e565433c'
+CASE_INDEX_SHA256 = '274a00c4e5d5da5b751b1babd7b5e81fe3e1872410bec09680f5f763abefb53c'
 PIN = (ROOT / 'tools/parity/pi-reference.txt').read_text().strip()
 
 

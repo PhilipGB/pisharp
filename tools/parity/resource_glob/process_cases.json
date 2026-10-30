@@ -258,11 +258,225 @@
       "trustedProject": false
     },
     "expectedExtensions": {
-      "selectedCommand": true,
+      "selectedCommands": [
+        "resource-discovery-user"
+      ],
       "excludedCommandPresent": false,
-      "loadTrace": [
-        "configured"
-      ]
+      "sourceInfoByCommand": {
+        "resource-discovery-user": {
+          "source": "local",
+          "scope": "user",
+          "origin": "top-level"
+        }
+      }
+    }
+  },
+  {
+    "id": "settings-extensions-trusted-project",
+    "resourceType": [
+      "skills",
+      "prompts",
+      "extensions"
+    ],
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:577-586",
+    "settings": {
+      "user": {},
+      "project": {
+        "extensions": [
+          "custom-extensions",
+          "!extensions/blocked*"
+        ],
+        "skills": [
+          "custom-skills",
+          "!skills/blocked/**"
+        ],
+        "prompts": [
+          "custom-prompts",
+          "!prompts/blocked*"
+        ]
+      },
+      "trusted": true
+    },
+    "excludedAutoNames": [
+      "blocked-user",
+      "blocked-project",
+      "blocked",
+      "blocked-extension"
+    ],
+    "expectedPi": {
+      "skill": {
+        "description": "Guide",
+        "sourceInfo": {
+          "path": "<workspace>/.pi/custom-skills/guide/SKILL.md",
+          "source": "local",
+          "scope": "project",
+          "origin": "top-level"
+        }
+      },
+      "prompt": {
+        "description": "Project review",
+        "sourceInfo": {
+          "path": "<workspace>/.pi/custom-prompts/review.md",
+          "source": "local",
+          "scope": "project",
+          "origin": "top-level"
+        }
+      },
+      "providerInputs": [
+        "<skill name=\"guide\" location=\"<workspace>/.pi/custom-skills/guide/SKILL.md\">\nReferences are relative to <workspace>/.pi/custom-skills/guide.\n\nbody\n</skill>\n\nargs",
+        "Project review topic"
+      ],
+      "trustedProject": true
+    },
+    "expectedExtensions": {
+      "selectedCommands": [
+        "resource-discovery-project"
+      ],
+      "excludedCommandPresent": false,
+      "sourceInfoByCommand": {
+        "resource-discovery-project": {
+          "source": "local",
+          "scope": "project",
+          "origin": "top-level"
+        }
+      }
+    }
+  },
+  {
+    "id": "settings-extensions-untrusted-project",
+    "resourceType": [
+      "skills",
+      "prompts",
+      "extensions"
+    ],
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:577-586",
+    "settings": {
+      "user": {},
+      "project": {
+        "extensions": [
+          "custom-extensions",
+          "!extensions/blocked*"
+        ],
+        "skills": [
+          "custom-skills",
+          "!skills/blocked/**"
+        ],
+        "prompts": [
+          "custom-prompts",
+          "!prompts/blocked*"
+        ]
+      },
+      "trusted": false
+    },
+    "excludedAutoNames": [
+      "blocked-user",
+      "blocked-project",
+      "blocked",
+      "blocked-extension"
+    ],
+    "expectedPi": {
+      "skill": null,
+      "prompt": null,
+      "providerInputs": [
+        "/skill:guide args",
+        "/review topic"
+      ],
+      "trustedProject": false
+    },
+    "expectedExtensions": {
+      "selectedCommands": [],
+      "excludedCommandPresent": false,
+      "sourceInfoByCommand": {}
+    }
+  },
+  {
+    "id": "settings-extensions-combined",
+    "resourceType": [
+      "skills",
+      "prompts",
+      "extensions"
+    ],
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:577-586",
+    "settings": {
+      "user": {
+        "extensions": [
+          "custom-extensions",
+          "!extensions/blocked*"
+        ],
+        "skills": [
+          "custom-skills",
+          "!skills/blocked/**"
+        ],
+        "prompts": [
+          "custom-prompts",
+          "!prompts/blocked*"
+        ]
+      },
+      "project": {
+        "extensions": [
+          "custom-extensions",
+          "!extensions/blocked*"
+        ],
+        "skills": [
+          "custom-skills",
+          "!skills/blocked/**"
+        ],
+        "prompts": [
+          "custom-prompts",
+          "!prompts/blocked*"
+        ]
+      },
+      "trusted": true
+    },
+    "excludedAutoNames": [
+      "blocked-user",
+      "blocked-project",
+      "blocked",
+      "blocked-extension"
+    ],
+    "expectedPi": {
+      "skill": {
+        "description": "Guide",
+        "sourceInfo": {
+          "path": "<workspace>/.pi/custom-skills/guide/SKILL.md",
+          "source": "local",
+          "scope": "project",
+          "origin": "top-level"
+        }
+      },
+      "prompt": {
+        "description": "Project review",
+        "sourceInfo": {
+          "path": "<workspace>/.pi/custom-prompts/review.md",
+          "source": "local",
+          "scope": "project",
+          "origin": "top-level"
+        }
+      },
+      "providerInputs": [
+        "<skill name=\"guide\" location=\"<workspace>/.pi/custom-skills/guide/SKILL.md\">\nReferences are relative to <workspace>/.pi/custom-skills/guide.\n\nbody\n</skill>\n\nargs",
+        "Project review topic"
+      ],
+      "trustedProject": true
+    },
+    "expectedExtensions": {
+      "selectedCommands": [
+        "resource-discovery-project",
+        "resource-discovery-user"
+      ],
+      "excludedCommandPresent": false,
+      "sourceInfoByCommand": {
+        "resource-discovery-project": {
+          "source": "local",
+          "scope": "project",
+          "origin": "top-level"
+        },
+        "resource-discovery-user": {
+          "source": "local",
+          "scope": "user",
+          "origin": "top-level"
+        }
+      }
     }
   }
 ]
