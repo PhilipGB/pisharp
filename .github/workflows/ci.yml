@@ -94,10 +94,10 @@ jobs:
           cp docs/parity/fixtures/resource-glob-matching-parity/file-url-normalization.json "$out/failing-before-fixed-after.json"
           python3 tools/parity/resource_glob/differential.py --pi artifacts/parity/pi-ownership-oracle --output "$out/glob.json"
           python3 tools/parity/resource-selection-differential.py --pi artifacts/parity/pi-ownership-oracle --selection-case-index tools/parity/resource_glob/selection_cases.json --output "$out/full-selection.json"
-          python3 tools/parity/resource_glob/acceptance.py selection --report "$out/full-selection.json"
-          python3 tools/parity/resource_glob/acceptance.py theme --report "$out/full-selection.json"
+          python3 tools/parity/resource_glob/acceptance.py selection --report "$out/full-selection.json" --source-sha "$(git rev-parse HEAD)"
+          python3 tools/parity/resource_glob/acceptance.py theme --report "$out/full-selection.json" --source-sha "$(git rev-parse HEAD)"
           python3 tools/parity/resource-path-differential.py --pi artifacts/parity/pi-ownership-oracle --case-index tools/parity/resource_glob/path_cases.json --output "$out/explicit-paths.json"
-          python3 tools/parity/resource_glob/acceptance.py path --report "$out/explicit-paths.json"
+          python3 tools/parity/resource_glob/acceptance.py path --report "$out/explicit-paths.json" --source-sha "$(git rev-parse HEAD)"
           python3 tools/parity/resource_glob/run_process_suite.py --pi artifacts/parity/pi-ownership-oracle --output "$out/processes"
           dotnet build tests/ResourceDiscoveryExtension/ResourceDiscoveryExtension.csproj --no-restore --warnaserror
           python3 tools/parity/terminal/run.py --pi artifacts/parity/pi-ownership-oracle --fixture tools/parity/terminal/fixtures/resource-glob-settings-reload.json --pisharp-extension tests/ResourceDiscoveryExtension/bin/Debug/net10.0/dynamic-resources.dll --case 120x40-dark-fullscreen --semantic-only --output "$out/reload"

@@ -93,12 +93,16 @@ class AcceptanceNegativeControls(unittest.TestCase):
         index=json.loads(acceptance.THEME_INDEX.read_text())
         changed=self.write('theme-index.json',index[:-1])
         with self.assertRaisesRegex(ValueError,'theme case index hash mismatch'):
-            acceptance.verify_theme_report(changed,self.write('theme-report.json',{}))
+            acceptance.verify_theme_report(changed,self.write('theme-report.json',{}),'source')
         expected=[item['expectedPi'] for item in index]
-        report=dict(piSha=acceptance.PI_SHA,pi=expected,pisharp=json.loads(json.dumps(expected)),differences=[],match=True)
+        report=dict(piSha=acceptance.PI_SHA,piSharpSha='source',pi=expected,
+                    pisharp=json.loads(json.dumps(expected)),differences=[],match=True)
         report['pi']=[item for item in report['pi'] if item['id']!='settings-theme-user']
         with self.assertRaisesRegex(ValueError,'missing or skipped frozen theme case'):
-            acceptance.verify_theme_report(acceptance.THEME_INDEX,self.write('theme-report.json',report))
+            acceptance.verify_theme_report(acceptance.THEME_INDEX,self.write('theme-report.json',report),'source')
+        report['pi']=expected; report['piSharpSha']='stale'
+        with self.assertRaisesRegex(ValueError,'stale PiSharp source'):
+            acceptance.verify_theme_report(acceptance.THEME_INDEX,self.write('theme-report.json',report),'source')
 
     def test_rejects_wrong_glob_source_matcher_and_aggregate(self):
         cases=json.loads(acceptance.GLOB_INDEX.read_text())
@@ -128,7 +132,7 @@ class AcceptanceNegativeControls(unittest.TestCase):
     def test_rejects_selection_inputs_skips_and_wrong_result(self):
         cases=json.loads(acceptance.SELECTION_INDEX.read_text())
         import hashlib
-        report=dict(piSha=acceptance.PI_SHA,
+        report=dict(piSha=acceptance.PI_SHA,piSharpSha='source',
             selectionCaseIndexSha256=hashlib.sha256(acceptance.SELECTION_INDEX.read_bytes()).hexdigest(),
             scenarios=[case['input'] for case in cases],
             pi=[case['expectedPi'] for case in cases],
@@ -136,21 +140,28 @@ class AcceptanceNegativeControls(unittest.TestCase):
             differences=[],match=True)
         original=json.loads(json.dumps(report))
         path=self.write('selection-original-report.json',original)
+        report['piSharpSha']='stale'
+        with self.assertRaisesRegex(ValueError,'stale PiSharp source'):
+            acceptance.verify_selection_report(acceptance.SELECTION_INDEX,
+                self.write('selection-report.json',report),'source')
+        report=json.loads(json.dumps(original))
         report['pisharp'].pop()
         with self.assertRaisesRegex(ValueError,'missing, duplicate, skipped'):
-            acceptance.verify_selection_report(acceptance.SELECTION_INDEX,self.write('selection-report.json',report))
-        report=original; report['pisharp'][0]['themes']=[{'name':'wrong'}]
+            acceptance.verify_selection_report(acceptance.SELECTION_INDEX,
+                self.write('selection-report.json',report),'source')
+        report=json.loads(json.dumps(original)); report['pisharp'][0]['themes']=[{'name':'wrong'}]
         with self.assertRaisesRegex(ValueError,'PiSharp selection differs'):
-            acceptance.verify_selection_report(acceptance.SELECTION_INDEX,self.write('selection-report.json',report))
+            acceptance.verify_selection_report(acceptance.SELECTION_INDEX,
+                self.write('selection-report.json',report),'source')
         changed=json.loads(acceptance.SELECTION_INDEX.read_text()); changed[0]['input']['id']='changed'
         with self.assertRaisesRegex(ValueError,'selection case index hash mismatch'):
-            acceptance.verify_selection_report(self.write('selection-index.json',changed),path)
+            acceptance.verify_selection_report(self.write('selection-index.json',changed),path,'source')
 
     def test_rejects_explicit_path_skip_or_tampered_result(self):
         cases=json.loads(acceptance.PATH_INDEX.read_text())
         import hashlib
         values=[case['expectedPi'] for case in cases]
-        report=dict(piSha=acceptance.PI_SHA,
+        report=dict(piSha=acceptance.PI_SHA,piSharpSha='source',
             caseIndexSha256=hashlib.sha256(acceptance.PATH_INDEX.read_bytes()).hexdigest(),
             scenarios=[case['input'] for case in cases],pi=values,pisharp=values,differences=[],match=True,
             cases=[dict(id=case['id'],input=case['input'],expectedPi=case['expectedPi'],
@@ -158,10 +169,13 @@ class AcceptanceNegativeControls(unittest.TestCase):
         original=json.loads(json.dumps(report))
         report['cases'].pop()
         with self.assertRaisesRegex(ValueError,'missing, duplicate, skipped'):
-            acceptance.verify_path_report(acceptance.PATH_INDEX,self.write('path-report.json',report))
-        report=original; report['cases'][0]['piSharpActual']={'id':'wrong'}
+            acceptance.verify_path_report(acceptance.PATH_INDEX,self.write('path-report.json',report),'source')
+        report=json.loads(json.dumps(original)); report['piSharpSha']='stale'
+        with self.assertRaisesRegex(ValueError,'stale PiSharp source'):
+            acceptance.verify_path_report(acceptance.PATH_INDEX,self.write('path-report.json',report),'source')
+        report=json.loads(json.dumps(original)); report['cases'][0]['piSharpActual']={'id':'wrong'}
         with self.assertRaisesRegex(ValueError,'PiSharp explicit path selection differs'):
-            acceptance.verify_path_report(acceptance.PATH_INDEX,self.write('path-report.json',report))
+            acceptance.verify_path_report(acceptance.PATH_INDEX,self.write('path-report.json',report),'source')
 
     def test_rejects_stale_evidence_source_and_ci(self):
         artifact=self.root/'capture.json'; artifact.write_text('{}')

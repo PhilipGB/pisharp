@@ -65,7 +65,8 @@ with tempfile.TemporaryDirectory(prefix='pisharp-resource-path-oracle-') as dire
  differences=[dict(id=p['id'],pi=p,pisharp=n) for p,n in zip(expected,actual,strict=True) if p!=n]
  output=args.output
  output.parent.mkdir(parents=True,exist_ok=True)
- output.write_text(json.dumps(dict(piSha=pi_sha,caseIndexSha256=case_index_sha,scenarios=cases,pi=expected,pisharp=actual,
+ output.write_text(json.dumps(dict(piSha=pi_sha,piSharpSha=subprocess.check_output(['git','rev-parse','HEAD'],cwd=repo,text=True).strip(),
+  caseIndexSha256=case_index_sha,scenarios=cases,pi=expected,pisharp=actual,
   cases=[dict(id=case['id'],input=case,expectedPi=frozen_expected.get(case['id']),
     piActual=next(item for item in expected if item['id']==case['id']),
     piSharpActual=next(item for item in actual if item['id']==case['id']),

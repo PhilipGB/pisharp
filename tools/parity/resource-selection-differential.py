@@ -328,7 +328,9 @@ def main():
             env=env, timeout=60))
     differences = [dict(id=p['id'], pi=p, pisharp=n) for p, n in zip(expected, actual, strict=True) if p != n]
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(dict(piSha=sha, selectionCaseIndexSha256=(
+    args.output.write_text(json.dumps(dict(piSha=sha,
+        piSharpSha=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
+        selectionCaseIndexSha256=(
         __import__('hashlib').sha256(args.selection_case_index.read_bytes()).hexdigest()
         if args.selection_case_index else None), scenarios=cases, pi=expected, pisharp=actual,
         differences=differences, match=not differences), indent=2) + '\n')

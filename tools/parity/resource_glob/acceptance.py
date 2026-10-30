@@ -96,7 +96,7 @@ def verify_process_cases(index_path, report_paths, source_sha):
     return dict(required=len(ids), passed=len(ids), failed=0, skipped=0)
 
 
-def verify_theme_report(index_path, report_path):
+def verify_theme_report(index_path, report_path, source_sha):
     if hashlib.sha256(Path(index_path).read_bytes()).hexdigest() != THEME_INDEX_SHA256:
         raise ValueError('theme case index hash mismatch')
     cases = _json(index_path)
@@ -104,6 +104,8 @@ def verify_theme_report(index_path, report_path):
     report = _json(report_path)
     if report.get('piSha') != PI_SHA:
         raise ValueError('wrong Pi SHA in theme integration')
+    if report.get('piSharpSha') != source_sha:
+        raise ValueError('stale PiSharp source in theme integration')
     observed_pi, observed_pisharp = report.get('pi', []), report.get('pisharp', [])
     pi_ids, pisharp_ids = _ids(observed_pi, 'Pi theme result'), _ids(observed_pisharp, 'PiSharp theme result')
     if not set(ids).issubset(pi_ids) or not set(ids).issubset(pisharp_ids):
@@ -119,7 +121,7 @@ def verify_theme_report(index_path, report_path):
     return dict(required=len(ids), passed=len(ids), failed=0, skipped=0)
 
 
-def verify_selection_report(index_path, report_path):
+def verify_selection_report(index_path, report_path, source_sha):
     if hashlib.sha256(Path(index_path).read_bytes()).hexdigest() != SELECTION_INDEX_SHA256:
         raise ValueError('selection case index hash mismatch')
     cases = _json(index_path)
@@ -128,6 +130,8 @@ def verify_selection_report(index_path, report_path):
     digest = hashlib.sha256(Path(index_path).read_bytes()).hexdigest()
     if report.get('piSha') != PI_SHA:
         raise ValueError('wrong Pi SHA in selection integration')
+    if report.get('piSharpSha') != source_sha:
+        raise ValueError('stale PiSharp source in selection integration')
     if report.get('selectionCaseIndexSha256') != digest:
         raise ValueError('selection report is bound to a different case index')
     if report.get('scenarios') != [case['input'] for case in cases]:
@@ -149,7 +153,7 @@ def verify_selection_report(index_path, report_path):
     return dict(required=len(ids), passed=len(ids), failed=0, skipped=0)
 
 
-def verify_path_report(index_path, report_path):
+def verify_path_report(index_path, report_path, source_sha):
     if hashlib.sha256(Path(index_path).read_bytes()).hexdigest() != PATH_INDEX_SHA256:
         raise ValueError('path case index hash mismatch')
     cases = _json(index_path)
@@ -158,6 +162,8 @@ def verify_path_report(index_path, report_path):
     digest = hashlib.sha256(Path(index_path).read_bytes()).hexdigest()
     if report.get('piSha') != PI_SHA:
         raise ValueError('wrong Pi SHA in explicit path report')
+    if report.get('piSharpSha') != source_sha:
+        raise ValueError('stale PiSharp source in explicit path report')
     if report.get('caseIndexSha256') != digest:
         raise ValueError('explicit path report is bound to a different case index')
     observed = report.get('cases', [])
@@ -226,10 +232,13 @@ def main():
     process.add_argument('--source-sha', required=True)
     theme = sub.add_parser('theme')
     theme.add_argument('--report', type=Path, required=True)
+    theme.add_argument('--source-sha', required=True)
     selection = sub.add_parser('selection')
     selection.add_argument('--report', type=Path, required=True)
+    selection.add_argument('--source-sha', required=True)
     path_report = sub.add_parser('path')
     path_report.add_argument('--report', type=Path, required=True)
+    path_report.add_argument('--source-sha', required=True)
     manifest = sub.add_parser('manifest')
     manifest.add_argument('--manifest', type=Path, required=True)
     manifest.add_argument('--source-sha', required=True)
@@ -241,11 +250,11 @@ def main():
     elif args.command == 'process':
         result = verify_process_cases(PROCESS_INDEX, args.report, args.source_sha)
     elif args.command == 'theme':
-        result = verify_theme_report(THEME_INDEX, args.report)
+        result = verify_theme_report(THEME_INDEX, args.report, args.source_sha)
     elif args.command == 'selection':
-        result = verify_selection_report(SELECTION_INDEX, args.report)
+        result = verify_selection_report(SELECTION_INDEX, args.report, args.source_sha)
     elif args.command == 'path':
-        result = verify_path_report(PATH_INDEX, args.report)
+        result = verify_path_report(PATH_INDEX, args.report, args.source_sha)
     else:
         result = {'artifacts': verify_evidence_manifest(args.manifest, args.source_sha, args.ci_run_id,
                                                         args.pr_head_sha)}
