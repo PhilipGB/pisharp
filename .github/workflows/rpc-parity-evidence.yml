@@ -6,7 +6,9 @@ on:
       - milestone/rpc-protocol-command-parity
 
 permissions:
+  actions: read
   contents: read
+  pull-requests: read
 
 concurrency:
   group: rpc-parity-evidence-${{ github.ref }}
@@ -83,6 +85,7 @@ jobs:
 
       - name: Generate and independently verify the frozen RPC corpus
         env:
+          GH_TOKEN: ${{ github.token }}
           PISHARP_RPC_EVIDENCE_HEAD: ${{ github.sha }}
         run: |
           evidence_dir="$PISHARP_RPC_EVIDENCE_DIR"
