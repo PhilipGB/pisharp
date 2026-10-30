@@ -11,8 +11,6 @@ namespace PiSharp.Tests;
 
 public sealed class LlamaRouterManagerTuiTests
 {
-    private static readonly object s_routerEndpointGate = new();
-
     private static string EditorInputLine(string frame)
     {
         return frame.Split('\n').Select(line => line.Trim())
@@ -894,7 +892,7 @@ public sealed class LlamaRouterManagerTuiTests
 
     private sealed class RouterServer : IAsyncDisposable
     {
-        private readonly HttpListener _listener = new();
+        private readonly HttpListener _listener;
         private readonly CancellationTokenSource _shutdown = new();
         private readonly Task _serve;
         private readonly bool _holdLoad;
@@ -950,15 +948,9 @@ public sealed class LlamaRouterManagerTuiTests
             _pauseAfterChunk = pauseAfterChunk;
             _pauseAgainAfterChunk = pauseAgainAfterChunk;
             if (sleepingQwen) Statuses["qwen"] = "sleeping";
-            lock (s_routerEndpointGate)
-            {
-                using var reservation = new TcpListener(IPAddress.Loopback, 0);
-                reservation.Start();
-                Origin = "http://127.0.0.1:" + ((IPEndPoint)reservation.LocalEndpoint).Port;
-                reservation.Stop();
-                _listener.Prefixes.Add(Origin + "/");
-                _listener.Start();
-            }
+            var (listener, port) = TestLoopbackListener.Start();
+            _listener = listener;
+            Origin = "http://127.0.0.1:" + port;
             _serve = ServeAsync();
         }
 
