@@ -38,6 +38,8 @@ PUB0_CASE_IDS = (
     "PUB0.publication-verifier-current-evidence", "PUB0.e0-ci0-pub0-independent",
     "PUB0.single-contributor-review-state", "PUB0.final-source-and-pin-report",
 )
+RPC_EVIDENCE_WORKFLOW = "RPC parity evidence"
+RPC_EVIDENCE_JOB = "generate-and-publish"
 
 
 def _run(argv: list[str]) -> dict[str, Any]:
@@ -66,12 +68,14 @@ def _current_pull_request(branch: str) -> tuple[dict[str, Any], list[dict[str, A
     return pr, [list_capture, pull_capture]
 
 
-def _latest_exact_run(event: str, branch: str, head_sha: str) -> tuple[dict[str, Any] | None, list[dict[str, Any]]]:
+def _latest_exact_run(event: str, branch: str, head_sha: str,
+                      workflow_name: str = "Linux CI") -> tuple[dict[str, Any] | None, list[dict[str, Any]]]:
     runs, list_capture = _gh_json([
         "run", "list", "--branch", branch, "--event", event, "--limit", "50",
         "--json", "databaseId,event,headSha,conclusion,createdAt,headBranch,workflowName",
     ])
-    exact = [run for run in runs if run.get("headSha") == head_sha and run.get("event") == event]
+    exact = [run for run in runs if run.get("headSha") == head_sha and run.get("event") == event
+             and run.get("workflowName") == workflow_name]
     if not exact:
         return None, [list_capture]
     latest = max(exact, key=lambda run: run.get("createdAt", ""))
@@ -79,6 +83,65 @@ def _latest_exact_run(event: str, branch: str, head_sha: str) -> tuple[dict[str,
         "run", "view", str(latest["databaseId"]), "--json", "databaseId,event,headSha,conclusion,jobs",
     ])
     return detail, [list_capture, detail_capture]
+
+
+def _latest_rpc_evidence_run(branch: str, head_sha: str) -> tuple[dict[str, Any] | None, list[dict[str, Any]]]:
+    runs, list_capture = _gh_json([
+        "run", "list", "--branch", branch, "--event", "push", "--limit", "100",
+        "--json", "databaseId,event,headSha,conclusion,createdAt,workflowName",
+    ])
+    exact = [run for run in runs if run.get("headSha") == head_sha and run.get("event") == "push"
+             and run.get("workflowName") == RPC_EVIDENCE_WORKFLOW]
+    if not exact:
+        return None, [list_capture]
+
+    latest = max(exact, key=lambda run: run.get("createdAt", ""))
+    run_id = str(latest["databaseId"])
+    detail, detail_capture = _gh_json([
+        "run", "view", run_id, "--json", "databaseId,event,headSha,conclusion,workflowName,jobs",
+    ])
+    artifacts, artifacts_capture = _gh_json([
+        "api", f"repos/PhilipGB/pisharp/actions/runs/{run_id}/artifacts",
+    ])
+    artifact_name = f"rpc-parity-evidence-{head_sha}"
+    matches = [item for item in artifacts.get("artifacts", []) if item.get("name") == artifact_name]
+    artifact = matches[0] if len(matches) == 1 else None
+    workflow_artifact = None
+    if artifact is not None:
+        workflow_artifact = artifact.get("workflow_run") or {}
+    jobs = {job.get("name"): job.get("conclusion") for job in detail.get("jobs", [])}
+    record = {
+        "workflowName": detail.get("workflowName"), "event": detail.get("event"),
+        "runId": run_id, "headSha": detail.get("headSha"),
+        "conclusion": detail.get("conclusion"), "jobs": jobs,
+        "url": f"https://github.com/PhilipGB/pisharp/actions/runs/{run_id}",
+        "artifact": None if artifact is None else {
+            "artifactId": artifact.get("id"), "name": artifact.get("name"),
+            "digest": artifact.get("digest"), "sizeInBytes": artifact.get("size_in_bytes"),
+            "expired": artifact.get("expired"), "expiresAt": artifact.get("expires_at"),
+            "headSha": workflow_artifact.get("head_sha"),
+        },
+    }
+    return record, [list_capture, detail_capture, artifacts_capture]
+
+
+def _rpc_evidence_artifact_passes(record: Any, head_sha: str) -> bool:
+    if not isinstance(record, dict) or record.get("workflowName") != RPC_EVIDENCE_WORKFLOW:
+        return False
+    artifact = record.get("artifact")
+    return bool(
+        record.get("event") == "push" and record.get("headSha") == head_sha
+        and record.get("conclusion") == "success"
+        and record.get("jobs") == {RPC_EVIDENCE_JOB: "success"}
+        and isinstance(artifact, dict)
+        and artifact.get("name") == f"rpc-parity-evidence-{head_sha}"
+        and artifact.get("headSha") == head_sha and artifact.get("expired") is False
+        and type(artifact.get("artifactId")) is int and artifact["artifactId"] > 0
+        and type(artifact.get("sizeInBytes")) is int and artifact["sizeInBytes"] > 0
+        and isinstance(artifact.get("digest"), str)
+        and artifact["digest"].startswith("sha256:") and len(artifact["digest"]) == 71
+        and all(character in "0123456789abcdef" for character in artifact["digest"][7:])
+    )
 
 
 def _ci_snapshot(branch: str) -> tuple[dict[str, Any], list[dict[str, Any]]]:
@@ -96,8 +159,10 @@ def _ci_snapshot(branch: str) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     head_sha = pr.get("head", {}).get("sha")
     push, push_captures = _latest_exact_run("push", branch, head_sha or "")
     pull, pull_captures = _latest_exact_run("pull_request", branch, head_sha or "")
+    rpc_evidence, rpc_evidence_captures = _latest_rpc_evidence_run(branch, head_sha or "")
     captures.extend(push_captures)
     captures.extend(pull_captures)
+    captures.extend(rpc_evidence_captures)
     branch_runs, branch_runs_capture = _gh_json([
         "run", "list", "--branch", branch, "--limit", "100",
         "--json", "databaseId,event,headSha,conclusion,createdAt,headBranch,workflowName",
@@ -132,6 +197,7 @@ def _ci_snapshot(branch: str) -> tuple[dict[str, Any], list[dict[str, Any]]]:
         },
         "pushRun": push, "pullRequestRun": pull,
         "pushEvidence": push_record, "pullRequestEvidence": pull_record,
+        "rpcParityEvidence": rpc_evidence,
         "manualRunsOnHead": manual_runs, "requiredJobs": sorted(required_jobs),
         "captures": captures,
     }
@@ -161,10 +227,11 @@ def run_ci0_checkpoint(evidence_dir: Path) -> dict[str, int]:
         ["git", "merge-base", "--is-ancestor", BASE_SHA, pr["baseSha"]], cwd=ROOT, capture_output=True,
     ).returncode == 0
     base_current = pr["baseRef"] == "main" and pr["baseSha"] == snapshot["apiMainSha"] == snapshot["localMainSha"]
+    rpc_artifact_ok = _rpc_evidence_artifact_passes(snapshot.get("rpcParityEvidence"), pr["headSha"])
     complete_jobs = all(
         run is not None and set(run["jobs"]) == set(jobs) and all(value == "success" for value in run["jobs"].values())
         for run in (push, pull)
-    )
+    ) and rpc_artifact_ok
     no_manual = not snapshot["manualRunsOnHead"]
     observations = [
         _check("push-workflow-exact-head", push_ok, {"run": push, "expectedHead": pr["headSha"]}),
@@ -175,7 +242,8 @@ def run_ci0_checkpoint(evidence_dir: Path) -> dict[str, int]:
         }),
         _check("job-completeness", complete_jobs, {"requiredJobs": jobs,
                "pushJobSet": sorted((push or {}).get("jobs", {})),
-               "pullRequestJobSet": sorted((pull or {}).get("jobs", {}))}),
+               "pullRequestJobSet": sorted((pull or {}).get("jobs", {})),
+               "rpcParityEvidence": snapshot.get("rpcParityEvidence")}),
         _check("no-duplicate-manual-dispatch", no_manual and {push and push["event"], pull and pull["event"]} == {"push", "pull_request"}, {
             "countedEvents": [push and push["event"], pull and pull["event"]],
             "manualRunsOnHead": snapshot["manualRunsOnHead"],
@@ -217,7 +285,8 @@ def run_ci0_checkpoint(evidence_dir: Path) -> dict[str, int]:
         quality_evidence, evidence_dir.parent / "Q0",
         expected_source_commit=source_evidence["implementationSourceCommit"],
     )
-    ci_evidence = {"runs": [run for run in (push, pull) if run is not None]}
+    ci_evidence = {"runs": [run for run in (push, pull) if run is not None],
+                   "rpcParityEvidence": snapshot.get("rpcParityEvidence")}
     publication = {
         "number": pr["number"], "url": pr["url"], "branch": pr["headRef"],
         "headSha": pr["headSha"], "baseSha": pr["baseSha"], "author": pr["author"],
@@ -249,6 +318,8 @@ def _publication_description_check(pr: dict[str, Any], source_sha: str,
     dotnet_count = quality_counts.get("total")
     if type(dotnet_count) is not int or dotnet_count <= 0:
         raise VerificationError("PUB0 requires the numeric total from authoritative Q0 testCounts")
+    evidence_workflow = ci_evidence.get("rpcParityEvidence", {})
+    evidence_artifact = evidence_workflow.get("artifact", {}) if isinstance(evidence_workflow, dict) else {}
     required_tokens = [
         "24/24", "252/252", PINNED_PI_SHA, BASE_SHA, source_sha, pr.get("headSha", ""),
         str(runs.get("push", {}).get("runId", "")), str(runs.get("pull_request", {}).get("runId", "")),
@@ -256,6 +327,8 @@ def _publication_description_check(pr: dict[str, Any], source_sha: str,
         f"Strict: {modes['strict']}", f"Equivalent: {modes['equivalent']}",
         f"Intentional safety differences: {modes['intentional-safety-difference']}",
         "20 credential-gated", "unverified", "managed-package parity corpus",
+        str(evidence_workflow.get("runId", "")) if isinstance(evidence_workflow, dict) else "",
+        evidence_artifact.get("name", ""), evidence_artifact.get("digest", ""),
     ]
     matched = all(token and token.lower() in body.lower() for token in required_tokens)
     expected_report = {
@@ -263,6 +336,9 @@ def _publication_description_check(pr: dict[str, Any], source_sha: str,
         "fullDotnetTestCount": dotnet_count,
         "pushRunId": runs.get("push", {}).get("runId"),
         "pullRequestRunId": runs.get("pull_request", {}).get("runId"),
+        "rpcParityEvidenceRunId": evidence_workflow.get("runId") if isinstance(evidence_workflow, dict) else None,
+        "rpcParityEvidenceArtifactName": evidence_artifact.get("name"),
+        "rpcParityEvidenceArtifactDigest": evidence_artifact.get("digest"),
         "implementationSourceCommit": source_sha, "finalHeadCommit": pr.get("headSha"),
         "allRequiredTokensPresent": matched,
     }
@@ -285,6 +361,10 @@ def run_pub0_checkpoint(evidence_dir: Path) -> dict[str, int]:
     final_head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True,
                                 text=True, check=True).stdout.strip()
     ci_evidence = ci0.get("ciEvidence", {})
+    rpc_evidence = ci_evidence.get("rpcParityEvidence") if isinstance(ci_evidence, dict) else None
+    rpc_evidence = rpc_evidence if isinstance(rpc_evidence, dict) else {}
+    rpc_artifact = rpc_evidence.get("artifact")
+    rpc_artifact = rpc_artifact if isinstance(rpc_artifact, dict) else {}
     pr = snapshot["pullRequest"]
     self_review_capture = _run(["gh", "api", f"repos/PhilipGB/pisharp/pulls/{pr['number']}/reviews"])
     if self_review_capture["exitCode"] != 0:
@@ -383,6 +463,9 @@ def run_pub0_checkpoint(evidence_dir: Path) -> dict[str, int]:
         "bodySha256": hashlib.sha256(pr["body"].encode("utf-8")).hexdigest(),
         "pushRunId": next((run.get("runId") for run in ci_evidence.get("runs", []) if run.get("event") == "push"), None),
         "pullRequestRunId": next((run.get("runId") for run in ci_evidence.get("runs", []) if run.get("event") == "pull_request"), None),
+        "rpcParityEvidenceRunId": rpc_evidence.get("runId"),
+        "rpcParityEvidenceArtifactName": rpc_artifact.get("name"),
+        "rpcParityEvidenceArtifactDigest": rpc_artifact.get("digest"),
     }
     ci_evidence = ci0.get("ciEvidence", {})
     evidence = {

@@ -61,6 +61,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     private RpcEventWriter? _events;
     private readonly ConcurrentDictionary<Guid, BashOperation> _bashOperations = new();
     private readonly ConcurrentDictionary<Guid, RpcCompactionOperation> _compactionOperations = new();
+    private readonly SemaphoreSlim _compactionAdmission = new(1, 1);
     private CancellationTokenSource? _abort;
     private CancellationTokenSource? _serveCancellation;
     private Task? _active;
@@ -422,8 +423,11 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         }
         _ = Task.Run(async () =>
         {
+            var admitted = false;
             try
             {
+                await _compactionAdmission.WaitAsync(operation.Cancellation.Token);
+                admitted = true;
                 await handler.TryHandleAsync("compact", root, id, operation.Cancellation.Token,
                     () => CancelActiveRunAsync(key));
             }
@@ -433,6 +437,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             }
             finally
             {
+                if (admitted) _compactionAdmission.Release();
                 _compactionOperations.TryRemove(key, out _);
                 operation.Cancellation.Dispose();
                 operation.Completed.TrySetResult();

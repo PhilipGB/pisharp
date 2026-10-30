@@ -436,7 +436,7 @@ def required_ci_jobs(workflow_path: Path = CI_WORKFLOW_PATH) -> set[str]:
 
 def validate_ci_evidence(ci_evidence: Any, *, final_head_sha: str, milestone_base_sha: str,
                          cwd: Path = ROOT) -> None:
-    """Require automatic push and PR runs, exact heads, current base and every current job."""
+    """Require exact-head automatic CI plus a published full-corpus evidence artifact."""
     if not isinstance(ci_evidence, dict):
         raise VerificationError("exact-head CI evidence is missing")
     runs = ci_evidence.get("runs")
@@ -479,6 +479,31 @@ def validate_ci_evidence(ci_evidence: Any, *, final_head_sha: str, milestone_bas
     )
     if ancestor.returncode != 0:
         raise VerificationError("pull_request CI base does not contain the prerequisite merge")
+    validate_rpc_parity_artifact(ci_evidence.get("rpcParityEvidence"), final_head_sha=final_head_sha)
+
+
+def validate_rpc_parity_artifact(record: Any, *, final_head_sha: str) -> None:
+    """Check the exact-head evidence workflow and its immutable GitHub artifact metadata."""
+    if not isinstance(record, dict):
+        raise VerificationError("published RPC parity evidence workflow is missing")
+    run_id = record.get("runId")
+    if (record.get("workflowName") != "RPC parity evidence" or record.get("event") != "push"
+            or record.get("headSha") != final_head_sha or record.get("conclusion") != "success"
+            or not isinstance(run_id, str) or not run_id.isdigit()):
+        raise VerificationError("RPC parity evidence workflow is not a successful exact-head push run")
+    if record.get("jobs") != {"generate-and-publish": "success"}:
+        raise VerificationError("RPC parity evidence workflow job did not succeed")
+    artifact = record.get("artifact")
+    if not isinstance(artifact, dict):
+        raise VerificationError("RPC parity evidence workflow did not publish its artifact")
+    if (artifact.get("name") != f"rpc-parity-evidence-{final_head_sha}"
+            or artifact.get("headSha") != final_head_sha or artifact.get("expired") is not False
+            or type(artifact.get("artifactId")) is not int or artifact["artifactId"] <= 0
+            or type(artifact.get("sizeInBytes")) is not int or artifact["sizeInBytes"] <= 0):
+        raise VerificationError("RPC parity evidence artifact is stale, expired, or empty")
+    digest = artifact.get("digest")
+    if not isinstance(digest, str) or not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
+        raise VerificationError("RPC parity evidence artifact lacks a valid immutable digest")
 
 
 def _github_json(arguments: list[str], *, cwd: Path = ROOT) -> Any:
@@ -507,6 +532,35 @@ def validate_live_ci_evidence(ci_evidence: Any, *, final_head_sha: str, cwd: Pat
                 or live.get("conclusion") != recorded.get("conclusion")
                 or live_jobs != recorded_jobs):
             raise VerificationError(f"GitHub Actions run {run_id} differs from the exact-head CI receipt")
+    record = ci_evidence.get("rpcParityEvidence")
+    validate_rpc_parity_artifact(record, final_head_sha=final_head_sha)
+    run_id = record["runId"]
+    live_run = _github_json([
+        "run", "view", run_id,
+        "--json", "databaseId,event,headSha,conclusion,workflowName,jobs",
+    ], cwd=cwd)
+    live_jobs = {job.get("name"): job.get("conclusion") for job in live_run.get("jobs", [])}
+    if (str(live_run.get("databaseId")) != run_id or live_run.get("event") != "push"
+            or live_run.get("headSha") != final_head_sha or live_run.get("conclusion") != "success"
+            or live_run.get("workflowName") != "RPC parity evidence"
+            or live_jobs != record.get("jobs")):
+        raise VerificationError("RPC parity evidence workflow changed or is not on the exact final head")
+    artifact_record = record["artifact"]
+    artifact_list = _github_json([
+        "api", f"repos/PhilipGB/pisharp/actions/runs/{run_id}/artifacts",
+    ], cwd=cwd)
+    matching = [item for item in artifact_list.get("artifacts", [])
+                if item.get("id") == artifact_record.get("artifactId")]
+    if len(matching) != 1:
+        raise VerificationError("published RPC parity evidence artifact is missing or ambiguous")
+    live_artifact = matching[0]
+    artifact_head = live_artifact.get("workflow_run", {}).get("head_sha")
+    if (live_artifact.get("name") != artifact_record.get("name")
+            or live_artifact.get("digest") != artifact_record.get("digest")
+            or live_artifact.get("size_in_bytes") != artifact_record.get("sizeInBytes")
+            or live_artifact.get("expired") != artifact_record.get("expired")
+            or artifact_head != final_head_sha):
+        raise VerificationError("published RPC parity evidence artifact differs from its recorded digest or source head")
 
 
 def validate_live_publication_evidence(publication: Any, *, final_head_sha: str,
@@ -549,6 +603,9 @@ def validate_live_publication_evidence(publication: Any, *, final_head_sha: str,
         f"intentional safety differences: {mode_counts['intentional-safety-difference']}",
         f"{dotnet_count:,}/{dotnet_count:,}" if isinstance(dotnet_count, int) else "",
         "20 credential-gated", "unverified", "managed-package parity corpus",
+        str(publication.get("rpcParityEvidenceRunId", "")),
+        str(publication.get("rpcParityEvidenceArtifactName", "")),
+        str(publication.get("rpcParityEvidenceArtifactDigest", "")),
     ]
     if not source_sha or any(token.lower() not in body.lower() for token in mandatory_tokens):
         raise VerificationError("PR description omits required exact results, pins, CI IDs or limitations")

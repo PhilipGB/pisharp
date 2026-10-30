@@ -9,6 +9,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from typing import Any
+from unittest.mock import patch
 
 import finalization_oracle
 import quality_oracle
@@ -174,10 +175,16 @@ class Q0AuthoritativeCountTests(unittest.TestCase):
         }
         source = "a" * 40
         head = "b" * 40
+        artifact_name = f"rpc-parity-evidence-{head}"
+        artifact_digest = "sha256:" + "c" * 64
         ci = {"runs": [
             {"event": "push", "runId": "11"},
             {"event": "pull_request", "runId": "12"},
-        ]}
+        ], "rpcParityEvidence": {
+            "workflowName": "RPC parity evidence", "event": "push", "runId": "13",
+            "headSha": head, "conclusion": "success", "jobs": {"generate-and-publish": "success"},
+            "artifact": {"name": artifact_name, "digest": artifact_digest},
+        }}
 
         def pull_body(test_count: int) -> str:
             return " ".join((
@@ -186,7 +193,7 @@ class Q0AuthoritativeCountTests(unittest.TestCase):
                 f"Equivalent: {mode_counts['equivalent']}",
                 f"Intentional safety differences: {mode_counts['intentional-safety-difference']}",
                 f"{test_count:,}/{test_count:,}", "20 credential-gated", "unverified",
-                "managed-package parity corpus",
+                "managed-package parity corpus", "13", artifact_name, artifact_digest,
             ))
 
         pr = {"body": pull_body(123), "headSha": head}
@@ -197,6 +204,70 @@ class Q0AuthoritativeCountTests(unittest.TestCase):
         matched, report = finalization_oracle._publication_description_check(pr, source, ci, counts)
         self.assertFalse(matched)
         self.assertEqual(123, report["fullDotnetTestCount"])
+
+    def test_pub0_requires_source_pinned_rpc_evidence_artifact_reference(self) -> None:
+        evidence, _, _ = self.fixture()
+        counts = verify.validate_q0_authoritative_counts(evidence, self.evidence_dir)
+        source = "a" * 40
+        head = "b" * 40
+        ci = {"runs": [
+            {"event": "push", "runId": "11"},
+            {"event": "pull_request", "runId": "12"},
+        ], "rpcParityEvidence": {
+            "workflowName": "RPC parity evidence", "event": "push", "runId": "13",
+            "headSha": head, "conclusion": "success", "jobs": {"generate-and-publish": "success"},
+            "artifact": {"name": f"rpc-parity-evidence-{head}", "digest": "sha256:" + "c" * 64},
+        }}
+        body = " ".join(("24/24", "252/252", verify.PINNED_PI_SHA, verify.BASE_SHA, source, head,
+                         "11", "12", "13", f"rpc-parity-evidence-{head}", "sha256:" + "c" * 64,
+                         "Strict: 230", "Equivalent: 22", "Intentional safety differences: 0",
+                         "123/123", "20 credential-gated", "unverified", "managed-package parity corpus"))
+        matched, _ = finalization_oracle._publication_description_check(
+            {"body": body, "headSha": head}, source, ci, counts)
+        self.assertTrue(matched)
+        ci["rpcParityEvidence"]["artifact"]["digest"] = "sha256:" + "d" * 64
+        matched, _ = finalization_oracle._publication_description_check(
+            {"body": body, "headSha": head}, source, ci, counts)
+        self.assertFalse(matched)
+
+    def test_ci0_requires_an_unexpired_exact_head_evidence_artifact(self) -> None:
+        head = "e" * 40
+        record = {
+            "workflowName": "RPC parity evidence", "event": "push", "runId": "42",
+            "headSha": head, "conclusion": "success", "jobs": {"generate-and-publish": "success"},
+            "artifact": {
+                "artifactId": 7, "name": f"rpc-parity-evidence-{head}",
+                "digest": "sha256:" + "f" * 64, "sizeInBytes": 1024,
+                "expired": False, "headSha": head,
+            },
+        }
+        verify.validate_rpc_parity_artifact(record, final_head_sha=head)
+        for mutate in (
+            lambda item: item["artifact"].update(expired=True),
+            lambda item: item["artifact"].update(headSha="a" * 40),
+            lambda item: item["artifact"].update(digest="sha1:" + "f" * 40),
+            lambda item: item.update(conclusion="failure"),
+        ):
+            invalid = copy.deepcopy(record)
+            mutate(invalid)
+            with self.assertRaises(verify.VerificationError):
+                verify.validate_rpc_parity_artifact(invalid, final_head_sha=head)
+
+    def test_ci0_selects_linux_ci_separately_from_the_parity_evidence_workflow(self) -> None:
+        head = "a" * 40
+        runs = [
+            {"databaseId": 22, "event": "push", "headSha": head, "createdAt": "2026-10-30T12:02:00Z",
+             "workflowName": "RPC parity evidence"},
+            {"databaseId": 21, "event": "push", "headSha": head, "createdAt": "2026-10-30T12:01:00Z",
+             "workflowName": "Linux CI"},
+        ]
+        detail = {"databaseId": 21, "event": "push", "headSha": head, "conclusion": "success"}
+        with patch.object(finalization_oracle, "_gh_json", side_effect=[
+            (runs, {"stdout": "runs"}), (detail, {"stdout": "detail"}),
+        ]):
+            selected, _ = finalization_oracle._latest_exact_run(
+                "push", "milestone/rpc-protocol-command-parity", head)
+        self.assertEqual(21, selected["databaseId"])
 
     def test_ci0_and_pub0_counts_must_match_q0_numeric_total(self) -> None:
         evidence, _, _ = self.fixture()
