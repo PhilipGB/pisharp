@@ -168,6 +168,42 @@ class FrozenRpcVerifierMutationControls(unittest.TestCase):
             with self.assertRaisesRegex(verify.VerificationError, "uncommitted production, test, parity or workflow"):
                 verify.validate_clean_source_tree(cwd=repository)
 
+    def test_implementation_source_pin_allows_docs_and_evidence_workflow_after_source(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary)
+            subprocess.run(["git", "init", "-q", str(repository)], check=True)
+            subprocess.run(["git", "-C", str(repository), "config", "user.name", "Parity Test"], check=True)
+            subprocess.run(["git", "-C", str(repository), "config", "user.email", "parity@example.invalid"], check=True)
+            source = repository / "src" / "owner.txt"
+            source.parent.mkdir()
+            source.write_text("implementation", encoding="utf-8")
+            subprocess.run(["git", "-C", str(repository), "add", "src/owner.txt"], check=True)
+            subprocess.run(["git", "-C", str(repository), "commit", "-qm", "implementation source"], check=True)
+            source_commit = subprocess.run(["git", "-C", str(repository), "rev-parse", "HEAD"],
+                                           capture_output=True, text=True, check=True).stdout.strip()
+
+            workflow = repository / ".github" / "workflows" / "rpc-parity-evidence.yml"
+            workflow.parent.mkdir(parents=True)
+            workflow.write_text("name: RPC parity evidence\n", encoding="utf-8")
+            docs = repository / "docs" / "receipt.md"
+            docs.parent.mkdir()
+            docs.write_text(f"source {source_commit}\n", encoding="utf-8")
+            subprocess.run(["git", "-C", str(repository), "add", "."], check=True)
+            subprocess.run(["git", "-C", str(repository), "commit", "-qm", "publish evidence workflow"], check=True)
+            final_head = subprocess.run(["git", "-C", str(repository), "rev-parse", "HEAD"],
+                                        capture_output=True, text=True, check=True).stdout.strip()
+
+            self.assertEqual(source_commit, verify.current_implementation_source_commit(cwd=repository))
+            verify.validate_source_identity(source_commit, final_head, cwd=repository)
+
+            source.write_text("changed implementation", encoding="utf-8")
+            subprocess.run(["git", "-C", str(repository), "add", "src/owner.txt"], check=True)
+            subprocess.run(["git", "-C", str(repository), "commit", "-qm", "change implementation"], check=True)
+            changed_head = subprocess.run(["git", "-C", str(repository), "rev-parse", "HEAD"],
+                                          capture_output=True, text=True, check=True).stdout.strip()
+            with self.assertRaisesRegex(verify.VerificationError, "evidence is stale"):
+                verify.validate_source_identity(source_commit, changed_head, cwd=repository)
+
     def test_source_and_frozen_contract_mutations_are_rejected(self) -> None:
         with self.subTest(case_id="V1.wrong-pi-sha"):
             header = _valid_header()

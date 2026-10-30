@@ -33,6 +33,7 @@ DOTNET_TEST_SUMMARY = re.compile(
 )
 PROCESS_CHECKPOINTS = {f"R{i}" for i in range(1, 16)} | {"D0"}
 CI_WORKFLOW_PATH = ROOT / ".github/workflows/ci.yml"
+IMPLEMENTATION_SOURCE_PATHS = ("src", "tests", "tools/parity", ".github/workflows/ci.yml")
 
 
 class VerificationError(ValueError):
@@ -766,11 +767,23 @@ def validate_source_identity(source_sha: str, head_sha: str, *, cwd: Path = ROOT
     if ancestor.returncode != 0:
         raise VerificationError("implementation source is not an ancestor of the tested head")
     changed = subprocess.run(
-        ["git", "diff", "--quiet", source_sha, head_sha, "--", "src", "tests", "tools/parity", ".github/workflows"],
+        ["git", "diff", "--quiet", source_sha, head_sha, "--", *IMPLEMENTATION_SOURCE_PATHS],
         cwd=cwd,
     )
     if changed.returncode != 0:
         raise VerificationError("evidence is stale: production, test or parity sources changed after implementation source")
+
+
+def current_implementation_source_commit(*, cwd: Path = ROOT) -> str:
+    """Return the latest commit that changed implementation, tests, parity tools or Linux CI."""
+    result = subprocess.run(
+        ["git", "log", "-1", "--format=%H", "HEAD", "--", *IMPLEMENTATION_SOURCE_PATHS],
+        cwd=cwd, capture_output=True, text=True,
+    )
+    source_sha = result.stdout.strip()
+    if result.returncode != 0 or not SHA1.fullmatch(source_sha):
+        raise VerificationError("cannot determine the implementation source commit")
+    return source_sha
 
 
 def validate_clean_source_tree(*, cwd: Path = ROOT) -> None:

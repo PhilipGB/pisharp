@@ -14,6 +14,7 @@ from verify import (
     FROZEN_CONTRACT_SHA256,
     PINNED_PI_SHA,
     VerificationError,
+    current_implementation_source_commit,
     load_contract,
     required_ci_jobs,
     validate_case_results,
@@ -337,13 +338,14 @@ def run_source_checkpoint(checkpoint_id: str, pi_checkout: Path, evidence_dir: P
                 "passed": passed,
             }],
         })
-    source_head = _git("rev-parse", "HEAD")
+    source_head = current_implementation_source_commit()
+    final_head = _git("rev-parse", "HEAD")
     evidence = {
         "schemaVersion": 1,
         "contractSha256": FROZEN_CONTRACT_SHA256,
         "piCommit": PINNED_PI_SHA,
         "implementationSourceCommit": source_head,
-        "finalHeadCommit": source_head,
+        "finalHeadCommit": final_head,
         "pisharpBaseCommit": BASE_SHA,
         "checkpointId": checkpoint_id,
         "caseResults": case_results,

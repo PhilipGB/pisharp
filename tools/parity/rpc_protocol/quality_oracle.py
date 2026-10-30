@@ -16,6 +16,7 @@ from verify import (
     FROZEN_CONTRACT_SHA256,
     PINNED_PI_SHA,
     VerificationError,
+    current_implementation_source_commit,
     load_contract,
     validate_case_results,
     validate_clean_source_tree,
@@ -255,7 +256,9 @@ def run_quality_checkpoint(pi_checkout: Path, evidence_dir: Path) -> dict[str, i
     if expected_ids != list(QUALITY_CASE_IDS):
         raise VerificationError("Q0 quality runner case order differs from the frozen contract")
     case_defs = {case["id"]: case for case in checkpoint["caseDefinitions"]}
-    source_head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()
+    source_head = current_implementation_source_commit()
+    final_head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True,
+                                text=True, check=True).stdout.strip()
     plan = _quality_plan(evidence_dir.parent)
     run_summaries: dict[str, dict[str, Any]] = {}
     case_results: list[dict[str, Any]] = []
@@ -367,7 +370,7 @@ def run_quality_checkpoint(pi_checkout: Path, evidence_dir: Path) -> dict[str, i
 
     evidence = {
         "schemaVersion": 1, "contractSha256": FROZEN_CONTRACT_SHA256, "piCommit": PINNED_PI_SHA,
-        "implementationSourceCommit": source_head, "finalHeadCommit": source_head,
+        "implementationSourceCommit": source_head, "finalHeadCommit": final_head,
         "pisharpBaseCommit": BASE_SHA, "checkpointId": "Q0", "caseResults": case_results,
         "qualitySourceCommit": source_head, "pinnedPiTestRoot": str(pi_checkout.resolve()),
     }

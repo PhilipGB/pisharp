@@ -20,6 +20,7 @@ from verify import (
     FROZEN_CONTRACT_SHA256,
     PINNED_PI_SHA,
     VerificationError,
+    current_implementation_source_commit,
     load_contract,
     validate_clean_source_tree,
     validate_case_results,
@@ -38,7 +39,9 @@ HERE = Path(__file__).resolve().parent
 def run_v1_controls(evidence_dir: Path) -> dict[str, int]:
     """Execute the synthetic verifier-control suite and bind its report to source pins."""
     validate_clean_source_tree()
-    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()
+    source_head = current_implementation_source_commit()
+    final_head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True,
+                                text=True, check=True).stdout.strip()
     evidence_dir.mkdir(parents=True, exist_ok=True)
     report_path = evidence_dir / "v1-controls.log"
     environment = dict(os.environ)
@@ -63,8 +66,8 @@ def run_v1_controls(evidence_dir: Path) -> dict[str, int]:
         "schemaVersion": 1,
         "contractSha256": FROZEN_CONTRACT_SHA256,
         "piCommit": PINNED_PI_SHA,
-        "implementationSourceCommit": head,
-        "finalHeadCommit": head,
+        "implementationSourceCommit": source_head,
+        "finalHeadCommit": final_head,
         "pisharpBaseCommit": BASE_SHA,
         "v1ControlEvidence": control_evidence,
     }
@@ -106,7 +109,8 @@ def run_process_cases(checkpoint_id: str, selected_cases: list[dict], pi_checkou
     assembly = ROOT / "src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll"
     if not assembly.is_file():
         raise VerificationError(f"built PiSharp process assembly not found: {assembly}")
-    source_head = subprocess.run(
+    source_head = current_implementation_source_commit()
+    final_head = subprocess.run(
         ["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, check=True,
     ).stdout.strip()
     case_results = [run_process_case(case, pi=pi_checkout, evidence_dir=evidence_dir) for case in selected_cases]
@@ -115,7 +119,7 @@ def run_process_cases(checkpoint_id: str, selected_cases: list[dict], pi_checkou
         "contractSha256": FROZEN_CONTRACT_SHA256,
         "piCommit": PINNED_PI_SHA,
         "implementationSourceCommit": source_head,
-        "finalHeadCommit": source_head,
+        "finalHeadCommit": final_head,
         "pisharpBaseCommit": BASE_SHA,
         "checkpointId": checkpoint_id,
         "build": {
