@@ -2,6 +2,7 @@
 """Verify frozen resource glob, process, artifact, and source/CI receipts."""
 import hashlib
 import argparse
+import importlib.util
 import json
 from pathlib import Path
 
@@ -18,6 +19,16 @@ SELECTION_INDEX = Path(__file__).with_name('selection_cases.json')
 SELECTION_INDEX_SHA256 = '3d3e29f748236a1c40971924d68e6dd8195120742a67c6801f4b3f96caecbae0'
 PATH_INDEX = Path(__file__).with_name('path_cases.json')
 PATH_INDEX_SHA256 = '7bd88472c14c425524d8fa536e8ffcb3d2b7aece7bc7a2e10c102d89eced5a6b'
+FILE_URL_ERROR_INDEX = Path(__file__).with_name('file_url_error_cases.json')
+FILE_URL_ERROR_INDEX_SHA256 = 'e886f081820a24fa25f4f4493010bc8ab5b06e9d0f3948e93c4b8d75f0992cd5'
+
+
+def expected_report_inventory(index_paths=None):
+    process_cases = _json(index_paths['process_cases.json'] if index_paths else PROCESS_INDEX)
+    reports = ['glob.json', 'full-selection.json', 'explicit-paths.json', 'file-url-errors.json',
+               'reload/report.json', 'reload/120x40-dark-fullscreen.assertions.json.gz']
+    reports.extend(f'processes/{case["id"]}.json' for case in process_cases)
+    return sorted(reports)
 
 
 def _json(path):
@@ -182,6 +193,61 @@ def verify_path_report(index_path, report_path, source_sha):
     return dict(required=len(ids), passed=len(ids), failed=0, skipped=0)
 
 
+def verify_file_url_error_report(index_path, report_path, source_sha):
+    if hashlib.sha256(Path(index_path).read_bytes()).hexdigest() != FILE_URL_ERROR_INDEX_SHA256:
+        raise ValueError('file URL error case index hash mismatch')
+    cases = _json(index_path)
+    ids = _ids(cases, 'file URL error index')
+    report = _json(report_path)
+    if report.get('piSha') != PI_SHA:
+        raise ValueError('wrong Pi SHA in file URL error report')
+    if report.get('piSharpSha') != source_sha:
+        raise ValueError('stale PiSharp source in file URL error report')
+    if report.get('caseIndexSha256') != FILE_URL_ERROR_INDEX_SHA256:
+        raise ValueError('file URL error report is bound to a different case index')
+    observed = report.get('cases', [])
+    if _ids(observed, 'file URL error report') != ids:
+        raise ValueError('file URL error report has missing, duplicate, skipped, or reordered cases')
+    for case, result in zip(cases, observed, strict=True):
+        if result.get('pattern') != case['pattern'] or result.get('expectedPiError') != case['expectedPiError']:
+            raise ValueError(f'file URL error input or expectation changed: {case["id"]}')
+        if result.get('piActual') != {'error': case['expectedPiError']}:
+            raise ValueError(f'Pi file URL error expectation changed: {case["id"]}')
+        sharp = result.get('piSharpActual', {})
+        for operation in ('glob', 'exact'):
+            actual = sharp.get(operation, {})
+            if actual.get('threw') is not True or actual.get('message') != case['expectedPiError']['message']:
+                raise ValueError(f'PiSharp {operation} file URL error differs: {case["id"]}')
+        if result.get('status') != 'passed':
+            raise ValueError(f'file URL error case failed: {case["id"]}')
+    counts = dict(required=len(ids), passed=len(ids), failed=0, skipped=0)
+    if any(report.get(key) != value for key, value in counts.items()):
+        raise ValueError('incorrect file URL error aggregate counts')
+    return counts
+
+
+def verify_reload_report(root, source_sha):
+    report = _json(Path(root) / 'reload/report.json')
+    if report.get('piSha') != PI_SHA:
+        raise ValueError('wrong Pi SHA in reload report')
+    if report.get('pisharpSha') != source_sha:
+        raise ValueError('stale PiSharp source in reload report')
+    cases = report.get('cases', [])
+    if len(cases) != 1 or cases[0].get('id') != '120x40-dark-fullscreen':
+        raise ValueError('missing or duplicate resource reload scenario')
+    if report.get('semanticOnly') is not True:
+        raise ValueError('reload report is missing its semantic assertion')
+    if cases[0].get('assertionEvidence') != '120x40-dark-fullscreen.assertions.json.gz':
+        raise ValueError('reload assertion evidence path changed')
+    assertion_path = Path(root) / 'reload/120x40-dark-fullscreen.assertions.json.gz'
+    script = ROOT / 'tools/parity/terminal/assert_resource_glob_settings_reload.py'
+    spec = importlib.util.spec_from_file_location('resource_glob_reload_assertions', script)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.verify(assertion_path)
+    return dict(required=1, passed=1, failed=0, skipped=0)
+
+
 def verify_evidence_manifest(manifest_path, source_sha, ci_run_id, pr_head_sha=None):
     manifest = _json(manifest_path)
     if manifest.get('sourceSha') != source_sha:
@@ -197,10 +263,27 @@ def verify_evidence_manifest(manifest_path, source_sha, ci_run_id, pr_head_sha=N
     files = manifest.get('files')
     if not isinstance(files, list) or not files:
         raise ValueError('missing evidence artifacts')
-    _ids([{'id': item.get('path')} for item in files if isinstance(item, dict)], 'evidence file list')
+    if any(not isinstance(item, dict) for item in files):
+        raise ValueError('invalid evidence file list')
+    file_ids = _ids([{'id': item.get('path')} for item in files], 'evidence file list')
+    expected_reports = expected_report_inventory()
+    if manifest.get('reportInventory') != expected_reports:
+        raise ValueError('missing, duplicate, extra, or reordered mandatory report inventory')
+    required_bundle_files = set(expected_reports) | {
+        f'contracts/{name}' for name in ('cases.json', 'process_cases.json', 'theme_cases.json',
+                                         'selection_cases.json', 'path_cases.json', 'file_url_error_cases.json')
+    }
+    missing_bundle_files = required_bundle_files - set(file_ids)
+    if missing_bundle_files:
+        missing_path = sorted(missing_bundle_files)[0]
+        label = 'report' if missing_path in expected_reports else 'frozen contract'
+        raise ValueError(f'missing mandatory evidence {label}: {missing_path}')
     root = Path(manifest_path).resolve().parent
     for item in files:
-        path = root / item['path']
+        relative = Path(item['path'])
+        if relative.is_absolute() or '..' in relative.parts:
+            raise ValueError(f'invalid evidence artifact path: {item["path"]}')
+        path = root / relative
         if not path.is_file():
             raise ValueError(f'missing evidence artifact: {item["path"]}')
         if hashlib.sha256(path.read_bytes()).hexdigest() != item.get('sha256'):
@@ -209,7 +292,8 @@ def verify_evidence_manifest(manifest_path, source_sha, ci_run_id, pr_head_sha=N
                         'process_cases.json': PROCESS_INDEX_SHA256,
                         'theme_cases.json': THEME_INDEX_SHA256,
                         'selection_cases.json': SELECTION_INDEX_SHA256,
-                        'path_cases.json': PATH_INDEX_SHA256}
+                        'path_cases.json': PATH_INDEX_SHA256,
+                        'file_url_error_cases.json': FILE_URL_ERROR_INDEX_SHA256}
     for name, expected in expected_indexes.items():
         path = root / 'contracts' / name
         if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != expected:
@@ -218,6 +302,14 @@ def verify_evidence_manifest(manifest_path, source_sha, ci_run_id, pr_head_sha=N
             raise ValueError(f'evidence receipt has wrong contract hash: {name}')
     if manifest.get('requiredFiles') != len(files):
         raise ValueError('incorrect evidence file aggregate')
+    verify_glob_report(GLOB_INDEX, root / 'glob.json', source_sha)
+    verify_selection_report(SELECTION_INDEX, root / 'full-selection.json', source_sha)
+    verify_theme_report(THEME_INDEX, root / 'full-selection.json', source_sha)
+    verify_path_report(PATH_INDEX, root / 'explicit-paths.json', source_sha)
+    verify_file_url_error_report(FILE_URL_ERROR_INDEX, root / 'file-url-errors.json', source_sha)
+    process_reports = [root / 'processes' / f'{case["id"]}.json' for case in _json(PROCESS_INDEX)]
+    verify_process_cases(PROCESS_INDEX, process_reports, source_sha)
+    verify_reload_report(root, source_sha)
     return len(files)
 
 
@@ -239,6 +331,9 @@ def main():
     path_report = sub.add_parser('path')
     path_report.add_argument('--report', type=Path, required=True)
     path_report.add_argument('--source-sha', required=True)
+    file_url_errors = sub.add_parser('file-url-errors')
+    file_url_errors.add_argument('--report', type=Path, required=True)
+    file_url_errors.add_argument('--source-sha', required=True)
     manifest = sub.add_parser('manifest')
     manifest.add_argument('--manifest', type=Path, required=True)
     manifest.add_argument('--source-sha', required=True)
@@ -255,6 +350,8 @@ def main():
         result = verify_selection_report(SELECTION_INDEX, args.report, args.source_sha)
     elif args.command == 'path':
         result = verify_path_report(PATH_INDEX, args.report, args.source_sha)
+    elif args.command == 'file-url-errors':
+        result = verify_file_url_error_report(FILE_URL_ERROR_INDEX, args.report, args.source_sha)
     else:
         result = {'artifacts': verify_evidence_manifest(args.manifest, args.source_sha, args.ci_run_id,
                                                         args.pr_head_sha)}

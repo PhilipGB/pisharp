@@ -6,6 +6,7 @@ import tempfile
 import unittest
 
 import acceptance
+import create_manifest
 
 
 class AcceptanceNegativeControls(unittest.TestCase):
@@ -36,6 +37,14 @@ class AcceptanceNegativeControls(unittest.TestCase):
 
     def write_reports(self, reports):
         return [self.write(f'report-{index}.json', value) for index,value in enumerate(reports)]
+
+    def complete_manifest(self):
+        bundle = self.root / 'evidence-bundle'
+        for relative in acceptance.expected_report_inventory():
+            path = bundle / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text('{}\n')
+        return bundle, create_manifest.create_manifest(bundle, 'source', '42', 'head')
 
     def test_rejects_wrong_pi_and_pisharp_sha(self):
         reports=self.reports(); reports[0]['piSha']='wrong'
@@ -77,17 +86,34 @@ class AcceptanceNegativeControls(unittest.TestCase):
             acceptance.verify_process_cases(acceptance.PROCESS_INDEX,self.write_reports(reports),'source')
 
     def test_rejects_missing_or_changed_evidence(self):
-        artifact=self.root/'capture.json'; artifact.write_text('{}')
-        manifest=self.write('manifest.json',dict(sourceSha='source',piSha=acceptance.PI_SHA,
-            baseSha=acceptance.BASE_SHA,prHeadSha='head',ciRunId='42',files=[
-            dict(path='missing.json',sha256='0')]))
+        bundle, value = self.complete_manifest()
+        value['files'].append(dict(path='missing.json',sha256='0'))
+        value['requiredFiles'] = len(value['files'])
+        manifest=bundle/'manifest.json'; manifest.write_text(json.dumps(value,indent=2)+'\n')
         with self.assertRaisesRegex(ValueError,'missing evidence artifact'):
             acceptance.verify_evidence_manifest(manifest,'source','42','head')
-        manifest=self.write('manifest.json',dict(sourceSha='source',piSha=acceptance.PI_SHA,
-            baseSha=acceptance.BASE_SHA,prHeadSha='head',ciRunId='42',files=[
-            dict(path=artifact.name,sha256='0')]))
+        bundle, value = self.complete_manifest()
+        artifact=bundle/'capture.json'; artifact.write_text('{}')
+        value['files'].append(dict(path='capture.json',sha256='0'))
+        value['requiredFiles'] = len(value['files'])
+        manifest=bundle/'manifest.json'; manifest.write_text(json.dumps(value,indent=2)+'\n')
         with self.assertRaisesRegex(ValueError,'changed evidence artifact'):
             acceptance.verify_evidence_manifest(manifest,'source','42','head')
+
+    def test_e0_rejects_regenerated_bundle_after_mandatory_reports_are_removed(self):
+        bundle = self.root / 'evidence-bundle'
+        report_inventory = acceptance.expected_report_inventory()
+        for relative in report_inventory:
+            path = bundle / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text('{}\n')
+        for relative in report_inventory:
+            (bundle / relative).unlink()
+
+        manifest = create_manifest.create_manifest(bundle, 'source', '42', 'head')
+        self.assertEqual(manifest['reportInventory'], [])
+        with self.assertRaisesRegex(ValueError,'mandatory report inventory'):
+            acceptance.verify_evidence_manifest(bundle/'manifest.json','source','42','head')
 
     def test_rejects_changed_theme_contract_and_missing_theme_execution(self):
         index=json.loads(acceptance.THEME_INDEX.read_text())
@@ -176,6 +202,30 @@ class AcceptanceNegativeControls(unittest.TestCase):
         report=json.loads(json.dumps(original)); report['cases'][0]['piSharpActual']={'id':'wrong'}
         with self.assertRaisesRegex(ValueError,'PiSharp explicit path selection differs'):
             acceptance.verify_path_report(acceptance.PATH_INDEX,self.write('path-report.json',report),'source')
+
+    def test_rejects_file_url_error_skip_stale_source_or_wrong_behavior(self):
+        cases=json.loads(acceptance.FILE_URL_ERROR_INDEX.read_text())
+        import hashlib
+        report=dict(piSha=acceptance.PI_SHA,piSharpSha='source',
+            caseIndexSha256=hashlib.sha256(acceptance.FILE_URL_ERROR_INDEX.read_bytes()).hexdigest(),
+            required=len(cases),passed=len(cases),failed=0,skipped=0,
+            cases=[dict(id=case['id'],pattern=case['pattern'],expectedPiError=case['expectedPiError'],
+                piActual={'error':case['expectedPiError']},
+                piSharpActual={operation:dict(threw=True,message=case['expectedPiError']['message'])
+                               for operation in ('glob','exact')},status='passed') for case in cases])
+        original=json.loads(json.dumps(report))
+        report['piSharpSha']='stale'
+        with self.assertRaisesRegex(ValueError,'stale PiSharp source'):
+            acceptance.verify_file_url_error_report(acceptance.FILE_URL_ERROR_INDEX,
+                self.write('file-url-report.json',report),'source')
+        report=json.loads(json.dumps(original)); report['cases'].pop()
+        with self.assertRaisesRegex(ValueError,'missing, duplicate, skipped'):
+            acceptance.verify_file_url_error_report(acceptance.FILE_URL_ERROR_INDEX,
+                self.write('file-url-report.json',report),'source')
+        report=json.loads(json.dumps(original)); report['cases'][0]['piSharpActual']['glob']['threw']=False
+        with self.assertRaisesRegex(ValueError,'PiSharp glob file URL error differs'):
+            acceptance.verify_file_url_error_report(acceptance.FILE_URL_ERROR_INDEX,
+                self.write('file-url-report.json',report),'source')
 
     def test_rejects_stale_evidence_source_and_ci(self):
         artifact=self.root/'capture.json'; artifact.write_text('{}')

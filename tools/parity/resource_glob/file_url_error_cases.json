@@ -1,0 +1,57 @@
+[
+  {
+    "id": "file-url-invalid-percent",
+    "platform": "linux",
+    "pattern": "file:///tmp/resource-bad%",
+    "sourceReference": "packages/coding-agent/src/utils/paths.ts:96-98",
+    "expectedPiError": {
+      "name": "URIError",
+      "code": null,
+      "message": "URI malformed"
+    }
+  },
+  {
+    "id": "file-url-invalid-hex-escape",
+    "platform": "linux",
+    "pattern": "file:///tmp/resource-bad%GG",
+    "sourceReference": "packages/coding-agent/src/utils/paths.ts:96-98",
+    "expectedPiError": {
+      "name": "URIError",
+      "code": null,
+      "message": "URI malformed"
+    }
+  },
+  {
+    "id": "file-url-invalid-utf8-escape",
+    "platform": "linux",
+    "pattern": "file:///tmp/resource-%E0%A4",
+    "sourceReference": "packages/coding-agent/src/utils/paths.ts:96-98",
+    "expectedPiError": {
+      "name": "URIError",
+      "code": null,
+      "message": "URI malformed"
+    }
+  },
+  {
+    "id": "file-url-encoded-forward-slash",
+    "platform": "linux",
+    "pattern": "file:///tmp/resource-%2Fchild",
+    "sourceReference": "packages/coding-agent/src/utils/paths.ts:96-98",
+    "expectedPiError": {
+      "name": "TypeError",
+      "code": "ERR_INVALID_FILE_URL_PATH",
+      "message": "File URL path must not include encoded / characters"
+    }
+  },
+  {
+    "id": "file-url-unsupported-host",
+    "platform": "linux",
+    "pattern": "file://remote/tmp/resource-plugin.dll",
+    "sourceReference": "packages/coding-agent/src/utils/paths.ts:96-98",
+    "expectedPiError": {
+      "name": "TypeError",
+      "code": "ERR_INVALID_FILE_URL_HOST",
+      "message": "File URL host must be \"localhost\" or empty on linux"
+    }
+  }
+]

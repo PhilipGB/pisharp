@@ -596,10 +596,8 @@ public static class LocalResourcePathRules
     private static string NormalizePattern(string pattern)
     {
         var expanded = ExpandHome(pattern);
-        if (expanded.StartsWith("file://", StringComparison.Ordinal) &&
-            Uri.TryCreate(expanded, UriKind.Absolute, out var uri) && uri.IsFile &&
-            (string.IsNullOrEmpty(uri.Host) || uri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase)))
-            return Normalize(uri.LocalPath);
+        if (expanded.StartsWith("file://", StringComparison.Ordinal))
+            return Normalize(ResourceLocalPath.FileUrlPath(expanded));
         return Normalize(expanded);
     }
 

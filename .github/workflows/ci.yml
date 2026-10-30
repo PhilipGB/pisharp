@@ -90,9 +90,11 @@ jobs:
           set -euo pipefail
           out=artifacts/parity/resource-glob
           mkdir -p "$out/processes"
-          cp tools/parity/resource_glob/cases.json tools/parity/resource_glob/process_cases.json tools/parity/resource_glob/theme_cases.json tools/parity/resource_glob/selection_cases.json tools/parity/resource_glob/path_cases.json "$out/"
+          cp tools/parity/resource_glob/cases.json tools/parity/resource_glob/process_cases.json tools/parity/resource_glob/theme_cases.json tools/parity/resource_glob/selection_cases.json tools/parity/resource_glob/path_cases.json tools/parity/resource_glob/file_url_error_cases.json "$out/"
           cp docs/parity/fixtures/resource-glob-matching-parity/file-url-normalization.json "$out/failing-before-fixed-after.json"
           python3 tools/parity/resource_glob/differential.py --pi artifacts/parity/pi-ownership-oracle --output "$out/glob.json"
+          python3 tools/parity/resource_glob/file_url_error_differential.py --pi artifacts/parity/pi-ownership-oracle --output "$out/file-url-errors.json"
+          python3 tools/parity/resource_glob/acceptance.py file-url-errors --report "$out/file-url-errors.json" --source-sha "$(git rev-parse HEAD)"
           python3 tools/parity/resource-selection-differential.py --pi artifacts/parity/pi-ownership-oracle --selection-case-index tools/parity/resource_glob/selection_cases.json --output "$out/full-selection.json"
           python3 tools/parity/resource_glob/acceptance.py selection --report "$out/full-selection.json" --source-sha "$(git rev-parse HEAD)"
           python3 tools/parity/resource_glob/acceptance.py theme --report "$out/full-selection.json" --source-sha "$(git rev-parse HEAD)"

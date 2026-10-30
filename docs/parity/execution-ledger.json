@@ -14757,7 +14757,7 @@
     ]
   },
   "resource_glob_matching_parity_milestone": {
-    "status": "verified; exact-head CI, E0 and draft PR publication passed",
+    "status": "review corrections applied; final-head CI publishes refreshed receipts",
     "branch": "milestone/resource-glob-matching-parity",
     "base_sha": "480f058a95713fbc51b6904d4450da68bcda886c",
     "implementation_sha": "3fff08ba043c0129373108c9ccb3f2600bd3a9ad",
@@ -14803,11 +14803,23 @@
       "skipped": 0
     },
     "mandatory_case_total": {
-      "required": 139,
-      "passed": 139,
+      "required": 144,
+      "passed": 144,
       "failed": 0,
       "skipped": 0,
-      "note": "Includes matcher, selection, explicit path, settings process and reload cases; the four theme cases are included in full-loader selection. Negative controls are reported separately."
+      "note": "Includes matcher, malformed file-URL error, selection, explicit path, settings process and reload cases; the four theme cases are included in full-loader selection. Negative controls are reported separately."
+    },
+    "file_url_pattern_errors": {
+      "case_index": "tools/parity/resource_glob/file_url_error_cases.json",
+      "case_index_sha256": "e886f081820a24fa25f4f4493010bc8ab5b06e9d0f3948e93c4b8d75f0992cd5",
+      "required": 5,
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0,
+      "operations_per_case": [
+        "glob",
+        "exact"
+      ]
     },
     "extension_comparisons": {
       "ordering_cases": 1,
@@ -14815,13 +14827,13 @@
       "startup_reload_context": "matched"
     },
     "negative_controls": {
-      "required": 17,
-      "passed": 17,
+      "required": 19,
+      "passed": 19,
       "failed": 0,
       "skipped": 0,
       "components": {
         "matcher": 7,
-        "acceptance": 10
+        "acceptance": 12
       }
     },
     "focused_dotnet_tests": {
@@ -14841,7 +14853,7 @@
         "skipped": 0
       },
       "local_resource_path_rules": {
-        "passed": 76,
+        "passed": 81,
         "failed": 0,
         "skipped": 0
       }
@@ -14854,15 +14866,15 @@
         "errors": 0
       },
       "full_solution_tests": {
-        "required": 4010,
-        "passed": 4010,
+        "required": 4015,
+        "passed": 4015,
         "failed": 0,
         "skipped": 0
       }
     },
     "interim_fixture": "docs/parity/fixtures/resource-glob-matching-parity/README.md",
     "raw_evidence": "artifacts/parity/resource-glob/manifest.json",
-    "source_bound_evidence": {
+    "pre_review_source_bound_evidence": {
       "artifact": "resource-glob-parity",
       "ci_run_id": "41094555282",
       "source_sha": "10fe2173d96293f5f8b395e8dd082a5fad4ad1e3",
@@ -14870,7 +14882,7 @@
       "verified_files": 77,
       "independent_verification": "passed"
     },
-    "exact_head_ci": {
+    "pre_review_exact_head_ci": {
       "run_id": "41094555282",
       "head_sha": "3fff08ba043c0129373108c9ccb3f2600bd3a9ad",
       "event": "pull_request",
@@ -14914,6 +14926,17 @@
       "terminal_render_scope": "visual styling and general TUI rendering are excluded; complete raw/render capture retained"
     },
     "path_case_index_sha256": "7bd88472c14c425524d8fa536e8ffcb3d2b7aece7bc7a2e10c102d89eced5a6b",
-    "selection_case_index_sha256": "3d3e29f748236a1c40971924d68e6dd8195120742a67c6801f4b3f96caecbae0"
+    "selection_case_index_sha256": "3d3e29f748236a1c40971924d68e6dd8195120742a67c6801f4b3f96caecbae0",
+    "review_corrections": {
+      "status": "verified_locally",
+      "e0_mandatory_report_inventory": 14,
+      "e0_revalidates_all_mandatory_reports": true,
+      "e0_rejects_removed_reports_after_manifest_regeneration": true,
+      "malformed_file_url_patterns_match_pinned_pi_errors": 5,
+      "focused_path_and_package_url_tests": "101/101",
+      "full_solution_tests": "4,015/4,015",
+      "format_and_warning_as_error_build": "passed",
+      "fresh_exact_head_ci": "automatic push and PR workflows run on the correction head"
+    }
   }
 }
