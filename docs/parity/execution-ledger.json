@@ -13744,7 +13744,7 @@
     "v1_evidence_directory": "artifacts/parity/rpc-protocol-command-parity/v1-736574cd",
     "v1_control_report_sha256": "6a040fac6cf795a62914a89d2907c80e2243eab7e4eb00faa4519f9285c7f4f9",
     "v1_case_result": "Initial 23/23 passed at 736574cdf3755340ffa3b340325484a0a0f95025; current-head verification rejects the report as stale after later parity-tool changes; rerun after source freeze",
-    "implementation_source_sha": "51f22e9c00675cec34766e4087165fe2534cdab9",
+    "implementation_source_sha": "e84a30b337bf09d5127a567cbaf5e4801b528d73",
     "r1_evidence_directory": "artifacts/parity/rpc-protocol-command-parity/r1-3642c9bc",
     "r1_evidence_sha256": "ae4715854e5b519e2f18aadb53a076a6cd02c7808a84a4f98782e758eda650f2",
     "r1_case_result": "Initial 11/11 passed at 3642c9bcbcaac05d6f7735015d8563f920847837; current-head verification rejects the report as stale after later parity-tool changes; rerun after source freeze",
@@ -13860,16 +13860,16 @@
     "r9_verifier_unit_tests": "16/16 passed; zero failures/skips",
     "r9_changed_file_format_verification": "Passed with targeted dotnet format whitespace verification for changed C# files.",
     "r9_compact_case_results": "docs/parity/fixtures/rpc-protocol-command-parity/r9-case-results.json",
-    "quality_checkpoint": "Pending exact-head rerun. The d2df2d92 push suite reported 4,007 passed and one failed test when cancellation interrupted a JSONL response flush; source 51f22e9c now makes writes atomic after they start. The PR workflow at that head passed 5/5; full validation and published evidence remain pending.",
+    "quality_checkpoint": "Pending exact-head rerun. The 944ec875 bundle recorded Q0 15/15 (4,009 passed, zero failed/skipped) and E0 10/10, but its publisher failed in the post-E0 manifest summary. Independent clean-checkout verification also exposed the absolute Q0 working-directory comparison. Source e84a30b3 fixes both; 42/42 RPC parity unit tests pass.",
     "credential_limit": "Exactly 20 credential-dependent pinned-Pi test identities are skipped and remain unverified; no live model endpoint was called.",
     "managed_package_limit": "Managed-package parity corpus remains scoped to its historical milestone branch; it was not rerun on this branch.",
     "completion_evidence": "docs/parity/fixtures/rpc-protocol-command-parity/completion-evidence-62c65044.json",
-    "contract_scope": "Frozen acceptance contract: 24/24 checkpoints and 252/252 mandatory cases. The earlier 62c65044 source-bound receipt is historical after review-follow-up changes. Final exact-head acceptance and E0 publication are pending.",
+    "contract_scope": "Frozen acceptance contract: 24/24 checkpoints and 252/252 mandatory cases. The 944ec875 result is diagnostic only; the latest source-bound receipt and exact-head artifact publication are pending.",
     "e0_checkpoint": {
       "result": "Pending exact-head source-bound evidence regeneration and independent verification.",
       "evidence_directory": null,
       "source_bound_checkpoint_count": 0,
-      "implementation_source_sha": "51f22e9c00675cec34766e4087165fe2534cdab9"
+      "implementation_source_sha": "e84a30b337bf09d5127a567cbaf5e4801b528d73"
     },
     "finalization_evidence": {
       "recordLocation": "Pending successful exact-head evidence, CI0 and PUB0; final results will be recorded in PR #29.",
@@ -13894,8 +13894,8 @@
       }
     },
     "independent_review_follow_up": {
-      "status": "compaction, verifier and response-write fixes committed; final exact-head acceptance pending",
-      "implementation_source_commit": "51f22e9c00675cec34766e4087165fe2534cdab9",
+      "status": "compaction, writer, verifier and publication-manifest fixes committed; final exact-head acceptance pending",
+      "implementation_source_commit": "e84a30b337bf09d5127a567cbaf5e4801b528d73",
       "review_findings": {
         "concurrent_compaction_deadlock": {
           "correction": "Serialize compaction handler admission so only one operation can cancel and await sibling operations.",
@@ -13974,10 +13974,49 @@
         "evidence_workflow_run_id": 40994871522,
         "evidence_workflow_conclusion": "cancelled after the response-write correction changed implementation source",
         "acceptance": "Historical diagnostic attempt; does not satisfy exact-head acceptance."
+      },
+      "portable_checkout_verification": {
+        "source_commit": "e84a30b337bf09d5127a567cbaf5e4801b528d73",
+        "cause": "Q0 raw command cwd is an absolute path from the GitHub runner and differs from a downloaded clean checkout root.",
+        "correction": "Verifier matches the recorded checkout directory name against the local root or origin repository name.",
+        "controls": "Positive remote-checkout-path and negative unrelated-checkout-path tests; source-manifest count positive and incomplete-manifest negative tests."
+      },
+      "publication_manifest_count_fix": {
+        "source_commit": "e84a30b337bf09d5127a567cbaf5e4801b528d73",
+        "cause": "The E0 sourceBoundEvidence.checkpoints records contain checkpointId/evidencePath/hash/source, not a passed field.",
+        "correction": "Compute sourceBoundCaseCount from the frozen contract definitions for the checkpoint IDs in the validated E0 manifest.",
+        "expectedSourceBoundCaseCount": 231
+      },
+      "third_evidence_attempt": {
+        "final_head_commit": "944ec87590e9541112ad38a25a782e83029b62a3",
+        "implementation_source_commit": "51f22e9c00675cec34766e4087165fe2534cdab9",
+        "push_ci_run_id": 40996792458,
+        "push_ci_conclusion": "success; 5/5 jobs",
+        "pull_request_ci_run_id": 40996797777,
+        "pull_request_ci_conclusion": "success; 5/5 jobs",
+        "evidence_workflow_run_id": 40996792405,
+        "evidence_workflow_conclusion": "failure in Record evidence bundle source identity after P0/P1/V0/V1/R1-R15/D0/Q0 and E0 generation.",
+        "q0_counts": {
+          "passed": 4009,
+          "failed": 0,
+          "skipped": 0,
+          "total": 4009
+        },
+        "q0_cases": "15/15 generated and accepted in the workflow checkout.",
+        "e0_cases": "10/10 generated and accepted in the workflow checkout.",
+        "source_checkpoint_count": 21,
+        "fresh_checkout_verifier": "P0/P1/V0/V1/R1-R15/D0 passed. Q0 was rejected only because its recorded absolute cwd differed from the clean checkout; this is corrected in the current source.",
+        "partial_artifact": {
+          "artifact_id": 12953032555,
+          "name": "rpc-parity-evidence-944ec87590e9541112ad38a25a782e83029b62a3",
+          "digest": "sha256:af2d1d89e0e5df29afec014614fb4a59fc3ceffe180bdf48e4ec270790d216a9",
+          "sizeInBytes": 3081378,
+          "acceptance": "diagnostic only; publisher workflow failed and clean-checkout Q0 verification rejected its absolute runner cwd"
+        }
       }
     },
     "previous_source_bound_implementation_source_sha": "62c650449f59be8cce7bedb2ecacbbec7770b015",
-    "current_source_bound_implementation_source_sha": "51f22e9c00675cec34766e4087165fe2534cdab9",
+    "current_source_bound_implementation_source_sha": "e84a30b337bf09d5127a567cbaf5e4801b528d73",
     "previous_source_bound_evidence_root": "artifacts/parity/rpc-protocol-command-parity/run-62c65044",
     "current_source_bound_evidence_root": null,
     "previous_source_bound_comparison_counts": {
