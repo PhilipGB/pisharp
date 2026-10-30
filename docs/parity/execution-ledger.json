@@ -13744,7 +13744,7 @@
     "v1_evidence_directory": "artifacts/parity/rpc-protocol-command-parity/v1-736574cd",
     "v1_control_report_sha256": "6a040fac6cf795a62914a89d2907c80e2243eab7e4eb00faa4519f9285c7f4f9",
     "v1_case_result": "Initial 23/23 passed at 736574cdf3755340ffa3b340325484a0a0f95025; current-head verification rejects the report as stale after later parity-tool changes; rerun after source freeze",
-    "implementation_source_sha": "f83470d7747f4e0157f8473900b49cc1ccdf8a09",
+    "implementation_source_sha": "51f22e9c00675cec34766e4087165fe2534cdab9",
     "r1_evidence_directory": "artifacts/parity/rpc-protocol-command-parity/r1-3642c9bc",
     "r1_evidence_sha256": "ae4715854e5b519e2f18aadb53a076a6cd02c7808a84a4f98782e758eda650f2",
     "r1_case_result": "Initial 11/11 passed at 3642c9bcbcaac05d6f7735015d8563f920847837; current-head verification rejects the report as stale after later parity-tool changes; rerun after source freeze",
@@ -13860,7 +13860,7 @@
     "r9_verifier_unit_tests": "16/16 passed; zero failures/skips",
     "r9_changed_file_format_verification": "Passed with targeted dotnet format whitespace verification for changed C# files.",
     "r9_compact_case_results": "docs/parity/fixtures/rpc-protocol-command-parity/r9-case-results.json",
-    "quality_checkpoint": "Pending exact-head rerun. The initial evidence workflow at baea9622 failed Q0 because ANSI-colored Vitest output was not parsed; the verifier fix now reports 582 passed, 20 inventory-matched skips, and RPC parity unit tests pass 38/38.",
+    "quality_checkpoint": "Pending exact-head rerun. The d2df2d92 push suite reported 4,007 passed and one failed test when cancellation interrupted a JSONL response flush; source 51f22e9c now makes writes atomic after they start. The PR workflow at that head passed 5/5; full validation and published evidence remain pending.",
     "credential_limit": "Exactly 20 credential-dependent pinned-Pi test identities are skipped and remain unverified; no live model endpoint was called.",
     "managed_package_limit": "Managed-package parity corpus remains scoped to its historical milestone branch; it was not rerun on this branch.",
     "completion_evidence": "docs/parity/fixtures/rpc-protocol-command-parity/completion-evidence-62c65044.json",
@@ -13869,7 +13869,7 @@
       "result": "Pending exact-head source-bound evidence regeneration and independent verification.",
       "evidence_directory": null,
       "source_bound_checkpoint_count": 0,
-      "implementation_source_sha": "f83470d7747f4e0157f8473900b49cc1ccdf8a09"
+      "implementation_source_sha": "51f22e9c00675cec34766e4087165fe2534cdab9"
     },
     "finalization_evidence": {
       "recordLocation": "Pending successful exact-head evidence, CI0 and PUB0; final results will be recorded in PR #29.",
@@ -13894,8 +13894,8 @@
       }
     },
     "independent_review_follow_up": {
-      "status": "source and verifier fixes committed; exact-head acceptance rerun pending",
-      "implementation_source_commit": "f83470d7747f4e0157f8473900b49cc1ccdf8a09",
+      "status": "compaction, verifier and response-write fixes committed; final exact-head acceptance pending",
+      "implementation_source_commit": "51f22e9c00675cec34766e4087165fe2534cdab9",
       "review_findings": {
         "concurrent_compaction_deadlock": {
           "correction": "Serialize compaction handler admission so only one operation can cancel and await sibling operations.",
@@ -13950,10 +13950,34 @@
           "digest": "sha256:984eadb9cae8d2b11de89b3cb0c90215d9615a2cac80f1ca41bc4996f3e72f1c",
           "acceptance": "diagnostic only; failed workflow artifact does not satisfy CI0 or final acceptance"
         }
+      },
+      "response_write_fix": {
+        "source_commit": "51f22e9c00675cec34766e4087165fe2534cdab9",
+        "behavior": "After JsonLineWriter acquires its output gate and starts writing a JSONL record, flush completes without cancellation so callers cannot send a second cancellation response after a record was already emitted.",
+        "regression": "JsonLineWriterTests.CompletesARecordWhenCancellationArrivesAfterWritingStarts",
+        "focused_tests": "8/8 passed; the cancellation-sensitive process test passed 10 consecutive reruns."
+      },
+      "second_evidence_attempt": {
+        "final_head_commit": "d2df2d925675c2c9474bcc8128b21fbb5944dcf5",
+        "push_ci_run_id": 40994871565,
+        "push_ci_conclusion": "failure",
+        "pull_request_ci_run_id": 40994877102,
+        "pull_request_ci_conclusion": "success; 5/5 jobs",
+        "full_dotnet_test_counts": {
+          "passed": 4007,
+          "failed": 1,
+          "skipped": 0,
+          "total": 4008
+        },
+        "failed_test": "PiSharp.Tests.RpcCompactionProcessTests.RpcProcessUsesPiSplitTurnCompactionAndCustomInstructionsForHistoryOnly",
+        "failure": "EOF cancellation during JsonLineWriter.FlushAsync could emit a cancellation response after the successful response record had already been written.",
+        "evidence_workflow_run_id": 40994871522,
+        "evidence_workflow_conclusion": "cancelled after the response-write correction changed implementation source",
+        "acceptance": "Historical diagnostic attempt; does not satisfy exact-head acceptance."
       }
     },
     "previous_source_bound_implementation_source_sha": "62c650449f59be8cce7bedb2ecacbbec7770b015",
-    "current_source_bound_implementation_source_sha": "f83470d7747f4e0157f8473900b49cc1ccdf8a09",
+    "current_source_bound_implementation_source_sha": "51f22e9c00675cec34766e4087165fe2534cdab9",
     "previous_source_bound_evidence_root": "artifacts/parity/rpc-protocol-command-parity/run-62c65044",
     "current_source_bound_evidence_root": null,
     "previous_source_bound_comparison_counts": {
