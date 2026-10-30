@@ -14757,9 +14757,10 @@
     ]
   },
   "resource_glob_matching_parity_milestone": {
-    "status": "in_progress",
+    "status": "verified; exact-head CI, E0 and draft PR publication passed",
     "branch": "milestone/resource-glob-matching-parity",
     "base_sha": "480f058a95713fbc51b6904d4450da68bcda886c",
+    "implementation_sha": "3fff08ba043c0129373108c9ccb3f2600bd3a9ad",
     "pi_reference": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
     "minimatch_version": "10.2.6",
     "case_index": "tools/parity/resource_glob/cases.json",
@@ -14800,6 +14801,13 @@
       "passed": 19,
       "failed": 0,
       "skipped": 0
+    },
+    "mandatory_case_total": {
+      "required": 139,
+      "passed": 139,
+      "failed": 0,
+      "skipped": 0,
+      "note": "Includes matcher, selection, explicit path, settings process and reload cases; the four theme cases are included in full-loader selection. Negative controls are reported separately."
     },
     "extension_comparisons": {
       "ordering_cases": 1,
@@ -14854,12 +14862,29 @@
     },
     "interim_fixture": "docs/parity/fixtures/resource-glob-matching-parity/README.md",
     "raw_evidence": "artifacts/parity/resource-glob/manifest.json",
-    "remaining": [
-      "full solution test receipt",
-      "source-bound E0 manifest",
-      "exact-head automatic CI0",
-      "draft PR PUB0 receipt"
-    ],
+    "source_bound_evidence": {
+      "artifact": "resource-glob-parity",
+      "ci_run_id": "41094555282",
+      "source_sha": "10fe2173d96293f5f8b395e8dd082a5fad4ad1e3",
+      "pr_head_sha": "3fff08ba043c0129373108c9ccb3f2600bd3a9ad",
+      "verified_files": 77,
+      "independent_verification": "passed"
+    },
+    "exact_head_ci": {
+      "run_id": "41094555282",
+      "head_sha": "3fff08ba043c0129373108c9ccb3f2600bd3a9ad",
+      "event": "pull_request",
+      "conclusion": "success",
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/41094555282"
+    },
+    "publication": {
+      "pull_request": 30,
+      "url": "https://github.com/PhilipGB/pisharp/pull/30",
+      "state": "open",
+      "draft": true,
+      "merged": false
+    },
+    "remaining": [],
     "theme_case_index_sha256": "55cac20f6ad2473956b902a311eb25e37fbb9033c21f231435da0d38b2daccc9",
     "process_case_index_sha256": "b596adb6e1cee1bcc55ce9855799288d3028f2077d6fa21167cc360ef49b863e",
     "failing_before_fixed_after": {
