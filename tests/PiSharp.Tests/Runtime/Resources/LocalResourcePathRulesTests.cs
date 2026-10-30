@@ -40,6 +40,50 @@ public sealed class LocalResourcePathRulesTests
         Assert.False(LocalResourcePathRules.IsEnabledByOverrides(path, [include, exclude], baseDirectory, skillPath));
     }
 
+    [Fact]
+    public void FileUrlPatternsNormalizeBeforeGlobAndExactOverrideMatching()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-resource file-url");
+        var path = Path.Combine(root, "extensions", "plugin.dll");
+        var fileUrl = new Uri(path).AbsoluteUri;
+
+        Assert.False(LocalResourcePathRules.IsEnabledByOverrides(path, ["!" + fileUrl], root));
+        Assert.True(LocalResourcePathRules.IsEnabledByOverrides(path, ["!extensions/**", "+" + fileUrl], root));
+        Assert.False(LocalResourcePathRules.IsEnabledByOverrides(path, ["+" + fileUrl, "-" + fileUrl], root));
+    }
+
+    [Theory]
+    [InlineData("file:///tmp/resource-bad%", "URI malformed")]
+    [InlineData("file:///tmp/resource-bad%GG", "URI malformed")]
+    [InlineData("file:///tmp/resource-%E0%A4", "URI malformed")]
+    [InlineData("file:///tmp/resource-%2Fchild", "File URL path must not include encoded / characters")]
+    public void MalformedFileUrlPatternsFailDuringGlobAndExactMatching(string pattern, string message)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-resource-invalid-file-url");
+        var path = Path.Combine(root, "extensions", "plugin.dll");
+
+        Assert.Equal(message, Assert.Throws<InvalidDataException>(() =>
+            LocalResourcePathRules.IsEnabledByOverrides(path, ["!" + pattern], root)).Message);
+        Assert.Equal(message, Assert.Throws<InvalidDataException>(() =>
+            LocalResourcePathRules.IsEnabledByOverrides(path, ["+" + pattern], root)).Message);
+    }
+
+    [Fact]
+    public void UnsupportedFileUrlHostFailsDuringGlobAndExactMatchingOnUnix()
+    {
+        if (OperatingSystem.IsWindows()) return;
+
+        const string pattern = "file://remote/tmp/resource-plugin.dll";
+        var message = $"File URL host must be \"localhost\" or empty on {(OperatingSystem.IsMacOS() ? "darwin" : "linux")}";
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-resource-invalid-file-url-host");
+        var path = Path.Combine(root, "extensions", "plugin.dll");
+
+        Assert.Equal(message, Assert.Throws<InvalidDataException>(() =>
+            LocalResourcePathRules.IsEnabledByOverrides(path, ["!" + pattern], root)).Message);
+        Assert.Equal(message, Assert.Throws<InvalidDataException>(() =>
+            LocalResourcePathRules.IsEnabledByOverrides(path, ["+" + pattern], root)).Message);
+    }
+
     [Theory]
     [InlineData("docs/.hidden.md", "!docs/**", true)]
     [InlineData("docs/.hidden.md", "!docs/*.md", true)]

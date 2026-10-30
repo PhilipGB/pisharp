@@ -83,6 +83,39 @@ jobs:
         run: npm --prefix artifacts/parity/pi-ownership-oracle run hydrate:model-data
       - name: Build pinned Pi offline
         run: npm --prefix artifacts/parity/pi-ownership-oracle run build:offline
+      - name: Run resource glob, selection and reload parity
+        env:
+          PULL_REQUEST_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          out=artifacts/parity/resource-glob
+          mkdir -p "$out/processes"
+          cp tools/parity/resource_glob/cases.json tools/parity/resource_glob/process_cases.json tools/parity/resource_glob/theme_cases.json tools/parity/resource_glob/selection_cases.json tools/parity/resource_glob/path_cases.json tools/parity/resource_glob/file_url_error_cases.json "$out/"
+          cp docs/parity/fixtures/resource-glob-matching-parity/file-url-normalization.json "$out/failing-before-fixed-after.json"
+          python3 tools/parity/resource_glob/differential.py --pi artifacts/parity/pi-ownership-oracle --output "$out/glob.json"
+          python3 tools/parity/resource_glob/file_url_error_differential.py --pi artifacts/parity/pi-ownership-oracle --output "$out/file-url-errors.json"
+          python3 tools/parity/resource_glob/acceptance.py file-url-errors --report "$out/file-url-errors.json" --source-sha "$(git rev-parse HEAD)"
+          python3 tools/parity/resource-selection-differential.py --pi artifacts/parity/pi-ownership-oracle --selection-case-index tools/parity/resource_glob/selection_cases.json --output "$out/full-selection.json"
+          python3 tools/parity/resource_glob/acceptance.py selection --report "$out/full-selection.json" --source-sha "$(git rev-parse HEAD)"
+          python3 tools/parity/resource_glob/acceptance.py theme --report "$out/full-selection.json" --source-sha "$(git rev-parse HEAD)"
+          python3 tools/parity/resource-path-differential.py --pi artifacts/parity/pi-ownership-oracle --case-index tools/parity/resource_glob/path_cases.json --output "$out/explicit-paths.json"
+          python3 tools/parity/resource_glob/acceptance.py path --report "$out/explicit-paths.json" --source-sha "$(git rev-parse HEAD)"
+          python3 tools/parity/resource_glob/run_process_suite.py --pi artifacts/parity/pi-ownership-oracle --output "$out/processes"
+          dotnet build tests/ResourceDiscoveryExtension/ResourceDiscoveryExtension.csproj --no-restore --warnaserror
+          python3 tools/parity/terminal/run.py --pi artifacts/parity/pi-ownership-oracle --fixture tools/parity/terminal/fixtures/resource-glob-settings-reload.json --pisharp-extension tests/ResourceDiscoveryExtension/bin/Debug/net10.0/dynamic-resources.dll --case 120x40-dark-fullscreen --semantic-only --output "$out/reload"
+          python3 tools/parity/terminal/assert_resource_glob_settings_reload.py "$out/reload/120x40-dark-fullscreen.assertions.json.gz"
+          python3 tools/parity/resource_glob/negative_controls.py
+          python3 tools/parity/resource_glob/acceptance_negative_controls.py
+          python3 tools/parity/resource_glob/acceptance.py glob --report "$out/glob.json" --source-sha "$(git rev-parse HEAD)"
+          python3 tools/parity/resource_glob/create_manifest.py --root "$out" --source-sha "$GITHUB_SHA" --pr-head-sha "$PULL_REQUEST_HEAD_SHA" --ci-run-id "$GITHUB_RUN_ID"
+          python3 tools/parity/resource_glob/acceptance.py manifest --manifest "$out/manifest.json" --source-sha "$GITHUB_SHA" --ci-run-id "$GITHUB_RUN_ID" --pr-head-sha "$PULL_REQUEST_HEAD_SHA"
+      - name: Upload resource glob parity evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resource-glob-parity
+          path: artifacts/parity/resource-glob
+          if-no-files-found: error
       - name: Run pinned multimodal image and session differentials
         run: |
           mkdir -p artifacts/parity/multimodal-differential

@@ -206,7 +206,8 @@ def write_assertion_evidence(path, products, dimensions, theme, mode, frame_ids=
                     assertionFrames=sorted(requested_frames))
     for name, product in products.items():
         frames = list(product.get('assertionFrames', []))
-        evidence[name] = dict(frames=frames, http=product['http'], scenarioError=product['scenarioError'])
+        evidence[name] = dict(frames=frames, http=product['http'], scenarioError=product['scenarioError'],
+                              capturedAgentFiles=product.get('capturedAgentFiles', {}))
         if include_working_indicator:
             evidence[name]['workingIndicator'] = working_indicator_summary(product['renders'])
 
@@ -302,6 +303,16 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
     (agent / 'models.json').write_text(json.dumps(dict(providers=dict(fixture=dict(baseUrl=server.url + '/v1',
                                                                                  apiKey='fixture-key', api='openai-completions', models=[model])))))
     write_scenario_files(scenario.get('files', {}).get(label, {}), agent)
+    if label == 'pisharp' and scenario.get('copyPisharpExtensionTo'):
+        if pisharp_extension is None or not pisharp_extension.is_file():
+            raise ValueError('This fixture requires --pisharp-extension to stage configured local extensions')
+        agent_root = agent.resolve()
+        for relative in scenario['copyPisharpExtensionTo']:
+            destination = (agent / relative).resolve()
+            if not destination.is_relative_to(agent_root):
+                raise ValueError(f'Configured extension fixture leaves the agent directory: {relative}')
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(pisharp_extension, destination)
     if label == 'pisharp' and scenario.get('pisharpExtension') and scenario.get('pisharpNativeExtensionPackage'):
         if pisharp_extension is None or not pisharp_extension.is_file():
             raise ValueError('This fixture requires an existing --pisharp-extension assembly')
@@ -417,10 +428,17 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
             http_by_frame.append(dict(id=action['id'], requests=server.requests[request_mark:]))
             clipboard_by_frame.append(record_clipboard_checkpoint(action, terminal.raw[mark:]))
         prior_raw.extend(terminal.raw)
+        captured_agent_files = {}
+        for relative in scenario.get('captureAgentFiles', []):
+            path = (agent / relative).resolve()
+            if not path.is_relative_to(agent.resolve()):
+                raise ValueError(f'Captured fixture file leaves the agent directory: {relative}')
+            if path.is_file():
+                captured_agent_files[relative] = path.read_text()
         return dict(frames=frames, assertionFrames=assertion_frames,
                     renders=RenderFrameSequence(*prior_render_frames, terminal.render_frames),
                     httpByFrame=http_by_frame, clipboardByFrame=clipboard_by_frame,
-                    raw=base64.b64encode(prior_raw).decode(),
+                    raw=base64.b64encode(prior_raw).decode(), capturedAgentFiles=captured_agent_files,
                     http=server.requests[request_start:], command=command, scenarioError=None)
     except (TimeoutError, RuntimeError) as error:
         record_frame(dict(id=action['id'], state=terminal.snapshot(), controls=terminal.trace.events[control_mark:],
@@ -449,6 +467,8 @@ def main():
     parser.add_argument('--fixture-root', type=Path,
                         help='Isolate owned workspace and agent directories beneath this root')
     parser.add_argument('--case', help='Run just the named dimension/theme/mode case')
+    parser.add_argument('--semantic-only', action='store_true',
+                        help='Retain full terminal comparisons but gate only process errors; pair with a fixture semantic assertion')
     args = parser.parse_args()
     if args.fixture_root is not None:
         root = args.fixture_root.resolve()
@@ -573,7 +593,10 @@ def main():
     if not report['cases']:
         raise ValueError('No terminal cases selected')
     report['match'] = all(case['match'] for case in report['cases'])
+    report['semanticOnly'] = args.semantic_only
     (args.output / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
+    if args.semantic_only:
+        return 0 if all(not case['scenarioErrors'] for case in report['cases']) else 1
     return 0 if report['match'] else 1
 
 

@@ -9,7 +9,23 @@ public sealed class ResourceDiscoveryFixture : IPiSharpExtension
 {
     public void Configure(ExtensionRegistration registration)
     {
-        Trace("configured");
+        var scopeAwareTrace = string.Equals(Environment.GetEnvironmentVariable(
+            "PISHARP_TEST_RESOURCE_DISCOVERY_SCOPE_TRACE"), "true", StringComparison.OrdinalIgnoreCase);
+        var path = Path.GetFullPath(typeof(ResourceDiscoveryFixture).Assembly.Location);
+        var scope = path.Contains(Path.Combine(".pi", "custom-extensions"), StringComparison.Ordinal)
+            ? "project" : "user";
+        var extensionDirectory = Path.GetFileName(Path.GetDirectoryName(path)) ?? "unknown";
+        Trace(scopeAwareTrace ? $"configured:{scope}:{extensionDirectory}" : "configured");
+        if (string.Equals(Environment.GetEnvironmentVariable("PISHARP_TEST_RESOURCE_DISCOVERY_COMMAND"), "true",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            var command = string.Equals(Environment.GetEnvironmentVariable(
+                    "PISHARP_TEST_RESOURCE_DISCOVERY_COMMAND_FROM_PARENT"), "true", StringComparison.OrdinalIgnoreCase)
+                ? $"resource-discovery-{extensionDirectory}"
+                : scopeAwareTrace ? $"resource-discovery-{scope}" : "resource-discovery-fixture";
+            registration.AddCommand(command, (_, _) => Task.FromResult("fixture command"),
+                "Resource discovery fixture command.");
+        }
 
         registration.AddProjectTrustHandler((context, cancellationToken) =>
         {

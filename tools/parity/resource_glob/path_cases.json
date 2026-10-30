@@ -1,0 +1,513 @@
+[
+  {
+    "id": "skill-normal",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:2396-2535",
+    "input": {
+      "id": "skill-normal",
+      "kind": "skill",
+      "paths": [
+        "SKILL.md"
+      ],
+      "variant": "normal"
+    },
+    "expectedPi": {
+      "id": "skill-normal",
+      "result": {
+        "skills": [
+          {
+            "name": "guide",
+            "description": "Guide",
+            "path": "SKILL.md",
+            "body": {
+              "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+              "characters": 4
+            }
+          }
+        ],
+        "prompts": [],
+        "diagnostics": []
+      },
+      "error": null
+    }
+  },
+  {
+    "id": "skill-alias",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:2396-2535",
+    "input": {
+      "id": "skill-alias",
+      "kind": "skill",
+      "paths": [
+        "alias.md"
+      ],
+      "variant": "alias"
+    },
+    "expectedPi": {
+      "id": "skill-alias",
+      "result": {
+        "skills": [
+          {
+            "name": "guide",
+            "description": "Guide",
+            "path": "alias.md",
+            "body": {
+              "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+              "characters": 4
+            }
+          }
+        ],
+        "prompts": [],
+        "diagnostics": []
+      },
+      "error": null
+    }
+  },
+  {
+    "id": "skill-wrong-extension",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:2396-2535",
+    "input": {
+      "id": "skill-wrong-extension",
+      "kind": "skill",
+      "paths": [
+        "guide.txt"
+      ],
+      "variant": "wrong-extension"
+    },
+    "expectedPi": {
+      "id": "skill-wrong-extension",
+      "result": {
+        "skills": [],
+        "prompts": [],
+        "diagnostics": [
+          {
+            "type": "warning",
+            "path": "guide.txt",
+            "category": "skill path is not a markdown file"
+          }
+        ]
+      },
+      "error": null
+    }
+  },
+  {
+    "id": "skill-uppercase",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:2396-2535",
+    "input": {
+      "id": "skill-uppercase",
+      "kind": "skill",
+      "paths": [
+        "GUIDE.MD"
+      ],
+      "variant": "uppercase"
+    },
+    "expectedPi": {
+      "id": "skill-uppercase",
+      "result": {
+        "skills": [],
+        "prompts": [],
+        "diagnostics": [
+          {
+            "type": "warning",
+            "path": "GUIDE.MD",
+            "category": "skill path is not a markdown file"
+          }
+        ]
+      },
+      "error": null
+    }
+  },
+  {
+    "id": "skill-missing",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:2396-2535",
+    "input": {
+      "id": "skill-missing",
+      "kind": "skill",
+      "paths": [
+        "SKILL.md"
+      ],
+      "variant": "missing"
+    },
+    "expectedPi": {
+      "id": "skill-missing",
+      "result": {
+        "skills": [],
+        "prompts": [],
+        "diagnostics": [
+          {
+            "type": "warning",
+            "path": "SKILL.md",
+            "category": "skill path does not exist"
+          }
+        ]
+      },
+      "error": null
+    }
+  },
+  {
+    "id": "skill-fifo",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:2396-2535",
+    "input": {
+      "id": "skill-fifo",
+      "kind": "skill",
+      "paths": [
+        "SKILL.md"
+      ],
+      "variant": "fifo"
+    },
+    "expectedPi": {
+      "id": "skill-fifo",
+      "result": {
+        "skills": [],
+        "prompts": [],
+        "diagnostics": [
+          {
+            "type": "warning",
+            "path": "SKILL.md",
+            "category": "skill path is not a markdown file"
+          }
+        ]
+      },
+      "error": null
+    }
+  },
+  {
+    "id": "skill-symlink",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:2396-2535",
+    "input": {
+      "id": "skill-symlink",
+      "kind": "skill",
+      "paths": [
+        "SKILL.md"
+      ],
+      "variant": "symlink"
+    },
+    "expectedPi": {
+      "id": "skill-symlink",
+      "result": {
+        "skills": [
+          {
+            "name": "guide",
+            "description": "Guide",
+            "path": "SKILL.md",
+            "body": {
+              "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+              "characters": 4
+            }
+          }
+        ],
+        "prompts": [],
+        "diagnostics": []
+      },
+      "error": null
+    }
+  },
+  {
+    "id": "skill-broken-link",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:2396-2535",
+    "input": {
+      "id": "skill-broken-link",
+      "kind": "skill",
+      "paths": [
+        "SKILL.md"
+      ],
+      "variant": "broken-link"
+    },
+    "expectedPi": {
+      "id": "skill-broken-link",
+      "result": {
+        "skills": [],
+        "prompts": [],
+        "diagnostics": [
+          {
+            "type": "warning",
+            "path": "SKILL.md",
+            "category": "skill path does not exist"
+          }
+        ]
+      },
+      "error": null
+    }
+  },
+  {
+    "id": "skill-empty-directory",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:2396-2535",
+    "input": {
+      "id": "skill-empty-directory",
+      "kind": "skill",
+      "paths": [
+        "SKILL.md"
+      ],
+      "variant": "empty-directory"
+    },
+    "expectedPi": {
+      "id": "skill-empty-directory",
+      "result": {
+        "skills": [],
+        "prompts": [],
+        "diagnostics": []
+      },
+      "error": null
+    }
+  },
+  {
+    "id": "prompt-normal",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:2396-2535",
+    "input": {
+      "id": "prompt-normal",
+      "kind": "prompt",
+      "paths": [
+        "guide.md"
+      ],
+      "variant": "normal"
+    },
+    "expectedPi": {
+      "id": "prompt-normal",
+      "result": {
+        "skills": [],
+        "prompts": [
+          {
+            "name": "guide",
+            "description": "Guide",
+            "path": "guide.md",
+            "body": {
+              "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+              "characters": 4
+            }
+          }
+        ],
+        "diagnostics": []
+      },
+      "error": null
+    }
+  },
+  {
+    "id": "prompt-alias",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:2396-2535",
+    "input": {
+      "id": "prompt-alias",
+      "kind": "prompt",
+      "paths": [
+        "alias.md"
+      ],
+      "variant": "alias"
+    },
+    "expectedPi": {
+      "id": "prompt-alias",
+      "result": {
+        "skills": [],
+        "prompts": [
+          {
+            "name": "alias",
+            "description": "Guide",
+            "path": "alias.md",
+            "body": {
+              "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+              "characters": 4
+            }
+          }
+        ],
+        "diagnostics": []
+      },
+      "error": null
+    }
+  },
+  {
+    "id": "prompt-wrong-extension",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:2396-2535",
+    "input": {
+      "id": "prompt-wrong-extension",
+      "kind": "prompt",
+      "paths": [
+        "guide.txt"
+      ],
+      "variant": "wrong-extension"
+    },
+    "expectedPi": {
+      "id": "prompt-wrong-extension",
+      "result": {
+        "skills": [],
+        "prompts": [],
+        "diagnostics": []
+      },
+      "error": null
+    }
+  },
+  {
+    "id": "prompt-uppercase",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:2396-2535",
+    "input": {
+      "id": "prompt-uppercase",
+      "kind": "prompt",
+      "paths": [
+        "GUIDE.MD"
+      ],
+      "variant": "uppercase"
+    },
+    "expectedPi": {
+      "id": "prompt-uppercase",
+      "result": {
+        "skills": [],
+        "prompts": [],
+        "diagnostics": []
+      },
+      "error": null
+    }
+  },
+  {
+    "id": "prompt-missing",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:2396-2535",
+    "input": {
+      "id": "prompt-missing",
+      "kind": "prompt",
+      "paths": [
+        "guide.md"
+      ],
+      "variant": "missing"
+    },
+    "expectedPi": {
+      "id": "prompt-missing",
+      "result": {
+        "skills": [],
+        "prompts": [],
+        "diagnostics": [
+          {
+            "type": "error",
+            "path": "guide.md",
+            "category": "Prompt template path does not exist"
+          }
+        ]
+      },
+      "error": null
+    }
+  },
+  {
+    "id": "prompt-fifo",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:2396-2535",
+    "input": {
+      "id": "prompt-fifo",
+      "kind": "prompt",
+      "paths": [
+        "guide.md"
+      ],
+      "variant": "fifo"
+    },
+    "expectedPi": {
+      "id": "prompt-fifo",
+      "result": {
+        "skills": [],
+        "prompts": [],
+        "diagnostics": []
+      },
+      "error": null
+    }
+  },
+  {
+    "id": "prompt-symlink",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:2396-2535",
+    "input": {
+      "id": "prompt-symlink",
+      "kind": "prompt",
+      "paths": [
+        "guide.md"
+      ],
+      "variant": "symlink"
+    },
+    "expectedPi": {
+      "id": "prompt-symlink",
+      "result": {
+        "skills": [],
+        "prompts": [
+          {
+            "name": "guide",
+            "description": "Guide",
+            "path": "guide.md",
+            "body": {
+              "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+              "characters": 4
+            }
+          }
+        ],
+        "diagnostics": []
+      },
+      "error": null
+    }
+  },
+  {
+    "id": "prompt-broken-link",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:2396-2535",
+    "input": {
+      "id": "prompt-broken-link",
+      "kind": "prompt",
+      "paths": [
+        "guide.md"
+      ],
+      "variant": "broken-link"
+    },
+    "expectedPi": {
+      "id": "prompt-broken-link",
+      "result": {
+        "skills": [],
+        "prompts": [],
+        "diagnostics": [
+          {
+            "type": "error",
+            "path": "guide.md",
+            "category": "Prompt template path does not exist"
+          }
+        ]
+      },
+      "error": null
+    }
+  },
+  {
+    "id": "prompt-empty-directory",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:2396-2535",
+    "input": {
+      "id": "prompt-empty-directory",
+      "kind": "prompt",
+      "paths": [
+        "guide.md"
+      ],
+      "variant": "empty-directory"
+    },
+    "expectedPi": {
+      "id": "prompt-empty-directory",
+      "result": {
+        "skills": [],
+        "prompts": [],
+        "diagnostics": []
+      },
+      "error": null
+    }
+  },
+  {
+    "id": "prompt-spaces-name",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:2396-2535",
+    "input": {
+      "id": "prompt-spaces-name",
+      "kind": "prompt",
+      "paths": [
+        "space name.md"
+      ],
+      "variant": "normal"
+    },
+    "expectedPi": {
+      "id": "prompt-spaces-name",
+      "result": {
+        "skills": [],
+        "prompts": [
+          {
+            "name": "space name",
+            "description": "Guide",
+            "path": "space name.md",
+            "body": {
+              "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+              "characters": 4
+            }
+          }
+        ],
+        "diagnostics": []
+      },
+      "error": null
+    }
+  }
+]

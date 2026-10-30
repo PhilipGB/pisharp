@@ -1,0 +1,252 @@
+{
+  "id": "resource-glob-settings-reload",
+  "assertionFrames": [
+    "startup",
+    "reload",
+    "reloaded-skill",
+    "reloaded-prompt"
+  ],
+  "workingDirectory": "resource-glob-settings-project",
+  "environment": {
+    "pi": {
+      "PISHARP_TEST_EXTENSION_LOAD_LOG": "{agent}/extension-load.log"
+    },
+    "pisharp": {
+      "PISHARP_TEST_RESOURCE_DISCOVERY_SCOPE_TRACE": "true",
+      "PISHARP_TEST_RESOURCE_DISCOVERY_COMMAND": "true",
+      "PISHARP_TEST_RESOURCE_DISCOVERY_COMMAND_FROM_PARENT": "true",
+      "PISHARP_TEST_EXTENSION_LOAD_LOG": "{agent}/extension-load.log"
+    }
+  },
+  "settings": {
+    "quietStartup": true,
+    "skills": [
+      "initial-skills",
+      "!initial-skills/blocked/**"
+    ],
+    "prompts": [
+      "initial-prompts",
+      "!initial-prompts/blocked*"
+    ],
+    "themes": [
+      "initial-themes",
+      "!initial-themes/blocked-*"
+    ],
+    "extensions": [
+      "custom-extensions",
+      "!extensions/blocked*"
+    ]
+  },
+  "arguments": {
+    "pi": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--models",
+      "fixture-model",
+      "--no-session",
+      "--offline",
+      "--no-context-files"
+    ],
+    "pisharp": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--models",
+      "fixture-model",
+      "--no-session",
+      "--offline",
+      "--no-context-files"
+    ]
+  },
+  "projectFiles": {},
+  "pisharpNativeExtension": "dynamic-resources.dll",
+  "files": {
+    "pi": {
+      "settings.json": {
+        "quietStartup": true,
+        "skills": [
+          "initial-skills",
+          "!initial-skills/blocked/**"
+        ],
+        "prompts": [
+          "initial-prompts",
+          "!initial-prompts/blocked*"
+        ],
+        "themes": [
+          "initial-themes",
+          "!initial-themes/blocked-*"
+        ],
+        "extensions": [
+          "custom-extensions",
+          "!extensions/blocked*"
+        ]
+      },
+      "initial-skills/initial-guide/SKILL.md": "---\nname: initial-guide\ndescription: Initial guide\n---\nInitial skill body.\n",
+      "initial-prompts/initial-review.md": "---\ndescription: Initial review\n---\nInitial prompt $1\n",
+      "initial-themes/initial.json": {
+        "name": "resource-glob-initial-theme",
+        "colors": {
+          "accent": "#112233"
+        }
+      },
+      "initial-themes/blocked-initial.json": {
+        "name": "resource-glob-blocked-initial-theme",
+        "colors": {
+          "accent": "#223344"
+        }
+      },
+      "custom-extensions/index.ts": "import {appendFileSync} from 'node:fs';\nexport default function(pi) { appendFileSync(process.env.PISHARP_TEST_EXTENSION_LOAD_LOG,'configured:initial-extensions\\n'); pi.registerCommand('resource-discovery-custom-extensions',{description:'Initial selected extension.',handler:async()=>{}}); }\n",
+      "extensions/blocked.ts": "import {appendFileSync} from 'node:fs';\nexport default function(pi) { appendFileSync(process.env.PISHARP_TEST_EXTENSION_LOAD_LOG,'blocked-extension\\n'); pi.registerCommand('resource-discovery-blocked',{description:'Must not load.',handler:async()=>{}}); }\n"
+    },
+    "pisharp": {
+      "settings.json": {
+        "quietStartup": true,
+        "skills": [
+          "initial-skills",
+          "!initial-skills/blocked/**"
+        ],
+        "prompts": [
+          "initial-prompts",
+          "!initial-prompts/blocked*"
+        ],
+        "themes": [
+          "initial-themes",
+          "!initial-themes/blocked-*"
+        ],
+        "extensions": [
+          "custom-extensions",
+          "!extensions/blocked*"
+        ]
+      },
+      "initial-skills/initial-guide/SKILL.md": "---\nname: initial-guide\ndescription: Initial guide\n---\nInitial skill body.\n",
+      "initial-prompts/initial-review.md": "---\ndescription: Initial review\n---\nInitial prompt $1\n",
+      "initial-themes/initial.json": {
+        "name": "resource-glob-initial-theme",
+        "colors": {
+          "accent": "#112233"
+        }
+      },
+      "initial-themes/blocked-initial.json": {
+        "name": "resource-glob-blocked-initial-theme",
+        "colors": {
+          "accent": "#223344"
+        }
+      }
+    }
+  },
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "initial-skill",
+      "send": "/skill:initial-guide arg\r",
+      "expect": "fixture reply"
+    },
+    {
+      "id": "initial-prompt",
+      "send": "/initial-review arg\r",
+      "expect": "fixture reply"
+    },
+    {
+      "id": "replace-settings-globs",
+      "writeFiles": {
+        "agent": {
+          "settings.json": {
+            "quietStartup": true,
+            "skills": [
+              "reloaded-skills",
+              "!reloaded-skills/blocked/**"
+            ],
+            "prompts": [
+              "reloaded-prompts",
+              "!reloaded-prompts/blocked*"
+            ],
+            "themes": [
+              "reloaded-themes",
+              "!reloaded-themes/blocked-*"
+            ],
+            "extensions": [
+              "reloaded-extensions",
+              "!extensions/blocked*"
+            ]
+          },
+          "reloaded-skills/reloaded-guide/SKILL.md": "---\nname: reloaded-guide\ndescription: Reloaded guide\n---\nReloaded skill body.\n",
+          "reloaded-skills/blocked/ignored/SKILL.md": "---\nname: blocked-guide\ndescription: Excluded\n---\nBlocked skill body.\n",
+          "reloaded-prompts/reloaded-review.md": "---\ndescription: Reloaded review\n---\nReloaded prompt $1\n",
+          "reloaded-prompts/blocked-review.md": "---\ndescription: Excluded\n---\nBlocked prompt body.\n",
+          "reloaded-themes/reloaded.json": {
+            "name": "resource-glob-reloaded-theme",
+            "colors": {
+              "accent": "#445566"
+            }
+          },
+          "reloaded-themes/blocked-reloaded.json": {
+            "name": "resource-glob-blocked-reloaded-theme",
+            "colors": {
+              "accent": "#556677"
+            }
+          },
+          "reloaded-extensions/index.ts": "import {appendFileSync} from 'node:fs';\nexport default function(pi) { appendFileSync(process.env.PISHARP_TEST_EXTENSION_LOAD_LOG,'configured:reloaded-extensions\\n'); pi.registerCommand('resource-discovery-reloaded-extensions',{description:'Reloaded selected extension.',handler:async()=>{}}); }\n"
+        },
+        "workspace": {}
+      },
+      "allowStaticFrame": true
+    },
+    {
+      "id": "reload",
+      "send": "/reload\r",
+      "expect": {
+        "pi": "Reloaded keybindings, extensions, skills, prompts, themes, and context files",
+        "pisharp": "Reloaded keybindings, extensions, skills, prompts, themes, and context files"
+      }
+    },
+    {
+      "id": "reloaded-skill",
+      "send": "/skill:reloaded-guide arg\r",
+      "expect": "fixture reply"
+    },
+    {
+      "id": "reloaded-prompt",
+      "send": "/reloaded-review arg\r",
+      "expect": "fixture reply"
+    },
+    {
+      "id": "close-settings-after-reload",
+      "send": "\u001b",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "quit",
+      "send": "/quit\r",
+      "exit": true
+    }
+  ],
+  "dimensions": [
+    {
+      "columns": 120,
+      "rows": 40
+    }
+  ],
+  "themes": [
+    "dark"
+  ],
+  "modes": [
+    "fullscreen"
+  ],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  },
+  "copyPisharpExtensionTo": [
+    "custom-extensions/index.dll",
+    "extensions/blocked.dll",
+    "reloaded-extensions/index.dll"
+  ],
+  "captureAgentFiles": [
+    "extension-load.log"
+  ]
+}

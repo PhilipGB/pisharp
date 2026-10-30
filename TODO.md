@@ -604,3 +604,8 @@ Rerun the frozen RPC publisher on the current source, verify its downloaded arti
 - Keep RPC capability tests in focused classes rather than growing `RpcModeTests.cs` further.
 - Preserve remaining TUI gaps: custom HTML-export theme CSS, full Markdown dialect/syntax highlighting, and broader TUI differential coverage. System-theme acquisition/update, word-aware wrapping, shared ANSI-aware visual-row layout, and nested Markdown style restoration now have pinned fixtures and exact-head CI evidence.
 - Before final parity, reread the feature matrix and ledger, audit current Pi `main` after this checkpoint, collect required behavioral/differential evidence, and confirm exact-head CI.
+
+
+## Resource path and glob matching parity (2026-10-30)
+
+Review corrections on `milestone/resource-glob-matching-parity` add five pinned-Pi malformed file-URL error cases, propagate malformed URL errors instead of treating them as patterns, and make E0 require and replay its exact 14-report inventory. The regenerated-manifest negative control removes the mandatory reports and confirms rejection. Existing matcher 75/75, full-loader selection 36/36, explicit paths 19/19, settings processes 8/8, and reload 1/1 remain; five URL-error cases bring the mandatory result total to 144. Verifier controls pass 19/19; focused path/package URL tests pass 101/101; full .NET tests pass 4,015/4,015. Formatting and warnings-as-errors build also pass. Fresh exact-head CI and E0 receipts will be published in PR [#30](https://github.com/PhilipGB/pisharp/pull/30), which remains open, draft, and unmerged. See [the resource-path fixture](docs/parity/fixtures/resource-glob-matching-parity/README.md).

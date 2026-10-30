@@ -1501,3 +1501,6 @@ differences; unexplained mandatory differences are empty.
 
 PR #25 is merged at `897bc5778f87ed09ea42e48b260479ee6a6a218c`; that merge is
 the base of the active multimodal milestone above.
+
+
+Resource-path/glob parity review corrections add five malformed file-URL errors and make E0 require the exact 14-report inventory, replay all frozen result reports, and reject a regenerated manifest after mandatory reports are removed. The source-level URL correction uses the same local path validation as package file URLs and preserves valid path matching. Current local results are matcher 75/75, file-URL errors 5/5, loader selection 36/36, explicit paths 19/19, settings processes 8/8, themes 4/4 within full-loader cases, reload 1/1, and 19/19 verifier controls; 144 mandatory results total. Formatting, warnings-as-errors build, 101 focused path/package URL tests, and the full .NET suite (4,015/4,015) pass. Fresh exact-head CI will verify this correction head. PR [#30](https://github.com/PhilipGB/pisharp/pull/30) remains open, draft, and unmerged. See [resource-path receipt](parity/fixtures/resource-glob-matching-parity/README.md) and [execution ledger](parity/execution-ledger.json).

@@ -78,7 +78,7 @@ public static class LocalResourcePathRules
     {
         if (pattern.Length == 0) return false;
         var fullBase = Path.GetFullPath(baseDirectory);
-        var fullPattern = Normalize(ExpandHome(pattern));
+        var fullPattern = NormalizePattern(pattern);
         var relative = Normalize(Path.GetRelativePath(fullBase, path));
         var absolute = Normalize(path);
         var name = Path.GetFileName(path);
@@ -112,7 +112,7 @@ public static class LocalResourcePathRules
         if (pattern.Length == 0) return false;
         var normalized = pattern.StartsWith("./", StringComparison.Ordinal) || pattern.StartsWith(".\\", StringComparison.Ordinal)
             ? pattern[2..] : pattern;
-        var expanded = ExpandHome(normalized);
+        var expanded = NormalizePattern(normalized);
         var fullPath = Path.GetFullPath(path);
         var fullBase = Path.GetFullPath(baseDirectory);
         var target = Path.IsPathRooted(expanded) ? Path.GetFullPath(expanded) : Path.GetFullPath(expanded, fullBase);
@@ -591,6 +591,14 @@ public static class LocalResourcePathRules
         if (path.StartsWith("~/", StringComparison.Ordinal) || path.StartsWith("~\\", StringComparison.Ordinal))
             return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), path[2..]);
         return path;
+    }
+
+    private static string NormalizePattern(string pattern)
+    {
+        var expanded = ExpandHome(pattern);
+        if (expanded.StartsWith("file://", StringComparison.Ordinal))
+            return Normalize(ResourceLocalPath.FileUrlPath(expanded));
+        return Normalize(expanded);
     }
 
     private static bool IsPatternEscape(char character) => !OperatingSystem.IsWindows() && character == '\\';

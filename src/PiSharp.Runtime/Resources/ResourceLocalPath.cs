@@ -31,9 +31,11 @@ public static class ResourceLocalPath
             ? Path.GetFullPath(baseDirectory) : Path.GetFullPath(path, Path.GetFullPath(baseDirectory)));
     }
 
-    private static string FileUrlPath(string source)
+    internal static string FileUrlPath(string source)
     {
-        var uri = new Uri(source, UriKind.Absolute);
+        Uri uri;
+        try { uri = new Uri(source, UriKind.Absolute); }
+        catch (UriFormatException) { throw new InvalidDataException("URI malformed"); }
         var localhost = uri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase);
         if (!OperatingSystem.IsWindows() && uri.Host.Length > 0 && !localhost)
             throw new InvalidDataException($"File URL host must be \"localhost\" or empty on {(OperatingSystem.IsMacOS() ? "darwin" : "linux")}");

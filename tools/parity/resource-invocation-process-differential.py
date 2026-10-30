@@ -274,6 +274,19 @@ console.log(JSON.stringify({source, before, after, expectedBefore: v1, expectedA
 
 def replay(product, pi, native, root, output, scenario, extension_mode='manifest', managed_sources=None,
            profile=None):
+    settings_scenario = scenario in ['settings-user', 'settings-trusted-project',
+                                     'settings-untrusted-project', 'settings-combined', 'settings-extensions',
+                                     'settings-extensions-trusted-project',
+                                     'settings-extensions-untrusted-project', 'settings-extensions-combined']
+    extension_settings_scenario = scenario.startswith('settings-extensions')
+    user_scope_selected = scenario in ['settings-user', 'settings-combined', 'settings-extensions',
+                                       'settings-extensions-combined']
+    project_scope_selected = scenario in ['settings-trusted-project', 'settings-untrusted-project',
+                                          'settings-combined', 'settings-extensions-trusted-project',
+                                          'settings-extensions-untrusted-project', 'settings-extensions-combined']
+    project_scope_trusted = scenario in ['settings-trusted-project', 'settings-combined',
+                                         'settings-extensions-trusted-project', 'settings-extensions-combined']
+    project_wins = project_scope_trusted
     package_scenario = scenario in ['local-package', 'padded-local-package', 'file-url-package', 'package-extension',
                                     'managed-npm-package', 'managed-git-package',
                                     'temporary-npm-package', 'temporary-git-package', 'temporary-mixed-source-order']
@@ -292,6 +305,9 @@ def replay(product, pi, native, root, output, scenario, extension_mode='manifest
         skill = agent / 'tmp/extensions/git-127.0.0.1/fixture/repo/skills/guide/SKILL.md'
     if scenario == 'package-extension':
         skill = root / product / '.pi/extension-resources/startup/skills/guide/SKILL.md'
+    if settings_scenario:
+        selected_scope = 'project' if project_scope_selected else 'user'
+        skill = (agent if selected_scope == 'user' else root / product / '.pi') / 'custom-skills/guide/SKILL.md'
     agent.mkdir(parents=True)
     home.mkdir(parents=True, exist_ok=True)
     if scenario not in ['managed-npm-package', 'managed-git-package', 'temporary-npm-package',
@@ -299,6 +315,77 @@ def replay(product, pi, native, root, output, scenario, extension_mode='manifest
         skill.parent.mkdir(parents=True)
         description = '!!int word' if scenario == 'invalid-tag' else 'Guide'
         skill.write_text(f'---\nname: guide\ndescription: {description}\n---\nbody')
+    if settings_scenario:
+        project = root / product / '.pi'
+        project.mkdir(parents=True, exist_ok=True)
+        user_settings = {}
+        project_settings = {}
+        if user_scope_selected:
+            (agent / 'custom-prompts').mkdir(parents=True)
+            (agent / 'custom-prompts/review.md').write_text('---\ndescription: User review\n---\nUser review $1')
+            user_settings = dict(skills=['custom-skills', '!skills/blocked/**'],
+                                 prompts=['custom-prompts', '!prompts/blocked*'])
+            (agent / 'prompts').mkdir(parents=True)
+            (agent / 'prompts/blocked.md').write_text('---\ndescription: Must be excluded\n---\nblocked')
+            (agent / 'skills/blocked/ignored').mkdir(parents=True)
+            (agent / 'skills/blocked/ignored/SKILL.md').write_text(
+                '---\nname: blocked-user\ndescription: Must be excluded\n---\nblocked')
+        if extension_settings_scenario:
+            if user_scope_selected:
+                user_settings['extensions'] = ['custom-extensions', '!extensions/blocked*']
+            if project_scope_selected:
+                project_settings['extensions'] = ['custom-extensions', '!extensions/blocked*']
+            extension_scopes = []
+            if user_scope_selected:
+                extension_scopes.append(('user', agent))
+            if project_scope_selected:
+                extension_scopes.append(('project', project))
+            fixture = ROOT / 'tests/ResourceDiscoveryExtension/bin/Debug/net10.0/dynamic-resources.dll'
+            for scope, base in extension_scopes:
+                (base / 'custom-extensions').mkdir(parents=True, exist_ok=True)
+                (base / 'extensions').mkdir(parents=True, exist_ok=True)
+                if product == 'pi':
+                    command_name = f'resource-discovery-{scope}'
+                    (base / 'custom-extensions/index.ts').write_text(
+                        "import {appendFileSync} from 'node:fs';\n"
+                        "export default function(pi) {\n"
+                        f" appendFileSync(process.env.PISHARP_TEST_EXTENSION_LOAD_LOG,'configured:{scope}\\n');\n"
+                        f" pi.registerCommand('{command_name}',{{description:'{scope} configured extension.',handler:async()=>{{}}}});\n"
+                        "}\n")
+                    (base / 'extensions/blocked.ts').write_text(
+                        "import {appendFileSync} from 'node:fs';\n"
+                        "export default function(pi) {\n"
+                        f" appendFileSync(process.env.PISHARP_TEST_EXTENSION_LOAD_LOG,'blocked:{scope}\\n');\n"
+                        f" pi.registerCommand('blocked-extension-{scope}',{{description:'Must not load.',handler:async()=>{{}}}});\n"
+                        "}\n")
+                else:
+                    shutil.copyfile(fixture, base / 'custom-extensions/index.dll')
+                    shutil.copyfile(fixture, base / 'extensions/blocked.dll')
+            if user_scope_selected:
+                user_settings.update(skills=['custom-skills', '!skills/blocked/**'],
+                                     prompts=['custom-prompts', '!prompts/blocked*'])
+            if project_scope_selected:
+                (project / 'custom-prompts').mkdir(parents=True)
+                (project / 'custom-prompts/review.md').write_text(
+                    '---\ndescription: Project review\n---\nProject review $1')
+                project_settings.update(skills=['custom-skills', '!skills/blocked/**'],
+                                        prompts=['custom-prompts', '!prompts/blocked*'])
+        if scenario in ['settings-trusted-project', 'settings-untrusted-project', 'settings-combined']:
+            (project / 'custom-prompts').mkdir(parents=True)
+            (project / 'custom-prompts/review.md').write_text('---\ndescription: Project review\n---\nProject review $1')
+            project_settings = dict(skills=['custom-skills', '!skills/blocked/**'],
+                                    prompts=['custom-prompts', '!prompts/blocked*'])
+            (project / 'prompts').mkdir(parents=True)
+            (project / 'prompts/blocked.md').write_text('---\ndescription: Must be excluded\n---\nblocked')
+            (project / 'skills/blocked/ignored').mkdir(parents=True)
+            (project / 'skills/blocked/ignored/SKILL.md').write_text(
+                '---\nname: blocked-project\ndescription: Must be excluded\n---\nblocked')
+        (agent / 'settings.json').write_text(json.dumps(user_settings))
+        (project / 'settings.json').write_text(json.dumps(project_settings))
+        if scenario == 'settings-combined':
+            user_skill = agent / 'custom-skills/guide/SKILL.md'
+            user_skill.parent.mkdir(parents=True)
+            user_skill.write_text('---\nname: guide\ndescription: User guide\n---\nUser skill body')
     if package_scenario:
         if scenario in ['managed-npm-package', 'managed-git-package']:
             (agent / 'settings.json').write_text(json.dumps(dict(packages=managed_sources)))
@@ -458,14 +545,27 @@ export default function(pi) {
                    PISHARP_TEST_EXTENSION_LOAD_LOG=str(root / product / 'extension-load.log'))
         if extension_mode == 'throwing-sibling':
             env['PISHARP_TEST_EXTENSION_PARTIAL_FAILURE'] = 'true'
+    if extension_settings_scenario:
+        env.update(PISHARP_TEST_EXTENSION_LOAD_LOG=str(root / product / 'extension-load.log'),
+                   PISHARP_TEST_RESOURCE_DISCOVERY_COMMAND='true',
+                   PISHARP_TEST_RESOURCE_DISCOVERY_SCOPE_TRACE='true')
     common = ['--mode', 'rpc', '--provider', 'fixture', '--model', 'fixture-model', '--no-session',
-              '--no-extensions', '--no-skills', '--no-prompt-templates', '--no-tools', '--skill', str(skill)]
+              '--no-extensions', '--no-skills', '--no-prompt-templates', '--no-tools']
+    if settings_scenario:
+        common.append('--approve' if project_scope_trusted else '--no-approve')
+    else:
+        common.extend(['--skill', str(skill)])
     if not managed_scenario:
         common.insert(6, '--offline')
     if package_scenario:
         common = common[:-2]
         common.remove('--no-skills')
         common.remove('--no-prompt-templates')
+    if settings_scenario:
+        common.remove('--no-skills')
+        common.remove('--no-prompt-templates')
+    if extension_settings_scenario:
+        common.remove('--no-extensions')
     if scenario in ['package-extension', 'managed-npm-package', 'managed-git-package',
                     'temporary-npm-package', 'temporary-git-package', 'temporary-mixed-source-order'] and extension_mode != 'no-extensions':
         common.remove('--no-extensions')
@@ -530,6 +630,43 @@ export default function(pi) {
             startup_skill = next((c for c in commands['data']['commands']
                                   if c['name'] == 'skill:managed-startup'), None)
             review_command = next((c for c in commands['data']['commands'] if c['name'] == 'review'), None)
+            if settings_scenario:
+                if project_scope_selected and not project_scope_trusted and not user_scope_selected:
+                    assert command_info is None and review_command is None, commands
+                else:
+                    expected_description = 'Project review' if project_wins else 'User review'
+                    expected_scope = 'project' if project_wins else 'user'
+                    assert command_info and command_info['description'] == 'Guide', commands
+                    assert review_command and review_command['description'] == expected_description, commands
+                    assert command_info['sourceInfo']['scope'] == expected_scope, command_info
+                    assert review_command['sourceInfo']['scope'] == expected_scope, review_command
+                assert not any(command.get('name') in ['skill:blocked-user', 'skill:blocked-project', 'blocked']
+                               for command in commands['data']['commands']), commands
+                if extension_settings_scenario:
+                    expected_extension_scopes = (['user', 'project'] if user_scope_selected and project_scope_trusted
+                                                 else ['project'] if project_scope_trusted
+                                                 else ['user'] if user_scope_selected else [])
+                    expected_extension_names = {f'resource-discovery-{scope}' for scope in expected_extension_scopes}
+                    selected_extension_names = {command.get('name') for command in commands['data']['commands']
+                                                if command.get('name', '').startswith('resource-discovery-')}
+                    assert selected_extension_names == expected_extension_names, commands
+                    expected_selection_order = [f'resource-discovery-{scope}' for scope in
+                        (['project', 'user'] if user_scope_selected and project_scope_trusted else
+                         ['project'] if project_scope_trusted else ['user'] if user_scope_selected else [])]
+                    actual_selection_order = [command.get('name') for command in commands['data']['commands']
+                                              if command.get('name', '').startswith('resource-discovery-')]
+                    assert actual_selection_order == expected_selection_order, actual_selection_order
+                    assert not any(command.get('name', '').startswith('blocked-extension-')
+                                   for command in commands['data']['commands']), commands
+                    trace_path = root / product / 'extension-load.log'
+                    load_trace = trace_path.read_text().splitlines() if trace_path.exists() else []
+                    configure_scopes = (['project', 'user'] if product == 'pi' and user_scope_selected and project_scope_trusted
+                                        else ['user', 'project'] if user_scope_selected and project_scope_trusted
+                                        else expected_extension_scopes)
+                    expected_trace = [f'configured:{scope}' if product == 'pi'
+                                      else f'configured:{scope}:custom-extensions'
+                                      for scope in configure_scopes]
+                    assert load_trace == expected_trace, load_trace
             temporary_resource_metadata = None
             if scenario in ['temporary-npm-package', 'temporary-git-package', 'temporary-mixed-source-order']:
                 skill_metadata = (command_info or {}).get('sourceInfo', {})
@@ -567,12 +704,14 @@ export default function(pi) {
             elif scenario == 'package-extension' and extension_mode == 'project-disabled':
                 if product == 'pi':
                     assert command_info is None, commands
-            elif not package_scenario or product == 'pi':
+            elif (not package_scenario and not settings_scenario) or (
+                    product == 'pi' and scenario not in ['settings-untrusted-project',
+                                                        'settings-extensions-untrusted-project']):
                 assert command_info and command_info['description'] == ('word' if scenario == 'invalid-tag' else 'Guide')
             if scenario == 'deleted-skill':
                 skill.unlink()
             prompts = [('skill', '/skill:guide args'), ('template', '/review topic')] \
-                if scenario in ['managed-npm-package', 'managed-git-package',
+                if settings_scenario or scenario in ['managed-npm-package', 'managed-git-package',
                                 'temporary-npm-package', 'temporary-git-package', 'temporary-mixed-source-order'] \
                 else [('prompt', '/skill:guide args')]
             response_records = []
@@ -591,7 +730,7 @@ export default function(pi) {
                 assert failure['event'] == 'skill_expansion' and failure['extensionPath'] == str(skill), failure
             else:
                 assert not any(r.get('type') == 'extension_error' for r in records), records
-            expected_requests = 2 if scenario in ['managed-npm-package', 'managed-git-package',
+            expected_requests = 2 if settings_scenario or scenario in ['managed-npm-package', 'managed-git-package',
                                                    'temporary-npm-package', 'temporary-git-package',
                                                    'temporary-mixed-source-order'] else 1
             assert len(server.requests) == expected_requests
@@ -601,7 +740,16 @@ export default function(pi) {
                 content = users[-1]
                 provider_inputs.append(content if isinstance(content, str) else ''.join(
                     p.get('text', '') for p in content if p.get('type') == 'text'))
-            if scenario in ['managed-npm-package', 'managed-git-package',
+            if settings_scenario:
+                if project_scope_selected and not project_scope_trusted and not user_scope_selected:
+                    assert provider_inputs == ['/skill:guide args', '/review topic'], provider_inputs
+                else:
+                    expected_body = 'body'
+                    expected_skill = (f'<skill name="guide" location="{skill}">\n'
+                                      f'References are relative to {skill.parent}.\n\n{expected_body}\n</skill>\n\nargs')
+                    expected_prompt = 'Project review topic' if project_wins else 'User review topic'
+                    assert provider_inputs == [expected_skill, expected_prompt], provider_inputs
+            elif scenario in ['managed-npm-package', 'managed-git-package',
                             'temporary-npm-package', 'temporary-git-package', 'temporary-mixed-source-order']:
                 expected_skill_body = ('Installed managed Git skill body'
                                        if scenario in ['managed-git-package', 'temporary-git-package']
@@ -627,6 +775,37 @@ export default function(pi) {
                             provider_inputs[0].replace(str(root / product), '<workspace>')),
                         providerRequests=expected_requests,
                         promptAccepted=True, commandDescription=command_info['description'] if command_info else None)
+            if settings_scenario:
+                def source_metadata(command):
+                    if not command:
+                        return None
+                    info = command.get('sourceInfo') or {}
+                    return {key: value.replace(str(root / product), '<workspace>') if isinstance(value, str) else value
+                            for key, value in info.items()}
+                result['settingsSelection'] = {
+                    'skill': {'description': command_info['description'], 'sourceInfo': source_metadata(command_info)}
+                        if command_info else None,
+                    'prompt': {'description': review_command['description'], 'sourceInfo': source_metadata(review_command)}
+                        if review_command else None,
+                    'providerInputs': [normalize_temporary_git_cache_path(
+                        value.replace(str(root / product), '<workspace>')) for value in provider_inputs],
+                    'trustedProject': project_scope_trusted
+                }
+            if extension_settings_scenario:
+                trace_path = root / product / 'extension-load.log'
+                result['localExtensionSelection'] = {
+                    'selectedCommands': [command.get('name') for command in commands['data']['commands']
+                                         if command.get('name', '').startswith('resource-discovery-')],
+                    'excludedCommandPresent': any(command.get('name', '').startswith('blocked-extension-')
+                                                  for command in commands['data']['commands']),
+                    'loadTrace': trace_path.read_text().splitlines() if trace_path.exists() else [],
+                    'sourceInfoByCommand': {
+                        command['name']: {key: command.get('sourceInfo', {}).get(key)
+                                          for key in ['source', 'scope', 'origin']}
+                        for command in commands['data']['commands']
+                        if command.get('name', '').startswith('resource-discovery-')
+                    }
+                }
             if package_scenario:
                 result['packageSkillMetadata'] = {
                     key: (command_info or {}).get('sourceInfo', {}).get(key)
@@ -746,7 +925,7 @@ def main():
     parser.add_argument('--pisharp', type=Path, default=ROOT / 'src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--profile', type=Path)
-    parser.add_argument('--scenario', choices=['deleted-skill', 'invalid-tag', 'malformed-flow', 'local-package', 'padded-local-package', 'file-url-package', 'package-extension', 'managed-npm-package', 'managed-git-package', 'temporary-npm-package', 'temporary-git-package', 'temporary-mixed-source-order'], default='deleted-skill')
+    parser.add_argument('--scenario', choices=['deleted-skill', 'invalid-tag', 'malformed-flow', 'local-package', 'padded-local-package', 'file-url-package', 'package-extension', 'managed-npm-package', 'managed-git-package', 'temporary-npm-package', 'temporary-git-package', 'temporary-mixed-source-order', 'settings-user', 'settings-trusted-project', 'settings-untrusted-project', 'settings-combined', 'settings-extensions', 'settings-extensions-trusted-project', 'settings-extensions-untrusted-project', 'settings-extensions-combined'], default='deleted-skill')
     parser.add_argument('--extension-mode', choices=['manifest', 'conventions', 'disabled', 'no-extensions', 'file', 'root', 'index-with-sibling', 'nested-manifest', 'ignored-sibling', 'hidden-sibling', 'node-modules-sibling', 'throwing-sibling', 'missing-explicit', 'padded-explicit', 'file-url-explicit', 'canonical-explicit-alias', 'project-disabled', 'project-enabled'], default='manifest')
     args = parser.parse_args()
     sha = verify_pi_checkout(args.pi)
@@ -797,12 +976,25 @@ def main():
     if args.scenario == 'invalid-tag':
         for product in results:
             assert 'YAMLWarning' not in args.output.with_name(args.output.stem + f'-{product}.stderr.log').read_text()
+    def comparable(value):
+        normalized = dict(value)
+        if normalized.get('localExtensionSelection') is not None:
+            extension_selection = dict(normalized['localExtensionSelection'])
+            extension_selection.pop('loadTrace', None)
+            normalized['localExtensionSelection'] = extension_selection
+        return normalized
+
     result = dict(piSha=sha, scenario=args.scenario, piSharpBaseSha=subprocess.check_output(
         ['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
         assemblySha256=hashlib.sha256(args.pisharp.read_bytes()).hexdigest(),
         dependencyAssemblySha256={name: hashlib.sha256(args.pisharp.with_name(name).read_bytes()).hexdigest()
                                   for name in ['PiSharp.Runtime.dll', 'PiSharp.Core.dll']},
-        results=results, match=results['pi'] == results['pisharp'])
+        results=results, configurationTraceComparison=(
+            'PiSharp can configure user extensions before project trust is resolved so their trust handlers are available; '
+            'the combined trusted case therefore has a different Configure trace, while final selected command order, '
+            'source metadata, exclusions, resource selection, and provider input match Pi.'
+            if args.scenario == 'settings-extensions-combined' else None),
+        match=comparable(results['pi']) == comparable(results['pisharp']))
     if pi_update_probe is not None:
         result['piUpdateProbe'] = pi_update_probe
     if args.scenario == 'package-extension':
