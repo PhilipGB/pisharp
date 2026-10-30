@@ -14755,5 +14755,100 @@
         "evidenceSha256": "299ca7daaacbf4ed3ab4cc1c86f555599741024fa0bd9136e6e64a7e7c7ee892"
       }
     ]
+  },
+  "resource_glob_matching_parity_milestone": {
+    "status": "in_progress",
+    "branch": "milestone/resource-glob-matching-parity",
+    "base_sha": "480f058a95713fbc51b6904d4450da68bcda886c",
+    "pi_reference": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "minimatch_version": "10.2.6",
+    "case_index": "tools/parity/resource_glob/cases.json",
+    "case_index_sha256": "54794e54701d62252e56feb7d84f57c47e0ffaf348d6c7b86320e379e565433c",
+    "matcher_cases": {
+      "required": 64,
+      "passed": 64,
+      "failed": 0,
+      "skipped": 0
+    },
+    "full_loader_selection": {
+      "required": 72,
+      "passed": 72,
+      "failed": 0,
+      "skipped": 0
+    },
+    "settings_process_cases": {
+      "required": 5,
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0,
+      "resource_types": [
+        "skills",
+        "prompts",
+        "extensions"
+      ],
+      "report": "artifacts/parity/resource-glob-initial/resource-settings-process.json"
+    },
+    "local_theme_settings_cases": {
+      "required": 4,
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0,
+      "method": "Pi/PiSharp full-loader process probe"
+    },
+    "explicit_resource_paths": {
+      "required": 19,
+      "passed": 19,
+      "failed": 0,
+      "skipped": 0
+    },
+    "extension_comparisons": {
+      "ordering_cases": 1,
+      "path_metadata_cases": 3,
+      "startup_reload_context": "matched"
+    },
+    "negative_controls": {
+      "required": 7,
+      "passed": 7,
+      "failed": 0
+    },
+    "focused_dotnet_tests": {
+      "resource_theme": {
+        "passed": 63,
+        "failed": 0,
+        "skipped": 0
+      },
+      "extension_theme_reload": {
+        "passed": 24,
+        "failed": 0,
+        "skipped": 0
+      },
+      "extension_catalog_reload": {
+        "passed": 15,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    "quality_gates": {
+      "format_verify": "passed",
+      "build_warn_as_error": {
+        "status": "passed",
+        "warnings": 0,
+        "errors": 0
+      },
+      "full_solution_tests": {
+        "required": 4009,
+        "passed": 4009,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    "interim_fixture": "docs/parity/fixtures/resource-glob-matching-parity/README.md",
+    "raw_interim_evidence": "artifacts/parity/resource-glob-initial/manifest.json",
+    "remaining": [
+      "interactive CLI process theme comparison",
+      "final source-bound E0 receipt",
+      "exact-head CI0",
+      "draft PR PUB0"
+    ]
   }
 }

@@ -1,0 +1,268 @@
+[
+  {
+    "id": "settings-user",
+    "resourceType": [
+      "skills",
+      "prompts"
+    ],
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:2419-2535",
+    "settings": {
+      "user": {
+        "skills": [
+          "custom-skills",
+          "!skills/blocked/**"
+        ],
+        "prompts": [
+          "custom-prompts",
+          "!prompts/blocked*"
+        ]
+      },
+      "project": {},
+      "trusted": false
+    },
+    "excludedAutoNames": [
+      "blocked-user",
+      "blocked-project",
+      "blocked"
+    ],
+    "expectedPi": {
+      "skill": {
+        "description": "Guide",
+        "sourceInfo": {
+          "path": "<workspace>/agent/custom-skills/guide/SKILL.md",
+          "source": "local",
+          "scope": "user",
+          "origin": "top-level"
+        }
+      },
+      "prompt": {
+        "description": "User review",
+        "sourceInfo": {
+          "path": "<workspace>/agent/custom-prompts/review.md",
+          "source": "local",
+          "scope": "user",
+          "origin": "top-level"
+        }
+      },
+      "providerInputs": [
+        "<skill name=\"guide\" location=\"<workspace>/agent/custom-skills/guide/SKILL.md\">\nReferences are relative to <workspace>/agent/custom-skills/guide.\n\nbody\n</skill>\n\nargs",
+        "User review topic"
+      ],
+      "trustedProject": false
+    }
+  },
+  {
+    "id": "settings-trusted-project",
+    "resourceType": [
+      "skills",
+      "prompts"
+    ],
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:2419-2535",
+    "settings": {
+      "user": {},
+      "project": {
+        "skills": [
+          "custom-skills",
+          "!skills/blocked/**"
+        ],
+        "prompts": [
+          "custom-prompts",
+          "!prompts/blocked*"
+        ]
+      },
+      "trusted": true
+    },
+    "excludedAutoNames": [
+      "blocked-user",
+      "blocked-project",
+      "blocked"
+    ],
+    "expectedPi": {
+      "skill": {
+        "description": "Guide",
+        "sourceInfo": {
+          "path": "<workspace>/.pi/custom-skills/guide/SKILL.md",
+          "source": "local",
+          "scope": "project",
+          "origin": "top-level"
+        }
+      },
+      "prompt": {
+        "description": "Project review",
+        "sourceInfo": {
+          "path": "<workspace>/.pi/custom-prompts/review.md",
+          "source": "local",
+          "scope": "project",
+          "origin": "top-level"
+        }
+      },
+      "providerInputs": [
+        "<skill name=\"guide\" location=\"<workspace>/.pi/custom-skills/guide/SKILL.md\">\nReferences are relative to <workspace>/.pi/custom-skills/guide.\n\nbody\n</skill>\n\nargs",
+        "Project review topic"
+      ],
+      "trustedProject": true
+    }
+  },
+  {
+    "id": "settings-untrusted-project",
+    "resourceType": [
+      "skills",
+      "prompts"
+    ],
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:2419-2535",
+    "settings": {
+      "user": {},
+      "project": {
+        "skills": [
+          "custom-skills",
+          "!skills/blocked/**"
+        ],
+        "prompts": [
+          "custom-prompts",
+          "!prompts/blocked*"
+        ]
+      },
+      "trusted": false
+    },
+    "excludedAutoNames": [
+      "blocked-user",
+      "blocked-project",
+      "blocked"
+    ],
+    "expectedPi": {
+      "skill": null,
+      "prompt": null,
+      "providerInputs": [
+        "/skill:guide args",
+        "/review topic"
+      ],
+      "trustedProject": false
+    }
+  },
+  {
+    "id": "settings-combined",
+    "resourceType": [
+      "skills",
+      "prompts"
+    ],
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:2419-2535",
+    "settings": {
+      "user": {
+        "skills": [
+          "custom-skills",
+          "!skills/blocked/**"
+        ],
+        "prompts": [
+          "custom-prompts",
+          "!prompts/blocked*"
+        ]
+      },
+      "project": {
+        "skills": [
+          "custom-skills",
+          "!skills/blocked/**"
+        ],
+        "prompts": [
+          "custom-prompts",
+          "!prompts/blocked*"
+        ]
+      },
+      "trusted": true
+    },
+    "excludedAutoNames": [
+      "blocked-user",
+      "blocked-project",
+      "blocked"
+    ],
+    "expectedPi": {
+      "skill": {
+        "description": "Guide",
+        "sourceInfo": {
+          "path": "<workspace>/.pi/custom-skills/guide/SKILL.md",
+          "source": "local",
+          "scope": "project",
+          "origin": "top-level"
+        }
+      },
+      "prompt": {
+        "description": "Project review",
+        "sourceInfo": {
+          "path": "<workspace>/.pi/custom-prompts/review.md",
+          "source": "local",
+          "scope": "project",
+          "origin": "top-level"
+        }
+      },
+      "providerInputs": [
+        "<skill name=\"guide\" location=\"<workspace>/.pi/custom-skills/guide/SKILL.md\">\nReferences are relative to <workspace>/.pi/custom-skills/guide.\n\nbody\n</skill>\n\nargs",
+        "Project review topic"
+      ],
+      "trustedProject": true
+    }
+  },
+  {
+    "id": "settings-extensions",
+    "resourceType": [
+      "skills",
+      "prompts",
+      "extensions"
+    ],
+    "sourceReference": "packages/coding-agent/src/core/resource-loader.ts:577-586",
+    "settings": {
+      "user": {
+        "skills": [
+          "custom-skills",
+          "!skills/blocked/**"
+        ],
+        "prompts": [
+          "custom-prompts",
+          "!prompts/blocked*"
+        ],
+        "extensions": [
+          "custom-extensions",
+          "!extensions/blocked*"
+        ]
+      },
+      "project": {},
+      "trusted": false
+    },
+    "excludedAutoNames": [
+      "blocked-user",
+      "blocked-project",
+      "blocked",
+      "blocked-extension"
+    ],
+    "expectedPi": {
+      "skill": {
+        "description": "Guide",
+        "sourceInfo": {
+          "path": "<workspace>/agent/custom-skills/guide/SKILL.md",
+          "source": "local",
+          "scope": "user",
+          "origin": "top-level"
+        }
+      },
+      "prompt": {
+        "description": "User review",
+        "sourceInfo": {
+          "path": "<workspace>/agent/custom-prompts/review.md",
+          "source": "local",
+          "scope": "user",
+          "origin": "top-level"
+        }
+      },
+      "providerInputs": [
+        "<skill name=\"guide\" location=\"<workspace>/agent/custom-skills/guide/SKILL.md\">\nReferences are relative to <workspace>/agent/custom-skills/guide.\n\nbody\n</skill>\n\nargs",
+        "User review topic"
+      ],
+      "trustedProject": false
+    },
+    "expectedExtensions": {
+      "selectedCommand": true,
+      "excludedCommandPresent": false,
+      "loadTrace": [
+        "configured"
+      ]
+    }
+  }
+]

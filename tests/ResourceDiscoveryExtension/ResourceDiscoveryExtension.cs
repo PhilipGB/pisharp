@@ -10,6 +10,10 @@ public sealed class ResourceDiscoveryFixture : IPiSharpExtension
     public void Configure(ExtensionRegistration registration)
     {
         Trace("configured");
+        if (string.Equals(Environment.GetEnvironmentVariable("PISHARP_TEST_RESOURCE_DISCOVERY_COMMAND"), "true",
+                StringComparison.OrdinalIgnoreCase))
+            registration.AddCommand("resource-discovery-fixture", (_, _) => Task.FromResult("fixture command"),
+                "Resource discovery fixture command.");
 
         registration.AddProjectTrustHandler((context, cancellationToken) =>
         {

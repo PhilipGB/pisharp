@@ -1501,3 +1501,6 @@ differences; unexplained mandatory differences are empty.
 
 PR #25 is merged at `897bc5778f87ed09ea42e48b260479ee6a6a218c`; that merge is
 the base of the active multimodal milestone above.
+
+
+Resource-path/glob parity milestone started from main `480f058a95713fbc51b6904d4450da68bcda886c` on `milestone/resource-glob-matching-parity`; pinned Pi remains `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` with minimatch 10.2.6. The current 64-case matcher/override slice, 72 full-loader selection cases, 19 explicit path cases, five paired CLI settings cases (skills, prompts and extensions), four local-theme settings cases, extension metadata/order/reload probes, focused resource/theme tests (63/63), and full solution tests (4,009/4,009) pass. Formatting and a zero-warning/error build pass. The theme settings comparison currently uses the full-loader process probe; interactive CLI theme selection, final E0, exact-head CI and draft PR are pending. See [interim receipt](parity/fixtures/resource-glob-matching-parity/README.md) and [execution ledger](parity/execution-ledger.json).

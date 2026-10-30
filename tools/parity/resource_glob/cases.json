@@ -1,0 +1,600 @@
+[
+  {
+    "id": "G1-literal-exact",
+    "path": "src/file.ts",
+    "pattern": "src/file.ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G1-star",
+    "path": "src/file.ts",
+    "pattern": "src/*.ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G1-question",
+    "path": "src/a.ts",
+    "pattern": "src/?.ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G1-star-no-separator",
+    "path": "src/nested/file.ts",
+    "pattern": "src/*.ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": false
+  },
+  {
+    "id": "G1-globstar",
+    "path": "src/nested/file.ts",
+    "pattern": "src/**/*.ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G2-hidden-star",
+    "path": "src/.hidden.ts",
+    "pattern": "src/*.ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": false
+  },
+  {
+    "id": "G2-hidden-explicit",
+    "path": "src/.hidden.ts",
+    "pattern": "src/.*.ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G2-hidden-globstar",
+    "path": "src/.hidden/file.ts",
+    "pattern": "src/**/file.ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": false
+  },
+  {
+    "id": "G2-globstar-boundary",
+    "path": "src/file.ts",
+    "pattern": "src/**/file.ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G3-range",
+    "path": "src/b.ts",
+    "pattern": "src/[a-c].ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G3-negated-class",
+    "path": "src/z.ts",
+    "pattern": "src/[!a-c].ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G3-posix-alpha",
+    "path": "src/a.ts",
+    "pattern": "src/[[:alpha:]].ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G3-posix-digit",
+    "path": "src/7.ts",
+    "pattern": "src/[[:digit:]].ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G4-brace-alternative",
+    "path": "src/file.json",
+    "pattern": "src/*.{ts,json}",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G4-numeric-range",
+    "path": "src/item-03.ts",
+    "pattern": "src/item-{01..05}.ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G4-alpha-range",
+    "path": "src/item-c.ts",
+    "pattern": "src/item-{a..d}.ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G5-extglob-at",
+    "path": "src/test.ts",
+    "pattern": "src/@(test|spec).ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G5-extglob-question-empty",
+    "path": "src/file.ts",
+    "pattern": "src/?(pre)file.ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G5-extglob-star",
+    "path": "src/aaa.ts",
+    "pattern": "src/*(a).ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G5-extglob-plus",
+    "path": "src/abab.ts",
+    "pattern": "src/+(ab).ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G5-extglob-negate",
+    "path": "src/readme.ts",
+    "pattern": "src/!(test).ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G5-extglob-nested",
+    "path": "src/foo.ts",
+    "pattern": "src/@(f@(oo|bar)|baz).ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G6-escaped-star",
+    "path": "src/a*.ts",
+    "pattern": "src/a\\*.ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G6-escaped-question",
+    "path": "src/file?.ts",
+    "pattern": "src/file\\?.ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G6-comment",
+    "path": "#notes/a.ts",
+    "pattern": "#notes/*",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": false
+  },
+  {
+    "id": "G6-leading-negation-one",
+    "path": "src/a.ts",
+    "pattern": "!src/b.ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G6-leading-negation-two",
+    "path": "src/a.ts",
+    "pattern": "!!src/b.ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": false
+  },
+  {
+    "id": "G6-malformed-brace",
+    "path": "src/a.ts",
+    "pattern": "src/{a,b.ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": false
+  },
+  {
+    "id": "G6-malformed-class",
+    "path": "src/a.ts",
+    "pattern": "src/[a.ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": false
+  },
+  {
+    "id": "G6-malformed-extglob",
+    "path": "src/a.ts",
+    "pattern": "src/@(a|b.ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": false
+  },
+  {
+    "id": "P2-skill-containing-directory",
+    "path": "skills/guide/SKILL.md",
+    "pattern": "skills/guide",
+    "resourceType": "skills",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "P2-skill-directory-glob",
+    "path": "skills/guide/SKILL.md",
+    "pattern": "skills/*",
+    "resourceType": "skills",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "P2-skill-other-declaration",
+    "path": "skills/guide/readme.md",
+    "pattern": "skills/guide",
+    "resourceType": "skills",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": false
+  },
+  {
+    "id": "G1-basename-match",
+    "path": "src/file.ts",
+    "pattern": "file.ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G1-absolute-path-match",
+    "path": "src/file.ts",
+    "pattern": "$BASE/src/file.ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G1-backslash-separator-is-escape",
+    "path": "src/file.ts",
+    "pattern": "src\\file.ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": false
+  },
+  {
+    "id": "G2-hidden-explicit-class",
+    "path": "src/.hidden.ts",
+    "pattern": "src/[.]hidden.ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G2-hidden-in-globstar-explicit",
+    "path": "src/.hidden/file.ts",
+    "pattern": "src/**/.hidden/file.ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G2-globstar-zero-directory",
+    "path": "src/file.ts",
+    "pattern": "src/**/file.ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G3-posix-unicode-alpha",
+    "path": "src/\u00f1.ts",
+    "pattern": "src/[[:alpha:]].ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G3-posix-space",
+    "path": "src/ .ts",
+    "pattern": "src/[[:space:]].ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G3-posix-punct",
+    "path": "src/!.ts",
+    "pattern": "src/[[:punct:]].ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G3-posix-negated",
+    "path": "src/a.ts",
+    "pattern": "src/[![:digit:]].ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G4-numeric-range-step",
+    "path": "src/item-05.ts",
+    "pattern": "src/item-{1..9..2}.ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": false
+  },
+  {
+    "id": "G4-descending-range",
+    "path": "src/item-3.ts",
+    "pattern": "src/item-{5..1..-2}.ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G4-nested-braces",
+    "path": "src/item-b.json",
+    "pattern": "src/item-{a,{b,c}}.{json,md}",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G4-empty-alternative",
+    "path": "src/file.ts",
+    "pattern": "src/{,file}.ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G5-extglob-question-present",
+    "path": "src/prefix-file.ts",
+    "pattern": "src/?(prefix-)file.ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G5-extglob-star-empty",
+    "path": "src/file.ts",
+    "pattern": "src/*(pre)file.ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G5-extglob-plus-repetition",
+    "path": "src/ababab.ts",
+    "pattern": "src/+(ab).ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G5-extglob-negate-prefix",
+    "path": "src/foobar.ts",
+    "pattern": "src/foo!(bar).ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": false
+  },
+  {
+    "id": "G5-extglob-nested-alternative",
+    "path": "src/fbar.ts",
+    "pattern": "src/@(f@(oo|bar)|baz).ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G6-escaped-brackets",
+    "path": "src/[draft].ts",
+    "pattern": "src/\\[draft\\].ts",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G6-escaped-hash",
+    "path": "#notes/a.ts",
+    "pattern": "\\#notes/*",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "G6-leading-comment-hash",
+    "path": "src/a.ts",
+    "pattern": "#comment",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": false
+  },
+  {
+    "id": "G6-trailing-escape",
+    "path": "src/trailing\\",
+    "pattern": "src/trailing\\",
+    "resourceType": "extensions",
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-692",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "P1-exact-dot-relative-override",
+    "path": "extensions/plugin.dll",
+    "resourceType": "extensions",
+    "overrides": [
+      "!**",
+      "+./extensions/plugin.dll"
+    ],
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:695-722",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "P1-exact-home-override",
+    "path": "extensions/plugin.dll",
+    "resourceType": "extensions",
+    "overrides": [
+      "!**",
+      "+~/resource-glob-contract/extensions/plugin.dll"
+    ],
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:695-722",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "P3-force-include-after-glob-exclusion",
+    "path": "extensions/plugin.dll",
+    "resourceType": "extensions",
+    "overrides": [
+      "!extensions/**/*.dll",
+      "+extensions/plugin.dll"
+    ],
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:724-750",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "P3-force-include-order-independent",
+    "path": "extensions/plugin.dll",
+    "resourceType": "extensions",
+    "overrides": [
+      "+extensions/plugin.dll",
+      "!extensions/**/*.dll"
+    ],
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:724-750",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  },
+  {
+    "id": "P3-force-exclude-final-precedence",
+    "path": "extensions/plugin.dll",
+    "resourceType": "extensions",
+    "overrides": [
+      "-extensions/plugin.dll",
+      "+extensions/plugin.dll"
+    ],
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:724-750",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": false
+  },
+  {
+    "id": "P3-force-exclude-order-independent",
+    "path": "extensions/plugin.dll",
+    "resourceType": "extensions",
+    "overrides": [
+      "+extensions/plugin.dll",
+      "-extensions/plugin.dll"
+    ],
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:724-750",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": false
+  },
+  {
+    "id": "P3-skill-directory-only-for-skill-md",
+    "path": "skills/guide/SKILL.md",
+    "resourceType": "skills",
+    "overrides": [
+      "!skills/guide"
+    ],
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-750",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": false
+  },
+  {
+    "id": "P3-directory-pattern-does-not-match-other-markdown",
+    "path": "skills/guide/readme.md",
+    "resourceType": "skills",
+    "overrides": [
+      "!skills/guide"
+    ],
+    "sourceReference": "packages/coding-agent/src/core/package-manager.ts:667-750",
+    "baseDirectory": "$HOME/resource-glob-contract",
+    "expectedPi": true
+  }
+]

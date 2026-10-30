@@ -177,6 +177,41 @@ def package_scenarios(edges=False):
             links={'outside/alias-package': 'package'})
     return cases
 
+def local_theme_scenarios():
+    template = json.loads((ROOT / 'src/PiSharp.Cli/Tui/Themes/dark.json').read_text())
+    cases = []
+    for name, user_selected, project_selected, trusted in [
+        ('user', True, False, False),
+        ('project-trusted', False, True, True),
+        ('project-untrusted', False, True, False),
+        ('combined', True, True, True),
+    ]:
+        files = {}
+        user = {}
+        project = {}
+        if user_selected:
+            theme = dict(template)
+            theme['name'] = 'settings-theme'
+            theme['colors'] = dict(template['colors'], accent='#112233')
+            blocked = dict(template)
+            blocked['name'] = 'blocked-user-theme'
+            files['agent/custom-themes/settings.json'] = json.dumps(theme)
+            files['agent/themes/blocked-theme.json'] = json.dumps(blocked)
+            user['themes'] = ['custom-themes', '!themes/blocked-*']
+        if project_selected:
+            theme = dict(template)
+            theme['name'] = 'settings-theme'
+            theme['colors'] = dict(template['colors'], accent='#445566')
+            blocked = dict(template)
+            blocked['name'] = 'blocked-project-theme'
+            files['project/.pi/custom-themes/settings.json'] = json.dumps(theme)
+            files['project/.pi/themes/blocked-theme.json'] = json.dumps(blocked)
+            project['themes'] = ['custom-themes', '!themes/blocked-*']
+        cases.append(dict(id='settings-theme-' + name, files=files, links={}, discover=True,
+            includeThemes=True, skillPaths=[], promptPaths=[], user=user, project=project, trusted=trusted))
+    return cases
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--pi', type=Path, required=True)
@@ -184,11 +219,14 @@ def main():
     parser.add_argument('--packages', action='store_true', help='Include local package settings/manifest/filter/scope comparisons')
     parser.add_argument('--package-edges', action='store_true', help='Include additional package filesystem edge characterization')
     parser.add_argument('--package-themes', action='store_true', help='Include package theme availability and selected palette comparisons')
+    parser.add_argument('--local-themes', action='store_true', help='Include user/project settings theme selection and trust cases')
     args = parser.parse_args()
     sha = verify_pi_checkout(args.pi)
     cases = scenarios()
     if args.packages or args.package_edges:
         cases.extend(package_scenarios(args.package_edges))
+    if args.local_themes:
+        cases.extend(local_theme_scenarios())
     if args.package_themes:
         theme = json.loads((ROOT / 'src/PiSharp.Cli/Tui/Themes/dark.json').read_text())
         theme['name'] = 'package-theme'

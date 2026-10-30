@@ -604,3 +604,8 @@ Rerun the frozen RPC publisher on the current source, verify its downloaded arti
 - Keep RPC capability tests in focused classes rather than growing `RpcModeTests.cs` further.
 - Preserve remaining TUI gaps: custom HTML-export theme CSS, full Markdown dialect/syntax highlighting, and broader TUI differential coverage. System-theme acquisition/update, word-aware wrapping, shared ANSI-aware visual-row layout, and nested Markdown style restoration now have pinned fixtures and exact-head CI evidence.
 - Before final parity, reread the feature matrix and ledger, audit current Pi `main` after this checkpoint, collect required behavioral/differential evidence, and confirm exact-head CI.
+
+
+## Resource path and glob matching parity (2026-10-30)
+
+In progress on `milestone/resource-glob-matching-parity` from main `480f058a95713fbc51b6904d4450da68bcda886c`, pinned Pi `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The 64-case minimatch 10.2.6 matcher/override slice, 72 full-loader selection cases, 19 explicit path cases, five paired CLI settings cases, and four local-theme settings cases match. Focused resource/theme tests pass 63/63; the full solution passes 4,009/4,009. Formatting and zero-warning/error build pass. Theme selection is compared through the full-loader process probe; theme selection from an interactive CLI process, final E0, exact-head CI0, and draft PR PUB0 remain. Track evidence in [the interim fixture](docs/parity/fixtures/resource-glob-matching-parity/README.md).
