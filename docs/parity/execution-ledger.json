@@ -14129,7 +14129,7 @@
     },
     "independent_review_follow_up": {
       "status": "review correction committed; exact-head acceptance is recorded in PR #29",
-      "implementation_source_commit": "0615a90681f95f14e2250ba17f80b592e54d41ba",
+      "implementation_source_commit": "31963d3d098e8c194b1de68600cedb2d3af237f3",
       "review_findings": {
         "concurrent_compaction_deadlock": {
           "correction": "Serialize compaction handler admission so only one operation can cancel and await sibling operations.",
@@ -14141,7 +14141,8 @@
           ],
           "terminal_responses_per_accepted_request": 1,
           "focused_rpc_process_tests": "5/5",
-          "fail_first_without_admission_gate": "New overlapping completion case fails."
+          "fail_first_without_admission_gate": "New overlapping completion case fails.",
+          "teardown_follow_up": "The first exact-head full suite exposed an HttpListener.Close cleanup race in the EOF process fixture. Teardown now awaits the fixture server before closing the listener; the process class passes 5/5 and the EOF case passed five additional repetitions."
         },
         "fresh_checkout_evidence": {
           "workflow": ".github/workflows/rpc-parity-evidence.yml",
