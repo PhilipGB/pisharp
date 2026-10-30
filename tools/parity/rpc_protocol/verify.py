@@ -166,6 +166,33 @@ def load_contract(path: Path = CONTRACT_PATH, *, verify_lock: bool = True) -> di
     return contract
 
 
+def source_bound_case_count(source_bound_evidence: Any) -> int:
+    """Count the frozen cases represented by E0's source-bound checkpoint manifest."""
+    checkpoints = source_bound_evidence.get("checkpoints") if isinstance(source_bound_evidence, dict) else None
+    if not isinstance(checkpoints, list):
+        raise VerificationError("E0 source-bound checkpoint manifest is missing")
+    checkpoint_ids = [item.get("checkpointId") for item in checkpoints if isinstance(item, dict)]
+    expected_ids = ["P0", "P1", "V0", "V1", *[f"R{i}" for i in range(1, 16)], "D0", "Q0"]
+    if checkpoint_ids != expected_ids:
+        raise VerificationError("E0 source-bound checkpoint manifest is incomplete or out of contract order")
+    definitions = {item["id"]: item["caseDefinitions"] for item in load_contract()["checkpoints"]}
+    return sum(len(definitions[checkpoint_id]) for checkpoint_id in checkpoint_ids)
+
+
+def _recorded_checkout_directory_matches(cwd: str) -> bool:
+    """Match captured absolute working directories across independent checkout roots."""
+    normalized = cwd.replace("\\", "/").rstrip("/")
+    recorded_name = normalized.rsplit("/", 1)[-1].casefold()
+    expected_names = {ROOT.name.casefold()}
+    remote = subprocess.run(
+        ["git", "remote", "get-url", "origin"], cwd=ROOT, capture_output=True, text=True,
+    )
+    if remote.returncode == 0 and remote.stdout.strip():
+        remote_name = re.split(r"[/\\:]", remote.stdout.strip().rstrip("/"))[-1]
+        expected_names.add(remote_name.removesuffix(".git").casefold())
+    return bool(recorded_name) and recorded_name in expected_names
+
+
 def validate_pi_checkout(pi_checkout: Path) -> None:
     result = subprocess.run(["git", "-C", str(pi_checkout), "rev-parse", "HEAD"], capture_output=True, text=True)
     if result.returncode != 0 or result.stdout.strip() != PINNED_PI_SHA:
@@ -356,7 +383,7 @@ def validate_q0_authoritative_counts(evidence: dict[str, Any], evidence_dir: Pat
     if raw_command.get("argv") != ["dotnet", "test", "PiSharp.slnx"]:
         raise VerificationError("Q0 authoritative counts are not from the full dotnet test PiSharp.slnx suite")
     cwd = raw_command.get("cwd")
-    if not isinstance(cwd, str) or Path(cwd).resolve() != ROOT.resolve():
+    if not isinstance(cwd, str) or not _recorded_checkout_directory_matches(cwd):
         raise VerificationError("Q0 full .NET suite ran from the wrong implementation directory")
     if type(raw_command.get("exitCode")) is not int or raw_command["exitCode"] != 0:
         raise VerificationError("Q0 raw full .NET suite command did not exit successfully")

@@ -156,6 +156,39 @@ class Q0AuthoritativeCountTests(unittest.TestCase):
         with self.assertRaisesRegex(verify.VerificationError, "not from the full dotnet test"):
             verify.validate_q0_authoritative_counts(evidence, self.evidence_dir)
 
+    def test_q0_counts_verify_after_download_to_a_different_checkout_root(self) -> None:
+        evidence, _, raw_command = self.fixture()
+        raw_command["cwd"] = "/home/runner/work/pisharp/pisharp"
+        _refresh_artifact(self.evidence_dir, evidence["caseResults"][0],
+                          "Q0.full-dotnet-suite.command-1", raw_command)
+
+        self.assertEqual({"passed": 123, "failed": 0, "skipped": 0, "total": 123},
+                         verify.validate_q0_authoritative_counts(
+                             evidence, self.evidence_dir, expected_source_commit="a" * 40))
+
+    def test_q0_counts_reject_a_working_directory_outside_the_repository(self) -> None:
+        evidence, _, raw_command = self.fixture()
+        raw_command["cwd"] = "/home/runner/work/other/other"
+        _refresh_artifact(self.evidence_dir, evidence["caseResults"][0],
+                          "Q0.full-dotnet-suite.command-1", raw_command)
+
+        with self.assertRaisesRegex(verify.VerificationError, "wrong implementation directory"):
+            verify.validate_q0_authoritative_counts(evidence, self.evidence_dir)
+
+    def test_e0_source_bound_case_count_uses_checkpoint_ids_not_extra_record_fields(self) -> None:
+        checkpoint_ids = [
+            "P0", "P1", "V0", "V1", *[f"R{index}" for index in range(1, 16)], "D0", "Q0",
+        ]
+        source_bound = {"checkpoints": [{"checkpointId": checkpoint_id} for checkpoint_id in checkpoint_ids]}
+
+        self.assertEqual(231, verify.source_bound_case_count(source_bound))
+
+    def test_e0_source_bound_case_count_rejects_an_incomplete_manifest(self) -> None:
+        source_bound = {"checkpoints": [{"checkpointId": "P0"}]}
+
+        with self.assertRaisesRegex(verify.VerificationError, "manifest is incomplete"):
+            verify.source_bound_case_count(source_bound)
+
     def test_wrong_source_and_stale_quality_sha_are_rejected(self) -> None:
         evidence, _, _ = self.fixture()
         with self.assertRaisesRegex(verify.VerificationError, "differs from the publication source"):

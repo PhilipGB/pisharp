@@ -118,7 +118,11 @@ jobs:
           import hashlib
           import json
           import os
+          import sys
           from pathlib import Path
+
+          sys.path.insert(0, "tools/parity/rpc_protocol")
+          from verify import source_bound_case_count
 
           root = Path(os.environ["PISHARP_RPC_EVIDENCE_DIR"])
           e0_path = root / "E0/evidence.json"
@@ -136,7 +140,7 @@ jobs:
               "implementationSourceCommit": e0["implementationSourceCommit"],
               "pinnedPiCommit": e0["piCommit"],
               "sourceBoundCheckpointCount": len(source["checkpoints"]),
-              "sourceBoundCaseCount": sum(item["passed"] for item in source["checkpoints"]),
+              "sourceBoundCaseCount": source_bound_case_count(source),
               "e0EvidencePath": "E0/evidence.json",
               "e0EvidenceSha256": hashlib.sha256(e0_path.read_bytes()).hexdigest(),
               "rawArtifactManifest": source["artifactManifest"],
