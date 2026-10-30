@@ -14129,7 +14129,7 @@
     },
     "independent_review_follow_up": {
       "status": "review correction committed; exact-head acceptance is recorded in PR #29",
-      "implementation_source_commit": "8373b75767117aaf2d799caba05efe2cf55a8bbf",
+      "implementation_source_commit": "0615a90681f95f14e2250ba17f80b592e54d41ba",
       "review_findings": {
         "concurrent_compaction_deadlock": {
           "correction": "Serialize compaction handler admission so only one operation can cancel and await sibling operations.",
@@ -14163,7 +14163,8 @@
         "Run the frozen RPC corpus and full Q0 suite on the final head.",
         "Download the exact-head GitHub artifact into a fresh checkout and verify every source checkpoint and E0.",
         "Pass exact-head push CI, pull-request CI, CI0 and PUB0; keep PR #29 open, draft and unmerged."
-      ]
+      ],
+      "source_identity_rule": "Pin the latest commit touching src, tests, tools/parity or .github/workflows/ci.yml as implementationSourceCommit; record the tested checkout separately as finalHeadCommit. The docs and dedicated evidence publisher workflow may follow the source commit."
     }
   }
 }
