@@ -18,7 +18,10 @@ public sealed class JsonLineWriter(TextWriter output)
         try
         {
             await output.WriteAsync(json + '\n');
-            await output.FlushAsync(cancellationToken);
+            // Once a record write starts, finish flushing it atomically. Cancelling
+            // after WriteAsync can otherwise leave the response on stdout and make
+            // the caller emit a second cancellation response.
+            await output.FlushAsync();
         }
         finally { _gate.Release(); }
     }

@@ -46,4 +46,40 @@ public sealed class JsonLineWriterTests
             foreach (var record in records) record.Dispose();
         }
     }
+
+    [Fact]
+    public async Task CompletesARecordWhenCancellationArrivesAfterWritingStarts()
+    {
+        using var cancellation = new CancellationTokenSource();
+        using var output = new CancelDuringWriteTextWriter(cancellation);
+        var writer = new JsonLineWriter(output);
+
+        await writer.EmitAsync(new { type = "event", text = "committed" }, cancellation.Token);
+
+        Assert.True(cancellation.IsCancellationRequested);
+        Assert.True(output.FlushCalled);
+        using var record = JsonDocument.Parse(output.ToString().TrimEnd('\n'));
+        Assert.Equal("committed", record.RootElement.GetProperty("text").GetString());
+        Assert.Equal(CancellationToken.None, output.FlushToken);
+    }
+
+    private sealed class CancelDuringWriteTextWriter(CancellationTokenSource cancellation) : StringWriter
+    {
+        public bool FlushCalled { get; private set; }
+        public CancellationToken FlushToken { get; private set; }
+
+        public override Task WriteAsync(string? value)
+        {
+            var write = base.WriteAsync(value);
+            cancellation.Cancel();
+            return write;
+        }
+
+        public override Task FlushAsync()
+        {
+            FlushCalled = true;
+            FlushToken = CancellationToken.None;
+            return base.FlushAsync();
+        }
+    }
 }
