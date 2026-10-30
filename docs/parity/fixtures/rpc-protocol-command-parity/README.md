@@ -26,7 +26,7 @@ Q0 passed the full .NET suite (4,005/4,005), RPC tests (185/185), runtime/sessio
 
 Source commit `8373b75767117aaf2d799caba05efe2cf55a8bbf` serializes RPC compaction admission. A deterministic CLI process regression overlaps two `compact` requests and covers normal completion, abort and EOF; it checks exactly one terminal response for each accepted request. The focused RPC process class passes 5/5. The fail-first run without the admission gate failed the new completion case.
 
-The new `.github/workflows/rpc-parity-evidence.yml` workflow runs on pushes to the milestone branch. It regenerates all 21 source-bound checkpoints and E0, runs the independent verifier for each, and uploads the raw files as `rpc-parity-evidence-<final-head>` with source-bound hashes. GitHub retains this artifact for 90 days. CI0 and PUB0 now require a successful workflow and an unexpired artifact attached to the exact final head. The final acceptance run is pending publication of the updated head.
+The new `.github/workflows/rpc-parity-evidence.yml` workflow runs on pushes to the milestone branch. It regenerates all 21 source-bound checkpoints and E0, runs the independent verifier for each, and uploads the raw files as `rpc-parity-evidence-<final-head>` with source-bound hashes. GitHub retains this artifact for 90 days. CI0 and PUB0 now require a successful workflow and an unexpired artifact attached to the exact final head. The exact-head workflow run ID, artifact name and digest are recorded in PR #29's description.
 
 To independently verify a published run from a clean checkout, download the artifact into its head-specific evidence directory and run the check for every source checkpoint and E0:
 

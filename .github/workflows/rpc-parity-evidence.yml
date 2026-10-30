@@ -51,9 +51,10 @@ jobs:
           sudo apt-get install --yes ripgrep
           mkdir -p "$RUNNER_TEMP/pisharp-search-bin"
           curl --fail --location --silent --show-error \
+            --retry 3 \
             --output "$RUNNER_TEMP/pisharp-fd.tar.gz" \
             https://github.com/sharkdp/fd/releases/download/v10.5.0/fd-v10.5.0-x86_64-unknown-linux-musl.tar.gz
-          echo "5838168525bb1bbc109b1c0370a828729b9dc7ad21df903bfc5e6a8a64d1eeb3  $RUNNER_TEMP/pisharp-fd.tar.gz" | sha256sum --check
+          echo "761c72dc8e120d85b22292063be8a796e2eeb20eb3e4f38b8fa2343ccf3514a7  $RUNNER_TEMP/pisharp-fd.tar.gz" | sha256sum --check
           tar --extract --gzip --file "$RUNNER_TEMP/pisharp-fd.tar.gz" \
             --directory "$RUNNER_TEMP/pisharp-search-bin" --strip-components=1 \
             fd-v10.5.0-x86_64-unknown-linux-musl/fd
@@ -104,7 +105,7 @@ jobs:
           done
 
       - name: Record evidence bundle source identity
-        if: always()
+        if: success()
         env:
           PISHARP_RPC_EVIDENCE_HEAD: ${{ github.sha }}
           PISHARP_RPC_EVIDENCE_RUN_ID: ${{ github.run_id }}

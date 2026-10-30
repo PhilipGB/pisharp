@@ -14128,7 +14128,7 @@
       }
     },
     "independent_review_follow_up": {
-      "status": "implementation_committed; clean-head corpus and publication verification pending",
+      "status": "review correction committed; exact-head acceptance is recorded in PR #29",
       "implementation_source_commit": "8373b75767117aaf2d799caba05efe2cf55a8bbf",
       "review_findings": {
         "concurrent_compaction_deadlock": {
@@ -14151,18 +14151,18 @@
           "artifact_name": "rpc-parity-evidence-<final-head>",
           "artifact_retention_days": 90,
           "source_binding": "E0 manifests source pins and per-file raw capture hashes; GitHub artifact metadata binds the bundle to the exact head.",
-          "workflow_artifact_and_fresh_checkout_verification": "Pending final head push."
+          "acceptance_rule": "CI0 requires the successful exact-head workflow and an unexpired artifact; E0 validates source pins and raw capture hashes after download."
         }
       },
-      "remaining_acceptance": [
-        "Run the frozen RPC corpus and full Q0 suite on the final head.",
-        "Download the exact-head GitHub artifact into a fresh checkout and verify every source checkpoint and E0.",
-        "Pass exact-head push CI, pull-request CI, CI0 and PUB0; keep PR #29 open, draft and unmerged."
-      ],
       "limitations": [
         "20 credential-dependent pinned-Pi test cases remain unverified.",
         "Managed-package parity remains scoped to its historical milestone branch.",
         "No live model endpoint was called."
+      ],
+      "acceptance_requirements": [
+        "Run the frozen RPC corpus and full Q0 suite on the final head.",
+        "Download the exact-head GitHub artifact into a fresh checkout and verify every source checkpoint and E0.",
+        "Pass exact-head push CI, pull-request CI, CI0 and PUB0; keep PR #29 open, draft and unmerged."
       ]
     }
   }
