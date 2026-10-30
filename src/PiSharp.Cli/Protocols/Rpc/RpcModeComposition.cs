@@ -1,3 +1,7 @@
+using System.Runtime.InteropServices;
+using System.Text.Json;
+using System.Text;
+using Microsoft.Win32.SafeHandles;
 using PiSharp.Cli.Composition;
 using PiSharp.Cli.Sessions;
 using PiSharp.Cli.Tui;
@@ -12,7 +16,8 @@ internal static class RpcModeComposition
 {
     public static async Task ServeAsync(string agentDirectory, ActiveProjectRuntime projectBinding, ActiveModelRuntime modelBinding,
         ActiveConversationRuntime conversationBinding, ProviderModelRuntime modelRuntime, ConversationModelTransitions modelTransitions,
-        ProjectConversationTransitions projectTransitions, ExtensionLease extensionLease, TerminalPresentation presentation)
+        ProjectConversationTransitions projectTransitions, ExtensionLease extensionLease, TerminalPresentation presentation,
+        string invocationDirectory)
     {
         async Task<IReadOnlyList<ModelDescriptor>> GetRpcModelsAsync(string? providerId, CancellationToken token) =>
             (await modelRuntime.ListModelsAsync(providerId, token, includeOutOfScope: true)).Where(model => model.Available).ToArray();
@@ -45,6 +50,7 @@ internal static class RpcModeComposition
             },
             () => conversationBinding.Run);
 
+        RpcMode? rpcMode = null;
         Task AdoptProjectSession(ProjectSessionRuntime replacement) => projectTransitions.AdoptAsync(replacement,
             presentation.ConfigureMcpAuthorizationUrlPresenter, () =>
             {
@@ -54,17 +60,21 @@ internal static class RpcModeComposition
             {
                 presentation.SetIdleFooter();
                 presentation.LoadSessionTranscript();
-            });
+            }, beforeAdopt: outgoingRun => rpcMode!.CancelBashForSessionTransitionAsync(outgoingRun));
         Task<bool> SwitchProjectSessionAsync(string reference, CancellationToken token) =>
             projectTransitions.SwitchAsync(reference, AdoptProjectSession, token);
         Task ValidateRpcSessionSwitchAsync(string reference, CancellationToken token) =>
             projectTransitions.ValidateSwitchAsync(reference, token);
 
-        async Task<bool> StartRpcSessionAsync(string? parentSession, CancellationToken cancellationToken)
+        async Task<bool> StartRpcSessionAsync(JsonElement? parentSession, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var created = await projectTransitions.Sessions.NewAsync(conversationBinding.Conversation, conversationBinding.Path, parentSession);
-            await projectTransitions.AdoptSessionBranchAsync(created, PiSharpExtensionSessionStartReason.New);
+            var created = await projectTransitions.Sessions.NewAsync(conversationBinding.Conversation,
+                conversationBinding.Path,
+                parentSession?.ValueKind == JsonValueKind.String ? parentSession.Value.GetString() : null,
+                conversationBinding.Run.ThinkingLevel, parentSession);
+            await projectTransitions.AdoptSessionBranchAsync(created, PiSharpExtensionSessionStartReason.New,
+                outgoingRun => rpcMode!.CancelBashForSessionTransitionAsync(outgoingRun));
             return false;
         }
 
@@ -73,7 +83,8 @@ internal static class RpcModeComposition
         {
             cancellationToken.ThrowIfCancellationRequested();
             var forked = await projectTransitions.Sessions.ForkPreparedAsync(conversationBinding.Conversation, conversationBinding.Path, entryId, branchSnapshot, prompt);
-            await projectTransitions.AdoptSessionBranchAsync(forked, PiSharpExtensionSessionStartReason.Fork);
+            await projectTransitions.AdoptSessionBranchAsync(forked, PiSharpExtensionSessionStartReason.Fork,
+                outgoingRun => rpcMode!.CancelBashForSessionTransitionAsync(outgoingRun));
             return forked.Prompt;
         }
 
@@ -88,11 +99,13 @@ internal static class RpcModeComposition
         {
             cancellationToken.ThrowIfCancellationRequested();
             var cloned = await projectTransitions.Sessions.ActivatePreparedCloneAsync(branchSnapshot, branchPath);
-            await projectTransitions.AdoptSessionBranchAsync(cloned, PiSharpExtensionSessionStartReason.Fork);
+            await projectTransitions.AdoptSessionBranchAsync(cloned, PiSharpExtensionSessionStartReason.Fork,
+                outgoingRun => rpcMode!.CancelBashForSessionTransitionAsync(outgoingRun));
             return false;
         }
 
-        var rpcMode = new RpcMode(Console.In, Console.Out, conversationBinding.Run,
+        using var rpcOutput = CreateRpcOutputWriter();
+        rpcMode = new RpcMode(Console.In, rpcOutput, conversationBinding.Run,
             cancellationToken => conversationBinding.Run.PersistAsync(cancellationToken),
             projectBinding.Resources, GetRpcModelsAsync,
             extensionLease.Current.Registration, () => modelBinding.Selection.Authenticated ? null :
@@ -113,12 +126,13 @@ internal static class RpcModeComposition
             validateSwitchSession: ValidateRpcSessionSwitchAsync,
             prepareCloneSession: PrepareRpcCloneAsync,
             discoverCycleModels: GetRpcCycleModelsAsync,
-            getSystemMessage: () => RpcSystemMessageProjector.Project(modelBinding.Agent),
+            getSystemMessage: () => RpcSystemMessageProjector.Project(modelBinding.Agent,
+                conversationBinding.Run.Conversation.Snapshot().Tree.Entries.Any(entry => entry.Type == "run_started")),
             getProjectTrusted: () => projectBinding.Trusted,
             extensionMode: projectBinding.Configuration.ExtensionMode,
             extensionHasUserInterface: projectBinding.Configuration.HasUserInterface,
             extensionUi: projectBinding.Configuration.ExtensionUi,
-            createCommandControlOperations: (abort, cancel, shutdown) => PiSharpExtensionCommandControlFactory.Create(
+            createCommandControlOperations: (abort, cancel, shutdown, publishLifecycleEvent) => PiSharpExtensionCommandControlFactory.Create(
                 () => conversationBinding.Run,
                 GetExtensionCommands,
                 () => extensionLease.Current.Registration,
@@ -127,15 +141,49 @@ internal static class RpcModeComposition
                 modelTransitions,
                 abort,
                 cancel,
-                shutdown),
+                shutdown,
+                publishLifecycleEvent),
             createSettingsFlagContext: sourcePath =>
                 PiSharpExtensionSettingsFlagContextFactory.Create(projectBinding, sourcePath),
             cycleModel: (model, token) => modelTransitions.SelectRpcModelAsync(model,
                 PiSharpExtensionModelSelectionSource.Cycle, token),
             installExtensionCapabilitiesFactory: conversationBinding.SetExtensionCapabilitiesFactory,
-            getSystemPrompt: () => modelBinding.Agent.SystemInstructions);
+            getSystemPrompt: () => modelBinding.Agent.SystemInstructions,
+            rpcInvocationDirectory: invocationDirectory,
+            getExportSystemMessage: () => RpcSystemMessageProjector.Project(modelBinding.Agent,
+                includeBeforeFirstRun: true),
+            persistRun: (originRun, cancellationToken) => originRun.PersistAsync(cancellationToken));
         rpcMode.AfterServeBeforeUiShutdown = token => ExtensionSessionLifecycleHost.NotifyShutdownAsync(
             conversationBinding.Run, PiSharpExtensionSessionShutdownReason.Quit, token);
-        await rpcMode.ServeAsync();
+        try
+        {
+            await rpcMode.ServeAsync();
+        }
+        catch (IOException)
+        {
+            Environment.ExitCode = 1;
+        }
     }
+
+    private static StreamWriter CreateRpcOutputWriter()
+    {
+        Stream output;
+        if (OperatingSystem.IsWindows())
+        {
+            var handle = GetStdHandle(-11);
+            output = handle is { } value && value != IntPtr.Zero && value != new IntPtr(-1)
+                ? new FileStream(new SafeFileHandle(value, ownsHandle: false), FileAccess.Write, 4096, false)
+                : Console.OpenStandardOutput();
+        }
+        else
+        {
+            output = new FileStream(new SafeFileHandle(new IntPtr(1), ownsHandle: false),
+                FileAccess.Write, 4096, false);
+        }
+
+        return new StreamWriter(output, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+    }
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern IntPtr GetStdHandle(int standardHandle);
 }

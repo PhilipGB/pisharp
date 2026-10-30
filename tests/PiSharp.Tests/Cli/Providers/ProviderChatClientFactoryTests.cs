@@ -50,6 +50,23 @@ public sealed class ProviderChatClientFactoryTests
     }
 
     [Fact]
+    public void OpenAiCompletionsProjectionUsesDeveloperRoleForReasoningModelInstructions()
+    {
+        var model = Selection("fixture", "http://127.0.0.1:1234/v1", "openai-completions").Model with
+        {
+            Reasoning = true
+        };
+        var body = """{"messages":[{"role":"system","content":"instructions"},{"role":"user","content":"prompt"}]}"""u8.ToArray();
+
+        var projected = OpenAiCompletionsRequestCompatibilityHandler.ProjectRequest(
+            body, model, supportsStore: false, maxTokensField: "max_completion_tokens",
+            mapSystemRoleToDeveloper: true);
+        using var request = JsonDocument.Parse(projected);
+
+        Assert.Equal("developer", request.RootElement.GetProperty("messages")[0].GetProperty("role").GetString());
+    }
+
+    [Fact]
     public void ProtocolSelectionDoesNotTreatEveryProviderAsOpenAiCompletions()
     {
         var official = Selection("openai", "https://api.openai.com/v1");

@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "milestone": "rpc-protocol-command-parity",
+  "checkpointId": "R7",
+  "contractSha256": "036c369054fbb50887629666f6b25ef76d8a9fbe856d00d4a79a2cf9609f0761",
+  "evidenceDirectory": "artifacts/parity/rpc-protocol-command-parity/r7-ef1b9d23",
+  "evidenceJsonSha256": "72dbc91f585ad0b6dd58d4b90d47932bdfc40e04688533a9d1a8de67ae970e2f",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "evidenceHeadSha": "ef1b9d23b83dbcdd9d67de5a8300f4e1d37f9c52",
+  "implementationSourceSha": "ef1b9d23b83dbcdd9d67de5a8300f4e1d37f9c52",
+  "sourceTreeClean": true,
+  "status": "passed",
+  "executedCaseCount": 13,
+  "requiredCaseCount": 13,
+  "verifierCounts": {
+    "required": 13,
+    "executed": 13,
+    "passed": 13,
+    "failed": 0,
+    "skipped": 0
+  },
+  "build": {
+    "command": "dotnet build src/PiSharp.Cli/PiSharp.Cli.csproj --no-restore --warnaserror",
+    "exitCode": 0,
+    "assemblySha256": "d098ed0c91fac3b64e29b4cf938db0e83abd1152ddd9818268091141e602b9de",
+    "logPath": "pisharp-build.log",
+    "logSha256": "1d3c7f2c7283701570656b1d470565ce7daee173da4f1d412be9a8d0225ff9f0"
+  },
+  "comparison": "Each case matched two stable pinned-Pi processes and an independent PiSharp process.",
+  "focusedDotnetTests": "13/13 passed; zero failures/skips",
+  "verifierUnitTests": "16/16 passed; zero failures/skips",
+  "changedFileFormatVerification": "Passed with dotnet format whitespace --verify-no-changes --include changed C# files.",
+  "cases": [
+    {
+      "caseId": "R7.get-state-idle-schema",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R7.get-state-active-stream",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R7.get-messages-system-projection",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R7.get-messages-compacted-context-edits",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R7.get-messages-active-partial",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R7.get-entries-full-and-leaf",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R7.get-entries-cursor-boundaries",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R7.get-tree-branches-and-labels",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R7.get-fork-messages-content",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R7.get-last-assistant-text-values",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R7.session-read-during-provider-work",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R7.session-read-after-reload",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R7.read-command-error-cursors",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    }
+  ]
+}

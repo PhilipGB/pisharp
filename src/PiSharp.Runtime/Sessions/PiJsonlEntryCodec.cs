@@ -147,7 +147,7 @@ internal static class PiJsonlEntryCodec
         if (usage.CachedInputTokens is long cacheRead) value["cacheRead"] = cacheRead;
         if (usage.CachedWriteTokens is long cacheWrite) value["cacheWrite"] = cacheWrite;
         if (usage.TotalTokens is long totalTokens) value["totalTokens"] = totalTokens;
-        if (usage.ReasoningTokens is long reasoning && reasoning > 0) value["reasoning"] = reasoning;
+        if (usage.ReasoningTokens is long reasoning) value["reasoning"] = reasoning;
         if (usage.Cost is decimal cost)
         {
             var costs = new JsonObject { ["total"] = cost };
@@ -173,6 +173,12 @@ internal static class PiJsonlEntryCodec
         if (node.Type == "bash_execution") return ConversationMessageCodec.PiEntryFromBashPayload(node.Payload);
         return TryProperty(node.Payload, "piOriginalEntry", out var entry) && entry.ValueKind == JsonValueKind.Object
             ? entry.Clone() : null;
+    }
+
+    internal static string ProjectedEntryId(ConversationNode node)
+    {
+        var original = OriginalEntry(node);
+        return original is { } entry ? StringProperty(entry, "id") ?? node.Id : node.Id;
     }
 
     internal static UsageRecord? ImportedUsage(ConversationNode node)
@@ -341,8 +347,10 @@ internal static class PiJsonlEntryCodec
     internal static ChatMessage? CompactionSystemMessage(ConversationNode node)
     {
         var entry = OriginalEntry(node);
-        return entry is { } original && TryProperty(original, "systemMessage", out var message)
-            ? ToChatMessage(message) : null;
+        if (entry is { } original && TryProperty(original, "systemMessage", out var importedMessage))
+            return ToChatMessage(importedMessage);
+        return TryProperty(node.Payload, "systemMessage", out var nativeMessage)
+            ? ToChatMessage(nativeMessage) : null;
     }
 
     internal static ChatMessage? ApplyContextEdit(ConversationNode node, ChatMessage message, JsonElement replacement)
@@ -526,8 +534,11 @@ internal static class PiJsonlEntryCodec
             if (StringProperty(message, "thinkingLevel") is { } thinking) properties["pisharp.thinkingLevel"] = thinking;
             if (StringProperty(message, "api") is { } api) properties["pisharp.api"] = api;
             if (StringProperty(message, "stopReason") is { } stopReason) properties["pisharp.stopReason"] = stopReason;
+            if (StringProperty(message, "rawStopReason") is { } rawStopReason)
+                properties["pisharp.rawStopReason"] = rawStopReason;
             if (StringProperty(message, "errorMessage") is { } errorMessage) properties["pisharp.errorMessage"] = errorMessage;
             if (properties.Count > 0) result.AdditionalProperties = properties;
+            result.MessageId = StringProperty(message, "responseId");
         }
         return result;
     }
@@ -610,10 +621,18 @@ internal static class PiJsonlEntryCodec
             };
             if (TryProperty(payload, "details", out var details) && details.ValueKind != JsonValueKind.Undefined)
                 entry["details"] = JsonNode.Parse(details.GetRawText());
-            if (TryProperty(payload, "fromHook", out var fromHook) && fromHook.ValueKind == JsonValueKind.True)
-                entry["fromHook"] = true;
+            if (TryProperty(payload, "fromHook", out var fromHook) &&
+                fromHook.ValueKind is JsonValueKind.True or JsonValueKind.False)
+                entry["fromHook"] = fromHook.GetBoolean();
             if (TryProperty(payload, "usage", out var usage) && usage.ValueKind is not (JsonValueKind.Null or JsonValueKind.Undefined))
                 entry["usage"] = JsonNode.Parse(usage.GetRawText());
+            if (TryProperty(payload, "systemMessage", out var systemMessage) &&
+                systemMessage.ValueKind is not (JsonValueKind.Null or JsonValueKind.Undefined))
+            {
+                var projectedSystemMessage = JsonNode.Parse(systemMessage.GetRawText())!.AsObject();
+                projectedSystemMessage["timestamp"] ??= node.Timestamp.ToUnixTimeMilliseconds();
+                entry["systemMessage"] = projectedSystemMessage;
+            }
             return entry;
         }
         if (node.Type == "branch_summary")
@@ -627,8 +646,9 @@ internal static class PiJsonlEntryCodec
             };
             if (TryProperty(node.Payload, "details", out var details) && details.ValueKind is not (JsonValueKind.Null or JsonValueKind.Undefined))
                 entry["details"] = JsonNode.Parse(details.GetRawText());
-            if (TryProperty(node.Payload, "fromHook", out var fromHook) && fromHook.ValueKind == JsonValueKind.True)
-                entry["fromHook"] = true;
+            if (TryProperty(node.Payload, "fromHook", out var fromHook) &&
+                fromHook.ValueKind is JsonValueKind.True or JsonValueKind.False)
+                entry["fromHook"] = fromHook.GetBoolean();
             if (TryProperty(node.Payload, "usage", out var usage) && usage.ValueKind is not (JsonValueKind.Null or JsonValueKind.Undefined))
                 entry["usage"] = JsonNode.Parse(usage.GetRawText());
             return entry;
@@ -769,12 +789,18 @@ internal static class PiJsonlEntryCodec
         if (role == "system") SystemMessageTranscript.ExportMetadata(message, messageObject);
         if (role == "assistant")
         {
+            var hasToolCalls = message.Contents.OfType<FunctionCallContent>().Any();
+            var rawStopReason = MessageProperty(message, "pisharp.rawStopReason");
             messageObject["provider"] = MessageProperty(message, "pisharp.provider") ?? session.Provider;
             messageObject["model"] = MessageProperty(message, "pisharp.model") ?? session.Model;
             messageObject["thinkingLevel"] = MessageProperty(message, "pisharp.thinkingLevel");
             messageObject["api"] = MessageProperty(message, "pisharp.api") ?? "openai-responses";
-            messageObject["stopReason"] = message.Contents.OfType<FunctionCallContent>().Any() ? "toolUse" : "stop";
+            messageObject["stopReason"] = MessageProperty(message, "pisharp.stopReason") ??
+                (rawStopReason == "length" ? "length" : hasToolCalls ? "toolUse" : "stop");
             messageObject["usage"] = EmptyUsage();
+            if (message.MessageId is { Length: > 0 } responseId)
+                messageObject["responseId"] = responseId;
+            if (rawStopReason is not null) messageObject["rawStopReason"] = rawStopReason;
         }
         if (role == "toolResult")
         {

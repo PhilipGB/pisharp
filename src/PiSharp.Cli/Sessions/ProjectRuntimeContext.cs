@@ -412,7 +412,8 @@ internal sealed class ProjectRuntimeContext : IDisposable
             // ProviderChatClientFactory applies retry.provider.maxRetries inside the SDK adapter.
             // Avoid adding PiAgent's independent fallback retry loop on top of that configured count.
             retryPolicy: ProviderRetryPolicy.None,
-            maxOutputTokens: selection.Model.MaxOutputTokens);
+            maxOutputTokens: selection.Model.MaxOutputTokens,
+            summarizationRetryPolicy: effectiveSettings.Retry?.ResolvePolicy() ?? AgentRunRetryPolicy.Default);
     }
 
     public ExtensionCatalog TransferExtensions()

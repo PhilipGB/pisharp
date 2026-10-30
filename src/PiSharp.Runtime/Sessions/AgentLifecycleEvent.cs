@@ -16,8 +16,14 @@ public sealed record AgentLifecycleEvent(string Type, string? Text = null, strin
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public double? DurationMs { get; init; }
 
+    [JsonPropertyName("aborted"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? Aborted { get; init; }
+
     [JsonIgnore]
     public IReadOnlyDictionary<string, object?>? ToolArguments { get; init; }
+
+    [JsonIgnore]
+    public bool? ToolResultIsError { get; init; }
 
     [JsonIgnore]
     public IReadOnlyList<DataContent>? Images { get; init; }
@@ -166,4 +172,7 @@ public sealed record AgentLifecycleEvent(string Type, string? Text = null, strin
 
     [JsonPropertyName("finalError"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? RetryFinalError { get; init; }
+
+    [JsonIgnore]
+    public string? SummarizationRetrySource { get; init; }
 }

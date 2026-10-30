@@ -22,7 +22,8 @@ internal static class PiJsonlSessionWriter
         header["id"] = session.Id;
         header["timestamp"] = DateTimeOffset.UtcNow.ToString("O");
         header["cwd"] = session.WorkingDirectory;
-        if (session.ParentSessionPath is not null) header["parentSession"] = session.ParentSessionPath;
+        if (session.ParentSessionValue is { } parentSession && parentSession.ValueKind != JsonValueKind.Null)
+            header["parentSession"] = JsonNode.Parse(parentSession.GetRawText());
         AppendLine(output, header);
 
         var orderedEntries = OrderedEntriesForExport(session);

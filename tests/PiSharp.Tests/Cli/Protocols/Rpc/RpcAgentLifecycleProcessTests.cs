@@ -131,17 +131,18 @@ public sealed class RpcAgentLifecycleProcessTests
                 Assert.Equal(["type", "messages", "willRetry"], agentEnd.EnumerateObject().Select(property => property.Name));
                 Assert.False(agentEnd.GetProperty("willRetry").GetBoolean());
                 var messages = agentEnd.GetProperty("messages");
-                Assert.Equal(2, messages.GetArrayLength());
-                Assert.Equal("user", messages[0].GetProperty("role").GetString());
-                Assert.Equal("hello", messages[0].GetProperty("content").GetString());
-                Assert.Equal("assistant", messages[1].GetProperty("role").GetString());
-                Assert.Equal("reply", messages[1].GetProperty("content")[0].GetProperty("text").GetString());
-                Assert.Equal("openai-completions", messages[1].GetProperty("api").GetString());
-                Assert.Equal("fixture", messages[1].GetProperty("provider").GetString());
-                Assert.Equal("rpc-event-fixture", messages[1].GetProperty("model").GetString());
-                Assert.Equal("stop", messages[1].GetProperty("stopReason").GetString());
-                Assert.True(JsonElement.DeepEquals(userMessageEnd.RootElement.GetProperty("message"), messages[0]));
-                Assert.True(JsonElement.DeepEquals(eventTypes[assistantMessageEndIndex].RootElement.GetProperty("message"), messages[1]));
+                Assert.Equal(3, messages.GetArrayLength());
+                Assert.Equal("system", messages[0].GetProperty("role").GetString());
+                Assert.Equal("user", messages[1].GetProperty("role").GetString());
+                Assert.Equal("hello", messages[1].GetProperty("content")[0].GetProperty("text").GetString());
+                Assert.Equal("assistant", messages[2].GetProperty("role").GetString());
+                Assert.Equal("reply", messages[2].GetProperty("content")[0].GetProperty("text").GetString());
+                Assert.Equal("openai-completions", messages[2].GetProperty("api").GetString());
+                Assert.Equal("fixture", messages[2].GetProperty("provider").GetString());
+                Assert.Equal("rpc-event-fixture", messages[2].GetProperty("model").GetString());
+                Assert.Equal("stop", messages[2].GetProperty("stopReason").GetString());
+                Assert.True(JsonElement.DeepEquals(userMessageEnd.RootElement.GetProperty("message"), messages[1]));
+                Assert.True(JsonElement.DeepEquals(eventTypes[assistantMessageEndIndex].RootElement.GetProperty("message"), messages[2]));
             }
             finally { foreach (var record in eventTypes) record.Dispose(); }
         }
@@ -276,18 +277,20 @@ public sealed class RpcAgentLifecycleProcessTests
                 Assert.True(JsonElement.DeepEquals(toolResultEndMessage, firstTurnEnd.GetProperty("toolResults")[0]));
                 var agentEnd = records[Array.IndexOf(types, "agent_end")].RootElement;
                 var messages = agentEnd.GetProperty("messages");
-                Assert.Equal(4, messages.GetArrayLength());
+                Assert.Equal(5, messages.GetArrayLength());
+                Assert.Equal("system", messages[0].GetProperty("role").GetString());
+                Assert.Equal("user", messages[1].GetProperty("role").GetString());
                 var assistantMessageEnds = records.Where(record => record.RootElement.GetProperty("type").GetString() == "message_end" &&
                         record.RootElement.GetProperty("message").GetProperty("role").GetString() == "assistant")
                     .Select(record => record.RootElement.GetProperty("message")).ToArray();
                 Assert.Equal(2, assistantMessageEnds.Length);
-                Assert.True(JsonElement.DeepEquals(assistantMessageEnds[0], messages[1]));
-                Assert.True(JsonElement.DeepEquals(toolResultEndMessage, messages[2]));
-                Assert.True(JsonElement.DeepEquals(assistantMessageEnds[1], messages[3]));
+                Assert.True(JsonElement.DeepEquals(assistantMessageEnds[0], messages[2]));
+                Assert.True(JsonElement.DeepEquals(toolResultEndMessage, messages[3]));
+                Assert.True(JsonElement.DeepEquals(assistantMessageEnds[1], messages[4]));
                 Assert.True(JsonElement.DeepEquals(assistantMessageEnds[0], firstTurnEnd.GetProperty("message")));
                 var secondTurnEnd = records[Array.LastIndexOf(types, "turn_end")].RootElement;
                 Assert.True(JsonElement.DeepEquals(assistantMessageEnds[1], secondTurnEnd.GetProperty("message")));
-                Assert.Equal("process tool result", messages[2].GetProperty("content")[0]
+                Assert.Equal("process tool result", messages[3].GetProperty("content")[0]
                     .GetProperty("text").GetString());
             }
             finally { foreach (var record in records) record.Dispose(); }
@@ -429,9 +432,10 @@ public sealed class RpcAgentLifecycleProcessTests
                 var agentEnd = records[agentEndIndex].RootElement;
                 Assert.False(agentEnd.GetProperty("willRetry").GetBoolean());
                 var messages = agentEnd.GetProperty("messages");
-                Assert.Equal(2, messages.GetArrayLength());
-                Assert.True(JsonElement.DeepEquals(userMessageEnd.RootElement.GetProperty("message"), messages[0]));
-                Assert.True(JsonElement.DeepEquals(finalAssistant, messages[1]));
+                Assert.Equal(3, messages.GetArrayLength());
+                Assert.Equal("system", messages[0].GetProperty("role").GetString());
+                Assert.True(JsonElement.DeepEquals(userMessageEnd.RootElement.GetProperty("message"), messages[1]));
+                Assert.True(JsonElement.DeepEquals(finalAssistant, messages[2]));
                 Assert.True(JsonElement.DeepEquals(finalAssistant, records[turnEndIndex].RootElement.GetProperty("message")));
                 var abortResponse = records[responseIndex].RootElement;
                 Assert.True(abortResponse.GetProperty("success").GetBoolean());

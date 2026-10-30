@@ -4,11 +4,31 @@ using PiSharp.Runtime.Sessions;
 namespace PiSharp.Cli.Protocols;
 
 /// <summary>Writes lifecycle events in the order required by the RPC stream.</summary>
-internal sealed class RpcEventWriter(JsonLineWriter output)
+internal sealed class RpcEventWriter(JsonLineWriter output, Func<JsonObject?>? getSystemMessage = null)
 {
     private readonly object _projectorGate = new();
+    private readonly object _retryEndGate = new();
+    private readonly List<(long AfterVersion, TaskCompletionSource Completion)> _retryEndWaiters = [];
     private RpcEventProjector? _activeProjector;
     private string? _activeApi;
+    private JsonObject? _lastSystemMessage;
+    private long _retryEndVersion;
+
+    public long RetryEndVersion
+    {
+        get { lock (_retryEndGate) return _retryEndVersion; }
+    }
+
+    public Task WaitForRetryEndAfterAsync(long version)
+    {
+        lock (_retryEndGate)
+        {
+            if (_retryEndVersion > version) return Task.CompletedTask;
+            var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            _retryEndWaiters.Add((version, completion));
+            return completion.Task;
+        }
+    }
 
     public JsonArray ProjectMessagesSnapshot(ConversationSession conversation, JsonObject? systemMessage = null)
     {
@@ -33,6 +53,7 @@ internal sealed class RpcEventWriter(JsonLineWriter output)
         var projector = new RpcEventProjector();
         foreach (var record in projector.Project(item, run.Conversation, null, null, false, null))
             await output.EmitAsync(record, CancellationToken.None);
+        if (item.Type == "auto_retry_end") SignalRetryEndEmitted();
     }
 
     public Task<bool> RunAsync(ConversationRun run, string prompt, CancellationToken cancellationToken = default,
@@ -44,10 +65,13 @@ internal sealed class RpcEventWriter(JsonLineWriter output)
         string? api = null)
     {
         var projector = new RpcEventProjector();
+        projector.SetThinkingLevel(run.ThinkingLevel);
+        var pendingPromptMessages = new List<AgentLifecycleEvent>();
         lock (_projectorGate)
         {
             _activeProjector = projector;
             _activeApi = api;
+            projector.SetSystemMessage(_lastSystemMessage);
         }
         var succeeded = false;
         var accepted = false;
@@ -58,6 +82,7 @@ internal sealed class RpcEventWriter(JsonLineWriter output)
         {
             await foreach (var item in events)
             {
+                projector.SetThinkingLevel(run.ThinkingLevel);
                 if (observeEvent is not null) await observeEvent(item);
                 if (item.Type == "prompt_accepted")
                 {
@@ -75,10 +100,7 @@ internal sealed class RpcEventWriter(JsonLineWriter output)
                         turnOpen = true;
                         lock (_projectorGate) projector.BeginTurn();
                     }
-                    IReadOnlyList<object> promptRecords;
-                    lock (_projectorGate) promptRecords = projector.ProjectPrompt(item, run.Conversation);
-                    foreach (var record in promptRecords)
-                        await output.EmitAsync(record, CancellationToken.None);
+                    pendingPromptMessages.Add(item);
                     continue;
                 }
                 if (item.Type == "steering_message_accepted")
@@ -100,9 +122,33 @@ internal sealed class RpcEventWriter(JsonLineWriter output)
                     continue;
                 }
                 if (item.Type == "prompt_rejected") continue;
+                if (item.Type == "model_request_started" ||
+                    pendingPromptMessages.Count > 0 && item.Type is "turn_completed" or "turn_failed" or "turn_interrupted")
+                {
+                    JsonObject? currentSystemMessage;
+                    lock (_projectorGate) currentSystemMessage = getSystemMessage?.Invoke();
+                    if (currentSystemMessage is not null &&
+                        _lastSystemMessage?.ToJsonString() != currentSystemMessage.ToJsonString())
+                    {
+                        IReadOnlyList<object> systemRecords;
+                        lock (_projectorGate) systemRecords = projector.ProjectSystemMessage(currentSystemMessage);
+                        foreach (var record in systemRecords)
+                            await output.EmitAsync(record, CancellationToken.None);
+                        lock (_projectorGate) _lastSystemMessage = currentSystemMessage.DeepClone().AsObject();
+                    }
+                    foreach (var pendingPrompt in pendingPromptMessages)
+                    {
+                        IReadOnlyList<object> promptRecords;
+                        lock (_projectorGate) promptRecords = projector.ProjectPrompt(pendingPrompt, run.Conversation);
+                        foreach (var record in promptRecords)
+                            await output.EmitAsync(record, CancellationToken.None);
+                    }
+                    pendingPromptMessages.Clear();
+                }
                 if (item.Type == "agent_settled")
                 {
-                    if (accepted) await output.EmitAsync(new { type = "agent_settled" }, CancellationToken.None);
+                    if (accepted) await output.EmitAsync(new { type = "agent_settled", aborted = item.Aborted ?? false },
+                        CancellationToken.None);
                     continue;
                 }
                 if (item.Type == "assistant_turn_started" && turnOpen) continue;
@@ -112,6 +158,7 @@ internal sealed class RpcEventWriter(JsonLineWriter output)
                         accepted, api, turnOpen);
                 foreach (var record in records)
                     await output.EmitAsync(record, CancellationToken.None);
+                if (item.Type == "auto_retry_end") SignalRetryEndEmitted();
                 if (item.Type == "assistant_turn_started") turnOpen = true;
                 if (item.Type is "assistant_turn_completed" or "turn_failed" or "turn_interrupted") turnOpen = false;
                 if (item.Type == "agent_run_completed") succeeded = true;
@@ -129,5 +176,18 @@ internal sealed class RpcEventWriter(JsonLineWriter output)
             }
         }
         return succeeded;
+    }
+
+    private void SignalRetryEndEmitted()
+    {
+        TaskCompletionSource[] ready;
+        lock (_retryEndGate)
+        {
+            _retryEndVersion++;
+            ready = _retryEndWaiters.Where(waiter => _retryEndVersion > waiter.AfterVersion)
+                .Select(waiter => waiter.Completion).ToArray();
+            _retryEndWaiters.RemoveAll(waiter => _retryEndVersion > waiter.AfterVersion);
+        }
+        foreach (var completion in ready) completion.TrySetResult();
     }
 }

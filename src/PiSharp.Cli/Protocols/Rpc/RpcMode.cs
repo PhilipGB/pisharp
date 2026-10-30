@@ -25,7 +25,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     Func<string?>? getApi = null,
     Func<string, CancellationToken, Task<string>>? setThinkingLevelDuringRun = null,
     Func<bool, CancellationToken, Task>? persistRetryEnabled = null,
-    Func<string?, CancellationToken, Task<bool>>? newSession = null,
+    Func<JsonElement?, CancellationToken, Task<bool>>? newSession = null,
     Func<string, ConversationSession, string, CancellationToken, Task<string?>>? forkSession = null,
     Func<ConversationSession, string?, CancellationToken, Task<bool>>? cloneSession = null,
     Func<string, CancellationToken, Task<bool>>? switchSession = null,
@@ -43,28 +43,37 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     string extensionMode = "rpc",
     bool extensionHasUserInterface = false,
     PublicExtensionUi? extensionUi = null,
-    Func<Action, Func<CancellationToken, Task>, Action, PiSharpExtensionCommandControlOperations>? createCommandControlOperations = null,
+    Func<Action, Func<CancellationToken, Task>, Action, Func<AgentLifecycleEvent, Task>,
+        PiSharpExtensionCommandControlOperations>? createCommandControlOperations = null,
     Func<string, PiSharpExtensionSettingsFlagContext>? createSettingsFlagContext = null,
     Func<ModelDescriptor, CancellationToken, Task<ModelDescriptor>>? cycleModel = null,
     Action<Func<ConversationRun,
         Func<string?, PiSharpExtensionSessionContext?, PiSharpExtensionCapabilities?>>>? installExtensionCapabilitiesFactory = null,
-    Func<string?>? getSystemPrompt = null)
+    Func<string?>? getSystemPrompt = null,
+    string? rpcInvocationDirectory = null,
+    Func<JsonObject?>? getExportSystemMessage = null,
+    Func<ConversationRun, CancellationToken, Task>? persistRun = null)
 {
+    private const int MaxRpcRecordLength = 16 * 1024 * 1024;
+    private readonly string _rpcInvocationDirectory = Path.GetFullPath(
+        rpcInvocationDirectory ?? Environment.CurrentDirectory);
     private readonly JsonLineWriter _writer = new(output);
     private RpcEventWriter? _events;
     private readonly ConcurrentDictionary<Guid, BashOperation> _bashOperations = new();
     private readonly ConcurrentDictionary<Guid, RpcCompactionOperation> _compactionOperations = new();
+    private readonly SemaphoreSlim _compactionAdmission = new(1, 1);
     private CancellationTokenSource? _abort;
     private CancellationTokenSource? _serveCancellation;
     private Task? _active;
     private int _activeSettled;
     private int _shutdownRequested;
+    private int _serveStopping;
     internal Func<CancellationToken, Task>? AfterServeBeforeUiShutdown { get; set; }
     private bool IsActive => _active is { IsCompleted: false } && Volatile.Read(ref _activeSettled) == 0;
     private ConversationRun CurrentRun => getCurrentRun?.Invoke() ?? run;
     private PiSharp.Runtime.Resources.ResourceCatalog? CurrentResources => getCurrentResources?.Invoke() ?? resources;
     private ExtensionRegistration? CurrentExtensions => getCurrentExtensions?.Invoke() ?? extensions;
-    private RpcEventWriter Events => _events ??= new RpcEventWriter(_writer);
+    private RpcEventWriter Events => _events ??= new RpcEventWriter(_writer, () => getSystemMessage?.Invoke());
 
     public async Task ServeAsync(CancellationToken cancellationToken = default)
     {
@@ -78,10 +87,13 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             discoverModels, discoverCycleModels ?? discoverModels, setModel, cycleModel,
             projectModel ?? RpcModelProjector.Project, () => CurrentRun, getThinkingLevel, isModelScoped,
             setThinkingLevel, setThinkingLevelDuringRun, getAvailableThinkingLevels, supportsThinking);
-        var retryCommands = new RpcRetryCommandHandler(RespondAsync, () => CurrentRun, persistRetryEnabled);
+        var retryCommands = new RpcRetryCommandHandler(RespondAsync, () => CurrentRun, persistRetryEnabled,
+            WaitForRetrySettlementAsync, () => Events.RetryEndVersion, Events.WaitForRetryEndAfterAsync);
         var compactionCommands = new RpcCompactionCommandHandler(_writer, RespondAsync, () => CurrentRun,
             persistAutoCompactionEnabled, CancelActivePromptAsync,
-            item => Events.EmitCommandLifecycleAsync(CurrentRun, item));
+            item => Volatile.Read(ref _serveStopping) == 0
+                ? Events.EmitCommandLifecycleAsync(CurrentRun, item)
+                : Task.CompletedTask);
         var queueModeCommands = new RpcQueueModeCommandHandler(RespondAsync, () => CurrentRun, persistQueueMode);
         var stateCommands = new RpcStateCommandHandler(_writer, () => CurrentRun,
             () => getThinkingLevel?.Invoke(), () => IsActive,
@@ -107,20 +119,24 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             }
             while (await input.ReadLineAsync(serveCancellation.Token) is { } line)
             {
-                if (line.Length > 1024 * 1024)
+                if (line.Length > MaxRpcRecordLength)
                 {
-                    await RespondAsync(null, "unknown", false, "Command exceeds 1MB.");
+                    await RespondAsync(null, "parse", false, "Command exceeds the 16 MiB RPC record limit.");
                     continue;
                 }
                 JsonDocument document;
                 try { document = JsonDocument.Parse(line); }
-                catch (JsonException error) { await RespondAsync(null, "unknown", false, error.Message); continue; }
+                catch (JsonException error)
+                {
+                    await RespondAsync(null, "parse", false, $"Failed to parse command: {error.Message}");
+                    continue;
+                }
                 using (document)
                 {
                     var root = document.RootElement;
                     if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("type", out var kind) || kind.ValueKind != JsonValueKind.String)
                     {
-                        await RespondAsync(null, "unknown", false, "Command must be an object with a type.");
+                        await RespondInvalidRequestAsync(root, cancellationToken);
                         continue;
                     }
                     var type = kind.GetString()!;
@@ -151,21 +167,38 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             { await RespondAsync(id, type, false, "outputPath must be a nonempty string."); break; }
                             try
                             {
-                                var path = Path.GetFullPath(root.TryGetProperty("outputPath", out outputPath)
-                                    ? outputPath.GetString()! : Path.Combine(CurrentRun.Conversation.WorkingDirectory,
-                                        $"pisharp-{CurrentRun.Conversation.Id[..12]}.html"));
-                                var snapshot = CurrentRun.Conversation.Snapshot();
-                                await SessionExport.ExportHtmlAsync(snapshot, path, cancellationToken);
+                                var run = CurrentRun;
+                                if (run.SessionFile is null)
+                                    throw new InvalidOperationException("Cannot export in-memory session to HTML");
+                                if (!File.Exists(run.SessionFile))
+                                    throw new InvalidOperationException("Nothing to export yet - start a conversation first");
+                                var responsePath = root.TryGetProperty("outputPath", out outputPath)
+                                    ? NormalizeRpcExportPath(outputPath.GetString()!)
+                                    : $"pi-session-{PiSessionExportStem(run)}.html";
+                                var fullPath = Path.GetFullPath(responsePath, _rpcInvocationDirectory);
+                                var snapshot = run.Conversation.Snapshot();
+                                var systemMessage = getSystemMessage?.Invoke();
+                                var presentation = RpcExportPresentation(
+                                    systemMessage is null ? "" : getSystemPrompt?.Invoke(),
+                                    getExportSystemMessage?.Invoke() ?? systemMessage);
+                                var projectedEntries = RpcSessionEntryProjector.ProjectEntries(snapshot,
+                                    getApi?.Invoke(), systemMessage);
+                                var projectedLeafId = RpcSessionEntryProjector.ProjectLeafId(snapshot, systemMessage);
+                                await SessionExport.ExportHtmlAsync(snapshot, fullPath, cancellationToken,
+                                    sharePresentation: presentation, overwriteExisting: true,
+                                    projectedEntries: projectedEntries, projectedLeafId: projectedLeafId);
                                 await _writer.EmitAsync(new
                                 {
                                     id,
                                     type = "response",
                                     command = type,
                                     success = true,
-                                    data = new { path }
+                                    data = new { path = responsePath }
                                 }, cancellationToken);
                             }
-                            catch (Exception error) when (error is IOException or ArgumentException or UnauthorizedAccessException or NotSupportedException)
+                            catch (Exception error) when (error is IOException or ArgumentException or
+                                                           UnauthorizedAccessException or NotSupportedException or
+                                                           InvalidOperationException)
                             { await RespondAsync(id, type, false, error.Message); }
                             break;
                         case "get_session_stats":
@@ -232,7 +265,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                                 if (promptStreamingBehavior is null)
                                 {
                                     await RespondAsync(id, type, false,
-                                        "The active run requires streamingBehavior 'steer' or 'followUp'.");
+                                        "Agent is already processing. Specify streamingBehavior ('steer' or 'followUp') to queue the message.");
                                     break;
                                 }
                                 currentRun.QueueRpcInput(promptMessage, expanded, promptStreamingBehavior == "steer",
@@ -253,20 +286,22 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             _active = ExecuteAsync(id, promptMessage, expanded, _abort.Token);
                             break;
                         case "bash":
-                            if (!root.TryGetProperty("command", out var bashCommand) || bashCommand.ValueKind != JsonValueKind.String)
-                            { await RespondAsync(id, type, false, "A string command is required."); break; }
-                            if (root.TryGetProperty("excludeFromContext", out var excludeFromContext) &&
-                                excludeFromContext.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
-                            { await RespondAsync(id, type, false, "excludeFromContext must be a boolean."); break; }
-                            StartBash(id, bashCommand.GetString()!, excludeFromContext.ValueKind == JsonValueKind.True, cancellationToken);
-                            break;
-                        case "abort_bash":
-                            CurrentRun.AbortBash();
-                            foreach (var operation in _bashOperations.Values)
                             {
-                                try { operation.Cancellation.Cancel(); }
-                                catch (ObjectDisposedException) { }
+                                string bashCommandText;
+                                if (!root.TryGetProperty("command", out var bashCommand))
+                                    bashCommandText = "undefined";
+                                else if (bashCommand.ValueKind != JsonValueKind.String)
+                                { await RespondAsync(id, type, false, "A string command is required."); break; }
+                                else
+                                    bashCommandText = bashCommand.GetString()!;
+                                if (root.TryGetProperty("excludeFromContext", out var excludeFromContext) &&
+                                    excludeFromContext.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+                                { await RespondAsync(id, type, false, "excludeFromContext must be a boolean."); break; }
+                                StartBash(id, bashCommandText, excludeFromContext.ValueKind == JsonValueKind.True, cancellationToken);
+                                break;
                             }
+                        case "abort_bash":
+                            CancelBashOperationsForRun(CurrentRun);
                             await RespondAsync(id, type, true);
                             break;
                         case "steer":
@@ -342,6 +377,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         finally
         {
             await promptCommandHandler.CancelAndWaitAsync();
+            Volatile.Write(ref _serveStopping, 1);
             foreach (var operation in _bashOperations.Values)
             {
                 try { operation.Cancellation.Cancel(); }
@@ -355,9 +391,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                 _abort?.Cancel();
                 try { await _active; } catch (OperationCanceledException) { }
             }
-            var compactions = _compactionOperations.Values.ToArray();
-            if (compactions.Length > 0)
-                await Task.WhenAll(compactions.Select(operation => operation.Completed.Task));
+            await CancelActiveCompactionsAsync();
             _abort?.Dispose();
             rpcUiTransport?.StopDialogs();
             try
@@ -389,8 +423,11 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         }
         _ = Task.Run(async () =>
         {
+            var admitted = false;
             try
             {
+                await _compactionAdmission.WaitAsync(operation.Cancellation.Token);
+                admitted = true;
                 await handler.TryHandleAsync("compact", root, id, operation.Cancellation.Token,
                     () => CancelActiveRunAsync(key));
             }
@@ -400,6 +437,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             }
             finally
             {
+                if (admitted) _compactionAdmission.Release();
                 _compactionOperations.TryRemove(key, out _);
                 operation.Cancellation.Dispose();
                 operation.Completed.TrySetResult();
@@ -407,7 +445,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         }, CancellationToken.None);
     }
 
-    private async Task<bool> StartNewSessionAsync(string? parentSession, CancellationToken cancellationToken)
+    private async Task<bool> StartNewSessionAsync(JsonElement? parentSession, CancellationToken cancellationToken)
     {
         var current = CurrentRun;
         var beforeSwitch = await current.DispatchSessionBeforeSwitchAsync(
@@ -422,6 +460,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     {
         var current = CurrentRun;
         var (branchSnapshot, selectedText) = current.Conversation.ForkAtUser(entryId, current.SessionFile);
+        RestoreBranchRuntimeMetadata(branchSnapshot, current);
         var beforeFork = await current.DispatchSessionBeforeForkAsync(entryId,
             PiSharpExtensionForkPosition.Before, current.SessionFile, cancellationToken);
         if (beforeFork?.Cancel == true)
@@ -442,10 +481,24 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                 throw new InvalidOperationException("Session fork was cancelled by an extension.");
         }
         var branchSnapshot = current.Conversation.ForkForSessionReplacement(current.SessionFile);
+        RestoreBranchRuntimeMetadata(branchSnapshot, current);
         var branchPath = prepareCloneSession is null ? null :
             await prepareCloneSession(branchSnapshot, cancellationToken);
         await CancelActiveRunAsync();
         return await cloneSession!(branchSnapshot, branchPath, cancellationToken);
+    }
+
+    private static void RestoreBranchRuntimeMetadata(ConversationSession branch, ConversationRun source)
+    {
+        if (branch.ContextMessages().Count == 0)
+        {
+            branch.SelectModel(branch.Model, branch.Endpoint, branch.Provider);
+            branch.AppendThinkingLevelChange(source.ThinkingLevel);
+        }
+        else if (!branch.Tree.ActivePath().Any(entry => entry.Type == "thinking_level_change"))
+        {
+            branch.AppendThinkingLevelChange(source.ThinkingLevel);
+        }
     }
 
     private async Task<bool> StartSwitchSessionAsync(string sessionPath, CancellationToken cancellationToken)
@@ -467,6 +520,37 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     {
         await CancelActivePromptAsync();
         await CancelActiveCompactionsAsync(exceptCompaction);
+    }
+
+    internal async Task CancelBashForSessionTransitionAsync(ConversationRun outgoingRun)
+    {
+        ArgumentNullException.ThrowIfNull(outgoingRun);
+        var operations = _bashOperations.Values.Where(operation =>
+            ReferenceEquals(operation.Owner.Run, outgoingRun)).ToArray();
+        CancelBashOperationsForRun(outgoingRun, operations);
+        if (operations.Length > 0)
+            await Task.WhenAll(operations.Select(operation => operation.Completed.Task));
+    }
+
+    private void CancelBashOperationsForRun(ConversationRun originRun, BashOperation[]? operations = null)
+    {
+        originRun.AbortBash();
+        operations ??= _bashOperations.Values.Where(operation =>
+            ReferenceEquals(operation.Owner.Run, originRun)).ToArray();
+        foreach (var operation in operations)
+        {
+            try { operation.Cancellation.Cancel(); }
+            catch (ObjectDisposedException) { }
+        }
+    }
+
+    private async Task WaitForRetrySettlementAsync()
+    {
+        if (_active is { IsCompleted: false } active)
+        {
+            try { await active; }
+            catch (OperationCanceledException) { }
+        }
     }
 
     private async Task CancelActivePromptAsync()
@@ -615,7 +699,14 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     {
         var run = CurrentRun;
         var controls = CreateExtensionControls();
-        var session = run.CreateExtensionSessionContext(commandInfo.SourceInfo.Path);
+        var session = run.CreateExtensionSessionContext(commandInfo.SourceInfo.Path,
+            async (entry, _) =>
+            {
+                var entryId = entry.GetProperty("id").GetString()!;
+                var projectedEntry = RpcSessionEntryProjector.ProjectAppendedEntry(run.Conversation, entryId,
+                    getApi?.Invoke());
+                await _writer.EmitAsync(new { type = "entry_appended", entry = projectedEntry }, CancellationToken.None);
+            });
         var settingsAndFlags = createSettingsFlagContext?.Invoke(commandInfo.SourceInfo.Path);
         var sendUserMessageAsync = CreateExtensionUserMessageSender();
         var sendCustomMessageAsync = CreateExtensionCustomMessageSender(commandInfo.SourceInfo.Path);
@@ -655,7 +746,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             try { _abort?.Cancel(); }
             catch (ObjectDisposedException) { }
         }, token => token.IsCancellationRequested ? Task.FromCanceled(token) : CancelActivePromptAsync(),
-            RequestShutdown);
+            RequestShutdown, item => Events.EmitCommandLifecycleAsync(CurrentRun, item));
 
     private Func<string, CancellationToken, Task> CreateExtensionUserMessageSender() =>
         async (prompt, cancellationToken) =>
@@ -769,7 +860,14 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     private void StartBash(JsonElement? id, string command, bool excludeFromContext, CancellationToken cancellationToken)
     {
         var key = Guid.NewGuid();
-        var operation = new BashOperation(CancellationTokenSource.CreateLinkedTokenSource(cancellationToken));
+        var originRun = CurrentRun;
+        // The general RPC save callback can resolve CurrentRun dynamically; Bash persists through the captured run.
+        Func<CancellationToken, Task> persistOrigin = persistRun is null
+            ? originRun.PersistAsync
+            : token => persistRun(originRun, token);
+        var owner = new BashExecutionOwner(originRun, originRun.Conversation,
+            originRun.Conversation.Id, originRun.Conversation.WorkingDirectory, originRun.SessionFile, persistOrigin);
+        var operation = new BashOperation(owner, CancellationTokenSource.CreateLinkedTokenSource(cancellationToken));
         if (!_bashOperations.TryAdd(key, operation)) throw new InvalidOperationException("Could not register the bash operation.");
         _ = ExecuteBashAsync(key, operation, id, command, excludeFromContext);
     }
@@ -783,7 +881,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             BashExecutionResult result;
             try
             {
-                result = await ExecuteUserBashAsync(correlationId, command, excludeFromContext,
+                result = await ExecuteUserBashAsync(operation.Owner.Run, correlationId, command, excludeFromContext,
                     operation.Cancellation.Token);
             }
             catch (OperationCanceledException) when (operation.Cancellation.IsCancellationRequested)
@@ -791,8 +889,10 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                 result = new BashExecutionResult("", "(command cancelled)", null, true, false, null);
             }
 
-            var recordedNow = CurrentRun.RecordBashResult(command, result, excludeFromContext);
-            if (recordedNow && save is not null) await save(CancellationToken.None);
+            var recordedNow = operation.Owner.Run.RecordBashResult(command, result, excludeFromContext);
+            if (recordedNow)
+                await operation.Owner.Persist(CancellationToken.None);
+            if (Volatile.Read(ref _serveStopping) != 0) return;
             var data = new Dictionary<string, object?>
             {
                 ["output"] = result.Output,
@@ -805,7 +905,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         }
         catch (Exception error)
         {
-            await RespondAsync(id, "bash", false, error.Message);
+            if (Volatile.Read(ref _serveStopping) == 0)
+                await RespondAsync(id, "bash", false, error.Message);
         }
         finally
         {
@@ -815,15 +916,15 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         }
     }
 
-    private async Task<BashExecutionResult> ExecuteUserBashAsync(string? correlationId, string command,
+    private async Task<BashExecutionResult> ExecuteUserBashAsync(ConversationRun originRun, string? correlationId, string command,
         bool excludeFromContext, CancellationToken cancellationToken)
     {
         Task EmitUpdateAsync(string delta) => EmitBashUpdateAsync(correlationId, delta);
-        var interception = await CurrentRun.InterceptUserBashAsync(command, excludeFromContext, EmitUpdateAsync,
+        var interception = await originRun.InterceptUserBashAsync(command, excludeFromContext, EmitUpdateAsync,
             cancellationToken);
         if (interception is null)
         {
-            return await CurrentRun.ExecuteBashAsync(command,
+            return await originRun.ExecuteBashAsync(command,
                 delta => EmitBashUpdateAsync(correlationId, delta).GetAwaiter().GetResult(), cancellationToken);
         }
 
@@ -837,19 +938,15 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         if (interception.Kind == PiSharpUserBashResultKind.CustomOperation &&
             interception.CustomOperation is { } customOperation)
         {
-            return await CurrentRun.ExecuteUserBashOperationAsync(command, customOperation,
+            return await originRun.ExecuteUserBashOperationAsync(command, customOperation,
                 delta => EmitBashUpdateAsync(correlationId, delta).GetAwaiter().GetResult(), cancellationToken);
         }
 
         throw new InvalidOperationException("The user_bash handler returned an invalid result.");
     }
 
-    private Task EmitBashUpdateAsync(string? id, string delta) => _writer.EmitAsync(new
-    {
-        type = "event",
-        format = "pisharp",
-        data = new AgentLifecycleEvent("bash_execution_update", Text: delta, Tool: "bash", OperationId: id)
-    });
+    private Task EmitBashUpdateAsync(string? id, string delta) =>
+        _writer.EmitAsync(RpcEventProjector.ProjectBashExecutionUpdate(id, delta));
 
     private static string? GetCorrelationId(JsonElement? id)
     {
@@ -857,8 +954,13 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         return value.ValueKind == JsonValueKind.String ? value.GetString() : value.GetRawText();
     }
 
-    private sealed class BashOperation(CancellationTokenSource cancellation)
+    private sealed record BashExecutionOwner(ConversationRun Run, ConversationSession Session,
+        string SessionIdentity, string WorkingDirectory, string? PersistenceTarget,
+        Func<CancellationToken, Task> Persist);
+
+    private sealed class BashOperation(BashExecutionOwner owner, CancellationTokenSource cancellation)
     {
+        public BashExecutionOwner Owner { get; } = owner;
         public CancellationTokenSource Cancellation { get; } = cancellation;
         public TaskCompletionSource Completed { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
     }
@@ -881,6 +983,60 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     private Task RespondAsync(JsonElement? id, string command, bool success, string? error = null) => success
         ? _writer.EmitAsync(new { id, type = "response", command, success = true })
         : _writer.EmitAsync(new { id, type = "response", command, success = false, error });
+
+    private static string PiSessionExportStem(ConversationRun run)
+    {
+        if (run.SessionFile is { } sessionFile && sessionFile.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase))
+            return Path.GetFileNameWithoutExtension(sessionFile);
+        return run.Conversation.Id;
+    }
+
+    private static string NormalizeRpcExportPath(string path)
+    {
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        if (path == "~") return home;
+        return path.StartsWith("~/", StringComparison.Ordinal)
+            ? Path.Combine(home, path[2..])
+            : path;
+    }
+
+    private static JsonElement RpcExportPresentation(string? systemPrompt, JsonObject? systemMessage)
+    {
+        var tools = new JsonArray();
+        if (systemMessage?["toolsAdded"] is JsonArray declaredTools)
+        {
+            foreach (var tool in declaredTools.OfType<JsonObject>())
+                tools.Add(new JsonObject
+                {
+                    ["name"] = tool["name"]?.DeepClone(),
+                    ["description"] = tool["description"]?.DeepClone(),
+                    ["parameters"] = tool["parameters"]?.DeepClone()
+                });
+        }
+        var presentation = new JsonObject
+        {
+            ["systemPrompt"] = systemPrompt,
+            ["tools"] = tools
+        };
+        using var document = JsonDocument.Parse(presentation.ToJsonString());
+        return document.RootElement.Clone();
+    }
+
+    private Task RespondInvalidRequestAsync(JsonElement root, CancellationToken cancellationToken)
+    {
+        var response = new JsonObject
+        {
+            ["type"] = "response",
+            ["success"] = false,
+            ["error"] = "Command must be an object with a type."
+        };
+        if (root.ValueKind == JsonValueKind.Object)
+        {
+            if (root.TryGetProperty("id", out var id)) response["id"] = JsonNode.Parse(id.GetRawText());
+            if (root.TryGetProperty("type", out var type)) response["command"] = JsonNode.Parse(type.GetRawText());
+        }
+        return _writer.EmitAsync(response, cancellationToken);
+    }
 
     private void PublishQueueUpdate(ConversationRun currentRun, AgentLifecycleEvent item) =>
         Events.EmitCommandLifecycleAsync(currentRun, item).GetAwaiter().GetResult();

@@ -27,17 +27,19 @@ public sealed class ConversationSession
     public string? Endpoint { get { lock (_metadataGate) return _endpoint; } }
     public string? Name { get; private set; }
     public string? ParentSessionPath { get; }
+    internal JsonElement? ParentSessionValue { get; }
     internal JsonElement? PiJsonlHeader { get; }
     public ConversationTree Tree { get; }
 
     public ConversationSession(string workingDirectory, string model, string? endpoint, string? provider = null,
-        string? parentSessionPath = null)
+        string? parentSessionPath = null, JsonElement? parentSessionValue = null)
         : this(Guid.NewGuid().ToString("N"), Path.GetFullPath(workingDirectory), model, endpoint, provider, null,
-            new ConversationTree(), parentSessionPath: parentSessionPath)
+            new ConversationTree(), parentSessionPath: parentSessionPath, parentSessionValue: parentSessionValue)
     { }
 
     private ConversationSession(string id, string cwd, string model, string? endpoint, string? provider, string? name,
-        ConversationTree tree, JsonElement? piJsonlHeader = null, string? parentSessionPath = null)
+        ConversationTree tree, JsonElement? piJsonlHeader = null, string? parentSessionPath = null,
+        JsonElement? parentSessionValue = null)
     {
         Id = id;
         WorkingDirectory = cwd;
@@ -48,13 +50,17 @@ public sealed class ConversationSession
         Tree = tree;
         PiJsonlHeader = piJsonlHeader?.Clone();
         ParentSessionPath = parentSessionPath;
+        ParentSessionValue = parentSessionValue?.Clone() ?? (parentSessionPath is null
+            ? null : JsonSerializer.SerializeToElement(parentSessionPath));
     }
 
     internal static ConversationSession FromPiJsonl(string id, string cwd, string model, string? provider, string? name,
-        ConversationTree tree, JsonElement header) =>
-        new(id, cwd, model, null, provider, name, tree, header,
-            header.TryGetProperty("parentSession", out var parent) && parent.ValueKind == JsonValueKind.String
-                ? parent.GetString() : null);
+        ConversationTree tree, JsonElement header)
+    {
+        var parent = header.TryGetProperty("parentSession", out var value) ? value.Clone() : (JsonElement?)null;
+        return new(id, cwd, model, null, provider, name, tree, header,
+            parent?.ValueKind == JsonValueKind.String ? parent.Value.GetString() : null, parent);
+    }
 
     public void Rename(string? name) => Name = name;
 
@@ -62,7 +68,7 @@ public sealed class ConversationSession
     {
         lock (_metadataGate)
             return new ConversationSession(Id, WorkingDirectory, _model, _endpoint, _provider, Name,
-                Tree.Clone(), PiJsonlHeader, ParentSessionPath);
+                Tree.Clone(), PiJsonlHeader, ParentSessionPath, ParentSessionValue);
     }
 
     public SessionNameChange BeginSessionNameChange(string name)
@@ -524,13 +530,43 @@ public sealed class ConversationSession
         return projection.HasValidAssistantUsage && !projection.IsInvalidated ? projection.UsageTokens : null;
     }
 
+    /// <summary>Estimates context usage from the selected persisted history, matching Pi's session projection.</summary>
+    public long? EstimatedContextUsageTokens()
+    {
+        var projection = ProjectContextUsageForEstimate();
+        if (projection.HasCompaction && !projection.HasValidAssistantUsage) return null;
+        if (projection.HasValidAssistantUsage && !projection.IsInvalidated)
+            return PiContextUsageEstimator.EstimateAfterUsage(projection.UsageTokens, projection.TrailingMessages);
+
+        var path = Tree.ActivePath();
+        if (path.Any(node => node.Type is "compaction" or "context_edit"))
+            return PiContextUsageEstimator.EstimateAfterUsage(0, ContextMessages());
+
+        long tokens = 0;
+        foreach (var node in path)
+        {
+            if (node.Type == "branch_summary")
+            {
+                var summaryEntry = PiJsonlEntryCodec.OriginalEntry(node) ?? node.Payload;
+                if (summaryEntry.TryGetProperty("summary", out var summary) && summary.ValueKind == JsonValueKind.String)
+                    tokens += PiContextUsageEstimator.EstimateCharacters(summary.GetString()!.Length);
+                continue;
+            }
+
+            if (ConversationContextProjection.ContextMessageForNode(node) is { } message)
+                tokens += PiContextUsageEstimator.EstimateMessage(message);
+        }
+        return Math.Min(int.MaxValue, tokens);
+    }
+
     /// <summary>Plan against context-visible entry boundaries while retaining the canonical tree as source.</summary>
     public CompactionPlan? PrepareCompaction(int? keepRecentTokens = null) =>
         ConversationCompactionCoordinator.PreparePlan(this, keepRecentTokens);
 
     public void AppendCompaction(CompactionPlan plan, string summary, int? keepRecentTokens = null,
         int tokensBefore = 0, ConversationCompactionDetails? details = null, string? firstKeptEntryId = null,
-        JsonElement? extensionDetails = null, bool fromExtension = false, UsageRecord? usage = null)
+        JsonElement? extensionDetails = null, bool fromExtension = false, UsageRecord? usage = null,
+        JsonElement? systemMessage = null)
     {
         if (string.IsNullOrWhiteSpace(summary) || summary.Length > 64 * 1024)
             throw new InvalidDataException("Compaction summary must be nonempty and at most 64KB.");
@@ -544,7 +580,8 @@ public sealed class ConversationSession
         var projectedUsage = usage is null ? (JsonElement?)null :
             JsonSerializer.SerializeToElement(PiJsonlEntryCodec.ProjectUsage(usage));
         Tree.Append("compaction", JsonSerializer.SerializeToElement(new CompactionRecord(summary,
-            retainedEntryId, tokensBefore, persistedDetails, fromExtension, projectedUsage, usage)));
+            retainedEntryId, tokensBefore, persistedDetails, fromExtension, projectedUsage, usage,
+            systemMessage?.Clone())));
     }
 
     internal void ValidateCompactionBoundary(string firstKeptEntryId)
@@ -580,6 +617,8 @@ public sealed class ConversationSession
         if (path.Any(node => node.Type == "run_recovered" && node.Payload.GetProperty("runId").GetString() == runId) ||
             path.Any(node => node.Type == "run_finished" && node.Payload.GetProperty("runId").GetString() == runId &&
                 node.Payload.GetProperty("completed").GetBoolean())) return false;
+        var finished = path.LastOrDefault(node => node.Type == "run_finished" &&
+            node.Payload.GetProperty("runId").GetString() == runId);
         var prompt = start.Payload.GetProperty("prompt").GetString();
         var intents = path.SkipWhile(node => node.Id != start.Id).Where(node => node.Type == "tool_intent" &&
             node.Payload.GetProperty("runId").GetString() == runId).ToArray();
@@ -588,11 +627,23 @@ public sealed class ConversationSession
             .Select(node => node.Payload.GetProperty("operationId").GetString()).ToHashSet();
         var unknown = intents.Where(node => !outcomes.Contains(node.Payload.GetProperty("operationId").GetString()))
             .Select(node => node.Payload.GetProperty("name").GetString()).ToArray();
-        Tree.Append("run_recovered", JsonSerializer.SerializeToElement(new { runId, unknownOperations = unknown }));
         var warning = unknown.Length == 0 ? "No tool outcome is unknown."
             : $"Outcome UNKNOWN for {string.Join(", ", unknown)}; a side effect may already have happened. Inspect before repeating any operation.";
         var progress = path.LastOrDefault(node => node.Type == "assistant_progress" &&
             node.Payload.GetProperty("runId").GetString() == runId)?.Payload.GetProperty("text").GetString();
+        var hasUncheckpointedOutput = path.SkipWhile(node => node.Id != start.Id).Any(node =>
+            node.Type == "interrupted" && node.Payload.TryGetProperty("prompt", out var interruptedPrompt) &&
+            interruptedPrompt.ValueKind == JsonValueKind.String && interruptedPrompt.GetString() == prompt &&
+            ((node.Payload.TryGetProperty("partialText", out var partialText) &&
+              partialText.ValueKind == JsonValueKind.String && !string.IsNullOrEmpty(partialText.GetString())) ||
+             (node.Payload.TryGetProperty("partialAssistantText", out var partialAssistantText) &&
+              partialAssistantText.ValueKind == JsonValueKind.String &&
+              !string.IsNullOrEmpty(partialAssistantText.GetString()))));
+        if (finished is not null && finished.Payload.TryGetProperty("aborted", out var aborted) &&
+            aborted.ValueKind == JsonValueKind.True && intents.Length == 0 && string.IsNullOrEmpty(progress) &&
+            !hasUncheckpointedOutput)
+            return false;
+        Tree.Append("run_recovered", JsonSerializer.SerializeToElement(new { runId, unknownOperations = unknown }));
         var fragment = string.IsNullOrEmpty(progress) ? "" : $" Last checkpointed assistant text: {progress[..Math.Min(progress.Length, 2048)]}.";
         Append(new ChatMessage(ChatRole.User,
             $"[Recovery notice: the previous request '{prompt}' was interrupted. {warning}{fragment} Uncheckpointed output may be missing. Do not automatically repeat it.]"));
@@ -655,7 +706,7 @@ public sealed class ConversationSession
                 providerValue.ValueKind == JsonValueKind.String ? providerValue.GetString() : null;
         }
 
-        var previous = Tree.ClonePath(entry.ParentId);
+        var previous = PiSessionForkProjection.CreateTree(Tree.ClonePath(entry.ParentId).ActivePath());
         return (new ConversationSession(Guid.NewGuid().ToString("N"), WorkingDirectory, model, endpoint, provider,
             Name, previous, parentSessionPath: parentSessionPath), selectedText);
     }
@@ -685,8 +736,7 @@ public sealed class ConversationSession
 
     private ConversationSession ForkPath(IReadOnlyList<ConversationNode> path, string? parentSessionPath)
     {
-        var entries = path.Select((node, index) => node with { ParentId = index == 0 ? null : path[index - 1].Id }).ToArray();
-        var tree = new ConversationTree(entries, entries.LastOrDefault()?.Id);
+        var tree = PiSessionForkProjection.CreateTree(path);
         return new ConversationSession(Guid.NewGuid().ToString("N"), WorkingDirectory, Model, Endpoint, Provider, Name,
             tree, parentSessionPath: parentSessionPath);
     }
@@ -708,7 +758,7 @@ public sealed class ConversationSession
         lock (_metadataGate)
         {
             var document = new NativeSessionDocumentCodec.Document(FormatVersion, Id, WorkingDirectory, _model, _endpoint, Name, Tree.HeadId,
-                Tree.Entries.ToArray(), _provider, PiJsonlHeader, ParentSessionPath);
+                Tree.Entries.ToArray(), _provider, PiJsonlHeader, ParentSessionValue);
             return JsonSerializer.Serialize(document);
         }
     }
@@ -717,7 +767,9 @@ public sealed class ConversationSession
     {
         var (document, tree) = NativeSessionDocumentCodec.Parse(json);
         return new ConversationSession(document.Id, document.WorkingDirectory, document.Model, document.Endpoint,
-            document.Provider, document.Name, tree, document.PiHeader, document.ParentSessionPath);
+            document.Provider, document.Name, tree, document.PiHeader,
+            document.ParentSessionPath?.ValueKind == JsonValueKind.String
+                ? document.ParentSessionPath.Value.GetString() : null, document.ParentSessionPath);
     }
 
     public sealed record CompactionPlan(string FirstKeptEntryId, IReadOnlyList<ChatMessage> MessagesToSummarize,
@@ -729,12 +781,14 @@ public sealed class ConversationSession
         [property: JsonPropertyName("tokensBefore")] int TokensBefore,
         [property: JsonPropertyName("details"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         JsonElement? Details,
-        [property: JsonPropertyName("fromHook"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        [property: JsonPropertyName("fromHook")]
         bool FromExtension,
         [property: JsonPropertyName("usage"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         JsonElement? Usage,
         [property: JsonPropertyName("nativeUsage"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        UsageRecord? NativeUsage);
+        UsageRecord? NativeUsage,
+        [property: JsonPropertyName("systemMessage"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        JsonElement? SystemMessage);
 
     internal ConversationContextProjection.ContextUsageProjection ProjectContextUsageForEstimate() =>
         ConversationContextProjection.ProjectContextUsageForEstimate(Tree.ActivePath());

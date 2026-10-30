@@ -198,19 +198,25 @@ public sealed class ProviderOverflowLoopbackTests
                 }
                 else if (i == 1)
                 {
-                    request.Response.ContentType = "application/json";
+                    request.Response.ContentType = "text/event-stream";
                     responseBody = api switch
                     {
-                        "openai-responses" => """
-                        {"id":"resp_summary","object":"response","created_at":1,"model":"fixture-model","status":"completed","output":[{"id":"msg_1","type":"message","role":"assistant","status":"completed","content":[{"type":"output_text","text":"Earlier answer summarized.","annotations":[]}]}],"usage":{"input_tokens":20,"output_tokens":5,"total_tokens":25}}
-                        """,
-                        "openai-completions" => """
-                        {"id":"chatcmpl_summary","object":"chat.completion","created":1,"model":"fixture-model","choices":[{"index":0,"message":{"role":"assistant","content":"Earlier answer summarized."},"finish_reason":"stop"}],"usage":{"prompt_tokens":20,"completion_tokens":5,"total_tokens":25}}
-                        """,
-                        _ => """
-                        {"id":"msg_summary","type":"message","role":"assistant","model":"fixture-model","content":[{"type":"text","text":"Earlier answer summarized."}],"stop_reason":"end_turn","stop_sequence":null,"usage":{"input_tokens":20,"output_tokens":5}}
-                        """
+                        "openai-responses" =>
+                            "data: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_summary\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"in_progress\",\"output\":[]}}\n\n" +
+                            "data: {\"type\":\"response.output_text.delta\",\"item_id\":\"msg_1\",\"output_index\":0,\"content_index\":0,\"delta\":\"Earlier answer summarized.\"}\n\n" +
+                            "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp_summary\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"completed\",\"output\":[],\"usage\":{\"input_tokens\":20,\"output_tokens\":5,\"total_tokens\":25}}}\n\ndata: [DONE]\n\n",
+                        "openai-completions" =>
+                            "data: {\"id\":\"chatcmpl_summary\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-model\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"Earlier answer summarized.\"},\"finish_reason\":null}]}\n\n" +
+                            "data: {\"id\":\"chatcmpl_summary\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-model\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":20,\"completion_tokens\":5,\"total_tokens\":25}}\n\ndata: [DONE]\n\n",
+                        _ =>
+                            "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_summary\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":20,\"output_tokens\":0}}}\n\n" +
+                            "event: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\n" +
+                            "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"Earlier answer summarized.\"}}\n\n" +
+                            "event: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\n" +
+                            "event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"output_tokens\":5}}\n\n" +
+                            "event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n"
                     };
+                    if (api != "anthropic-messages") responseBody += "data: [DONE]\n\n";
                 }
                 else
                 {

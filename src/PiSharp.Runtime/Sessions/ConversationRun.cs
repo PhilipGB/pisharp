@@ -123,11 +123,12 @@ public sealed partial class ConversationRun
     }
 
     /// <summary>Creates a public, branch-aware extension session bridge for this conversation.</summary>
-    public NativeExtensions.PiSharpExtensionSessionContext CreateExtensionSessionContext(string? source = null) =>
+    public NativeExtensions.PiSharpExtensionSessionContext CreateExtensionSessionContext(string? source = null,
+        Func<JsonElement, CancellationToken, Task>? entryAppended = null) =>
         new(() => new NativeExtensions.PiSharpExtensionSessionSnapshot(Conversation.Id, Conversation.Name,
                 Conversation.Tree.HeadId, Conversation.ExtensionStateEntries()),
             (customType, data, cancellationToken) => AppendExtensionStateAsync(customType, data, source,
-                cancellationToken), SetSessionNameAsync, SetEntryLabelAsync);
+                entryAppended, cancellationToken), SetSessionNameAsync, SetEntryLabelAsync);
 
     /// <summary>Installs the host-owned callback capabilities used by extension event contexts.</summary>
     internal void SetExtensionCapabilitiesFactory(
@@ -197,7 +198,8 @@ public sealed partial class ConversationRun
     }
 
     private async Task<NativeExtensions.PiSharpExtensionSessionEntry> AppendExtensionStateAsync(string customType,
-        JsonElement data, string? source, CancellationToken cancellationToken)
+        JsonElement data, string? source, Func<JsonElement, CancellationToken, Task>? entryAppended,
+        CancellationToken cancellationToken)
     {
         var ownsGate = ReferenceEquals(s_currentGateOwner.Value, this);
         if (!ownsGate) await _gate.WaitAsync(cancellationToken);
@@ -206,6 +208,12 @@ public sealed partial class ConversationRun
             using var change = Conversation.BeginExtensionStateAppend(customType, data, source);
             if (_save is not null) await _save(cancellationToken);
             change.Commit();
+            if (entryAppended is not null)
+            {
+                var node = Conversation.Tree.Entries.Single(entry => entry.Id == change.Entry.Id);
+                var projected = JsonSerializer.SerializeToElement(PiJsonlEntryCodec.ProjectEntry(Conversation, node));
+                await entryAppended(projected, CancellationToken.None).ConfigureAwait(false);
+            }
             return change.Entry;
         }
         finally
@@ -486,6 +494,8 @@ public sealed partial class ConversationRun
 
     public void AbortRetry() => _retryController.AbortRetry();
 
+    public Task AbortRetryAndWaitAsync() => _retryController.AbortRetryAndWaitAsync();
+
     public void SetAutoCompactionEnabled(bool enabled) => Volatile.Write(ref _autoCompactionEnabled, enabled ? 1 : 0);
 
     private sealed record PromptBatch(IReadOnlyList<ChatMessage> Messages, IReadOnlyList<string> Texts,
@@ -651,7 +661,15 @@ public sealed partial class ConversationRun
         using var consumerClosed = new CancellationTokenSource();
         var initialEntryIds = Conversation.Tree.ActivePath().Select(entry => entry.Id).ToHashSet(StringComparer.Ordinal);
         var initialRunBoundaryVersion = _boundaryContextVersion;
-        void Publish(AgentLifecycleEvent value) => channel.Writer.WriteAsync(value, linked.Token).AsTask().GetAwaiter().GetResult();
+        void Publish(AgentLifecycleEvent value)
+        {
+            // A tool may report its durable outcome after cancellation has been requested.
+            // Keep those terminal records observable while the consumer is still attached.
+            var token = value.Type is "tool_execution_finished" or "tool_outcome_unknown"
+                ? consumerClosed.Token
+                : linked.Token;
+            channel.Writer.WriteAsync(value, token).AsTask().GetAwaiter().GetResult();
+        }
         var pump = Task.Run(async () =>
         {
             var accepted = false;
@@ -889,7 +907,13 @@ public sealed partial class ConversationRun
                         }
                         catch (OperationCanceledException) when (settledCancellation.IsCancellationRequested) { }
                     }
-                    try { await channel.Writer.WriteAsync(new("agent_settled"), consumerClosed.Token); }
+                    try
+                    {
+                        await channel.Writer.WriteAsync(new AgentLifecycleEvent("agent_settled")
+                        {
+                            Aborted = linked.IsCancellationRequested
+                        }, consumerClosed.Token);
+                    }
                     catch (OperationCanceledException) { }
                     channel.Writer.TryComplete();
                 }
@@ -1179,7 +1203,8 @@ public sealed partial class ConversationRun
             try
             {
                 await RestorePhysicalContextPolicyAsync(cancellationToken);
-                var result = await CompactCoreAsync(focus, cancellationToken);
+                var result = await CompactCoreAsync(focus, cancellationToken,
+                    publishLifecycleEvent: publishEvent);
                 if (result is null)
                 {
                     var errorMessage = terminalErrorMessage = "Compaction failed: " + CompactionUnavailableError();
@@ -1311,6 +1336,11 @@ public sealed partial class ConversationRun
             ? "Already compacted"
             : "Nothing to compact (session too small)";
 
+    private static bool IsRpcInternalEntry(ConversationNode entry) => entry.Type is
+        "tool_loadout" or "run_started" or "run_finished" or "run_recovered" or "tool_intent" or
+        "tool_outcome" or "tool_skipped" or "assistant_progress" or "usage" or "context_projection" or
+        "tool_transcript";
+
     private (string Model, string? Provider) GetCurrentRequestModel()
     {
         lock (_runtimeStateGate) return (_currentModel, _currentProvider);
@@ -1318,22 +1348,25 @@ public sealed partial class ConversationRun
 
     private Task<ConversationCompactionResult?> CompactCoreAsync(string? focus, CancellationToken cancellationToken,
         NativeExtensions.PiSharpExtensionCompactionReason reason = NativeExtensions.PiSharpExtensionCompactionReason.Manual,
-        bool willRetry = false) =>
-        _compactionCoordinator.CompactAsync(focus, cancellationToken, reason: reason, willRetry: willRetry);
+        bool willRetry = false, Func<AgentLifecycleEvent, Task>? publishLifecycleEvent = null) =>
+        _compactionCoordinator.CompactAsync(focus, cancellationToken, reason: reason, willRetry: willRetry,
+            publishLifecycleEvent: publishLifecycleEvent);
 
     /// <summary>Selects the exact entry and rebuilds MAF state before the next run.</summary>
     public async Task SelectAsync(string? id, CancellationToken cancellationToken = default) =>
         await NavigateTreeCoreAsync(id, new ConversationTreeSelectionOptions(), returnPromptToEditor: false,
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken, publishLifecycleEvent: null).ConfigureAwait(false);
 
     /// <summary>Navigates like Pi tree navigation, returning a selected user prompt for editing.</summary>
     public Task<ConversationTreeNavigationResult> NavigateTreeAsync(string? id,
-        ConversationTreeSelectionOptions? options = null, CancellationToken cancellationToken = default) =>
+        ConversationTreeSelectionOptions? options = null, CancellationToken cancellationToken = default,
+        Func<AgentLifecycleEvent, Task>? publishLifecycleEvent = null) =>
         NavigateTreeCoreAsync(id, options ?? new ConversationTreeSelectionOptions(), returnPromptToEditor: true,
-            cancellationToken);
+            cancellationToken, publishLifecycleEvent);
 
     private async Task<ConversationTreeNavigationResult> NavigateTreeCoreAsync(string? id,
-        ConversationTreeSelectionOptions options, bool returnPromptToEditor, CancellationToken cancellationToken)
+        ConversationTreeSelectionOptions options, bool returnPromptToEditor, CancellationToken cancellationToken,
+        Func<AgentLifecycleEvent, Task>? publishLifecycleEvent)
     {
         if (options.CustomInstructions?.Length > 4096)
             throw new ArgumentException("Branch summary instructions exceed 4096 characters.", nameof(options));
@@ -1434,7 +1467,7 @@ public sealed partial class ConversationRun
                     if (preparation.Messages.Count > 0)
                     {
                         var summary = await _agent.SummarizeBranchAsync(preparation.Messages, customInstructions,
-                            replaceInstructions, cancellationToken).ConfigureAwait(false);
+                            replaceInstructions, cancellationToken, publishLifecycleEvent).ConfigureAwait(false);
                         summaryText = summary.Text + preparation.FileOperationsSuffix;
                         summaryDetails = JsonSerializer.SerializeToElement(new
                         {
@@ -1456,7 +1489,9 @@ public sealed partial class ConversationRun
                 ConversationNode? summaryEntry = null;
                 if (!string.IsNullOrWhiteSpace(summaryText))
                 {
-                    summaryEntry = Conversation.AppendBranchSummary(previous ?? "root", summaryText,
+                    var sourceEntry = oldPath.LastOrDefault(entry => !IsRpcInternalEntry(entry));
+                    var sourceEntryId = sourceEntry is null ? "root" : PiJsonlEntryCodec.ProjectedEntryId(sourceEntry);
+                    summaryEntry = Conversation.AppendBranchSummary(sourceEntryId, summaryText,
                         summaryDetails, summaryFromExtension, summaryUsage);
                     summaryEntryId = summaryEntry.Id;
                 }
@@ -2194,7 +2229,8 @@ public sealed partial class ConversationRun
                     _execution = await RestoreExecutionAsync(interruptedHistory, CancellationToken.None);
                     _historyCount = interruptedHistory.Count;
                 }
-                if (started) await durable!.FinishAsync(completed);
+                if (started) await durable!.FinishAsync(completed,
+                    aborted: !completed && attemptStream.InterruptionType == "turn_interrupted");
                 if (nativeTurnOpen)
                 {
                     var turn = providerTurns.SnapshotTurn();

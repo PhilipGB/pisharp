@@ -439,8 +439,14 @@ public sealed class RpcSessionProcessTests
             {
                 await process.StandardInput.WriteLineAsync(request);
                 await process.StandardInput.FlushAsync(timeout.Token);
-                var line = await process.StandardOutput.ReadLineAsync(timeout.Token);
-                return JsonDocument.Parse(Assert.IsType<string>(line));
+                while (await process.StandardOutput.ReadLineAsync(timeout.Token) is { } line)
+                {
+                    var record = JsonDocument.Parse(line);
+                    if (record.RootElement.TryGetProperty("type", out var type) && type.GetString() == "response")
+                        return record;
+                    record.Dispose();
+                }
+                throw new EndOfStreamException("The RPC process exited before writing the expected response.");
             }
 
             using var nullParent = await SendAsync("{\"type\":\"new_session\",\"parentSession\":null}");
@@ -454,6 +460,9 @@ public sealed class RpcSessionProcessTests
             Assert.False(nullState.RootElement.TryGetProperty("id", out _));
             Assert.False(nullState.RootElement.TryGetProperty("error", out _));
             var nullSessionPath = nullState.RootElement.GetProperty("data").GetProperty("sessionFile").GetString()!;
+            Assert.False(File.Exists(nullSessionPath));
+            using var nullName = await SendAsync("{\"id\":\"null-name\",\"type\":\"set_session_name\",\"name\":\"null parent\"}");
+            Assert.True(nullName.RootElement.GetProperty("success").GetBoolean());
             var store = new ConversationStore(root, sessionDirectory);
             Assert.Null((await store.LoadAsync(nullSessionPath)).ParentSessionPath);
 
@@ -462,7 +471,112 @@ public sealed class RpcSessionProcessTests
             Assert.False(emptyParent.RootElement.GetProperty("data").GetProperty("cancelled").GetBoolean());
             using var emptyState = await SendAsync("{\"id\":\"empty-state\",\"type\":\"get_state\"}");
             var emptySessionPath = emptyState.RootElement.GetProperty("data").GetProperty("sessionFile").GetString()!;
+            Assert.False(File.Exists(emptySessionPath));
+            using var emptyName = await SendAsync("{\"id\":\"empty-name\",\"type\":\"set_session_name\",\"name\":\"empty parent\"}");
+            Assert.True(emptyName.RootElement.GetProperty("success").GetBoolean());
             Assert.Null((await store.LoadAsync(emptySessionPath)).ParentSessionPath);
+
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+            Assert.Equal(0, process.ExitCode);
+            Assert.Equal("", await error.WaitAsync(timeout.Token));
+        }
+        finally
+        {
+            if (process is { HasExited: false })
+            {
+                process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync();
+            }
+            process?.Dispose();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task NewSessionPersistsTruthyNonStringParentSessionValues()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-new-session-parent-values-" + Guid.NewGuid().ToString("N"));
+        var agentDirectory = Path.Combine(root, "agent");
+        var sessionDirectory = Path.Combine(root, "sessions");
+        Directory.CreateDirectory(root);
+        Directory.CreateDirectory(agentDirectory);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+        Process? process = null;
+        try
+        {
+            var start = new ProcessStartInfo("dotnet")
+            {
+                WorkingDirectory = root,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            start.ArgumentList.Add(typeof(CliArguments).Assembly.Location);
+            foreach (var argument in new[] { "--mode", "rpc", "--local", "--offline", "--session-dir", sessionDirectory })
+                start.ArgumentList.Add(argument);
+            foreach (var name in new[] { "OPENAI_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_MODEL",
+                "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH", "PISHARP_SETTINGS_PATH", "PISHARP_SESSION_DIR" })
+                start.Environment.Remove(name);
+            start.Environment["PISHARP_AGENT_DIR"] = agentDirectory;
+            process = Process.Start(start)!;
+            var error = process.StandardError.ReadToEndAsync();
+
+            async Task<JsonDocument> SendAsync(string request)
+            {
+                using var parsedRequest = JsonDocument.Parse(request);
+                var expectedId = parsedRequest.RootElement.GetProperty("id").GetString();
+                await process.StandardInput.WriteLineAsync(request);
+                await process.StandardInput.FlushAsync(timeout.Token);
+                while (true)
+                {
+                    var line = await process.StandardOutput.ReadLineAsync(timeout.Token);
+                    using var response = JsonDocument.Parse(Assert.IsType<string>(line));
+                    if (response.RootElement.GetProperty("type").GetString() == "response" &&
+                        response.RootElement.TryGetProperty("id", out var responseId) &&
+                        responseId.GetString() == expectedId)
+                        return JsonDocument.Parse(response.RootElement.GetRawText());
+                }
+            }
+
+            var values = new[]
+            {
+                (Name: "number", Json: "7"),
+                (Name: "object", Json: "{\"source\":\"rpc\"}"),
+                (Name: "array", Json: "[]")
+            };
+            foreach (var (name, json) in values)
+            {
+                using var parent = JsonDocument.Parse(json);
+                var request = JsonSerializer.Serialize(new
+                {
+                    id = $"new-{name}",
+                    type = "new_session",
+                    parentSession = parent.RootElement
+                });
+                using var created = await SendAsync(request);
+                Assert.Equal($"new-{name}", created.RootElement.GetProperty("id").GetString());
+                Assert.True(created.RootElement.GetProperty("success").GetBoolean());
+
+                using var named = await SendAsync(JsonSerializer.Serialize(new
+                {
+                    id = $"name-{name}",
+                    type = "set_session_name",
+                    name
+                }));
+                Assert.True(named.RootElement.GetProperty("success").GetBoolean());
+
+                using var state = await SendAsync(JsonSerializer.Serialize(new
+                {
+                    id = $"state-{name}",
+                    type = "get_state"
+                }));
+                var sessionPath = state.RootElement.GetProperty("data").GetProperty("sessionFile").GetString()!;
+                using var native = JsonDocument.Parse(await File.ReadAllTextAsync(sessionPath, timeout.Token));
+                Assert.Equal(parent.RootElement.GetRawText(),
+                    native.RootElement.GetProperty("ParentSessionPath").GetRawText());
+            }
 
             process.StandardInput.Close();
             await process.WaitForExitAsync(timeout.Token);

@@ -12,6 +12,7 @@ internal static class RpcSessionMessageProjector
     {
         var path = conversation.Tree.ActivePath();
         var toolNames = ResolveToolNames(path);
+        var usageByAssistantId = ResolveModelUsageByAssistantId(path);
         var compactionIndex = path.ToList().FindLastIndex(node => node.Type == "compaction");
         IReadOnlyList<ConversationNode> projectedNodes = path;
         var messages = new JsonArray();
@@ -51,6 +52,13 @@ internal static class RpcSessionMessageProjector
         {
             var message = ProjectNode(conversation, node, api);
             if (message is null) continue;
+            if (node.Type == "chat" && PiJsonlEntryCodec.OriginalEntry(node) is null &&
+                message["role"]?.GetValue<string>() == "assistant" && usageByAssistantId.TryGetValue(node.Id, out var usage))
+                message["usage"] = RpcAssistantMessageProjector.ProjectUsage(usage);
+            message.Remove("piSharpToolResult");
+            if (message["role"]?.GetValue<string>() == "user" &&
+                message["content"] is JsonValue userContent && userContent.TryGetValue<string>(out var userText))
+                message["content"] = new JsonArray(new JsonObject { ["type"] = "text", ["text"] = userText });
             if (message["role"]?.GetValue<string>() == "toolResult" && toolNames.TryGetValue(node.Id, out var toolName))
                 message["toolName"] = toolName;
             if (node.Type == "interrupted" && message["role"]?.GetValue<string>() == "assistant" &&
@@ -72,6 +80,36 @@ internal static class RpcSessionMessageProjector
             messages.Add(message);
         }
         return messages;
+    }
+
+    internal static Dictionary<string, UsageRecord> ResolveModelUsageByAssistantId(
+        IReadOnlyList<ConversationNode> entries)
+    {
+        var nodesById = entries.ToDictionary(node => node.Id, StringComparer.Ordinal);
+        var usageByAssistantId = new Dictionary<string, UsageRecord>(StringComparer.Ordinal);
+        foreach (var assistant in entries.Where(node => node.Type == "chat" &&
+                     ConversationMessageCodec.RestoreEntry(node).Role == ChatRole.Assistant))
+        {
+            var ancestorId = assistant.ParentId;
+            while (ancestorId is not null && nodesById.TryGetValue(ancestorId, out var ancestor))
+            {
+                if (ancestor.Type is "interrupted" or "compaction") break;
+                if (ancestor.Type == "chat")
+                {
+                    var role = ConversationMessageCodec.RestoreEntry(ancestor).Role;
+                    if (role == ChatRole.User || role == ChatRole.Assistant) break;
+                }
+                if (ancestor.Type == "usage")
+                {
+                    var usage = ancestor.Payload.Deserialize<UsageRecord>() ??
+                        throw new InvalidDataException($"Invalid usage record at {ancestor.Id}.");
+                    if (usage.Source == "model") usageByAssistantId[assistant.Id] = usage;
+                    break;
+                }
+                ancestorId = ancestor.ParentId;
+            }
+        }
+        return usageByAssistantId;
     }
 
     private static Dictionary<string, string> ResolveToolNames(IReadOnlyList<ConversationNode> path)

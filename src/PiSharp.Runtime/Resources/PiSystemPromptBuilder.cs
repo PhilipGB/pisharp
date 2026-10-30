@@ -104,6 +104,18 @@ internal static class PiSystemPromptBuilder
         return new(text, sections.Sum(section => section.Length));
     }
 
+    internal static IReadOnlyDictionary<string, string> ProjectSections(PiSharpSystemPromptOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        var sections = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var (name, content) in options.Sections)
+        {
+            if (string.IsNullOrEmpty(content)) continue;
+            sections[name] = name == "preamble" ? content : $"<{name}>\n{content}\n</{name}>";
+        }
+        return sections;
+    }
+
     internal static PiSharpSystemPromptOptions CloneOptions(PiSharpSystemPromptOptions source)
     {
         var clone = new PiSharpSystemPromptOptions();

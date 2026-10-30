@@ -603,8 +603,9 @@ public sealed class RpcModeTests
             var service = new RpcMode(reader, output, previousRun, getCurrentRun: () => currentRun,
                 newSession: async (parentSession, token) =>
                 {
-                    Assert.Equal("/sessions/parent.jsonl", parentSession);
-                    var next = new ConversationSession(cwd, "fixture", null, parentSessionPath: parentSession);
+                    Assert.Equal("/sessions/parent.jsonl", parentSession?.GetString());
+                    var next = new ConversationSession(cwd, "fixture", null,
+                        parentSessionPath: parentSession?.GetString(), parentSessionValue: parentSession);
                     currentRun = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(cwd)), next);
                     return false;
                 });
@@ -1163,9 +1164,9 @@ public sealed class RpcModeTests
             foreach (var index in updateIndices)
             {
                 using var update = JsonDocument.Parse(lines[index]);
-                var eventData = update.RootElement.GetProperty("data");
-                Assert.Equal("bash-1", eventData.GetProperty("OperationId").GetString());
-                streamed.Append(eventData.GetProperty("Text").GetString());
+                Assert.Equal("bash_execution_update", update.RootElement.GetProperty("type").GetString());
+                Assert.Equal("bash-1", update.RootElement.GetProperty("id").GetString());
+                streamed.Append(update.RootElement.GetProperty("delta").GetString());
             }
             Assert.Contains("stdout-marker", streamed.ToString());
             Assert.Contains("stderr-marker", streamed.ToString());
@@ -1192,7 +1193,7 @@ public sealed class RpcModeTests
             var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
 
             channel.Writer.TryWrite(JsonSerializer.Serialize(new { id = "bash-prefix", type = "bash", command }));
-            await WaitForAsync(output, "\"id\":\"bash-prefix\"");
+            await WaitForAsync(output, "\"id\":\"bash-prefix\",\"type\":\"response\",\"command\":\"bash\"");
             channel.Writer.Complete();
             await serving.WaitAsync(TimeSpan.FromSeconds(5));
 
@@ -1259,8 +1260,9 @@ public sealed class RpcModeTests
                 {
                     using (document)
                     {
-                        Assert.Equal("user-bash", document.RootElement.GetProperty("data").GetProperty("OperationId").GetString());
-                        return document.RootElement.GetProperty("data").GetProperty("Text").GetString()!;
+                        Assert.Equal("bash_execution_update", document.RootElement.GetProperty("type").GetString());
+                        Assert.Equal("user-bash", document.RootElement.GetProperty("id").GetString());
+                        return document.RootElement.GetProperty("delta").GetString()!;
                     }
                 }).ToArray();
             Assert.Equal(["extension-first", "extension-second"], updateTexts);
@@ -1339,9 +1341,11 @@ public sealed class RpcModeTests
             adapter.Close();
             var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(),
                 new CodingTools(root, shellCommandPrefix: "export PISHARP_REMOTE=1"),
-                liveExtensionRegistration: extensions), new ConversationSession(root, "fixture", null));
+                liveExtensionRegistration: extensions), new ConversationSession(root, "fixture", null),
+                save: _ => { saveCalls++; return Task.CompletedTask; });
             var serving = new RpcMode(new CommandReader(channel.Reader), output, run,
-                save: _ => { saveCalls++; return Task.CompletedTask; }, extensions: extensions).ServeAsync();
+                extensions: extensions,
+                persistRun: (origin, token) => origin.PersistAsync(token)).ServeAsync();
             channel.Writer.TryWrite(JsonSerializer.Serialize(new
             {
                 id = "user-bash-operation",
@@ -1366,8 +1370,9 @@ public sealed class RpcModeTests
             var update = Assert.Single(output.Lines(), line => line.Contains("bash_execution_update", StringComparison.Ordinal));
             using (var updateEvent = JsonDocument.Parse(update))
             {
-                Assert.Equal("remote-output\n", updateEvent.RootElement.GetProperty("data").GetProperty("Text").GetString());
-                Assert.Equal("user-bash-operation", updateEvent.RootElement.GetProperty("data").GetProperty("OperationId").GetString());
+                Assert.Equal("bash_execution_update", updateEvent.RootElement.GetProperty("type").GetString());
+                Assert.Equal("remote-output\n", updateEvent.RootElement.GetProperty("delta").GetString());
+                Assert.Equal("user-bash-operation", updateEvent.RootElement.GetProperty("id").GetString());
             }
             var bashEntry = Assert.Single(run.Conversation.Tree.ActivePath(), item => item.Type == "bash_execution");
             Assert.Equal(command, bashEntry.Payload.GetProperty("command").GetString());
@@ -1378,6 +1383,135 @@ public sealed class RpcModeTests
             Assert.Equal(1, saveCalls);
         }
         finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Theory]
+    [InlineData("full-result")]
+    [InlineData("custom-operation")]
+    public async Task LateExtensionBashCompletionPersistsOnlyToItsOriginAfterSessionAdoption(string kind)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-late-bash-owner-" + Guid.NewGuid().ToString("N"));
+        var sessionDirectory = Path.Combine(root, "sessions");
+        Directory.CreateDirectory(sessionDirectory);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Channel<string>? channel = null;
+        Task? serving = null;
+        try
+        {
+            var store = new ConversationStore(root, sessionDirectory);
+            var source = new ConversationSession(root, "fixture", null);
+            source.Append(new ChatMessage(ChatRole.User, "late-bash-origin"));
+            var sourcePath = store.NewPath(source);
+            await store.SaveAsync(source, sourcePath);
+            var target = new ConversationSession(root, "fixture", null);
+            target.Append(new ChatMessage(ChatRole.User, "late-bash-target"));
+            var targetPath = store.NewPath(target);
+            await store.SaveAsync(target, targetPath);
+
+            var registration = new ExtensionRegistration();
+            var adapter = new NativeExtensionRegistrationAdapter(registration);
+            var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            adapter.AddUserBashHandler((_, _, _) =>
+            {
+                if (kind == "full-result")
+                {
+                    entered.TrySetResult();
+                    return new ValueTask<PiSharpUserBashResult?>(CompleteFullResultAsync(release.Task));
+                }
+
+                return ValueTask.FromResult<PiSharpUserBashResult?>(PiSharpUserBashResult.Custom(
+                    async (_, _, outputSink, _) =>
+                    {
+                        entered.TrySetResult();
+                        await release.Task;
+                        await outputSink(Encoding.UTF8.GetBytes("late-custom-operation"));
+                        return 23;
+                    }));
+            });
+            adapter.Close();
+
+            var originSaveCalls = 0;
+            var targetSaveCalls = 0;
+            var originRun = await ConversationRun.OpenAsync(
+                new PiAgent(new StubClient(), new CodingTools(root), liveExtensionRegistration: registration), source,
+                save: token =>
+                {
+                    Interlocked.Increment(ref originSaveCalls);
+                    return store.SaveAsync(source, sourcePath, token);
+                }, sessionFile: sourcePath);
+            var targetRun = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(root)), target,
+                save: token =>
+                {
+                    Interlocked.Increment(ref targetSaveCalls);
+                    return store.SaveAsync(target, targetPath, token);
+                }, sessionFile: targetPath);
+
+            channel = Channel.CreateUnbounded<string>();
+            using var output = new LockedWriter();
+            var currentRun = originRun;
+            var service = new RpcMode(new CommandReader(channel.Reader), output, originRun,
+                save: token => currentRun.PersistAsync(token), extensions: registration,
+                getCurrentRun: () => currentRun,
+                switchSession: (_, _) =>
+                {
+                    currentRun = targetRun;
+                    return Task.FromResult(false);
+                },
+                persistRun: (origin, token) => origin.PersistAsync(token));
+            serving = service.ServeAsync();
+            const string bashCommand = "extension-owned-command";
+            channel.Writer.TryWrite(JsonSerializer.Serialize(new { id = "late-bash", type = "bash", command = bashCommand }));
+            await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            channel.Writer.TryWrite("{\"id\":\"late-switch\",\"type\":\"switch_session\",\"sessionPath\":\"next.session.json\"}");
+            await WaitForAsync(output, "\"id\":\"late-switch\"");
+            Assert.Same(targetRun, currentRun);
+
+            channel.Writer.TryWrite("{\"id\":\"target-abort-bash\",\"type\":\"abort_bash\"}");
+            await WaitForAsync(output, "\"id\":\"target-abort-bash\"");
+
+            release.TrySetResult();
+            await WaitForAsync(output, "\"id\":\"late-bash\",\"type\":\"response\"");
+            channel.Writer.TryComplete();
+            await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+            using var bashResponse = JsonDocument.Parse(Assert.Single(output.Lines(), line =>
+            {
+                using var record = JsonDocument.Parse(line);
+                return record.RootElement.TryGetProperty("id", out var id) && id.GetString() == "late-bash" &&
+                    record.RootElement.GetProperty("type").GetString() == "response";
+            }));
+            Assert.True(bashResponse.RootElement.GetProperty("success").GetBoolean());
+            Assert.False(bashResponse.RootElement.GetProperty("data").GetProperty("cancelled").GetBoolean());
+            var expectedOutput = kind == "full-result" ? "late-full-result" : "late-custom-operation";
+            Assert.Equal(expectedOutput, bashResponse.RootElement.GetProperty("data").GetProperty("output").GetString());
+
+            var restoredSource = await store.LoadAsync(sourcePath);
+            var sourceResult = Assert.Single(restoredSource.Tree.Entries, entry => entry.Type == "bash_execution" &&
+                entry.Payload.GetProperty("command").GetString() == bashCommand);
+            Assert.Equal(expectedOutput, sourceResult.Payload.GetProperty("output").GetString());
+            var restoredTarget = await store.LoadAsync(targetPath);
+            Assert.DoesNotContain(restoredTarget.Tree.Entries, entry => entry.Type == "bash_execution" &&
+                entry.Payload.GetProperty("command").GetString() == bashCommand);
+            Assert.Equal(1, originSaveCalls);
+            Assert.Equal(0, targetSaveCalls);
+        }
+        finally
+        {
+            release.TrySetResult();
+            channel?.Writer.TryComplete();
+            if (serving is not null)
+            {
+                try { await serving.WaitAsync(TimeSpan.FromSeconds(5)); }
+                catch (TimeoutException) { }
+            }
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    private static async Task<PiSharpUserBashResult?> CompleteFullResultAsync(Task release)
+    {
+        await release;
+        return PiSharpUserBashResult.Full("late-full-result", exitCode: 19);
     }
 
     [Fact]
@@ -1528,9 +1662,10 @@ public sealed class RpcModeTests
             var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
 
             channel.Writer.TryWrite("{\"id\":\"bash-excluded\",\"type\":\"bash\",\"command\":\"printf excluded-marker\",\"excludeFromContext\":true}");
-            await WaitForAsync(output, "\"command\":\"bash\"");
+            await WaitForAsync(output, "\"id\":\"bash-excluded\",\"type\":\"response\"");
             using (var response = JsonDocument.Parse(Assert.Single(output.Lines(), line =>
-                       line.Contains("\"id\":\"bash-excluded\"", StringComparison.Ordinal))))
+                       line.Contains("\"id\":\"bash-excluded\"", StringComparison.Ordinal) &&
+                       line.Contains("\"type\":\"response\"", StringComparison.Ordinal))))
             {
                 Assert.True(response.RootElement.GetProperty("success").GetBoolean());
                 Assert.Equal("excluded-marker", response.RootElement.GetProperty("data").GetProperty("output").GetString());
@@ -1720,7 +1855,7 @@ public sealed class RpcModeTests
                 Assert.Equal(["one", "first reply", "two", "second reply"], agentEnd.RootElement.GetProperty("messages")
                     .EnumerateArray().Select(message => message.GetProperty("role").GetString() == "assistant"
                         ? message.GetProperty("content")[0].GetProperty("text").GetString()
-                        : message.GetProperty("content").GetString()));
+                        : message.GetProperty("content")[0].GetProperty("text").GetString()));
             }
             Assert.Contains(lines, line => line.Contains("\"type\":\"queue_update\"", StringComparison.Ordinal) &&
                 line.Contains("\"followUp\":[\"two\"]", StringComparison.Ordinal));
@@ -1947,7 +2082,8 @@ public sealed class RpcModeTests
             .Select(line =>
             {
                 using var record = JsonDocument.Parse(line);
-                return record.RootElement.GetProperty("message").GetProperty("content").GetString()!;
+                return record.RootElement.GetProperty("message").GetProperty("content")[0]
+                    .GetProperty("text").GetString()!;
             }).ToArray();
         Assert.Equal(["initial", "steer first", "steer second", "follow first", "follow second"], projectedUserMessages);
         using var steeringResponse = JsonDocument.Parse(Assert.Single(lines, line => line.Contains("\"id\":\"steering-mode\"", StringComparison.Ordinal)));
@@ -2026,13 +2162,13 @@ public sealed class RpcModeTests
                 line.Contains("\"type\":\"agent_end\"", StringComparison.Ordinal)));
             Assert.Equal(1, agentEnd.RootElement.GetProperty("messages").EnumerateArray().Count(message =>
                 message.GetProperty("role").GetString() == "user" &&
-                message.GetProperty("content").GetString() == "inspect the result"));
+                message.GetProperty("content")[0].GetProperty("text").GetString() == "inspect the result"));
         }
         finally { Directory.Delete(cwd, recursive: true); }
     }
 
     [Fact]
-    public async Task RpcHtmlExportIsPrivateIncludesBranchesAndNeverOverwrites()
+    public async Task RpcHtmlExportIncludesBranchesUsesPiPathAndOverwritesExistingFile()
     {
         var dir = Path.Combine(Path.GetTempPath(), "pisharp-rpc-export-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(dir);
@@ -2044,10 +2180,15 @@ public sealed class RpcModeTests
             session.Append(new ChatMessage(ChatRole.Assistant, "inactive <script>"));
             session.Tree.Select(root);
             session.Append(new ChatMessage(ChatRole.Assistant, "active"));
-            var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(dir)), session);
+            var sessionPath = Path.Combine(dir, "rpc-export-fixture.jsonl");
+            var store = new ConversationStore(dir, dir);
+            await store.SaveAsync(session, sessionPath);
+            var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(dir)), session,
+                save: token => store.SaveAsync(session, sessionPath, token), sessionFile: sessionPath);
             var channel = Channel.CreateUnbounded<string>();
             using var output = new LockedWriter();
-            var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
+            var serving = new RpcMode(new CommandReader(channel.Reader), output, run,
+                rpcInvocationDirectory: dir).ServeAsync();
             channel.Writer.TryWrite("{\"id\":1,\"type\":\"export_html\"}");
             channel.Writer.TryWrite("{\"id\":2,\"type\":\"export_html\"}");
             channel.Writer.TryWrite("{\"id\":3,\"type\":\"export_html\",\"outputPath\":null}");
@@ -2055,20 +2196,20 @@ public sealed class RpcModeTests
             channel.Writer.TryWrite(JsonSerializer.Serialize(new { id = 4, type = "export_html", outputPath = customPath }));
             channel.Writer.Complete();
             await serving.WaitAsync(TimeSpan.FromSeconds(5));
-            var path = Path.Combine(dir, $"pisharp-{session.Id[..12]}.html");
+            var path = Path.Combine(dir, "pi-session-rpc-export-fixture.html");
             var html = await File.ReadAllTextAsync(path);
             Assert.Contains("inactive", html);
             Assert.DoesNotContain("<script>", html);
             Assert.Contains("active", html);
             using var first = JsonDocument.Parse(output.Lines()[0]);
             Assert.True(first.RootElement.GetProperty("success").GetBoolean());
-            Assert.Equal(path, first.RootElement.GetProperty("data").GetProperty("path").GetString());
+            Assert.Equal("pi-session-rpc-export-fixture.html",
+                first.RootElement.GetProperty("data").GetProperty("path").GetString());
             Assert.Equal(4, output.Lines().Length);
-            foreach (var line in output.Lines().Skip(1).Take(2))
-            {
-                using var response = JsonDocument.Parse(line);
-                Assert.False(response.RootElement.GetProperty("success").GetBoolean());
-            }
+            using (var repeated = JsonDocument.Parse(output.Lines()[1]))
+                Assert.True(repeated.RootElement.GetProperty("success").GetBoolean());
+            using (var invalid = JsonDocument.Parse(output.Lines()[2]))
+                Assert.False(invalid.RootElement.GetProperty("success").GetBoolean());
             using var custom = JsonDocument.Parse(output.Lines()[3]);
             Assert.True(custom.RootElement.GetProperty("success").GetBoolean());
             Assert.Equal(customPath, custom.RootElement.GetProperty("data").GetProperty("path").GetString());
@@ -2113,7 +2254,7 @@ public sealed class RpcModeTests
         Assert.Equal(1, data.GetProperty("toolResults").GetInt32());
         Assert.Equal(4, data.GetProperty("totalMessages").GetInt32());
         Assert.Equal(0, data.GetProperty("tokens").GetProperty("total").GetInt64());
-        Assert.Equal(JsonValueKind.Null, data.GetProperty("cost").ValueKind);
+        Assert.Equal(0m, data.GetProperty("cost").GetDecimal());
     }
 
     [Fact]
@@ -2531,7 +2672,9 @@ public sealed class RpcModeTests
         Assert.Equal("Retry cancelled", end.RootElement.GetProperty("finalError").GetString());
         var settledIndex = Array.FindIndex(lines, line => line.Contains("\"type\":\"agent_settled\"", StringComparison.Ordinal));
         Assert.True(settledIndex > Array.IndexOf(lines, endLine));
-        Assert.Contains(lines, line => line.Contains("\"command\":\"abort_retry\",\"success\":true", StringComparison.Ordinal));
+        var abortResponseIndex = Array.FindIndex(lines, line =>
+            line.Contains("\"command\":\"abort_retry\",\"success\":true", StringComparison.Ordinal));
+        Assert.True(abortResponseIndex > Array.IndexOf(lines, endLine));
         Assert.Contains(lines, line => line.Contains("\"command\":\"set_auto_retry\",\"success\":true", StringComparison.Ordinal));
         Assert.Contains(lines, line => line.Contains("\"command\":\"set_auto_retry\",\"success\":false", StringComparison.Ordinal));
         Assert.False(persistedRetryEnabled);
@@ -2636,6 +2779,140 @@ public sealed class RpcModeTests
         finally { foreach (var record in appended) record.Dispose(); }
     }
 
+    [Fact]
+    public async Task RpcParserAcceptsOneMiBRequestAndUsesParseCommandForMalformedJson()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-rpc-large-record-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        Task? serving = null;
+        try
+        {
+            var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(cwd)),
+                new ConversationSession(cwd, "large-record-fixture", null));
+            serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
+
+            var largeName = new string('x', 1024 * 1024);
+            channel.Writer.TryWrite(JsonSerializer.Serialize(new { id = "large", type = "set_session_name", name = largeName }));
+            await WaitForAsync(output, "\"id\":\"large\"");
+            channel.Writer.TryWrite("{");
+            await WaitForAsync(output, "\"command\":\"parse\"");
+            channel.Writer.TryWrite("{\"id\":\"after-parse\",\"type\":\"get_state\"}");
+            await WaitForAsync(output, "\"id\":\"after-parse\"");
+            channel.Writer.Complete();
+            await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+            var records = output.Lines().Select(line => JsonDocument.Parse(line)).ToArray();
+            try
+            {
+                var largeResponse = Assert.Single(records, document =>
+                    document.RootElement.TryGetProperty("id", out var id) && id.GetString() == "large" &&
+                    document.RootElement.GetProperty("type").GetString() == "response");
+                Assert.True(largeResponse.RootElement.GetProperty("success").GetBoolean());
+                var parseResponse = Assert.Single(records, document =>
+                    document.RootElement.TryGetProperty("command", out var command) && command.GetString() == "parse");
+                Assert.False(parseResponse.RootElement.GetProperty("success").GetBoolean());
+                Assert.False(parseResponse.RootElement.TryGetProperty("id", out _));
+                Assert.False(string.IsNullOrWhiteSpace(parseResponse.RootElement.GetProperty("error").GetString()));
+                var recoveryResponse = Assert.Single(records, document =>
+                    document.RootElement.TryGetProperty("id", out var id) && id.GetString() == "after-parse");
+                Assert.True(recoveryResponse.RootElement.GetProperty("success").GetBoolean());
+            }
+            finally { foreach (var record in records) record.Dispose(); }
+        }
+        finally
+        {
+            channel.Writer.TryComplete();
+            if (serving is not null) await serving.WaitAsync(TimeSpan.FromSeconds(5));
+            Directory.Delete(cwd, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task InvalidRpcRequestShapePreservesProvidedIdAndOmitsUndefinedCommand()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-rpc-invalid-shape-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        Task? serving = null;
+        try
+        {
+            var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(cwd)),
+                new ConversationSession(cwd, "invalid-shape-fixture", null));
+            serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
+
+            channel.Writer.TryWrite("{\"id\":\"missing-type\"}");
+            await WaitForAsync(output, "\"id\":\"missing-type\"");
+            channel.Writer.TryWrite("[]");
+            channel.Writer.Complete();
+            await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+            var records = output.Lines().Select(line => JsonDocument.Parse(line)).ToArray();
+            try
+            {
+                Assert.Equal(2, records.Length);
+                Assert.Equal("missing-type", records[0].RootElement.GetProperty("id").GetString());
+                Assert.False(records[0].RootElement.TryGetProperty("command", out _));
+                Assert.False(records[0].RootElement.GetProperty("success").GetBoolean());
+                Assert.False(records[1].RootElement.TryGetProperty("id", out _));
+                Assert.False(records[1].RootElement.TryGetProperty("command", out _));
+                Assert.False(records[1].RootElement.GetProperty("success").GetBoolean());
+            }
+            finally { foreach (var record in records) record.Dispose(); }
+        }
+        finally
+        {
+            channel.Writer.TryComplete();
+            if (serving is not null) await serving.WaitAsync(TimeSpan.FromSeconds(5));
+            Directory.Delete(cwd, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task SetSessionNameKeepsMissingAndNullFieldsDistinct()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-rpc-null-field-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        Task? serving = null;
+        try
+        {
+            var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(cwd)),
+                new ConversationSession(cwd, "null-field-fixture", null));
+            serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
+
+            channel.Writer.TryWrite("{\"id\":\"missing\",\"type\":\"set_session_name\"}");
+            await WaitForAsync(output, "\"id\":\"missing\"");
+            channel.Writer.TryWrite("{\"id\":\"null\",\"type\":\"set_session_name\",\"name\":null}");
+            await WaitForAsync(output, "\"id\":\"null\"");
+            channel.Writer.Complete();
+            await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+            var records = output.Lines().Select(line => JsonDocument.Parse(line)).ToArray();
+            try
+            {
+                var missing = Assert.Single(records, record => record.RootElement.TryGetProperty("id", out var id) &&
+                    id.GetString() == "missing");
+                var explicitNull = Assert.Single(records, record => record.RootElement.TryGetProperty("id", out var id) &&
+                    id.GetString() == "null");
+                Assert.Equal("Cannot read properties of undefined (reading 'trim')",
+                    missing.RootElement.GetProperty("error").GetString());
+                Assert.Equal("Cannot read properties of null (reading 'trim')",
+                    explicitNull.RootElement.GetProperty("error").GetString());
+            }
+            finally { foreach (var record in records) record.Dispose(); }
+        }
+        finally
+        {
+            channel.Writer.TryComplete();
+            if (serving is not null) await serving.WaitAsync(TimeSpan.FromSeconds(5));
+            Directory.Delete(cwd, recursive: true);
+        }
+    }
+
     private sealed class OrderedRpcQueueClient : IChatClient
     {
         public List<string> LatestUserByRequest { get; } = [];
@@ -2721,7 +2998,12 @@ public sealed class RpcModeTests
             CancellationToken cancellationToken = default) => Task.FromResult(new ChatResponse([new ChatMessage(ChatRole.Assistant, "summary")]));
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
-        { yield return new ChatResponseUpdate(ChatRole.Assistant, "reply"); await Task.CompletedTask; }
+        {
+            var isSummary = messages.Any(message => message.Role == ChatRole.User &&
+                message.Text?.Contains("<conversation>", StringComparison.Ordinal) == true);
+            yield return new ChatResponseUpdate(ChatRole.Assistant, isSummary ? "summary" : "reply");
+            await Task.CompletedTask;
+        }
         public object? GetService(Type serviceType, object? serviceKey = null) => null;
         public void Dispose() { }
     }
@@ -2905,6 +3187,13 @@ public sealed class RpcModeTests
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
+            if (messages.Any(message => message.Role == ChatRole.User &&
+                message.Text?.Contains("<conversation>", StringComparison.Ordinal) == true))
+            {
+                yield return new ChatResponseUpdate(ChatRole.Assistant, "summary");
+                yield break;
+            }
+
             await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
             yield break;
         }
@@ -2928,6 +3217,9 @@ public sealed class RpcModeTests
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
+            if (messages.Any(message => message.Role == ChatRole.User &&
+                message.Text?.Contains("<conversation>", StringComparison.Ordinal) == true))
+                SummaryStarted.TrySetResult();
             await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
             yield break;
         }

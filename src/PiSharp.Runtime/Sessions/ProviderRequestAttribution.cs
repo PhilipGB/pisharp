@@ -32,9 +32,20 @@ internal sealed class ProviderRequestAttribution(string model, string? provider,
     public ChatMessage? AttributeResponse(AgentLifecycleEvent item, string? logicalThinkingLevel)
     {
         var response = item.ProviderResponse;
-        return response is not null && item.ProviderProviderId is null && Api is not null
+        if (response is null) return null;
+        var attributed = item.ProviderProviderId is null && Api is not null
             ? ChatMessageProperties.WithProviderIdentity(response, Provider, Model, Api, logicalThinkingLevel)
             : response;
+        if (string.IsNullOrWhiteSpace(item.ProviderResponseId) &&
+            string.IsNullOrWhiteSpace(item.ProviderFinishReason)) return attributed;
+
+        var persisted = attributed.Clone();
+        persisted.AdditionalProperties = attributed.AdditionalProperties?.Clone() ?? new();
+        if (!string.IsNullOrWhiteSpace(item.ProviderResponseId))
+            persisted.AdditionalProperties["pisharp.responseId"] = item.ProviderResponseId;
+        if (!string.IsNullOrWhiteSpace(item.ProviderFinishReason))
+            persisted.AdditionalProperties["pisharp.rawStopReason"] = item.ProviderFinishReason;
+        return persisted;
     }
 
     public UsageRecord Usage(UsageDetails usage) => UsageRecord.Create(Model, "model", usage, Pricing);

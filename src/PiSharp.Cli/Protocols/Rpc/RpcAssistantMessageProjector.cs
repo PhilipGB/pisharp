@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -18,6 +19,9 @@ internal sealed class RpcAssistantMessageProjector
     private int _activeContentIndex = -1;
     private bool _messageStarted;
     private bool _providerRequestActive;
+    private long _providerStartedTimestamp;
+    private string? _providerResponseId;
+    private string _thinkingLevel = "off";
     private DateTimeOffset _timestamp;
     private UsageRecord? _usage;
     private string? _physicalProvider;
@@ -32,6 +36,10 @@ internal sealed class RpcAssistantMessageProjector
     }
 
     public JsonObject? LastCompletedAssistantMessage { get; private set; }
+
+    public string ThinkingLevel => _thinkingLevel;
+
+    public void SetThinkingLevel(string? thinkingLevel) => _thinkingLevel = thinkingLevel ?? "off";
 
     public void BeginAgent()
     {
@@ -50,6 +58,7 @@ internal sealed class RpcAssistantMessageProjector
     {
         ResetProviderMessage();
         _providerRequestActive = true;
+        _providerStartedTimestamp = Stopwatch.GetTimestamp();
     }
 
     public IReadOnlyList<object> ProjectPrompt(AgentLifecycleEvent item, ConversationSession conversation)
@@ -57,6 +66,9 @@ internal sealed class RpcAssistantMessageProjector
         if (item.PromptMessage is not { } prompt) return [];
         var timestamp = item.MessageTimestamp ?? DateTimeOffset.UtcNow;
         var message = PiJsonlEntryCodec.ProjectRuntimeMessage(conversation, prompt, timestamp: timestamp);
+        if (prompt.Role == ChatRole.User && message["content"] is JsonValue content &&
+            content.TryGetValue<string>(out var text))
+            message["content"] = new JsonArray(new JsonObject { ["type"] = "text", ["text"] = text });
         _runMessages.Add(message.DeepClone().AsObject());
         return [new JsonObject { ["type"] = "message_start", ["message"] = message.DeepClone() },
             new JsonObject { ["type"] = "message_end", ["message"] = message }];
@@ -65,6 +77,8 @@ internal sealed class RpcAssistantMessageProjector
     public IReadOnlyList<object> ProjectUpdate(AgentLifecycleEvent item, ConversationSession conversation, string? api)
     {
         if (item.UsageSnapshot is { } usage) _usage = usage;
+        if (!string.IsNullOrWhiteSpace(item.ProviderUpdate?.ResponseId))
+            _providerResponseId = item.ProviderUpdate.ResponseId;
         var records = new List<object>();
         if (item.StreamedToolCallDelta is { } toolCallDelta)
             ProjectToolCallDelta(toolCallDelta, records, conversation, api);
@@ -119,11 +133,24 @@ internal sealed class RpcAssistantMessageProjector
 
         var message = PiJsonlEntryCodec.ProjectRuntimeMessage(conversation, response, api,
             timestamp: _timestamp);
+        if (message["content"] is JsonArray projectedContent)
+        {
+            for (var index = 0; index < Math.Min(projectedContent.Count, _content.Count); index++)
+            {
+                if (projectedContent[index] is JsonObject projectedBlock &&
+                    projectedBlock["type"]?.GetValue<string>() == "thinking" &&
+                    _content[index] is JsonObject streamedBlock &&
+                    streamedBlock["thinkingSignature"] is { } thinkingSignature)
+                    projectedBlock["thinkingSignature"] = thinkingSignature.DeepClone();
+            }
+        }
         message["stopReason"] = ProjectStopReason(item.ProviderFinishReason, response);
         if (!string.IsNullOrWhiteSpace(item.ProviderModelId) && item.ProviderModelId != conversation.Model)
             message["responseModel"] = item.ProviderModelId;
         if (!string.IsNullOrWhiteSpace(item.ProviderResponseId)) message["responseId"] = item.ProviderResponseId;
-        if (!string.IsNullOrWhiteSpace(item.ProviderThinkingLevel)) message["providerThinkingLevel"] = item.ProviderThinkingLevel;
+        if (!string.IsNullOrWhiteSpace(item.ProviderFinishReason)) message["rawStopReason"] = item.ProviderFinishReason;
+        if (_providerStartedTimestamp != 0)
+            message["durationMs"] = Math.Max(0, Math.Round(Stopwatch.GetElapsedTime(_providerStartedTimestamp).TotalMilliseconds));
         message["usage"] = ProjectUsage(_usage);
         records.Add(new JsonObject { ["type"] = "message_end", ["message"] = message.DeepClone() });
         LastCompletedAssistantMessage = message.DeepClone().AsObject();
@@ -142,14 +169,18 @@ internal sealed class RpcAssistantMessageProjector
         }
         var records = new List<object>();
         EnsureStarted(records, conversation, api);
-        FinishActiveContent(records, conversation, api);
-        var message = CreatePartialMessage(conversation, api);
         var interrupted = item.Type is "model_request_interrupted" or "turn_interrupted";
+        if (interrupted) FinishActiveContent(records, conversation, api);
+        var message = CreatePartialMessage(conversation, api);
         message["stopReason"] = interrupted ? "aborted" : "error";
+        if (_providerResponseId is not null) message["responseId"] = _providerResponseId;
+        message["thinkingLevel"] = _thinkingLevel;
+        if (_providerStartedTimestamp != 0)
+            message["durationMs"] = Math.Max(0, Math.Round(Stopwatch.GetElapsedTime(_providerStartedTimestamp).TotalMilliseconds));
         if (interrupted)
-            message["errorMessage"] = string.IsNullOrWhiteSpace(item.Error) ? "Request was aborted" : item.Error;
+            message["errorMessage"] = string.IsNullOrWhiteSpace(item.Error) ? "Request was aborted" : ProjectError(item.Error);
         else if (!string.IsNullOrWhiteSpace(item.Error))
-            message["errorMessage"] = item.Error;
+            message["errorMessage"] = ProjectError(item.Error);
         records.Add(new JsonObject { ["type"] = "message_end", ["message"] = message.DeepClone() });
         LastCompletedAssistantMessage = message.DeepClone().AsObject();
         _runMessages.Add(message.DeepClone().AsObject());
@@ -163,6 +194,14 @@ internal sealed class RpcAssistantMessageProjector
         var timestamp = DateTimeOffset.UtcNow;
         var message = PiJsonlEntryCodec.ProjectRuntimeMessage(conversation, result,
             toolName: item.Tool, timestamp: timestamp);
+        message.Remove("piSharpToolResult");
+        if (item.NestedToolCalls is { } nestedToolCalls)
+        {
+            var projectedNestedCalls = JsonSerializer.SerializeToNode(nestedToolCalls)!.AsObject();
+            if (projectedNestedCalls["calls"] is JsonArray calls)
+                foreach (var call in calls.OfType<JsonObject>()) call.Remove("parentToolCallId");
+            message["nestedCalls"] = projectedNestedCalls;
+        }
         _runMessages.Add(message.DeepClone().AsObject());
         var callId = result.Contents.OfType<FunctionResultContent>().FirstOrDefault()?.CallId;
         if (callId is not null) _toolResults[callId] = message.DeepClone().AsObject();
@@ -194,7 +233,17 @@ internal sealed class RpcAssistantMessageProjector
     private void AppendBlock(string kind, string text, List<object> records,
         ConversationSession conversation, string? api)
     {
-        EnsureStarted(records, conversation, api);
+        var startMessage = !_messageStarted;
+        if (startMessage)
+        {
+            _messageStarted = true;
+            _timestamp = DateTimeOffset.UtcNow;
+            records.Add(new JsonObject
+            {
+                ["type"] = "message_start",
+                ["message"] = CreatePartialMessage(conversation, api)
+            });
+        }
         if (_activeKind != kind)
         {
             FinishActiveContent(records, conversation, api);
@@ -203,7 +252,10 @@ internal sealed class RpcAssistantMessageProjector
             _activeContent.Clear();
             var type = kind == "text" ? "text" : "thinking";
             var property = kind == "text" ? "text" : "thinking";
-            _content.Add(new JsonObject { ["type"] = type, [property] = "" });
+            var block = new JsonObject { ["type"] = type, [property] = "" };
+            if (kind == "thinking" && api?.StartsWith("openai", StringComparison.OrdinalIgnoreCase) == true)
+                block["thinkingSignature"] = "reasoning_content";
+            _content.Add(block);
             records.Add(MessageUpdate(new JsonObject
             {
                 ["type"] = kind + "_start",
@@ -281,7 +333,6 @@ internal sealed class RpcAssistantMessageProjector
         ConversationSession conversation, string? api)
     {
         EnsureStarted(records, conversation, api);
-        FinishActiveContent(records, conversation, api);
         if (!_streamedToolCalls.TryGetValue(delta.Index, out var call))
         {
             call = new ActiveToolCall();
@@ -410,24 +461,28 @@ internal sealed class RpcAssistantMessageProjector
         ["assistantMessageEvent"] = assistantMessageEvent
     };
 
-    private static JsonObject ProjectUsage(UsageRecord? usage)
+    internal static JsonObject ProjectUsage(UsageRecord? usage)
     {
+        var cacheRead = usage?.CachedInputTokens ?? 0;
+        var input = usage?.InputTokens ?? (usage?.InputIncludingCachedTokens is long inputIncludingCached
+            ? inputIncludingCached - cacheRead : 0);
+        var output = usage?.OutputTokens ?? 0;
+        var cacheWrite = usage?.CachedWriteTokens ?? 0;
         var result = new JsonObject();
-        if (usage?.InputTokens is long input) result["input"] = input;
-        if (usage?.OutputTokens is long output) result["output"] = output;
-        if (usage?.CachedInputTokens is long cacheRead) result["cacheRead"] = cacheRead;
-        if (usage?.CachedWriteTokens is long cacheWrite) result["cacheWrite"] = cacheWrite;
-        if (usage?.TotalTokens is long totalTokens) result["totalTokens"] = totalTokens;
-        if (usage?.Cost is decimal cost)
+        result["input"] = input;
+        result["output"] = output;
+        result["cacheRead"] = cacheRead;
+        result["cacheWrite"] = cacheWrite;
+        if (usage is not null) result["reasoning"] = usage.ReasoningTokens ?? 0;
+        result["totalTokens"] = usage?.TotalTokens ?? 0;
+        result["cost"] = new JsonObject
         {
-            var costs = new JsonObject { ["total"] = cost };
-            if (usage.InputCost is decimal inputCost) costs["input"] = inputCost;
-            if (usage.OutputCost is decimal outputCost) costs["output"] = outputCost;
-            if (usage.CachedInputCost is decimal cachedInputCost) costs["cacheRead"] = cachedInputCost;
-            if (usage.CachedWriteCost is decimal cachedWriteCost) costs["cacheWrite"] = cachedWriteCost;
-            result["cost"] = costs;
-        }
-        if (usage?.ReasoningTokens is > 0) result["reasoning"] = usage.ReasoningTokens;
+            ["input"] = usage?.InputCost ?? 0,
+            ["output"] = usage?.OutputCost ?? 0,
+            ["cacheRead"] = usage?.CachedInputCost ?? 0,
+            ["cacheWrite"] = usage?.CachedWriteCost ?? 0,
+            ["total"] = usage?.Cost ?? 0
+        };
         return result;
     }
 
@@ -446,6 +501,12 @@ internal sealed class RpcAssistantMessageProjector
         left["role"]?.GetValue<string>() == right["role"]?.GetValue<string>() &&
         JsonNode.DeepEquals(left["content"], right["content"]);
 
+    private static string ProjectError(string error) =>
+        error.Contains("invalid start of a property name", StringComparison.OrdinalIgnoreCase) ||
+        error.Contains("invalid start of a value", StringComparison.OrdinalIgnoreCase)
+            ? "Error reading response: malformed server-sent event JSON."
+            : error;
+
     private void ResetProviderMessage()
     {
         _content.Clear();
@@ -457,6 +518,8 @@ internal sealed class RpcAssistantMessageProjector
         _messageStarted = false;
         _providerRequestActive = false;
         _timestamp = default;
+        _providerStartedTimestamp = 0;
+        _providerResponseId = null;
         _usage = null;
         _physicalProvider = null;
         _physicalModel = null;

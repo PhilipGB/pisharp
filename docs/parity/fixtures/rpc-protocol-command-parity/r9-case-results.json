@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "milestone": "rpc-protocol-command-parity",
+  "checkpointId": "R9",
+  "contractSha256": "036c369054fbb50887629666f6b25ef76d8a9fbe856d00d4a79a2cf9609f0761",
+  "evidenceDirectory": "artifacts/parity/rpc-protocol-command-parity/r9-74d9370b",
+  "evidenceJsonSha256": "a6bf68c8c06a9a6b459724dbbe0e2b70b84a8645a0249da39bd556fa427919d6",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "evidenceHeadSha": "74d9370b02045b562376f3ebdca8973cd2cb870a",
+  "implementationSourceSha": "74d9370b02045b562376f3ebdca8973cd2cb870a",
+  "sourceTreeClean": true,
+  "status": "passed",
+  "executedCaseCount": 12,
+  "requiredCaseCount": 12,
+  "verifierCounts": {
+    "required": 12,
+    "executed": 12,
+    "passed": 12,
+    "failed": 0,
+    "skipped": 0
+  },
+  "build": {
+    "command": "dotnet build src/PiSharp.Cli/PiSharp.Cli.csproj --no-restore --warnaserror",
+    "exitCode": 0,
+    "assemblySha256": "78c961118b9d7dce5362d149007c288abc86425bb5d2cf5593db795b05bcf269",
+    "logPath": "pisharp-build.log",
+    "logSha256": "97c0367c4cf195b5957b71a1102bd86b8780d1d4fd4e5c5230f0eaf5437c4c28"
+  },
+  "comparison": "Each case matched two stable pinned-Pi process runs and a separately started PiSharp process.",
+  "scope": "RPC model selection, model cycling, supported thinking levels, per-model defaults, sparse thinking maps, model persistence, invalid model handling and catalog boundaries.",
+  "limitations": "This checkpoint uses deterministic local fixtures. Live-provider parity and the credential-gated upstream cases remain outside this result.",
+  "focusedDotnetTests": "61/61 passed; zero failures/skips",
+  "verifierUnitTests": "16/16 passed; zero failures/skips",
+  "changedFileFormatVerification": "Passed with targeted dotnet format whitespace verification for changed C# files.",
+  "cases": [
+    {
+      "caseId": "R9.available-model-schema-order",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R9.set-model-exact-and-invalid",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R9.cycle-model-order-and-null",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R9.scoped-thinking-suffix",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R9.per-model-thinking-defaults",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R9.supported-and-unsupported-levels",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R9.sparse-thinking-level-map",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R9.busy-model-change",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R9.thinking-event-response-order",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R9.model-persistence-restart",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R9.invalid-model-no-mutation",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R9.catalog-boundary",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    }
+  ]
+}

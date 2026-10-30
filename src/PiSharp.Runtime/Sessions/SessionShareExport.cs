@@ -43,7 +43,8 @@ public static class SessionShareExport
         return output.ToString();
     }
 
-    internal static string ViewerDataBase64(ConversationSession session, JsonElement presentation)
+    internal static string ViewerDataBase64(ConversationSession session, JsonElement presentation,
+        IReadOnlyList<JsonElement>? projectedEntries = null, string? projectedLeafId = null)
     {
         var snapshot = session.Snapshot();
         var header = snapshot.PiJsonlHeader ?? JsonSerializer.SerializeToElement(new
@@ -58,8 +59,8 @@ public static class SessionShareExport
         var data = JsonSerializer.SerializeToUtf8Bytes(new
         {
             header,
-            entries = PiJsonlSessionInterchange.ProjectEntries(snapshot),
-            leafId = snapshot.Tree.HeadId,
+            entries = projectedEntries ?? PiJsonlSessionInterchange.ProjectEntries(snapshot),
+            leafId = projectedLeafId ?? snapshot.Tree.HeadId,
             systemPrompt = presentation.GetProperty("systemPrompt"),
             tools = presentation.GetProperty("tools")
         });

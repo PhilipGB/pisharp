@@ -1,0 +1,3374 @@
+{
+  "schemaVersion": 1,
+  "status": "source-pinned-inventory-before-rpc-milestone-production-changes",
+  "sourcePins": {
+    "piRepository": "https://github.com/earendil-works/pi",
+    "piCommit": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "pisharpBaseCommit": "646db89bd396b8089b1b9a058fa96b1489f4d0cd",
+    "sourceFileHashes": {
+      "packages/agent/src/types.ts": "2e116ef60fdaca4e26be5a1ace8d8b47f545d648d365de60b8c9f9d1ba629ee4",
+      "packages/coding-agent/docs/json.md": "f103191816fdcf3627dfc98b89acad8a28eee737697130ddaeb2581131213543",
+      "packages/coding-agent/docs/message-types.md": "b832893fb762f87fdbbfd694241d484592942823791f3e81a6c4d915421ff5db",
+      "packages/coding-agent/docs/rpc-commands.md": "4deeee367852f4633ef594bc079f9e9fb14640a4e3ba8a69b7c89b6f54740838",
+      "packages/coding-agent/docs/rpc-extension-ui.md": "3c6f2c6edfc8b1ace6642343727aef97a7e9234c85509850921b52d6ff09a48e",
+      "packages/coding-agent/docs/rpc.md": "37a03d180115460a0a275022f4aeabef1e5345458df6a9b6e8a6de18474de720",
+      "packages/coding-agent/src/core/agent-session.ts": "e0fa206e8c49a98c024708068df39c0e4944f4251633425fc083b2fbb5ec0ac6",
+      "packages/coding-agent/src/core/session-manager.ts": "450d82c529933214e088b8422f00061815e617f352f6c834689787a314064bff",
+      "packages/coding-agent/src/modes/rpc/jsonl.ts": "95723d349fcebad1f1da7ce103d02ba7d5e2c876b7d178d41d8b56beedbd93e0",
+      "packages/coding-agent/src/modes/rpc/rpc-client.ts": "a34c9eb4937bf3b526128c9a2032cc3295504996a14bf204e4a17e5bb55dcf7f",
+      "packages/coding-agent/src/modes/rpc/rpc-mode.ts": "d534e0fa1484844a097963d5f4fb4df9397c5a1b5e29e42aed7575ab6f67989b",
+      "packages/coding-agent/src/modes/rpc/rpc-types.ts": "be06a1d53916e03e9274cce9e4833692b235494e4047f1f7139d7f0147daae1a",
+      "packages/coding-agent/test/agent-session-tree-navigation.test.ts": "26030678b0a8e9044bb3c021477eb1e7b4945eb2f7f06328544ce93eac7471d7",
+      "packages/coding-agent/test/compaction-extensions.test.ts": "318be143ecdfc18b85d98c67d17128fb612e98d06bf023a65f37869a98844158",
+      "packages/coding-agent/test/compaction.test.ts": "829f29b4dc268b77baa4904c6283206ff19993f65e4503bcc1ce995be26c4b3b"
+    }
+  },
+  "counts": {
+    "commands": 33,
+    "eventFamilies": 24,
+    "extensionUiMethods": 9,
+    "stateFields": 12,
+    "responseSuccessVariants": 33,
+    "protocolRecordFamilies": 5,
+    "protocolOperations": 7,
+    "credentialGatedUpstreamCases": 20
+  },
+  "protocolRecordFamilies": [
+    {
+      "name": "rpc_command",
+      "direction": "stdin",
+      "schema": "RpcCommand",
+      "source": {
+        "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+        "line": 20
+      },
+      "framing": "one JSON object per LF-delimited record; optional preceding CR accepted"
+    },
+    {
+      "name": "extension_ui_response",
+      "direction": "stdin",
+      "schema": "export type RpcExtensionUIResponse =\n\t| { type: \"extension_ui_response\";",
+      "source": {
+        "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+        "line": 294
+      },
+      "framing": "same JSONL stream, matched by request id"
+    },
+    {
+      "name": "command_response",
+      "direction": "stdout",
+      "schema": "RpcResponse success variants and shared error variant",
+      "source": {
+        "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+        "line": 116
+      },
+      "framing": "one JSON object per LF-delimited record"
+    },
+    {
+      "name": "session_event",
+      "direction": "stdout",
+      "schema": "JsonAgentSessionEvent and RPC-only extension_error",
+      "source": {
+        "path": "packages/coding-agent/docs/json.md",
+        "line": 1
+      },
+      "framing": "event records interleave with command responses"
+    },
+    {
+      "name": "extension_ui_request",
+      "direction": "stdout",
+      "schema": "export type RpcExtensionUIRequest =\n\t| { type: \"extension_ui_request\";",
+      "source": {
+        "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+        "line": 252
+      },
+      "framing": "dialog request IDs are independent of command IDs"
+    }
+  ],
+  "protocolOperations": [
+    {
+      "name": "parse_jsonl_command",
+      "mandatoryVerificationCaseIds": [
+        "R1.lf-delimited-record",
+        "R1.utf8-split-codepoint",
+        "R1.optional-crlf",
+        "R1.unicode-separators-in-string",
+        "R1.incremental-and-multiple-chunks",
+        "R1.incomplete-record-completion",
+        "R1.large-valid-record",
+        "R1.malformed-json-recovery",
+        "R1.empty-and-blank-input",
+        "R1.eof-incomplete-final-record"
+      ],
+      "source": {
+        "path": "packages/coding-agent/src/modes/rpc/jsonl.ts",
+        "line": 21
+      },
+      "expected": "LF framing, optional CR stripping, UTF-8 incremental decode and incomplete final record delivery"
+    },
+    {
+      "name": "correlate_command_response",
+      "mandatoryVerificationCaseIds": [
+        "R2.correlated-response-id",
+        "R2.uncorrelated-response-omits-id",
+        "R2.id-type-validation",
+        "R2.overlapping-correlated-requests"
+      ],
+      "source": {
+        "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+        "line": 64
+      },
+      "expected": "Repeat optional string id on command response; absent stays absent"
+    },
+    {
+      "name": "emit_parse_error",
+      "mandatoryVerificationCaseIds": [
+        "R1.malformed-json-recovery",
+        "R2.unknown-command-recovery",
+        "R2.invalid-request-shapes",
+        "R2.missing-required-properties"
+      ],
+      "source": {
+        "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+        "line": 759
+      },
+      "expected": "Malformed JSON yields a failed parse response without id and process continues unless source proves otherwise"
+    },
+    {
+      "name": "interleave_session_events",
+      "mandatoryVerificationCaseIds": [
+        "R2.overlapping-correlated-requests",
+        "R3.acceptance-before-completion",
+        "R5.agent-start-end-settled"
+      ],
+      "source": {
+        "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+        "line": 361
+      },
+      "expected": "Session events may interleave with independent correlated command responses"
+    },
+    {
+      "name": "resolve_extension_ui_dialog",
+      "mandatoryVerificationCaseIds": [
+        "R14.ui-select-roundtrip",
+        "R14.ui-confirm-roundtrip",
+        "R14.ui-input-roundtrip",
+        "R14.ui-editor-roundtrip",
+        "R14.ui-unique-concurrent-ids",
+        "R14.ui-out-of-order-responses",
+        "R14.ui-timeout-default",
+        "R14.ui-cancel-late-unknown"
+      ],
+      "source": {
+        "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+        "line": 294
+      },
+      "expected": "Match response id to pending dialog; value, confirmed or cancelled shape"
+    },
+    {
+      "name": "orderly_eof_shutdown",
+      "mandatoryVerificationCaseIds": [
+        "R1.empty-and-blank-input",
+        "R1.eof-incomplete-final-record",
+        "R15.normal-eof",
+        "R15.pending-command-shutdown",
+        "R15.pending-extension-dialog-shutdown"
+      ],
+      "source": {
+        "path": "packages/coding-agent/docs/rpc.md",
+        "line": 91
+      },
+      "expected": "Closing stdin requests orderly active runtime disposal and process exit"
+    },
+    {
+      "name": "stdout_stderr_separation",
+      "mandatoryVerificationCaseIds": [
+        "R1.stdout-stderr-purity",
+        "R15.broken-pipe-handling"
+      ],
+      "source": {
+        "path": "packages/coding-agent/docs/rpc.md",
+        "line": 56
+      },
+      "expected": "stdout contains protocol records only; diagnostic output is on stderr"
+    }
+  ],
+  "commandInventory": [
+    {
+      "name": "prompt",
+      "checkpoint": "R3",
+      "mandatoryVerificationCaseIds": [
+        "R3.idle-prompt-started",
+        "R3.prompt-handled-without-run",
+        "R3.busy-prompt-default-behavior",
+        "R3.acceptance-before-completion",
+        "R3.provider-failure-after-acceptance"
+      ],
+      "requestSchema": "| { id?: string; type: \"prompt\"; message: string; images?: ImageContent[]; streamingBehavior?: \"steer\" | \"followUp\" }",
+      "responseSchema": "| { id?: string; type: \"response\"; command: \"prompt\"; success: true; data: { disposition: PromptDisposition } }",
+      "documentedSemantics": "Send a user prompt to the agent. The command response is emitted after the prompt is accepted, queued, or handled. Events continue streaming asynchronously after acceptance.\n\n```json\n{\"id\": \"req-1\", \"type\": \"prompt\", \"message\": \"Hello, world!\"}\n```\n\nWith images:\n```json\n{\"type\": \"prompt\", \"message\": \"What's in this image?\", \"images\": [{\"type\": \"image\", \"data\": \"base64-encoded-data\", \"mimeType\": \"image/png\"}]}\n```\n\n**During streaming**: If the agent is already streaming, you must specify `streamingBehavior` to queue the message:\n\n```json\n{\"type\": \"prompt\", \"message\": \"New instruction\", \"streamingBehavior\": \"steer\"}\n```\n\n- `\"steer\"`: Queue the message while the agent is running. It is delivered after the current assistant turn finishes executing its tool calls, before the next LLM call.\n- `\"followUp\"`: Wait until the agent finishes. Message is delivered only when agent stops.\n\nIf the agent is streaming and no `streamingBehavior` is specified, the command returns an error.\n\n**Extension commands**: If the message is an extension command (e.g., `/mycommand`), it executes immediately even during streaming. Extension commands manage their own LLM interaction via `pi.sendMessage()`.\n\n**Input expansion**: Skill commands (`/skill:name`) and prompt templates (`/template`) are expanded before sending/queueing.\n\nResponse:\n```json\n{\"id\": \"req-1\", \"type\": \"response\", \"command\": \"prompt\", \"success\": true, \"data\": {\"disposition\": \"started\"}}\n```\n\n`data.disposition` is `\"handled\"` if an extension command or input handler consumed the prompt, `\"queued\"` if Pi queued it during a run, or `\"started\"` if Pi accepted it to start a run. This describes the submitted prompt, not independent work started by an extension or a guarantee of completion.\n\n`success: true` means the prompt was accepted, queued, or handled immediately. `success: false` means the prompt was rejected before acceptance. Failures after acceptance are reported through the normal event and message stream, not as a second `response` for the same request id.\n\nThe `images` field is optional. Each image uses `ImageContent` format: `{\"type\": \"image\", \"data\": \"base64-encoded-data\", \"mimeType\": \"image/png\"}`.",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 22,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 118,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 7,
+          "symbol": "prompt command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 394
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcMode.cs",
+          "line": 16
+        },
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcPromptCommandHandler.cs",
+          "line": 9
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcPromptLifecycleTests.cs",
+          "line": 17
+        },
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcAgentLifecycleProcessTests.cs",
+          "line": 9
+        },
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSettlementBarrierTests.cs",
+          "line": 13
+        }
+      ],
+      "existingDifferentialFixtures": [],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "existing-route-and-test-only",
+      "knownReviewRequirement": "",
+      "confirmedOrHistoricalMismatchIds": [],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    },
+    {
+      "name": "steer",
+      "checkpoint": "R4",
+      "mandatoryVerificationCaseIds": [
+        "R4.steer-command-idle",
+        "R4.steering-all-mode",
+        "R4.steering-one-at-a-time-mode",
+        "R4.steer-followup-precedence",
+        "R4.multiple-concurrent-queue-updates"
+      ],
+      "requestSchema": "| { id?: string; type: \"steer\"; message: string; images?: ImageContent[] }",
+      "responseSchema": "| { id?: string; type: \"response\"; command: \"steer\"; success: true; data: { disposition: QueuedInputDisposition } }",
+      "documentedSemantics": "Queue a steering message while the agent is running. It is delivered after the current assistant turn finishes executing its tool calls, before the next LLM call. Skill commands and prompt templates are expanded. Extension commands are not allowed (use `prompt` instead).\n\n```json\n{\"type\": \"steer\", \"message\": \"Stop and do this instead\"}\n```\n\nWith images:\n```json\n{\"type\": \"steer\", \"message\": \"Look at this instead\", \"images\": [{\"type\": \"image\", \"data\": \"base64-encoded-data\", \"mimeType\": \"image/png\"}]}\n```\n\nThe `images` field is optional. Each image uses `ImageContent` format (same as `prompt`).\n\nResponse:\n```json\n{\"type\": \"response\", \"command\": \"steer\", \"success\": true, \"data\": {\"disposition\": \"queued\"}}\n```\n\n`data.disposition` is `\"handled\"` if an input handler consumed this steer, or `\"queued\"` if Pi queued it (including after a handler transformed it). It does not guarantee this message remains queued.\n\nSee [set_steering_mode](#set_steering_mode) for controlling how steering messages are processed.",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 23,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 119,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 46,
+          "symbol": "steer command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 416
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcMode.cs",
+          "line": 16
+        },
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcPromptCommandHandler.cs",
+          "line": 9
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcIdleQueueProcessTests.cs",
+          "line": 10
+        },
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcModeTests.cs",
+          "line": 20
+        }
+      ],
+      "existingDifferentialFixtures": [],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "existing-route-and-test-only",
+      "knownReviewRequirement": "",
+      "confirmedOrHistoricalMismatchIds": [],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    },
+    {
+      "name": "follow_up",
+      "checkpoint": "R4",
+      "mandatoryVerificationCaseIds": [
+        "R4.followup-command-idle",
+        "R4.followup-all-mode",
+        "R4.followup-one-at-a-time-mode",
+        "R4.steer-followup-precedence",
+        "R4.multiple-concurrent-queue-updates"
+      ],
+      "requestSchema": "| { id?: string; type: \"follow_up\"; message: string; images?: ImageContent[] }",
+      "responseSchema": "| {\n\t\t\tid?: string;\n\t\t\ttype: \"response\";\n\t\t\tcommand: \"follow_up\";\n\t\t\tsuccess: true;\n\t\t\tdata: { disposition: QueuedInputDisposition };\n\t  }",
+      "documentedSemantics": "Queue a follow-up message to be processed after the agent finishes. Delivered only when agent has no more tool calls or steering messages. Skill commands and prompt templates are expanded. Extension commands are not allowed (use `prompt` instead).\n\n```json\n{\"type\": \"follow_up\", \"message\": \"After you're done, also do this\"}\n```\n\nWith images:\n```json\n{\"type\": \"follow_up\", \"message\": \"Also check this image\", \"images\": [{\"type\": \"image\", \"data\": \"base64-encoded-data\", \"mimeType\": \"image/png\"}]}\n```\n\nThe `images` field is optional. Each image uses `ImageContent` format (same as `prompt`).\n\nResponse:\n```json\n{\"type\": \"response\", \"command\": \"follow_up\", \"success\": true, \"data\": {\"disposition\": \"queued\"}}\n```\n\n`data.disposition` has the same `\"handled\"` or `\"queued\"` meaning as for `steer`, applied to this follow-up.\n\nSee [set_follow_up_mode](#set_follow_up_mode) for controlling how follow-up messages are processed.",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 24,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 120,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 70,
+          "symbol": "follow_up command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 421
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcMode.cs",
+          "line": 16
+        },
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcPromptCommandHandler.cs",
+          "line": 9
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcIdleQueueProcessTests.cs",
+          "line": 10
+        },
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcModeTests.cs",
+          "line": 20
+        }
+      ],
+      "existingDifferentialFixtures": [],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "existing-route-and-test-only",
+      "knownReviewRequirement": "",
+      "confirmedOrHistoricalMismatchIds": [],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    },
+    {
+      "name": "abort",
+      "checkpoint": "R3",
+      "mandatoryVerificationCaseIds": [
+        "R3.abort-prompt-run",
+        "R4.queue-cancel-and-restore",
+        "R15.cancel-provider-turn-on-shutdown"
+      ],
+      "requestSchema": "| { id?: string; type: \"abort\" }",
+      "responseSchema": "| { id?: string; type: \"response\"; command: \"abort\"; success: true }",
+      "documentedSemantics": "Abort the current operation and wait for the session to become idle before responding.\n\n```json\n{\"type\": \"abort\"}\n```\n\nResponse:\n```json\n{\"type\": \"response\", \"command\": \"abort\", \"success\": true}\n```",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 25,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 127,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 94,
+          "symbol": "abort command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 426
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcMode.cs",
+          "line": 16
+        },
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcPromptCommandHandler.cs",
+          "line": 9
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcAgentLifecycleProcessTests.cs",
+          "line": 9
+        },
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSettlementBarrierTests.cs",
+          "line": 13
+        },
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcModeTests.cs",
+          "line": 20
+        }
+      ],
+      "existingDifferentialFixtures": [
+        "docs/parity/fixtures/rpc-abort-baseline.md"
+      ],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "partial-prior-fixture",
+      "knownReviewRequirement": "",
+      "confirmedOrHistoricalMismatchIds": [],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    },
+    {
+      "name": "clear_queue",
+      "checkpoint": "R4",
+      "mandatoryVerificationCaseIds": [
+        "R4.clear-queue-snapshot",
+        "R4.multiple-concurrent-queue-updates"
+      ],
+      "requestSchema": "| { id?: string; type: \"clear_queue\" }",
+      "responseSchema": "| {\n\t\t\tid?: string;\n\t\t\ttype: \"response\";\n\t\t\tcommand: \"clear_queue\";\n\t\t\tsuccess: true;\n\t\t\tdata: { steering: string[]; followUp: string[] };\n\t  }",
+      "documentedSemantics": "Remove queued steering and follow-up messages and return their text.\n\n```json\n{\"type\": \"clear_queue\"}\n```\n\nResponse:\n```json\n{\n  \"type\": \"response\",\n  \"command\": \"clear_queue\",\n  \"success\": true,\n  \"data\": {\n    \"steering\": [\"Change direction\"],\n    \"followUp\": [\"Summarize when finished\"]\n  }\n}\n```\n\nTo implement interactive Esc behavior, send `clear_queue` before `abort`, then restore the returned text in the client editor. `abort` continues queued messages when they remain in the session.",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 26,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 128,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 107,
+          "symbol": "clear_queue command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 431
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcMode.cs",
+          "line": 16
+        },
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcPromptCommandHandler.cs",
+          "line": 9
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcIdleQueueProcessTests.cs",
+          "line": 10
+        },
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcModeTests.cs",
+          "line": 20
+        }
+      ],
+      "existingDifferentialFixtures": [],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "existing-route-and-test-only",
+      "knownReviewRequirement": "",
+      "confirmedOrHistoricalMismatchIds": [],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    },
+    {
+      "name": "new_session",
+      "checkpoint": "R12",
+      "mandatoryVerificationCaseIds": [
+        "R12.new-session-empty",
+        "R12.new-session-parent-session",
+        "R12.session-file-ownership"
+      ],
+      "requestSchema": "| { id?: string; type: \"new_session\"; parentSession?: string }",
+      "responseSchema": "| { id?: string; type: \"response\"; command: \"new_session\"; success: true; data: { cancelled: boolean } }",
+      "documentedSemantics": "Start a fresh session. Can be canceled by a `session_before_switch` extension event handler.\n\n```json\n{\"type\": \"new_session\"}\n```\n\nWith optional parent session tracking:\n```json\n{\"type\": \"new_session\", \"parentSession\": \"/path/to/parent-session.jsonl\"}\n```\n\nResponse:\n```json\n{\"type\": \"response\", \"command\": \"new_session\", \"success\": true, \"data\": {\"cancelled\": false}}\n```\n\nIf an extension canceled:\n```json\n{\"type\": \"response\", \"command\": \"new_session\", \"success\": true, \"data\": {\"cancelled\": true}}\n```",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 27,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 135,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 130,
+          "symbol": "new_session command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 435
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcSessionCommandHandler.cs",
+          "line": 7
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionProcessTests.cs",
+          "line": 10
+        },
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionReplacementProcessTests.cs",
+          "line": 11
+        }
+      ],
+      "existingDifferentialFixtures": [
+        "docs/parity/fixtures/rpc-new-session-baseline.md"
+      ],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "partial-prior-fixture",
+      "knownReviewRequirement": "",
+      "confirmedOrHistoricalMismatchIds": [
+        "RPC-NEW-SESSION-PARENT-TYPE"
+      ],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    },
+    {
+      "name": "get_state",
+      "checkpoint": "R7",
+      "mandatoryVerificationCaseIds": [
+        "R7.get-state-idle-schema",
+        "R7.get-state-active-stream"
+      ],
+      "requestSchema": "| { id?: string; type: \"get_state\" }",
+      "responseSchema": "| { id?: string; type: \"response\"; command: \"get_state\"; success: true; data: RpcSessionState }",
+      "documentedSemantics": "Get current session state.\n\n```json\n{\"type\": \"get_state\"}\n```\n\nResponse:\n```json\n{\n  \"type\": \"response\",\n  \"command\": \"get_state\",\n  \"success\": true,\n  \"data\": {\n    \"model\": {...},\n    \"thinkingLevel\": \"medium\",\n    \"isStreaming\": false,\n    \"isCompacting\": false,\n    \"steeringMode\": \"all\",\n    \"followUpMode\": \"one-at-a-time\",\n    \"sessionFile\": \"/path/to/session.jsonl\",\n    \"sessionId\": \"abc123\",\n    \"sessionName\": \"my-feature-work\",\n    \"autoCompactionEnabled\": true,\n    \"messageCount\": 5,\n    \"pendingMessageCount\": 0\n  }\n}\n```\n\nThe `model` field is a full [Model](#model-object) object, or omitted when no model is selected. The `sessionName` field is the display name set via `set_session_name`, or omitted if not set.",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 30,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 138,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 155,
+          "symbol": "get_state command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 448
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcStateCommandHandler.cs",
+          "line": 7
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcStateTests.cs",
+          "line": 12
+        },
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcModeTests.cs",
+          "line": 20
+        }
+      ],
+      "existingDifferentialFixtures": [],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "existing-route-and-test-only",
+      "knownReviewRequirement": "",
+      "confirmedOrHistoricalMismatchIds": [],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    },
+    {
+      "name": "set_model",
+      "checkpoint": "R9",
+      "mandatoryVerificationCaseIds": [
+        "R9.set-model-exact-and-invalid",
+        "R9.scoped-thinking-suffix",
+        "R9.busy-model-change",
+        "R9.model-persistence-restart"
+      ],
+      "requestSchema": "| { id?: string; type: \"set_model\"; provider: string; modelId: string }",
+      "responseSchema": "| {\n\t\t\tid?: string;\n\t\t\ttype: \"response\";\n\t\t\tcommand: \"set_model\";\n\t\t\tsuccess: true;\n\t\t\tdata: Model<any>;\n\t  }",
+      "documentedSemantics": "Switch to a specific model.\n\n```json\n{\"type\": \"set_model\", \"provider\": \"anthropic\", \"modelId\": \"claude-sonnet-4-20250514\"}\n```\n\nResponse contains the full [Model](#model-object) object:\n```json\n{\n  \"type\": \"response\",\n  \"command\": \"set_model\",\n  \"success\": true,\n  \"data\": {...}\n}\n```",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 33,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 141,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 210,
+          "symbol": "set_model command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 470
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcModelCommandHandler.cs",
+          "line": 8
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcModelProcessTests.cs",
+          "line": 8
+        },
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcActiveModelSelectionProcessTests.cs",
+          "line": 10
+        }
+      ],
+      "existingDifferentialFixtures": [
+        "docs/parity/fixtures/rpc-scoped-model-thinking-baseline.md"
+      ],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "partial-prior-fixture",
+      "knownReviewRequirement": "",
+      "confirmedOrHistoricalMismatchIds": [
+        "RPC-SCOPED-THINKING-SUFFIX"
+      ],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    },
+    {
+      "name": "cycle_model",
+      "checkpoint": "R9",
+      "mandatoryVerificationCaseIds": [
+        "R9.cycle-model-order-and-null",
+        "R9.busy-model-change"
+      ],
+      "requestSchema": "| { id?: string; type: \"cycle_model\" }",
+      "responseSchema": "| {\n\t\t\tid?: string;\n\t\t\ttype: \"response\";\n\t\t\tcommand: \"cycle_model\";\n\t\t\tsuccess: true;\n\t\t\tdata: { model: Model<any>; thinkingLevel: ThinkingLevel; isScoped: boolean } | null;\n\t  }",
+      "documentedSemantics": "Cycle to the next available model. Returns `null` data if only one model available.\n\n```json\n{\"type\": \"cycle_model\"}\n```\n\nResponse:\n```json\n{\n  \"type\": \"response\",\n  \"command\": \"cycle_model\",\n  \"success\": true,\n  \"data\": {\n    \"model\": {...},\n    \"thinkingLevel\": \"medium\",\n    \"isScoped\": false\n  }\n}\n```\n\nThe `model` field is a full [Model](#model-object) object.",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 34,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 148,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 228,
+          "symbol": "cycle_model command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 480
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcModelCommandHandler.cs",
+          "line": 8
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcModelProcessTests.cs",
+          "line": 8
+        }
+      ],
+      "existingDifferentialFixtures": [
+        "docs/parity/fixtures/rpc-cycle-model-baseline.md"
+      ],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "partial-prior-fixture",
+      "knownReviewRequirement": "",
+      "confirmedOrHistoricalMismatchIds": [],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    },
+    {
+      "name": "get_available_models",
+      "checkpoint": "R9",
+      "mandatoryVerificationCaseIds": [
+        "R9.available-model-schema-order",
+        "R9.catalog-boundary"
+      ],
+      "requestSchema": "| { id?: string; type: \"get_available_models\" }",
+      "responseSchema": "| {\n\t\t\tid?: string;\n\t\t\ttype: \"response\";\n\t\t\tcommand: \"get_available_models\";\n\t\t\tsuccess: true;\n\t\t\tdata: { models: Model<any>[] };\n\t  }",
+      "documentedSemantics": "List all configured models.\n\n```json\n{\"type\": \"get_available_models\"}\n```\n\nResponse contains an array of full [Model](#model-object) objects:\n```json\n{\n  \"type\": \"response\",\n  \"command\": \"get_available_models\",\n  \"success\": true,\n  \"data\": {\n    \"models\": [...]\n  }\n}\n```",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 35,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 155,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 252,
+          "symbol": "get_available_models command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 488
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcModelCommandHandler.cs",
+          "line": 8
+        },
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcModelProjector.cs",
+          "line": 11
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcModelProcessTests.cs",
+          "line": 8
+        }
+      ],
+      "existingDifferentialFixtures": [],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "existing-route-and-test-only",
+      "knownReviewRequirement": "",
+      "confirmedOrHistoricalMismatchIds": [],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    },
+    {
+      "name": "set_thinking_level",
+      "checkpoint": "R9",
+      "mandatoryVerificationCaseIds": [
+        "R9.supported-and-unsupported-levels",
+        "R9.sparse-thinking-level-map",
+        "R9.thinking-event-response-order"
+      ],
+      "requestSchema": "| { id?: string; type: \"set_thinking_level\"; level: ThinkingLevel }",
+      "responseSchema": "| { id?: string; type: \"response\"; command: \"set_thinking_level\"; success: true }",
+      "documentedSemantics": "Set the reasoning/thinking level for models that support it.\n\n```json\n{\"type\": \"set_thinking_level\", \"level\": \"high\"}\n```\n\nLevels: `\"off\"`, `\"minimal\"`, `\"low\"`, `\"medium\"`, `\"high\"`, `\"xhigh\"`, `\"max\"`\n\n`\"xhigh\"` and `\"max\"` are exposed only when supported by the selected model. Some models, including GPT-5.6, expose both.\n\nResponse:\n```json\n{\"type\": \"response\", \"command\": \"set_thinking_level\", \"success\": true}\n```",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 38,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 164,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 274,
+          "symbol": "set_thinking_level command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 497
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcModelCommandHandler.cs",
+          "line": 8
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcThinkingLevelMapProcessTests.cs",
+          "line": 7
+        },
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcModelProcessTests.cs",
+          "line": 8
+        }
+      ],
+      "existingDifferentialFixtures": [
+        "docs/parity/fixtures/rpc-thinking-level-map-baseline.md"
+      ],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "partial-prior-fixture",
+      "knownReviewRequirement": "",
+      "confirmedOrHistoricalMismatchIds": [],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    },
+    {
+      "name": "cycle_thinking_level",
+      "checkpoint": "R9",
+      "mandatoryVerificationCaseIds": [
+        "R9.supported-and-unsupported-levels",
+        "R9.sparse-thinking-level-map"
+      ],
+      "requestSchema": "| { id?: string; type: \"cycle_thinking_level\" }",
+      "responseSchema": "| {\n\t\t\tid?: string;\n\t\t\ttype: \"response\";\n\t\t\tcommand: \"cycle_thinking_level\";\n\t\t\tsuccess: true;\n\t\t\tdata: { level: ThinkingLevel } | null;\n\t  }",
+      "documentedSemantics": "Cycle through available thinking levels. Returns `null` data if model doesn't support thinking.\n\n```json\n{\"type\": \"cycle_thinking_level\"}\n```\n\nResponse:\n```json\n{\n  \"type\": \"response\",\n  \"command\": \"cycle_thinking_level\",\n  \"success\": true,\n  \"data\": {\"level\": \"high\"}\n}\n```",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 39,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 165,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 291,
+          "symbol": "cycle_thinking_level command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 502
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcModelCommandHandler.cs",
+          "line": 8
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcModelProcessTests.cs",
+          "line": 8
+        }
+      ],
+      "existingDifferentialFixtures": [],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "existing-route-and-test-only",
+      "knownReviewRequirement": "",
+      "confirmedOrHistoricalMismatchIds": [],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    },
+    {
+      "name": "get_available_thinking_levels",
+      "checkpoint": "R9",
+      "mandatoryVerificationCaseIds": [
+        "R9.supported-and-unsupported-levels",
+        "R9.sparse-thinking-level-map"
+      ],
+      "requestSchema": "| { id?: string; type: \"get_available_thinking_levels\" }",
+      "responseSchema": "| {\n\t\t\tid?: string;\n\t\t\ttype: \"response\";\n\t\t\tcommand: \"get_available_thinking_levels\";\n\t\t\tsuccess: true;\n\t\t\tdata: { levels: ThinkingLevel[] };\n\t  }",
+      "documentedSemantics": "List the thinking levels supported by the current model. Returns `[\"off\"]` for a model without reasoning support.\n\n```json\n{\"type\": \"get_available_thinking_levels\"}\n```\n\nResponse:\n```json\n{\n  \"type\": \"response\",\n  \"command\": \"get_available_thinking_levels\",\n  \"success\": true,\n  \"data\": {\n    \"levels\": [\"off\", \"minimal\", \"low\", \"medium\", \"high\"]\n  }\n}\n```",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 40,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 172,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 309,
+          "symbol": "get_available_thinking_levels command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 510
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcModelCommandHandler.cs",
+          "line": 8
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcThinkingLevelMapProcessTests.cs",
+          "line": 7
+        }
+      ],
+      "existingDifferentialFixtures": [],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "existing-route-and-test-only",
+      "knownReviewRequirement": "",
+      "confirmedOrHistoricalMismatchIds": [],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    },
+    {
+      "name": "set_steering_mode",
+      "checkpoint": "R4",
+      "mandatoryVerificationCaseIds": [
+        "R4.steering-all-mode",
+        "R4.steering-one-at-a-time-mode",
+        "R4.mode-change-persistence"
+      ],
+      "requestSchema": "| { id?: string; type: \"set_steering_mode\"; mode: \"all\" | \"one-at-a-time\" }",
+      "responseSchema": "| { id?: string; type: \"response\"; command: \"set_steering_mode\"; success: true }",
+      "documentedSemantics": "Control how steering messages (from `steer`) are delivered.\n\n```json\n{\"type\": \"set_steering_mode\", \"mode\": \"one-at-a-time\"}\n```\n\nModes:\n- `\"all\"`: Deliver all steering messages after the current assistant turn finishes executing its tool calls\n- `\"one-at-a-time\"`: Deliver one steering message per completed assistant turn (default)\n\nResponse:\n```json\n{\"type\": \"response\", \"command\": \"set_steering_mode\", \"success\": true}\n```",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 43,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 181,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 331,
+          "symbol": "set_steering_mode command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 519
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcQueueModeCommandHandler.cs",
+          "line": 6
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcIdleQueueProcessTests.cs",
+          "line": 10
+        },
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcModeTests.cs",
+          "line": 20
+        }
+      ],
+      "existingDifferentialFixtures": [],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "existing-route-and-test-only",
+      "knownReviewRequirement": "",
+      "confirmedOrHistoricalMismatchIds": [],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    },
+    {
+      "name": "set_follow_up_mode",
+      "checkpoint": "R4",
+      "mandatoryVerificationCaseIds": [
+        "R4.followup-all-mode",
+        "R4.followup-one-at-a-time-mode",
+        "R4.mode-change-persistence"
+      ],
+      "requestSchema": "| { id?: string; type: \"set_follow_up_mode\"; mode: \"all\" | \"one-at-a-time\" }",
+      "responseSchema": "| { id?: string; type: \"response\"; command: \"set_follow_up_mode\"; success: true }",
+      "documentedSemantics": "Control how follow-up messages (from `follow_up`) are delivered.\n\n```json\n{\"type\": \"set_follow_up_mode\", \"mode\": \"one-at-a-time\"}\n```\n\nModes:\n- `\"all\"`: Deliver all follow-up messages when agent finishes\n- `\"one-at-a-time\"`: Deliver one follow-up message per agent completion (default)\n\nResponse:\n```json\n{\"type\": \"response\", \"command\": \"set_follow_up_mode\", \"success\": true}\n```",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 44,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 182,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 348,
+          "symbol": "set_follow_up_mode command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 524
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcQueueModeCommandHandler.cs",
+          "line": 6
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcIdleQueueProcessTests.cs",
+          "line": 10
+        },
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcModeTests.cs",
+          "line": 20
+        }
+      ],
+      "existingDifferentialFixtures": [],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "existing-route-and-test-only",
+      "knownReviewRequirement": "",
+      "confirmedOrHistoricalMismatchIds": [],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    },
+    {
+      "name": "compact",
+      "checkpoint": "R10",
+      "mandatoryVerificationCaseIds": [
+        "R10.manual-compact-success",
+        "R10.manual-compact-failure-rollback",
+        "R10.manual-compact-abort",
+        "R10.threshold-and-overflow-compaction"
+      ],
+      "requestSchema": "| { id?: string; type: \"compact\"; customInstructions?: string }",
+      "responseSchema": "| { id?: string; type: \"response\"; command: \"compact\"; success: true; data: CompactionResult }",
+      "documentedSemantics": "Manually compact conversation context to reduce token usage.\n\n```json\n{\"type\": \"compact\"}\n```\n\nWith custom instructions:\n```json\n{\"type\": \"compact\", \"customInstructions\": \"Focus on code changes\"}\n```\n\nResponse:\n```json\n{\n  \"type\": \"response\",\n  \"command\": \"compact\",\n  \"success\": true,\n  \"data\": {\n    \"summary\": \"Summary of conversation...\",\n    \"firstKeptEntryId\": \"abc123\",\n    \"tokensBefore\": 150000,\n    \"estimatedTokensAfter\": 32000,\n    \"usage\": {\n      \"input\": 32000,\n      \"output\": 1200,\n      \"cacheRead\": 0,\n      \"cacheWrite\": 0,\n      \"totalTokens\": 33200,\n      \"cost\": {\"input\": 0.01, \"output\": 0.02, \"cacheRead\": 0, \"cacheWrite\": 0, \"total\": 0.03}\n    },\n    \"details\": {}\n  }\n}\n```\n\n`estimatedTokensAfter` is a heuristic estimate over the rebuilt message context immediately after compaction, not a provider-exact token count. `usage` reports the LLM call or calls that generated the summary and may be omitted by custom compaction handlers.",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 47,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 185,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 367,
+          "symbol": "compact command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 533
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcCompactionCommandHandler.cs",
+          "line": 6
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcCompactionProcessTests.cs",
+          "line": 11
+        }
+      ],
+      "existingDifferentialFixtures": [
+        "docs/parity/fixtures/rpc-compact-baseline.md"
+      ],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "partial-prior-fixture",
+      "knownReviewRequirement": "",
+      "confirmedOrHistoricalMismatchIds": [],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    },
+    {
+      "name": "set_auto_compaction",
+      "checkpoint": "R10",
+      "mandatoryVerificationCaseIds": [
+        "R10.auto-compaction-setting",
+        "R10.threshold-and-overflow-compaction",
+        "R10.compaction-and-retry-restart"
+      ],
+      "requestSchema": "| { id?: string; type: \"set_auto_compaction\"; enabled: boolean }",
+      "responseSchema": "| { id?: string; type: \"response\"; command: \"set_auto_compaction\"; success: true }",
+      "documentedSemantics": "Enable or disable automatic compaction when context is nearly full.\n\n```json\n{\"type\": \"set_auto_compaction\", \"enabled\": true}\n```\n\nResponse:\n```json\n{\"type\": \"response\", \"command\": \"set_auto_compaction\", \"success\": true}\n```",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 48,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 186,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 406,
+          "symbol": "set_auto_compaction command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 538
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcCompactionCommandHandler.cs",
+          "line": 6
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcCompactionProcessTests.cs",
+          "line": 11
+        },
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcModeTests.cs",
+          "line": 20
+        }
+      ],
+      "existingDifferentialFixtures": [],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "existing-route-and-test-only",
+      "knownReviewRequirement": "",
+      "confirmedOrHistoricalMismatchIds": [],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    },
+    {
+      "name": "set_auto_retry",
+      "checkpoint": "R10",
+      "mandatoryVerificationCaseIds": [
+        "R10.auto-retry-events",
+        "R10.compaction-and-retry-restart"
+      ],
+      "requestSchema": "| { id?: string; type: \"set_auto_retry\"; enabled: boolean }",
+      "responseSchema": "| { id?: string; type: \"response\"; command: \"set_auto_retry\"; success: true }",
+      "documentedSemantics": "Enable or disable automatic retry on transient errors (overloaded, rate limit, 5xx).\n\n```json\n{\"type\": \"set_auto_retry\", \"enabled\": true}\n```\n\nResponse:\n```json\n{\"type\": \"response\", \"command\": \"set_auto_retry\", \"success\": true}\n```",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 51,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 189,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 421,
+          "symbol": "set_auto_retry command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 547
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcRetryCommandHandler.cs",
+          "line": 6
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcRetryProcessTests.cs",
+          "line": 9
+        }
+      ],
+      "existingDifferentialFixtures": [],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "existing-route-and-test-only",
+      "knownReviewRequirement": "",
+      "confirmedOrHistoricalMismatchIds": [],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    },
+    {
+      "name": "abort_retry",
+      "checkpoint": "R10",
+      "mandatoryVerificationCaseIds": [
+        "R10.abort-retry",
+        "R10.auto-retry-events"
+      ],
+      "requestSchema": "| { id?: string; type: \"abort_retry\" }",
+      "responseSchema": "| { id?: string; type: \"response\"; command: \"abort_retry\"; success: true }",
+      "documentedSemantics": "Abort an in-progress retry (cancel the delay and stop retrying).\n\n```json\n{\"type\": \"abort_retry\"}\n```\n\nResponse:\n```json\n{\"type\": \"response\", \"command\": \"abort_retry\", \"success\": true}\n```",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 52,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 190,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 434,
+          "symbol": "abort_retry command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 552
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcRetryCommandHandler.cs",
+          "line": 6
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcRetryProcessTests.cs",
+          "line": 9
+        }
+      ],
+      "existingDifferentialFixtures": [],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "existing-route-and-test-only",
+      "knownReviewRequirement": "",
+      "confirmedOrHistoricalMismatchIds": [],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    },
+    {
+      "name": "bash",
+      "checkpoint": "R11",
+      "mandatoryVerificationCaseIds": [
+        "R11.bash-success-result",
+        "R11.bash-stream-id-and-chunks",
+        "R11.bash-without-command-id",
+        "R11.bash-failure-semantics",
+        "R11.bash-during-agent-run"
+      ],
+      "requestSchema": "| { id?: string; type: \"bash\"; command: string; excludeFromContext?: boolean }",
+      "responseSchema": "| { id?: string; type: \"response\"; command: \"bash\"; success: true; data: BashResult }",
+      "documentedSemantics": "Execute a shell command and add output to conversation context. Output streams as `bash_execution_update` events while the command runs; the response contains the final result.\n\n```json\n{\"id\": \"req-1\", \"type\": \"bash\", \"command\": \"ls -la\"}\n```\n\nSet `excludeFromContext` to `true` when the command output should be stored in the session but omitted from the model context on the next prompt.\n\nInclude an `id` to associate streamed `bash_execution_update` events with this command.\n\nResponse:\n```json\n{\n  \"id\": \"req-1\",\n  \"type\": \"response\",\n  \"command\": \"bash\",\n  \"success\": true,\n  \"data\": {\n    \"output\": \"total 48\\ndrwxr-xr-x ...\",\n    \"exitCode\": 0,\n    \"cancelled\": false,\n    \"truncated\": false\n  }\n}\n```\n\nIf output was truncated, includes `fullOutputPath`:\n```json\n{\n  \"type\": \"response\",\n  \"command\": \"bash\",\n  \"success\": true,\n  \"data\": {\n    \"output\": \"truncated output...\",\n    \"exitCode\": 0,\n    \"cancelled\": false,\n    \"truncated\": true,\n    \"fullOutputPath\": \"/tmp/pi-bash-abc123.log\"\n  }\n}\n```\n\n**How bash results reach the LLM:**\n\nThe `bash` command executes immediately and returns a `BashResult`. Internally, a `BashExecutionMessage` is created and stored in the agent's message state.\n\nWhen the next `prompt` command is sent, Pi transforms context messages before sending them to the model. Unless `excludeFromContext` is true, the `BashExecutionMessage` becomes a `UserMessage` with this format:\n\n````\nRan `ls -la`\n```\ntotal 48\ndrwxr-xr-x ...\n```\n````\n\nThis means:\n1. Included bash output reaches the model on the **next prompt**, not immediately.\n2. Multiple bash commands can run before a prompt; Pi includes each output that does not set `excludeFromContext`.",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 55,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 193,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 449,
+          "symbol": "bash command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 561
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcMode.cs",
+          "line": 16
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcBashProcessTests.cs",
+          "line": 7
+        },
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/BashShutdownProcessTests.cs",
+          "line": 8
+        }
+      ],
+      "existingDifferentialFixtures": [],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "existing-route-and-test-only",
+      "knownReviewRequirement": "",
+      "confirmedOrHistoricalMismatchIds": [],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    },
+    {
+      "name": "abort_bash",
+      "checkpoint": "R11",
+      "mandatoryVerificationCaseIds": [
+        "R11.abort-active-bash",
+        "R11.shutdown-active-bash",
+        "R15.active-tool-cancellation"
+      ],
+      "requestSchema": "| { id?: string; type: \"abort_bash\" }",
+      "responseSchema": "| { id?: string; type: \"response\"; command: \"abort_bash\"; success: true }",
+      "documentedSemantics": "Abort a running bash command.\n\n```json\n{\"type\": \"abort_bash\"}\n```\n\nResponse:\n```json\n{\"type\": \"response\", \"command\": \"abort_bash\", \"success\": true}\n```",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 56,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 194,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 511,
+          "symbol": "abort_bash command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 584
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcMode.cs",
+          "line": 16
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcBashProcessTests.cs",
+          "line": 7
+        },
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/BashShutdownProcessTests.cs",
+          "line": 8
+        }
+      ],
+      "existingDifferentialFixtures": [],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "existing-route-and-test-only",
+      "knownReviewRequirement": "",
+      "confirmedOrHistoricalMismatchIds": [],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    },
+    {
+      "name": "get_session_stats",
+      "checkpoint": "R8",
+      "mandatoryVerificationCaseIds": [
+        "R8.native-summary-generation",
+        "R8.native-summary-persisted-reload",
+        "R8.imported-pi-summary",
+        "R8.mixed-native-imported-summaries",
+        "R8.cost-and-token-fields",
+        "R8.empty-and-zero-usage"
+      ],
+      "requestSchema": "| { id?: string; type: \"get_session_stats\" }",
+      "responseSchema": "| { id?: string; type: \"response\"; command: \"get_session_stats\"; success: true; data: SessionStats }",
+      "documentedSemantics": "Get token usage, cost statistics, and current context window usage.\n\n```json\n{\"type\": \"get_session_stats\"}\n```\n\nResponse:\n```json\n{\n  \"type\": \"response\",\n  \"command\": \"get_session_stats\",\n  \"success\": true,\n  \"data\": {\n    \"sessionFile\": \"/path/to/session.jsonl\",\n    \"sessionId\": \"abc123\",\n    \"userMessages\": 5,\n    \"assistantMessages\": 5,\n    \"toolCalls\": 12,\n    \"toolResults\": 12,\n    \"totalMessages\": 22,\n    \"tokens\": {\n      \"input\": 50000,\n      \"output\": 10000,\n      \"cacheRead\": 40000,\n      \"cacheWrite\": 5000,\n      \"total\": 105000\n    },\n    \"cost\": 0.45,\n    \"contextUsage\": {\n      \"tokens\": 60000,\n      \"contextWindow\": 200000,\n      \"percent\": 30\n    }\n  }\n}\n```\n\n`tokens` and `cost` include assistant messages, usage reported by tools, and compaction/branch-summary generation across the full session. `contextUsage` contains the actual current context-window estimate used for compaction and footer display.\n\n`contextUsage` is omitted when no model or context window is available. `contextUsage.tokens` and `contextUsage.percent` are `null` immediately after compaction until a fresh post-compaction assistant response provides valid usage data.",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 59,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 197,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 526,
+          "symbol": "get_session_stats command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 593
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcSessionStatsProjector.cs",
+          "line": 9
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionStatsProjectorTests.cs",
+          "line": 9
+        },
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcReadCommandsProcessTests.cs",
+          "line": 11
+        }
+      ],
+      "existingDifferentialFixtures": [
+        "docs/parity/fixtures/rpc-get-session-stats-baseline.md",
+        "docs/parity/fixtures/session-rpc-projection-b06-2026-10-24.json"
+      ],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "partial-prior-fixture",
+      "knownReviewRequirement": "Native branch-summary usage is counted exactly once, including persisted reload, imported summaries and mixed sessions.",
+      "confirmedOrHistoricalMismatchIds": [
+        "RPC-CONTEXT-USAGE-ESTIMATE"
+      ],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    },
+    {
+      "name": "export_html",
+      "checkpoint": "R13",
+      "mandatoryVerificationCaseIds": [
+        "R13.export-default-path",
+        "R13.export-explicit-path",
+        "R13.export-errors"
+      ],
+      "requestSchema": "| { id?: string; type: \"export_html\"; outputPath?: string }",
+      "responseSchema": "| { id?: string; type: \"response\"; command: \"export_html\"; success: true; data: { path: string } }",
+      "documentedSemantics": "Export session to an HTML file.\n\n```json\n{\"type\": \"export_html\"}\n```\n\nWith custom path:\n```json\n{\"type\": \"export_html\", \"outputPath\": \"/tmp/session.html\"}\n```\n\nResponse:\n```json\n{\n  \"type\": \"response\",\n  \"command\": \"export_html\",\n  \"success\": true,\n  \"data\": {\"path\": \"/tmp/session.html\"}\n}\n```",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 60,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 198,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 569,
+          "symbol": "export_html command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 598
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcMode.cs",
+          "line": 16
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcExportHtmlProcessTests.cs",
+          "line": 10
+        }
+      ],
+      "existingDifferentialFixtures": [
+        "docs/parity/fixtures/rpc-export-html-active-baseline.md"
+      ],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "partial-prior-fixture",
+      "knownReviewRequirement": "",
+      "confirmedOrHistoricalMismatchIds": [],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    },
+    {
+      "name": "switch_session",
+      "checkpoint": "R12",
+      "mandatoryVerificationCaseIds": [
+        "R12.switch-native-session",
+        "R12.switch-pi-jsonl-session",
+        "R12.switch-missing-or-malformed-target",
+        "R12.replace-during-provider-stream",
+        "R12.replace-during-active-tool",
+        "R12.failed-replacement-recovery"
+      ],
+      "requestSchema": "| { id?: string; type: \"switch_session\"; sessionPath: string }",
+      "responseSchema": "| { id?: string; type: \"response\"; command: \"switch_session\"; success: true; data: { cancelled: boolean } }",
+      "documentedSemantics": "Load a different session file. Can be canceled by a `session_before_switch` extension event handler.\n\n```json\n{\"type\": \"switch_session\", \"sessionPath\": \"/path/to/session.jsonl\"}\n```\n\nResponse:\n```json\n{\"type\": \"response\", \"command\": \"switch_session\", \"success\": true, \"data\": {\"cancelled\": false}}\n```\n\nIf an extension canceled the switch:\n```json\n{\"type\": \"response\", \"command\": \"switch_session\", \"success\": true, \"data\": {\"cancelled\": true}}\n```",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 61,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 199,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 592,
+          "symbol": "switch_session command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 603
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcSessionCommandHandler.cs",
+          "line": 7
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionProcessTests.cs",
+          "line": 10
+        },
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionReplacementProcessTests.cs",
+          "line": 11
+        },
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcMissingSessionTargetProcessTests.cs",
+          "line": 10
+        }
+      ],
+      "existingDifferentialFixtures": [
+        "docs/parity/fixtures/rpc-switch-abort-baseline.md"
+      ],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "partial-prior-fixture",
+      "knownReviewRequirement": "",
+      "confirmedOrHistoricalMismatchIds": [],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    },
+    {
+      "name": "fork",
+      "checkpoint": "R12",
+      "mandatoryVerificationCaseIds": [
+        "R12.fork-entry-and-branch-point",
+        "R12.replace-during-provider-stream",
+        "R12.replace-during-active-tool",
+        "R12.subsequent-provider-history"
+      ],
+      "requestSchema": "| { id?: string; type: \"fork\"; entryId: string }",
+      "responseSchema": "| { id?: string; type: \"response\"; command: \"fork\"; success: true; data: { text: string; cancelled: boolean } }",
+      "documentedSemantics": "Create a new fork from a previous user message on the active branch. Can be canceled by a `session_before_fork` extension event handler. Returns the text of the message being forked from.\n\n```json\n{\"type\": \"fork\", \"entryId\": \"abc123\"}\n```\n\nResponse:\n```json\n{\n  \"type\": \"response\",\n  \"command\": \"fork\",\n  \"success\": true,\n  \"data\": {\"text\": \"The original prompt text...\", \"cancelled\": false}\n}\n```\n\nIf an extension canceled the fork:\n```json\n{\n  \"type\": \"response\",\n  \"command\": \"fork\",\n  \"success\": true,\n  \"data\": {\"cancelled\": true}\n}\n```",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 62,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 200,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 610,
+          "symbol": "fork command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 611
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcSessionCommandHandler.cs",
+          "line": 7
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionProcessTests.cs",
+          "line": 10
+        },
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcActiveToolForkProcessTests.cs",
+          "line": 9
+        },
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionReplacementProcessTests.cs",
+          "line": 11
+        }
+      ],
+      "existingDifferentialFixtures": [],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "existing-route-and-test-only",
+      "knownReviewRequirement": "",
+      "confirmedOrHistoricalMismatchIds": [],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    },
+    {
+      "name": "clone",
+      "checkpoint": "R12",
+      "mandatoryVerificationCaseIds": [
+        "R12.clone-current-branch",
+        "R12.replace-during-provider-stream",
+        "R12.replace-during-active-tool",
+        "R12.subsequent-provider-history"
+      ],
+      "requestSchema": "| { id?: string; type: \"clone\" }",
+      "responseSchema": "| { id?: string; type: \"response\"; command: \"clone\"; success: true; data: { cancelled: boolean } }",
+      "documentedSemantics": "Duplicate the current active branch into a new session at the current position. Can be canceled by a `session_before_fork` extension event handler.\n\n```json\n{\"type\": \"clone\"}\n```\n\nResponse:\n```json\n{\n  \"type\": \"response\",\n  \"command\": \"clone\",\n  \"success\": true,\n  \"data\": {\"cancelled\": false}\n}\n```\n\nIf an extension canceled the clone:\n```json\n{\n  \"type\": \"response\",\n  \"command\": \"clone\",\n  \"success\": true,\n  \"data\": {\"cancelled\": true}\n}\n```",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 63,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 201,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 638,
+          "symbol": "clone command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 619
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcSessionCommandHandler.cs",
+          "line": 7
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionProcessTests.cs",
+          "line": 10
+        },
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcActiveCloneProcessTests.cs",
+          "line": 10
+        },
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcClonePreflightProcessTests.cs",
+          "line": 9
+        }
+      ],
+      "existingDifferentialFixtures": [
+        "docs/parity/fixtures/rpc-clone-baseline.md"
+      ],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "partial-prior-fixture",
+      "knownReviewRequirement": "",
+      "confirmedOrHistoricalMismatchIds": [],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    },
+    {
+      "name": "get_fork_messages",
+      "checkpoint": "R7",
+      "mandatoryVerificationCaseIds": [
+        "R7.get-fork-messages-content",
+        "R7.get-tree-branches-and-labels"
+      ],
+      "requestSchema": "| { id?: string; type: \"get_fork_messages\" }",
+      "responseSchema": "| {\n\t\t\tid?: string;\n\t\t\ttype: \"response\";\n\t\t\tcommand: \"get_fork_messages\";\n\t\t\tsuccess: true;\n\t\t\tdata: { messages: Array<{ entryId: string; text: string }> };\n\t  }",
+      "documentedSemantics": "Get user messages available for forking.\n\n```json\n{\"type\": \"get_fork_messages\"}\n```\n\nResponse:\n```json\n{\n  \"type\": \"response\",\n  \"command\": \"get_fork_messages\",\n  \"success\": true,\n  \"data\": {\n    \"messages\": [\n      {\"entryId\": \"abc123\", \"text\": \"First prompt...\"},\n      {\"entryId\": \"def456\", \"text\": \"Second prompt...\"}\n    ]\n  }\n}\n```",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 64,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 202,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 666,
+          "symbol": "get_fork_messages command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 631
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcSessionCommandHandler.cs",
+          "line": 7
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcReadCommandsProcessTests.cs",
+          "line": 11
+        }
+      ],
+      "existingDifferentialFixtures": [],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "existing-route-and-test-only",
+      "knownReviewRequirement": "",
+      "confirmedOrHistoricalMismatchIds": [],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    },
+    {
+      "name": "get_entries",
+      "checkpoint": "R7",
+      "mandatoryVerificationCaseIds": [
+        "R7.get-entries-full-and-leaf",
+        "R7.get-entries-cursor-boundaries",
+        "R7.session-read-after-reload"
+      ],
+      "requestSchema": "| { id?: string; type: \"get_entries\"; since?: string }",
+      "responseSchema": "| {\n\t\t\tid?: string;\n\t\t\ttype: \"response\";\n\t\t\tcommand: \"get_entries\";\n\t\t\tsuccess: true;\n\t\t\tdata: { entries: SessionEntry[]; leafId: string | null };\n\t  }",
+      "documentedSemantics": "Get all session entries in append order (excluding the session header). The session is an append-only tree of entries with stable ids, so an entry id works as a durable cursor: pass the last entry id you have seen as `since` to get only entries strictly after it, even across client restarts. Unlike `get_messages`, this includes pre-compaction history and abandoned branches.\n\n```json\n{\"type\": \"get_entries\"}\n```\n\nWith a cursor:\n```json\n{\"type\": \"get_entries\", \"since\": \"abc123\"}\n```\n\nResponse:\n```json\n{\n  \"type\": \"response\",\n  \"command\": \"get_entries\",\n  \"success\": true,\n  \"data\": {\n    \"entries\": [\n      {\"type\": \"message\", \"id\": \"def456\", \"parentId\": \"abc123\", \"timestamp\": \"...\", \"message\": {\"role\": \"user\", \"...\": \"...\"}}\n    ],\n    \"leafId\": \"def456\"\n  }\n}\n```\n\n`leafId` is the id of the current leaf entry (`null` for an empty session), so a client can tell in one round trip whether the active branch moved. If `since` does not match any entry id, the response is `success: false`.",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 65,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 209,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 689,
+          "symbol": "get_entries command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 636
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcSessionCommandHandler.cs",
+          "line": 7
+        },
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcSessionEntryProjector.cs",
+          "line": 8
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcReadCommandsProcessTests.cs",
+          "line": 11
+        },
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionEntryProjectorTests.cs",
+          "line": 8
+        }
+      ],
+      "existingDifferentialFixtures": [],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "existing-route-and-test-only",
+      "knownReviewRequirement": "",
+      "confirmedOrHistoricalMismatchIds": [],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    },
+    {
+      "name": "get_tree",
+      "checkpoint": "R7",
+      "mandatoryVerificationCaseIds": [
+        "R7.get-tree-branches-and-labels",
+        "R7.session-read-after-reload"
+      ],
+      "requestSchema": "| { id?: string; type: \"get_tree\" }",
+      "responseSchema": "| {\n\t\t\tid?: string;\n\t\t\ttype: \"response\";\n\t\t\tcommand: \"get_tree\";\n\t\t\tsuccess: true;\n\t\t\tdata: { tree: SessionTreeNode[]; leafId: string | null };\n\t  }",
+      "documentedSemantics": "Get the session as a tree of entries. Each node is `{entry, children, label?, labelTimestamp?}`. The result is an array because navigation APIs can create multiple roots; orphaned entries with broken parent chains also appear as roots.\n\n```json\n{\"type\": \"get_tree\"}\n```\n\nResponse:\n```json\n{\n  \"type\": \"response\",\n  \"command\": \"get_tree\",\n  \"success\": true,\n  \"data\": {\n    \"tree\": [\n      {\n        \"entry\": {\"type\": \"message\", \"id\": \"abc123\", \"parentId\": null, \"...\": \"...\"},\n        \"children\": [\n          {\"entry\": {\"type\": \"message\", \"id\": \"def456\", \"parentId\": \"abc123\", \"...\": \"...\"}, \"children\": []}\n        ]\n      }\n    ],\n    \"leafId\": \"def456\"\n  }\n}\n```",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 66,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 216,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 719,
+          "symbol": "get_tree command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 649
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcSessionCommandHandler.cs",
+          "line": 7
+        },
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcSessionEntryProjector.cs",
+          "line": 8
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcReadCommandsProcessTests.cs",
+          "line": 11
+        },
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionEntryProjectorTests.cs",
+          "line": 8
+        }
+      ],
+      "existingDifferentialFixtures": [],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "existing-route-and-test-only",
+      "knownReviewRequirement": "",
+      "confirmedOrHistoricalMismatchIds": [],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    },
+    {
+      "name": "get_last_assistant_text",
+      "checkpoint": "R7",
+      "mandatoryVerificationCaseIds": [
+        "R7.get-last-assistant-text-values",
+        "R7.get-messages-active-partial"
+      ],
+      "requestSchema": "| { id?: string; type: \"get_last_assistant_text\" }",
+      "responseSchema": "| {\n\t\t\tid?: string;\n\t\t\ttype: \"response\";\n\t\t\tcommand: \"get_last_assistant_text\";\n\t\t\tsuccess: true;\n\t\t\tdata: { text: string | null };\n\t  }",
+      "documentedSemantics": "Get the text content of the last assistant message.\n\n```json\n{\"type\": \"get_last_assistant_text\"}\n```\n\nResponse:\n```json\n{\n  \"type\": \"response\",\n  \"command\": \"get_last_assistant_text\",\n  \"success\": true,\n  \"data\": {\"text\": \"The assistant's response...\"}\n}\n```\n\nThe `text` value is `null` if no assistant text exists.",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 67,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 223,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 747,
+          "symbol": "get_last_assistant_text command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 654
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcSessionCommandHandler.cs",
+          "line": 7
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcReadCommandsProcessTests.cs",
+          "line": 11
+        }
+      ],
+      "existingDifferentialFixtures": [],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "existing-route-and-test-only",
+      "knownReviewRequirement": "",
+      "confirmedOrHistoricalMismatchIds": [],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    },
+    {
+      "name": "set_session_name",
+      "checkpoint": "R13",
+      "mandatoryVerificationCaseIds": [
+        "R13.set-session-name-and-clear",
+        "R13.session-info-event-order",
+        "R13.commands-after-reload"
+      ],
+      "requestSchema": "| { id?: string; type: \"set_session_name\"; name: string }",
+      "responseSchema": "| { id?: string; type: \"response\"; command: \"set_session_name\"; success: true }",
+      "documentedSemantics": "Set a display name for the current session. The name appears in session listings and helps identify sessions.\n\n```json\n{\"type\": \"set_session_name\", \"name\": \"my-feature-work\"}\n```\n\nResponse:\n```json\n{\n  \"type\": \"response\",\n  \"command\": \"set_session_name\",\n  \"success\": true\n}\n```\n\nThe current session name is available via `get_state` in the `sessionName` field. To set the initial name when starting RPC mode, pass `--name <name>` or `-n <name>` to the `pi --mode rpc` process.",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 68,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 230,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 767,
+          "symbol": "set_session_name command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 659
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcSessionCommandHandler.cs",
+          "line": 7
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionProcessTests.cs",
+          "line": 10
+        }
+      ],
+      "existingDifferentialFixtures": [],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "existing-route-and-test-only",
+      "knownReviewRequirement": "",
+      "confirmedOrHistoricalMismatchIds": [],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    },
+    {
+      "name": "get_messages",
+      "checkpoint": "R7",
+      "mandatoryVerificationCaseIds": [
+        "R7.get-messages-system-projection",
+        "R7.get-messages-compacted-context-edits",
+        "R7.get-messages-active-partial",
+        "R7.session-read-after-reload"
+      ],
+      "requestSchema": "| { id?: string; type: \"get_messages\" }",
+      "responseSchema": "| { id?: string; type: \"response\"; command: \"get_messages\"; success: true; data: { messages: AgentMessage[] } }",
+      "documentedSemantics": "Get all messages in the conversation.\n\n```json\n{\"type\": \"get_messages\"}\n```\n\nResponse:\n```json\n{\n  \"type\": \"response\",\n  \"command\": \"get_messages\",\n  \"success\": true,\n  \"data\": {\"messages\": [...]}\n}\n```\n\nMessages are `AgentMessage` objects (see [Message Types](message-types.md)).",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 71,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 233,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 188,
+          "symbol": "get_messages command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 672
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcSessionCommandHandler.cs",
+          "line": 7
+        },
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcSessionMessageProjector.cs",
+          "line": 9
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcReadCommandsProcessTests.cs",
+          "line": 11
+        },
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionMessageProjectorTests.cs",
+          "line": 9
+        }
+      ],
+      "existingDifferentialFixtures": [
+        "docs/parity/fixtures/rpc-get-messages-system-baseline.md"
+      ],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "partial-prior-fixture",
+      "knownReviewRequirement": "",
+      "confirmedOrHistoricalMismatchIds": [
+        "RPC-SYSMSG-SECTIONS"
+      ],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    },
+    {
+      "name": "get_commands",
+      "checkpoint": "R13",
+      "mandatoryVerificationCaseIds": [
+        "R13.get-commands-builtins",
+        "R13.get-commands-extension",
+        "R13.commands-after-reload"
+      ],
+      "requestSchema": "| { id?: string; type: \"get_commands\" };",
+      "responseSchema": "| {\n\t\t\tid?: string;\n\t\t\ttype: \"response\";\n\t\t\tcommand: \"get_commands\";\n\t\t\tsuccess: true;\n\t\t\tdata: { commands: RpcSlashCommand[] };\n\t  }",
+      "documentedSemantics": "Get available commands (extension commands, prompt templates, and skills). Run one through the `prompt` command by prefixing its name with `/`.\n\n```json\n{\"type\": \"get_commands\"}\n```\n\nResponse:\n```json\n{\n  \"type\": \"response\",\n  \"command\": \"get_commands\",\n  \"success\": true,\n  \"data\": {\n    \"commands\": [\n      {\n        \"name\": \"fix-tests\",\n        \"description\": \"Fix failing tests\",\n        \"source\": \"prompt\",\n        \"sourceInfo\": {\n          \"path\": \"/home/user/myproject/.pi/agent/prompts/fix-tests.md\",\n          \"source\": \"local\",\n          \"scope\": \"project\",\n          \"origin\": \"top-level\"\n        }\n      }\n    ]\n  }\n}\n```\n\nEach command has:\n- `name`: Command name (use `/name`)\n- `description`: Human-readable description (optional for extension commands)\n- `source`: What kind of command:\n  - `\"extension\"`: Registered via `pi.registerCommand()` in an extension\n  - `\"prompt\"`: Loaded from a prompt template `.md` file\n  - `\"skill\"`: Loaded from a skill directory (name is prefixed with `skill:`)\n- `sourceInfo`: Metadata for the resource that registered the command:\n  - `path`: Absolute path to the resource\n  - `source`: How Pi discovered it, such as `\"local\"`, `\"auto\"`, or `\"cli\"`\n  - `scope`: `\"user\"`, `\"project\"`, or `\"temporary\"`\n  - `origin`: `\"top-level\"` for a directly loaded resource or `\"package\"` for a package resource\n  - `baseDir`: Package base directory, when applicable\n\n**Note**: Built-in TUI commands (`/settings`, `/hotkeys`, etc.) are not included. They are handled only in interactive mode and would not execute if sent via `prompt`.",
+      "upstreamSources": [
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 74,
+          "symbol": "RpcCommand"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+          "line": 236,
+          "symbol": "RpcResponse"
+        },
+        {
+          "path": "packages/coding-agent/docs/rpc-commands.md",
+          "line": 788,
+          "symbol": "get_commands command contract"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 680
+        }
+      ],
+      "pisharpOwners": [
+        {
+          "path": "src/PiSharp.Cli/Protocols/Rpc/RpcCommandDiscoveryHandler.cs",
+          "line": 8
+        }
+      ],
+      "existingTests": [
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcCommandDiscoveryProcessTests.cs",
+          "line": 7
+        },
+        {
+          "path": "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcExtensionCommandProcessTests.cs",
+          "line": 9
+        }
+      ],
+      "existingDifferentialFixtures": [
+        "docs/parity/fixtures/rpc-get-commands-baseline.md"
+      ],
+      "baselineAssessment": "Existing routes/tests are inventory evidence only; parity remains unverified until this milestone's process differential passes.",
+      "priorEvidenceClassification": "partial-prior-fixture",
+      "knownReviewRequirement": "",
+      "confirmedOrHistoricalMismatchIds": [],
+      "missingEvidence": [
+        "fresh exact-pin paired Pi/PiSharp process capture",
+        "same-Pi repeated calibration",
+        "all mandatory case results for the assigned checkpoint"
+      ]
+    }
+  ],
+  "eventInventory": [
+    {
+      "name": "agent_end",
+      "schemaVariants": [
+        "| { type: \"agent_end\"; messages: AgentMessage[] }",
+        "| {\n\t\t\ttype: \"agent_end\";\n\t\t\tmessages: AgentMessage[];\n\t\t\twillRetry: boolean;\n\t  }"
+      ],
+      "sources": [
+        {
+          "path": "packages/agent/src/types.ts",
+          "line": 519,
+          "symbol": "AgentEvent"
+        }
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/json.md",
+        "line": 44
+      },
+      "mandatoryVerificationCaseIds": [
+        "R5.agent-start-end-settled",
+        "R5.cancellation-lifecycle"
+      ],
+      "inheritedSessionSchema": "agent_end replaces the low-level AgentEvent with messages plus willRetry.",
+      "projectionOwner": "src/PiSharp.Cli/Protocols/Rpc/RpcEventProjector.cs",
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcEventProjectorTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcAgentLifecycleProcessTests.cs"
+      ],
+      "assessment": "Source-defined event family; exact field and ordering parity is unverified until process-level cases pass."
+    },
+    {
+      "name": "agent_settled",
+      "schemaVariants": [
+        "| { type: \"agent_settled\"; aborted: boolean }"
+      ],
+      "sources": [
+        {
+          "path": "packages/coding-agent/src/core/agent-session.ts",
+          "line": 203,
+          "symbol": "AgentSessionEvent"
+        }
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/json.md",
+        "line": 45
+      },
+      "mandatoryVerificationCaseIds": [
+        "R5.agent-start-end-settled",
+        "R5.cancellation-lifecycle"
+      ],
+      "inheritedSessionSchema": "Inherited core AgentEvent fields are retained by AgentSessionEvent.",
+      "projectionOwner": "src/PiSharp.Cli/Protocols/Rpc/RpcEventProjector.cs",
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcEventProjectorTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcAgentLifecycleProcessTests.cs"
+      ],
+      "assessment": "Source-defined event family; exact field and ordering parity is unverified until process-level cases pass."
+    },
+    {
+      "name": "agent_start",
+      "schemaVariants": [
+        "| { type: \"agent_start\" }"
+      ],
+      "sources": [
+        {
+          "path": "packages/agent/src/types.ts",
+          "line": 518,
+          "symbol": "AgentEvent"
+        }
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/json.md",
+        "line": 36
+      },
+      "mandatoryVerificationCaseIds": [
+        "R5.agent-start-end-settled"
+      ],
+      "inheritedSessionSchema": "Inherited core AgentEvent fields are retained by AgentSessionEvent.",
+      "projectionOwner": "src/PiSharp.Cli/Protocols/Rpc/RpcEventProjector.cs",
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcEventProjectorTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcAgentLifecycleProcessTests.cs"
+      ],
+      "assessment": "Source-defined event family; exact field and ordering parity is unverified until process-level cases pass."
+    },
+    {
+      "name": "auto_retry_end",
+      "schemaVariants": [
+        "| { type: \"auto_retry_end\"; success: boolean; attempt: number; finalError?: string }"
+      ],
+      "sources": [
+        {
+          "path": "packages/coding-agent/src/core/agent-session.ts",
+          "line": 222,
+          "symbol": "AgentSessionEvent"
+        }
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/json.md",
+        "line": 167
+      },
+      "mandatoryVerificationCaseIds": [
+        "R5.retry-event-order",
+        "R10.auto-retry-events"
+      ],
+      "inheritedSessionSchema": "Inherited core AgentEvent fields are retained by AgentSessionEvent.",
+      "projectionOwner": "src/PiSharp.Cli/Protocols/Rpc/RpcEventProjector.cs",
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcEventProjectorTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcAgentLifecycleProcessTests.cs"
+      ],
+      "assessment": "Source-defined event family; exact field and ordering parity is unverified until process-level cases pass."
+    },
+    {
+      "name": "auto_retry_start",
+      "schemaVariants": [
+        "| { type: \"auto_retry_start\"; attempt: number; maxAttempts: number; delayMs: number; errorMessage: string }"
+      ],
+      "sources": [
+        {
+          "path": "packages/coding-agent/src/core/agent-session.ts",
+          "line": 221,
+          "symbol": "AgentSessionEvent"
+        }
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/json.md",
+        "line": 166
+      },
+      "mandatoryVerificationCaseIds": [
+        "R5.retry-event-order",
+        "R10.auto-retry-events"
+      ],
+      "inheritedSessionSchema": "Inherited core AgentEvent fields are retained by AgentSessionEvent.",
+      "projectionOwner": "src/PiSharp.Cli/Protocols/Rpc/RpcEventProjector.cs",
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcEventProjectorTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcAgentLifecycleProcessTests.cs"
+      ],
+      "assessment": "Source-defined event family; exact field and ordering parity is unverified until process-level cases pass."
+    },
+    {
+      "name": "bash_execution_update",
+      "schemaVariants": [
+        "| { type: \"bash_execution_update\"; id?: string; delta: string }"
+      ],
+      "sources": [
+        {
+          "path": "packages/coding-agent/src/core/agent-session.ts",
+          "line": 237,
+          "symbol": "AgentSessionEvent"
+        }
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/json.md",
+        "line": 184
+      },
+      "mandatoryVerificationCaseIds": [
+        "R11.bash-stream-id-and-chunks",
+        "R11.bash-without-command-id"
+      ],
+      "inheritedSessionSchema": "Inherited core AgentEvent fields are retained by AgentSessionEvent.",
+      "projectionOwner": "src/PiSharp.Cli/Protocols/Rpc/RpcEventProjector.cs",
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcEventProjectorTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcAgentLifecycleProcessTests.cs"
+      ],
+      "assessment": "Source-defined event family; exact field and ordering parity is unverified until process-level cases pass."
+    },
+    {
+      "name": "compaction_end",
+      "schemaVariants": [
+        "| {\n\t\t\ttype: \"compaction_end\";\n\t\t\treason: \"manual\" | \"threshold\" | \"overflow\";\n\t\t\tresult: CompactionResult | undefined;\n\t\t\taborted: boolean;\n\t\t\twillRetry: boolean;\n\t\t\terrorMessage?: string;\n\t  }"
+      ],
+      "sources": [
+        {
+          "path": "packages/coding-agent/src/core/agent-session.ts",
+          "line": 213,
+          "symbol": "AgentSessionEvent"
+        }
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/json.md",
+        "line": 138
+      },
+      "mandatoryVerificationCaseIds": [
+        "R10.manual-compact-success",
+        "R10.manual-compact-failure-rollback"
+      ],
+      "inheritedSessionSchema": "Inherited core AgentEvent fields are retained by AgentSessionEvent.",
+      "projectionOwner": "src/PiSharp.Cli/Protocols/Rpc/RpcEventProjector.cs",
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcEventProjectorTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcAgentLifecycleProcessTests.cs"
+      ],
+      "assessment": "Source-defined event family; exact field and ordering parity is unverified until process-level cases pass."
+    },
+    {
+      "name": "compaction_start",
+      "schemaVariants": [
+        "| { type: \"compaction_start\"; reason: \"manual\" | \"threshold\" | \"overflow\" }"
+      ],
+      "sources": [
+        {
+          "path": "packages/coding-agent/src/core/agent-session.ts",
+          "line": 209,
+          "symbol": "AgentSessionEvent"
+        }
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/json.md",
+        "line": 130
+      },
+      "mandatoryVerificationCaseIds": [
+        "R10.manual-compact-success",
+        "R10.threshold-and-overflow-compaction"
+      ],
+      "inheritedSessionSchema": "Inherited core AgentEvent fields are retained by AgentSessionEvent.",
+      "projectionOwner": "src/PiSharp.Cli/Protocols/Rpc/RpcEventProjector.cs",
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcEventProjectorTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcAgentLifecycleProcessTests.cs"
+      ],
+      "assessment": "Source-defined event family; exact field and ordering parity is unverified until process-level cases pass."
+    },
+    {
+      "name": "entry_appended",
+      "schemaVariants": [
+        "| { type: \"entry_appended\"; entry: SessionEntry }"
+      ],
+      "sources": [
+        {
+          "path": "packages/coding-agent/src/core/agent-session.ts",
+          "line": 210,
+          "symbol": "AgentSessionEvent"
+        }
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/json.md",
+        "line": 122
+      },
+      "mandatoryVerificationCaseIds": [
+        "R5.session-entry-event-payload"
+      ],
+      "inheritedSessionSchema": "Inherited core AgentEvent fields are retained by AgentSessionEvent.",
+      "projectionOwner": "src/PiSharp.Cli/Protocols/Rpc/RpcEventProjector.cs",
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcEventProjectorTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcAgentLifecycleProcessTests.cs"
+      ],
+      "assessment": "Source-defined event family; exact field and ordering parity is unverified until process-level cases pass."
+    },
+    {
+      "name": "extension_error",
+      "schemaVariants": [
+        "{ \"type\": \"extension_error\", \"extensionPath\": string, \"event\": string, \"error\": string }"
+      ],
+      "sources": [
+        {
+          "path": "packages/coding-agent/docs/json.md",
+          "line": 193,
+          "symbol": "RPC-only JSON event"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "line": 349
+        }
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/json.md",
+        "line": 190
+      },
+      "mandatoryVerificationCaseIds": [
+        "R14.extension-handler-error-event"
+      ],
+      "inheritedSessionSchema": "Inherited core AgentEvent fields are retained by AgentSessionEvent.",
+      "projectionOwner": "src/PiSharp.Cli/Protocols/Rpc/RpcEventProjector.cs",
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcEventProjectorTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcAgentLifecycleProcessTests.cs"
+      ],
+      "assessment": "Source-defined event family; exact field and ordering parity is unverified until process-level cases pass."
+    },
+    {
+      "name": "message_end",
+      "schemaVariants": [
+        "| { type: \"message_end\"; message: AgentMessage }"
+      ],
+      "sources": [
+        {
+          "path": "packages/agent/src/types.ts",
+          "line": 527,
+          "symbol": "AgentEvent"
+        }
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/json.md",
+        "line": 39
+      },
+      "mandatoryVerificationCaseIds": [
+        "R5.message-role-lifecycle",
+        "R5.post-content-failure",
+        "R5.cancellation-lifecycle"
+      ],
+      "inheritedSessionSchema": "Inherited core AgentEvent fields are retained by AgentSessionEvent.",
+      "projectionOwner": "src/PiSharp.Cli/Protocols/Rpc/RpcEventProjector.cs",
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcEventProjectorTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcAgentLifecycleProcessTests.cs"
+      ],
+      "assessment": "Source-defined event family; exact field and ordering parity is unverified until process-level cases pass."
+    },
+    {
+      "name": "message_start",
+      "schemaVariants": [
+        "| { type: \"message_start\"; message: AgentMessage }"
+      ],
+      "sources": [
+        {
+          "path": "packages/agent/src/types.ts",
+          "line": 524,
+          "symbol": "AgentEvent"
+        }
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/json.md",
+        "line": 38
+      },
+      "mandatoryVerificationCaseIds": [
+        "R5.message-role-lifecycle"
+      ],
+      "inheritedSessionSchema": "Inherited core AgentEvent fields are retained by AgentSessionEvent.",
+      "projectionOwner": "src/PiSharp.Cli/Protocols/Rpc/RpcEventProjector.cs",
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcEventProjectorTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcAgentLifecycleProcessTests.cs"
+      ],
+      "assessment": "Source-defined event family; exact field and ordering parity is unverified until process-level cases pass."
+    },
+    {
+      "name": "message_update",
+      "schemaVariants": [
+        "| { type: \"message_update\"; message: AgentMessage; assistantMessageEvent: AssistantMessageEvent }"
+      ],
+      "sources": [
+        {
+          "path": "packages/agent/src/types.ts",
+          "line": 526,
+          "symbol": "AgentEvent"
+        }
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/json.md",
+        "line": 41
+      },
+      "mandatoryVerificationCaseIds": [
+        "R5.streaming-text-fragments",
+        "R5.streaming-reasoning-fragments",
+        "R5.cumulative-usage-and-final-message"
+      ],
+      "inheritedSessionSchema": "Inherited core AgentEvent fields are retained by AgentSessionEvent.",
+      "projectionOwner": "src/PiSharp.Cli/Protocols/Rpc/RpcEventProjector.cs",
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcEventProjectorTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcAgentLifecycleProcessTests.cs"
+      ],
+      "assessment": "Source-defined event family; exact field and ordering parity is unverified until process-level cases pass."
+    },
+    {
+      "name": "queue_update",
+      "schemaVariants": [
+        "| {\n\t\t\ttype: \"queue_update\";\n\t\t\tsteering: readonly string[];\n\t\t\tfollowUp: readonly string[];\n\t  }"
+      ],
+      "sources": [
+        {
+          "path": "packages/coding-agent/src/core/agent-session.ts",
+          "line": 204,
+          "symbol": "AgentSessionEvent"
+        }
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/json.md",
+        "line": 121
+      },
+      "mandatoryVerificationCaseIds": [
+        "R4.multiple-concurrent-queue-updates",
+        "R4.clear-queue-snapshot"
+      ],
+      "inheritedSessionSchema": "Inherited core AgentEvent fields are retained by AgentSessionEvent.",
+      "projectionOwner": "src/PiSharp.Cli/Protocols/Rpc/RpcEventProjector.cs",
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcEventProjectorTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcAgentLifecycleProcessTests.cs"
+      ],
+      "assessment": "Source-defined event family; exact field and ordering parity is unverified until process-level cases pass."
+    },
+    {
+      "name": "session_info_changed",
+      "schemaVariants": [
+        "| { type: \"session_info_changed\"; name: string | undefined }"
+      ],
+      "sources": [
+        {
+          "path": "packages/coding-agent/src/core/agent-session.ts",
+          "line": 211,
+          "symbol": "AgentSessionEvent"
+        }
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/json.md",
+        "line": 123
+      },
+      "mandatoryVerificationCaseIds": [
+        "R5.session-and-model-event-order",
+        "R13.session-info-event-order"
+      ],
+      "inheritedSessionSchema": "Inherited core AgentEvent fields are retained by AgentSessionEvent.",
+      "projectionOwner": "src/PiSharp.Cli/Protocols/Rpc/RpcEventProjector.cs",
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcEventProjectorTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcAgentLifecycleProcessTests.cs"
+      ],
+      "assessment": "Source-defined event family; exact field and ordering parity is unverified until process-level cases pass."
+    },
+    {
+      "name": "summarization_retry_attempt_start",
+      "schemaVariants": [
+        "| { type: \"summarization_retry_attempt_start\"; source: \"branchSummary\" }",
+        "| {\n\t\t\ttype: \"summarization_retry_attempt_start\";\n\t\t\tsource: \"compaction\";\n\t\t\treason: \"manual\" | \"threshold\" | \"overflow\";\n\t  }"
+      ],
+      "sources": [
+        {
+          "path": "packages/coding-agent/src/core/agent-session.ts",
+          "line": 230,
+          "symbol": "AgentSessionEvent"
+        }
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/json.md",
+        "line": 176
+      },
+      "mandatoryVerificationCaseIds": [
+        "R10.summarization-retry-events"
+      ],
+      "inheritedSessionSchema": "Inherited core AgentEvent fields are retained by AgentSessionEvent.",
+      "projectionOwner": "src/PiSharp.Cli/Protocols/Rpc/RpcEventProjector.cs",
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcEventProjectorTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcAgentLifecycleProcessTests.cs"
+      ],
+      "assessment": "Source-defined event family; exact field and ordering parity is unverified until process-level cases pass."
+    },
+    {
+      "name": "summarization_retry_finished",
+      "schemaVariants": [
+        "| { type: \"summarization_retry_finished\" }"
+      ],
+      "sources": [
+        {
+          "path": "packages/coding-agent/src/core/agent-session.ts",
+          "line": 236,
+          "symbol": "AgentSessionEvent"
+        }
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/json.md",
+        "line": 177
+      },
+      "mandatoryVerificationCaseIds": [
+        "R10.summarization-retry-events"
+      ],
+      "inheritedSessionSchema": "Inherited core AgentEvent fields are retained by AgentSessionEvent.",
+      "projectionOwner": "src/PiSharp.Cli/Protocols/Rpc/RpcEventProjector.cs",
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcEventProjectorTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcAgentLifecycleProcessTests.cs"
+      ],
+      "assessment": "Source-defined event family; exact field and ordering parity is unverified until process-level cases pass."
+    },
+    {
+      "name": "summarization_retry_scheduled",
+      "schemaVariants": [
+        "| {\n\t\t\ttype: \"summarization_retry_scheduled\";\n\t\t\tattempt: number;\n\t\t\tmaxAttempts: number;\n\t\t\tdelayMs: number;\n\t\t\terrorMessage: string;\n\t  }"
+      ],
+      "sources": [
+        {
+          "path": "packages/coding-agent/src/core/agent-session.ts",
+          "line": 223,
+          "symbol": "AgentSessionEvent"
+        }
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/json.md",
+        "line": 175
+      },
+      "mandatoryVerificationCaseIds": [
+        "R10.summarization-retry-events"
+      ],
+      "inheritedSessionSchema": "Inherited core AgentEvent fields are retained by AgentSessionEvent.",
+      "projectionOwner": "src/PiSharp.Cli/Protocols/Rpc/RpcEventProjector.cs",
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcEventProjectorTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcAgentLifecycleProcessTests.cs"
+      ],
+      "assessment": "Source-defined event family; exact field and ordering parity is unverified until process-level cases pass."
+    },
+    {
+      "name": "thinking_level_changed",
+      "schemaVariants": [
+        "| { type: \"thinking_level_changed\"; level: ThinkingLevel }"
+      ],
+      "sources": [
+        {
+          "path": "packages/coding-agent/src/core/agent-session.ts",
+          "line": 212,
+          "symbol": "AgentSessionEvent"
+        }
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/json.md",
+        "line": 124
+      },
+      "mandatoryVerificationCaseIds": [
+        "R5.session-and-model-event-order",
+        "R9.thinking-event-response-order"
+      ],
+      "inheritedSessionSchema": "Inherited core AgentEvent fields are retained by AgentSessionEvent.",
+      "projectionOwner": "src/PiSharp.Cli/Protocols/Rpc/RpcEventProjector.cs",
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcEventProjectorTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcAgentLifecycleProcessTests.cs"
+      ],
+      "assessment": "Source-defined event family; exact field and ordering parity is unverified until process-level cases pass."
+    },
+    {
+      "name": "tool_execution_end",
+      "schemaVariants": [
+        "| {\n\t\t\ttype: \"tool_execution_end\";\n\t\t\ttoolCallId: string;\n\t\t\ttoolName: string;\n\t\t\tresult: any;\n\t\t\tisError: boolean;\n\t\t\t/** Milliseconds `execute()` took, measured with a monotonic clock; absent when the tool did not run. */\n\t\t\tdurationMs?: number;\n\t  };"
+      ],
+      "sources": [
+        {
+          "path": "packages/agent/src/types.ts",
+          "line": 531,
+          "symbol": "AgentEvent"
+        }
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/json.md",
+        "line": 107
+      },
+      "mandatoryVerificationCaseIds": [
+        "R6.tool-execution-start-update-end",
+        "R6.tool-error-continuation"
+      ],
+      "inheritedSessionSchema": "tool_execution_start/update/end add optional parentToolCallId when emitted for ctx.executeTool().",
+      "projectionOwner": "src/PiSharp.Cli/Protocols/Rpc/RpcEventProjector.cs",
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcEventProjectorTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcAgentLifecycleProcessTests.cs"
+      ],
+      "assessment": "Source-defined event family; exact field and ordering parity is unverified until process-level cases pass."
+    },
+    {
+      "name": "tool_execution_start",
+      "schemaVariants": [
+        "| { type: \"tool_execution_start\"; toolCallId: string; toolName: string; args: any }"
+      ],
+      "sources": [
+        {
+          "path": "packages/agent/src/types.ts",
+          "line": 529,
+          "symbol": "AgentEvent"
+        }
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/json.md",
+        "line": 105
+      },
+      "mandatoryVerificationCaseIds": [
+        "R6.tool-execution-start-update-end"
+      ],
+      "inheritedSessionSchema": "tool_execution_start/update/end add optional parentToolCallId when emitted for ctx.executeTool().",
+      "projectionOwner": "src/PiSharp.Cli/Protocols/Rpc/RpcEventProjector.cs",
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcEventProjectorTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcAgentLifecycleProcessTests.cs"
+      ],
+      "assessment": "Source-defined event family; exact field and ordering parity is unverified until process-level cases pass."
+    },
+    {
+      "name": "tool_execution_update",
+      "schemaVariants": [
+        "| { type: \"tool_execution_update\"; toolCallId: string; toolName: string; args: any; partialResult: any }"
+      ],
+      "sources": [
+        {
+          "path": "packages/agent/src/types.ts",
+          "line": 530,
+          "symbol": "AgentEvent"
+        }
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/json.md",
+        "line": 106
+      },
+      "mandatoryVerificationCaseIds": [
+        "R6.tool-execution-start-update-end"
+      ],
+      "inheritedSessionSchema": "tool_execution_start/update/end add optional parentToolCallId when emitted for ctx.executeTool().",
+      "projectionOwner": "src/PiSharp.Cli/Protocols/Rpc/RpcEventProjector.cs",
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcEventProjectorTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcAgentLifecycleProcessTests.cs"
+      ],
+      "assessment": "Source-defined event family; exact field and ordering parity is unverified until process-level cases pass."
+    },
+    {
+      "name": "turn_end",
+      "schemaVariants": [
+        "| { type: \"turn_end\"; message: AgentMessage; toolResults: ToolResultMessage[] }"
+      ],
+      "sources": [
+        {
+          "path": "packages/agent/src/types.ts",
+          "line": 522,
+          "symbol": "AgentEvent"
+        }
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/json.md",
+        "line": 43
+      },
+      "mandatoryVerificationCaseIds": [
+        "R5.turn-start-end"
+      ],
+      "inheritedSessionSchema": "Inherited core AgentEvent fields are retained by AgentSessionEvent.",
+      "projectionOwner": "src/PiSharp.Cli/Protocols/Rpc/RpcEventProjector.cs",
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcEventProjectorTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcAgentLifecycleProcessTests.cs"
+      ],
+      "assessment": "Source-defined event family; exact field and ordering parity is unverified until process-level cases pass."
+    },
+    {
+      "name": "turn_start",
+      "schemaVariants": [
+        "| { type: \"turn_start\" }"
+      ],
+      "sources": [
+        {
+          "path": "packages/agent/src/types.ts",
+          "line": 521,
+          "symbol": "AgentEvent"
+        }
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/json.md",
+        "line": 37
+      },
+      "mandatoryVerificationCaseIds": [
+        "R5.turn-start-end"
+      ],
+      "inheritedSessionSchema": "Inherited core AgentEvent fields are retained by AgentSessionEvent.",
+      "projectionOwner": "src/PiSharp.Cli/Protocols/Rpc/RpcEventProjector.cs",
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcEventProjectorTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcAgentLifecycleProcessTests.cs"
+      ],
+      "assessment": "Source-defined event family; exact field and ordering parity is unverified until process-level cases pass."
+    }
+  ],
+  "extensionUiMethods": [
+    {
+      "name": "select",
+      "requestSchemaSource": "| { type: \"extension_ui_request\"; id: string; method: \"select\"; title: string; options: string[]; timeout?: number }",
+      "source": {
+        "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+        "line": 253,
+        "symbol": "RpcExtensionUIRequest"
+      },
+      "mandatoryVerificationCaseIds": [
+        "R14.ui-select-roundtrip",
+        "R14.ui-unique-concurrent-ids",
+        "R14.ui-out-of-order-responses"
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/rpc-extension-ui.md",
+        "line": 31
+      },
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcExtensionUiTransportTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcExtensionContextProcessTests.cs"
+      ],
+      "assessment": "Request/response behavior, timeout, cancellation and concurrency require new process differentials."
+    },
+    {
+      "name": "confirm",
+      "requestSchemaSource": "| { type: \"extension_ui_request\"; id: string; method: \"confirm\"; title: string; message: string; timeout?: number }",
+      "source": {
+        "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+        "line": 254,
+        "symbol": "RpcExtensionUIRequest"
+      },
+      "mandatoryVerificationCaseIds": [
+        "R14.ui-confirm-roundtrip",
+        "R14.ui-unique-concurrent-ids",
+        "R14.ui-out-of-order-responses"
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/rpc-extension-ui.md",
+        "line": 48
+      },
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcExtensionUiTransportTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcExtensionContextProcessTests.cs"
+      ],
+      "assessment": "Request/response behavior, timeout, cancellation and concurrency require new process differentials."
+    },
+    {
+      "name": "input",
+      "requestSchemaSource": "| {\n\t\t\ttype: \"extension_ui_request\";\n\t\t\tid: string;\n\t\t\tmethod: \"input\";\n\t\t\ttitle: string;\n\t\t\tplaceholder?: string;\n\t\t\ttimeout?: number;\n\t  }",
+      "source": {
+        "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+        "line": 258,
+        "symbol": "RpcExtensionUIRequest"
+      },
+      "mandatoryVerificationCaseIds": [
+        "R14.ui-input-roundtrip",
+        "R14.ui-unique-concurrent-ids",
+        "R14.ui-timeout-default"
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/rpc-extension-ui.md",
+        "line": 65
+      },
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcExtensionUiTransportTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcExtensionContextProcessTests.cs"
+      ],
+      "assessment": "Request/response behavior, timeout, cancellation and concurrency require new process differentials."
+    },
+    {
+      "name": "editor",
+      "requestSchemaSource": "| { type: \"extension_ui_request\"; id: string; method: \"editor\"; title: string; prefill?: string }",
+      "source": {
+        "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+        "line": 263,
+        "symbol": "RpcExtensionUIRequest"
+      },
+      "mandatoryVerificationCaseIds": [
+        "R14.ui-editor-roundtrip",
+        "R14.ui-unique-concurrent-ids",
+        "R14.ui-cancel-late-unknown"
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/rpc-extension-ui.md",
+        "line": 81
+      },
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcExtensionUiTransportTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcExtensionContextProcessTests.cs"
+      ],
+      "assessment": "Request/response behavior, timeout, cancellation and concurrency require new process differentials."
+    },
+    {
+      "name": "notify",
+      "requestSchemaSource": "| {\n\t\t\ttype: \"extension_ui_request\";\n\t\t\tid: string;\n\t\t\tmethod: \"notify\";\n\t\t\tmessage: string;\n\t\t\tnotifyType?: \"info\" | \"warning\" | \"error\";\n\t  }",
+      "source": {
+        "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+        "line": 267,
+        "symbol": "RpcExtensionUIRequest"
+      },
+      "mandatoryVerificationCaseIds": [
+        "R14.ui-notify-fire-and-forget"
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/rpc-extension-ui.md",
+        "line": 97
+      },
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcExtensionUiTransportTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcExtensionContextProcessTests.cs"
+      ],
+      "assessment": "Request/response behavior, timeout, cancellation and concurrency require new process differentials."
+    },
+    {
+      "name": "setStatus",
+      "requestSchemaSource": "| {\n\t\t\ttype: \"extension_ui_request\";\n\t\t\tid: string;\n\t\t\tmethod: \"setStatus\";\n\t\t\tstatusKey: string;\n\t\t\tstatusText: string | undefined;\n\t  }",
+      "source": {
+        "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+        "line": 274,
+        "symbol": "RpcExtensionUIRequest"
+      },
+      "mandatoryVerificationCaseIds": [
+        "R14.ui-set-status"
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/rpc-extension-ui.md",
+        "line": 113
+      },
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcExtensionUiTransportTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcExtensionContextProcessTests.cs"
+      ],
+      "assessment": "Request/response behavior, timeout, cancellation and concurrency require new process differentials."
+    },
+    {
+      "name": "setWidget",
+      "requestSchemaSource": "| {\n\t\t\ttype: \"extension_ui_request\";\n\t\t\tid: string;\n\t\t\tmethod: \"setWidget\";\n\t\t\twidgetKey: string;\n\t\t\twidgetLines: string[] | undefined;\n\t\t\twidgetPlacement?: \"aboveEditor\" | \"belowEditor\";\n\t  }",
+      "source": {
+        "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+        "line": 281,
+        "symbol": "RpcExtensionUIRequest"
+      },
+      "mandatoryVerificationCaseIds": [
+        "R14.ui-set-widget"
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/rpc-extension-ui.md",
+        "line": 129
+      },
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcExtensionUiTransportTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcExtensionContextProcessTests.cs"
+      ],
+      "assessment": "Request/response behavior, timeout, cancellation and concurrency require new process differentials."
+    },
+    {
+      "name": "setTitle",
+      "requestSchemaSource": "| { type: \"extension_ui_request\"; id: string; method: \"setTitle\"; title: string }",
+      "source": {
+        "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+        "line": 286,
+        "symbol": "RpcExtensionUIRequest"
+      },
+      "mandatoryVerificationCaseIds": [
+        "R14.ui-set-title"
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/rpc-extension-ui.md",
+        "line": 146
+      },
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcExtensionUiTransportTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcExtensionContextProcessTests.cs"
+      ],
+      "assessment": "Request/response behavior, timeout, cancellation and concurrency require new process differentials."
+    },
+    {
+      "name": "set_editor_text",
+      "requestSchemaSource": "| { type: \"extension_ui_request\"; id: string; method: \"set_editor_text\"; text: string };",
+      "source": {
+        "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+        "line": 287,
+        "symbol": "RpcExtensionUIRequest"
+      },
+      "mandatoryVerificationCaseIds": [
+        "R14.ui-set-editor-text"
+      ],
+      "documentation": {
+        "path": "packages/coding-agent/docs/rpc-extension-ui.md",
+        "line": 159
+      },
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcExtensionUiTransportTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcExtensionContextProcessTests.cs"
+      ],
+      "assessment": "Request/response behavior, timeout, cancellation and concurrency require new process differentials."
+    }
+  ],
+  "stateProjection": {
+    "name": "RpcSessionState",
+    "fields": [
+      "model?: Model<any>;",
+      "thinkingLevel: ThinkingLevel;",
+      "isStreaming: boolean;",
+      "isCompacting: boolean;",
+      "steeringMode: \"all\" | \"one-at-a-time\";",
+      "followUpMode: \"all\" | \"one-at-a-time\";",
+      "sessionFile?: string;",
+      "sessionId: string;",
+      "sessionName?: string;",
+      "autoCompactionEnabled: boolean;",
+      "messageCount: number;",
+      "pendingMessageCount: number;"
+    ],
+    "source": {
+      "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+      "line": 96
+    },
+    "documentation": {
+      "path": "packages/coding-agent/docs/rpc-commands.md",
+      "line": 155
+    },
+    "mandatoryVerificationCaseIds": [
+      "R7.get-state-idle-schema",
+      "R7.get-state-active-stream"
+    ],
+    "knownProjectionQuestion": "System-message sections and active message fragments require explicit differential confirmation."
+  },
+  "globalErrorAndCorrelationContract": {
+    "successShapeSource": {
+      "path": "packages/coding-agent/src/modes/rpc/rpc-types.ts",
+      "line": 116
+    },
+    "errorResponseSchema": "| { id?: string; type: \"response\"; command: string; success: false; error: string };",
+    "parseErrorDocumentation": {
+      "path": "packages/coding-agent/docs/rpc.md",
+      "line": 81
+    },
+    "unknownAndInvalidRequestSemantics": "Per-command upstream documentation and rpc-mode parser/dispatcher are included in the contract source set; exact process behavior is currently unverified."
+  },
+  "pisharpSourceOwners": [
+    {
+      "path": "src/PiSharp.Cli/Protocols/Json/JsonLineWriter.cs",
+      "line": 9
+    },
+    {
+      "path": "src/PiSharp.Cli/Protocols/Rpc/RpcCommandDiscoveryHandler.cs",
+      "line": 8
+    },
+    {
+      "path": "src/PiSharp.Cli/Protocols/Rpc/RpcCompactionCommandHandler.cs",
+      "line": 6
+    },
+    {
+      "path": "src/PiSharp.Cli/Protocols/Rpc/RpcEventProjector.cs",
+      "line": 8
+    },
+    {
+      "path": "src/PiSharp.Cli/Protocols/Rpc/RpcEventWriter.cs",
+      "line": 7
+    },
+    {
+      "path": "src/PiSharp.Cli/Protocols/Rpc/RpcExtensionUiTransport.cs",
+      "line": 7
+    },
+    {
+      "path": "src/PiSharp.Cli/Protocols/Rpc/RpcMode.cs",
+      "line": 16
+    },
+    {
+      "path": "src/PiSharp.Cli/Protocols/Rpc/RpcModelCommandHandler.cs",
+      "line": 8
+    },
+    {
+      "path": "src/PiSharp.Cli/Protocols/Rpc/RpcModelProjector.cs",
+      "line": 11
+    },
+    {
+      "path": "src/PiSharp.Cli/Protocols/Rpc/RpcPromptCommandHandler.cs",
+      "line": 9
+    },
+    {
+      "path": "src/PiSharp.Cli/Protocols/Rpc/RpcQueueModeCommandHandler.cs",
+      "line": 6
+    },
+    {
+      "path": "src/PiSharp.Cli/Protocols/Rpc/RpcRetryCommandHandler.cs",
+      "line": 6
+    },
+    {
+      "path": "src/PiSharp.Cli/Protocols/Rpc/RpcSessionCommandHandler.cs",
+      "line": 7
+    },
+    {
+      "path": "src/PiSharp.Cli/Protocols/Rpc/RpcSessionEntryProjector.cs",
+      "line": 8
+    },
+    {
+      "path": "src/PiSharp.Cli/Protocols/Rpc/RpcSessionMessageProjector.cs",
+      "line": 9
+    },
+    {
+      "path": "src/PiSharp.Cli/Protocols/Rpc/RpcSessionStatsProjector.cs",
+      "line": 9
+    },
+    {
+      "path": "src/PiSharp.Cli/Protocols/Rpc/RpcStateCommandHandler.cs",
+      "line": 7
+    }
+  ],
+  "knownCoverageLimitations": [
+    "Existing route and test references establish baseline ownership only, not parity.",
+    "Large RpcModeTests.cs is indexed as existing evidence but is not the default target for new tests.",
+    "Prior RPC fixtures use earlier scoped Pi pins; the new acceptance contract requires fresh paired captures at the exact pinned SHA.",
+    "Native branch-summary usage was fixed in PR #28 and is a mandatory exactly-once regression in R8.",
+    "Pinned Pi checkout contains an unrelated untracked test file; source extraction reads only named tracked files above."
+  ],
+  "credentialGatedUpstreamCases": [
+    {
+      "source": "packages/coding-agent/test/agent-session-tree-navigation.test.ts",
+      "testName": "AgentSession tree navigation e2e should navigate to user message and put text in editor",
+      "classification": "credential-dependent interactive/LLM test; unverified, never counted as a pass",
+      "evidence": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/Q0/pinned-pi-q0.json"
+    },
+    {
+      "source": "packages/coding-agent/test/agent-session-tree-navigation.test.ts",
+      "testName": "AgentSession tree navigation e2e should navigate to non-user message without editor text",
+      "classification": "credential-dependent interactive/LLM test; unverified, never counted as a pass",
+      "evidence": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/Q0/pinned-pi-q0.json"
+    },
+    {
+      "source": "packages/coding-agent/test/agent-session-tree-navigation.test.ts",
+      "testName": "AgentSession tree navigation e2e should create branch summary when navigating with summarize=true",
+      "classification": "credential-dependent interactive/LLM test; unverified, never counted as a pass",
+      "evidence": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/Q0/pinned-pi-q0.json"
+    },
+    {
+      "source": "packages/coding-agent/test/agent-session-tree-navigation.test.ts",
+      "testName": "AgentSession tree navigation e2e should attach summary to correct parent when navigating to nested user message",
+      "classification": "credential-dependent interactive/LLM test; unverified, never counted as a pass",
+      "evidence": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/Q0/pinned-pi-q0.json"
+    },
+    {
+      "source": "packages/coding-agent/test/agent-session-tree-navigation.test.ts",
+      "testName": "AgentSession tree navigation e2e should attach summary to selected node when navigating to assistant message",
+      "classification": "credential-dependent interactive/LLM test; unverified, never counted as a pass",
+      "evidence": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/Q0/pinned-pi-q0.json"
+    },
+    {
+      "source": "packages/coding-agent/test/agent-session-tree-navigation.test.ts",
+      "testName": "AgentSession tree navigation e2e should handle abort during summarization",
+      "classification": "credential-dependent interactive/LLM test; unverified, never counted as a pass",
+      "evidence": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/Q0/pinned-pi-q0.json"
+    },
+    {
+      "source": "packages/coding-agent/test/agent-session-tree-navigation.test.ts",
+      "testName": "AgentSession tree navigation e2e should not create summary when navigating without summarize option",
+      "classification": "credential-dependent interactive/LLM test; unverified, never counted as a pass",
+      "evidence": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/Q0/pinned-pi-q0.json"
+    },
+    {
+      "source": "packages/coding-agent/test/agent-session-tree-navigation.test.ts",
+      "testName": "AgentSession tree navigation e2e should handle navigation to same position (no-op)",
+      "classification": "credential-dependent interactive/LLM test; unverified, never counted as a pass",
+      "evidence": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/Q0/pinned-pi-q0.json"
+    },
+    {
+      "source": "packages/coding-agent/test/agent-session-tree-navigation.test.ts",
+      "testName": "AgentSession tree navigation e2e should support custom summarization instructions",
+      "classification": "credential-dependent interactive/LLM test; unverified, never counted as a pass",
+      "evidence": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/Q0/pinned-pi-q0.json"
+    },
+    {
+      "source": "packages/coding-agent/test/agent-session-tree-navigation.test.ts",
+      "testName": "AgentSession tree navigation - branch scenarios should navigate between branches correctly",
+      "classification": "credential-dependent interactive/LLM test; unverified, never counted as a pass",
+      "evidence": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/Q0/pinned-pi-q0.json"
+    },
+    {
+      "source": "packages/coding-agent/test/compaction-extensions.test.ts",
+      "testName": "Compaction extensions should emit before_compact and compact events",
+      "classification": "credential-dependent interactive/LLM test; unverified, never counted as a pass",
+      "evidence": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/Q0/pinned-pi-q0.json"
+    },
+    {
+      "source": "packages/coding-agent/test/compaction-extensions.test.ts",
+      "testName": "Compaction extensions should allow extensions to cancel compaction",
+      "classification": "credential-dependent interactive/LLM test; unverified, never counted as a pass",
+      "evidence": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/Q0/pinned-pi-q0.json"
+    },
+    {
+      "source": "packages/coding-agent/test/compaction-extensions.test.ts",
+      "testName": "Compaction extensions should allow extensions to provide custom compaction",
+      "classification": "credential-dependent interactive/LLM test; unverified, never counted as a pass",
+      "evidence": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/Q0/pinned-pi-q0.json"
+    },
+    {
+      "source": "packages/coding-agent/test/compaction-extensions.test.ts",
+      "testName": "Compaction extensions should include entries in compact event after compaction is saved",
+      "classification": "credential-dependent interactive/LLM test; unverified, never counted as a pass",
+      "evidence": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/Q0/pinned-pi-q0.json"
+    },
+    {
+      "source": "packages/coding-agent/test/compaction-extensions.test.ts",
+      "testName": "Compaction extensions should continue with default compaction if extension throws error",
+      "classification": "credential-dependent interactive/LLM test; unverified, never counted as a pass",
+      "evidence": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/Q0/pinned-pi-q0.json"
+    },
+    {
+      "source": "packages/coding-agent/test/compaction-extensions.test.ts",
+      "testName": "Compaction extensions should call multiple extensions in order",
+      "classification": "credential-dependent interactive/LLM test; unverified, never counted as a pass",
+      "evidence": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/Q0/pinned-pi-q0.json"
+    },
+    {
+      "source": "packages/coding-agent/test/compaction-extensions.test.ts",
+      "testName": "Compaction extensions should pass correct data in before_compact event",
+      "classification": "credential-dependent interactive/LLM test; unverified, never counted as a pass",
+      "evidence": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/Q0/pinned-pi-q0.json"
+    },
+    {
+      "source": "packages/coding-agent/test/compaction-extensions.test.ts",
+      "testName": "Compaction extensions should use extension compaction even with different values",
+      "classification": "credential-dependent interactive/LLM test; unverified, never counted as a pass",
+      "evidence": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/Q0/pinned-pi-q0.json"
+    },
+    {
+      "source": "packages/coding-agent/test/compaction.test.ts",
+      "testName": "LLM summarization should generate a compaction result for the large session",
+      "classification": "credential-dependent interactive/LLM test; unverified, never counted as a pass",
+      "evidence": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/Q0/pinned-pi-q0.json"
+    },
+    {
+      "source": "packages/coding-agent/test/compaction.test.ts",
+      "testName": "LLM summarization should produce valid session after compaction",
+      "classification": "credential-dependent interactive/LLM test; unverified, never counted as a pass",
+      "evidence": "artifacts/parity/20261028T-review-fix-41e9b7e7/runs/Q0/pinned-pi-q0.json"
+    }
+  ],
+  "mismatchRegister": [
+    {
+      "id": "RPC-SYSMSG-SECTIONS",
+      "capability": "get_messages generated system message",
+      "classification": "confirmed-observable-difference-in-existing-paired-fixture",
+      "evidence": "docs/parity/fixtures/rpc-get-messages-system-baseline.md",
+      "observation": "PiSharp exposes generated instructions in sections.preamble; pinned Pi distinguishes preamble, tools, rules, docs and cwd sections.",
+      "requiredCheckpoint": "R7",
+      "resolution": "Re-run exact pinned process comparison; correct the projection if still different and retain a dedicated process regression."
+    },
+    {
+      "id": "RPC-NEW-SESSION-PARENT-TYPE",
+      "capability": "new_session.parentSession validation",
+      "classification": "historical-observation-requires-exact-pin-revalidation",
+      "evidence": "docs/parity/rpc-residual-audit-2026-09-28.md",
+      "observation": "An earlier Pi revision accepted truthy non-string parentSession values while PiSharp enforced a string contract.",
+      "requiredCheckpoint": "R12",
+      "resolution": "Probe pinned b06c1f2 before deciding whether correction is required."
+    },
+    {
+      "id": "RPC-CONTEXT-USAGE-ESTIMATE",
+      "capability": "get_session_stats.contextUsage",
+      "classification": "known-approximation-in-existing-paired-fixture",
+      "evidence": "docs/parity/fixtures/rpc-get-session-stats-baseline.md",
+      "observation": "A previous paired fixture reported Pi contextUsage.tokens 1422 and PiSharp 817 for the same logical session; exact estimator parity was open.",
+      "requiredCheckpoint": "R8",
+      "resolution": "Repeat with equivalent persisted system state and determine whether an in-scope exact correction or explicitly verified safety difference is justified."
+    },
+    {
+      "id": "RPC-SCOPED-THINKING-SUFFIX",
+      "capability": "set_model scoped :thinking selection",
+      "classification": "previously-open-gap-requires-exact-pin-process-test",
+      "evidence": "TODO.md RPC progress entry and docs/parity/fixtures/rpc-scoped-model-thinking-baseline.md",
+      "observation": "Scoped model selection was compared, while explicit scoped :thinking suffix behavior remained open.",
+      "requiredCheckpoint": "R9",
+      "resolution": "Capture pinned Pi and PiSharp process behavior for explicit suffix and precedence cases."
+    },
+    {
+      "id": "RPC-PROVIDER-STREAMING-AND-CANCEL",
+      "capability": "provider streaming, partial tool arguments and cancellation",
+      "classification": "unverified-across-provider-families",
+      "evidence": "docs/parity/rpc-residual-audit-2026-09-27.md",
+      "observation": "Existing raw tool-call coverage is narrow; partial argument snapshots and broader cancellation/error differentials remain open.",
+      "requiredCheckpoint": "R5/R6/R15",
+      "resolution": "Use deterministic local providers for all mandatory stream/error/cancellation scenarios."
+    },
+    {
+      "id": "RPC-EXTENSION-UI-LIFECYCLE",
+      "capability": "bidirectional RPC extension UI",
+      "classification": "not-covered-by-prior-native-terminal-ui-verification",
+      "evidence": "pinned Pi rpc-extension-ui.md and PiSharp RpcExtensionUiTransport.cs",
+      "observation": "Terminal extension UI parity does not prove the separate RPC request/response subprotocol, concurrency or shutdown behavior.",
+      "requiredCheckpoint": "R14",
+      "resolution": "Verify all nine RPC UI methods, pending dialogs and cross-protocol correlation with real CLI processes."
+    },
+    {
+      "id": "RPC-ACTIVE-SESSION-REPLACEMENT",
+      "capability": "switch/fork/clone during streaming and tool execution",
+      "classification": "partial-prior-coverage-requires-full-matrix",
+      "evidence": "docs/parity/fixtures/rpc-switch-abort-baseline.md and RPC active replacement process tests",
+      "observation": "Selected active replacement flows have evidence, but the complete pinned-Pi matrix for active provider/tool work, stale writes and next provider history is required.",
+      "requiredCheckpoint": "R12/R15",
+      "resolution": "Run all declared provider, tool, persistence and recovery cases against pinned Pi."
+    }
+  ]
+}

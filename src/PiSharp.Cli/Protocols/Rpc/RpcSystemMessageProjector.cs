@@ -6,17 +6,20 @@ namespace PiSharp.Cli.Protocols;
 
 internal static class RpcSystemMessageProjector
 {
-    public static JsonObject? Project(PiAgent agent)
+    public static JsonObject? Project(PiAgent agent, bool includeBeforeFirstRun = false)
     {
-        if (agent.SystemMessageTimestamp is not long timestamp) return null;
+        var timestamp = agent.SystemMessageTimestamp;
+        if (timestamp is null && !includeBeforeFirstRun) return null;
 
         var message = new JsonObject
         {
             ["role"] = "system",
             ["content"] = "",
-            ["sections"] = new JsonObject { ["preamble"] = agent.SystemInstructions },
-            ["timestamp"] = timestamp
+            ["sections"] = new JsonObject(),
+            ["timestamp"] = timestamp ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
         };
+        foreach (var (name, content) in agent.SystemMessageSections)
+            message["sections"]![name] = content;
         var tools = new JsonArray();
         foreach (var function in agent.ToolDeclarations)
         {

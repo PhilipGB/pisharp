@@ -84,6 +84,7 @@ public sealed class PiAgent
         _toolTranscripts.GetValue(session, _ => new());
 
     public string SystemInstructions => GetSystemInstructionsForCurrentLoadout();
+    internal IReadOnlyDictionary<string, string> SystemMessageSections => GetSystemMessageSections();
     internal JsonElement GetSharePresentation(AgentSession session)
     {
         var loadout = GetToolLoadout(session).Snapshot;
@@ -129,7 +130,7 @@ public sealed class PiAgent
         PiSharpExtensionContextConfiguration? extensionContextConfiguration = null,
         IReadOnlyDictionary<string, int>? thinkingBudgets = null,
         IReadOnlyList<PiSharpBeforeAgentStartHandlerRegistration>? beforeAgentStartHandlers = null,
-        int? maxOutputTokens = null)
+        int? maxOutputTokens = null, AgentRunRetryPolicy? summarizationRetryPolicy = null)
     {
         _contextTransforms = new(extensionContextTransforms);
         _extensionLifecycleHandlers = extensionLifecycleHandlers?.ToArray() ?? [];
@@ -163,7 +164,8 @@ public sealed class PiAgent
         _reasoning = reasoning;
         var effectiveRetryPolicy = retryPolicy ?? ProviderRetryPolicy.Default;
         _summarizer = new PiCompactionSummarizer(_routedChatClient,
-            () => Volatile.Read(ref _reasoning), () => Volatile.Read(ref _maxOutputTokens), effectiveRetryPolicy);
+            () => Volatile.Read(ref _reasoning), () => Volatile.Read(ref _maxOutputTokens),
+            summarizationRetryPolicy ?? AgentRunRetryPolicy.None, PublishSummaryEventAsync);
         _toolCatalog = new AgentToolCatalog(tools, selectedTools, excludedTools, noTools, noBuiltinTools,
             extensionTools, extensionToolRegistrations, initialActiveToolNames);
         lock (_runtimeToolGate)
@@ -259,6 +261,18 @@ public sealed class PiAgent
         var currentBase = GetSystemPromptOptionsForCurrentLoadout();
         var options = PiSystemPromptBuilder.ApplyChanges(runOverride.BaseOptions!, runOverride.EditedOptions!, currentBase);
         return RenderSystemPrompt(options, runOverride.AdditionalInstructions);
+    }
+
+    private IReadOnlyDictionary<string, string> GetSystemMessageSections()
+    {
+        var runOverride = Volatile.Read(ref _runSystemPromptOverride);
+        if (runOverride?.Text is not null) return new Dictionary<string, string>(StringComparer.Ordinal);
+
+        var currentBase = GetSystemPromptOptionsForCurrentLoadout();
+        var options = runOverride is null
+            ? currentBase
+            : PiSystemPromptBuilder.ApplyChanges(runOverride.BaseOptions!, runOverride.EditedOptions!, currentBase);
+        return PiSystemPromptBuilder.ProjectSections(options);
     }
 
     private string? GetAdditionalSystemInstructionsForCurrentTurn() =>
@@ -587,6 +601,12 @@ public sealed class PiAgent
         _events?.Invoke(item);
     }
 
+    private Task PublishSummaryEventAsync(AgentLifecycleEvent item)
+    {
+        PublishEvent(item);
+        return Task.CompletedTask;
+    }
+
     private void DispatchNativeToolEvent(AgentLifecycleEvent item)
     {
         var cancellationToken = Volatile.Read(ref _activeRunCancellation)?.Token ?? CancellationToken.None;
@@ -640,16 +660,22 @@ public sealed class PiAgent
             ? project(messages, force, token) : Task.FromResult(messages);
 
     public Task<CompactionSummary> SummarizeAsync(IReadOnlyList<ChatMessage> messages, string? focus,
-        CancellationToken cancellationToken = default, string? previousSummary = null, bool turnPrefix = false) =>
-        _summarizer.SummarizeAsync(messages, focus, cancellationToken, previousSummary, turnPrefix);
+        CancellationToken cancellationToken = default, string? previousSummary = null, bool turnPrefix = false,
+        Func<AgentLifecycleEvent, Task>? publishLifecycleEvent = null) =>
+        _summarizer.SummarizeAsync(messages, focus, cancellationToken, previousSummary, turnPrefix,
+            publishLifecycleEvent: publishLifecycleEvent);
 
     internal Task<CompactionSummary> SummarizeWithBudgetAsync(IReadOnlyList<ChatMessage> messages, string? focus,
-        CancellationToken cancellationToken, string? previousSummary, bool turnPrefix, int? reserveTokens) =>
-        _summarizer.SummarizeAsync(messages, focus, cancellationToken, previousSummary, turnPrefix, reserveTokens);
+        CancellationToken cancellationToken, string? previousSummary, bool turnPrefix, int? reserveTokens,
+        string compactionReason, Func<AgentLifecycleEvent, Task>? publishLifecycleEvent = null) =>
+        _summarizer.SummarizeAsync(messages, focus, cancellationToken, previousSummary, turnPrefix, reserveTokens,
+            compactionReason, publishLifecycleEvent);
 
     public Task<CompactionSummary> SummarizeBranchAsync(IReadOnlyList<ChatMessage> messages,
-        string? customInstructions, bool replaceInstructions, CancellationToken cancellationToken = default) =>
-        _summarizer.SummarizeBranchAsync(messages, customInstructions, replaceInstructions, cancellationToken);
+        string? customInstructions, bool replaceInstructions, CancellationToken cancellationToken = default,
+        Func<AgentLifecycleEvent, Task>? publishLifecycleEvent = null) =>
+        _summarizer.SummarizeBranchAsync(messages, customInstructions, replaceInstructions, cancellationToken,
+            publishLifecycleEvent);
 
     public sealed record CompactionSummary(string Text, UsageDetails? Usage, IReadOnlyList<UsageRecord>? PhysicalUsage = null);
 

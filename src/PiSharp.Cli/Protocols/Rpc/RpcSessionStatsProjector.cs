@@ -43,17 +43,13 @@ internal static class RpcSessionStatsProjector
             ["cacheWrite"] = cacheWrite,
             ["total"] = tokens
         };
-        decimal? cost = usage.Length == 0 || usage.Any(item => item.Cost is null)
-            ? null : usage.Sum(item => item.Cost!.Value);
+        decimal? cost = usage.All(item => item.Cost is not null)
+            ? usage.Sum(item => item.Cost!.Value) : null;
         result["cost"] = cost is decimal knownCost ? JsonValue.Create(knownCost) : null;
 
         if (TryGetContextWindow(model, out var contextWindow))
         {
-            var latestUsage = session.LatestContextUsageTokens();
-            var afterCompaction = session.Tree.ActivePath().Any(entry => entry.Type == "compaction");
-            long? contextTokens = afterCompaction && latestUsage is null
-                ? null
-                : latestUsage ?? SessionStatistics.Calculate(session).EstimatedContextTokens;
+            long? contextTokens = session.EstimatedContextUsageTokens();
             result["contextUsage"] = new JsonObject
             {
                 ["tokens"] = contextTokens is long value ? JsonValue.Create(value) : null,

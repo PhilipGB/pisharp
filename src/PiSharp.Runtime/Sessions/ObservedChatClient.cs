@@ -277,6 +277,9 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
             if (failure is null)
             {
                 var response = responseUpdates.ToChatResponse();
+                if (responseUpdates.SelectMany(update => update.Contents ?? [])
+                    .OfType<UsageContent>().LastOrDefault() is { } latestStreamUsage)
+                    response.Usage = latestStreamUsage.Details;
                 var physicalRoute = VirtualModelRequestHints.ReadHint(requestOptions)?.Execution?.Route;
                 if (physicalRoute is not null) RoutedChatClient.ApplyPhysicalIdentity(response, physicalRoute);
                 var assistantMessageReplaced = await FinalizeAssistantMessageAsync(response, assistantMessageStarted, cancellationToken,

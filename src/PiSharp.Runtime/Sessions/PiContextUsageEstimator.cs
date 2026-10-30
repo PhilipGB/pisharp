@@ -22,8 +22,8 @@ internal static class PiContextUsageEstimator
         ArgumentNullException.ThrowIfNull(tools);
         ArgumentNullException.ThrowIfNull(messages);
 
-        var toolJson = SerializeToolDeclarations(tools);
-        var toolCharacters = toolJson.Length;
+        var declarations = tools.ToArray();
+        var toolCharacters = declarations.Length == 0 ? 0 : SerializeToolDeclarations(declarations).Length;
         var messageCharacters = messages.Select(MessageCharacters).ToArray();
         long tokens = EstimateTokens(systemPromptCharacters + toolCharacters);
         foreach (var characters in messageCharacters) tokens += EstimateTokens(characters);
@@ -45,6 +45,12 @@ internal static class PiContextUsageEstimator
         foreach (var message in messages) tokens += EstimateTokens(MessageCharacters(message));
         return (int)Math.Min(int.MaxValue, tokens);
     }
+
+    internal static int EstimateMessage(ChatMessage message) =>
+        (int)Math.Min(int.MaxValue, EstimateTokens(MessageCharacters(message)));
+
+    internal static int EstimateCharacters(long characters) =>
+        (int)Math.Min(int.MaxValue, EstimateTokens(characters));
 
     private static List<Dictionary<string, object?>> ToolDeclarations(IEnumerable<AITool> tools)
     {

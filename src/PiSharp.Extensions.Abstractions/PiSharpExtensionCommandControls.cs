@@ -93,6 +93,13 @@ public sealed record PiSharpCompactionResult(
     PiSharpCompactionStatus Status,
     string? Error = null);
 
+/// <summary>Options for selecting a prior conversation branch from an extension command.</summary>
+public sealed record PiSharpTreeNavigationOptions(bool Summarize = false,
+    string? CustomInstructions = null, bool ReplaceInstructions = false, string? Label = null);
+
+/// <summary>Result of an extension-requested conversation tree navigation.</summary>
+public sealed record PiSharpTreeNavigationResult(bool Cancelled = false);
+
 /// <summary>
 /// Host-owned operations made available on a live extension command context. The value contains
 /// callbacks only; extensions receive the stable methods on <see cref="PiSharpExtensionCommandContext"/>.
@@ -109,6 +116,8 @@ public sealed class PiSharpExtensionCommandControlOperations
     private readonly Func<PiSharpThinkingLevel, CancellationToken, Task<PiSharpThinkingLevel>> _setThinkingLevelAsync;
     private readonly Action _abortCurrentRun;
     private readonly Func<CancellationToken, Task<PiSharpCompactionResult>> _compactCurrentSessionAsync;
+    private readonly Func<string, PiSharpTreeNavigationOptions?, CancellationToken,
+        Task<PiSharpTreeNavigationResult>>? _navigateTreeAsync;
     private readonly Action _requestShutdown;
 
     /// <summary>Creates the narrow control bridge used by a live CLI or protocol host.</summary>
@@ -123,7 +132,9 @@ public sealed class PiSharpExtensionCommandControlOperations
         Func<PiSharpThinkingLevel, CancellationToken, Task<PiSharpThinkingLevel>> setThinkingLevelAsync,
         Action abortCurrentRun,
         Func<CancellationToken, Task<PiSharpCompactionResult>> compactCurrentSessionAsync,
-        Action requestShutdown)
+        Action requestShutdown,
+        Func<string, PiSharpTreeNavigationOptions?, CancellationToken,
+            Task<PiSharpTreeNavigationResult>>? navigateTreeAsync = null)
     {
         ArgumentNullException.ThrowIfNull(getCommands);
         ArgumentNullException.ThrowIfNull(getActiveTools);
@@ -147,6 +158,7 @@ public sealed class PiSharpExtensionCommandControlOperations
         _setThinkingLevelAsync = setThinkingLevelAsync;
         _abortCurrentRun = abortCurrentRun;
         _compactCurrentSessionAsync = compactCurrentSessionAsync;
+        _navigateTreeAsync = navigateTreeAsync;
         _requestShutdown = requestShutdown;
     }
 
@@ -167,6 +179,12 @@ public sealed class PiSharpExtensionCommandControlOperations
     internal void AbortCurrentRun() => _abortCurrentRun();
     internal Task<PiSharpCompactionResult> CompactCurrentSessionAsync(CancellationToken cancellationToken) =>
         _compactCurrentSessionAsync(cancellationToken);
+    internal Task<PiSharpTreeNavigationResult> NavigateTreeAsync(string targetId,
+        PiSharpTreeNavigationOptions? options, CancellationToken cancellationToken) =>
+        _navigateTreeAsync is { } navigate
+            ? navigate(targetId, options, cancellationToken)
+            : Task.FromException<PiSharpTreeNavigationResult>(new InvalidOperationException(
+                "Tree navigation is not available in this extension command context."));
     internal void RequestShutdown() => _requestShutdown();
 
     private static IReadOnlyList<T> Snapshot<T>(IReadOnlyList<T> values)
@@ -279,6 +297,15 @@ public sealed partial class PiSharpExtensionCommandContext
     {
         EnsureControlContextActive();
         return RequireControlOperations().CompactCurrentSessionAsync(cancellationToken);
+    }
+
+    /// <summary>Selects a prior conversation branch, optionally summarizing the branch being left.</summary>
+    public Task<PiSharpTreeNavigationResult> NavigateTreeAsync(string targetId,
+        PiSharpTreeNavigationOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        EnsureControlContextActive();
+        ArgumentException.ThrowIfNullOrWhiteSpace(targetId);
+        return RequireControlOperations().NavigateTreeAsync(targetId, options, cancellationToken);
     }
 
     /// <summary>Requests graceful host shutdown through its normal application path.</summary>

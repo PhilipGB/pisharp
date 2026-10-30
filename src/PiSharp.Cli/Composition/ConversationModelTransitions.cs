@@ -56,7 +56,8 @@ internal sealed class ConversationModelTransitions(ActiveProjectRuntime projectB
         PiSharpExtensionModelSelectionSource source, CancellationToken token)
     {
         var nextSelection = await modelRuntimeController.ResolveRpcModelAsync(model, token);
-        var nextThinking = modelRuntimeController.ResolveThinkingLevelForModelSwitch(nextSelection, modelBinding.Thinking);
+        var nextThinking = modelRuntimeController.ResolveThinkingLevelForModelSwitch(nextSelection, modelBinding.Thinking,
+            honorScopedThinkingLevel: source == PiSharpExtensionModelSelectionSource.Cycle);
         await ApplySelectionAsync(nextSelection, nextThinking, source, token);
         return modelBinding.Selection.Model;
     }

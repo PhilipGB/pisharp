@@ -196,9 +196,19 @@ public sealed class RpcStateTests
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
+            var request = messages.Where(message => message.Role == ChatRole.User)
+                .Select(message => message.Text).LastOrDefault();
+            if (request?.Contains("<conversation>", StringComparison.Ordinal) == true)
+            {
+                SummaryCalls++;
+                SummaryStarted.TrySetResult();
+                await ReleaseSummary.Task.WaitAsync(cancellationToken);
+                yield return new ChatResponseUpdate(ChatRole.Assistant, "summary");
+                yield break;
+            }
+
             ProviderCalls++;
             yield return new ChatResponseUpdate(ChatRole.Assistant, "reply");
-            await Task.CompletedTask;
         }
 
         public object? GetService(Type serviceType, object? serviceKey = null) => null;

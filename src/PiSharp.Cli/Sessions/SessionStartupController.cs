@@ -78,7 +78,7 @@ internal static class SessionStartupController
         var connection = selection.Connection;
         var explicitConnection = cli.Local || cli.Provider is not null || cli.ModelOverride is not null ||
             Environment.GetEnvironmentVariable("PISHARP_MODEL") is not null || Environment.GetEnvironmentVariable("PISHARP_BASE_URL") is not null;
-        var savedThinking = !explicitConnection && cli.Thinking is null
+        var savedThinking = !explicitConnection && explicitThinking is null
             ? PiJsonlSessionInterchange.GetThinkingLevel(conversation) : null;
         if (savedThinking is not null) thinking = savedThinking;
         var savedProvider = conversation.Provider ?? modelRuntime.Providers.FirstOrDefault(item =>

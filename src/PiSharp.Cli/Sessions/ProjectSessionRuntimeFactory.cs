@@ -88,6 +88,20 @@ internal sealed class ProjectSessionRuntimeFactory(
             var thinking = ThinkingLevels.ValidateForModel(
                 PiJsonlSessionInterchange.GetThinkingLevel(conversation) ?? currentThinking,
                 selection.Model.Reasoning, selection.Model.ThinkingLevelMap);
+            var rpcMode = string.Equals(arguments.Mode, "rpc", StringComparison.Ordinal);
+            var hasExistingContext = conversation.ContextMessages().Count > 0;
+            var hasThinkingEntry = conversation.Tree.ActivePath().Any(entry => entry.Type == "thinking_level_change");
+            var restoredRpcSessionMetadata = rpcMode && (!hasExistingContext || !hasThinkingEntry);
+            if (rpcMode && !hasExistingContext)
+            {
+                conversation.SelectModel(selection.Connection.Model, selection.Connection.Endpoint?.ToString(),
+                    selection.Provider.Id);
+                conversation.AppendThinkingLevelChange(thinking);
+            }
+            else if (rpcMode && !hasThinkingEntry)
+            {
+                conversation.AppendThinkingLevelChange(thinking);
+            }
             var chat = ProviderChatClientFactory.Create(selection, project.Settings.Retry?.Provider);
             var controller = new ModelRuntimeController(modelRuntime, () => project.Settings,
                 Environment.GetEnvironmentVariable);
@@ -97,7 +111,8 @@ internal sealed class ProjectSessionRuntimeFactory(
                 Environment.GetEnvironmentVariable, $"{selection.Provider.Id}/{selection.Model.Id}");
             var pricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? selection.Model.Pricing;
 
-            if (targetExists && destinationPath is not null && (isPiJsonl || conversation.Model == "unknown"))
+            if (targetExists && destinationPath is not null &&
+                (isPiJsonl || conversation.Model == "unknown" || restoredRpcSessionMetadata))
             {
                 await project.Store.SaveAsync(conversation, destinationPath, cancellationToken);
                 createdImportedSession = isPiJsonl;

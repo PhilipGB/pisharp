@@ -62,7 +62,8 @@ public sealed class RpcPromptLifecycleTests
                 e.RootElement.GetProperty("message").GetProperty("role").GetString() == "user");
             var userMessageEnd = Assert.Single(events, e => e.RootElement.GetProperty("type").GetString() == "message_end" &&
                 e.RootElement.GetProperty("message").GetProperty("role").GetString() == "user");
-            Assert.Equal("hello", userMessageStart.RootElement.GetProperty("message").GetProperty("content").GetString());
+            Assert.Equal("hello", userMessageStart.RootElement.GetProperty("message").GetProperty("content")[0]
+                .GetProperty("text").GetString());
             var assistantMessageStartIndex = Array.FindIndex(events, e => e.RootElement.GetProperty("type").GetString() == "message_start" &&
                 e.RootElement.GetProperty("message").GetProperty("role").GetString() == "assistant");
             var assistantMessageEndIndex = Array.FindIndex(events, e => e.RootElement.GetProperty("type").GetString() == "message_end" &&
@@ -85,13 +86,14 @@ public sealed class RpcPromptLifecycleTests
             var runMessages = agentEnd.RootElement.GetProperty("messages");
             Assert.Equal(2, runMessages.GetArrayLength());
             Assert.Equal("user", runMessages[0].GetProperty("role").GetString());
-            Assert.Equal("hello", runMessages[0].GetProperty("content").GetString());
+            Assert.Equal("hello", runMessages[0].GetProperty("content")[0].GetProperty("text").GetString());
             Assert.Equal("assistant", runMessages[1].GetProperty("role").GetString());
             Assert.Equal("reply", runMessages[1].GetProperty("content")[0].GetProperty("text").GetString());
             Assert.True(JsonElement.DeepEquals(userMessageEnd.RootElement.GetProperty("message"), runMessages[0]));
             Assert.True(JsonElement.DeepEquals(events[assistantMessageEndIndex].RootElement.GetProperty("message"), runMessages[1]));
             var settled = Assert.Single(events, e => e.RootElement.GetProperty("type").GetString() == "agent_settled");
-            Assert.Equal(["type"], settled.RootElement.EnumerateObject().Select(property => property.Name));
+            Assert.Equal(["type", "aborted"], settled.RootElement.EnumerateObject().Select(property => property.Name));
+            Assert.False(settled.RootElement.GetProperty("aborted").GetBoolean());
             var settledIndex = Array.FindIndex(output.Lines(), line => line.Contains("\"type\":\"agent_settled\"", StringComparison.Ordinal));
             var endIndex = Array.FindIndex(output.Lines(), line => line.Contains("\"type\":\"agent_end\"", StringComparison.Ordinal));
             Assert.True(settledIndex > endIndex && endIndex > turnEndIndex);
@@ -126,21 +128,23 @@ public sealed class RpcPromptLifecycleTests
             Assert.Single(forkMessages.EnumerateArray());
             Assert.Equal("hello", forkMessages[0].GetProperty("text").GetString());
             var entriesResponse = Assert.Single(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
-                e.RootElement.GetProperty("id").GetString() == "entries" &&
-                e.RootElement.GetProperty("data").GetProperty("entries").GetArrayLength() == 4);
+                e.RootElement.GetProperty("id").GetString() == "entries");
+            Assert.Equal(3, entriesResponse.RootElement.GetProperty("data").GetProperty("entries").GetArrayLength());
             var entriesData = entriesResponse.RootElement.GetProperty("data");
             Assert.Equal(["entries", "leafId"], entriesData.EnumerateObject().Select(property => property.Name));
             Assert.False(entriesData.TryGetProperty("format", out _));
             Assert.Equal("message", entriesData.GetProperty("entries")[0].GetProperty("type").GetString());
             Assert.Equal(firstEntryId, entriesData.GetProperty("entries")[0].GetProperty("id").GetString());
-            Assert.Equal("session_info", entriesData.GetProperty("entries")[3].GetProperty("type").GetString());
-            Assert.Equal("my feature", entriesData.GetProperty("entries")[3].GetProperty("name").GetString());
+            Assert.Equal("session_info", entriesData.GetProperty("entries")[2].GetProperty("type").GetString());
+            Assert.Equal("my feature", entriesData.GetProperty("entries")[2].GetProperty("name").GetString());
             Assert.Equal(session.Tree.HeadId, entriesData.GetProperty("leafId").GetString());
             var cursorEntries = Assert.Single(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
                 e.RootElement.GetProperty("id").GetString() == "entries-after-cursor").RootElement.GetProperty("data");
-            Assert.Equal(3, cursorEntries.GetProperty("entries").GetArrayLength());
-            Assert.Equal(session.Tree.Entries[1].Id, cursorEntries.GetProperty("entries")[0].GetProperty("id").GetString());
-            Assert.Equal(session.Tree.Entries[2].Id, cursorEntries.GetProperty("entries")[1].GetProperty("id").GetString());
+            Assert.Equal(2, cursorEntries.GetProperty("entries").GetArrayLength());
+            Assert.Equal(entriesData.GetProperty("entries")[1].GetProperty("id").GetString(),
+                cursorEntries.GetProperty("entries")[0].GetProperty("id").GetString());
+            Assert.Equal(entriesData.GetProperty("entries")[2].GetProperty("id").GetString(),
+                cursorEntries.GetProperty("entries")[1].GetProperty("id").GetString());
             Assert.Equal(session.Tree.HeadId, cursorEntries.GetProperty("leafId").GetString());
             var treeResponse = Assert.Single(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
                 e.RootElement.GetProperty("id").GetString() == "tree" &&
@@ -152,9 +156,10 @@ public sealed class RpcPromptLifecycleTests
             Assert.Equal(["entry", "children"], rootNode.EnumerateObject().Select(property => property.Name));
             Assert.Equal(firstEntryId, rootNode.GetProperty("entry").GetProperty("id").GetString());
             Assert.Equal(1, rootNode.GetProperty("children").GetArrayLength());
-            var transcriptNode = rootNode.GetProperty("children")[0];
-            Assert.Equal("pisharp.tool_transcript", transcriptNode.GetProperty("entry").GetProperty("customType").GetString());
-            var assistantNode = transcriptNode.GetProperty("children")[0];
+            var assistantNode = rootNode.GetProperty("children")[0];
+            Assert.Equal("message", assistantNode.GetProperty("entry").GetProperty("type").GetString());
+            Assert.Equal("assistant", assistantNode.GetProperty("entry").GetProperty("message")
+                .GetProperty("role").GetString());
             Assert.Equal("session_info", assistantNode.GetProperty("children")[0]
                 .GetProperty("entry").GetProperty("type").GetString());
             Assert.Equal("my feature", assistantNode.GetProperty("children")[0]

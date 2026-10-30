@@ -1,0 +1,164 @@
+name: RPC parity evidence
+
+on:
+  push:
+    branches:
+      - milestone/rpc-protocol-command-parity
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: rpc-parity-evidence-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  generate-and-publish:
+    name: generate-and-publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      PISHARP_RPC_EVIDENCE_DIR: artifacts/parity/rpc-protocol-command-parity/run-${{ github.sha }}
+      PISHARP_TEST_OWNERSHIP_ORACLE: ${{ github.workspace }}/artifacts/parity/builtin-ownership/pinned.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/checkout@v4
+        with:
+          repository: earendil-works/pi
+          ref: b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6
+          path: artifacts/parity/pi-ownership-oracle
+          persist-credentials: false
+          clean: false
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+
+      - name: Install parity system tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes ripgrep
+          mkdir -p "$RUNNER_TEMP/pisharp-search-bin"
+          curl --fail --location --silent --show-error \
+            --retry 3 \
+            --output "$RUNNER_TEMP/pisharp-fd.tar.gz" \
+            https://github.com/sharkdp/fd/releases/download/v10.5.0/fd-v10.5.0-x86_64-unknown-linux-musl.tar.gz
+          echo "761c72dc8e120d85b22292063be8a796e2eeb20eb3e4f38b8fa2343ccf3514a7  $RUNNER_TEMP/pisharp-fd.tar.gz" | sha256sum --check
+          tar --extract --gzip --file "$RUNNER_TEMP/pisharp-fd.tar.gz" \
+            --directory "$RUNNER_TEMP/pisharp-search-bin" --strip-components=1 \
+            fd-v10.5.0-x86_64-unknown-linux-musl/fd
+          echo "$RUNNER_TEMP/pisharp-search-bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/pisharp-search-bin/fd" --version
+          rg --version
+
+      - run: python3 -m pip install --requirement tools/parity/requirements-images.txt
+      - run: npm ci --prefix tools/parity/terminal --ignore-scripts --no-audit --no-fund
+      - run: dotnet restore PiSharp.slnx
+      - run: npm ci --prefix artifacts/parity/pi-ownership-oracle --ignore-scripts --no-audit --no-fund
+      - name: Hydrate pinned Pi model data
+        run: npm --prefix artifacts/parity/pi-ownership-oracle run hydrate:model-data
+      - name: Build pinned Pi offline
+        run: npm --prefix artifacts/parity/pi-ownership-oracle run build:offline
+
+      - name: Capture pinned built-in ownership oracle
+        run: |
+          mkdir -p artifacts/parity/builtin-ownership
+          PI_OFFLINE=1 node tools/parity/builtin-coding-tool-probe.mjs \
+            artifacts/parity/pi-ownership-oracle /dev/null \
+            artifacts/parity/builtin-ownership/pinned.json --mutation-ownership-only
+
+      - name: Run RPC parity oracle unit tests
+        run: python3 -m unittest discover -s tools/parity/rpc_protocol -p 'test_*.py'
+
+      - name: Generate and independently verify the frozen RPC corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PISHARP_RPC_EVIDENCE_HEAD: ${{ github.sha }}
+        run: |
+          evidence_dir="$PISHARP_RPC_EVIDENCE_DIR"
+          mkdir -p "$evidence_dir"
+          checkpoints=(P0 P1 V0 V1 R1 R2 R3 R4 R5 R6 R7 R8 R9 R10 R11 R12 R13 R14 R15 D0 Q0)
+          for checkpoint in "${checkpoints[@]}"; do
+            python3 tools/parity/rpc_protocol/runner.py run \
+              --checkpoint "$checkpoint" \
+              --pi-checkout artifacts/parity/pi-ownership-oracle \
+              --evidence-dir "$evidence_dir/$checkpoint"
+          done
+          python3 tools/parity/rpc_protocol/runner.py run \
+            --checkpoint E0 \
+            --pi-checkout artifacts/parity/pi-ownership-oracle \
+            --evidence-dir "$evidence_dir/E0"
+          for checkpoint in "${checkpoints[@]}" E0; do
+            python3 tools/parity/rpc_protocol/verify.py check \
+              --checkpoint "$checkpoint" \
+              --evidence-dir "$evidence_dir/$checkpoint"
+          done
+
+      - name: Record evidence bundle source identity
+        if: success()
+        env:
+          PISHARP_RPC_EVIDENCE_HEAD: ${{ github.sha }}
+          PISHARP_RPC_EVIDENCE_RUN_ID: ${{ github.run_id }}
+          PISHARP_RPC_EVIDENCE_RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          import sys
+          from pathlib import Path
+
+          sys.path.insert(0, "tools/parity/rpc_protocol")
+          from verify import source_bound_case_count
+
+          root = Path(os.environ["PISHARP_RPC_EVIDENCE_DIR"])
+          e0_path = root / "E0/evidence.json"
+          if not e0_path.is_file():
+              raise SystemExit("E0 evidence is missing; no source identity can be published")
+          e0 = json.loads(e0_path.read_text(encoding="utf-8"))
+          source = e0["sourceBoundEvidence"]
+          record = {
+              "schemaVersion": 1,
+              "workflowName": "RPC parity evidence",
+              "event": "push",
+              "workflowRunId": int(os.environ["PISHARP_RPC_EVIDENCE_RUN_ID"]),
+              "workflowRunAttempt": int(os.environ["PISHARP_RPC_EVIDENCE_RUN_ATTEMPT"]),
+              "finalHeadCommit": os.environ["PISHARP_RPC_EVIDENCE_HEAD"],
+              "implementationSourceCommit": e0["implementationSourceCommit"],
+              "pinnedPiCommit": e0["piCommit"],
+              "sourceBoundCheckpointCount": len(source["checkpoints"]),
+              "sourceBoundCaseCount": source_bound_case_count(source),
+              "e0EvidencePath": "E0/evidence.json",
+              "e0EvidenceSha256": hashlib.sha256(e0_path.read_bytes()).hexdigest(),
+              "rawArtifactManifest": source["artifactManifest"],
+          }
+          (root / "publication.json").write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+          summary = Path(os.environ["GITHUB_STEP_SUMMARY"])
+          with summary.open("a", encoding="utf-8") as output:
+              output.write("## Source-bound RPC parity evidence\n\n")
+              output.write(f"- Head: `{record['finalHeadCommit']}`\n")
+              output.write(f"- Implementation source: `{record['implementationSourceCommit']}`\n")
+              output.write(f"- Source-bound cases: {record['sourceBoundCaseCount']}\n")
+              output.write(f"- Evidence artifact: `rpc-parity-evidence-{record['finalHeadCommit']}`\n")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rpc-parity-evidence-${{ github.sha }}
+          path: ${{ env.PISHARP_RPC_EVIDENCE_DIR }}/**
+          if-no-files-found: error
+          retention-days: 90

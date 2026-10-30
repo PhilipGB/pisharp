@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "milestone": "rpc-protocol-command-parity",
+  "checkpointId": "R4",
+  "contractSha256": "036c369054fbb50887629666f6b25ef76d8a9fbe856d00d4a79a2cf9609f0761",
+  "evidenceDirectory": "artifacts/parity/rpc-protocol-command-parity/r4-413ebc6e",
+  "evidenceJsonSha256": "85c6739292fae752db99d3d2cf4c7e6268aa33578dff68f8e51f18c0a4b61d5a",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "evidenceHeadSha": "413ebc6e8773996048c1dd3315594f4e00973857",
+  "implementationSourceSha": "413ebc6e8773996048c1dd3315594f4e00973857",
+  "sourceTreeClean": true,
+  "status": "passed",
+  "executedCaseCount": 12,
+  "requiredCaseCount": 12,
+  "verifierCounts": {
+    "required": 12,
+    "executed": 12,
+    "passed": 12,
+    "failed": 0,
+    "skipped": 0
+  },
+  "build": {
+    "warningsAsErrors": true,
+    "assemblySha256": "49cd6864c3ceb1fa6fb69cf0f2c06ce2ffd8cde172736759a7f77cea8a701988",
+    "logPath": "artifacts/parity/rpc-protocol-command-parity/r4-413ebc6e/pisharp-build.log",
+    "logSha256": "538e50daabe47b5398d47761745984efa783d7d1493579d4aa51c2fc5983fca8"
+  },
+  "comparison": "Each case matched two stable pinned-Pi processes and an independent PiSharp process.",
+  "cases": [
+    {
+      "caseId": "R4.steer-command-idle",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R4.followup-command-idle",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R4.steering-all-mode",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R4.steering-one-at-a-time-mode",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R4.followup-all-mode",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R4.followup-one-at-a-time-mode",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R4.steer-followup-precedence",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R4.multiple-concurrent-queue-updates",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R4.clear-queue-snapshot",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R4.queue-cancel-and-restore",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R4.tool-finishes-before-next-request",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R4.mode-change-persistence",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    }
+  ]
+}

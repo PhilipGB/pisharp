@@ -717,7 +717,18 @@ class ManagedPackageVerifierTests(unittest.TestCase):
         removal = next(item for item in inventory['capabilities'] if item['capabilityId'] == 'removal-listing')
         self.assertTrue(any(binding['runnerPath'] == 'tools/parity/managed_packages/package_adapters.py'
                             for binding in removal['executableCaseBindings']))
-        verify._validate_inventory(fixture_support._pi_checkout(), verify_selectors=False)
+        # This inventory is pinned to the managed-package milestone's historical base.
+        # Later milestones advance origin/main; keep this adapter unit test independent
+        # of that live branch base while preserving the verifier's production check.
+        runtime = verify._runtime_state()
+        historical_runtime = {**runtime, 'baseSha': inventory['pisharpSourceSha']}
+        with mock.patch.object(verify, '_runtime_state', return_value=historical_runtime):
+            verify._validate_inventory(fixture_support._pi_checkout(), verify_selectors=False)
+        with mock.patch.object(verify, '_runtime_state', return_value={**runtime, 'baseSha': '0' * 40}):
+            with self.assertRaisesRegex(
+                    verify.MandatoryFailure,
+                    'Capability inventory is not pinned to the actual post-merge branch base'):
+                verify._validate_inventory(fixture_support._pi_checkout(), verify_selectors=False)
 
     def test_exact_head_run_selection_ignores_stale_heads_and_other_events(self) -> None:
         runs = [

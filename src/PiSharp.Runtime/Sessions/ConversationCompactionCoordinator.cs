@@ -29,7 +29,7 @@ internal sealed class ConversationCompactionCoordinator(
     public async Task<ConversationCompactionResult?> CompactAsync(string? focus, CancellationToken cancellationToken,
         bool adoptExecutionHistory = true,
         NativeExtensions.PiSharpExtensionCompactionReason reason = NativeExtensions.PiSharpExtensionCompactionReason.Manual,
-        bool willRetry = false)
+        bool willRetry = false, Func<AgentLifecycleEvent, Task>? publishLifecycleEvent = null)
     {
         LastCompactionFromExtension = false;
         LastCompactionCancelledByExtension = false;
@@ -82,7 +82,7 @@ internal sealed class ConversationCompactionCoordinator(
                 throw new InvalidOperationException("Conversation changed during compaction.");
 
             var summary = customCompaction is null
-                ? await SummarizeAsync(plan, focus, cancellationToken).ConfigureAwait(false)
+                ? await SummarizeAsync(plan, focus, reason, cancellationToken, publishLifecycleEvent).ConfigureAwait(false)
                 : new PiAgent.CompactionSummary(customCompaction.Summary,
                     customCompaction.Usage is null ? null : CreateUsageDetails(customCompaction.Usage));
             summaryText = customCompaction is null
@@ -100,14 +100,23 @@ internal sealed class ConversationCompactionCoordinator(
                 var usageRecords = CompactionUsageAccounting.Records(summary, conversation.Model, getPricing());
                 var usage = CompactionUsageAccounting.Aggregate(usageRecords);
                 conversation.AppendCompaction(plan, summaryText, keepRecentTokens, compactionTokensBefore,
-                    resultDetails, firstKeptEntryId, customCompaction?.Details, LastCompactionFromExtension, usage);
+                    resultDetails, firstKeptEntryId, customCompaction?.Details, LastCompactionFromExtension, usage,
+                    CurrentSystemMessage());
                 foreach (var record in usageRecords) conversation.AppendUsage(record);
                 var messages = conversation.ContextMessages();
                 var restored = adoptExecutionHistory ? await restoreHistory(messages, cancellationToken) : null;
                 if (save is not null) await save(cancellationToken);
                 if (restored is not null) adoptHistory(restored, messages.Count);
+                long projectedTokensAfter = 0;
+                foreach (var entry in conversation.CompactionContextEntries(out _))
+                    foreach (var message in entry.Messages)
+                        projectedTokensAfter += PiContextUsageEstimator.EstimateMessage(message);
+                if (reason != NativeExtensions.PiSharpExtensionCompactionReason.Manual)
+                    projectedTokensAfter += PiContextUsageEstimator.EstimateCharacters(
+                        agent.SystemMessageSections.Values.Sum(section => (long)section.Length));
+                var estimatedTokensAfter = (int)Math.Min(int.MaxValue, projectedTokensAfter);
                 return new ConversationCompactionResult(summaryText, firstKeptEntryId, compactionTokensBefore,
-                    ConversationCompactionMetadata.EstimateTokens(messages), usage, resultDetails,
+                    estimatedTokensAfter, usage, resultDetails,
                     LastCompactionFromExtension, customCompaction?.Details);
             }
             catch
@@ -209,12 +218,17 @@ internal sealed class ConversationCompactionCoordinator(
                 var recoveryBoundary = conversation.RecoveryOmittedAssistantAfter(entries[cutIndex].SourceIndex);
                 if (recoveryBoundary is not null)
                 {
-                    var recoveryTurnStart = FindTurnStart(entries, cutIndex, start);
+                    var recoverySourceIndex = path.ToList().FindIndex(entry => entry.Id == recoveryBoundary);
+                    var recoveryEnd = entries.ToList().FindIndex(entry => entry.SourceIndex >= recoverySourceIndex);
+                    if (recoveryEnd < 0) recoveryEnd = entries.Count;
+                    var recoveryTurnStart = recoveryEnd > start
+                        ? FindTurnStart(entries, recoveryEnd - 1, start)
+                        : -1;
                     var recoverySplitTurn = recoveryTurnStart >= start;
                     var recoveryHistoryEnd = recoverySplitTurn ? recoveryTurnStart : cutIndex + 1;
                     var recoveryHistory = SummarizableMessages(entries, start, recoveryHistoryEnd);
                     var recoveryTurnPrefix = recoverySplitTurn
-                        ? SummarizableMessages(entries, recoveryTurnStart, cutIndex + 1)
+                        ? SummarizableMessages(entries, recoveryTurnStart, recoveryEnd)
                         : [];
                     if (recoveryHistory.Count > 0 || recoveryTurnPrefix.Count > 0)
                         return new ConversationSession.CompactionPlan(recoveryBoundary, recoveryHistory,
@@ -237,12 +251,15 @@ internal sealed class ConversationCompactionCoordinator(
     }
 
     private async Task<PiAgent.CompactionSummary> SummarizeAsync(ConversationSession.CompactionPlan plan,
-        string? focus, CancellationToken cancellationToken)
+        string? focus, NativeExtensions.PiSharpExtensionCompactionReason reason,
+        CancellationToken cancellationToken, Func<AgentLifecycleEvent, Task>? publishLifecycleEvent)
     {
         var reserveTokens = getPolicy()?.ReserveTokens;
+        var reasonText = reason.ToString().ToLowerInvariant();
         if (!plan.IsSplitTurn)
             return await agent.SummarizeWithBudgetAsync(plan.MessagesToSummarize, focus, cancellationToken,
-                previousSummary: plan.PreviousSummary, turnPrefix: false, reserveTokens: reserveTokens);
+                previousSummary: plan.PreviousSummary, turnPrefix: false, reserveTokens: reserveTokens,
+                compactionReason: reasonText, publishLifecycleEvent: publishLifecycleEvent);
 
         var historyText = plan.PreviousSummary ?? "No prior history.";
         UsageDetails? usage = null;
@@ -250,31 +267,44 @@ internal sealed class ConversationCompactionCoordinator(
         if (plan.MessagesToSummarize.Count > 0)
         {
             var history = await agent.SummarizeWithBudgetAsync(plan.MessagesToSummarize, focus, cancellationToken,
-                previousSummary: plan.PreviousSummary, turnPrefix: false, reserveTokens: reserveTokens);
+                previousSummary: plan.PreviousSummary, turnPrefix: false, reserveTokens: reserveTokens,
+                compactionReason: reasonText, publishLifecycleEvent: publishLifecycleEvent);
             historyText = history.Text;
             usage = history.Usage;
             if (history.PhysicalUsage is { } historyUsage) physicalUsage.AddRange(historyUsage);
         }
 
         var turn = await agent.SummarizeWithBudgetAsync(plan.TurnPrefixMessages ?? [], null, cancellationToken,
-            previousSummary: null, turnPrefix: true, reserveTokens: reserveTokens);
+            previousSummary: null, turnPrefix: true, reserveTokens: reserveTokens,
+            compactionReason: reasonText, publishLifecycleEvent: publishLifecycleEvent);
         usage = AddUsage(usage, turn.Usage);
         if (turn.PhysicalUsage is { } turnUsage) physicalUsage.AddRange(turnUsage);
         return new PiAgent.CompactionSummary(
             $"{historyText}\n\n---\n\n**Turn Context (split turn):**\n\n{turn.Text}", usage, physicalUsage.Count > 0 ? physicalUsage : null);
     }
 
+    private JsonElement? CurrentSystemMessage()
+    {
+        if (agent.SystemMessageTimestamp is null &&
+            !conversation.ContextMessages().Any(message => message.Role == ChatRole.System))
+            return null;
+
+        var sections = agent.SystemMessageSections;
+        if (sections.Count > 0)
+            return JsonSerializer.SerializeToElement(new { role = "system", content = "", sections });
+
+        var instructions = agent.SystemInstructions;
+        return string.IsNullOrEmpty(instructions)
+            ? null
+            : JsonSerializer.SerializeToElement(new { role = "system", content = instructions });
+    }
+
     private int EstimateContextTokens()
     {
-        var context = conversation.ContextMessages();
-        var withSystem = new List<ChatMessage>(context.Count + 1)
-        {
-            new(ChatRole.System, agent.SystemInstructions)
-        };
-        withSystem.AddRange(context);
-        var messages = ConversationCompactionMetadata.EstimateTokens(withSystem);
-        var tools = JsonSerializer.Serialize(agent.ToolDeclarations, AIJsonUtilities.DefaultOptions).Length;
-        return (int)Math.Min(int.MaxValue, (long)messages + (tools + 3L) / 4);
+        var usage = conversation.ProjectContextUsageForEstimate();
+        if (usage.HasValidAssistantUsage && !usage.IsInvalidated)
+            return agent.EstimateContextTokens(usage.UsageTokens, usage.TrailingMessages);
+        return agent.EstimateContextTokens(conversation.ContextMessages());
     }
 
     private static int EstimateEntryTokens(ConversationContextProjection.CompactionContextEntry entry)

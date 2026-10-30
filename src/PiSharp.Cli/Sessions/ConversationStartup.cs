@@ -1,4 +1,5 @@
 using PiSharp.Cli.Composition;
+using PiSharp.Extensions.Abstractions;
 using PiSharp.Runtime.Codemode;
 using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Sessions;
@@ -55,6 +56,14 @@ internal static class ConversationStartup
             using var initialNameChange = cli.SessionName is null ? null : conversation.BeginSessionNameChange(cli.SessionName);
             if (!cli.NoSession) sessionPath ??= store.NewPath(conversation);
             var initialPath = sessionPath;
+            if (string.Equals(cli.Mode, "rpc", StringComparison.Ordinal) &&
+                startupConversation.StartReason == PiSharpExtensionSessionStartReason.Startup &&
+                conversation.Tree.Entries.Count == 0)
+            {
+                conversation.SelectModel(selection.Connection.Model, selection.Connection.Endpoint?.ToString(),
+                    selection.Provider.Id);
+                conversation.AppendThinkingLevelChange(thinking);
+            }
             conversationRun = await runComposition.OpenAsync(modelBinding, agent, conversation, initialPath);
             if (startupModel.RebuildRuntime)
                 await PiSharpExtensionSelectionEvents.PublishRestoreAsync(agent, initialSelection, initialThinking,

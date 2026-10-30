@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "milestone": "rpc-protocol-command-parity",
+  "checkpointId": "R8",
+  "contractSha256": "036c369054fbb50887629666f6b25ef76d8a9fbe856d00d4a79a2cf9609f0761",
+  "evidenceDirectory": "artifacts/parity/rpc-protocol-command-parity/r8-223f8f07",
+  "evidenceJsonSha256": "e97cd871be28bb6c0d976c690e7300d305669c7c1ef4a876cdff0c19b17b0bd3",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "evidenceHeadSha": "223f8f071b0aba831e0e74d0e7127771a4cc34fb",
+  "implementationSourceSha": "223f8f071b0aba831e0e74d0e7127771a4cc34fb",
+  "sourceTreeClean": true,
+  "status": "passed",
+  "executedCaseCount": 6,
+  "requiredCaseCount": 6,
+  "verifierCounts": {
+    "required": 6,
+    "executed": 6,
+    "passed": 6,
+    "failed": 0,
+    "skipped": 0
+  },
+  "build": {
+    "command": "dotnet build src/PiSharp.Cli/PiSharp.Cli.csproj --no-restore --warnaserror",
+    "exitCode": 0,
+    "assemblySha256": "545980dc0f98a0b22d0874fd494f469e3e646fc84e6339011ce7e3b6fe1f7109",
+    "logPath": "pisharp-build.log",
+    "logSha256": "abcf32c8a92d952c265b8bed1d77fb6e394860c51e60412680af3848c5baa80c"
+  },
+  "comparison": "Each case matched two stable pinned-Pi processes and a separately started PiSharp process.",
+  "nativeSummaryGeneration": "RequestedBranchSummaryUsesMafAndPersistsItsUsage generated and persisted the billed native summary using the deterministic fake MAF client. The runner retained the generated native and Pi JSONL sessions as hashed artifacts; the Pi input represents unbilled scaffold assistant messages with complete zero usage records while preserving billed summary usage.",
+  "focusedDotnetTests": "20/20 passed; zero failures/skips",
+  "summaryGenerationRegressionInRunner": "1/1 passed; emitted both persisted session formats",
+  "verifierUnitTests": "16/16 passed; zero failures/skips",
+  "changedFileFormatVerification": "Passed with dotnet format whitespace --verify-no-changes --include changed C# files.",
+  "cases": [
+    {
+      "caseId": "R8.native-summary-generation",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R8.native-summary-persisted-reload",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R8.imported-pi-summary",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R8.mixed-native-imported-summaries",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R8.cost-and-token-fields",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    },
+    {
+      "caseId": "R8.empty-and-zero-usage",
+      "passed": true,
+      "skipped": false,
+      "independentPiCalibrationMatched": true,
+      "pinnedPiAndPiSharpMatched": true
+    }
+  ]
+}

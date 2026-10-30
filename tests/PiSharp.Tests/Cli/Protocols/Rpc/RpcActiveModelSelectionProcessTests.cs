@@ -64,14 +64,8 @@ public sealed class RpcActiveModelSelectionProcessTests
             {
                 Assert.Equal("model-one", request.RootElement.GetProperty("model").GetString());
             }
-            compact.Response.StatusCode = (int)HttpStatusCode.OK;
-            compact.Response.ContentType = "application/json";
-            await using (var writer = new StreamWriter(compact.Response.OutputStream))
-            {
-                await writer.WriteAsync("""{"id":"model-one-compaction","object":"chat.completion","created":1,"model":"model-one","choices":[{"index":0,"message":{"role":"assistant","content":"compacted current model"},"finish_reason":"stop"}],"usage":{"prompt_tokens":12,"completion_tokens":4,"total_tokens":16}}""");
-                await writer.FlushAsync();
-            }
-            compact.Response.Close();
+            await WriteSseResponseAsync(compact, "model-one-compaction", "model-one",
+                new { role = "assistant", content = "compacted current model" }, "stop");
         }, timeout.Token);
 
         try
@@ -196,14 +190,15 @@ public sealed class RpcActiveModelSelectionProcessTests
             var entries = session.RootElement.GetProperty("Entries").EnumerateArray().ToArray();
             var modelChanges = entries.Select((entry, index) => (entry, index))
                 .Where(item => item.entry.GetProperty("Type").GetString() == "model_change").ToArray();
-            Assert.Equal(["model-two", "model-one"], modelChanges.Select(item =>
+            Assert.Equal(["model-three", "model-two", "model-one"], modelChanges.Select(item =>
                 item.entry.GetProperty("Payload").GetProperty("model").GetString()));
             Assert.All(modelChanges, item => Assert.Equal("fixture", item.entry.GetProperty("Payload").GetProperty("provider").GetString()));
             var assistantResponseIndex = Array.FindIndex(entries, entry => entry.GetProperty("Type").GetString() == "chat" &&
                 entry.GetProperty("Payload").GetProperty("Message").GetProperty("role").GetString() == "assistant");
             var toolOutcomeIndex = Array.FindIndex(entries, entry => entry.GetProperty("Type").GetString() == "tool_outcome");
-            Assert.True(assistantResponseIndex >= 0 && modelChanges[0].index > assistantResponseIndex &&
-                modelChanges[1].index > modelChanges[0].index && modelChanges[1].index < toolOutcomeIndex);
+            Assert.True(assistantResponseIndex >= 0 && modelChanges[0].index < assistantResponseIndex &&
+                modelChanges[1].index > assistantResponseIndex && modelChanges[2].index > modelChanges[1].index &&
+                modelChanges[2].index < toolOutcomeIndex);
         }
         finally
         {

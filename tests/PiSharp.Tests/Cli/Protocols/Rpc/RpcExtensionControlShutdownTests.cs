@@ -38,7 +38,7 @@ public sealed class RpcExtensionControlShutdownTests
                 new ConversationSession(workingDirectory, "fixture", null));
             var service = new RpcMode(new CommandReader(channel.Reader), output, run,
                 extensions: registration,
-                createCommandControlOperations: (abort, cancel, shutdown) =>
+                createCommandControlOperations: (abort, cancel, shutdown, _) =>
                     new PiSharpExtensionCommandControlOperations(
                         static () => [], static () => [], static () => [], static () => null,
                         static _ => { },

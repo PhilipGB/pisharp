@@ -106,18 +106,20 @@ internal sealed class ModelRuntimeController(
         return (null, null);
     }
 
-    public string ResolveThinkingLevelForModelSwitch(ModelSelection selection, string currentLevel)
+    public string ResolveThinkingLevelForModelSwitch(ModelSelection selection, string currentLevel,
+        bool honorScopedThinkingLevel = true)
     {
-        var requested = ResolveRequestedThinkingLevelForModelSwitch(selection, currentLevel);
+        var requested = ResolveRequestedThinkingLevelForModelSwitch(selection, currentLevel, honorScopedThinkingLevel);
         return ThinkingLevels.ValidateForModel(requested, selection.Model.Reasoning,
             selection.Model.ThinkingLevelMap);
     }
 
-    internal string ResolveRequestedThinkingLevelForModelSwitch(ModelSelection selection, string currentLevel)
+    internal string ResolveRequestedThinkingLevelForModelSwitch(ModelSelection selection, string currentLevel,
+        bool honorScopedThinkingLevel = true)
     {
         var settings = getSettings();
         return selection.RequestedThinkingLevel ??
-            providers.GetScopeThinkingLevel(selection.Provider.Id, selection.Model.Id) ??
+            (honorScopedThinkingLevel ? providers.GetScopeThinkingLevel(selection.Provider.Id, selection.Model.Id) : null) ??
             settings.GetModelThinkingLevel(selection) ??
             settings.DefaultThinkingLevel ?? currentLevel ?? ThinkingLevels.Default;
     }

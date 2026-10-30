@@ -47,6 +47,26 @@ public sealed class PiJsonlSessionInterchangeTests
         Assert.Equal(parentPath, header.RootElement.GetProperty("parentSession").GetString());
     }
 
+    [Theory]
+    [InlineData("7")]
+    [InlineData("{\"source\":\"rpc\"}")]
+    [InlineData("[]")]
+    public void TruthyNonStringParentSessionValuesRoundTripThroughNativeAndPiHeaders(string jsonValue)
+    {
+        using var parentSession = JsonDocument.Parse(jsonValue);
+        var session = new ConversationSession(Path.GetFullPath(Path.GetTempPath()), "fixture-model", null,
+            "fixture", parentSessionValue: parentSession.RootElement);
+
+        var native = ConversationSession.Parse(session.ToJson());
+        using var nativeDocument = JsonDocument.Parse(native.ToJson());
+        Assert.Equal(parentSession.RootElement.GetRawText(),
+            nativeDocument.RootElement.GetProperty("ParentSessionPath").GetRawText());
+
+        var exported = PiJsonlSessionInterchange.Export(native);
+        using var header = JsonDocument.Parse(exported.Split('\n', StringSplitOptions.RemoveEmptyEntries)[0]);
+        Assert.Equal(parentSession.RootElement.GetRawText(), header.RootElement.GetProperty("parentSession").GetRawText());
+    }
+
     [Fact]
     public void NativeReasoningSignatureSurvivesPiJsonlExportAndReimport()
     {
@@ -173,7 +193,10 @@ public sealed class PiJsonlSessionInterchangeTests
         var messages = PiSessionRunProjection.ProjectRunMessages(session, runStart, "openai-completions");
 
         Assert.Equal(3, messages.Count);
-        Assert.Equal("new prompt", messages[0]!["content"]!.GetValue<string>());
+        var userContent = messages[0]!["content"]!.AsArray();
+        var userText = Assert.Single(userContent);
+        Assert.Equal("text", userText!["type"]!.GetValue<string>());
+        Assert.Equal("new prompt", userText["text"]!.GetValue<string>());
         Assert.Equal("toolUse", messages[1]!["stopReason"]!.GetValue<string>());
         Assert.Equal("openai-completions", messages[1]!["api"]!.GetValue<string>());
         Assert.Equal("read", messages[2]!["toolName"]!.GetValue<string>());

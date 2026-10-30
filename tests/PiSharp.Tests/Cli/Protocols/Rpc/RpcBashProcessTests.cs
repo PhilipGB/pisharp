@@ -45,8 +45,9 @@ public sealed class RpcBashProcessTests
             Assert.Equal("extension: bash", response.RootElement.GetProperty("data").GetProperty("output").GetString());
             using var update = JsonDocument.Parse(Assert.Single(lines, line =>
                 line.Contains("bash_execution_update", StringComparison.Ordinal)));
-            Assert.Equal("extension-bash", update.RootElement.GetProperty("data").GetProperty("OperationId").GetString());
-            Assert.Equal("extension: bash update", update.RootElement.GetProperty("data").GetProperty("Text").GetString());
+            Assert.Equal("bash_execution_update", update.RootElement.GetProperty("type").GetString());
+            Assert.Equal("extension-bash", update.RootElement.GetProperty("id").GetString());
+            Assert.Equal("extension: bash update", update.RootElement.GetProperty("delta").GetString());
         }
         finally
         {
@@ -177,7 +178,9 @@ public sealed class RpcBashProcessTests
             foreach (var line in updates)
             {
                 using var update = JsonDocument.Parse(line);
-                Assert.Equal("process-bash", update.RootElement.GetProperty("data").GetProperty("OperationId").GetString());
+                Assert.Equal("bash_execution_update", update.RootElement.GetProperty("type").GetString());
+                Assert.Equal("process-bash", update.RootElement.GetProperty("id").GetString());
+                Assert.True(update.RootElement.GetProperty("delta").GetString() is not null);
             }
 
             await WriteCommandAsync(process, new { id = "process-entries", type = "get_entries" }, timeout.Token);
@@ -187,7 +190,8 @@ public sealed class RpcBashProcessTests
             using (var response = JsonDocument.Parse(Assert.Single(inspectionLines, line =>
                 line.Contains("\"id\":\"process-entries\"", StringComparison.Ordinal))))
             {
-                var entry = Assert.Single(response.RootElement.GetProperty("data").GetProperty("entries").EnumerateArray());
+                var entry = Assert.Single(response.RootElement.GetProperty("data").GetProperty("entries")
+                    .EnumerateArray(), item => item.GetProperty("type").GetString() == "message");
                 Assert.Equal("message", entry.GetProperty("type").GetString());
                 var bashExecution = entry.GetProperty("message");
                 Assert.Equal("bashExecution", bashExecution.GetProperty("role").GetString());

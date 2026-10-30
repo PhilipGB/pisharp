@@ -236,7 +236,7 @@ public sealed class PiJsonlSessionRecoveryProcessTests
             Assert.Equal("read-no-cwd", response.RootElement.GetProperty("id").GetString());
             Assert.True(response.RootElement.GetProperty("success").GetBoolean());
             var message = Assert.Single(response.RootElement.GetProperty("data").GetProperty("messages").EnumerateArray());
-            Assert.Equal("hello", message.GetProperty("content").GetString());
+            Assert.Equal("hello", message.GetProperty("content")[0].GetProperty("text").GetString());
             Assert.Equal(source, await File.ReadAllTextAsync(sourcePath));
         }
         finally

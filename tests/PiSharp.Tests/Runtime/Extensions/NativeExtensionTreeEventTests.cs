@@ -106,7 +106,8 @@ public sealed class NativeExtensionTreeEventTests
             var client = new SummaryClient("generated branch summary");
             var run = await OpenRunAsync(workingDirectory, conversation, new ExtensionRegistration(),
                 token => store.SaveAsync(conversation, path, token), path, chatClient: client,
-                reasoning: new ReasoningOptions { Effort = ReasoningEffort.High });
+                reasoning: new ReasoningOptions { Effort = ReasoningEffort.High },
+                pricing: new ModelPricing(2, 3, CachedInput: 1, CachedWrite: 4));
 
             await run.NavigateTreeAsync(targetLeaf, new ConversationTreeSelectionOptions(Summarize: true));
 
@@ -128,13 +129,35 @@ public sealed class NativeExtensionTreeEventTests
             Assert.Contains("<read-files>\nnotes.md\n</read-files>", conversation.ContextMessages().Last().Text, StringComparison.Ordinal);
             Assert.Equal("notes.md", summaryEntry.Payload.GetProperty("details").GetProperty("readFiles")[0].GetString());
             Assert.Equal("branch_summary", Assert.Single(conversation.ActiveUsage()).Source);
-            Assert.Equal(20, Assert.Single(conversation.ActiveUsage()).TotalTokens);
+            var generatedUsage = Assert.Single(conversation.ActiveUsage());
+            Assert.Equal(17, generatedUsage.InputTokens);
+            Assert.Equal(3, generatedUsage.OutputTokens);
+            Assert.Equal(5, generatedUsage.CachedInputTokens);
+            Assert.Equal(2, generatedUsage.CachedWriteTokens);
+            Assert.Equal(27, generatedUsage.TotalTokens);
+            Assert.Equal(0.000056m, generatedUsage.Cost);
 
             var loaded = await store.LoadAsync(path);
             var loadedUsage = Assert.Single(loaded.ActiveUsage());
             var rpcStats = RpcSessionStatsProjector.Project(loaded, path, null, null);
-            Assert.Equal(loadedUsage.TotalTokens, SessionStatistics.Calculate(loaded).BilledTokens);
+            var sessionStats = SessionStatistics.Calculate(loaded);
+            Assert.Equal(loadedUsage.TotalTokens, sessionStats.BilledTokens);
+            Assert.Equal(loadedUsage.Cost, sessionStats.Cost);
+            Assert.Equal(17, rpcStats["tokens"]!["input"]!.GetValue<long>());
+            Assert.Equal(3, rpcStats["tokens"]!["output"]!.GetValue<long>());
+            Assert.Equal(5, rpcStats["tokens"]!["cacheRead"]!.GetValue<long>());
+            Assert.Equal(2, rpcStats["tokens"]!["cacheWrite"]!.GetValue<long>());
             Assert.Equal(loadedUsage.TotalTokens, rpcStats["tokens"]!["total"]!.GetValue<long>());
+            Assert.Equal(loadedUsage.Cost, rpcStats["cost"]!.GetValue<decimal>());
+
+            var generatedFixtureDirectory = Environment.GetEnvironmentVariable("PISHARP_RPC_R8_FIXTURE_OUTPUT_DIR");
+            if (!string.IsNullOrWhiteSpace(generatedFixtureDirectory))
+            {
+                Directory.CreateDirectory(generatedFixtureDirectory);
+                File.Copy(path, Path.Combine(generatedFixtureDirectory, "generated.session.json"), overwrite: true);
+                await File.WriteAllTextAsync(Path.Combine(generatedFixtureDirectory, "generated.jsonl"),
+                    PiJsonlSessionInterchange.Export(loaded));
+            }
         }
         finally { Directory.Delete(workingDirectory, recursive: true); }
     }
@@ -156,7 +179,7 @@ public sealed class NativeExtensionTreeEventTests
             var exception = await Assert.ThrowsAsync<IOException>(() =>
                 run.NavigateTreeAsync(targetLeaf, new ConversationTreeSelectionOptions(Summarize: true)));
 
-            Assert.Equal("summary failed", exception.Message);
+            Assert.Equal("Summarization failed: summary failed", exception.Message);
             Assert.Equal(oldLeaf, conversation.Tree.HeadId);
             Assert.Equal(oldLeaf, (await store.LoadAsync(path)).Tree.HeadId);
             Assert.DoesNotContain(conversation.Tree.Entries, node => node.Type == "branch_summary");
@@ -590,7 +613,14 @@ public sealed class NativeExtensionTreeEventTests
                 AdditionalProperties = new()
             })
             {
-                Usage = new UsageDetails { InputTokenCount = 17, OutputTokenCount = 3, TotalTokenCount = 20 }
+                Usage = new UsageDetails
+                {
+                    InputTokenCount = 22,
+                    OutputTokenCount = 3,
+                    CachedInputTokenCount = 5,
+                    TotalTokenCount = 27,
+                    AdditionalCounts = new() { ["cacheWriteTokens"] = 2 }
+                }
             });
         }
 
@@ -598,8 +628,22 @@ public sealed class NativeExtensionTreeEventTests
             ChatOptions? options = null,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            await Task.CompletedTask;
-            yield break;
+            Calls++;
+            LastRequest = messages.ToArray();
+            LastOptions = options;
+            if (failure is not null) throw failure;
+            yield return new ChatResponseUpdate(ChatRole.Assistant, answer);
+            yield return new ChatResponseUpdate(ChatRole.Assistant,
+            [
+                new UsageContent(new UsageDetails
+                {
+                    InputTokenCount = 22,
+                    OutputTokenCount = 3,
+                    CachedInputTokenCount = 5,
+                    TotalTokenCount = 27,
+                    AdditionalCounts = new() { ["cacheWriteTokens"] = 2 }
+                })
+            ]);
         }
 
         public object? GetService(Type serviceType, object? serviceKey = null) => null;

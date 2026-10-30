@@ -164,7 +164,8 @@ internal sealed class TerminalSessionNavigation(ActiveProjectRuntime projectBind
         {
             await projectTransitions.BeforeSessionSwitchAsync(PiSharpExtensionSessionSwitchReason.New,
                 targetSessionFile: null, CancellationToken.None);
-            branch = await projectTransitions.Sessions.NewAsync(conversationBinding.Conversation, conversationBinding.Path, conversationBinding.Path);
+            branch = await projectTransitions.Sessions.NewAsync(conversationBinding.Conversation,
+                conversationBinding.Path, conversationBinding.Path, conversationBinding.Run.ThinkingLevel);
         }
         await projectTransitions.AdoptSessionBranchAsync(branch, reason);
         presentation.LoadSessionTranscript();
