@@ -13726,8 +13726,8 @@
     "published_head_before_review_correction": "763f008a347282078b86946b398e9229dd930f06"
   },
   "rpc_protocol_command_parity_milestone": {
-    "status": "review_follow_up_source_fixes_committed_final_acceptance_pending",
-    "phase": "source_frozen_awaiting_exact_head_quality_and_published_evidence",
+    "status": "source_fixes_complete_source_bound_evidence_verified_final_receipts_tracked_in_pr",
+    "phase": "source_bound_evidence_complete_exact_head_receipts_in_pr_description",
     "branch": "milestone/rpc-protocol-command-parity",
     "branch_base_sha": "646db89bd396b8089b1b9a058fa96b1489f4d0cd",
     "prerequisite_pr28": {
@@ -13860,7 +13860,7 @@
     "r9_verifier_unit_tests": "16/16 passed; zero failures/skips",
     "r9_changed_file_format_verification": "Passed with targeted dotnet format whitespace verification for changed C# files.",
     "r9_compact_case_results": "docs/parity/fixtures/rpc-protocol-command-parity/r9-case-results.json",
-    "quality_checkpoint": "Pending exact-head rerun. The 944ec875 bundle recorded Q0 15/15 (4,009 passed, zero failed/skipped) and E0 10/10, but its publisher failed in the post-E0 manifest summary. Independent clean-checkout verification also exposed the absolute Q0 working-directory comparison. Source e84a30b3 fixes both; 42/42 RPC parity unit tests pass.",
+    "quality_checkpoint": "Q0 15/15; full .NET 4,009/4,009; all RPC process tests 188/188; runtime/session 602/602; compaction/tools/extensions 1,358/1,358; JSON event regressions 15/15; Linux process/PTY 694/694; Python 224/224 across suites 66, 42, 27, 62 and 27; Node 24/24; pinned Pi 582 passed with 20 credential-gated skips; warnings-as-errors build, format, MCP conformance and docs validation (157 documents, 695 references) passed.",
     "credential_limit": "Exactly 20 credential-dependent pinned-Pi test identities are skipped and remain unverified; no live model endpoint was called.",
     "managed_package_limit": "Managed-package parity corpus remains scoped to its historical milestone branch; it was not rerun on this branch.",
     "completion_evidence": "docs/parity/fixtures/rpc-protocol-command-parity/completion-evidence-62c65044.json",
@@ -13872,11 +13872,11 @@
       "implementation_source_sha": "e84a30b337bf09d5127a567cbaf5e4801b528d73"
     },
     "finalization_evidence": {
-      "recordLocation": "Pending successful exact-head evidence, CI0 and PUB0; final results will be recorded in PR #29.",
+      "recordLocation": "Final exact-head evidence, push/PR CI run IDs, artifact digest, CI0 and PUB0 results are maintained in PR #29 description.",
       "requirements": {
-        "e0": "Pending exact-head artifact publication and independent verification.",
-        "ci0": "Pending successful exact-head push and pull-request CI plus the unexpired evidence artifact.",
-        "pub0": "Pending final PR #29 description validation; keep the PR open, draft and unmerged."
+        "e0": "A source-bound bundle is independently checked in a clean checkout; the final-head artifact and its verification are listed in PR #29.",
+        "ci0": "Exact-head push and pull-request CI receipts are maintained in PR #29 description.",
+        "pub0": "Final PR #29 description is validated while the PR remains open, draft and unmerged."
       },
       "previous_dotnetTestCountNormalization": {
         "sourceObservation": "Q0/cases/Q0.full-dotnet-suite/observation.json",
@@ -13894,7 +13894,7 @@
       }
     },
     "independent_review_follow_up": {
-      "status": "compaction, writer, verifier and publication-manifest fixes committed; final exact-head acceptance pending",
+      "status": "Compaction, writer, verifier and publication-manifest fixes are source-bound verified; current exact-head CI, evidence, CI0 and PUB0 receipts are maintained in PR #29.",
       "implementation_source_commit": "e84a30b337bf09d5127a567cbaf5e4801b528d73",
       "review_findings": {
         "concurrent_compaction_deadlock": {
@@ -14013,19 +14013,50 @@
           "sizeInBytes": 3081378,
           "acceptance": "diagnostic only; publisher workflow failed and clean-checkout Q0 verification rejected its absolute runner cwd"
         }
+      },
+      "successful_evidence_run": {
+        "evidence_head": "e567e423b53120a45f0008394e084aa346b67d38",
+        "implementation_source_commit": "e84a30b337bf09d5127a567cbaf5e4801b528d73",
+        "push_ci_run_id": 41001308274,
+        "pull_request_ci_run_id": 41001313795,
+        "evidence_workflow_run_id": 41001308373,
+        "evidence_workflow_conclusion": "success",
+        "artifact": {
+          "artifact_id": 12954678656,
+          "name": "rpc-parity-evidence-e567e423b53120a45f0008394e084aa346b67d38",
+          "digest": "sha256:db950a9f1b84d3ae17b9985843d7dd392028c7ea0b91eebc65c6a41e6dafe054",
+          "sizeInBytes": 3081891,
+          "expiresAt": "2027-01-28T04:09:25Z"
+        },
+        "independent_clean_checkout_verification": "P0/P1/V0/V1/R1-R15/D0/Q0/E0: 22/22 checkpoints, 241/241 cases, zero failures/skips.",
+        "source_bound_checkpoint_count": 21,
+        "source_bound_case_count": 231,
+        "e0_cases": "10/10",
+        "q0_cases": "15/15",
+        "full_dotnet_test_counts": {
+          "passed": 4009,
+          "failed": 0,
+          "skipped": 0,
+          "total": 4009
+        }
       }
     },
     "previous_source_bound_implementation_source_sha": "62c650449f59be8cce7bedb2ecacbbec7770b015",
     "current_source_bound_implementation_source_sha": "e84a30b337bf09d5127a567cbaf5e4801b528d73",
     "previous_source_bound_evidence_root": "artifacts/parity/rpc-protocol-command-parity/run-62c65044",
-    "current_source_bound_evidence_root": null,
+    "current_source_bound_evidence_root": "artifacts/parity/rpc-protocol-command-parity/run-e567e423b53120a45f0008394e084aa346b67d38",
     "previous_source_bound_comparison_counts": {
       "strict": 230,
       "equivalent": 22,
       "intentional-safety-difference": 0,
       "unresolved": 0
     },
-    "current_source_bound_comparison_counts": null,
+    "current_source_bound_comparison_counts": {
+      "strict": 230,
+      "equivalent": 22,
+      "intentional-safety-difference": 0,
+      "unresolved": 0
+    },
     "previous_quality_checkpoint": "Q0 15/15; full .NET 4,005/4,005; RPC 185/185; runtime/session 602/602; compaction/tools/extensions 1,355/1,355; Python 214/214 across five suites; Node 24/24; docs validated (157 documents, 701 references).",
     "previous_checkpoint_evidence": [
       {
@@ -14253,6 +14284,227 @@
         ]
       }
     ],
-    "checkpoint_evidence": []
+    "checkpoint_evidence": [
+      {
+        "checkpointId": "P0",
+        "passed": 6,
+        "required": 6,
+        "failed": 0,
+        "skipped": 0,
+        "implementationSourceCommit": "e84a30b337bf09d5127a567cbaf5e4801b528d73",
+        "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-e567e423b53120a45f0008394e084aa346b67d38/P0/evidence.json",
+        "evidenceSha256": "c85f050ea2b852f5018c6f6ba80f82cedcb3d891f53c6f01091cb75fa597e0f3"
+      },
+      {
+        "checkpointId": "P1",
+        "passed": 5,
+        "required": 5,
+        "failed": 0,
+        "skipped": 0,
+        "implementationSourceCommit": "e84a30b337bf09d5127a567cbaf5e4801b528d73",
+        "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-e567e423b53120a45f0008394e084aa346b67d38/P1/evidence.json",
+        "evidenceSha256": "f39eed2ae43a0bfcb632005c3f41d422e77353819ec2263d49309f693695fe51"
+      },
+      {
+        "checkpointId": "V0",
+        "passed": 6,
+        "required": 6,
+        "failed": 0,
+        "skipped": 0,
+        "implementationSourceCommit": "e84a30b337bf09d5127a567cbaf5e4801b528d73",
+        "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-e567e423b53120a45f0008394e084aa346b67d38/V0/evidence.json",
+        "evidenceSha256": "e1e06b28a525b16542c0e3a3dbf9c3545c37c135a0c16202e06ffad2e83d9e7a"
+      },
+      {
+        "checkpointId": "V1",
+        "passed": 23,
+        "required": 23,
+        "failed": 0,
+        "skipped": 0,
+        "implementationSourceCommit": "e84a30b337bf09d5127a567cbaf5e4801b528d73",
+        "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-e567e423b53120a45f0008394e084aa346b67d38/V1/evidence.json",
+        "evidenceSha256": "16887004e1230c837e61721d8271dfac7b3e8887a1c67781f9ddbdd27313d387"
+      },
+      {
+        "checkpointId": "R1",
+        "passed": 11,
+        "required": 11,
+        "failed": 0,
+        "skipped": 0,
+        "implementationSourceCommit": "e84a30b337bf09d5127a567cbaf5e4801b528d73",
+        "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-e567e423b53120a45f0008394e084aa346b67d38/R1/evidence.json",
+        "evidenceSha256": "001a71bf902e8f28480654e8803a21ef269c7a62f1caa79f5f3ba64dafd7e5ef"
+      },
+      {
+        "checkpointId": "R2",
+        "passed": 12,
+        "required": 12,
+        "failed": 0,
+        "skipped": 0,
+        "implementationSourceCommit": "e84a30b337bf09d5127a567cbaf5e4801b528d73",
+        "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-e567e423b53120a45f0008394e084aa346b67d38/R2/evidence.json",
+        "evidenceSha256": "3c760ecaee87306fbe20aa10c1588e4f7bbfeee3f6bcffcfd092239e14a52015"
+      },
+      {
+        "checkpointId": "R3",
+        "passed": 10,
+        "required": 10,
+        "failed": 0,
+        "skipped": 0,
+        "implementationSourceCommit": "e84a30b337bf09d5127a567cbaf5e4801b528d73",
+        "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-e567e423b53120a45f0008394e084aa346b67d38/R3/evidence.json",
+        "evidenceSha256": "c802af3a51fc2a0653a21931ee3eb7cf47ab6a0d2eb7282e359d7a807a6e7151"
+      },
+      {
+        "checkpointId": "R4",
+        "passed": 12,
+        "required": 12,
+        "failed": 0,
+        "skipped": 0,
+        "implementationSourceCommit": "e84a30b337bf09d5127a567cbaf5e4801b528d73",
+        "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-e567e423b53120a45f0008394e084aa346b67d38/R4/evidence.json",
+        "evidenceSha256": "b3744ee94cac5fcf4407926818a3399c759dec679e92b9f70dc6a759c213f87a"
+      },
+      {
+        "checkpointId": "R5",
+        "passed": 11,
+        "required": 11,
+        "failed": 0,
+        "skipped": 0,
+        "implementationSourceCommit": "e84a30b337bf09d5127a567cbaf5e4801b528d73",
+        "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-e567e423b53120a45f0008394e084aa346b67d38/R5/evidence.json",
+        "evidenceSha256": "f54a3c9e5a94e61912fe0fd1c3d6fe4c04348f37954d56bfada6380722defc43"
+      },
+      {
+        "checkpointId": "R6",
+        "passed": 10,
+        "required": 10,
+        "failed": 0,
+        "skipped": 0,
+        "implementationSourceCommit": "e84a30b337bf09d5127a567cbaf5e4801b528d73",
+        "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-e567e423b53120a45f0008394e084aa346b67d38/R6/evidence.json",
+        "evidenceSha256": "434ab01b48725d7ad18d10fdfbc7258245c971b74cca2d7dae69a885e0871d99"
+      },
+      {
+        "checkpointId": "R7",
+        "passed": 13,
+        "required": 13,
+        "failed": 0,
+        "skipped": 0,
+        "implementationSourceCommit": "e84a30b337bf09d5127a567cbaf5e4801b528d73",
+        "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-e567e423b53120a45f0008394e084aa346b67d38/R7/evidence.json",
+        "evidenceSha256": "86f3925ac272549386b374d04ee65d8cc4f92261b9b22a99830baafde6dee856"
+      },
+      {
+        "checkpointId": "R8",
+        "passed": 6,
+        "required": 6,
+        "failed": 0,
+        "skipped": 0,
+        "implementationSourceCommit": "e84a30b337bf09d5127a567cbaf5e4801b528d73",
+        "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-e567e423b53120a45f0008394e084aa346b67d38/R8/evidence.json",
+        "evidenceSha256": "3c3a2e1965e93b53d34e8c2f549c8343d2a242f92e2aeeded72bd713a19db508"
+      },
+      {
+        "checkpointId": "R9",
+        "passed": 12,
+        "required": 12,
+        "failed": 0,
+        "skipped": 0,
+        "implementationSourceCommit": "e84a30b337bf09d5127a567cbaf5e4801b528d73",
+        "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-e567e423b53120a45f0008394e084aa346b67d38/R9/evidence.json",
+        "evidenceSha256": "da98e429e28908723be794f98a237af44e8c6cb55bf48eff650a89c7ed764bd5"
+      },
+      {
+        "checkpointId": "R10",
+        "passed": 9,
+        "required": 9,
+        "failed": 0,
+        "skipped": 0,
+        "implementationSourceCommit": "e84a30b337bf09d5127a567cbaf5e4801b528d73",
+        "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-e567e423b53120a45f0008394e084aa346b67d38/R10/evidence.json",
+        "evidenceSha256": "aff104996f99f6ea7ad50ebd95e1179aeba4171b54e98d9ceb9e3bba1612e92d"
+      },
+      {
+        "checkpointId": "R11",
+        "passed": 8,
+        "required": 8,
+        "failed": 0,
+        "skipped": 0,
+        "implementationSourceCommit": "e84a30b337bf09d5127a567cbaf5e4801b528d73",
+        "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-e567e423b53120a45f0008394e084aa346b67d38/R11/evidence.json",
+        "evidenceSha256": "7dbb37cb126c713c9681c4a6b71c8223ca419ab0411c7333c28b0e27adeea5e6"
+      },
+      {
+        "checkpointId": "R12",
+        "passed": 15,
+        "required": 15,
+        "failed": 0,
+        "skipped": 0,
+        "implementationSourceCommit": "e84a30b337bf09d5127a567cbaf5e4801b528d73",
+        "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-e567e423b53120a45f0008394e084aa346b67d38/R12/evidence.json",
+        "evidenceSha256": "6bf8fd21ae8f359c65a04b0e460ed5a85555b07185eb304a3ef6d0e970d41a1f"
+      },
+      {
+        "checkpointId": "R13",
+        "passed": 8,
+        "required": 8,
+        "failed": 0,
+        "skipped": 0,
+        "implementationSourceCommit": "e84a30b337bf09d5127a567cbaf5e4801b528d73",
+        "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-e567e423b53120a45f0008394e084aa346b67d38/R13/evidence.json",
+        "evidenceSha256": "87630aae43bf49fb071ff514734eb14208d0b8d63d493dd7fef721f636cc9bc6"
+      },
+      {
+        "checkpointId": "R14",
+        "passed": 17,
+        "required": 17,
+        "failed": 0,
+        "skipped": 0,
+        "implementationSourceCommit": "e84a30b337bf09d5127a567cbaf5e4801b528d73",
+        "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-e567e423b53120a45f0008394e084aa346b67d38/R14/evidence.json",
+        "evidenceSha256": "31ae6fffd547183908a1fc0dd32c1211d754da49036e9945abe6f5e47dc44587"
+      },
+      {
+        "checkpointId": "R15",
+        "passed": 13,
+        "required": 13,
+        "failed": 0,
+        "skipped": 0,
+        "implementationSourceCommit": "e84a30b337bf09d5127a567cbaf5e4801b528d73",
+        "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-e567e423b53120a45f0008394e084aa346b67d38/R15/evidence.json",
+        "evidenceSha256": "4d4eee66ec68ad31838d24dfd47078c3725bedb4d034af344cf63d145a0feafd"
+      },
+      {
+        "checkpointId": "D0",
+        "passed": 9,
+        "required": 9,
+        "failed": 0,
+        "skipped": 0,
+        "implementationSourceCommit": "e84a30b337bf09d5127a567cbaf5e4801b528d73",
+        "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-e567e423b53120a45f0008394e084aa346b67d38/D0/evidence.json",
+        "evidenceSha256": "e16ecf855e306da4826ad073fe4168876d372f6f7f8ad113eb11b84307399adb"
+      },
+      {
+        "checkpointId": "Q0",
+        "passed": 15,
+        "required": 15,
+        "failed": 0,
+        "skipped": 0,
+        "implementationSourceCommit": "e84a30b337bf09d5127a567cbaf5e4801b528d73",
+        "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-e567e423b53120a45f0008394e084aa346b67d38/Q0/evidence.json",
+        "evidenceSha256": "e0ac6f5bc9bc801b6a3990a79ccdb0a986146823d99e0c13913bf0b8c1e6997e"
+      },
+      {
+        "checkpointId": "E0",
+        "passed": 10,
+        "required": 10,
+        "failed": 0,
+        "skipped": 0,
+        "implementationSourceCommit": "e84a30b337bf09d5127a567cbaf5e4801b528d73",
+        "evidencePath": "artifacts/parity/rpc-protocol-command-parity/run-e567e423b53120a45f0008394e084aa346b67d38/E0/evidence.json",
+        "evidenceSha256": "299ca7daaacbf4ed3ab4cc1c86f555599741024fa0bd9136e6e64a7e7c7ee892"
+      }
+    ]
   }
 }

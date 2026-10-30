@@ -590,11 +590,11 @@ The detailed entries in this section preserve earlier source/test evidence only;
 
 ## Current priority
 
-RPC protocol and command parity corrections are implemented at source `62c650449f59be8cce7bedb2ecacbbec7770b015`. Source-bound evidence passes 21/24 checkpoints and 231/252 cases; the frozen scope is 24 checkpoints and 252 cases. Final E0, exact-head CI0 and PUB0 receipts and run IDs are maintained in PR #29. Keep the PR open, draft and unmerged for review.
+PR #28 is merged at `646db89bd396b8089b1b9a058fa96b1489f4d0cd`. PR #29 remains open, draft and unmerged. The RPC acceptance scope contains 24 checkpoints and 252 mandatory cases. Implementation source `e84a30b337bf09d5127a567cbaf5e4801b528d73` includes serialized compaction admission, cancellation-safe JSONL settlement, ANSI-safe upstream test parsing, portable clean-checkout Q0 validation and source-bound manifest counting. Focused regressions pass: RPC parity Python 42/42 and RPC process/writer 8/8; the cancellation-sensitive history-compaction test passed 10 consecutive reruns. Exact-head `e567e423b53120a45f0008394e084aa346b67d38` push CI (run 41001308274) and pull-request CI (run 41001313795) passed all five jobs. Evidence publisher run [41001308373](https://github.com/PhilipGB/pisharp/actions/runs/41001308373) generated 21 source checkpoints and E0; the downloaded artifact passed all 22 independent checkpoint verifications from a separate clean checkout (241/241 cases, zero failures or skips). Artifact name `rpc-parity-evidence-e567e423b53120a45f0008394e084aa346b67d38` has digest `sha256:db950a9f1b84d3ae17b9985843d7dd392028c7ea0b91eebc65c6a41e6dafe054` and expires 2027-01-28. Q0 passed 15/15, including the full .NET suite 4,009/4,009; pinned Pi passed 582 with exactly 20 credential-gated skips; Python passed 224/224, Node 24/24, and docs validation covered 157 documents / 695 references. Final exact-head run IDs, artifact metadata, independent verification, CI0 and PUB0 receipts are maintained in PR #29’s description. The 20 credential-dependent Pi tests remain unverified; the managed-package corpus remains scoped to its historical milestone. No live model endpoint was called.
 
 ## Exact next action
 
-Keep PR #29 open, draft and unmerged for review. The 20 credential-dependent pinned-Pi cases remain unverified; the managed-package parity corpus remains scoped to its historical milestone branch.
+Keep PR #29 open, draft and unmerged for review. The latest exact-head CI, published artifact and CI0/PUB0 receipts are maintained in the PR description. The 20 credential-dependent pinned-Pi cases remain unverified; the managed-package parity corpus remains scoped to its historical milestone branch.
 
 ## Architecture risks to reconcile before completion
 
