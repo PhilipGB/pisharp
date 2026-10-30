@@ -38,6 +38,7 @@ QUALITY_CASE_IDS = (
 )
 VITEST_SUMMARY = re.compile(r"Tests\s+([\d,]+) passed(?:\s*\|\s*([\d,]+) skipped)?\s*\(([\d,]+)\)")
 NODE_SUMMARY = re.compile(r"(?:#|ℹ)\s+(tests|pass|fail|skipped)\s+(\d+)")
+ANSI_ESCAPE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 
 
 def quality_case_ids() -> tuple[str, ...]:
@@ -58,7 +59,7 @@ def _run(argv: list[str], *, cwd: Path = ROOT, env: dict[str, str] | None = None
 
 
 def _summary(step: dict[str, Any]) -> dict[str, Any]:
-    output = step["stdout"] + step["stderr"]
+    output = ANSI_ESCAPE.sub("", step["stdout"] + step["stderr"])
     dotnet = parse_dotnet_test_counts(output)
     if dotnet is not None:
         return dotnet
@@ -120,6 +121,16 @@ def _pi_test_files(pi_checkout: Path) -> list[str]:
     return sorted(selected)
 
 
+def _pinned_pi_skips(output: str) -> set[tuple[str, str]]:
+    normalized = ANSI_ESCAPE.sub("", output)
+    actual_skips: set[tuple[str, str]] = set()
+    for line in normalized.splitlines():
+        match = re.match(r"\s*↓\s+(test/[^ >]+)\s+>\s+(.+)$", line)
+        if match:
+            actual_skips.add((f"packages/coding-agent/{match.group(1)}", match.group(2).replace(" > ", " ")))
+    return actual_skips
+
+
 def _pinned_pi_step(pi_checkout: Path, evidence_dir: Path, head: str) -> tuple[dict[str, Any], dict[str, Any]]:
     package_dir = pi_checkout / "packages/coding-agent"
     tests = _pi_test_files(pi_checkout)
@@ -143,11 +154,7 @@ def _pinned_pi_step(pi_checkout: Path, evidence_dir: Path, head: str) -> tuple[d
     expected_skips = {
         (item["source"], item["testName"]) for item in inventory["credentialGatedUpstreamCases"]
     }
-    actual_skips: set[tuple[str, str]] = set()
-    for line in output.splitlines():
-        match = re.match(r"\s*↓\s+(test/[^ >]+)\s+>\s+(.+)$", line)
-        if match:
-            actual_skips.add((f"packages/coding-agent/{match.group(1)}", match.group(2).replace(" > ", " ")))
+    actual_skips = _pinned_pi_skips(output)
     counts = _summary(step)
     summary = {
         "selectedTrackedTests": tests,

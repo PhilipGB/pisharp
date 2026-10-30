@@ -279,5 +279,33 @@ class Q0AuthoritativeCountTests(unittest.TestCase):
                     verify.validate_publication_test_count({"fullDotnetTestCount": invalid}, counts)
 
 
+class VitestOutputParsingTests(unittest.TestCase):
+    def test_summary_counts_ansi_colored_vitest_output(self) -> None:
+        step = {
+            "stdout": "\x1b[2m      Tests \x1b[22m \x1b[1m\x1b[32m582 passed"
+            "\x1b[39m\x1b[22m \x1b[2m|\x1b[22m \x1b[33m20 skipped"
+            "\x1b[39m\x1b[90m (602)\x1b[39m\n",
+            "stderr": "",
+        }
+
+        self.assertEqual({"failed": 0, "passed": 582, "skipped": 20, "total": 602},
+                         quality_oracle._summary(step))
+
+    def test_credential_skips_match_inventory_from_ansi_colored_vitest_output(self) -> None:
+        output = (
+            " \x1b[2m\x1b[90m↓\x1b[39m\x1b[22m "
+            "test/agent-session-tree-navigation.test.ts\x1b[2m > \x1b[22m"
+            "AgentSession tree navigation e2e\x1b[2m > \x1b[22m"
+            "should navigate to user message and put text in editor\n"
+        )
+
+        self.assertEqual({
+            (
+                "packages/coding-agent/test/agent-session-tree-navigation.test.ts",
+                "AgentSession tree navigation e2e should navigate to user message and put text in editor",
+            ),
+        }, quality_oracle._pinned_pi_skips(output))
+
+
 if __name__ == "__main__":
     unittest.main()
