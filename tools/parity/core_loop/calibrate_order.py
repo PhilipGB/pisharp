@@ -12,12 +12,16 @@ Runs are spread across scheduling conditions (the harness caps child worker/CPU 
 same case can run with one or two CPUs). A single configuration repeating the same order many
 times is not evidence that the order is the only possible one.
 
-Classification per observable:
+Flags are reported independently, never as mutually exclusive alternatives, so Pi varying can
+never mask additional PiSharp variation:
 
 - ``pi-varies``    - Pi produced more than one order. Permitted alternatives are plausible; derive
                      them from the implementation before freezing anything.
-- ``gap``          - Pi was stable and PiSharp differed. A real parity gap to fix.
-- ``pisharp-varies`` - Pi was stable and PiSharp varied. A PiSharp defect; do not freeze it.
+- ``pisharp-varies`` - PiSharp produced more than one order. Nondeterminism in PiSharp is a defect
+                     to fix, not an alternative to freeze.
+- ``pisharp-outside-pi-observed`` - PiSharp produced an order Pi never produced in any run, even
+                     when Pi itself varied. This is the case the flags must not hide.
+- ``gap``          - convenience marker: Pi stable, PiSharp stable, and they differ.
 """
 
 import argparse
@@ -96,25 +100,32 @@ def main():
         for key in ORDERED_KEYS:
             pi_values = collect(pi_runs, key)
             sharp_values = collect(sharp_runs, key)
-            if len(pi_values) > 1:
-                verdict = 'pi-varies'
-            elif [entry['value'] for entry in sharp_values] != [entry['value'] for entry in pi_values]:
-                verdict = 'pisharp-varies' if len(sharp_values) > 1 else 'gap'
-            elif len(sharp_values) > 1:
-                verdict = 'pisharp-varies'
-            else:
-                verdict = 'stable'
-            if verdict != 'stable':
-                case_report[key] = dict(
-                    verdict=verdict,
-                    piOrders=[entry['value'] for entry in pi_values],
-                    pisharpOrders=[entry['value'] for entry in sharp_values],
-                    piConditions=[entry['conditions'] for entry in pi_values],
-                )
-                findings.append(f'{case["id"]}.{key}:{verdict}')
+            pi_orders = [entry['value'] for entry in pi_values]
+            sharp_orders = [entry['value'] for entry in sharp_values]
+            # The dimensions are reported independently: Pi varying does not excuse PiSharp
+            # producing an order Pi never produced, which a single mutually exclusive verdict hides.
+            flags = []
+            if len(pi_orders) > 1:
+                flags.append('pi-varies')
+            if len(sharp_orders) > 1:
+                flags.append('pisharp-varies')
+            if any(order not in pi_orders for order in sharp_orders):
+                flags.append('pisharp-outside-pi-observed')
+            if not flags:
+                continue
+            if len(pi_orders) == 1 and len(sharp_orders) == 1:
+                flags.append('gap')
+            case_report[key] = dict(
+                flags=flags,
+                piOrders=pi_orders,
+                pisharpOrders=sharp_orders,
+                piConditions=[entry['conditions'] for entry in pi_values],
+            )
+            findings.append(f'{case["id"]}.{key}:{",".join(flags)}')
         if case_report:
             report[case['id']] = case_report
-            detail = ", ".join(f"{key}={entry['verdict']}" for key, entry in case_report.items())
+            detail = ", ".join(f"{key}=[{'+'.join(entry['flags'])}]"
+                               for key, entry in case_report.items())
             print(f'{case["id"]}: {detail}')
         else:
             print(f'{case["id"]}: stable across {args.runs} runs '

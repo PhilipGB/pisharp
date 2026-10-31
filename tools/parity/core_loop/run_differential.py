@@ -13,6 +13,7 @@ Evidence layout (default artifacts/parity/core-loop):
 """
 import argparse
 import json
+import os
 import sys
 import tempfile
 import time
@@ -24,7 +25,8 @@ from cases import CASES  # noqa: E402
 from compare import compare_case, project_observation, render_diff  # noqa: E402
 from harness import ROOT, run_case  # noqa: E402
 
-PI_DEFAULT = Path('/home/philip/Projects/pi-pinned')
+# The one place the pinned Pi checkout is resolved. Override with PISHARP_PI_CHECKOUT.
+PI_DEFAULT = Path(os.environ.get('PISHARP_PI_CHECKOUT', '/home/philip/Projects/pi-pinned'))
 PISHARP_DLL = ROOT / 'src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll'
 
 
