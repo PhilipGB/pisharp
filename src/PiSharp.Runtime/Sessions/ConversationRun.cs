@@ -805,12 +805,14 @@ public sealed partial class ConversationRun
                     }
                     current = stopRun ? null : await TakeQueuedPromptOrCloseAsync(owner, linked.Token, closeWhenEmpty: false);
                     if (current is not null) continue;
+                    var closedAgentRun = false;
                     if (agentRunOpen)
                     {
                         var messages = Conversation.Tree.ActivePath()
                             .Where(entry => !initialEntryIds.Contains(entry.Id) && entry.Type == "chat")
                             .Select(ConversationMessageCodec.RestoreEntry).ToArray();
                         agentRunOpen = false;
+                        closedAgentRun = true;
                         await _agent.ExtensionEvents.DispatchAgentEndAsync(new(messages, nativeAgentOutcome,
                             nativeAgentError), linked.Token, Publish).ConfigureAwait(false);
                     }
@@ -818,12 +820,21 @@ public sealed partial class ConversationRun
                     if (_boundaryContextVersion != initialRunBoundaryVersion || _agent.ExtensionEvents.HasBoundaryHandlers)
                         await CompactAfterBoundaryAsync(linked.Token, Publish).ConfigureAwait(false);
                     current ??= await TakeQueuedPromptOrCloseAsync(owner, linked.Token, closeWhenEmpty: false);
+                    var boundaryContinuation = false;
                     if (current is null && await DispatchBeforeSettleBoundaryAsync(nativeAgentOutcome, linked.Token, Publish)
                             .ConfigureAwait(false))
+                    {
                         current = new([], [promptText], SkipBeforeAgentStart: true, Continuation: true);
+                        boundaryContinuation = true;
+                    }
                     current ??= await TakeQueuedPromptOrCloseAsync(owner, linked.Token, closeWhenEmpty: true);
                     if (current is not null)
                     {
+                        // A prompt queued from the agent_end handler continues the agent run that just
+                        // ended, so its turn does not start a new agent (pinned Pi keeps one
+                        // agent_start for the run while still ending the agent per drain). A
+                        // before-settle boundary continuation is a new agent run.
+                        if (closedAgentRun && !boundaryContinuation && nativeAgentStarted) agentRunOpen = true;
                         stopRun = false;
                     }
                 }
