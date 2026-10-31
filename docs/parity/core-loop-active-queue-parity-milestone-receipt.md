@@ -29,8 +29,8 @@ boundary), and the entry projections no longer double-emit them.
 - PiSharp branch base (from `origin/main`):
   `fc75ba2ad88fc3044b152fcc647144498064db59`
 - PiSharp implementation SHA (source-code parity fixes, including the
-  failed/aborted assistant layering):
-  `c2e975086706c714a718b40ecff4d291667994b5`
+  failed/aborted assistant layering and the agent-run continuation fix):
+  `4f05d7d6109a6feb422aed17b3ad3bf4ccd6e6b6`
 
 ## Differential Corpus
 
@@ -151,6 +151,15 @@ corpus, and followed the same workflow:
   `RecoverIncomplete(announce:)`, that the old second-request behaviour
   depended on the recovery notice acting as a compaction cut point.
 
+The full-suite run then exposed one genuine regression that the focused
+filters had not covered:
+`AgentSettlementCharacterizationTests.RetryKeepsPromptLoopOpenForAgentEndQueuedWorkBeforeAgentBecomesIdle`
+passed on the branch base and failed on the branch, because a prompt
+queued by an `agent_end` handler started a second agent run. Work queued
+from `agent_end` now continues the run that just ended (one `agent_start`,
+one `agent_end` per drain), while a before-settle boundary continuation
+still starts a new agent run.
+
 ## Fail-first regression tests
 
 `tests/PiSharp.Tests/Runtime/Sessions/CoreLoopParityTests.cs` contains the
@@ -251,8 +260,8 @@ Implementation points:
   DurableExecutionTests, ToolDeclarationHistoryTests,
   AgentLifecycleTests, PiJsonlSessionInterchangeTests, CompactionTests,
   RpcInterruptedSessionProcessTests, RpcCompactionProcessTests,
-  BoundaryRetryFailureTests, BoundaryCompactionAndRecoveryTests):
-  260 passed, 0 failed.
+  BoundaryRetryFailureTests, BoundaryCompactionAndRecoveryTests,
+  AgentSettlementCharacterizationTests): 262 passed, 0 failed.
 - Full differential corpus (41 cases): 33 match, 8 documented
   known-differences, 0 unresolved, 0 one-sided, 0 error.
 - Acceptance verifier: passed.
