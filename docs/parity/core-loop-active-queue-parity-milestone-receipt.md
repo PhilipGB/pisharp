@@ -277,6 +277,10 @@ Implementation points:
     | `~Agent` | 117 passed, 0 failed |
     | `~Tool` | 790 passed, 30 failed — all 30 are `ripgrep (rg) is not available` |
     | `~Provider` | 429 passed, 1 failed on the first run (a grep tool); the 1.003 s-vs-1 s idle-timeout flake seen once did not reproduce |
+    | `~Compaction` | 149 passed, 1 failed — `BuiltinConcurrencyReliabilityTests...`, which fails with the same assertion on base `fc75ba2a` (it asserts a search tool result is not an error, and the search binary is missing) |
+
+  `~Extension` could not be completed as one chunk: it stalled the same way
+  the whole-suite run does, even though its individual classes pass.
   - The `rg` failures are environmental. This machine has no `rg` on
     `PATH`, and `RipgrepSearch`/`FdSearch` resolve the binary by `PATH`
     lookup only. The same five search classes on the branch and on branch
