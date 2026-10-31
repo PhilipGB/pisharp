@@ -128,7 +128,7 @@ internal static class RpcModeComposition
             discoverCycleModels: GetRpcCycleModelsAsync,
             getSystemMessage: () => RpcSystemMessageProjector.Project(modelBinding.Agent,
                 conversationBinding.Run.Conversation.Snapshot().Tree.Entries.Any(entry => entry.Type == "run_started")),
-            getPersistedSystemMessage: () => modelBinding.Agent.PersistedSystemRevisions is { } revisions
+            getPersistedSystemMessage: () => modelBinding.Agent.RestoredSystemRevisions is { Count: > 0 } revisions
                 ? RpcSystemMessageProjector.ProjectPersisted(revisions)
                 : null,
             getProjectTrusted: () => projectBinding.Trusted,

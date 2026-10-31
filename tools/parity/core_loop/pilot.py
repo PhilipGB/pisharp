@@ -25,6 +25,8 @@ PILOT = dict(
 
 
 def main():
+    if PI is None:
+        raise SystemExit('A pinned Pi checkout is required: pass --pi or set PISHARP_PI_CHECKOUT.')
     parser = argparse.ArgumentParser()
     parser.add_argument('--product', choices=['pi', 'pisharp'], required=True)
     args = parser.parse_args()

@@ -25,8 +25,9 @@ from cases import CASES  # noqa: E402
 from compare import compare_case, project_observation, render_diff  # noqa: E402
 from harness import ROOT, run_case  # noqa: E402
 
-# The one place the pinned Pi checkout is resolved. Override with PISHARP_PI_CHECKOUT.
-PI_DEFAULT = Path(os.environ.get('PISHARP_PI_CHECKOUT', '/home/philip/Projects/pi-pinned'))
+# The one place the pinned Pi checkout is resolved: --pi, then PISHARP_PI_CHECKOUT. There is no
+# embedded developer path, so a checkout that is not configured is reported instead of guessed.
+PI_DEFAULT = os.environ.get('PISHARP_PI_CHECKOUT')
 PISHARP_DLL = ROOT / 'src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll'
 
 
@@ -43,7 +44,8 @@ def write_json(path, payload):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--out', default=str(ROOT / 'artifacts/parity/core-loop'))
-    parser.add_argument('--pi', default=str(PI_DEFAULT))
+    parser.add_argument('--pi', default=PI_DEFAULT,
+                        help='pinned Pi checkout (defaults to PISHARP_PI_CHECKOUT)')
     parser.add_argument('--pisharp-dll', default=str(PISHARP_DLL))
     parser.add_argument('--cases', nargs='*', default=None)
     parser.add_argument('--product', choices=('pi', 'pisharp'), default=None,
@@ -51,6 +53,8 @@ def main():
     parser.add_argument('--compare-only', action='store_true',
                         help='do not run products; re-compare saved obs and rewrite comparisons')
     args = parser.parse_args()
+    if not args.pi and not args.compare_only:
+        parser.error('a pinned Pi checkout is required: pass --pi or set PISHARP_PI_CHECKOUT')
 
     out = Path(args.out)
     if args.cases:
