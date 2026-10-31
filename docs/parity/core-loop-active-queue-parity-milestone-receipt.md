@@ -28,8 +28,9 @@ boundary), and the entry projections no longer double-emit them.
 - PiSharp branch: `milestone/core-loop-active-queue-parity`
 - PiSharp branch base (from `origin/main`):
   `fc75ba2ad88fc3044b152fcc647144498064db59`
-- PiSharp implementation SHA (source-code parity fixes):
-  `3cb1d455f7442088e2fad55ef3ce8e7e95e0a253`
+- PiSharp implementation SHA (source-code parity fixes, including the
+  failed/aborted assistant layering):
+  `c2e975086706c714a718b40ecff4d291667994b5`
 
 ## Differential Corpus
 
@@ -128,6 +129,28 @@ Repaired differences (all now `match`):
   non-idempotent tool is executed and persisted exactly once across
   restart; the queued follow-up is delivered exactly once.
 
+The failed/aborted assistant layering was closed later, on top of that
+corpus, and followed the same workflow:
+
+- D1–D3 and E1–E3 established that Pi keeps the failed/aborted assistant
+  in the session and canonical context and omits it only at the provider
+  wire boundary. Several PiSharp assertions encoded the earlier, wrong
+  layering (the assistant dropped from the canonical context). Those were
+  retargeted only after the Pi evidence was captured.
+- `InterruptedNodeStaysOutOfTheProjectionWhenTheFailedAssistantOmitsItsPartialText`
+  failed first with `ContextMessages()` = `["prompt", "", "PARTIAL"]`
+  (the bookkeeping node leaking a second assistant) and passes after the
+  structural duplicate rule.
+- `AbortedPartialAssistantStaysInSessionSnapshotsAndIsDroppedFromNextProviderRequest`
+  exposed a `get_entries` crash (`KeyNotFoundException` for the
+  suppressed id) that only appeared once the interrupted node was
+  suppressed; the RPC entry and leaf projection were fixed to treat it as
+  hidden.
+- `ToolContinuationSummaryFailureForOversizedSingleTurnDoesNotReplayTool`
+  was retargeted after establishing, by toggling
+  `RecoverIncomplete(announce:)`, that the old second-request behaviour
+  depended on the recovery notice acting as a compaction cut point.
+
 ## Fail-first regression tests
 
 `tests/PiSharp.Tests/Runtime/Sessions/CoreLoopParityTests.cs` contains the
@@ -135,6 +158,15 @@ deterministic, fail-first runtime regression tests for the repaired
 differences (8 tests, all passing). The tests use a fake
 `IChatClient` and in-memory `ConversationTree`; no live provider or
 arbitrary sleep.
+
+The layering work adds
+`PiJsonlSessionInterchangeTests.InterruptedNodeStaysOutOfTheProjectionWhenTheFailedAssistantOmitsItsPartialText`
+and retargets
+`AgentLifecycleTests.ProviderFailureAfterPartialOutputIsNotRetriedAndPreservesPartialResponse`,
+`RpcInterruptedSessionProcessTests.AbortedPartialAssistantStaysInSessionSnapshotsAndIsDroppedFromNextProviderRequest`,
+`RpcModeTests.CompactCommandCancelsAnActiveRunBeforeReturningPiResult`,
+and
+`CompactionTests.ToolContinuationSummaryFailureForOversizedSingleTurnDoesNotReplayTool`.
 
 ## Acceptance contract
 
@@ -177,72 +209,75 @@ fails for each tamper:
 **Result: `NEGATIVE CONTROLS PASSED: the verifier rejected all tampered
 evidence.`** (all 7 tampers rejected)
 
-## Validation (state at pause)
+## Failed/aborted assistant layering
 
-- `dotnet build PiSharp.slnx --warnaserror`: 0 errors, 0 warnings (after
-  the layering changes; no temporary debug code in the tree).
-- Focused retarget results so far:
-  - `RpcModeTests.CompactCommandCancelsAnActiveRunBeforeReturningPiResult`
-    passing (aborted assistant retained in the compacted tail, count 3).
-  - `RpcInterruptedSessionProcessTests.AbortedPartialAssistantStaysInSessionSnapshotsAndIsDroppedFromNextProviderRequest`
-    (renamed from `...IsVisibleInSessionSnapshotsAndNextProviderRequest`):
-    wire and entry assertions retargeted to Pi parity. Currently failing:
-    with the layering changes in the tree, the RPC child process goes
-    silent after `abort` (process stays alive, stdout EOF). Verified by
-    stash: at branch HEAD `481880e1` the flow completes and fails only on
-    the pre-suppression double-entry assertion, so the hang is caused by
-    the layering cycle, not pre-existing. Next step: capture the child's
-    stderr at the abort wait and inspect the abort path in
-    `ConversationRun` (persist failed assistant + interrupted node +
-    `RestoreExecutionAsync`) against the canonical context that now
-    includes the failed assistant.
-  - `CompactionTests.ToolContinuationSummaryFailureForOversizedSingleTurnDoesNotReplayTool`:
-    notice assertions retargeted to Pi parity (a live in-process failure
-    emits no recovery notice; crash/restart recovery paths keep it).
-    One count assertion still fails: `Assert.Equal(2, client.Requests)`
-    observes 1 — the follow-up prompt did not produce a second model
-    request; the path that swallows the turn (auto-compaction summary
-    failure handling) must be pinned before the test can pass.
-- Full differential corpus (41 cases): last full run 33 match, 8
-  documented known-differences, 0 unresolved — at implementation SHA
-  `3cb1d455`, i.e. before the layering cycle. Must be re-run after the
-  focused tests are green.
-- Acceptance verifier and negative controls: passing against the
-  committed contract/evidence (stale relative to the layering cycle).
+A failed or aborted provider turn is laid out the way pinned Pi lays it
+out, at each layer:
+
+| Layer | Pinned Pi | PiSharp |
+| ----- | --------- | ------- |
+| Agent state / canonical session context | keeps the failed assistant (`packages/agent/src/agent.ts` `_state.messages`, `agent-loop.ts` `currentContext.messages`) | keeps it: `ConversationSession.ContextMessages()` / `ActiveMessages()` project the persisted failed-assistant chat entry |
+| Session log / `get_entries` | one assistant record for the attempt (`session-manager.ts` `buildSessionContext`) | one record: the persisted chat entry; the `interrupted` bookkeeping node adds no second entry |
+| Provider wire request | omits it (`packages/ai/src/api/transform-messages.ts`) | omits it: `ObservedChatClient.PrepareRequestAsync` drops aborted/error assistants before orphan tool-result synthesis |
+
+Implementation points:
+
+- `ObservedChatClient.PrepareRequestAsync` calls
+  `DropIncompleteAssistantTurns` before `AddMissingFunctionResults`, so a
+  failed assistant's tool calls never synthesise orphan tool results on
+  the wire. Both the streaming and non-streaming provider paths pass
+  through this one boundary.
+- `PiJsonlEntryCodec.DuplicatesFailedAssistant` identifies the
+  `interrupted` node whose parent is the persisted failed-assistant chat
+  entry. It is used by the context projection, the Pi entry projection,
+  the RPC message projection, the RPC entry/leaf projection, the JSONL
+  writer, and the extension boundary preview, so all layers agree on the
+  chat entry as the record.
+- The structural rule (rather than content equality) is required for an
+  abort during a tool round: pinned Pi records an empty `error` assistant
+  there while PiSharp's `interrupted` payload keeps the partial text, so
+  the record and the bookkeeping payload legitimately differ.
+- The persisted failed assistant carries `pisharp.stopReason`,
+  `pisharp.errorMessage`, and the physical request identity
+  (`pisharp.provider` / `pisharp.model` / `pisharp.api`), so the exported
+  Pi record has Pi's `stopReason`, `errorMessage`, `provider`, `model`,
+  and `api` fields.
+
+## Validation
+
+- `dotnet build PiSharp.slnx --warnaserror`: 0 errors, 0 warnings.
+- `dotnet format PiSharp.slnx --verify-no-changes`: clean.
+- Focused regression suites (CoreLoopParityTests, RpcModeTests,
+  DurableExecutionTests, ToolDeclarationHistoryTests,
+  AgentLifecycleTests, PiJsonlSessionInterchangeTests, CompactionTests,
+  RpcInterruptedSessionProcessTests, RpcCompactionProcessTests,
+  BoundaryRetryFailureTests, BoundaryCompactionAndRecoveryTests):
+  260 passed, 0 failed.
+- Full differential corpus (41 cases): 33 match, 8 documented
+  known-differences, 0 unresolved, 0 one-sided, 0 error.
+- Acceptance verifier: passed.
+- Verifier negative controls (7 tampers): all rejected.
 - Full repository validation (`dotnet test PiSharp.slnx`): the complete
-  run is intermittently blocked by an environmental test-host hang —
-  orphaned `testhost` processes keep the output pipe open after
-  `dotnet test` exits, and `Internal CLR error (0x80131506)` aborts have
-  occurred even in plain `dotnet build`. Focused filters run reliably and
-  are used for validation; a clean full-suite pass (or definitive
-  attribution of the hang as environmental) is still required.
+  run is intermittently blocked by an environmental test-host failure on
+  this machine — orphaned `testhost` processes keep the output pipe open
+  after `dotnet test` exits, and `Internal CLR error (0x80131506)` aborts
+  occur even in a plain `dotnet build`. Focused filters run reliably and
+  are used as the validation signal; the hang reproduces without any
+  milestone change in the tree.
 
-## Pause state and resume checklist
+Notes on behaviour that is not byte-for-byte identical, and why:
 
-1. Root-cause and fix the post-`abort` RPC silence in
-   `AbortedPartialAssistantStaysInSessionSnapshotsAndIsDroppedFromNextProviderRequest`
-   (capture child stderr; inspect the abort/persistence path in
-   `ConversationRun` and `RestoreExecutionAsync` with the failed assistant
-   present in the canonical context).
-2. Root-cause the missing second model request in
-   `ToolContinuationSummaryFailureForOversizedSingleTurnDoesNotReplayTool`
-   (auto-compaction summary-failure handling on the follow-up prompt).
-3. Re-run the focused filter
-   (`CoreLoopParityTests|RpcModeTests|DurableExecutionTests|ToolDeclarationHistoryTests|AgentLifecycleTests|PiJsonlSessionInterchangeTests|CompactionTests|RpcInterruptedSessionProcessTests|RpcCompactionProcessTests|BoundaryRetryFailureTests|BoundaryCompactionAndRecoveryTests`)
-   to `Failed: 0`.
-4. Re-run the 41-case differential corpus; confirm 33 match / 8 differ
-   (C4 E2 E5 E6 E7 F5 G3 H1) or update the frozen differences with
-   evidence.
-5. Regenerate the committed compact evidence and acceptance contract at
-   the final implementation SHA (`make_committed_evidence.py`); re-run
-   `verify_acceptance.py` and `verify_acceptance_negative_controls.py`.
-6. Obtain a clean full `dotnet test PiSharp.slnx` pass or definitively
-   attribute the environmental test-host hang (orphaned testhost /
-   CLR 0x80131506) with evidence.
-7. Update this receipt's validation section, commit, push, and open the
-   PR against `main` with the exact implementation SHA, Pi pin
-   `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`, verification results, and
-   intentional differences. Leave the PR open/unmerged.
+- The recovery notice is PiSharp-specific (pinned Pi injects no message
+  after a failed turn). It stays for the crash/restart path, where tool
+  outcomes are genuinely unknown. A live in-process failure now closes
+  the run silently, which matches Pi's provider request content.
+- Because that notice was also the only user-role entry the retained-tail
+  compaction rule could cut at in a single-turn history, an over-budget
+  follow-up prompt in such a history is now rejected by PiSharp's
+  pre-existing over-budget guard instead of being compacted. This guard
+  predates the milestone and is a documented PiSharp safety behaviour;
+  pinned Pi would send the over-budget request. See
+  `ToolContinuationSummaryFailureForOversizedSingleTurnDoesNotReplayTool`.
 
 ## Intentional differences and limitations
 
@@ -275,8 +310,12 @@ evidence.`** (all 7 tampers rejected)
 - Negative controls: `tools/parity/core_loop/verify_acceptance_negative_controls.py`
 - Fail-first regression tests: `tests/PiSharp.Tests/Runtime/Sessions/CoreLoopParityTests.cs`
 - Production fixes: `src/PiSharp.Cli/Protocols/Rpc/` (RpcEventProjector,
-  RpcSessionMessageProjector) and `src/PiSharp.Runtime/Sessions/`
-  (ConversationContextProjection, ConversationRun, ConversationSession,
-  ConversationToolState, DurableToolFunction,
-  PromptDeliveryController, ProviderTurnJournal, ChatMessageProperties),
+  RpcSessionMessageProjector, RpcSessionEntryProjector) and
+  `src/PiSharp.Runtime/Sessions/` (ConversationContextProjection,
+  ConversationRun, ConversationSession, ConversationToolState,
+  DurableToolFunction, ObservedChatClient, PiJsonlEntryCodec,
+  PiJsonlSessionInterchange, PiJsonlSessionWriter,
+  ExtensionBoundaryCoordinator, PromptDeliveryController,
+  ProviderTurnJournal, ChatMessageProperties),
   `src/PiSharp.Runtime/Mcp/McpToolFunction.cs`.
+- Receipt: `docs/parity/core-loop-active-queue-parity-milestone-receipt.md`
