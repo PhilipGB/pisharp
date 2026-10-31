@@ -21,7 +21,16 @@ internal sealed class McpToolFunction(McpClientTool tool, McpServerConnection co
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         deadline.CancelAfter(timeout);
         var values = arguments.ToDictionary(item => item.Key, item => item.Value, StringComparer.Ordinal);
-        var wireResult = await connection.CallToolAsync(tool.Name, values, deadline.Token);
+        JsonElement wireResult;
+        try
+        {
+            wireResult = await connection.CallToolAsync(tool.Name, values, deadline.Token);
+        }
+        catch (OperationCanceledException error) when (cancellationToken.IsCancellationRequested)
+        {
+            // Pi reports a cancelled MCP request with this exact message (mcp/jsonrpc.ts).
+            throw new OperationCanceledException("MCP request aborted", error, cancellationToken);
+        }
         var resultNode = JsonNode.Parse(wireResult.GetRawText())?.AsObject() ??
             throw new JsonException("Invalid MCP tools/call result.");
         if (!resultNode.ContainsKey("content")) resultNode["content"] = new JsonArray();

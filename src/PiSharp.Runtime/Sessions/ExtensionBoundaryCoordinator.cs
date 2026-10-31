@@ -22,7 +22,9 @@ internal sealed class ExtensionBoundaryCoordinator(ConversationSession conversat
         var finalRole = messages.LastOrDefault()?.Role;
         var canContinue = messages.Any(message => message.Role != ChatRole.System) && finalRole != ChatRole.Assistant ||
             custom.Count > 0 || (beforeSettle ? finalRole == ChatRole.Assistant && queued.Count > 0 : queued.Count > 0);
+        var nodesById = preview.Tree.Entries.ToDictionary(node => node.Id, StringComparer.Ordinal);
         var entries = ConversationContextProjection.ContextEntries(preview.Tree.ActivePath())
+            .Where(node => !PiJsonlEntryCodec.IsSuppressedInterrupted(node, nodesById))
             .Select(entry => new PiSharpBoundaryContextEntry(entry.Id, entry.Type,
             System.Text.Json.JsonSerializer.SerializeToElement(PiJsonlEntryCodec.ProjectEntry(preview, entry))));
         return new PiSharpBoundaryContextPreview(entries, messages, queued.Concat(custom), canContinue);

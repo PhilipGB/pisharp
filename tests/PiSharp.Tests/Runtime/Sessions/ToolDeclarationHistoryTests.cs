@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.Extensions.AI;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Extensions;
+using PiSharp.Cli.Protocols;
 using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Tests;
@@ -99,6 +100,46 @@ public sealed class ToolDeclarationHistoryTests
         Assert.Equal("tool_a", Assert.Single(SystemMessageTranscript.RemovedTools(projectedUpdate)));
         Assert.Equal("tool_b", Assert.Single(SystemMessageTranscript.AddedTools(projectedUpdate))
             .GetProperty("name").GetString());
+    }
+
+    [Fact]
+    public void RestoredSystemRevisionsAreSnapshottedAtRestoreAndNotRewrittenByARun()
+    {
+        // The RPC writer compares the system state the model already knows against the current one.
+        // It reads that baseline from a channel consumer, which can run after the provider thread has
+        // already applied this run's transcript, so the baseline must be a snapshot taken at restore.
+        var restoredMessage = new ChatMessage(ChatRole.System, "original prompt");
+        SystemMessageTranscript.ImportMetadata(restoredMessage, JsonSerializer.SerializeToElement(new
+        {
+            sections = new Dictionary<string, string> { ["preamble"] = "original prompt" },
+            toolsAdded = new[]
+            {
+                new { name = "old_tool", label = "old_tool", description = "old", parameters = new { type = "object" } }
+            }
+        }));
+        var transcript = new ToolDeclarationTranscript();
+        transcript.Restore(JsonSerializer.SerializeToElement(new[]
+        {
+            new { afterMessageCount = 0,
+                message = JsonSerializer.SerializeToElement(restoredMessage, AIJsonUtilities.DefaultOptions) }
+        }));
+
+        var restored = transcript.RestoredSystemRevisions;
+        var restoredJson = JsonSerializer.Serialize(restored, AIJsonUtilities.DefaultOptions);
+
+        // A resumed run with a different prompt and loadout mutates the live revisions.
+        transcript.Project([new ChatMessage(ChatRole.User, "resume")],
+            new ChatOptions { Instructions = "changed prompt" });
+
+        Assert.Same(restored, transcript.RestoredSystemRevisions);
+        Assert.Equal(restoredJson,
+            JsonSerializer.Serialize(transcript.RestoredSystemRevisions, AIJsonUtilities.DefaultOptions));
+        Assert.NotEqual(restoredJson,
+            JsonSerializer.Serialize(transcript.SystemRevisions, AIJsonUtilities.DefaultOptions));
+        var projection = RpcSystemMessageProjector.ProjectPersisted(transcript.RestoredSystemRevisions);
+        Assert.NotNull(projection);
+        Assert.Contains("original prompt", projection!["content"]!.GetValue<string>(), StringComparison.Ordinal);
+        Assert.Contains("old_tool", projection["toolsAdded"]!.ToJsonString(), StringComparison.Ordinal);
     }
 
     private static PiAgent CreateAgent(IChatClient client, ExtensionRegistration registration) =>

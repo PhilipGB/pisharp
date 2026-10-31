@@ -27,8 +27,10 @@ internal static class PiJsonlSessionWriter
         AppendLine(output, header);
 
         var orderedEntries = OrderedEntriesForExport(session);
+        var nodesById = session.Tree.Entries.ToDictionary(node => node.Id, StringComparer.Ordinal);
         foreach (var node in orderedEntries)
-            AppendLine(output, ProjectEntry(session, node));
+            if (!IsSuppressedInterrupted(node, nodesById))
+                AppendLine(output, ProjectEntry(session, node));
 
         var activePath = session.Tree.ActivePath();
         var lastInfo = activePath.LastOrDefault(node => node.Type == "session_info");

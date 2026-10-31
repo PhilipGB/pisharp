@@ -21,8 +21,14 @@ _THREAD_ENVIRONMENT = {
 
 
 def thread_limit_environment():
-    """Return the environment settings needed by child processes in the harness."""
-    return dict(_THREAD_ENVIRONMENT)
+    """Return the environment settings needed by child processes in the harness.
+
+    ``PISHARP_PARITY_CPU_LIMIT`` overrides the worker/CPU budget. Ordering calibration uses it to
+    run the same case under different scheduling conditions, so a nondeterministic ordering is
+    established from more than one shape of machine rather than from one configuration.
+    """
+    limit = os.environ.get("PISHARP_PARITY_CPU_LIMIT") or TEST_THREAD_LIMIT
+    return {key: str(limit) for key in _THREAD_ENVIRONMENT}
 
 
 def apply_test_thread_limit():

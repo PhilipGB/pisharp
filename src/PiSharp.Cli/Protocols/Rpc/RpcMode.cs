@@ -39,6 +39,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     Func<ConversationSession, CancellationToken, Task<string?>>? prepareCloneSession = null,
     Func<string?, CancellationToken, Task<IReadOnlyList<ModelDescriptor>>>? discoverCycleModels = null,
     Func<JsonObject?>? getSystemMessage = null,
+    Func<JsonObject?>? getPersistedSystemMessage = null,
     Func<bool>? getProjectTrusted = null,
     string extensionMode = "rpc",
     bool extensionHasUserInterface = false,
@@ -73,7 +74,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     private ConversationRun CurrentRun => getCurrentRun?.Invoke() ?? run;
     private PiSharp.Runtime.Resources.ResourceCatalog? CurrentResources => getCurrentResources?.Invoke() ?? resources;
     private ExtensionRegistration? CurrentExtensions => getCurrentExtensions?.Invoke() ?? extensions;
-    private RpcEventWriter Events => _events ??= new RpcEventWriter(_writer, () => getSystemMessage?.Invoke());
+    private RpcEventWriter Events => _events ??= new RpcEventWriter(_writer, () => getSystemMessage?.Invoke(),
+        () => getPersistedSystemMessage?.Invoke());
 
     public async Task ServeAsync(CancellationToken cancellationToken = default)
     {

@@ -1,0 +1,25 @@
+{
+  "case": "H1",
+  "title": "composed: tools + steering + follow-up + provider failure + restart",
+  "status": "differ",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "pisharpSha": "4f05d7d6109a6feb422aed17b3ad3bf4ccd6e6b6",
+  "diffs": [
+    "events[8] [\"tool_end\", \"mcp__core__append\", false] != [\"queue\", [\"S1\"], []]",
+    "events[9] [\"queue\", [\"S1\"], []] != [\"resp\", \"steer\", true, \"queued\", null]",
+    "events[10] [\"resp\", \"steer\", true, \"queued\", null] != [\"queue\", [\"S1\"], [\"F1\"]]",
+    "events[11] [\"queue\", [\"S1\"], [\"F1\"]] != [\"resp\", \"follow_up\", true, \"queued\", null]",
+    "events[12] [\"resp\", \"follow_up\", true, \"queued\", null] != [\"tool_end\", \"mcp__core__append\", false]",
+    "events[25] [\"assistant\", \"error\", false, \"PART\", []] != [\"assistant\", \"stop\", false, \"PART\", []]",
+    "events[26] [\"turn_end\", \"error\"] != [\"turn_end\", \"stop\"]",
+    "events[40] [\"user\", \"AGAIN\"] != [\"system\"]",
+    "events[41] [\"assistant\", \"stop\", false, \"A5\", []] != [\"user\", \"AGAIN\"]",
+    "events[42] [\"turn_end\", \"stop\"] != [\"assistant\", \"stop\", false, \"A5\", []]",
+    "events[43] [\"agent_end\"] != [\"turn_end\", \"stop\"]",
+    "events[44] [\"settled\", false] != [\"agent_end\"]",
+    "events[45] null != [\"settled\", false]",
+    "providerRequests[3] {\"index\": 3, \"outcome\": \"completed\", \"messages\": [[\"system\"], [\"user\", \"GO\"], [\"assistant\", null, [{\"name\": \"mcp__core__gate_append\", \"args\": {\"id\": \"h1a\", \"token\": \"t-H1-1\"}}, {\"name\": \"mcp__core__append\", \"args\": {\"id\": \"h1b\"}}]], [\"tool\", \"appended h1a\", \"tool-result\"], [\"tool\", \"appended h1b\", \"tool-result\"], [\"user\", \"S1\"], [\"assistant\", \"D2\", null], [\"user\", \"F1\"], [\"user\", \"NEXT\"]], \"tools\": [\"mcp__core__append\", \"mcp__core__fail\", \"mcp__core__gate\", \"mcp__core__gate_append\"]} != {\"index\": 3, \"outcome\": \"completed\", \"messages\": [[\"system\"], [\"user\", \"GO\"], [\"assistant\", null, [{\"name\": \"mcp__core__gate_append\", \"args\": {\"id\": \"h1a\", \"token\": \"t-H1-1\"}}, {\"name\": \"mcp__core__append\", \"args\": {\"id\": \"h1b\"}}]], [\"tool\", \"appended h1a\", \"tool-result\"], [\"tool\", \"appended h1b\", \"tool-result\"], [\"user\", \"S1\"], [\"assistant\", \"D2\", null], [\"user\", \"F1\"], [\"assistant\", \"PART\", null], [\"user\", \"NEXT\"]], \"tools\": [\"mcp__core__append\", \"mcp__core__fail\", \"mcp__core__gate\", \"mcp__core__gate_append\"]}",
+    "providerRequests[4] {\"index\": 4, \"outcome\": \"completed\", \"messages\": [[\"system\"], [\"user\", \"GO\"], [\"assistant\", null, [{\"name\": \"mcp__core__gate_append\", \"args\": {\"id\": \"h1a\", \"token\": \"t-H1-1\"}}, {\"name\": \"mcp__core__append\", \"args\": {\"id\": \"h1b\"}}]], [\"tool\", \"appended h1a\", \"tool-result\"], [\"tool\", \"appended h1b\", \"tool-result\"], [\"user\", \"S1\"], [\"assistant\", \"D2\", null], [\"user\", \"F1\"], [\"user\", \"NEXT\"], [\"assistant\", \"N4\", null], [\"user\", \"AGAIN\"]], \"tools\": [\"mcp__core__append\", \"mcp__core__fail\", \"mcp__core__gate\", \"mcp__core__gate_append\"]} != {\"index\": 4, \"outcome\": \"completed\", \"messages\": [[\"system\"], [\"user\", \"GO\"], [\"assistant\", null, [{\"name\": \"mcp__core__gate_append\", \"args\": {\"id\": \"h1a\", \"token\": \"t-H1-1\"}}, {\"name\": \"mcp__core__append\", \"args\": {\"id\": \"h1b\"}}]], [\"tool\", \"appended h1a\", \"tool-result\"], [\"tool\", \"appended h1b\", \"tool-result\"], [\"user\", \"S1\"], [\"assistant\", \"D2\", null], [\"user\", \"F1\"], [\"assistant\", \"PART\", null], [\"user\", \"NEXT\"], [\"assistant\", \"N4\", null], [\"user\", \"AGAIN\"]], \"tools\": [\"mcp__core__append\", \"mcp__core__fail\", \"mcp__core__gate\", \"mcp__core__gate_append\"]}",
+    "entries[10] [\"assistant\", \"error\", false, \"PART\", []] != [\"assistant\", null, false, \"PART\", []]"
+  ]
+}

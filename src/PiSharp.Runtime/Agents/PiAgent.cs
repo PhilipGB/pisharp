@@ -83,6 +83,12 @@ public sealed class PiAgent
     internal ToolDeclarationTranscript GetToolTranscript(AgentSession session) =>
         _toolTranscripts.GetValue(session, _ => new());
 
+    /// <summary>
+    /// The system revisions the restored session already carried, snapshotted at restore time so a
+    /// run that appends revisions cannot change what an asynchronous consumer compares against.
+    /// </summary>
+    internal IReadOnlyList<ChatMessage>? RestoredSystemRevisions => _currentToolTranscript?.RestoredSystemRevisions;
+
     public string SystemInstructions => GetSystemInstructionsForCurrentLoadout();
     internal IReadOnlyDictionary<string, string> SystemMessageSections => GetSystemMessageSections();
     internal JsonElement GetSharePresentation(AgentSession session)

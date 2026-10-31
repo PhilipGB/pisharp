@@ -1,0 +1,30 @@
+{
+  "case": "E7",
+  "title": "provider error with queued steering and follow-up",
+  "status": "differ",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "pisharpSha": "4f05d7d6109a6feb422aed17b3ad3bf4ccd6e6b6",
+  "diffs": [
+    "events[12] [\"agent_start\"] != [\"turn_start\"]",
+    "events[13] [\"turn_start\"] != [\"queue\", [], [\"F1\"]]",
+    "events[14] [\"queue\", [], [\"F1\"]] != [\"user\", \"S1\"]",
+    "events[15] [\"user\", \"S1\"] != [\"assistant\", \"stop\", false, \"N2\", []]",
+    "events[16] [\"assistant\", \"stop\", false, \"N2\", []] != [\"turn_end\", \"stop\"]",
+    "events[17] [\"turn_end\", \"stop\"] != [\"turn_start\"]",
+    "events[18] [\"turn_start\"] != [\"queue\", [], []]",
+    "events[19] [\"queue\", [], []] != [\"user\", \"F1\"]",
+    "events[20] [\"user\", \"F1\"] != [\"assistant\", \"stop\", false, \"N3\", []]",
+    "events[21] [\"assistant\", \"stop\", false, \"N3\", []] != [\"turn_end\", \"stop\"]",
+    "events[22] [\"turn_end\", \"stop\"] != [\"agent_end\"]",
+    "events[23] [\"agent_end\"] != [\"settled\", false]",
+    "events[24] [\"settled\", false] != [\"resp\", \"prompt\", true, \"started\", null]",
+    "events[25] [\"resp\", \"prompt\", true, \"started\", null] != [\"agent_start\"]",
+    "events[26] [\"agent_start\"] != [\"turn_start\"]",
+    "events[27] [\"turn_start\"] != [\"user\", \"NEXT\"]",
+    "events[28] [\"user\", \"NEXT\"] != [\"assistant\", \"stop\", false, \"N4\", []]",
+    "events[29] [\"assistant\", \"stop\", false, \"N4\", []] != [\"turn_end\", \"stop\"]",
+    "events[30] [\"turn_end\", \"stop\"] != [\"agent_end\"]",
+    "events[31] [\"agent_end\"] != [\"settled\", false]",
+    "events[32] [\"settled\", false] != null"
+  ]
+}

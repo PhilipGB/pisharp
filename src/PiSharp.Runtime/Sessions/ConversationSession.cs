@@ -608,7 +608,7 @@ public sealed class ConversationSession
 
     /// <summary>Close a crash-interrupted run without guessing which side effects happened.
     /// No tool is invoked during recovery; the next model turn sees an explicit warning.</summary>
-    public bool RecoverIncomplete()
+    public bool RecoverIncomplete(bool announce = true)
     {
         var path = Tree.ActivePath();
         var start = path.LastOrDefault(node => node.Type == "run_started");
@@ -644,9 +644,12 @@ public sealed class ConversationSession
             !hasUncheckpointedOutput)
             return false;
         Tree.Append("run_recovered", JsonSerializer.SerializeToElement(new { runId, unknownOperations = unknown }));
-        var fragment = string.IsNullOrEmpty(progress) ? "" : $" Last checkpointed assistant text: {progress[..Math.Min(progress.Length, 2048)]}.";
-        Append(new ChatMessage(ChatRole.User,
-            $"[Recovery notice: the previous request '{prompt}' was interrupted. {warning}{fragment} Uncheckpointed output may be missing. Do not automatically repeat it.]"));
+        if (announce)
+        {
+            var fragment = string.IsNullOrEmpty(progress) ? "" : $" Last checkpointed assistant text: {progress[..Math.Min(progress.Length, 2048)]}.";
+            Append(new ChatMessage(ChatRole.User,
+                $"[Recovery notice: the previous request '{prompt}' was interrupted. {warning}{fragment} Uncheckpointed output may be missing. Do not automatically repeat it.]"));
+        }
         return true;
     }
 

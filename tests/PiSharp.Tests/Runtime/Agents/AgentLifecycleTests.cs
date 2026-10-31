@@ -370,8 +370,14 @@ public sealed class AgentLifecycleTests
         var interrupted = Assert.Single(session.Tree.Entries, entry => entry.Type == "interrupted");
         Assert.Equal("partial", interrupted.Payload.GetProperty("partialText").GetString());
         Assert.Equal("partial", interrupted.Payload.GetProperty("partialAssistantText").GetString());
-        var projected = Assert.Single(PiJsonlSessionInterchange.ProjectEntries(session),
+        // The persisted failed assistant is the Pi record for the attempt; the interrupted node is
+        // bookkeeping and adds no second entry.
+        Assert.DoesNotContain(PiJsonlSessionInterchange.ProjectEntries(session),
             entry => entry.GetProperty("id").GetString() == interrupted.Id);
+        var failedAssistant = session.Tree.ActivePath().Single(entry => entry.Type == "chat" &&
+            ConversationMessageCodec.RestoreEntry(entry).Role == ChatRole.Assistant);
+        var projected = Assert.Single(PiJsonlSessionInterchange.ProjectEntries(session),
+            entry => entry.GetProperty("id").GetString() == failedAssistant.Id);
         Assert.Equal("error", projected.GetProperty("message").GetProperty("stopReason").GetString());
         Assert.Equal("failed after output", projected.GetProperty("message").GetProperty("errorMessage").GetString());
         Assert.Equal("partial", session.ContextMessages().Last().Text);
