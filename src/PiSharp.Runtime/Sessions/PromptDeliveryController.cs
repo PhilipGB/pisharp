@@ -191,11 +191,15 @@ internal sealed class PromptDeliveryController
             var before = _queue.Snapshot();
             var prompts = _queue.TakeSteeringForProvider();
             if (prompts.Count == 0) return [];
-            foreach (var pending in RemainingQueueSnapshots(before, steering: true, prompts))
-                _events?.Invoke(QueueEvent(pending));
+            // Pinned Pi drains one steering message at a time and publishes the queue state that
+            // reflects that message before delivering it, so the drain reads
+            // snapshot, message, snapshot, message. Publishing every snapshot first would report
+            // queue states the caller never observed between deliveries.
+            var snapshots = RemainingQueueSnapshots(before, steering: true, prompts).ToList();
             var messages = new ChatMessage[prompts.Count];
             for (var index = 0; index < prompts.Count; index++)
             {
+                if (index < snapshots.Count) _events?.Invoke(QueueEvent(snapshots[index]));
                 var prompt = prompts[index];
                 messages[index] = prompt.Message;
                 _events?.Invoke(new AgentLifecycleEvent("steering_message_accepted", Text: prompt.Text)
@@ -204,6 +208,8 @@ internal sealed class PromptDeliveryController
                     MessageTimestamp = DateTimeOffset.UtcNow
                 });
             }
+            for (var index = prompts.Count; index < snapshots.Count; index++)
+                _events?.Invoke(QueueEvent(snapshots[index]));
             return messages;
         }
     }
