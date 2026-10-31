@@ -266,13 +266,24 @@ Implementation points:
   known-differences, 0 unresolved, 0 one-sided, 0 error.
 - Acceptance verifier: passed.
 - Verifier negative controls (7 tampers): all rejected.
-- Full repository validation (`dotnet test PiSharp.slnx`): the complete
-  run is intermittently blocked by an environmental test-host failure on
-  this machine — orphaned `testhost` processes keep the output pipe open
-  after `dotnet test` exits, and `Internal CLR error (0x80131506)` aborts
-  occur even in a plain `dotnet build`. Focused filters run reliably and
-  are used as the validation signal; the hang reproduces without any
-  milestone change in the tree.
+- Full repository validation (`dotnet test PiSharp.slnx`): partly blocked
+  by this machine's environment, with the causes isolated rather than
+  assumed.
+  - 94 of 96 full-suite failures are `ToolFailureException: ripgrep (rg)
+    is not available` — this machine has no `rg` on `PATH`.
+    `RipgrepSearch`/`FdSearch` resolve the binary by `PATH` lookup only, so
+    every grep/fd-parity test fails. The same filter on the branch and on
+    branch base `fc75ba2a` gives **identical** results: 233 tests, 96
+    failed, 137 passed, 94 `rg` errors — so these failures are
+    pre-existing and environmental, not caused by this branch.
+  - The remaining two are load-sensitive: a provider idle-timeout test
+    (observed to fail at a 1.003 s stall against a 1 s idle timeout) and a
+    concurrency test that asserts a grep tool result is not an error.
+  - Long full runs also intermittently fail to finish even after the tests
+    report, because child `testhost`/`dotnet` processes keep the output
+    pipe open; one run aborted with `Internal CLR error (0x80131506)`,
+    which was also observed in a plain `dotnet build`. Focused suites and
+    the differential corpus are the reliable signals and both pass.
 
 Notes on behaviour that is not byte-for-byte identical, and why:
 

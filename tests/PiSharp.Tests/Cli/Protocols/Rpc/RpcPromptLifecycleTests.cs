@@ -34,7 +34,9 @@ public sealed class RpcPromptLifecycleTests
         channel.Writer.TryWrite("{\"id\":\"fork-messages\",\"type\":\"get_fork_messages\"}");
         channel.Writer.TryWrite("{\"id\":\"blank-name\",\"type\":\"set_session_name\",\"name\":\"  \"}");
         channel.Writer.TryWrite("{\"id\":\"entries\",\"type\":\"get_entries\"}");
-        var firstEntryId = session.Tree.Entries[0].Id;
+        // The system/tool transcript is persisted before the prompt and is not a Pi session
+        // entry, so the first exported entry is the first chat node, not Entries[0].
+        var firstEntryId = session.Tree.Entries.First(entry => entry.Type == "chat").Id;
         channel.Writer.TryWrite($"{{\"id\":\"entries-after-cursor\",\"type\":\"get_entries\",\"since\":\"{firstEntryId}\"}}");
         channel.Writer.TryWrite("{\"id\":\"bad-cursor\",\"type\":\"get_entries\",\"since\":\"missing\"}");
         channel.Writer.TryWrite("{\"id\":\"tree\",\"type\":\"get_tree\"}");
