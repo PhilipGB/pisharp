@@ -125,7 +125,7 @@ internal sealed class ProviderToolCallDeltaCapture : IProviderToolCallDeltaSourc
 
     private sealed class CapturingStream(Stream inner, Capture capture) : Stream
     {
-        private readonly SseToolCallParser _parser = new(capture.Publish);
+        private readonly SseToolCallParser _parser = new(capture.Publish, capture.SetStreamFailure);
         private int _completed;
 
         public override bool CanRead => inner.CanRead;
@@ -221,6 +221,10 @@ internal sealed class ProviderToolCallDeltaCapture : IProviderToolCallDeltaSourc
                 $"Response status code does not indicate success: {(int)statusCode} ({statusCode}). {body}",
                 null, statusCode);
 
+        /// <summary>Records a mid-stream provider error payload as the request's failure.</summary>
+        public void SetStreamFailure(string message) =>
+            ResponseFailure ??= new InvalidOperationException(message);
+
         public void Publish(ProviderToolCallDelta delta)
         {
             lock (_argumentsGate)
@@ -252,7 +256,8 @@ internal sealed class ProviderToolCallDeltaCapture : IProviderToolCallDeltaSourc
         public void Dispose() => owner.Release(this);
     }
 
-    private sealed class SseToolCallParser(Action<ProviderToolCallDelta> publish)
+    private sealed class SseToolCallParser(Action<ProviderToolCallDelta> publish,
+        Action<string>? failed = null)
     {
         private readonly Decoder _decoder = Encoding.UTF8.GetDecoder();
         private readonly StringBuilder _line = new();
@@ -303,6 +308,16 @@ internal sealed class ProviderToolCallDeltaCapture : IProviderToolCallDeltaSourc
             try
             {
                 using var document = JsonDocument.Parse(data);
+                // A provider that terminates the SSE body with an error payload instead of a terminal
+                // event still returns HTTP 200, so the stream ends "successfully" unless the payload
+                // is surfaced. Pinned Pi fails the turn here; record the failure so the turn fails
+                // and the partial assistant is handled like any other failed provider request.
+                if (document.RootElement.ValueKind == JsonValueKind.Object &&
+                    document.RootElement.TryGetProperty("error", out var streamError))
+                {
+                    failed?.Invoke(StreamErrorMessage(streamError));
+                    return;
+                }
                 if (document.RootElement.TryGetProperty("type", out var type))
                 {
                     var root = document.RootElement;
@@ -337,5 +352,13 @@ internal sealed class ProviderToolCallDeltaCapture : IProviderToolCallDeltaSourc
             }
             catch (Exception error) when (error is JsonException or InvalidOperationException or FormatException or KeyNotFoundException) { }
         }
+
+        private static string StreamErrorMessage(JsonElement error) => error.ValueKind switch
+        {
+            JsonValueKind.String => error.GetString() ?? "provider stream error",
+            JsonValueKind.Object when error.TryGetProperty("message", out var message) &&
+                message.ValueKind == JsonValueKind.String => message.GetString() ?? "provider stream error",
+            _ => error.GetRawText()
+        };
     }
 }

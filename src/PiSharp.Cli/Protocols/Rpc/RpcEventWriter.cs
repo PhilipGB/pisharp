@@ -67,6 +67,10 @@ internal sealed class RpcEventWriter(JsonLineWriter output, Func<JsonObject?>? g
         var projector = new RpcEventProjector();
         projector.SetThinkingLevel(run.ThinkingLevel);
         var pendingPromptMessages = new List<AgentLifecycleEvent>();
+        // Drain snapshots that belong to a pending batch prompt, kept in drain order so each one is
+        // emitted immediately before the message it reflects (pinned Pi takes, publishes, then
+        // delivers one queued message at a time).
+        var pendingQueueUpdates = new List<AgentLifecycleEvent>();
         lock (_projectorGate)
         {
             _activeProjector = projector;
@@ -122,6 +126,11 @@ internal sealed class RpcEventWriter(JsonLineWriter output, Func<JsonObject?>? g
                     continue;
                 }
                 if (item.Type == "prompt_rejected") continue;
+                if (item.Type == "queue_update" && pendingPromptMessages.Count > 0)
+                {
+                    pendingQueueUpdates.Add(item);
+                    continue;
+                }
                 if (item.Type == "model_request_started" ||
                     pendingPromptMessages.Count > 0 && item.Type is "turn_completed" or "turn_failed" or "turn_interrupted")
                 {
@@ -136,17 +145,27 @@ internal sealed class RpcEventWriter(JsonLineWriter output, Func<JsonObject?>? g
                             await output.EmitAsync(record, CancellationToken.None);
                         lock (_projectorGate) _lastSystemMessage = currentSystemMessage.DeepClone().AsObject();
                     }
-                    foreach (var pendingPrompt in pendingPromptMessages)
+                    for (var index = 0; index < pendingPromptMessages.Count; index++)
                     {
+                        if (index < pendingQueueUpdates.Count)
+                            await EmitBufferedQueueUpdateAsync(pendingQueueUpdates[index]);
                         IReadOnlyList<object> promptRecords;
-                        lock (_projectorGate) promptRecords = projector.ProjectPrompt(pendingPrompt, run.Conversation);
+                        lock (_projectorGate) promptRecords = projector.ProjectPrompt(
+                            pendingPromptMessages[index], run.Conversation);
                         foreach (var record in promptRecords)
                             await output.EmitAsync(record, CancellationToken.None);
                     }
+                    for (var index = pendingPromptMessages.Count; index < pendingQueueUpdates.Count; index++)
+                        await EmitBufferedQueueUpdateAsync(pendingQueueUpdates[index]);
                     pendingPromptMessages.Clear();
+                    pendingQueueUpdates.Clear();
                 }
                 if (item.Type == "agent_settled")
                 {
+                    // A drain snapshot that never found its prompt must still be reported.
+                    foreach (var buffered in pendingQueueUpdates)
+                        await EmitBufferedQueueUpdateAsync(buffered);
+                    pendingQueueUpdates.Clear();
                     if (accepted) await output.EmitAsync(new { type = "agent_settled", aborted = item.Aborted ?? false },
                         CancellationToken.None);
                     continue;
@@ -176,6 +195,16 @@ internal sealed class RpcEventWriter(JsonLineWriter output, Func<JsonObject?>? g
             }
         }
         return succeeded;
+
+        async Task EmitBufferedQueueUpdateAsync(AgentLifecycleEvent queueEvent)
+        {
+            IReadOnlyList<object> queueRecords;
+            lock (_projectorGate)
+                queueRecords = projector.Project(queueEvent, run.Conversation, turnStartHead, runStartHead,
+                    accepted, api, turnOpen);
+            foreach (var record in queueRecords)
+                await output.EmitAsync(record, CancellationToken.None);
+        }
     }
 
     private void SignalRetryEndEmitted()

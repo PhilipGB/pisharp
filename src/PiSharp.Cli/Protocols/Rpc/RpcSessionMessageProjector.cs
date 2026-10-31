@@ -73,7 +73,7 @@ internal static class RpcSessionMessageProjector
                 // reason is authoritative when it already records a failure (including Pi's trailing
                 // error assistant after a tool round); otherwise the interrupt record carries it,
                 // because legacy sessions persist the partial assistant as a plain stop message.
-                if (existing["stopReason"]?.GetValue<string>() is not "aborted" or "error")
+                if (existing["stopReason"]?.GetValue<string>() is not ("aborted" or "error"))
                 {
                     existing["stopReason"] = message["stopReason"]?.DeepClone();
                     existing["errorMessage"] = message["errorMessage"]?.DeepClone();

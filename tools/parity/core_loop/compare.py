@@ -130,7 +130,7 @@ def project_provider_requests(requests):
                 normalized.append('tool-result')
             messages.append(normalized)
         view.append(dict(index=request.get('index'), outcome=request.get('outcome'),
-                         messages=messages, tools=sorted(request.get('tools', []))))
+                         messages=messages, tools=request.get('tools', [])))
     return view
 
 
@@ -163,9 +163,12 @@ def project_observation(obs):
     return dict(
         events=project_events(obs['records']),
         providerRequests=project_provider_requests(obs['providerRequests']),
-        effects=sorted(obs.get('effects', [])),
-        mcpCalls=sorted([[call.get('name'), call.get('args')] for call in obs.get('mcpCalls', [])],
-                        key=lambda call: json.dumps(call, sort_keys=True)),
+        # Physical side-effect order and physical MCP call order are compared as observed. Where a
+        # product's own ordering is nondeterministic, the permitted alternatives come from Pi-vs-Pi
+        # calibration (tools/parity/core_loop/order_calibration.json); the evidence is never sorted
+        # to make a comparison pass.
+        effects=obs.get('effects', []),
+        mcpCalls=[[call.get('name'), call.get('args')] for call in obs.get('mcpCalls', [])],
         state=project_state(obs.get('state')),
         entries=normalize_entries(obs.get('sessionEntries', [])),
         error=obs.get('error'),

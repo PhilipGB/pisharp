@@ -274,6 +274,11 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
                 if (!ended) publish(new("model_request_interrupted"));
             }
 
+            // A provider that ends the SSE body with an error payload leaves the SDK stream complete,
+            // so the transport records the failure instead. Adopt it here so such a request fails
+            // like any other provider error rather than completing with partial content.
+            failure ??= toolCallCapture?.ResponseFailure;
+
             if (failure is null)
             {
                 var response = responseUpdates.ToChatResponse();
