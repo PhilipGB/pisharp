@@ -10,7 +10,7 @@ namespace PiSharp.Tests;
 public sealed class RpcInterruptedSessionProcessTests
 {
     [Fact]
-    public async Task AbortedPartialAssistantIsVisibleInSessionSnapshotsAndNextProviderRequest()
+    public async Task AbortedPartialAssistantStaysInSessionSnapshotsAndIsDroppedFromNextProviderRequest()
     {
         if (!OperatingSystem.IsLinux()) return;
         var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-interrupted-" + Guid.NewGuid().ToString("N"));
@@ -133,7 +133,9 @@ public sealed class RpcInterruptedSessionProcessTests
             await ReadUntilAsync(process, record => record.TryGetProperty("type", out var type) &&
                 type.GetString() == "agent_settled", timeout.Token);
             var request = await continuationRequest.Task.WaitAsync(timeout.Token);
-            Assert.Contains("aborted partial", request, StringComparison.Ordinal);
+            // Pi parity (differential D2, pinned Pi transform-messages): the aborted partial stays in
+            // the session snapshots but is never replayed to the provider on the next request.
+            Assert.DoesNotContain("aborted partial", request, StringComparison.Ordinal);
 
             process.StandardInput.Close();
             await process.WaitForExitAsync(timeout.Token);

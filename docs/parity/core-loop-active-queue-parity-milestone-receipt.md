@@ -2,16 +2,17 @@
 
 ## Status
 
-Completed. The core agent-loop active-run queue and loop behavior is
-differential-verified against the pinned Pi reference across the mandated
-capability surface: active steering, active follow-up, mixed
-steering/follow-up, queue modes, abort while queued/provider-active/
-tool-active, provider failure before/after partial content, tool failure
-while other tools or queued messages exist, concurrent tool calls with
-steering/follow-up, queued-message ordering around tool completion and
-provider requests, preservation/restoration/discard of queued messages,
-exactly-once execution/persistence of tool calls/results, and final
-settlement and subsequent prompt behavior.
+Core differential work complete (41-case corpus, 33 match / 8 frozen
+known-differences, acceptance verifier and negative controls passing at
+implementation SHA `3cb1d455`). A final layering-alignment cycle is in
+progress and the branch is paused at a clean point: failed/aborted
+assistant messages now follow the pinned Pi layering (kept in the session
+and canonical context, omitted only at the provider wire boundary), the
+entry projections no longer double-emit them, and three focused tests are
+retargeted to the Pi-aligned behavior. Two focused-test failures remain
+open (see "Pause state and resume checklist" below); the committed
+acceptance evidence predates the layering work and must be regenerated
+before the PR is opened.
 
 ## Pins
 
@@ -172,19 +173,72 @@ fails for each tamper:
 **Result: `NEGATIVE CONTROLS PASSED: the verifier rejected all tampered
 evidence.`** (all 7 tampers rejected)
 
-## Validation
+## Validation (state at pause)
 
-- `dotnet build PiSharp.slnx --warnaserror`: 0 errors, 0 warnings.
-- Focused regression suites (CoreLoopParityTests, RpcModeTests,
-  DurableExecutionTests, ToolDeclarationHistoryTests,
-  AgentLifecycleTests): passing, including the retry context-omission
-  regression fixed by this milestone's follow-up commit.
-- Full differential corpus (41 cases): 33 match, 8 documented
-  known-differences, 0 unresolved, 0 one-sided, 0 error.
-- Acceptance verifier: passed.
-- Verifier negative controls (7 tampers): all rejected.
-- Full repository validation (complete `dotnet test` run) is in progress;
-  results will be recorded in the final commit before merge.
+- `dotnet build PiSharp.slnx --warnaserror`: 0 errors, 0 warnings (after
+  the layering changes; no temporary debug code in the tree).
+- Focused retarget results so far:
+  - `RpcModeTests.CompactCommandCancelsAnActiveRunBeforeReturningPiResult`
+    passing (aborted assistant retained in the compacted tail, count 3).
+  - `RpcInterruptedSessionProcessTests.AbortedPartialAssistantStaysInSessionSnapshotsAndIsDroppedFromNextProviderRequest`
+    (renamed from `...IsVisibleInSessionSnapshotsAndNextProviderRequest`):
+    wire and entry assertions retargeted to Pi parity. Currently failing:
+    with the layering changes in the tree, the RPC child process goes
+    silent after `abort` (process stays alive, stdout EOF). Verified by
+    stash: at branch HEAD `481880e1` the flow completes and fails only on
+    the pre-suppression double-entry assertion, so the hang is caused by
+    the layering cycle, not pre-existing. Next step: capture the child's
+    stderr at the abort wait and inspect the abort path in
+    `ConversationRun` (persist failed assistant + interrupted node +
+    `RestoreExecutionAsync`) against the canonical context that now
+    includes the failed assistant.
+  - `CompactionTests.ToolContinuationSummaryFailureForOversizedSingleTurnDoesNotReplayTool`:
+    notice assertions retargeted to Pi parity (a live in-process failure
+    emits no recovery notice; crash/restart recovery paths keep it).
+    One count assertion still fails: `Assert.Equal(2, client.Requests)`
+    observes 1 — the follow-up prompt did not produce a second model
+    request; the path that swallows the turn (auto-compaction summary
+    failure handling) must be pinned before the test can pass.
+- Full differential corpus (41 cases): last full run 33 match, 8
+  documented known-differences, 0 unresolved — at implementation SHA
+  `3cb1d455`, i.e. before the layering cycle. Must be re-run after the
+  focused tests are green.
+- Acceptance verifier and negative controls: passing against the
+  committed contract/evidence (stale relative to the layering cycle).
+- Full repository validation (`dotnet test PiSharp.slnx`): the complete
+  run is intermittently blocked by an environmental test-host hang —
+  orphaned `testhost` processes keep the output pipe open after
+  `dotnet test` exits, and `Internal CLR error (0x80131506)` aborts have
+  occurred even in plain `dotnet build`. Focused filters run reliably and
+  are used for validation; a clean full-suite pass (or definitive
+  attribution of the hang as environmental) is still required.
+
+## Pause state and resume checklist
+
+1. Root-cause and fix the post-`abort` RPC silence in
+   `AbortedPartialAssistantStaysInSessionSnapshotsAndIsDroppedFromNextProviderRequest`
+   (capture child stderr; inspect the abort/persistence path in
+   `ConversationRun` and `RestoreExecutionAsync` with the failed assistant
+   present in the canonical context).
+2. Root-cause the missing second model request in
+   `ToolContinuationSummaryFailureForOversizedSingleTurnDoesNotReplayTool`
+   (auto-compaction summary-failure handling on the follow-up prompt).
+3. Re-run the focused filter
+   (`CoreLoopParityTests|RpcModeTests|DurableExecutionTests|ToolDeclarationHistoryTests|AgentLifecycleTests|PiJsonlSessionInterchangeTests|CompactionTests|RpcInterruptedSessionProcessTests|RpcCompactionProcessTests|BoundaryRetryFailureTests|BoundaryCompactionAndRecoveryTests`)
+   to `Failed: 0`.
+4. Re-run the 41-case differential corpus; confirm 33 match / 8 differ
+   (C4 E2 E5 E6 E7 F5 G3 H1) or update the frozen differences with
+   evidence.
+5. Regenerate the committed compact evidence and acceptance contract at
+   the final implementation SHA (`make_committed_evidence.py`); re-run
+   `verify_acceptance.py` and `verify_acceptance_negative_controls.py`.
+6. Obtain a clean full `dotnet test PiSharp.slnx` pass or definitively
+   attribute the environmental test-host hang (orphaned testhost /
+   CLR 0x80131506) with evidence.
+7. Update this receipt's validation section, commit, push, and open the
+   PR against `main` with the exact implementation SHA, Pi pin
+   `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`, verification results, and
+   intentional differences. Leave the PR open/unmerged.
 
 ## Intentional differences and limitations
 

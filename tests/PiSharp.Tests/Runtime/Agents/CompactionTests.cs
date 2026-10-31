@@ -929,10 +929,14 @@ public sealed class CompactionTests
             Assert.Contains(reloaded.Tree.ActivePath(), node => node.Type == "run_finished" &&
                 node.Payload.GetProperty("completed").GetBoolean() == false);
             await foreach (var _ in run.RunEventsAsync("inspect the previous result before trying again")) { }
-            Assert.True(client.SawRecoveryNotice);
+            // Pi parity: a live (in-process) turn failure does not produce a recovery notice -
+            // the crash/restart recovery paths keep it. The previous tool result stays in the
+            // context, so the model can inspect it without the tool being replayed.
+            Assert.False(client.SawRecoveryNotice);
             Assert.Equal(2, client.Requests);
             Assert.Equal(2, client.Summaries);
-            Assert.Contains(conversation.ActiveMessages(), message => message.Text.Contains("Recovery notice", StringComparison.Ordinal));
+            Assert.DoesNotContain(conversation.ActiveMessages(),
+                message => message.Text.Contains("Recovery notice", StringComparison.Ordinal));
         }
         finally { Directory.Delete(cwd, recursive: true); }
     }

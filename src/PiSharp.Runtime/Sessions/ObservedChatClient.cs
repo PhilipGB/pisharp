@@ -326,7 +326,19 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
             ? messages : await projectContext(messages, force, cancellationToken);
         if (transformContext is not null)
             projected = await transformContext(projected, cancellationToken);
+        projected = DropIncompleteAssistantTurns(projected);
         return AttachReadImages(AddMissingFunctionResults(projected)).ToArray();
+    }
+
+    // Pi parity (pinned pi packages/ai/src/api/transform-messages.ts): an errored or aborted
+    // assistant turn stays in the session and in the canonical context, but is never replayed
+    // to the provider, and its (possibly partial) tool calls are not tracked for orphan results.
+    private static IReadOnlyList<ChatMessage> DropIncompleteAssistantTurns(IReadOnlyList<ChatMessage> messages)
+    {
+        return messages.Where(message =>
+            !(message.Role == ChatRole.Assistant &&
+              ChatMessageProperties.String(message.AdditionalProperties, "pisharp.stopReason") is "aborted" or "error"))
+            .ToList();
     }
 
     private async Task<IReadOnlyList<ChatMessage>?> RecoverOverflowAsync(IReadOnlyList<ChatMessage> original,

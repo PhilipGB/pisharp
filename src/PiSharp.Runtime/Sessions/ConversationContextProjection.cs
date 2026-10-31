@@ -327,9 +327,11 @@ internal static class ConversationContextProjection
     internal static ChatMessage? ContextMessageForNode(ConversationNode node)
     {
         if (node.Type == "chat") return Restore(node.Payload, node.Id);
-        // The interrupted bookkeeping node's partial assistant is the failed/aborted assistant,
-        // which is retained in the session log but dropped from model context (matching Pi).
-        if (node.Type == "interrupted") return null;
+        // The interrupted bookkeeping node projects its partial assistant; when the interrupt path
+        // also persisted that assistant as a chat entry, ProjectContextEntries de-duplicates it.
+        if (node.Type == "interrupted" &&
+            PiJsonlEntryCodec.StringProperty(node.Payload, "partialAssistantText") is { Length: > 0 } partialText)
+            return new ChatMessage(ChatRole.Assistant, partialText);
         if (node.Type is "custom_message" or "branch_summary")
             return PiJsonlEntryCodec.ImportedContextMessage(node);
         if (node.Type != "bash_execution") return null;
@@ -344,12 +346,6 @@ internal static class ConversationContextProjection
         {
             var message = ContextMessageForNode(node);
             if (message is null) continue;
-            // A failed or aborted provider assistant is retained in the session log but is not sent
-            // to the provider: the next request must see a closed turn without the incomplete
-            // assistant, matching Pi (which keeps the message in history but drops it from context).
-            if (node.Type == "chat" && message.Role == ChatRole.Assistant &&
-                ChatMessageProperties.String(message.AdditionalProperties, "pisharp.stopReason") is "aborted" or "error")
-                continue;
             if (node.Type == "interrupted" && message.Text.Length > 0 &&
                 entries.LastOrDefault(entry => entry.Message.Role == ChatRole.Assistant)?.Message.Text == message.Text)
                 continue;

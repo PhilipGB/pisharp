@@ -112,6 +112,24 @@ internal static class PiJsonlEntryCodec
         return record;
     }
 
+    /// <summary>
+    /// An interrupted node duplicates the persisted failed-assistant chat entry that is its parent
+    /// (the Pi-shaped record for the failed or aborted turn), so it does not export a second message.
+    /// Legacy sessions that persist only the interrupted node still export it.
+    /// </summary>
+    internal static bool IsSuppressedInterrupted(ConversationNode node,
+        IReadOnlyDictionary<string, ConversationNode> nodesById)
+    {
+        if (node.Type != "interrupted" || node.ParentId is not { } parentId ||
+            !nodesById.TryGetValue(parentId, out var parent) || parent.Type != "chat")
+            return false;
+        var parentMessage = ConversationMessageCodec.RestoreEntry(parent);
+        if (parentMessage.Role != ChatRole.Assistant ||
+            ChatMessageProperties.String(parentMessage.AdditionalProperties, "pisharp.stopReason") is not "aborted" or "error")
+            return false;
+        return parentMessage.Text == (StringProperty(node.Payload, "partialAssistantText") ?? "");
+    }
+
     internal static JsonObject ProjectInterruptedMessage(ConversationSession session, ConversationNode node,
         string? api = null)
     {

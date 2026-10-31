@@ -66,8 +66,15 @@ internal static class RpcSessionMessageProjector
                 ReadText(existing["content"]) == ReadText(message["content"]))
             {
                 // The interrupted node's projected assistant duplicates the failed/aborted assistant
-                // the interrupt path persists as a chat entry. Keep the persisted assistant (with its
-                // stop reason) and drop the bookkeeping duplicate.
+                // the interrupt path persists for the same turn. The persisted assistant's stop
+                // reason is authoritative when it already records a failure (including Pi's trailing
+                // error assistant after a tool round); otherwise the interrupt record carries it,
+                // because legacy sessions persist the partial assistant as a plain stop message.
+                if (existing["stopReason"]?.GetValue<string>() is not "aborted" or "error")
+                {
+                    existing["stopReason"] = message["stopReason"]?.DeepClone();
+                    existing["errorMessage"] = message["errorMessage"]?.DeepClone();
+                }
                 continue;
             }
             if (edits.TryGetValue(node.Id, out var replacement) &&

@@ -23,8 +23,11 @@ public static class PiJsonlSessionInterchange
     public static IReadOnlyList<JsonElement> ProjectEntries(ConversationSession session, string? api = null)
     {
         ArgumentNullException.ThrowIfNull(session);
-        return session.Tree.Entries.Select(node =>
-            JsonSerializer.SerializeToElement(ProjectEntry(session, node, api))).ToArray();
+        var nodesById = session.Tree.Entries.ToDictionary(node => node.Id, StringComparer.Ordinal);
+        return session.Tree.Entries
+            .Where(node => !PiJsonlEntryCodec.IsSuppressedInterrupted(node, nodesById))
+            .Select(node =>
+                JsonSerializer.SerializeToElement(ProjectEntry(session, node, api))).ToArray();
     }
 
     /// <summary>Resolve the current branch's Pi thinking-level state, if the imported log records one.</summary>
