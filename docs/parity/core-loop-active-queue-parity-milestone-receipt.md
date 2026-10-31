@@ -2,6 +2,8 @@
 
 ## Status
 
+**Work in progress; the evidence and acceptance contract below are stale.**
+
 The core agent-loop active-run queue and loop behavior is
 differential-verified against the pinned Pi reference across the mandated
 capability surface: active steering, active follow-up, mixed
@@ -13,10 +15,31 @@ provider requests, preservation/restoration/discard of queued messages,
 exactly-once execution/persistence of tool calls/results, and final
 settlement and subsequent prompt behavior.
 
-A final layering-alignment cycle completed the failed/aborted assistant
+A layering-alignment cycle completed the failed/aborted assistant
 handling: those messages follow the pinned Pi layering (kept in the
 session and canonical context, omitted only at the provider wire
 boundary), and the entry projections no longer double-emit them.
+
+Review of the first submission found that the comparator sorted side
+effects and MCP calls, which erased ordering evidence that the task
+explicitly required. With ordering compared strictly — and with a
+mid-stream provider error now surfaced as a failure — the honest corpus is
+**30 match / 11 differ**, not the 33/8 recorded below:
+
+```
+C4 D4 E5 E6 E7 F4 F5 F6 G1 G3 H1
+```
+
+`tools/parity/core_loop/calibrate_order.py` separates the causes:
+
+| Case | Pi | PiSharp | Meaning |
+| --- | --- | --- | --- |
+| F4 | varies (`effects`) | varies (`effects`, `mcpCalls`) | Pi is nondeterministic here (freeze permitted alternatives); PiSharp additionally varies where Pi does not, which is a PiSharp defect |
+| D4, F6, G1 | stable | stable, different | genuine ordering gaps (concurrent tool completion and MCP dispatch order) |
+| C4, F5 | stable | stable, different | a batch turn's drain snapshots: the follow-up half is fixed, the steering half still emits both snapshots before the first message |
+| E5, E6, E7 | stable | stable, different | `agent_start` for a follow-up turn after a failed turn |
+| G3 | stable | stable, different | unchanged system message re-emitted after a restart |
+| H1 | composed of the above | | |
 
 ## Pins
 
