@@ -109,11 +109,12 @@ def verify(contract_path):
             if expected_status != 'match':
                 failures.append(f'{case_id}: status match but contract expects {expected_status}')
         else:  # differ
-            if expected_status == 'intentional-safety':
+            if expected_status in ('intentional-safety', 'known-difference'):
                 observed_safety += 1
-                # An intentional safety difference must name the justification.
+                # A justified difference (intentional safety or a documented known
+                # behavioral difference) must name the justification.
                 if not entry.get('justification'):
-                    failures.append(f'{case_id}: intentional-safety case lacks a justification')
+                    failures.append(f'{case_id}: {expected_status} case lacks a justification')
             elif expected_status == 'match':
                 failures.append(f'{case_id}: status differ but contract expects match')
             else:

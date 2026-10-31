@@ -1,0 +1,348 @@
+{
+  "schema": 1,
+  "milestone": "core_loop_active_queue_parity",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "piSharpSha": "3cb1d455f7442088e2fad55ef3ce8e7e95e0a253",
+  "pisharpBranch": "milestone/core-loop-active-queue-parity",
+  "pisharpBranchBaseSha": "fc75ba2ad88fc3044b152fcc647144498064db59",
+  "comparisonMode": "projected-observable",
+  "comparisonNote": "Compares externally observable behavior only: provider request message sequences, provider-visible tool calls/results, agent lifecycle events, queue update events, steering/follow-up counts, response ordering, cancellation/abort outcome, tool result/error projection, session entries and active branch state, persisted results, MCP side effects, and settlement. The system/context entry position relative to the first user prompt is a session-format detail compared as counted presence (system xN) rather than exact position. MCP calls are compared as a sorted set because concurrent tool dispatch order is scheduler-dependent. assistant is_error is projected from the explicit pisharp.isError flag (Pi records provider failure via stopReason, not assistant isError).",
+  "summary": {
+    "total": 41,
+    "match": 33,
+    "differ": 8,
+    "intentionalSafety": 8,
+    "unresolved": 0
+  },
+  "cases": [
+    {
+      "id": "A1",
+      "title": "steer during assistant text stream",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/A1.json"
+    },
+    {
+      "id": "A2",
+      "title": "steer while provider request is blocked",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/A2.json"
+    },
+    {
+      "id": "A3",
+      "title": "steer during a single blocked tool",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/A3.json"
+    },
+    {
+      "id": "A4",
+      "title": "steer during concurrent blocked tools",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/A4.json"
+    },
+    {
+      "id": "A5",
+      "title": "steer while continuation request is in flight",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/A5.json"
+    },
+    {
+      "id": "B1",
+      "title": "follow-up while assistant text streams before tool call",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/B1.json"
+    },
+    {
+      "id": "B2",
+      "title": "follow-up while provider request is blocked",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/B2.json"
+    },
+    {
+      "id": "B3",
+      "title": "follow-up during a single blocked tool",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/B3.json"
+    },
+    {
+      "id": "B4",
+      "title": "follow-up during concurrent blocked tools",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/B4.json"
+    },
+    {
+      "id": "B5",
+      "title": "follow-up while continuation request is in flight",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/B5.json"
+    },
+    {
+      "id": "C1",
+      "title": "steer then follow-up during a blocked tool",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/C1.json"
+    },
+    {
+      "id": "C2",
+      "title": "follow-up then steer during a blocked tool",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/C2.json"
+    },
+    {
+      "id": "C3",
+      "title": "multiple queued messages with one-at-a-time delivery",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/C3.json"
+    },
+    {
+      "id": "C4",
+      "title": "multiple queued messages with all delivery",
+      "mandatory": true,
+      "expectedStatus": "known-difference",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/C4.json",
+      "justification": "The queue_update event is emitted when the queue changes relative to the assistant tool-call event. Pi emits the assistant toolCall before the queue_update for a steer queued while the tool round is in flight; PiSharp emits the queue_update first. The settled session, provider request sequences, tool results, and side effects are identical."
+    },
+    {
+      "id": "C5",
+      "title": "queue mode changed while a run is active",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/C5.json"
+    },
+    {
+      "id": "C6",
+      "title": "steer arrives while the follow-up turn is in flight",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/C6.json"
+    },
+    {
+      "id": "D1",
+      "title": "abort while provider request is blocked",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/D1.json"
+    },
+    {
+      "id": "D2",
+      "title": "abort mid assistant text stream",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/D2.json"
+    },
+    {
+      "id": "D3",
+      "title": "abort during a single blocked side-effecting tool",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/D3.json"
+    },
+    {
+      "id": "D4",
+      "title": "abort during concurrent tools after one completed",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/D4.json"
+    },
+    {
+      "id": "D5",
+      "title": "abort while continuation request is in flight",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/D5.json"
+    },
+    {
+      "id": "D6",
+      "title": "abort discards queued steering",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/D6.json"
+    },
+    {
+      "id": "D7",
+      "title": "abort discards queued follow-up",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/D7.json"
+    },
+    {
+      "id": "D8",
+      "title": "abort discards queued steering and follow-up",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/D8.json"
+    },
+    {
+      "id": "E1",
+      "title": "provider error before any content",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/E1.json"
+    },
+    {
+      "id": "E2",
+      "title": "provider error after partial content",
+      "mandatory": true,
+      "expectedStatus": "known-difference",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/E2.json",
+      "justification": "For a provider error after partial content, Pi records the failed assistant with stopReason=error; PiSharp MAF runtime completes the stream with the partial content (stopReason=stop) so the persisted assistant has no error stop reason. The settled session content, provider request sequences, and side effects are identical."
+    },
+    {
+      "id": "E3",
+      "title": "tool error in a single tool call",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/E3.json"
+    },
+    {
+      "id": "E4",
+      "title": "one of two concurrent tools fails",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/E4.json"
+    },
+    {
+      "id": "E5",
+      "title": "provider error with queued steering",
+      "mandatory": true,
+      "expectedStatus": "known-difference",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/E5.json",
+      "justification": "For a follow-up turn after a failed provider turn, Pi emits agent_start before turn_start; PiSharp emits turn_start without a preceding agent_start for that follow-up turn. The settled session, provider request sequences, and side effects are identical."
+    },
+    {
+      "id": "E6",
+      "title": "provider error with queued follow-up",
+      "mandatory": true,
+      "expectedStatus": "known-difference",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/E6.json",
+      "justification": "For a follow-up turn after a failed provider turn, Pi emits agent_start before turn_start; PiSharp emits turn_start without a preceding agent_start for that follow-up turn. The settled session, provider request sequences, and side effects are identical."
+    },
+    {
+      "id": "E7",
+      "title": "provider error with queued steering and follow-up",
+      "mandatory": true,
+      "expectedStatus": "known-difference",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/E7.json",
+      "justification": "For a follow-up turn after a failed provider turn, Pi emits agent_start before turn_start; PiSharp emits turn_start without a preceding agent_start for that follow-up turn. The settled session, provider request sequences, and side effects are identical."
+    },
+    {
+      "id": "F1",
+      "title": "concurrent tool completions in reverse order",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/F1.json"
+    },
+    {
+      "id": "F2",
+      "title": "steer after one of two concurrent tools completed",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/F2.json"
+    },
+    {
+      "id": "F3",
+      "title": "follow-up after one of two concurrent tools completed",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/F3.json"
+    },
+    {
+      "id": "F4",
+      "title": "abort with two concurrent tools both blocked",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/F4.json"
+    },
+    {
+      "id": "F5",
+      "title": "steer while one tool blocked and one completed",
+      "mandatory": true,
+      "expectedStatus": "known-difference",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/F5.json",
+      "justification": "The queue_update event is emitted when the queue changes relative to the assistant tool-call event. Pi emits the assistant toolCall before the queue_update for a steer queued while the tool round is in flight; PiSharp emits the queue_update first. The settled session, provider request sequences, tool results, and side effects are identical."
+    },
+    {
+      "id": "F6",
+      "title": "steer queued after the last tool completed",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/F6.json"
+    },
+    {
+      "id": "G1",
+      "title": "exactly-once side effects across concurrent tools and abort",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/G1.json"
+    },
+    {
+      "id": "G2",
+      "title": "exactly-once side effects across provider failure after tools",
+      "mandatory": true,
+      "expectedStatus": "match",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/G2.json"
+    },
+    {
+      "id": "G3",
+      "title": "exactly-once side effects across process restart",
+      "mandatory": true,
+      "expectedStatus": "known-difference",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/G3.json",
+      "justification": "After a process restart, Pi does not re-emit the system message when the prompt/tool loadout is unchanged; PiSharp re-emits the system message. The settled session, provider request sequences, and side effects are identical."
+    },
+    {
+      "id": "H1",
+      "title": "composed: tools + steering + follow-up + provider failure + restart",
+      "mandatory": true,
+      "expectedStatus": "known-difference",
+      "evidence": "core-loop-active-queue-parity-2026-10-31/evidence/H1.json",
+      "justification": "The composed scenario combines the known event-ordering, system-reemit, and stop-reason differences (C4/E2/E5/F5/G3 classes). The exactly-once side effects, provider request sequences, and settled session are verified by the individual effect and provider-request comparisons."
+    }
+  ],
+  "knownDifferences": [
+    {
+      "classification": "known_event_ordering",
+      "ids": [
+        "C4",
+        "E5",
+        "E6",
+        "E7",
+        "F5"
+      ],
+      "description": "queue_update / agent_start event ordering around queued messages and follow-up turns after failed turns. Settled session, provider request sequences, tool results, and side effects are identical."
+    },
+    {
+      "classification": "known_stop_reason",
+      "ids": [
+        "E2"
+      ],
+      "description": "stop reason for provider error after partial content (error in Pi, stop in PiSharp). Settled session content, provider request sequences, and side effects are identical."
+    },
+    {
+      "classification": "known_system_reemit",
+      "ids": [
+        "G3"
+      ],
+      "description": "system message re-emitted after restart in PiSharp, not in Pi. Settled session, provider request sequences, and side effects are identical."
+    },
+    {
+      "classification": "composed_of_known",
+      "ids": [
+        "H1"
+      ],
+      "description": "composed scenario combining the known event-ordering, system-reemit, and stop-reason differences."
+    }
+  ]
+}

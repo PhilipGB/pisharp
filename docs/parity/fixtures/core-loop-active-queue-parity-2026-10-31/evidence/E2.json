@@ -1,0 +1,13 @@
+{
+  "case": "E2",
+  "title": "provider error after partial content",
+  "status": "differ",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "pisharpSha": "3cb1d455f7442088e2fad55ef3ce8e7e95e0a253",
+  "diffs": [
+    "events[5] [\"assistant\", \"error\", false, \"PARTIAL-TEXT\", []] != [\"assistant\", \"stop\", false, \"PARTIAL-TEXT\", []]",
+    "events[6] [\"turn_end\", \"error\"] != [\"turn_end\", \"stop\"]",
+    "providerRequests[1] {\"index\": 1, \"outcome\": \"completed\", \"messages\": [[\"system\"], [\"user\", \"GO\"], [\"user\", \"NEXT\"]], \"tools\": [\"mcp__core__append\", \"mcp__core__fail\", \"mcp__core__gate\", \"mcp__core__gate_append\"]} != {\"index\": 1, \"outcome\": \"completed\", \"messages\": [[\"system\"], [\"user\", \"GO\"], [\"assistant\", \"PARTIAL-TEXT\", null], [\"user\", \"NEXT\"]], \"tools\": [\"mcp__core__append\", \"mcp__core__fail\", \"mcp__core__gate\", \"mcp__core__gate_append\"]}",
+    "entries[4] [\"assistant\", \"error\", false, \"PARTIAL-TEXT\", []] != [\"assistant\", null, false, \"PARTIAL-TEXT\", []]"
+  ]
+}
