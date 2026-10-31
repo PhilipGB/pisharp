@@ -2232,8 +2232,13 @@ public sealed partial class ConversationRun
                     var failedProperties = new AdditionalPropertiesDictionary
                     {
                         ["pisharp.stopReason"] = aborted && !trailingAfterTools ? "aborted" : "error",
-                        ["pisharp.errorMessage"] = attemptStream.InterruptionError ?? ""
+                        ["pisharp.errorMessage"] = attemptStream.InterruptionError ?? "",
+                        ["pisharp.provider"] = attribution.Provider,
+                        ["pisharp.model"] = attribution.Model
                     };
+                    // The failed assistant is the Pi record for that response, so it carries the
+                    // physical request identity the interrupted node also records.
+                    if (attribution.Api is { Length: > 0 } failedApi) failedProperties["pisharp.api"] = failedApi;
                     failedAssistant.AdditionalProperties = failedProperties;
                     Conversation.Append(failedAssistant);
                     Conversation.Tree.Append("interrupted", JsonSerializer.SerializeToElement(

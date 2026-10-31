@@ -928,15 +928,23 @@ public sealed class CompactionTests
             Assert.Contains(reloaded.Tree.ActivePath(), node => node.Type == "tool_outcome");
             Assert.Contains(reloaded.Tree.ActivePath(), node => node.Type == "run_finished" &&
                 node.Payload.GetProperty("completed").GetBoolean() == false);
-            await foreach (var _ in run.RunEventsAsync("inspect the previous result before trying again")) { }
-            // Pi parity: a live (in-process) turn failure does not produce a recovery notice -
-            // the crash/restart recovery paths keep it. The previous tool result stays in the
-            // context, so the model can inspect it without the tool being replayed.
+            var secondEvents = new List<AgentLifecycleEvent>();
+            await foreach (var item in run.RunEventsAsync("inspect the previous result before trying again")) secondEvents.Add(item);
+            // Pi parity: a live in-process turn failure is closed without injecting a recovery
+            // notice, because every tool outcome was checkpointed and nothing is unknown. The
+            // crash/restart recovery paths keep the notice. Pinned Pi injects no such message.
             Assert.False(client.SawRecoveryNotice);
-            Assert.Equal(2, client.Requests);
-            Assert.Equal(2, client.Summaries);
             Assert.DoesNotContain(conversation.ActiveMessages(),
                 message => message.Text.Contains("Recovery notice", StringComparison.Ordinal));
+            Assert.Contains(conversation.Tree.ActivePath(), node => node.Type == "run_recovered");
+            // This history holds a single user turn, so the retained-tail rule finds no compaction
+            // boundary and the summary cannot be retried. The pre-existing over-budget guard then
+            // rejects the prompt instead of issuing a request certain to overflow, and the failed
+            // turn's tool is not replayed.
+            var rejected = Assert.Single(secondEvents, item => item.Type == "prompt_rejected");
+            Assert.Contains("exceeds the configured budget", rejected.Error, StringComparison.Ordinal);
+            Assert.Equal(1, client.Requests);
+            Assert.Equal(1, client.Summaries);
         }
         finally { Directory.Delete(cwd, recursive: true); }
     }
