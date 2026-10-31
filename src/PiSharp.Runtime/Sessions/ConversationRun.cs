@@ -2489,7 +2489,10 @@ public sealed partial class ConversationRun
         }
         else
         {
-            var chatEntries = attemptEntries.Where(node => node.Type == "chat").ToArray();
+            var chatEntries = attemptEntries.Where(node => node.Type == "chat" &&
+                !(ChatMessageProperties.String(
+                    ConversationMessageCodec.RestoreEntry(node).AdditionalProperties,
+                    "pisharp.stopReason") is "aborted" or "error")).ToArray();
             var failedAssistant = Array.FindLastIndex(chatEntries,
                 node => ConversationMessageCodec.RestoreEntry(node).Role == ChatRole.Assistant);
             if (failedAssistant >= 0)
