@@ -22,24 +22,40 @@ boundary), and the entry projections no longer double-emit them.
 
 Review of the first submission found that the comparator sorted side
 effects and MCP calls, which erased ordering evidence that the task
-explicitly required. With ordering compared strictly — and with a
-mid-stream provider error now surfaced as a failure — the honest corpus is
-**30 match / 11 differ**, not the 33/8 recorded below:
+explicitly required. With ordering compared strictly the honest corpus
+went from the 33/8 recorded below to 30 match / 11 differ. The current
+state after the fixes in this cycle is **34 match / 7 differ**:
 
 ```
-C4 D4 E5 E6 E7 F4 F5 F6 G1 G3 H1
+C4 D2 F2 F3 F5 G3 H1
 ```
 
-`tools/parity/core_loop/calibrate_order.py` separates the causes:
+Of those seven, `D2`, `F2` and `F3` match on three consecutive isolated
+re-runs; they differ only under whole-corpus load, which points at
+load-sensitive nondeterminism in PiSharp's concurrent tool dispatch rather
+than at a deterministic gap. That same class moved `D4`, `F6` and `G1`
+between differ and match across runs. The deterministic gaps are `C4`/`F5`
+(the steering half of a batch drain, below), `G3` (an unchanged system
+message re-emitted after restart) and `H1` (composed).
 
-| Case | Pi | PiSharp | Meaning |
-| --- | --- | --- | --- |
-| F4 | varies (`effects`) | varies (`effects`, `mcpCalls`) | Pi is nondeterministic here (freeze permitted alternatives); PiSharp additionally varies where Pi does not, which is a PiSharp defect |
-| D4, F6, G1 | stable | stable, different | genuine ordering gaps (concurrent tool completion and MCP dispatch order) |
-| C4, F5 | stable | stable, different | a batch turn's drain snapshots: the follow-up half is fixed, the steering half still emits both snapshots before the first message |
-| E5, E6, E7 | stable | stable, different | `agent_start` for a follow-up turn after a failed turn |
-| G3 | stable | stable, different | unchanged system message re-emitted after a restart |
-| H1 | composed of the above | | |
+`tools/parity/core_loop/calibrate_order.py` separates the causes.
+
+Fixed in this cycle, each verified on its own differential case:
+
+| Case | Cause | Fix |
+| --- | --- | --- |
+| E2 | a provider that ends the SSE body with an error payload still returns HTTP 200, so the SDK stream completed and the turn was recorded as `stop` with the partial assistant left on the wire | the transport records that payload as the request failure and the client adopts it, so the turn fails |
+| E5, E6, E7 | no `agent_start` for a queue batch delivered after a failed turn | the writer tracks whether an agent run is open and starts a new one for such a continuation |
+| B4, D4, F4, F6, G1 | previously compared only after sorting | ordering is compared strictly; these now match on their own |
+
+Remaining, with cause:
+
+| Case | Status |
+| --- | --- |
+| C4, F5 | the follow-up half of a batch drain is fixed; the steering half still emits both drain snapshots before the first message because the steering take publishes its snapshot before the batch prompts are registered |
+| G3 | an unchanged system message is re-emitted after a restart |
+| D2, F2, F3, and the D4/F6/G1 flip-flop | load-sensitive nondeterminism in PiSharp's concurrent tool dispatch; matches in isolation, differs under load |
+| H1 | composed of the above |
 
 Exact-head CI (Linux, `307b0a52`) is **green**, including the full test
 suite: `Passed! - Failed: 0, Passed: 4023, Total: 4023`. That also settles
