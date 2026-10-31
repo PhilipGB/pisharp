@@ -83,6 +83,9 @@ public sealed class PiAgent
     internal ToolDeclarationTranscript GetToolTranscript(AgentSession session) =>
         _toolTranscripts.GetValue(session, _ => new());
 
+    /// <summary>The system revisions already carried by the run's restored session.</summary>
+    internal IReadOnlyList<ChatMessage>? PersistedSystemRevisions => _currentToolTranscript?.SystemRevisions;
+
     public string SystemInstructions => GetSystemInstructionsForCurrentLoadout();
     internal IReadOnlyDictionary<string, string> SystemMessageSections => GetSystemMessageSections();
     internal JsonElement GetSharePresentation(AgentSession session)

@@ -88,6 +88,17 @@ internal static class SystemMessageTranscript
         return tools.Values.ToArray();
     }
 
+    /// <summary>The effective system prompt sections after replaying every system revision.</summary>
+    internal static IReadOnlyDictionary<string, string> CurrentSections(IEnumerable<ChatMessage> messages)
+    {
+        var sections = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var message in messages.Where(message => message.Role == ChatRole.System))
+            foreach (var section in Sections(message))
+                if (section.Value.ValueKind == JsonValueKind.Null) sections.Remove(section.Name);
+                else sections[section.Name] = section.Value.GetString()!;
+        return sections;
+    }
+
     internal static string CurrentText(IEnumerable<ChatMessage> messages)
     {
         var content = new List<string>();

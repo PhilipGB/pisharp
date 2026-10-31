@@ -4,7 +4,8 @@ using PiSharp.Runtime.Sessions;
 namespace PiSharp.Cli.Protocols;
 
 /// <summary>Writes lifecycle events in the order required by the RPC stream.</summary>
-internal sealed class RpcEventWriter(JsonLineWriter output, Func<JsonObject?>? getSystemMessage = null)
+internal sealed class RpcEventWriter(JsonLineWriter output, Func<JsonObject?>? getSystemMessage = null,
+    Func<JsonObject?>? getPersistedSystemMessage = null)
 {
     private readonly object _projectorGate = new();
     private readonly object _retryEndGate = new();
@@ -142,8 +143,12 @@ internal sealed class RpcEventWriter(JsonLineWriter output, Func<JsonObject?>? g
                 {
                     JsonObject? currentSystemMessage;
                     lock (_projectorGate) currentSystemMessage = getSystemMessage?.Invoke();
+                    // Seed from the restored session so a resumed conversation reports no system
+                    // message when nothing changed, and reports one when a section or the tool
+                    // loadout did change while the session was closed.
+                    _lastSystemMessage ??= getPersistedSystemMessage?.Invoke();
                     if (currentSystemMessage is not null &&
-                        _lastSystemMessage?.ToJsonString() != currentSystemMessage.ToJsonString())
+                        !EquivalentSystemMessage(_lastSystemMessage, currentSystemMessage))
                     {
                         IReadOnlyList<object> systemRecords;
                         lock (_projectorGate) systemRecords = projector.ProjectSystemMessage(currentSystemMessage);
@@ -220,6 +225,38 @@ internal sealed class RpcEventWriter(JsonLineWriter output, Func<JsonObject?>? g
                     accepted, api, turnOpen);
             foreach (var record in queueRecords)
                 await output.EmitAsync(record, CancellationToken.None);
+        }
+    }
+
+    /// <summary>
+    /// Compares the semantic system state: the model-facing prompt text and the effective tool
+    /// declarations, ignoring the timestamp and ignoring whether the prompt is laid out as text or
+    /// as sections. A stamp-only change is not a change the model needs to be told about.
+    /// </summary>
+    private static bool EquivalentSystemMessage(JsonObject? left, JsonObject? right)
+    {
+        if (left is null || right is null) return false;
+        return Canonical(left) == Canonical(right);
+
+        static string Canonical(JsonObject message)
+        {
+            var parts = new List<string>();
+            if (message["content"]?.GetValue<string>() is { Length: > 0 } content) parts.Add(content);
+            if (message["sections"] is JsonObject sections)
+                parts.AddRange(sections.Select(section => section.Value?.GetValue<string>() ?? "")
+                    .Where(text => text.Length > 0));
+            // A tool's model-facing identity is its name, description and schema; the display label
+            // is presentation only, and older revisions do not carry it.
+            var tools = message["toolsAdded"] is JsonArray declarations
+                ? declarations.OfType<JsonObject>().Select(tool =>
+                {
+                    var modelFacing = new JsonObject();
+                    foreach (var name in new[] { "name", "description", "parameters" })
+                        if (tool[name] is { } value) modelFacing[name] = value.DeepClone();
+                    return modelFacing.ToJsonString();
+                }).ToArray()
+                : [];
+            return string.Join("\n\n", parts) + "\u0000" + string.Join("\u0000", tools);
         }
     }
 

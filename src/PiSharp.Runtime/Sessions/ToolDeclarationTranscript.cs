@@ -18,6 +18,10 @@ internal sealed class ToolDeclarationTranscript
                 revision.GetProperty("message").Deserialize<ChatMessage>(AIJsonUtilities.DefaultOptions)!));
     }
 
+    /// <summary>The persisted system revisions, in the order the model already saw them.</summary>
+    internal IReadOnlyList<ChatMessage> SystemRevisions =>
+        _revisions.Select(revision => revision.Message).Where(message => message.Role == ChatRole.System).ToArray();
+
     internal JsonElement Serialize() => JsonSerializer.SerializeToElement(_revisions.Select(revision => new
     {
         afterMessageCount = revision.AfterMessageCount,
