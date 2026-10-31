@@ -41,6 +41,12 @@ C4 D4 E5 E6 E7 F4 F5 F6 G1 G3 H1
 | G3 | stable | stable, different | unchanged system message re-emitted after a restart |
 | H1 | composed of the above | | |
 
+Exact-head CI (Linux, `307b0a52`) is **green**, including the full test
+suite: `Passed! - Failed: 0, Passed: 4023, Total: 4023`. That also settles
+the earlier local "environmental" claim — CI installs `ripgrep` and a
+pinned `fd`, and everything passes there — so the local full-run failures
+were machine-specific, not branch defects.
+
 ## Pins
 
 - Pi repository: `https://github.com/earendil-works/pi`
