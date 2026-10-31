@@ -250,6 +250,16 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
             CodingToolDeclarations.IsBuiltin(InnerFunction);
         var builtinFailure = failure is ToolFailureException &&
             !cancellationToken.IsCancellationRequested && CodingToolDeclarations.IsBuiltin(InnerFunction);
+        var cancelledNonBuiltin = failure is OperationCanceledException &&
+            cancellationToken.IsCancellationRequested && !CodingToolDeclarations.IsBuiltin(InnerFunction);
+        if (cancelledNonBuiltin && value is null)
+        {
+            // A cancelled external tool still reports an error result (Pi: "MCP request aborted" for
+            // MCP), so the tool round settles with a result instead of dropping the whole batch.
+            var cancelledText = string.IsNullOrWhiteSpace(failure!.Message) ? "Request was aborted" : failure.Message;
+            value = new PiSharpToolResult(cancelledText, Details: new Dictionary<string, object?>(),
+                IsError: true, Error: cancelledText);
+        }
         if (builtinFailure)
         {
             // Keep the failed durable outcome while returning Pi's recoverable error text to MAF.
@@ -367,8 +377,9 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
             NestedToolCalls = toolExecutionContext?.NestedCalls,
             ToolResultMessage = toolResultMessage
         });
-        if (failure is not null && !builtinFailure && !builtinCancelled) ExceptionDispatchInfo.Capture(failure).Throw();
-        if (messageLifecycleCancellation is not null && !builtinCancelled)
+        if (failure is not null && !builtinFailure && !builtinCancelled && !cancelledNonBuiltin)
+            ExceptionDispatchInfo.Capture(failure).Throw();
+        if (messageLifecycleCancellation is not null && !builtinCancelled && !cancelledNonBuiltin)
             ExceptionDispatchInfo.Capture(messageLifecycleCancellation).Throw();
         return value;
     }

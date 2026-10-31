@@ -28,21 +28,30 @@ internal sealed class ConversationToolState(PiAgent agent, ConversationSession c
         var declaredNames = loadout.BeginRun();
         if (conversation.ActiveToolLoadout() is not null)
             conversation.AppendToolLoadout(declaredNames);
+        // Pi records the system/tool section of the context before the first user prompt, so
+        // persist the initial transcript now instead of waiting for the first request to finish.
+        AppendTranscriptIfChanged();
     }
 
     internal void Observe(AgentLifecycleEvent item)
     {
         if (_execution is not null && item.Type is "model_request_completed" or "model_request_failed" or "model_request_interrupted")
         {
-            var snapshot = agent.GetToolTranscript(_execution).Serialize();
-            var previous = conversation.Tree.ActivePath().Select(TranscriptPayload).LastOrDefault(value => value is not null);
-            if (previous is null || !JsonElement.DeepEquals(previous.Value, snapshot))
-                conversation.Tree.Append("tool_transcript", snapshot);
+            AppendTranscriptIfChanged();
         }
         if (item.Type == "tool_loadout_changed" && item.ToolLoadoutNames is { } activeTools)
             conversation.AppendToolLoadout(activeTools);
         if (item.Type == "codemode_store_changed" && item.CodemodeStore is { } codemodeStore)
             conversation.AppendCodemodeStore(codemodeStore);
+    }
+
+    private void AppendTranscriptIfChanged()
+    {
+        if (_execution is null) return;
+        var snapshot = agent.GetToolTranscript(_execution).Serialize();
+        var previous = conversation.Tree.ActivePath().Select(TranscriptPayload).LastOrDefault(value => value is not null);
+        if (previous is null || !JsonElement.DeepEquals(previous.Value, snapshot))
+            conversation.Tree.Append("tool_transcript", snapshot);
     }
 
     private static JsonElement? TranscriptPayload(PiSharp.Core.ConversationNode node)

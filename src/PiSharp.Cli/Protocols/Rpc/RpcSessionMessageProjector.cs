@@ -62,12 +62,12 @@ internal static class RpcSessionMessageProjector
             if (message["role"]?.GetValue<string>() == "toolResult" && toolNames.TryGetValue(node.Id, out var toolName))
                 message["toolName"] = toolName;
             if (node.Type == "interrupted" && message["role"]?.GetValue<string>() == "assistant" &&
-                ReadText(message["content"]) is { Length: > 0 } partialText &&
                 messages.OfType<JsonObject>().LastOrDefault(item => item["role"]?.GetValue<string>() == "assistant") is { } existing &&
-                ReadText(existing["content"]) == partialText)
+                ReadText(existing["content"]) == ReadText(message["content"]))
             {
-                existing["stopReason"] = message["stopReason"]?.DeepClone();
-                existing["errorMessage"] = message["errorMessage"]?.DeepClone();
+                // The interrupted node's projected assistant duplicates the failed/aborted assistant
+                // the interrupt path persists as a chat entry. Keep the persisted assistant (with its
+                // stop reason) and drop the bookkeeping duplicate.
                 continue;
             }
             if (edits.TryGetValue(node.Id, out var replacement) &&

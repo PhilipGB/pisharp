@@ -8,6 +8,7 @@ internal sealed class PromptDeliveryController
     private readonly object _stateGate;
     private readonly PromptDeliveryQueue _queue = new();
     private readonly Queue<QueuedPrompt> _pendingNextTurn = new();
+    private readonly List<AgentLifecycleEvent> _pendingBatchQueueEvents = [];
     private object? _owner;
     private object? _idleReservation;
     private Action<AgentLifecycleEvent>? _events;
@@ -216,8 +217,14 @@ internal sealed class PromptDeliveryController
             var before = _queue.Snapshot();
             if (_queue.TakeNextBatch() is { } batch)
             {
+                // A previous batch that never reached its first provider request is abandoned:
+                // its drain update is discarded with it.
+                _pendingBatchQueueEvents.Clear();
+                // Pi reflects a batch drain in the queue only when the batch's turn is running
+                // (its message is dispatched after the turn start), so defer the update event
+                // until the run flushes it on the batch's first provider request.
                 foreach (var pending in RemainingQueueSnapshots(before, batch.IsSteering, batch.Messages))
-                    _events?.Invoke(QueueEvent(pending));
+                    _pendingBatchQueueEvents.Add(QueueEvent(pending));
                 return new(batch, Closed: false, pendingContextMessagesAppended);
             }
             if (pendingContextMessagesAppended)
@@ -239,6 +246,20 @@ internal sealed class PromptDeliveryController
             _owner = null;
             _events = null;
             _firstProviderRequestPending = false;
+            _pendingBatchQueueEvents.Clear();
+        }
+    }
+
+    // The run calls this on a batch turn's first provider request, after its turn_start,
+    // so the drain update lands between the turn start and the batch messages (Pi parity).
+    public IReadOnlyList<AgentLifecycleEvent> FlushPendingBatchQueueEvents()
+    {
+        lock (_stateGate)
+        {
+            if (_pendingBatchQueueEvents.Count == 0) return [];
+            var pending = _pendingBatchQueueEvents.ToArray();
+            _pendingBatchQueueEvents.Clear();
+            return pending;
         }
     }
 
