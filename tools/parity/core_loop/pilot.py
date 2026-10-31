@@ -2,6 +2,7 @@
 """Pilot: one prompt per product through the harness; print the observations."""
 import argparse
 import json
+import os
 import sys
 import tempfile
 from pathlib import Path
@@ -9,7 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from harness import ROOT, run_case  # noqa: E402
 
-PI = Path('/home/philip/Projects/pi-pinned')
+PI = Path(os.environ.get('PISHARP_PI_CHECKOUT', '/home/philip/Projects/pi-pinned'))
 PISHARP_DLL = ROOT / 'src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll'
 
 PILOT = dict(

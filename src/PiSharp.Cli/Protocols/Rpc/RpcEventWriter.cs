@@ -79,6 +79,7 @@ internal sealed class RpcEventWriter(JsonLineWriter output, Func<JsonObject?>? g
         }
         var succeeded = false;
         var accepted = false;
+        var agentOpen = false;
         var turnOpen = false;
         string? runStartHead = null;
         string? turnStartHead = null;
@@ -90,10 +91,14 @@ internal sealed class RpcEventWriter(JsonLineWriter output, Func<JsonObject?>? g
                 if (observeEvent is not null) await observeEvent(item);
                 if (item.Type == "prompt_accepted")
                 {
-                    if (!accepted)
+                    // An accepted prompt starts a new agent run whenever no agent run is open: the
+                    // first prompt, and also a queued steering/follow-up batch delivered after a
+                    // failed or completed turn (pinned Pi emits agent_start for that continuation).
+                    if (!agentOpen)
                     {
                         runStartHead = item.RunStartHead;
                         await output.EmitAsync(new { type = "agent_start" }, CancellationToken.None);
+                        agentOpen = true;
                         lock (_projectorGate) projector.BeginAgent();
                     }
                     accepted = true;
@@ -121,6 +126,7 @@ internal sealed class RpcEventWriter(JsonLineWriter output, Func<JsonObject?>? g
                     turnStartHead = item.RunStartHead;
                     await output.EmitAsync(new { type = "agent_start" }, CancellationToken.None);
                     await output.EmitAsync(new { type = "turn_start" }, CancellationToken.None);
+                    agentOpen = true;
                     lock (_projectorGate) projector.BeginAgent();
                     turnOpen = true;
                     continue;
@@ -170,6 +176,14 @@ internal sealed class RpcEventWriter(JsonLineWriter output, Func<JsonObject?>? g
                         CancellationToken.None);
                     continue;
                 }
+                if (item.Type == "assistant_turn_started" && !agentOpen)
+                {
+                    // A continuation batch delivered after a failed or completed turn opens a new
+                    // turn without a fresh prompt_accepted; pinned Pi starts a new agent run for it.
+                    await output.EmitAsync(new { type = "agent_start" }, CancellationToken.None);
+                    agentOpen = true;
+                    lock (_projectorGate) projector.BeginAgent();
+                }
                 if (item.Type == "assistant_turn_started" && turnOpen) continue;
                 IReadOnlyList<object> records;
                 lock (_projectorGate)
@@ -180,6 +194,8 @@ internal sealed class RpcEventWriter(JsonLineWriter output, Func<JsonObject?>? g
                 if (item.Type == "auto_retry_end") SignalRetryEndEmitted();
                 if (item.Type == "assistant_turn_started") turnOpen = true;
                 if (item.Type is "assistant_turn_completed" or "turn_failed" or "turn_interrupted") turnOpen = false;
+                // These close the agent run: the projector emits agent_end for them.
+                if (item.Type is "turn_failed" or "turn_interrupted" or "agent_run_completed") agentOpen = false;
                 if (item.Type == "agent_run_completed") succeeded = true;
             }
         }
