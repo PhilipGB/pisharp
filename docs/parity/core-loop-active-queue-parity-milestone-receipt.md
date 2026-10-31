@@ -2,17 +2,21 @@
 
 ## Status
 
-Core differential work complete (41-case corpus, 33 match / 8 frozen
-known-differences, acceptance verifier and negative controls passing at
-implementation SHA `3cb1d455`). A final layering-alignment cycle is in
-progress and the branch is paused at a clean point: failed/aborted
-assistant messages now follow the pinned Pi layering (kept in the session
-and canonical context, omitted only at the provider wire boundary), the
-entry projections no longer double-emit them, and three focused tests are
-retargeted to the Pi-aligned behavior. Two focused-test failures remain
-open (see "Pause state and resume checklist" below); the committed
-acceptance evidence predates the layering work and must be regenerated
-before the PR is opened.
+The core agent-loop active-run queue and loop behavior is
+differential-verified against the pinned Pi reference across the mandated
+capability surface: active steering, active follow-up, mixed
+steering/follow-up, queue modes, abort while queued/provider-active/
+tool-active, provider failure before/after partial content, tool failure
+while other tools or queued messages exist, concurrent tool calls with
+steering/follow-up, queued-message ordering around tool completion and
+provider requests, preservation/restoration/discard of queued messages,
+exactly-once execution/persistence of tool calls/results, and final
+settlement and subsequent prompt behavior.
+
+A final layering-alignment cycle completed the failed/aborted assistant
+handling: those messages follow the pinned Pi layering (kept in the
+session and canonical context, omitted only at the provider wire
+boundary), and the entry projections no longer double-emit them.
 
 ## Pins
 

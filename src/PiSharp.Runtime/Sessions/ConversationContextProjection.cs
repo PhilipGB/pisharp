@@ -252,8 +252,12 @@ internal static class ConversationContextProjection
             if (edits.TryGetValue(node.Id, out var replacement))
                 message = PiJsonlEntryCodec.ApplyContextEdit(node, message, replacement);
             if (message is null) continue;
-            if (node.Type == "interrupted" && message.Role == ChatRole.Assistant && message.Text.Length > 0 &&
-                lastAssistantText == message.Text)
+            // The interrupted bookkeeping node never adds a second assistant: the failed-assistant
+            // chat entry that is its parent is the Pi record. Legacy sessions keep the projected
+            // partial, de-duplicated against the preceding assistant text.
+            if (node.Type == "interrupted" && message.Role == ChatRole.Assistant &&
+                (message.Text.Length > 0 && lastAssistantText == message.Text ||
+                 PiJsonlEntryCodec.DuplicatesFailedAssistant(node, index > 0 ? path[index - 1] : null)))
                 continue;
             if (message.Role == ChatRole.Assistant) lastAssistantText = message.Text;
             projected.Add(new CompactionContextEntry(node.Id, index, [message]));
@@ -346,8 +350,13 @@ internal static class ConversationContextProjection
         {
             var message = ContextMessageForNode(node);
             if (message is null) continue;
-            if (node.Type == "interrupted" && message.Text.Length > 0 &&
-                entries.LastOrDefault(entry => entry.Message.Role == ChatRole.Assistant)?.Message.Text == message.Text)
+            // The interrupted bookkeeping node never adds a second assistant: the failed-assistant
+            // chat entry that is its parent is the Pi record. Legacy sessions keep the projected
+            // partial, de-duplicated against the preceding assistant text.
+            if (node.Type == "interrupted" && message.Role == ChatRole.Assistant &&
+                (message.Text.Length > 0 &&
+                 entries.LastOrDefault(entry => entry.Message.Role == ChatRole.Assistant)?.Message.Text == message.Text ||
+                 PiJsonlEntryCodec.DuplicatesFailedAssistant(node, index > 0 ? nodes[index - 1] : null)))
                 continue;
             entries.Add(new ProjectedContextEntry(node, index, message));
         }

@@ -11,6 +11,7 @@ internal static class RpcSessionMessageProjector
     public static JsonArray Project(ConversationSession conversation, string? api)
     {
         var path = conversation.Tree.ActivePath();
+        var nodesById = path.ToDictionary(node => node.Id, StringComparer.Ordinal);
         var toolNames = ResolveToolNames(path);
         var usageByAssistantId = ResolveModelUsageByAssistantId(path);
         var compactionIndex = path.ToList().FindLastIndex(node => node.Type == "compaction");
@@ -63,7 +64,9 @@ internal static class RpcSessionMessageProjector
                 message["toolName"] = toolName;
             if (node.Type == "interrupted" && message["role"]?.GetValue<string>() == "assistant" &&
                 messages.OfType<JsonObject>().LastOrDefault(item => item["role"]?.GetValue<string>() == "assistant") is { } existing &&
-                ReadText(existing["content"]) == ReadText(message["content"]))
+                (ReadText(existing["content"]) == ReadText(message["content"]) ||
+                 PiJsonlEntryCodec.DuplicatesFailedAssistant(node,
+                     node.ParentId is { } parentId && nodesById.TryGetValue(parentId, out var parent) ? parent : null)))
             {
                 // The interrupted node's projected assistant duplicates the failed/aborted assistant
                 // the interrupt path persists for the same turn. The persisted assistant's stop
