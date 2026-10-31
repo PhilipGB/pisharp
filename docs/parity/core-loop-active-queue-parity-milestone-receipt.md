@@ -266,24 +266,36 @@ Implementation points:
   known-differences, 0 unresolved, 0 one-sided, 0 error.
 - Acceptance verifier: passed.
 - Verifier negative controls (7 tampers): all rejected.
-- Full repository validation (`dotnet test PiSharp.slnx`): partly blocked
-  by this machine's environment, with the causes isolated rather than
-  assumed.
-  - 94 of 96 full-suite failures are `ToolFailureException: ripgrep (rg)
-    is not available` — this machine has no `rg` on `PATH`.
-    `RipgrepSearch`/`FdSearch` resolve the binary by `PATH` lookup only, so
-    every grep/fd-parity test fails. The same filter on the branch and on
-    branch base `fc75ba2a` gives **identical** results: 233 tests, 96
-    failed, 137 passed, 94 `rg` errors — so these failures are
-    pre-existing and environmental, not caused by this branch.
-  - The remaining two are load-sensitive: a provider idle-timeout test
-    (observed to fail at a 1.003 s stall against a 1 s idle timeout) and a
-    concurrency test that asserts a grep tool result is not an error.
-  - Long full runs also intermittently fail to finish even after the tests
-    report, because child `testhost`/`dotnet` processes keep the output
-    pipe open; one run aborted with `Internal CLR error (0x80131506)`,
-    which was also observed in a plain `dotnet build`. Focused suites and
-    the differential corpus are the reliable signals and both pass.
+- Full repository validation (`dotnet test PiSharp.slnx`): a single
+  complete run cannot be obtained on this machine, so the suite was
+  validated in bounded chunks and every observed failure was attributed.
+  - Name-filtered chunks:
+    | Chunk | Result |
+    | --- | --- |
+    | `~Rpc` | 188 passed, 0 failed |
+    | `~Session` | 303 passed, 0 failed |
+    | `~Agent` | 117 passed, 0 failed |
+    | `~Tool` | 790 passed, 30 failed — all 30 are `ripgrep (rg) is not available` |
+    | `~Provider` | 429 passed, 1 failed on the first run (a grep tool); the 1.003 s-vs-1 s idle-timeout flake seen once did not reproduce |
+  - The `rg` failures are environmental. This machine has no `rg` on
+    `PATH`, and `RipgrepSearch`/`FdSearch` resolve the binary by `PATH`
+    lookup only. The same five search classes on the branch and on branch
+    base `fc75ba2a` give **identical** results: 233 tests, 96 failed, 137
+    passed, 94 `rg` errors — pre-existing, not caused by this branch.
+  - A single whole-suite run (parallel or serial) stops producing output
+    at a non-deterministic point; observed stall points include
+    `ProviderChatClientFactoryTests`, `RpcPromptLifecycleTests`, and
+    `SearchToolsTests`. Individual classes and the chunks above complete
+    normally. Leftover `testhost` processes from an interrupted run make
+    this worse, and one run aborted with `Internal CLR error
+    (0x80131506)`, which was also observed in a plain `dotnet build`.
+  - Every test that failed in a whole-suite run was re-run individually:
+    two were genuine regressions and are fixed in this branch
+    (`AgentSettlementCharacterizationTests...`, see above, and
+    `RpcPromptLifecycleTests.AcceptsPromptThenEmitsEventsAndSupportsSubsequentStateQueries`,
+    which read `Tree.Entries[0]` after the system/tool transcript moved
+    ahead of the prompt and now reads the first chat entry); the rest were
+    the `rg` and timing cases above.
 
 Notes on behaviour that is not byte-for-byte identical, and why:
 
