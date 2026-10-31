@@ -21,13 +21,13 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+import pi_checkout  # noqa: E402
 from cases import CASES  # noqa: E402
 from compare import compare_case, project_observation, render_diff  # noqa: E402
 from harness import ROOT, run_case  # noqa: E402
 
-# The one place the pinned Pi checkout is resolved: --pi, then PISHARP_PI_CHECKOUT. There is no
-# embedded developer path, so a checkout that is not configured is reported instead of guessed.
-PI_DEFAULT = os.environ.get('PISHARP_PI_CHECKOUT')
+# The one place the pinned Pi checkout is resolved lives in pi_checkout.
+PI_DEFAULT = pi_checkout.DEFAULT
 PISHARP_DLL = ROOT / 'src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll'
 
 
@@ -53,8 +53,8 @@ def main():
     parser.add_argument('--compare-only', action='store_true',
                         help='do not run products; re-compare saved obs and rewrite comparisons')
     args = parser.parse_args()
-    if not args.pi and not args.compare_only:
-        parser.error('a pinned Pi checkout is required: pass --pi or set PISHARP_PI_CHECKOUT')
+    if args.pi or not args.compare_only:
+        args.pi = str(pi_checkout.require(parser, args.pi))
 
     out = Path(args.out)
     if args.cases:

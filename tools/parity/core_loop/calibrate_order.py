@@ -34,10 +34,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import pi_checkout  # noqa: E402
 from cases import CASES  # noqa: E402
 from compare import project_observation  # noqa: E402
 from harness import ROOT, run_case  # noqa: E402
-from run_differential import PI_DEFAULT, PISHARP_DLL, write_json  # noqa: E402
+from run_differential import PISHARP_DLL, write_json  # noqa: E402
 
 CALIBRATION_PATH = Path(__file__).resolve().parent / 'order_calibration.json'
 ORDERED_KEYS = ('effects', 'mcpCalls')
@@ -77,11 +78,13 @@ def main():
     parser.add_argument('--cpu-limits', nargs='+', default=['1', '2'],
                         help='scheduling conditions to cycle through')
     parser.add_argument('--cases', nargs='*', default=None)
-    parser.add_argument('--pi', default=str(PI_DEFAULT))
+    parser.add_argument('--pi', default=pi_checkout.DEFAULT,
+                        help='pinned Pi checkout (defaults to PISHARP_PI_CHECKOUT)')
     parser.add_argument('--pisharp-dll', default=str(PISHARP_DLL))
     parser.add_argument('--write', action='store_true',
                         help='write the diagnostic report (never the acceptance contract)')
     args = parser.parse_args()
+    args.pi = str(pi_checkout.require(parser, args.pi))
 
     wanted = set(args.cases) if args.cases else None
     cases = [case for case in CASES if wanted is None or case['id'] in wanted]

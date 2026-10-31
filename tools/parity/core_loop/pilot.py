@@ -7,10 +7,9 @@ import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import pi_checkout  # noqa: E402
 from harness import ROOT, run_case  # noqa: E402
-from run_differential import PI_DEFAULT  # noqa: E402
 
-PI = PI_DEFAULT
 PISHARP_DLL = ROOT / 'src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll'
 
 PILOT = dict(
@@ -25,14 +24,15 @@ PILOT = dict(
 
 
 def main():
-    if PI is None:
-        raise SystemExit('A pinned Pi checkout is required: pass --pi or set PISHARP_PI_CHECKOUT.')
     parser = argparse.ArgumentParser()
     parser.add_argument('--product', choices=['pi', 'pisharp'], required=True)
+    parser.add_argument('--pi', default=pi_checkout.DEFAULT,
+                        help='pinned Pi checkout (defaults to PISHARP_PI_CHECKOUT)')
     args = parser.parse_args()
+    pi = pi_checkout.require(parser, args.pi)
     with tempfile.TemporaryDirectory(prefix='cl-pilot-') as directory:
         work = Path(directory)
-        observations = run_case(PILOT, args.product, PI, PISHARP_DLL, work)
+        observations = run_case(PILOT, args.product, pi, PISHARP_DLL, work)
         slim = dict(
             providerRequests=observations['providerRequests'],
             events=[(r.get('type'), r.get('command'), r.get('success'), r.get('data') if r.get('type') == 'response'
