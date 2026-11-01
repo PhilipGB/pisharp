@@ -16,8 +16,33 @@ internal sealed class ProviderTurnJournal(ConversationSession conversation,
     private int _completedPathLength = conversation.Tree.ActivePath().Count;
     public ChatMessage? Response { get; set; }
     public StringBuilder PartialAssistantText { get; } = new();
+    public bool RequestInProgress { get; private set; }
+
+    public void MarkRequestStarted() => RequestInProgress = true;
+
+    public void MarkRequestCompleted() => RequestInProgress = false;
 
     public ProviderTurnSnapshot SnapshotTurn() => new(Response, Array.AsReadOnly(_toolResults.ToArray()));
+
+    // Pi emits parallel tool results in the assistant message's call order, not completion order.
+    public static List<ChatMessage> OrderByAssistantCalls(ChatMessage? assistant, IReadOnlyList<ChatMessage> results)
+    {
+        if (assistant is null || results.Count <= 1) return results.ToList();
+        var order = new Dictionary<string, int>(StringComparer.Ordinal);
+        var index = 0;
+        foreach (var call in assistant.Contents.OfType<FunctionCallContent>())
+            if (!string.IsNullOrEmpty(call.CallId))
+                order.TryAdd(call.CallId, index++);
+        return results
+            .Select((result, position) => (Result: result, Position: position))
+            .OrderBy(item => item.Result.Contents.OfType<FunctionResultContent>().FirstOrDefault()?.CallId is { } callId &&
+                    order.TryGetValue(callId, out var callIndex)
+                ? callIndex
+                : int.MaxValue)
+            .ThenBy(item => item.Position)
+            .Select(item => item.Result)
+            .ToList();
+    }
 
     public PiSharpNestedToolCalls? NestedCallsFor(ChatMessage message)
     {
@@ -39,7 +64,7 @@ internal sealed class ProviderTurnJournal(ConversationSession conversation,
         if (Response is not null)
         {
             var response = completed.Message!;
-            var toolResults = completed.ToolResults;
+            var toolResults = OrderByAssistantCalls(response, completed.ToolResults);
             _history.RecordCompletedTurn(response, toolResults);
             publish?.Invoke(new AgentLifecycleEvent("assistant_turn_completed")
             {

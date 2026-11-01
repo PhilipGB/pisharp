@@ -158,10 +158,36 @@ internal sealed class RpcEventProjector
     private List<object> FlushPendingToolResults()
     {
         var projected = new List<object>(_pendingToolResults.Count * 2);
-        foreach (var (item, conversation) in _pendingToolResults)
+        foreach (var (item, conversation) in OrderPendingToolResults())
             projected.AddRange(_assistantMessages.ProjectToolResult(item, conversation));
         _pendingToolResults.Clear();
         return projected;
+    }
+
+    // Pi flushes parallel tool results in the assistant message's call order, not completion order.
+    private List<(AgentLifecycleEvent Event, ConversationSession Conversation)> OrderPendingToolResults()
+    {
+        if (_pendingToolResults.Count <= 1) return _pendingToolResults;
+        var order = new Dictionary<string, int>(StringComparer.Ordinal);
+        if (_assistantMessages.LastCompletedAssistantMessage?["content"] is JsonArray content)
+        {
+            var index = 0;
+            foreach (var block in content.OfType<JsonObject>())
+                if (block["type"]?.GetValue<string>() == "toolCall" && block["id"]?.GetValue<string>() is { } callId)
+                    order.TryAdd(callId, index++);
+        }
+        return _pendingToolResults
+            .Select((pending, position) => (Pending: pending, Position: position))
+            .OrderBy(item => ToolCallId(item.Pending.Event) is { } callId && order.TryGetValue(callId, out var callIndex)
+                ? callIndex
+                : int.MaxValue)
+            .ThenBy(item => item.Position)
+            .Select(item => item.Pending)
+            .ToList();
+
+        static string? ToolCallId(AgentLifecycleEvent item) =>
+            item.ToolCallId ?? item.ToolResultMessage?.Contents
+                .OfType<FunctionResultContent>().FirstOrDefault()?.CallId;
     }
 
     private static object? ProjectOther(AgentLifecycleEvent item, ConversationSession conversation,

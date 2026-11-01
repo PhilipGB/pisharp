@@ -39,6 +39,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     Func<ConversationSession, CancellationToken, Task<string?>>? prepareCloneSession = null,
     Func<string?, CancellationToken, Task<IReadOnlyList<ModelDescriptor>>>? discoverCycleModels = null,
     Func<JsonObject?>? getSystemMessage = null,
+    Func<JsonObject?>? getPersistedSystemMessage = null,
     Func<bool>? getProjectTrusted = null,
     string extensionMode = "rpc",
     bool extensionHasUserInterface = false,
@@ -73,7 +74,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     private ConversationRun CurrentRun => getCurrentRun?.Invoke() ?? run;
     private PiSharp.Runtime.Resources.ResourceCatalog? CurrentResources => getCurrentResources?.Invoke() ?? resources;
     private ExtensionRegistration? CurrentExtensions => getCurrentExtensions?.Invoke() ?? extensions;
-    private RpcEventWriter Events => _events ??= new RpcEventWriter(_writer, () => getSystemMessage?.Invoke());
+    private RpcEventWriter Events => _events ??= new RpcEventWriter(_writer, () => getSystemMessage?.Invoke(),
+        () => getPersistedSystemMessage?.Invoke());
 
     public async Task ServeAsync(CancellationToken cancellationToken = default)
     {
@@ -268,8 +270,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                                         "Agent is already processing. Specify streamingBehavior ('steer' or 'followUp') to queue the message.");
                                     break;
                                 }
-                                currentRun.QueueRpcInput(promptMessage, expanded, promptStreamingBehavior == "steer",
-                                    item => PublishQueueUpdate(currentRun, item));
+                                await currentRun.QueueRpcInputAsync(promptMessage, expanded,
+                                    promptStreamingBehavior == "steer", item => PublishQueueUpdate(currentRun, item));
                                 await RespondPromptAsync(id, true, "queued");
                                 break;
                             }
@@ -342,8 +344,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             { await RespondAsync(id, type, false, error.Message); break; }
                             var queueContents = new List<AIContent> { new TextContent(queuedExpanded) };
                             if (queueImages is not null) queueContents.AddRange(queueImages);
-                            queueRun.QueueRpcInput(new ChatMessage(ChatRole.User, queueContents), queuedExpanded, type == "steer",
-                                item => PublishQueueUpdate(queueRun, item));
+                            await queueRun.QueueRpcInputAsync(new ChatMessage(ChatRole.User, queueContents), queuedExpanded,
+                                type == "steer", item => PublishQueueUpdate(queueRun, item));
                             await RespondQueuedInputAsync(id, type, true);
                             break;
                         case "clear_queue":
@@ -556,6 +558,9 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     private async Task CancelActivePromptAsync()
     {
         if (_active is not { IsCompleted: false } active) return;
+        // A tool that already finished must publish its completion before the cancellation of its
+        // siblings is observed (pinned Pi orders these on one event loop).
+        await CurrentRun.WaitForCompletedToolPublicationAsync();
         _abort?.Cancel();
         try { await active; }
         catch (OperationCanceledException) { }

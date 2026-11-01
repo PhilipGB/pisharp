@@ -42,6 +42,9 @@ public sealed class PiAgent
     private ReasoningOptions? _reasoning;
     private readonly ToolBatchTermination _toolBatchTermination = new();
     private DurableExecution? _active;
+
+    /// <summary>Tools that returned from their work but have not published their completion yet.</summary>
+    internal ToolCompletionGate ToolCompletions { get; } = new();
     private ConversationSession? _extensionConversation;
     private int _isRunning;
     private int _activeConversationRuns;
@@ -82,6 +85,12 @@ public sealed class PiAgent
 
     internal ToolDeclarationTranscript GetToolTranscript(AgentSession session) =>
         _toolTranscripts.GetValue(session, _ => new());
+
+    /// <summary>
+    /// The system revisions the restored session already carried, snapshotted at restore time so a
+    /// run that appends revisions cannot change what an asynchronous consumer compares against.
+    /// </summary>
+    internal IReadOnlyList<ChatMessage>? RestoredSystemRevisions => _currentToolTranscript?.RestoredSystemRevisions;
 
     public string SystemInstructions => GetSystemInstructionsForCurrentLoadout();
     internal IReadOnlyDictionary<string, string> SystemMessageSections => GetSystemMessageSections();
@@ -414,7 +423,8 @@ public sealed class PiAgent
         _runtimeToolFunctions[name] = new DurableToolFunction(registration.Function, () => _active,
             PublishEvent, _toolBatchTermination, () => Volatile.Read(ref _currentToolLoadout),
             () => _runtimeToolFunctions, _toolHooks, registration.OutputSchema, _codemodeModels,
-            registration.ReachesTools, registration.Namespace, () => _extensionContext, _extensionEvents);
+            registration.ReachesTools, registration.Namespace, () => _extensionContext, _extensionEvents,
+            ToolCompletions);
     }
 
     internal void SetExtensionConversation(ConversationSession conversation) =>

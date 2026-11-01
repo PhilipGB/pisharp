@@ -11,6 +11,7 @@ internal static class RpcSessionMessageProjector
     public static JsonArray Project(ConversationSession conversation, string? api)
     {
         var path = conversation.Tree.ActivePath();
+        var nodesById = path.ToDictionary(node => node.Id, StringComparer.Ordinal);
         var toolNames = ResolveToolNames(path);
         var usageByAssistantId = ResolveModelUsageByAssistantId(path);
         var compactionIndex = path.ToList().FindLastIndex(node => node.Type == "compaction");
@@ -62,12 +63,21 @@ internal static class RpcSessionMessageProjector
             if (message["role"]?.GetValue<string>() == "toolResult" && toolNames.TryGetValue(node.Id, out var toolName))
                 message["toolName"] = toolName;
             if (node.Type == "interrupted" && message["role"]?.GetValue<string>() == "assistant" &&
-                ReadText(message["content"]) is { Length: > 0 } partialText &&
                 messages.OfType<JsonObject>().LastOrDefault(item => item["role"]?.GetValue<string>() == "assistant") is { } existing &&
-                ReadText(existing["content"]) == partialText)
+                (ReadText(existing["content"]) == ReadText(message["content"]) ||
+                 PiJsonlEntryCodec.DuplicatesFailedAssistant(node,
+                     node.ParentId is { } parentId && nodesById.TryGetValue(parentId, out var parent) ? parent : null)))
             {
-                existing["stopReason"] = message["stopReason"]?.DeepClone();
-                existing["errorMessage"] = message["errorMessage"]?.DeepClone();
+                // The interrupted node's projected assistant duplicates the failed/aborted assistant
+                // the interrupt path persists for the same turn. The persisted assistant's stop
+                // reason is authoritative when it already records a failure (including Pi's trailing
+                // error assistant after a tool round); otherwise the interrupt record carries it,
+                // because legacy sessions persist the partial assistant as a plain stop message.
+                if (existing["stopReason"]?.GetValue<string>() is not ("aborted" or "error"))
+                {
+                    existing["stopReason"] = message["stopReason"]?.DeepClone();
+                    existing["errorMessage"] = message["errorMessage"]?.DeepClone();
+                }
                 continue;
             }
             if (edits.TryGetValue(node.Id, out var replacement) &&

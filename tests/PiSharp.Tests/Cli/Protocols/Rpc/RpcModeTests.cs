@@ -2450,7 +2450,11 @@ public sealed class RpcModeTests
         using var response = JsonDocument.Parse(lines[responseIndex]);
         Assert.True(response.RootElement.GetProperty("success").GetBoolean());
         Assert.Equal("summary", response.RootElement.GetProperty("data").GetProperty("summary").GetString());
-        Assert.Equal(2, session.ContextMessages().Count);
+        // The cancelled prompt's empty aborted assistant is persisted with the turn (Pi parity,
+        // differential D1) and stays in the tail kept by the compaction boundary.
+        var contextAfterCompact = session.ContextMessages();
+        Assert.Equal(3, contextAfterCompact.Count);
+        Assert.Equal(ChatRole.Assistant, contextAfterCompact.Last().Role);
     }
 
     [Fact]

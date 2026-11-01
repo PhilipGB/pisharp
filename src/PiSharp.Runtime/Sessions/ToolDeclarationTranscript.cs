@@ -7,16 +7,36 @@ internal sealed class ToolDeclarationTranscript
 {
     private readonly List<(int AfterMessageCount, ChatMessage Message)> _revisions = [];
     private JsonElement? _sourceHead;
+    private IReadOnlyList<ChatMessage> _restoredSystemRevisions = [];
 
     internal void Restore(JsonElement? saved)
     {
         _revisions.Clear();
         _sourceHead = null;
+        _restoredSystemRevisions = [];
         if (saved is not { ValueKind: JsonValueKind.Array } revisions) return;
         foreach (var revision in revisions.EnumerateArray())
             _revisions.Add((revision.GetProperty("afterMessageCount").GetInt32(),
                 revision.GetProperty("message").Deserialize<ChatMessage>(AIJsonUtilities.DefaultOptions)!));
+        // Snapshot what the model already knew at restore time. Project() later appends and mutates
+        // revisions while a run is in progress, and comparing against the live list would make the
+        // answer depend on whether the provider thread got ahead of the event consumer.
+        _restoredSystemRevisions = _revisions
+            .Where(revision => revision.Message.Role == ChatRole.System)
+            .Select(revision => JsonSerializer.Deserialize<ChatMessage>(
+                JsonSerializer.Serialize(revision.Message, AIJsonUtilities.DefaultOptions),
+                AIJsonUtilities.DefaultOptions) ?? revision.Message)
+            .ToArray();
     }
+
+    /// <summary>
+    /// The system revisions as restored from the session, unaffected by revisions this run appends.
+    /// </summary>
+    internal IReadOnlyList<ChatMessage> RestoredSystemRevisions => _restoredSystemRevisions;
+
+    /// <summary>The system revisions this transcript currently holds, including this run's.</summary>
+    internal IReadOnlyList<ChatMessage> SystemRevisions =>
+        _revisions.Select(revision => revision.Message).Where(message => message.Role == ChatRole.System).ToArray();
 
     internal JsonElement Serialize() => JsonSerializer.SerializeToElement(_revisions.Select(revision => new
     {

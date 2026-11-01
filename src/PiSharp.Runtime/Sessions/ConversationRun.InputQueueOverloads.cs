@@ -16,4 +16,16 @@ public sealed partial class ConversationRun
     public void QueueRpcInput(ChatMessage message, string promptText, bool steering,
         Action<AgentLifecycleEvent> publishQueueUpdate) =>
         _promptDelivery.QueueRpcInput(message, promptText, steering, publishQueueUpdate);
+
+    /// <summary>
+    /// Queue an RPC input message once every tool that already finished its work has published its
+    /// completion, so the accepted steer is never observed before it (see ToolCompletionGate).
+    /// </summary>
+    public async Task QueueRpcInputAsync(ChatMessage message, string promptText, bool steering,
+        Action<AgentLifecycleEvent> publishQueueUpdate)
+    {
+        await _agent.ToolCompletions.WaitForIdleAsync().ConfigureAwait(false);
+        await WaitForEventDrainAsync().ConfigureAwait(false);
+        _promptDelivery.QueueRpcInput(message, promptText, steering, publishQueueUpdate);
+    }
 }

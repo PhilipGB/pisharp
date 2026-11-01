@@ -112,6 +112,26 @@ internal static class PiJsonlEntryCodec
         return record;
     }
 
+    /// <summary>
+    /// An interrupted node is bookkeeping for the failed-assistant chat entry that is its parent, so
+    /// it never adds a second message: the chat entry is the Pi record for that attempt. This holds
+    /// even when the interrupted payload keeps partial text the Pi record omits (an abort after a
+    /// tool round persists an empty error assistant). Legacy sessions that persist only the
+    /// interrupted node are unaffected because they have no such parent.
+    /// </summary>
+    internal static bool DuplicatesFailedAssistant(ConversationNode node, ConversationNode? parent)
+    {
+        if (node.Type != "interrupted" || parent is not { Type: "chat" }) return false;
+        var message = ConversationMessageCodec.RestoreEntry(parent);
+        return message.Role == ChatRole.Assistant &&
+            ChatMessageProperties.String(message.AdditionalProperties, "pisharp.stopReason") is "aborted" or "error";
+    }
+
+    internal static bool IsSuppressedInterrupted(ConversationNode node,
+        IReadOnlyDictionary<string, ConversationNode> nodesById) =>
+        node.ParentId is { } parentId && nodesById.TryGetValue(parentId, out var parent) &&
+        DuplicatesFailedAssistant(node, parent);
+
     internal static JsonObject ProjectInterruptedMessage(ConversationSession session, ConversationNode node,
         string? api = null)
     {
@@ -801,6 +821,9 @@ internal static class PiJsonlEntryCodec
             if (message.MessageId is { Length: > 0 } responseId)
                 messageObject["responseId"] = responseId;
             if (rawStopReason is not null) messageObject["rawStopReason"] = rawStopReason;
+            // Pi records the failure text on the failed assistant itself.
+            if (MessageProperty(message, "pisharp.errorMessage") is { Length: > 0 } failureText)
+                messageObject["errorMessage"] = failureText;
         }
         if (role == "toolResult")
         {

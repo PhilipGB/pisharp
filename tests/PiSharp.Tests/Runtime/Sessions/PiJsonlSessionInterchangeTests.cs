@@ -297,6 +297,48 @@ public sealed class PiJsonlSessionInterchangeTests
     }
 
     [Fact]
+    public void InterruptedNodeStaysOutOfTheProjectionWhenTheFailedAssistantOmitsItsPartialText()
+    {
+        // An abort during a tool round persists an empty error assistant (pinned Pi records
+        // `stopReason: "error"` with empty content) while the interrupted bookkeeping node keeps
+        // the partial text. The chat entry is the record, so the bookkeeping node never adds a
+        // second assistant to the context, the Pi entries, or the RPC messages.
+        var session = new ConversationSession(Path.GetTempPath(), "fixture-model", null, "fixture");
+        session.Append(new ChatMessage(ChatRole.User, "prompt"));
+        var failed = new ChatMessage(ChatRole.Assistant, "");
+        failed.AdditionalProperties = new AdditionalPropertiesDictionary
+        {
+            ["pisharp.stopReason"] = "error",
+            ["pisharp.errorMessage"] = "Request was aborted"
+        };
+        session.Append(failed);
+        session.Tree.Append("interrupted", JsonSerializer.SerializeToElement(new
+        {
+            partialAssistantText = "PARTIAL",
+            stopReason = "error",
+            terminalType = "turn_failed"
+        }));
+
+        var path = session.Tree.ActivePath();
+        Assert.Equal(["chat", "chat", "interrupted"], path.Select(node => node.Type));
+        Assert.Equal("error", ChatMessageProperties.String(
+            ConversationMessageCodec.RestoreEntry(path[1]).AdditionalProperties, "pisharp.stopReason"));
+        Assert.Equal(["prompt", ""], session.ContextMessages().Select(message => message.Text));
+        var entries = PiJsonlSessionInterchange.ProjectEntries(session);
+        Assert.Equal(2, entries.Count);
+        var assistantEntries = entries.Where(entry =>
+            entry.GetProperty("message").GetProperty("role").GetString() == "assistant").ToArray();
+        var entry = Assert.Single(assistantEntries);
+        Assert.Equal("error", entry.GetProperty("message").GetProperty("stopReason").GetString());
+        Assert.Equal(session.Tree.ActivePath()[1].Id, entry.GetProperty("id").GetString());
+        var messages = RpcSessionMessageProjector.Project(session, "openai-responses");
+        var projected = Assert.Single(messages.OfType<System.Text.Json.Nodes.JsonObject>(),
+            message => message["role"]?.GetValue<string>() == "assistant");
+        Assert.Equal("error", projected["stopReason"]?.GetValue<string>());
+        Assert.DoesNotContain("PARTIAL", projected["content"]!.ToJsonString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void NativeContextOmissionsFilterModelInputAndRoundTripAsPiEntries()
     {
         var session = new ConversationSession(Path.GetTempPath(), "fixture-model", null);

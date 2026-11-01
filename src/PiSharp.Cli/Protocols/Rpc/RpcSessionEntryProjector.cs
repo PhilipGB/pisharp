@@ -14,7 +14,7 @@ internal static class RpcSessionEntryProjector
     {
         var nodes = session.Tree.Entries;
         var nodesById = nodes.ToDictionary(node => node.Id, StringComparer.Ordinal);
-        var hiddenIds = nodes.Where(IsInternalEntry).Select(node => node.Id).ToHashSet(StringComparer.Ordinal);
+        var hiddenIds = HiddenIds(nodes, nodesById);
         var usageByAssistantId = RpcSessionMessageProjector.ResolveModelUsageByAssistantId(nodes);
         var projectedById = PiJsonlSessionInterchange.ProjectEntries(session, api)
             .ToDictionary(entry => entry.GetProperty("id").GetString()!, StringComparer.Ordinal);
@@ -70,9 +70,8 @@ internal static class RpcSessionEntryProjector
     public static string? ProjectLeafId(ConversationSession session, JsonObject? systemMessage = null)
     {
         var nodes = session.Tree.Entries;
-        var hiddenIds = nodes.Where(IsInternalEntry).Select(node => node.Id)
-            .ToHashSet(StringComparer.Ordinal);
         var nodesById = nodes.ToDictionary(node => node.Id, StringComparer.Ordinal);
+        var hiddenIds = HiddenIds(nodes, nodesById);
         var syntheticSystemIds = SyntheticSystemIds(session, nodes, nodesById, systemMessage);
         foreach (var node in session.Tree.ActivePath().Reverse())
         {
@@ -84,6 +83,20 @@ internal static class RpcSessionEntryProjector
 
     public static JsonElement ProjectAppendedEntry(ConversationSession session, string entryId, string? api = null) =>
         ProjectEntries(session, api).Single(entry => entry.GetProperty("id").GetString() == entryId);
+
+    /// <summary>
+    /// Entries that are not visible as Pi session entries. An interrupted node that duplicates the
+    /// persisted failed-assistant chat entry is hidden: the chat entry is the exported record
+    /// (PiJsonlEntryCodec.IsSuppressedInterrupted), so entry and leaf ids resolve to it.
+    /// </summary>
+    private static HashSet<string> HiddenIds(IReadOnlyList<ConversationNode> nodes,
+        IReadOnlyDictionary<string, ConversationNode> nodesById)
+    {
+        var hidden = nodes.Where(IsInternalEntry).Select(node => node.Id).ToHashSet(StringComparer.Ordinal);
+        foreach (var node in nodes)
+            if (PiJsonlEntryCodec.IsSuppressedInterrupted(node, nodesById)) hidden.Add(node.Id);
+        return hidden;
+    }
 
     private static bool IsInternalEntry(ConversationNode node) => node.Type is
         "tool_loadout" or "run_started" or "run_finished" or "run_recovered" or "tool_intent" or

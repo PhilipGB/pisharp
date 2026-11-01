@@ -388,6 +388,43 @@ public sealed partial class ConversationRun
     public void QueueRpcInput(string prompt, bool steering, Action<AgentLifecycleEvent> publishQueueUpdate)
         => _promptDelivery.QueueRpcInput(prompt, steering, publishQueueUpdate);
 
+    private readonly EventWatermark _events = new();
+
+    /// <summary>Counts an event whose records the consumer has finished writing.</summary>
+    internal void NoteEventEmitted() => _events.NoteEmitted();
+
+    /// <summary>
+    /// Releases a pending drain wait when the run's event stream has ended, so acceptance never
+    /// depends on records that no consumer will write.
+    /// </summary>
+    internal void NoteEventStreamCompleted() => _events.NoteStreamCompleted();
+
+    /// <summary>
+    /// Waits until every tool that already returned for this run has published its completion and the
+    /// consumer has written it. An abort or a queue mutation must not be observed before a tool that
+    /// had already finished, which is the ordering pinned Pi gets from its single event loop.
+    /// </summary>
+    public async Task WaitForCompletedToolPublicationAsync()
+    {
+        await _agent.ToolCompletions.WaitForIdleAsync().ConfigureAwait(false);
+        await WaitForEventDrainAsync().ConfigureAwait(false);
+    }
+
+    /// <summary>Completes once every event produced so far has been written by the consumer.</summary>
+    internal Task WaitForEventDrainAsync() => _events.WaitForDrainAsync();
+
+    /// <summary>
+    /// Queues input only once every tool that already finished its work has published its completion, so an
+    /// accepted steer is never observed before it. Pinned Pi gets this ordering from a single event loop.
+    /// </summary>
+    public async Task QueueRpcInputAsync(string prompt, bool steering,
+        Action<AgentLifecycleEvent> publishQueueUpdate)
+    {
+        await _agent.ToolCompletions.WaitForIdleAsync().ConfigureAwait(false);
+        await WaitForEventDrainAsync().ConfigureAwait(false);
+        _promptDelivery.QueueRpcInput(prompt, steering, publishQueueUpdate);
+    }
+
     private bool TryQueue(string prompt, bool steering, string kind)
         => _promptDelivery.TryQueueActive(prompt, steering, kind);
 
@@ -661,6 +698,25 @@ public sealed partial class ConversationRun
         using var consumerClosed = new CancellationTokenSource();
         var initialEntryIds = Conversation.Tree.ActivePath().Select(entry => entry.Id).ToHashSet(StringComparer.Ordinal);
         var initialRunBoundaryVersion = _boundaryContextVersion;
+        // Every write into the run's stream goes through these counted helpers, so the producer
+        // watermark and the consumer's count describe exactly the same events.
+        void WriteCounted(AgentLifecycleEvent value, CancellationToken token)
+        {
+            var reservation = _events.Reserve();
+            try { channel.Writer.WriteAsync(value, token).AsTask().GetAwaiter().GetResult(); }
+            catch { reservation.Dispose(); throw; }
+        }
+        async Task WriteCountedAsync(AgentLifecycleEvent value, CancellationToken token)
+        {
+            var reservation = _events.Reserve();
+            try { await channel.Writer.WriteAsync(value, token); }
+            catch { reservation.Dispose(); throw; }
+        }
+        void TryWriteCounted(AgentLifecycleEvent value)
+        {
+            var reservation = _events.Reserve();
+            if (!channel.Writer.TryWrite(value)) reservation.Dispose();
+        }
         void Publish(AgentLifecycleEvent value)
         {
             // A tool may report its durable outcome after cancellation has been requested.
@@ -668,13 +724,13 @@ public sealed partial class ConversationRun
             var token = value.Type is "tool_execution_finished" or "tool_outcome_unknown"
                 ? consumerClosed.Token
                 : linked.Token;
-            channel.Writer.WriteAsync(value, token).AsTask().GetAwaiter().GetResult();
+            WriteCounted(value, token);
         }
         var pump = Task.Run(async () =>
         {
             var accepted = false;
             var nativeAgentStarted = false;
-            var nativeAgentEnded = false;
+            var agentRunOpen = false;
             var nativeAgentOutcome = NativeExtensions.PiSharpExtensionAgentOutcome.Completed;
             string? nativeAgentError = null;
             var activeTurnOutcomeSent = false;
@@ -730,9 +786,13 @@ public sealed partial class ConversationRun
                             {
                                 nativeAgentOutcome = NativeExtensions.PiSharpExtensionAgentOutcome.Completed;
                                 nativeAgentError = null;
-                                if (item.Type == "prompt_accepted" && !nativeAgentStarted)
+                                // A prompt accepted into a fresh agent run (the first run, or a
+                                // continuation that begins after a previous agent_end, e.g. after a
+                                // failed turn) starts the agent lifecycle again (Pi parity).
+                                if (item.Type == "prompt_accepted" && !agentRunOpen)
                                 {
                                     nativeAgentStarted = true;
+                                    agentRunOpen = true;
                                     _agent.BeginExtensionAgentRun();
                                     _agent.ExtensionEvents.DispatchAgentStartAsync(
                                         new NativeExtensions.PiSharpExtensionAgentStartEvent(), linked.Token, Publish)
@@ -801,12 +861,14 @@ public sealed partial class ConversationRun
                     }
                     current = stopRun ? null : await TakeQueuedPromptOrCloseAsync(owner, linked.Token, closeWhenEmpty: false);
                     if (current is not null) continue;
-                    if (nativeAgentStarted)
+                    var closedAgentRun = false;
+                    if (agentRunOpen)
                     {
                         var messages = Conversation.Tree.ActivePath()
                             .Where(entry => !initialEntryIds.Contains(entry.Id) && entry.Type == "chat")
                             .Select(ConversationMessageCodec.RestoreEntry).ToArray();
-                        nativeAgentEnded = true;
+                        agentRunOpen = false;
+                        closedAgentRun = true;
                         await _agent.ExtensionEvents.DispatchAgentEndAsync(new(messages, nativeAgentOutcome,
                             nativeAgentError), linked.Token, Publish).ConfigureAwait(false);
                     }
@@ -814,13 +876,21 @@ public sealed partial class ConversationRun
                     if (_boundaryContextVersion != initialRunBoundaryVersion || _agent.ExtensionEvents.HasBoundaryHandlers)
                         await CompactAfterBoundaryAsync(linked.Token, Publish).ConfigureAwait(false);
                     current ??= await TakeQueuedPromptOrCloseAsync(owner, linked.Token, closeWhenEmpty: false);
+                    var boundaryContinuation = false;
                     if (current is null && await DispatchBeforeSettleBoundaryAsync(nativeAgentOutcome, linked.Token, Publish)
                             .ConfigureAwait(false))
+                    {
                         current = new([], [promptText], SkipBeforeAgentStart: true, Continuation: true);
+                        boundaryContinuation = true;
+                    }
                     current ??= await TakeQueuedPromptOrCloseAsync(owner, linked.Token, closeWhenEmpty: true);
                     if (current is not null)
                     {
-                        nativeAgentEnded = false;
+                        // A prompt queued from the agent_end handler continues the agent run that just
+                        // ended, so its turn does not start a new agent (pinned Pi keeps one
+                        // agent_start for the run while still ending the agent per drain). A
+                        // before-settle boundary continuation is a new agent run.
+                        if (closedAgentRun && !boundaryContinuation && nativeAgentStarted) agentRunOpen = true;
                         stopRun = false;
                     }
                 }
@@ -834,7 +904,7 @@ public sealed partial class ConversationRun
                 if (!consumerClosed.IsCancellationRequested && !activeTurnOutcomeSent)
                     try
                     {
-                        await channel.Writer.WriteAsync(new(accepted ? "turn_interrupted" : "prompt_rejected")
+                        await WriteCountedAsync(new(accepted ? "turn_interrupted" : "prompt_rejected")
                         { TurnEndHead = Conversation.Tree.HeadId }, consumerClosed.Token);
                     }
                     catch (OperationCanceledException) { }
@@ -847,7 +917,7 @@ public sealed partial class ConversationRun
                 if (!consumerClosed.IsCancellationRequested && !activeTurnOutcomeSent)
                     try
                     {
-                        await channel.Writer.WriteAsync(new(accepted ? "turn_failed" : "prompt_rejected", Error: error.Message)
+                        await WriteCountedAsync(new(accepted ? "turn_failed" : "prompt_rejected", Error: error.Message)
                         { TurnEndHead = Conversation.Tree.HeadId }, consumerClosed.Token);
                     }
                     catch (OperationCanceledException) { }
@@ -864,12 +934,12 @@ public sealed partial class ConversationRun
                         {
                             await DispatchMutableTurnBoundaryAsync(interruptedBoundary,
                                 NativeExtensions.PiSharpExtensionAgentOutcome.Aborted, terminalCancellation.Token,
-                                item => channel.Writer.TryWrite(item)).ConfigureAwait(false);
+                                TryWriteCounted).ConfigureAwait(false);
                         }
                         catch (OperationCanceledException) when (terminalCancellation.IsCancellationRequested) { }
                         _terminalBoundaryTurn = null;
                     }
-                    if (nativeAgentStarted && !nativeAgentEnded)
+                    if (agentRunOpen)
                     {
                         var messages = Conversation.Tree.ActivePath()
                             .Where(entry => !initialEntryIds.Contains(entry.Id) && entry.Type == "chat")
@@ -878,7 +948,7 @@ public sealed partial class ConversationRun
                         {
                             await _agent.ExtensionEvents.DispatchAgentEndAsync(new(messages, nativeAgentOutcome,
                                 nativeAgentError), linked.Token,
-                                item => channel.Writer.TryWrite(item)).ConfigureAwait(false);
+                                TryWriteCounted).ConfigureAwait(false);
                         }
                         catch (OperationCanceledException) when (linked.IsCancellationRequested)
                         {
@@ -903,13 +973,13 @@ public sealed partial class ConversationRun
                         try
                         {
                             await _agent.ExtensionEvents.DispatchAgentSettledAsync(new(aborted),
-                                settledCancellation.Token, item => channel.Writer.TryWrite(item)).ConfigureAwait(false);
+                                settledCancellation.Token, TryWriteCounted).ConfigureAwait(false);
                         }
                         catch (OperationCanceledException) when (settledCancellation.IsCancellationRequested) { }
                     }
                     try
                     {
-                        await channel.Writer.WriteAsync(new AgentLifecycleEvent("agent_settled")
+                        await WriteCountedAsync(new AgentLifecycleEvent("agent_settled")
                         {
                             Aborted = linked.IsCancellationRequested
                         }, consumerClosed.Token);
@@ -928,6 +998,9 @@ public sealed partial class ConversationRun
             consumerClosed.Cancel();
             linked.Cancel();
             await pump;
+            // No consumer remains for this stream: release any command path waiting for it, so a
+            // queued steer accepted during teardown cannot wait for records that will never be written.
+            NoteEventStreamCompleted();
         }
     }
 
@@ -1700,6 +1773,7 @@ public sealed partial class ConversationRun
                 }
                 _boundaryContinuationRequested = false;
                 providerTurns.PartialAssistantText.Clear();
+                providerTurns.MarkRequestStarted();
                 if (!nativeTurnOpen)
                 {
                     if (!nativeTurnStartDispatched)
@@ -1710,6 +1784,8 @@ public sealed partial class ConversationRun
                     nativeTurnOpen = true;
                 }
                 onEvent?.Invoke(new("assistant_turn_started"));
+                foreach (var queued in _promptDelivery.FlushPendingBatchQueueEvents())
+                    onEvent?.Invoke(queued);
             }
             else if (item.Type == "model_request_routed")
             {
@@ -1726,6 +1802,7 @@ public sealed partial class ConversationRun
                 lock (_runtimeStateGate)
                 {
                     providerTurns.Response = attribution.AttributeResponse(item, _reasoningLevel);
+                    providerTurns.MarkRequestCompleted();
                     if (item.ProviderProviderId is not null) _successfulPhysicalContextWindow = _autoCompaction?.ContextWindowTokens;
                     if (providerTurns.Response is not null && (attribution.Api is not null || item.ProviderProviderId is not null ||
                         providerTurns.Response.Contents.OfType<FunctionCallContent>().Any()))
@@ -1756,9 +1833,10 @@ public sealed partial class ConversationRun
         }
         try
         {
-            // A failed settled run can have checkpointed side effects without MAF-persisted tool results.
-            // Rebuild from canonical history with an explicit no-replay warning before accepting another prompt.
-            if (!retryContinuation && Conversation.RecoverIncomplete())
+            // A live provider failure has not checkpointed anything: the interrupted request is not
+            // an unknown tool outcome, and Pi does not warn about replaying it (the crash/restart
+            // recovery paths keep the notice). Close the run without a visible notice.
+            if (!retryContinuation && Conversation.RecoverIncomplete(announce: false))
             {
                 var history = Conversation.ContextMessages();
                 var restored = await RestoreExecutionAsync(history, cancellationToken);
@@ -1913,6 +1991,9 @@ public sealed partial class ConversationRun
             }
             var attemptStartHead = Conversation.Tree.HeadId;
             var attemptStartPathLength = Conversation.Tree.ActivePath().Count;
+            // Persist the system/tool section (and loadout) before the prompt so the transcript
+            // precedes the first user message, matching Pi's session ordering.
+            lock (_runtimeStateGate) _toolState.BeginRun(_execution);
             var inputMessages = promptMessage is not null ? [promptMessage] : acceptedPromptMessages ?? [];
             if (inputMessages.Count > 0)
             {
@@ -2148,7 +2229,6 @@ public sealed partial class ConversationRun
             var projectRequestContext = inFlightBudget is null
                 ? null
                 : (Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>)ProjectRequestContextAsync;
-            lock (_runtimeStateGate) _toolState.BeginRun(_execution);
             _agent.SetTurnBoundaryPreparation(PrepareTurnAsync);
             var codexSessionId = _providerApi == "openai-codex-responses" ? Conversation.Id : null;
             var updates = promptMessage is null
@@ -2211,6 +2291,26 @@ public sealed partial class ConversationRun
                 _historyCount = canonicalHistory.Count;
                 if (!completed && accepted)
                 {
+                    // Pi persists the assistant of a failed or interrupted provider request (keeping
+                    // partial content when there is any), plus the trailing error assistant of the
+                    // aborted continuation after a tool round, so the next provider request sees the
+                    // closed turn.
+                    var aborted = attemptStream.InterruptionType == "turn_interrupted";
+                    var trailingAfterTools = aborted && providerTurns.SnapshotTurn().ToolResults.Count > 0;
+                    var partialText = providerTurns.PartialAssistantText.ToString();
+                    var failedAssistant = new ChatMessage(ChatRole.Assistant, trailingAfterTools ? "" : partialText);
+                    var failedProperties = new AdditionalPropertiesDictionary
+                    {
+                        ["pisharp.stopReason"] = aborted && !trailingAfterTools ? "aborted" : "error",
+                        ["pisharp.errorMessage"] = attemptStream.InterruptionError ?? "",
+                        ["pisharp.provider"] = attribution.Provider,
+                        ["pisharp.model"] = attribution.Model
+                    };
+                    // The failed assistant is the Pi record for that response, so it carries the
+                    // physical request identity the interrupted node also records.
+                    if (attribution.Api is { Length: > 0 } failedApi) failedProperties["pisharp.api"] = failedApi;
+                    failedAssistant.AdditionalProperties = failedProperties;
+                    Conversation.Append(failedAssistant);
                     Conversation.Tree.Append("interrupted", JsonSerializer.SerializeToElement(
                         new
                         {
@@ -2464,7 +2564,10 @@ public sealed partial class ConversationRun
         }
         else
         {
-            var chatEntries = attemptEntries.Where(node => node.Type == "chat").ToArray();
+            var chatEntries = attemptEntries.Where(node => node.Type == "chat" &&
+                !(ChatMessageProperties.String(
+                    ConversationMessageCodec.RestoreEntry(node).AdditionalProperties,
+                    "pisharp.stopReason") is "aborted" or "error")).ToArray();
             var failedAssistant = Array.FindLastIndex(chatEntries,
                 node => ConversationMessageCodec.RestoreEntry(node).Role == ChatRole.Assistant);
             if (failedAssistant >= 0)
