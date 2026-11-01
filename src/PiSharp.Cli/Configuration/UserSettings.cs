@@ -120,7 +120,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
     CompactionSettings? Compaction = null, bool? BlockImages = null, string? DefaultProjectTrust = null, bool? HideThinkingBlock = null, QuietStartupMode? QuietStartup = null, IReadOnlyList<string>? EnabledModels = null, string? ShellPath = null, string? ExternalEditor = null, string? Theme = null,
     RetrySettings? Retry = null, PromptDeliveryMode? SteeringMode = null, PromptDeliveryMode? FollowUpMode = null,
     IReadOnlyDictionary<string, string>? ModelThinkingLevels = null, string? HttpProxy = null,
-    int? HttpIdleTimeoutMs = null, string? MarkdownCodeBlockIndent = null, string? TerminalTrueColor = null,
+    int? HttpIdleTimeoutMs = null, string? MarkdownCodeBlockIndent = null, string? MarkdownMermaid = null, string? TerminalTrueColor = null,
     bool? EnableSkillCommands = null, IReadOnlyList<string>? Extensions = null,
     IReadOnlyList<string>? Skills = null, IReadOnlyList<string>? Prompts = null,
     IReadOnlyList<string>? Themes = null, string? ShellCommandPrefix = null, string? SessionShareDestination = null,
@@ -134,6 +134,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
 {
     public const int DefaultHttpIdleTimeoutMs = 300_000;
     public const string DefaultMarkdownCodeBlockIndent = "  ";
+    public const string DefaultMarkdownMermaid = "streaming";
 
     public bool? TerminalTrueColorOverride => TerminalTrueColor switch
     {
@@ -144,6 +145,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
 
     public bool SkillCommandsEnabled => EnableSkillCommands ?? true;
     public string ShareDestination => SessionShareDestination is "gist" or "radius" ? SessionShareDestination : "auto";
+    public string EffectiveMarkdownMermaid => MarkdownMermaid is "off" or "final" ? MarkdownMermaid : DefaultMarkdownMermaid;
 
     public static async Task<UserSettings> LoadAsync(string agentDirectory, Func<string, string?> environment,
         CancellationToken cancellationToken = default)
@@ -177,6 +179,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         string? httpProxy = null;
         int? httpIdleTimeoutMs = null;
         string? markdownCodeBlockIndent = null;
+        string? markdownMermaid = null;
         string? terminalTrueColor = null;
         string? shellCommandPrefix = null;
         string? sessionShareDestination = null;
@@ -269,10 +272,14 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                 var markdownKeys = new HashSet<string>(StringComparer.Ordinal);
                 foreach (var markdownSetting in property.Value.EnumerateObject())
                 {
-                    if (!markdownKeys.Add(markdownSetting.Name) || markdownSetting.Name != "codeBlockIndent" ||
-                        markdownSetting.Value.ValueKind != JsonValueKind.String)
+                    if (!markdownKeys.Add(markdownSetting.Name) ||
+                        markdownSetting.Value.ValueKind != JsonValueKind.String ||
+                        (markdownSetting.Name != "codeBlockIndent" && markdownSetting.Name != "mermaid"))
                         throw new InvalidDataException($"settings.json markdown.{markdownSetting.Name} is unsupported, duplicate or invalid.");
-                    markdownCodeBlockIndent = markdownSetting.Value.GetString();
+                    if (markdownSetting.Name == "codeBlockIndent")
+                        markdownCodeBlockIndent = markdownSetting.Value.GetString();
+                    else
+                        markdownMermaid = markdownSetting.Value.GetString();
                 }
                 continue;
             }
@@ -448,7 +455,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         }
         return new(provider, model, thinking, tools, sessionDirectory, compaction, blockImages, defaultTrust, hideThinkingBlock,
             quietStartup, enabledModels, shellPath, externalEditor, theme, retry, steeringMode, followUpMode,
-            modelThinkingLevels, httpProxy, httpIdleTimeoutMs, markdownCodeBlockIndent, terminalTrueColor,
+            modelThinkingLevels, httpProxy, httpIdleTimeoutMs, markdownCodeBlockIndent, markdownMermaid, terminalTrueColor,
             enableSkillCommands, extensions, skills, prompts, themes, shellCommandPrefix, sessionShareDestination, packages,
             npmCommand, thinkingBudgets, autoResizeImages, showHardwareCursor, editorPaddingX, outputPad,
             autocompleteMaxVisible, clearOnShrink, showTerminalProgress, nativeExtensions, fullscreenWheelScrollLines,
@@ -484,6 +491,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         MergeModelThinkingLevels(ModelThinkingLevels, project.ModelThinkingLevels), HttpProxy,
         project.HttpIdleTimeoutMs ?? HttpIdleTimeoutMs,
         project.MarkdownCodeBlockIndent ?? MarkdownCodeBlockIndent,
+        project.MarkdownMermaid ?? MarkdownMermaid,
         project.TerminalTrueColor ?? TerminalTrueColor,
         project.EnableSkillCommands ?? EnableSkillCommands,
         MergeResourcePaths(Extensions, project.Extensions),

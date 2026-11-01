@@ -6,9 +6,22 @@ namespace PiSharp.Cli.Tui;
 
 /// <summary>Projects user, tool and streamed assistant content into the retained transcript.</summary>
 internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer transcript,
-    TerminalImageRenderer imageRenderer, Func<int> columns, Func<TerminalTheme> getTheme)
+    TerminalImageRenderer imageRenderer, Func<int> columns, Func<TerminalTheme> getTheme,
+    Func<string, TerminalMermaidArt?>? mermaidSyncProvider = null,
+    Func<string, CancellationToken, Task<TerminalMermaidArt?>>? mermaidAsyncProvider = null,
+    Action<Action>? applyUnderLockAndRequest = null)
 {
     private string _markdownCodeBlockIndent = "  ";
+    private string _mermaidMode = "streaming";
+    private long _mermaidVersion;
+    private CancellationTokenSource? _mermaidDebounceCts;
+    private readonly Func<string, TerminalMermaidArt?> _mermaidSyncProvider = mermaidSyncProvider ?? (source =>
+    {
+        return TerminalMermaidEngine.TryGetCached(source, out var art) ? art : null;
+    });
+    private readonly Func<string, CancellationToken, Task<TerminalMermaidArt?>> _mermaidAsyncProvider =
+        mermaidAsyncProvider ?? ((source, ct) => TerminalMermaidWorker.RenderAsync(source, ct));
+    private readonly Action<Action> _applyUnderLockAndRequest = applyUnderLockAndRequest ?? (action => action());
     private int _outputPadding = 1;
     private string _toolExpandKeyLabel = "Ctrl+O";
     private string _liveAssistant = "";
@@ -31,6 +44,8 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
 
     public void Reset()
     {
+        Interlocked.Increment(ref _mermaidVersion);
+        try { _mermaidDebounceCts?.Cancel(); } catch { }
         _liveAssistant = "";
         _liveAssistantSource = "";
         _liveAssistantStreaming = false;
@@ -49,6 +64,7 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
 
     public void ReRender()
     {
+        Interlocked.Increment(ref _mermaidVersion);
         transcript.ReRenderMarkdown(markdown => RenderMarkdown(markdown));
         transcript.ReRenderThemedSegments(getTheme());
         _liveAssistant = _liveAssistantSource.Length == 0 ? "" :
@@ -60,6 +76,7 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
 
     public void ReRenderMarkdown()
     {
+        Interlocked.Increment(ref _mermaidVersion);
         transcript.ReRenderMarkdown(markdown => RenderMarkdown(markdown));
         _liveAssistant = _liveAssistantSource.Length == 0 ? "" :
             (_liveAssistantNeedsSpacer ? Environment.NewLine : "") + RenderMarkdown(_liveAssistantSource, _liveAssistantStreaming);
@@ -69,7 +86,18 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
     {
         if (string.Equals(_markdownCodeBlockIndent, indent, StringComparison.Ordinal)) return false;
         _markdownCodeBlockIndent = indent;
-        ReRenderMarkdown();
+        Interlocked.Increment(ref _mermaidVersion);
+        ReRenderMarkdownWithoutVersionBump();
+        return true;
+    }
+
+    public bool SetMermaidMode(string mode)
+    {
+        var effective = mode is "off" or "final" ? mode : "streaming";
+        if (string.Equals(_mermaidMode, effective, StringComparison.Ordinal)) return false;
+        _mermaidMode = effective;
+        Interlocked.Increment(ref _mermaidVersion);
+        ReRenderMarkdownWithoutVersionBump();
         return true;
     }
 
@@ -78,8 +106,16 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
         var bounded = Math.Clamp(padding, 0, Math.Max(0, (columns() - 2) / 2));
         if (_outputPadding == bounded) return false;
         _outputPadding = bounded;
-        ReRenderMarkdown();
+        Interlocked.Increment(ref _mermaidVersion);
+        ReRenderMarkdownWithoutVersionBump();
         return true;
+    }
+
+    private void ReRenderMarkdownWithoutVersionBump()
+    {
+        transcript.ReRenderMarkdown(markdown => RenderMarkdown(markdown));
+        _liveAssistant = _liveAssistantSource.Length == 0 ? "" :
+            (_liveAssistantNeedsSpacer ? Environment.NewLine : "") + RenderMarkdown(_liveAssistantSource, _liveAssistantStreaming);
     }
 
     public void SetAssistantText(string markdown)
@@ -87,6 +123,7 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
         if (_liveAssistantSource.Length == 0) _liveAssistantNeedsSpacer = _lastSegmentWasToolResult;
         _liveAssistantSource = TerminalSafeText.Normalize(markdown);
         _liveAssistantStreaming = true;
+        Interlocked.Increment(ref _mermaidVersion);
         _liveAssistant = (_liveAssistantNeedsSpacer ? Environment.NewLine : "") +
             RenderMarkdown(_liveAssistantSource, streaming: true);
     }
@@ -133,6 +170,7 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
     public void CommitAssistantText(string markdown)
     {
         var safe = TerminalSafeText.Normalize(markdown);
+        Interlocked.Increment(ref _mermaidVersion);
         var rendered = RenderMarkdown(safe, streaming: false);
         _liveAssistant = "";
         _liveAssistantSource = "";
@@ -468,9 +506,110 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
     private string RenderMarkdown(string markdown, bool streaming = false)
     {
         var width = Math.Max(1, columns() - 2 * _outputPadding);
+        var theme = getTheme();
         var rendered = streaming
-            ? TerminalMarkdownRenderer.RenderStreaming(markdown, width, getTheme(), _markdownCodeBlockIndent)
-            : TerminalMarkdownRenderer.Render(markdown, width, getTheme(), _markdownCodeBlockIndent);
+            ? TerminalMarkdownRenderer.RenderStreaming(markdown, width, theme, _markdownCodeBlockIndent, mermaidMode: _mermaidMode, mermaidRender: _mermaidSyncProvider)
+            : TerminalMarkdownRenderer.Render(markdown, width, theme, _markdownCodeBlockIndent, mermaidMode: _mermaidMode, mermaidRender: _mermaidSyncProvider);
+        EnqueueMermaidUpgrades(markdown, streaming);
+        return "\n" + rendered;
+    }
+
+    private void EnqueueMermaidUpgrades(string markdown, bool streaming)
+    {
+        if (!TerminalMermaidRenderer.ShouldAttemptRender(_mermaidMode, streaming, isThinking: false))
+            return;
+        IReadOnlyList<string> sources;
+        try
+        {
+            sources = TerminalMermaidRenderer.CollectEligibleSources(markdown);
+        }
+        catch
+        {
+            return;
+        }
+        if (sources.Count == 0)
+            return;
+        var version = Volatile.Read(ref _mermaidVersion);
+        var pending = new List<string>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var source in sources)
+        {
+            if (!seen.Add(source))
+                continue;
+            if (source.Length > TerminalMermaidEngine.MaximumSourceCharacters)
+                continue;
+            if (TerminalMermaidEngine.TryGetCached(source, out _))
+                continue;
+            pending.Add(source);
+        }
+        if (pending.Count == 0)
+            return;
+        try { _mermaidDebounceCts?.Cancel(); } catch { }
+        try { _mermaidDebounceCts?.Dispose(); } catch { }
+        var cts = new CancellationTokenSource();
+        _mermaidDebounceCts = cts;
+        var token = cts.Token;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(20, token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+            if (token.IsCancellationRequested)
+                return;
+            if (Volatile.Read(ref _mermaidVersion) != version)
+                return;
+            foreach (var capturedSource in pending)
+            {
+                if (token.IsCancellationRequested)
+                    return;
+                if (Volatile.Read(ref _mermaidVersion) != version)
+                    return;
+                if (TerminalMermaidEngine.TryGetCached(capturedSource, out _))
+                    continue;
+                TerminalMermaidArt? art;
+                try
+                {
+                    art = await _mermaidAsyncProvider(capturedSource, CancellationToken.None).ConfigureAwait(false);
+                }
+                catch
+                {
+                    continue;
+                }
+                TerminalMermaidEngine.CacheForTests(capturedSource, art);
+                if (Volatile.Read(ref _mermaidVersion) != version)
+                    return;
+            }
+            if (Volatile.Read(ref _mermaidVersion) != version)
+                return;
+            ApplyMermaidUpgrade(version);
+        });
+    }
+
+    private void ApplyMermaidUpgrade(long capturedVersion)
+    {
+        _applyUnderLockAndRequest(() =>
+        {
+            if (Volatile.Read(ref _mermaidVersion) != capturedVersion)
+                return;
+            transcript.ReRenderMarkdown(markdown => RenderMarkdownWithoutEnqueue(markdown));
+            if (_liveAssistantSource.Length != 0)
+                _liveAssistant = (_liveAssistantNeedsSpacer ? Environment.NewLine : "") +
+                    RenderMarkdownWithoutEnqueue(_liveAssistantSource, _liveAssistantStreaming);
+        });
+    }
+
+    private string RenderMarkdownWithoutEnqueue(string markdown, bool streaming = false)
+    {
+        var width = Math.Max(1, columns() - 2 * _outputPadding);
+        var theme = getTheme();
+        var rendered = streaming
+            ? TerminalMarkdownRenderer.RenderStreaming(markdown, width, theme, _markdownCodeBlockIndent, mermaidMode: _mermaidMode, mermaidRender: _mermaidSyncProvider)
+            : TerminalMarkdownRenderer.Render(markdown, width, theme, _markdownCodeBlockIndent, mermaidMode: _mermaidMode, mermaidRender: _mermaidSyncProvider);
         return "\n" + rendered;
     }
 

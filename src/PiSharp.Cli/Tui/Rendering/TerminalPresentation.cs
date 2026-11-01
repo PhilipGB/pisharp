@@ -84,6 +84,7 @@ internal sealed class TerminalPresentation : IDisposable
         {
             _terminalScreen?.SetThemeResolver(colors => ResolveConfiguredTheme(ActiveThemeSetting(), colors));
             _terminalScreen?.SetMarkdownCodeBlockIndent(_projectBinding.Settings.MarkdownCodeBlockIndent ?? UserSettings.DefaultMarkdownCodeBlockIndent);
+            _terminalScreen?.SetMermaidRenderingMode(_projectBinding.Settings.EffectiveMarkdownMermaid);
             ApplyTuiSettings(_projectBinding.Settings);
             _hideThinkingBlock = _projectBinding.Settings.HideThinkingBlock == true;
             _terminalScreen?.SetThinkingBlocksHidden(_hideThinkingBlock);

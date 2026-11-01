@@ -10,8 +10,8 @@ public sealed class TerminalSettingsPickerTests
         // Pi source receipt: settings-selector.ts, main, inspected 2026-10-16
         // https://github.com/earendil-works/pi/blob/main/packages/coding-agent/src/modes/interactive/components/settings-selector.ts
         // The prompt-specified first ten are authoritative; the remaining supported shared entries
-        // retain upstream order. Mermaid rendering, cache miss notices and changelog collapsing are
-        // out of scope because their renderer, cache diagnostics and update notification owners are absent.
+        // retain upstream order. Cache miss notices and changelog collapsing are
+        // out of scope because their cache diagnostics and update notification owners are absent.
         var ids = TerminalSettingsPicker.Settings.Select(setting => setting.Id).ToArray();
 
         Assert.Equal(new[]
@@ -23,16 +23,16 @@ public sealed class TerminalSettingsPickerTests
         Assert.Equal(new[]
         {
             "steeringMode", "followUpMode", "sessionShareDestination", "httpIdleTimeoutMs",
-            "hideThinkingBlock", "quietStartup", "defaultProjectTrust", "modelThinkingLevels", "theme",
+            "hideThinkingBlock", "markdown.mermaid", "quietStartup", "defaultProjectTrust", "modelThinkingLevels", "theme",
             "fullscreenWheelScrollLines"
-        }, ids.Skip(10).Take(10));
+        }, ids.Skip(10).Take(11));
         Assert.Equal(new[]
         {
             "defaultThinkingLevel", "httpProxy", "terminal.trueColor", "externalEditor",
             "retry.provider.timeoutMs", "retry.provider.maxRetries",
             "retry.provider.maxRetryDelayMs", "markdown.codeBlockIndent"
-        }, ids.Skip(20));
-        Assert.DoesNotContain(ids, id => id is "markdown.mermaid" or "showCacheMissNotices" or "collapseChangelog");
+        }, ids.Skip(21));
+        Assert.DoesNotContain(ids, id => id is "showCacheMissNotices" or "collapseChangelog");
     }
 
     [Theory]
@@ -56,7 +56,7 @@ public sealed class TerminalSettingsPickerTests
         Assert.Equal(10, settingRows.Length);
         Assert.Equal(firstValue, secondValue);
         Assert.Contains(plainRows, row => row.Contains("Automatically compact context", StringComparison.Ordinal));
-        Assert.Contains(plainRows, row => row.Contains("1/28", StringComparison.Ordinal));
+        Assert.Contains(plainRows, row => row.Contains($"1/{TerminalSettingsPicker.Settings.Length}", StringComparison.Ordinal));
         Assert.Contains(plainRows, row => row.Contains("Type to filter", StringComparison.Ordinal));
         Assert.DoesNotContain(plainRows, row => row.Contains("Search:", StringComparison.Ordinal));
         Assert.All(rendered, row => Assert.True(TerminalTextLayout.Width(row) <= width));

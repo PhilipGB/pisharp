@@ -56,6 +56,7 @@ internal static class RpcModeComposition
             {
                 presentation.RefreshTerminalTheme();
                 presentation.Screen?.SetMarkdownCodeBlockIndent(projectBinding.Settings.MarkdownCodeBlockIndent ?? UserSettings.DefaultMarkdownCodeBlockIndent);
+                presentation.Screen?.SetMermaidRenderingMode(projectBinding.Settings.EffectiveMarkdownMermaid);
             }, () =>
             {
                 presentation.SetIdleFooter();
