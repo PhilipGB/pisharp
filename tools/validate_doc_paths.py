@@ -13,7 +13,7 @@ LINK = re.compile(r'!?\[[^\]]*\]\((<[^>]+>|[^\s)]+)(?:\s+"[^"]*")?\)')
 REFERENCE = re.compile(r'^\s*\[[^\]]+\]:\s*(<[^>]+>|\S+)', re.MULTILINE)
 CODE = re.compile(r'`([^`\n]+)`')
 ROOT_PATH = re.compile(r'(?<![\w/])(?:src|tests|tools|docs|\.github)/[\w./*?\-]+')
-ROOT_FILES = {'AGENTS.md', 'README.md', 'PiSharp.slnx'}
+ROOT_FILES = {'AGENTS.md', 'README.md', 'TODO.md', 'PiSharp.slnx'}
 
 def tracked_files(repo):
     return set(subprocess.check_output(['git', 'ls-files', '-z'], cwd=repo).decode().split('\0')) - {''}

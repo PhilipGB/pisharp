@@ -1,6 +1,6 @@
 ## Current state — 2026-11-01
 
-Current status, project goal and open architecture risks are maintained in [the continuation](../continuation.md). The milestone summaries below are historical and may retain the wording used when they were written; later merges supersede their status claims.
+Current status and project goal are maintained in [the continuation](../continuation.md); open architecture risks are tracked in the [architecture document](../architecture.md#open-architecture-risks). The milestone summaries below are historical and may retain the wording used when they were written; later merges supersede their status claims.
 
 ## Completed milestone — Compaction, Context Budget, Overflow and Usage Parity — 2026-10-28
 
