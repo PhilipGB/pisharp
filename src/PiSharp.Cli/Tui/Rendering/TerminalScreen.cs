@@ -130,7 +130,9 @@ public sealed class TerminalScreen : IDisposable
     internal TerminalScreen(TextWriter originalOut, TextWriter originalError,
         Func<int>? getColumns, Func<int>? getRows, TerminalImageRenderer imageRenderer, TerminalTheme theme,
         bool queryTerminalColors, bool followTerminalAppearance = false, bool deferInitialRender = false,
-        TimeSpan? minimumRenderInterval = null, TimeProvider? timeProvider = null, bool useAlternateScreen = true)
+        TimeSpan? minimumRenderInterval = null, TimeProvider? timeProvider = null, bool useAlternateScreen = true,
+        Func<string, TerminalMermaidArt?>? mermaidSyncProvider = null,
+        Func<string, CancellationToken, Task<TerminalMermaidArt?>>? mermaidAsyncProvider = null)
     {
         ArgumentNullException.ThrowIfNull(originalOut);
         ArgumentNullException.ThrowIfNull(originalError);
@@ -160,7 +162,17 @@ public sealed class TerminalScreen : IDisposable
         _getColumns = getColumns ?? ReadColumns;
         _getRows = getRows ?? ReadRows;
         _compositor = new(_originalOut, _images, _useAlternateScreen);
-        _conversationPresentation = new(_transcript, _images, Columns, () => _theme);
+        _conversationPresentation = new(_transcript, _images, Columns, () => _theme,
+            mermaidSyncProvider, mermaidAsyncProvider,
+            applyUnderLockAndRequest: action =>
+            {
+                lock (_gate)
+                {
+                    if (!_active) return;
+                    action();
+                    _render.Request();
+                }
+            });
         _wheelScroll = new(clock);
         _toolTimers = new(clock, RefreshToolTimers);
         _notifications = new(_transcript, () => _theme);

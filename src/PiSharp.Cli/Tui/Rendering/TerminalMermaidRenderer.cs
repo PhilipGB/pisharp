@@ -16,6 +16,31 @@ internal static class TerminalMermaidRenderer
         return string.Equals(first, "mermaid", StringComparison.OrdinalIgnoreCase);
     }
 
+    public static IReadOnlyList<string> CollectEligibleSources(string markdown)
+    {
+        var sources = new List<string>();
+        Markdig.Syntax.MarkdownDocument document;
+        try
+        {
+            document = PiSharp.Cli.Tui.TerminalMarkdownParser.Parse(markdown);
+        }
+        catch
+        {
+            return sources;
+        }
+        foreach (var block in document)
+        {
+            if (block is not Markdig.Syntax.FencedCodeBlock fenced)
+                continue;
+            if (fenced.Parent is not Markdig.Syntax.MarkdownDocument)
+                continue;
+            if (!IsMermaidInfo(fenced.Info?.ToString() ?? ""))
+                continue;
+            sources.Add(fenced.Lines.ToString());
+        }
+        return sources;
+    }
+
     public static bool ShouldAttemptRender(string? mode, bool isStreaming, bool isThinking)
     {
         if (isThinking)

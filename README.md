@@ -41,6 +41,8 @@ Start PiSharp from the project directory its tools should use. The terminal incl
 
 The built-in `codemode` tool is registered but inactive by default. Enable it with, for example, `--tools read,bash,edit,write,codemode`. It requires Node.js 22.19 or newer on `PATH`. Model JavaScript runs inside a bundled QuickJS/WASM VM in a separate process; normal coding tools and provider use do not require Node.js.
 
+Mermaid diagrams (`markdown.mermaid`, default `streaming`) render via a persistent vendored `grok-mermaid` Node worker. It requires Node.js 22.19 or newer on `PATH`; without Node, Mermaid fences fall back to source code blocks. Rendering never blocks the terminal screen lock while waiting for the worker.
+
 For automation, `--mode json` emits PiSharp JSONL lifecycle records and `--mode rpc` accepts one JSON request per stdin line. See the [protocol contract](docs/protocol.md) for framing, commands, events and known differences.
 
 ## Providers and tools

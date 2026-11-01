@@ -296,7 +296,13 @@ public sealed class TerminalMermaidTests
     {
         using var output = new StringWriter();
         using var error = new StringWriter();
-        using var screen = new TerminalScreen(output, error, () => 80, () => 24);
+        var prewarmed = TerminalMermaidEngine.TryRender("flowchart LR\n  A --> B\n");
+        Assert.NotNull(prewarmed);
+        using var screen = new TerminalScreen(output, error, () => 80, () => 24,
+            new TerminalImageRenderer(), TerminalTheme.Default,
+            queryTerminalColors: false,
+            mermaidSyncProvider: _ => prewarmed,
+            mermaidAsyncProvider: (_, _) => Task.FromResult<TerminalMermaidArt?>(null));
 
         screen.CommitAssistantText("```mermaid\nflowchart LR\n  A --> B\n```");
         var before = output.ToString();

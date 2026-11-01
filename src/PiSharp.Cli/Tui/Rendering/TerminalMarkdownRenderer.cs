@@ -10,42 +10,45 @@ internal static class TerminalMarkdownRenderer
 {
     public static string Render(string markdown, int availableWidth = 80, TerminalTheme? theme = null,
         string? codeBlockIndent = null, string? baseForegroundToken = null, string? mermaidMode = null,
-        bool isStreaming = false, bool isThinking = false)
+        bool isStreaming = false, bool isThinking = false,
+        Func<string, TerminalMermaidArt?>? mermaidRender = null)
     {
         ArgumentNullException.ThrowIfNull(markdown);
         return Render(TerminalMarkdownParser.Parse(markdown), markdown, availableWidth, theme, codeBlockIndent,
-            baseForegroundToken, mermaidMode, isStreaming, isThinking);
+            baseForegroundToken, mermaidMode, isStreaming, isThinking, mermaidRender);
     }
 
     public static string RenderStreaming(string markdown, int availableWidth = 80, TerminalTheme? theme = null,
         string? codeBlockIndent = null, string? baseForegroundToken = null, string? mermaidMode = null,
-        bool isThinking = false)
+        bool isThinking = false, Func<string, TerminalMermaidArt?>? mermaidRender = null)
     {
         ArgumentNullException.ThrowIfNull(markdown);
         return Render(PreserveIncompleteLinks(markdown), availableWidth, theme, codeBlockIndent, baseForegroundToken,
-            mermaidMode, isStreaming: true, isThinking: isThinking);
+            mermaidMode, isStreaming: true, isThinking: isThinking, mermaidRender: mermaidRender);
     }
 
     public static string Render(MarkdownDocument document, string source, int availableWidth = 80,
         TerminalTheme? theme = null, string? codeBlockIndent = null, string? baseForegroundToken = null,
-        string? mermaidMode = null, bool isStreaming = false, bool isThinking = false)
+        string? mermaidMode = null, bool isStreaming = false, bool isThinking = false,
+        Func<string, TerminalMermaidArt?>? mermaidRender = null)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(source);
         return RenderBlocks(document, source, Math.Clamp(availableWidth, 1, 400), "\n\n", theme ?? TerminalTheme.Default,
-            codeBlockIndent ?? "  ", baseForegroundToken, mermaidMode, isStreaming, isThinking);
+            codeBlockIndent ?? "  ", baseForegroundToken, mermaidMode, isStreaming, isThinking, mermaidRender);
     }
 
     private static string RenderBlocks(ContainerBlock container, string source, int width, string separator,
         TerminalTheme theme, string codeBlockIndent, string? baseForegroundToken, string? mermaidMode = null,
-        bool isStreaming = false, bool isThinking = false)
+        bool isStreaming = false, bool isThinking = false,
+        Func<string, TerminalMermaidArt?>? mermaidRender = null)
     {
         var output = new StringBuilder();
         foreach (var block in container)
         {
             if (block is BlankLineBlock) continue;
             var rendered = RenderBlock(block, source, width, theme, codeBlockIndent, baseForegroundToken,
-                mermaidMode, isStreaming, isThinking);
+                mermaidMode, isStreaming, isThinking, mermaidRender);
             if (rendered.Length == 0) continue;
             if (output.Length > 0) output.Append(separator);
             output.Append(rendered);
@@ -54,7 +57,8 @@ internal static class TerminalMarkdownRenderer
     }
 
     private static string RenderBlock(Block block, string source, int width, TerminalTheme theme, string codeBlockIndent,
-        string? baseForegroundToken, string? mermaidMode = null, bool isStreaming = false, bool isThinking = false)
+        string? baseForegroundToken, string? mermaidMode = null, bool isStreaming = false, bool isThinking = false,
+        Func<string, TerminalMermaidArt?>? mermaidRender = null)
     {
         switch (block)
         {
@@ -69,7 +73,7 @@ internal static class TerminalMarkdownRenderer
                 {
                     var mermaidSource = fenced.Lines.ToString();
                     if (TerminalMermaidRenderer.TryRender(mermaidSource, width, theme, mermaidMode, isStreaming,
-                        isThinking, out var diagram, out var mermaidWarning))
+                        isThinking, out var diagram, out var mermaidWarning, mermaidRender))
                         return diagram!;
                     var codeFallback = RenderCodeBlock(fenced, Language(info), theme, codeBlockIndent);
                     if (mermaidWarning is not null)
@@ -89,17 +93,17 @@ internal static class TerminalMarkdownRenderer
                 return TerminalMarkdownTableRenderer.Render(table, source, width, theme);
             case ListBlock list:
                 return RenderList(list, source, width, theme, codeBlockIndent, baseForegroundToken,
-                    mermaidMode, isStreaming, isThinking);
+                    mermaidMode, isStreaming, isThinking, mermaidRender);
             case QuoteBlock quote:
                 return RenderQuote(quote, source, width, theme, codeBlockIndent, baseForegroundToken,
-                    mermaidMode, isStreaming, isThinking);
+                    mermaidMode, isStreaming, isThinking, mermaidRender);
             case ThematicBreakBlock:
                 return theme.Style("mdHr", new string('─', Math.Min(width, 80)));
             case HtmlBlock html:
                 return PrefixLines(TerminalMarkdownInlineRenderer.Visible(html.Lines.ToString()), "  │ ");
             case ContainerBlock nested:
                 return RenderBlocks(nested, source, width, "\n\n", theme, codeBlockIndent, baseForegroundToken,
-                    mermaidMode, isStreaming, isThinking);
+                    mermaidMode, isStreaming, isThinking, mermaidRender);
             case LeafBlock leaf:
                 return leaf.Inline is not null
                     ? TerminalMarkdownInlineRenderer.Render(leaf.Inline.FirstChild, styled: true, theme: theme,
@@ -111,7 +115,8 @@ internal static class TerminalMarkdownRenderer
     }
 
     private static string RenderList(ListBlock list, string source, int width, TerminalTheme theme, string codeBlockIndent,
-        string? baseForegroundToken, string? mermaidMode = null, bool isStreaming = false, bool isThinking = false)
+        string? baseForegroundToken, string? mermaidMode = null, bool isStreaming = false, bool isThinking = false,
+        Func<string, TerminalMermaidArt?>? mermaidRender = null)
     {
         var output = new List<string>();
         var fallbackOrder = int.TryParse(list.OrderedStart, NumberStyles.None, CultureInfo.InvariantCulture, out var start)
@@ -123,7 +128,7 @@ internal static class TerminalMarkdownRenderer
             fallbackOrder = order + 1;
             var marker = list.IsOrdered ? $"{order}{list.OrderedDelimiter}" : "-";
             var content = RenderBlocks(item, source, Math.Max(1, width - TerminalTextLayout.Width(marker) - 1), "\n",
-                theme, codeBlockIndent, baseForegroundToken, mermaidMode, isStreaming, isThinking);
+                theme, codeBlockIndent, baseForegroundToken, mermaidMode, isStreaming, isThinking, mermaidRender);
             if (content.Length == 0)
             {
                 output.Add(marker);
@@ -169,10 +174,11 @@ internal static class TerminalMarkdownRenderer
     }
 
     private static string RenderQuote(QuoteBlock quote, string source, int width, TerminalTheme theme, string codeBlockIndent,
-        string? baseForegroundToken, string? mermaidMode = null, bool isStreaming = false, bool isThinking = false)
+        string? baseForegroundToken, string? mermaidMode = null, bool isStreaming = false, bool isThinking = false,
+        Func<string, TerminalMermaidArt?>? mermaidRender = null)
     {
         var text = RenderBlocks(quote, source, Math.Max(1, width - 2), "\n\n", theme, codeBlockIndent,
-            baseForegroundToken: null, mermaidMode, isStreaming, isThinking);
+            baseForegroundToken: null, mermaidMode, isStreaming, isThinking, mermaidRender);
         if (text.Length == 0) return theme.Style("mdQuoteBorder", "│ ");
         return string.Join('\n', text.Split('\n').Select(line =>
             theme.Style("mdQuoteBorder", "│ ") + theme.Style("mdQuote", line, italic: true)));

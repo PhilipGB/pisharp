@@ -25,6 +25,22 @@ internal static class TerminalMermaidEngine
 
     internal static void ClearCacheForTests() => s_cache.Clear();
 
+    internal static bool TryGetCached(string source, out TerminalMermaidArt? art)
+    {
+        art = null;
+        if (string.IsNullOrWhiteSpace(source))
+            return false;
+        if (source.Length > MaximumSourceCharacters)
+            return false;
+        return s_cache.TryGetValue(source, out art);
+    }
+
+    internal static void CacheForTests(string source, TerminalMermaidArt? art)
+    {
+        if (source.Length <= MaximumSourceCharacters && s_cache.Count < 1_024)
+            s_cache[source] = art;
+    }
+
     internal static TerminalMermaidArt? TryRender(string source)
     {
         if (string.IsNullOrWhiteSpace(source))
