@@ -19,6 +19,10 @@ internal static class TerminalMermaidWorker
 
     internal static int ProcessCreationCount => Volatile.Read(ref s_processCreationCount);
 
+    private static TimeSpan s_renderTimeout = TimeSpan.FromSeconds(10);
+
+    internal static void SetRenderTimeoutForTests(TimeSpan timeout) => s_renderTimeout = timeout;
+
     internal static void ResetForTests()
     {
         lock (s_processGate)
@@ -32,25 +36,47 @@ internal static class TerminalMermaidWorker
         }
         Interlocked.Exchange(ref s_processCreationCount, 0);
         Interlocked.Exchange(ref s_nextId, 0);
+        s_renderTimeout = TimeSpan.FromSeconds(10);
     }
 
     internal static async Task<TerminalMermaidArt?> RenderAsync(string source, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(source))
             return null;
+        if (source.Length > TerminalMermaidEngine.MaximumSourceCharacters)
+            return null;
         await s_gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             if (!EnsureWorker())
                 return null;
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeoutCts.CancelAfter(s_renderTimeout);
+            var token = timeoutCts.Token;
             var id = Interlocked.Increment(ref s_nextId);
             var request = JsonSerializer.Serialize(new { id, source });
-            await s_writer!.WriteLineAsync(request.AsMemory(), cancellationToken).ConfigureAwait(false);
-            await s_writer.FlushAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                await s_writer!.WriteLineAsync(request.AsMemory(), token).ConfigureAwait(false);
+                await s_writer.FlushAsync(token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                RestartWorker();
+                return null;
+            }
             string? line;
             while (true)
             {
-                line = await s_reader!.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    line = await s_reader!.ReadLineAsync(token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+                {
+                    RestartWorker();
+                    return null;
+                }
                 if (line is null)
                 {
                     RestartWorker();

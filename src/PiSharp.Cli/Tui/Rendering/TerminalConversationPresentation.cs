@@ -536,6 +536,8 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
         {
             if (!seen.Add(source))
                 continue;
+            if (source.Length > TerminalMermaidEngine.MaximumSourceCharacters)
+                continue;
             if (TerminalMermaidEngine.TryGetCached(source, out _))
                 continue;
             pending.Add(source);

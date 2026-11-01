@@ -204,4 +204,98 @@ public sealed class TerminalMermaidAsyncTests
             TerminalMermaidEngine.ClearCacheForTests();
         }
     }
+
+    [Fact]
+    public async Task WorkerTimeoutRestartsAndFallsBack()
+    {
+        TerminalMermaidWorker.ResetForTests();
+        TerminalMermaidEngine.ClearCacheForTests();
+        try
+        {
+            TerminalMermaidWorker.SetRenderTimeoutForTests(TimeSpan.FromMilliseconds(1));
+            var stalled = await TerminalMermaidWorker.RenderAsync("flowchart LR\n  A --> TIMEOUT_RESTART\n");
+            Assert.Null(stalled);
+            var countAfterTimeout = TerminalMermaidWorker.ProcessCreationCount;
+            Assert.True(countAfterTimeout >= 1);
+
+            TerminalMermaidWorker.SetRenderTimeoutForTests(TimeSpan.FromSeconds(10));
+            var recovered = await TerminalMermaidWorker.RenderAsync("flowchart LR\n  A --> TIMEOUT_RECOVERED\n");
+            Assert.NotNull(recovered);
+            Assert.True(TerminalMermaidWorker.ProcessCreationCount >= countAfterTimeout);
+        }
+        finally
+        {
+            TerminalMermaidWorker.ResetForTests();
+            TerminalMermaidEngine.ClearCacheForTests();
+        }
+    }
+
+    [Fact]
+    public async Task CacheCapEvictsButNewDiagramsStillRender()
+    {
+        TerminalMermaidEngine.ClearCacheForTests();
+        try
+        {
+            for (var i = 0; i < TerminalMermaidEngine.MaximumCachedSources; i++)
+                TerminalMermaidEngine.CacheForTests($"fill-{i}", FakeArt($"F{i}"));
+            Assert.Equal(TerminalMermaidEngine.MaximumCachedSources, TerminalMermaidEngine.CachedCountForTests);
+
+            var gate = new object();
+            int asyncCalls = 0;
+            var freshArt = FakeArt("FRESH_AFTER_CAP");
+            Func<string, CancellationToken, Task<TerminalMermaidArt?>> provider = (source, ct) =>
+            {
+                Interlocked.Increment(ref asyncCalls);
+                return Task.FromResult<TerminalMermaidArt?>(freshArt);
+            };
+            var presentation = CreatePresentation(gate, EngineCacheSync(), provider);
+            presentation.SetAssistantText("```mermaid\nflowchart LR\n  A --> FRESH_CAP_SOURCE\n```");
+            var deadline = DateTimeOffset.UtcNow + TimeSpan.FromSeconds(10);
+            while (DateTimeOffset.UtcNow < deadline)
+            {
+                if (StripSgr(presentation.LiveText).Contains("FRESH_AFTER_CAP", StringComparison.Ordinal))
+                    break;
+                await Task.Delay(20);
+            }
+            Assert.Contains("FRESH_AFTER_CAP", StripSgr(presentation.LiveText));
+            Assert.True(TerminalMermaidEngine.CachedCountForTests <= TerminalMermaidEngine.MaximumCachedSources,
+                $"Cache stayed bounded, got {TerminalMermaidEngine.CachedCountForTests}.");
+            Assert.True(Volatile.Read(ref asyncCalls) >= 1);
+        }
+        finally
+        {
+            TerminalMermaidEngine.ClearCacheForTests();
+        }
+    }
+
+    [Fact]
+    public async Task OversizedSourcesNeverReachTheWorker()
+    {
+        TerminalMermaidWorker.ResetForTests();
+        TerminalMermaidEngine.ClearCacheForTests();
+        try
+        {
+            var oversizedBody = new string('A', TerminalMermaidEngine.MaximumSourceCharacters + 1);
+            Assert.Null(await TerminalMermaidWorker.RenderAsync(oversizedBody));
+            Assert.Equal(0, TerminalMermaidWorker.ProcessCreationCount);
+
+            var gate = new object();
+            int asyncCalls = 0;
+            Func<string, CancellationToken, Task<TerminalMermaidArt?>> provider = (source, ct) =>
+            {
+                Interlocked.Increment(ref asyncCalls);
+                return Task.FromResult<TerminalMermaidArt?>(FakeArt("SHOULD_NOT_RENDER"));
+            };
+            var presentation = CreatePresentation(gate, EngineCacheSync(), provider);
+            presentation.SetAssistantText($"```mermaid\n{oversizedBody}\n```");
+            await Task.Delay(200);
+            Assert.Equal(0, Volatile.Read(ref asyncCalls));
+            Assert.Contains("```mermaid", StripSgr(presentation.LiveText));
+        }
+        finally
+        {
+            TerminalMermaidWorker.ResetForTests();
+            TerminalMermaidEngine.ClearCacheForTests();
+        }
+    }
 }

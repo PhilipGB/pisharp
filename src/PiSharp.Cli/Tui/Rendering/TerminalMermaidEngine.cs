@@ -17,13 +17,17 @@ internal sealed record TerminalMermaidSpan(string Text, string Cls);
 /// <summary>Process boundary for the vendored grok-mermaid renderer.</summary>
 internal static class TerminalMermaidEngine
 {
-    private const int MaximumSourceCharacters = 64 * 1024;
+    internal const int MaximumSourceCharacters = 64 * 1024;
+    internal const int MaximumCachedSources = 1_024;
     private const int ProcessTimeoutMilliseconds = 10_000;
     private static readonly ConcurrentDictionary<string, TerminalMermaidArt?> s_cache = new(StringComparer.Ordinal);
+    private static readonly object s_cacheGate = new();
     private static string? s_wrapperPath;
     private static readonly object s_wrapperGate = new();
 
     internal static void ClearCacheForTests() => s_cache.Clear();
+
+    internal static int CachedCountForTests => s_cache.Count;
 
     internal static bool TryGetCached(string source, out TerminalMermaidArt? art)
     {
@@ -37,8 +41,35 @@ internal static class TerminalMermaidEngine
 
     internal static void CacheForTests(string source, TerminalMermaidArt? art)
     {
-        if (source.Length <= MaximumSourceCharacters && s_cache.Count < 1_024)
+        if (string.IsNullOrWhiteSpace(source))
+            return;
+        if (source.Length > MaximumSourceCharacters)
+            return;
+        CacheArt(source, art);
+    }
+
+    internal static void CacheArt(string source, TerminalMermaidArt? art)
+    {
+        lock (s_cacheGate)
+        {
+            if (s_cache.ContainsKey(source))
+            {
+                s_cache[source] = art;
+                return;
+            }
+            while (s_cache.Count >= MaximumCachedSources)
+            {
+                string? oldest = null;
+                foreach (var key in s_cache.Keys)
+                {
+                    oldest = key;
+                    break;
+                }
+                if (oldest is null || !s_cache.TryRemove(oldest, out _))
+                    break;
+            }
             s_cache[source] = art;
+        }
     }
 
     internal static TerminalMermaidArt? TryRender(string source)
@@ -50,8 +81,7 @@ internal static class TerminalMermaidEngine
         if (s_cache.TryGetValue(source, out var cached))
             return cached;
         var art = RenderViaNode(source);
-        if (s_cache.Count < 1_024)
-            s_cache.TryAdd(source, art);
+        CacheArt(source, art);
         return art;
     }
 
