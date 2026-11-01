@@ -33,6 +33,23 @@ class ComparisonStrictnessTests(unittest.TestCase):
                              view(mcpCalls=[['gate', {'token': 't'}], ['append', {'id': 'a'}]]))
         self.assertEqual([], diffs)
 
+    def test_cross_batch_mcp_reordering_is_a_difference(self):
+        # Two assistant turns declared tool calls, so arrival order across turns is product behavior.
+        two_batches = [['assistant', 'toolCall', False, '', [{'name': 'append', 'args': {'id': 'a'}}]],
+                       ['assistant', 'toolCall', False, '', [{'name': 'append', 'args': {'id': 'b'}}]]]
+        diffs = compare_case(
+            view(events=two_batches, mcpCalls=[['append', {'id': 'a'}], ['append', {'id': 'b'}]]),
+            view(events=two_batches, mcpCalls=[['append', {'id': 'b'}], ['append', {'id': 'a'}]]))
+        self.assertTrue(diffs, 'calls from different tool batches must stay ordered')
+
+    def test_single_batch_arrival_order_is_not_a_difference(self):
+        one_batch = [['assistant', 'toolCall', False, '',
+                      [{'name': 'append', 'args': {'id': 'a'}}, {'name': 'gate', 'args': {'token': 't'}}]]]
+        diffs = compare_case(
+            view(events=one_batch, mcpCalls=[['append', {'id': 'a'}], ['gate', {'token': 't'}]]),
+            view(events=one_batch, mcpCalls=[['gate', {'token': 't'}], ['append', {'id': 'a'}]]))
+        self.assertEqual([], diffs)
+
     def test_a_different_set_of_mcp_calls_is_still_a_difference(self):
         diffs = compare_case(view(mcpCalls=[['append', {'id': 'a'}], ['append', {'id': 'b'}]]),
                              view(mcpCalls=[['append', {'id': 'a'}]]))

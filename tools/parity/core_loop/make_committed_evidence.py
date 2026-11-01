@@ -54,7 +54,13 @@ def write_contract(entries, totals):
         'pisharpBranch': git('rev-parse', '--abbrev-ref', 'HEAD'),
         'pisharpBranchBaseSha': git('merge-base', 'HEAD', 'origin/main'),
         'comparisonMode': 'projected-observable',
-        'orderingPolicy': 'strict-equal',
+        'orderingPolicy': 'strict-projected-equality',
+        'orderingNote': (
+            'Strict equality of every projected observable. Two normalisations are disclosed rather '
+            'than implied: MCP call-arrival order is unordered within a single concurrent tool batch '
+            '(calls issued from different assistant turns stay ordered), and the persisted '
+            'system/context entry position is compared as counted presence rather than exact '
+            'position.'),
         'allowDocumentedDifferences': False,
         'comparisonNote': COMPARISON_NOTE,
         'summary': {'total': len(entries), **totals, 'unresolved': 0},

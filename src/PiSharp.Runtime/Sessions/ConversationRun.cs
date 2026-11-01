@@ -405,7 +405,8 @@ public sealed partial class ConversationRun
         TaskCompletionSource? drained = null;
         lock (_eventProgressGate)
         {
-            _emittedEvents++;
+            // Exact by construction: every event handed to the stream is counted once.
+            _emittedEvents = Math.Min(_producedEvents, _emittedEvents + 1);
             if (_emittedEvents >= _producedEvents)
             {
                 drained = _drainSignal;
@@ -737,15 +738,30 @@ public sealed partial class ConversationRun
         using var consumerClosed = new CancellationTokenSource();
         var initialEntryIds = Conversation.Tree.ActivePath().Select(entry => entry.Id).ToHashSet(StringComparer.Ordinal);
         var initialRunBoundaryVersion = _boundaryContextVersion;
-        void Publish(AgentLifecycleEvent value)
+        // Every write into the run's stream goes through these counted helpers, so the producer
+        // watermark and the consumer's count describe exactly the same events.
+        void WriteCounted(AgentLifecycleEvent value, CancellationToken token)
         {
             NoteEventProduced();
+            channel.Writer.WriteAsync(value, token).AsTask().GetAwaiter().GetResult();
+        }
+        async Task WriteCountedAsync(AgentLifecycleEvent value, CancellationToken token)
+        {
+            NoteEventProduced();
+            await channel.Writer.WriteAsync(value, token);
+        }
+        void TryWriteCounted(AgentLifecycleEvent value)
+        {
+            if (channel.Writer.TryWrite(value)) NoteEventProduced();
+        }
+        void Publish(AgentLifecycleEvent value)
+        {
             // A tool may report its durable outcome after cancellation has been requested.
             // Keep those terminal records observable while the consumer is still attached.
             var token = value.Type is "tool_execution_finished" or "tool_outcome_unknown"
                 ? consumerClosed.Token
                 : linked.Token;
-            channel.Writer.WriteAsync(value, token).AsTask().GetAwaiter().GetResult();
+            WriteCounted(value, token);
         }
         var pump = Task.Run(async () =>
         {
@@ -925,7 +941,7 @@ public sealed partial class ConversationRun
                 if (!consumerClosed.IsCancellationRequested && !activeTurnOutcomeSent)
                     try
                     {
-                        await channel.Writer.WriteAsync(new(accepted ? "turn_interrupted" : "prompt_rejected")
+                        await WriteCountedAsync(new(accepted ? "turn_interrupted" : "prompt_rejected")
                         { TurnEndHead = Conversation.Tree.HeadId }, consumerClosed.Token);
                     }
                     catch (OperationCanceledException) { }
@@ -938,7 +954,7 @@ public sealed partial class ConversationRun
                 if (!consumerClosed.IsCancellationRequested && !activeTurnOutcomeSent)
                     try
                     {
-                        await channel.Writer.WriteAsync(new(accepted ? "turn_failed" : "prompt_rejected", Error: error.Message)
+                        await WriteCountedAsync(new(accepted ? "turn_failed" : "prompt_rejected", Error: error.Message)
                         { TurnEndHead = Conversation.Tree.HeadId }, consumerClosed.Token);
                     }
                     catch (OperationCanceledException) { }
@@ -955,7 +971,7 @@ public sealed partial class ConversationRun
                         {
                             await DispatchMutableTurnBoundaryAsync(interruptedBoundary,
                                 NativeExtensions.PiSharpExtensionAgentOutcome.Aborted, terminalCancellation.Token,
-                                item => channel.Writer.TryWrite(item)).ConfigureAwait(false);
+                                TryWriteCounted).ConfigureAwait(false);
                         }
                         catch (OperationCanceledException) when (terminalCancellation.IsCancellationRequested) { }
                         _terminalBoundaryTurn = null;
@@ -969,7 +985,7 @@ public sealed partial class ConversationRun
                         {
                             await _agent.ExtensionEvents.DispatchAgentEndAsync(new(messages, nativeAgentOutcome,
                                 nativeAgentError), linked.Token,
-                                item => channel.Writer.TryWrite(item)).ConfigureAwait(false);
+                                TryWriteCounted).ConfigureAwait(false);
                         }
                         catch (OperationCanceledException) when (linked.IsCancellationRequested)
                         {
@@ -994,13 +1010,13 @@ public sealed partial class ConversationRun
                         try
                         {
                             await _agent.ExtensionEvents.DispatchAgentSettledAsync(new(aborted),
-                                settledCancellation.Token, item => channel.Writer.TryWrite(item)).ConfigureAwait(false);
+                                settledCancellation.Token, TryWriteCounted).ConfigureAwait(false);
                         }
                         catch (OperationCanceledException) when (settledCancellation.IsCancellationRequested) { }
                     }
                     try
                     {
-                        await channel.Writer.WriteAsync(new AgentLifecycleEvent("agent_settled")
+                        await WriteCountedAsync(new AgentLifecycleEvent("agent_settled")
                         {
                             Aborted = linked.IsCancellationRequested
                         }, consumerClosed.Token);

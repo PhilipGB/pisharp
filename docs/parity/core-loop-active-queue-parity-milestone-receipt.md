@@ -39,7 +39,9 @@ observed. PiSharp runs the run pipeline and the RPC command loop on different ta
 completion path awaits durable persistence, so an accepted steer could be written before the
 `tool_end` and tool result of a tool whose side effect had already happened.
 
-Two cooperating changes in the runtime, not per-case patches:
+Two cooperating changes in the runtime, not per-case patches (every event handed to the run's
+stream goes through one counted publication helper, so the producer watermark and the consumer count
+describe exactly the same events — `_emittedEvents` can no longer exceed `_producedEvents`):
 
 - `ToolCompletionGate` (`src/PiSharp.Runtime/Sessions/ToolCompletionGate.cs`) holds a tool from the
   moment its work returns until its completion event is published. `DurableToolFunction` opens the
@@ -89,13 +91,18 @@ PiSharp variation. `test_order_calibration.py` freezes that property with synthe
 
 Calibration measured pinned Pi producing **both** arrival orders for MCP calls dispatched from one
 assistant turn. Because both implementations dispatch those calls concurrently (pinned Pi maps over
-the call array and awaits `Promise.all`), that arrival order is not part of either contract. It is
-the single observable compared without regard to order, and only as a multiset: the set of calls
-must still match, and effects, lifecycle events, provider request content and declared tool lists
-remain strictly ordered. `test_compare_strictness.py` proves the comparator still reports effect,
-event and declared-tool reordering, and still reports a different call set.
+the call array and awaits `Promise.all`), that arrival order is not part of either contract.
 
-Nothing else is permitted to differ, and no alternative ordering is frozen as an allowance.
+The relaxation is scoped to a **single concurrent batch**, not applied to the case-level list: a
+case whose observation declares more than one assistant turn with tool calls is compared strictly,
+so an arrival order that crosses turns can never compare equal. `test_compare_strictness.py` proves
+both directions — cross-batch reordering is a difference, single-batch arrival order is not — plus
+that effect, event and declared-tool reordering and a different call set are still reported.
+
+Nothing else is permitted to differ, and no alternative ordering is frozen as an allowance. The
+contract states this as `orderingPolicy: strict-projected-equality` with an `orderingNote` naming
+the two disclosed normalisations (single-batch MCP arrival order, and the persisted
+system/context entry position compared as counted presence).
 
 ## Acceptance contract and verification
 

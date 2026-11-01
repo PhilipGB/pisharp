@@ -194,18 +194,32 @@ FIELDS = ('events', 'providerRequests', 'effects', 'mcpCalls', 'state', 'entries
 
 # Calls issued from one assistant turn are dispatched concurrently by both implementations (pinned Pi
 # maps over the call array and awaits Promise.all; PiSharp starts each call's request concurrently).
-# The arrival order at the MCP server is therefore scheduler-determined: pinned Pi itself was measured
-# producing both orders for the same case under load (see the calibration note in the milestone
-# receipt). Only this observable is compared without regard to arrival order, and only as a multiset:
-# every other ordered observable stays strict.
+# The arrival order at the MCP server is therefore scheduler-determined for that batch: pinned Pi
+# itself was measured producing both orders for the same case under load (see the calibration note in
+# the milestone receipt).
+#
+# The relaxation is scoped to a single concurrent batch. Calls from different batches are ordered by
+# their turns, which is product behavior, so a case with more than one batch is compared strictly: an
+# order that crosses turns must never compare equal merely because the whole list was sorted.
 MULTISET_FIELDS = {'mcpCalls'}
+
+
+def tool_call_batches(view):
+    """Assistant turns in this observation that declared tool calls."""
+    batches = 0
+    for event in view.get('events') or []:
+        if isinstance(event, list) and len(event) > 1 and event[0] == 'assistant' and event[1] == 'toolCall':
+            batches += 1
+    return batches
 
 
 def compare_case(view_pi, view_pisharp):
     diffs = []
+    # Only a single-batch case may use the arrival-order-insensitive comparison.
+    single_batch = tool_call_batches(view_pi) <= 1 and tool_call_batches(view_pisharp) <= 1
     for field in FIELDS:
         left, right = view_pi.get(field), view_pisharp.get(field)
-        if field in MULTISET_FIELDS:
+        if field in MULTISET_FIELDS and single_batch:
             left = sorted(json.dumps(item, sort_keys=True, default=str) for item in left or [])
             right = sorted(json.dumps(item, sort_keys=True, default=str) for item in right or [])
         diffs.extend(compare_views(left, right, field))
