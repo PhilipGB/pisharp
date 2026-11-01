@@ -10,7 +10,7 @@ Complete. The full 41-case differential matches pinned Pi: **41 match, 0 differ,
 | Item | Value |
 | --- | --- |
 | Pinned Pi oracle | `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` (`tools/parity/pi-reference.txt`) |
-| PiSharp implementation | `393e8248` (branch `milestone/core-loop-active-queue-parity`) |
+| PiSharp implementation | `bb79a2d5` (branch `milestone/core-loop-active-queue-parity`) |
 | Branch base | `fc75ba2ad88fc3044b152fcc647144498064db59` |
 | Acceptance contract | `docs/parity/fixtures/core-loop-active-queue-parity-2026-10-31.json` |
 | Evidence | `docs/parity/fixtures/core-loop-active-queue-parity-2026-10-31/evidence/` |

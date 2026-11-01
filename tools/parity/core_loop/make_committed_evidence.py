@@ -59,7 +59,8 @@ def write_contract(entries, totals):
         'comparisonNote': COMPARISON_NOTE,
         'summary': {'total': len(entries), **totals, 'unresolved': 0},
         'cases': [{'id': entry['case'], 'title': entry['title'], 'mandatory': True,
-                   'expectedStatus': entry['status'], 'evidence': f'evidence/{entry["case"]}.json'}
+                   'expectedStatus': entry['status'],
+                   'evidence': f'{MILESTONE_DIR}/evidence/{entry["case"]}.json'}
                   for entry in sorted(entries, key=lambda item: item['case'])],
     }
     CONTRACT.write_text(json.dumps(contract, indent=2) + '\n', encoding='utf-8')
