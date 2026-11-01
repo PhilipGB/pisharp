@@ -388,49 +388,16 @@ public sealed partial class ConversationRun
     public void QueueRpcInput(string prompt, bool steering, Action<AgentLifecycleEvent> publishQueueUpdate)
         => _promptDelivery.QueueRpcInput(prompt, steering, publishQueueUpdate);
 
-    private readonly object _eventProgressGate = new();
-    private long _producedEvents;
-    private long _emittedEvents;
-    private TaskCompletionSource? _drainSignal;
-
-    /// <summary>Counts an event handed to the run's stream, before any consumer can reorder it.</summary>
-    private void NoteEventProduced()
-    {
-        lock (_eventProgressGate) _producedEvents++;
-    }
+    private readonly EventWatermark _events = new();
 
     /// <summary>Counts an event whose records the consumer has finished writing.</summary>
-    internal void NoteEventEmitted()
-    {
-        TaskCompletionSource? drained = null;
-        lock (_eventProgressGate)
-        {
-            // Exact by construction: every event handed to the stream is counted once.
-            _emittedEvents = Math.Min(_producedEvents, _emittedEvents + 1);
-            if (_emittedEvents >= _producedEvents)
-            {
-                drained = _drainSignal;
-                _drainSignal = null;
-            }
-        }
-        drained?.TrySetResult();
-    }
+    internal void NoteEventEmitted() => _events.NoteEmitted();
 
     /// <summary>
     /// Releases a pending drain wait when the run's event stream has ended, so acceptance never
     /// depends on records that no consumer will write.
     /// </summary>
-    internal void NoteEventStreamCompleted()
-    {
-        TaskCompletionSource? drained;
-        lock (_eventProgressGate)
-        {
-            _emittedEvents = _producedEvents;
-            drained = _drainSignal;
-            _drainSignal = null;
-        }
-        drained?.TrySetResult();
-    }
+    internal void NoteEventStreamCompleted() => _events.NoteStreamCompleted();
 
     /// <summary>
     /// Waits until every tool that already returned for this run has published its completion and the
@@ -444,14 +411,7 @@ public sealed partial class ConversationRun
     }
 
     /// <summary>Completes once every event produced so far has been written by the consumer.</summary>
-    internal Task WaitForEventDrainAsync()
-    {
-        lock (_eventProgressGate)
-        {
-            if (_emittedEvents >= _producedEvents) return Task.CompletedTask;
-            return (_drainSignal ??= new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously)).Task;
-        }
-    }
+    internal Task WaitForEventDrainAsync() => _events.WaitForDrainAsync();
 
     /// <summary>
     /// Queues input only once every tool that already finished its work has published its completion, so an
@@ -742,17 +702,20 @@ public sealed partial class ConversationRun
         // watermark and the consumer's count describe exactly the same events.
         void WriteCounted(AgentLifecycleEvent value, CancellationToken token)
         {
-            NoteEventProduced();
-            channel.Writer.WriteAsync(value, token).AsTask().GetAwaiter().GetResult();
+            var reservation = _events.Reserve();
+            try { channel.Writer.WriteAsync(value, token).AsTask().GetAwaiter().GetResult(); }
+            catch { reservation.Dispose(); throw; }
         }
         async Task WriteCountedAsync(AgentLifecycleEvent value, CancellationToken token)
         {
-            NoteEventProduced();
-            await channel.Writer.WriteAsync(value, token);
+            var reservation = _events.Reserve();
+            try { await channel.Writer.WriteAsync(value, token); }
+            catch { reservation.Dispose(); throw; }
         }
         void TryWriteCounted(AgentLifecycleEvent value)
         {
-            if (channel.Writer.TryWrite(value)) NoteEventProduced();
+            var reservation = _events.Reserve();
+            if (!channel.Writer.TryWrite(value)) reservation.Dispose();
         }
         void Publish(AgentLifecycleEvent value)
         {
