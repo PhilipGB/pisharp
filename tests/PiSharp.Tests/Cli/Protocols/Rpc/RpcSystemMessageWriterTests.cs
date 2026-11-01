@@ -25,7 +25,7 @@ public sealed class RpcSystemMessageWriterTests
     {
         var persisted = SystemMessage("restored prompt", tool: null);
         var current = SystemMessage("changed prompt", tool: null);
-        var lines = await WriteModelRequestAsync(persisted, current, tool: null);
+        var lines = await WriteModelRequestAsync(persisted, current);
 
         Assert.Equal(1, CountSystemMessages(lines));
         Assert.Contains(lines, line => line.Contains("changed prompt", StringComparison.Ordinal));
@@ -36,7 +36,7 @@ public sealed class RpcSystemMessageWriterTests
     {
         var persisted = SystemMessage("prompt", tool: null);
         var current = SystemMessage("prompt", tool: """{"name":"late_tool","description":"late","parameters":{"type":"object"}}""");
-        var lines = await WriteModelRequestAsync(persisted, current, tool: "late_tool");
+        var lines = await WriteModelRequestAsync(persisted, current);
 
         Assert.Equal(1, CountSystemMessages(lines));
         Assert.Contains(lines, line => line.Contains("late_tool", StringComparison.Ordinal));
@@ -47,13 +47,12 @@ public sealed class RpcSystemMessageWriterTests
     {
         var persisted = SystemMessage("prompt", tool: null);
         var current = SystemMessage("prompt", tool: null);
-        var lines = await WriteModelRequestAsync(persisted, current, tool: null);
+        var lines = await WriteModelRequestAsync(persisted, current);
 
         Assert.Equal(0, CountSystemMessages(lines));
     }
 
-    private static async Task<string[]> WriteModelRequestAsync(JsonObject persisted, JsonObject current,
-        string? tool)
+    private static async Task<string[]> WriteModelRequestAsync(JsonObject persisted, JsonObject current)
     {
         var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
         var agent = new PiAgent(new IdleClient(), new CodingTools(Path.GetTempPath()), noBuiltinTools: true);
