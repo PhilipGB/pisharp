@@ -1,5 +1,17 @@
 # Continuation — PiSharp capability parity
 
+## Project goal and completion condition
+
+**Goal:** implement Pi's in-scope capabilities idiomatically in C#/.NET, using Microsoft Agent Framework and Microsoft.Extensions.AI where appropriate. Normal CLI package-resource workflows and user-reachable visual interactions are in scope.
+
+**Stop condition:** a full current-Pi audit finds no material in-scope gaps, required behavioral/differential evidence passes, exact-head CI is green, and major architecture bottlenecks are resolved.
+
+## Current state — 2026-11-01
+
+Current status is based on `main` at `80357982b960ce1b7d44237f20eff4a035372640`. The latest merged milestones are the [Complete RPC Protocol and Command Parity](parity/fixtures/rpc-protocol-command-parity/README.md) (PR #29, `480f058a`), [resource path and glob matching parity](parity/fixtures/resource-glob-matching-parity/README.md) (PR #30, `fc75ba2a`), [core agent-loop active-queue parity](parity/core-loop-active-queue-parity-milestone-receipt.md) (PR #31, `50cbb591`) and [Mermaid Markdown parity](parity/fixtures/mermaid-markdown-parity.md) (PR #32, `80357982`). Global parity remains `in_progress` at **13 verified, 148 in progress and 33 not started** across the 194 required capabilities. The next step is to select the next capability from the feature matrix and execution ledger, audit pinned Pi for it, and record the resulting evidence. Open architecture risks are tracked in the [architecture document](architecture.md#open-architecture-risks).
+
+The milestone entries below retain their historical wording and are superseded by this section wherever they describe a milestone as active or a merged PR as open.
+
 ## Completed milestone — Compaction, Context Budget, Overflow and Usage Parity — 2026-10-28
 
 PR #27 is merged at `12064420179f4119bdaf37479c7cba0f5ca40717`. Pinned Pi is `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; the frozen acceptance contract defines 22 checkpoints and 211 required cases.
@@ -12,13 +24,13 @@ Limitations: the 20 credential-dependent pinned Pi interactive/LLM cases remain 
 
 See the [source-pinned inventory](parity/fixtures/compaction-context-management-inventory.json), [compact evidence](parity/fixtures/compaction-context-management-c1-case-results.json), [case index](parity/fixtures/compaction-context-management/evidence-summary.json), and [execution ledger](parity/execution-ledger.json).
 
-## Active milestone — Complete RPC Protocol and Command Parity — 2026-10-29
+## Completed milestone — Complete RPC Protocol and Command Parity — 2026-10-29
 
-PR #28 is merged at `646db89bd396b8089b1b9a058fa96b1489f4d0cd`. PR #29 remains open, draft and unmerged. The frozen RPC contract has 24/24 checkpoints and 252/252 mandatory cases. Current source `0af1b7f8091ac2805fc7ca505333552ae8876c21` switches the llama router test server to the retrying shared loopback listener helper, preventing transient `Address already in use` failures when a just-reserved port is claimed concurrently. The existing occupied-port regression covers retry behavior; focused Llama/router and listener tests pass 17/17, and the Linux process/session/PTY subset passes 694/694 locally. On prior source `e84a30b337bf09d5127a567cbaf5e4801b528d73`, exact-head push CI (run 41006393388) and PR CI (run 41006398353) passed all five jobs, and the full .NET suite passed 4,009/4,009. Its evidence run (41006393325) failed one Q0 Linux process/PTY test because the test fixture selected a port that became occupied before `HttpListener.Start`; 693/694 cases passed. The partial artifact `rpc-parity-evidence-2f863fa854cbe824fee8a8ec91042594b030f450` (digest `sha256:849257952adfb52a8d45bff8c5c66e0f8cf60a238e85730fd751a5b015684ca3`) is diagnostic only. A new exact-head publisher run and clean-checkout artifact verification are required for current source; final CI/evidence/CI0/PUB0 receipts are maintained in PR #29’s description. The 20 credential-dependent Pi cases remain unverified, and the managed-package parity corpus remains scoped to its historical milestone. No live model endpoint was called.
+PR #29 is merged at `480f058a95713fbc51b6904d4450da68bcda886c`. The frozen RPC contract has 24/24 checkpoints and 252/252 mandatory cases. Implementation source `0af1b7f8091ac2805fc7ca505333552ae8876c21` uses the shared retrying loopback listener helper in the llama router test server; exact-head push CI `41011626977`, PR CI `41011633355`, and the publisher run `41011627041` passed. The downloaded artifact was independently verified from a clean checkout: P0/P1/V0/V1/R1-R15/D0/Q0/E0 passed 22/22 checkpoints and 241/241 cases, CI0 passed 5/5 and PUB0 passed 6/6, with zero failures or skips. Q0 passed 15/15 with 4,009/4,009 .NET tests and 157 documents / 695 references. The 20 credential-dependent Pi cases remain unverified; the managed-package corpus remains scoped to its historical milestone. No live model endpoint was called.
 
-See the [milestone receipt](parity/fixtures/rpc-protocol-command-parity/README.md), [completion evidence](parity/fixtures/rpc-protocol-command-parity/completion-evidence-62c65044.json), [remediation evidence](parity/fixtures/rpc-protocol-command-parity/remediation-evidence-62c65044.json), [inventory](parity/fixtures/rpc-protocol-command-parity/inventory.json), [case index](parity/fixtures/rpc-protocol-command-parity/required-case-index.json), and [contract](../tools/parity/rpc_protocol/contract.json).
+See the [milestone receipt](parity/fixtures/rpc-protocol-command-parity/README.md), [completion evidence](parity/fixtures/rpc-protocol-command-parity/completion-evidence-62c65044.json), [remediation evidence](parity/fixtures/rpc-protocol-command-parity/remediation-evidence-62c65044.json), [source-pinned inventory](parity/fixtures/rpc-protocol-command-parity/inventory.json), [case index](parity/fixtures/rpc-protocol-command-parity/required-case-index.json), and [contract](../tools/parity/rpc_protocol/contract.json).
 
-## Active milestone — Complete Managed Package Lifecycle and Resource Distribution Parity — 2026-10-27
+## Completed milestone — Complete Managed Package Lifecycle and Resource Distribution Parity — 2026-10-27
 
 PR #26 was verified merged at `d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9`;
 this branch is based on that merge, and Pi remains pinned at
@@ -386,7 +398,7 @@ OAuth, late registration and the full event surface remain open. See the
 [API guide](extensions.md) and
 [milestone receipt](parity/fixtures/native-extension-provider-mcp-virtual-models-2026-10-17.md).
 
-## Active milestone — Native Extension Controls & Configuration — 2026-10-17
+## Historical milestone — Native Extension Controls & Configuration — 2026-10-17
 
 Work is on `milestone/native-extension-controls-configuration`, based on
 `15b7acceb9c41a5b278b005ac5df6dadad7cda48`; the configured Pi reference stays
@@ -1503,4 +1515,4 @@ PR #25 is merged at `897bc5778f87ed09ea42e48b260479ee6a6a218c`; that merge is
 the base of the active multimodal milestone above.
 
 
-Resource-path/glob parity review corrections add five malformed file-URL errors and make E0 require the exact 14-report inventory, replay all frozen result reports, and reject a regenerated manifest after mandatory reports are removed. The source-level URL correction uses the same local path validation as package file URLs and preserves valid path matching. Current local results are matcher 75/75, file-URL errors 5/5, loader selection 36/36, explicit paths 19/19, settings processes 8/8, themes 4/4 within full-loader cases, reload 1/1, and 19/19 verifier controls; 144 mandatory results total. Formatting, warnings-as-errors build, 101 focused path/package URL tests, and the full .NET suite (4,015/4,015) pass. Fresh exact-head CI will verify this correction head. PR [#30](https://github.com/PhilipGB/pisharp/pull/30) remains open, draft, and unmerged. See [resource-path receipt](parity/fixtures/resource-glob-matching-parity/README.md) and [execution ledger](parity/execution-ledger.json).
+Resource-path/glob parity review corrections add five malformed file-URL errors and make E0 require the exact 14-report inventory, replay all frozen result reports, and reject a regenerated manifest after mandatory reports are removed. The source-level URL correction uses the same local path validation as package file URLs and preserves valid path matching. Current local results are matcher 75/75, file-URL errors 5/5, loader selection 36/36, explicit paths 19/19, settings processes 8/8, themes 4/4 within full-loader cases, reload 1/1, and 19/19 verifier controls; 144 mandatory results total. Formatting, warnings-as-errors build, 101 focused path/package URL tests, and the full .NET suite (4,015/4,015) pass. PR [#30](https://github.com/PhilipGB/pisharp/pull/30) is merged at `fc75ba2ad88fc3044b152fcc647144498064db59`; its exact-head push and PR CI passed all jobs, and the run's E0 artifact verified against the merge source. See [resource-path receipt](parity/fixtures/resource-glob-matching-parity/README.md) and [execution ledger](parity/execution-ledger.json).
