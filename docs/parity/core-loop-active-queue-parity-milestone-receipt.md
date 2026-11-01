@@ -10,7 +10,7 @@ Complete. The full 41-case differential matches pinned Pi: **41 match, 0 differ,
 | Item | Value |
 | --- | --- |
 | Pinned Pi oracle | `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` (`tools/parity/pi-reference.txt`) |
-| PiSharp implementation | `4e77f7c2` (branch `milestone/core-loop-active-queue-parity`) |
+| PiSharp implementation | `daaf3989` (branch `milestone/core-loop-active-queue-parity`) |
 | Branch base | `fc75ba2ad88fc3044b152fcc647144498064db59` |
 | Acceptance contract | `docs/parity/fixtures/core-loop-active-queue-parity-2026-10-31.json` |
 | Evidence | `docs/parity/fixtures/core-loop-active-queue-parity-2026-10-31/evidence/` |
@@ -39,9 +39,10 @@ observed. PiSharp runs the run pipeline and the RPC command loop on different ta
 completion path awaits durable persistence, so an accepted steer could be written before the
 `tool_end` and tool result of a tool whose side effect had already happened.
 
-Two cooperating changes in the runtime, not per-case patches (every event handed to the run's
-stream goes through one counted publication helper, so the producer watermark and the consumer count
-describe exactly the same events — `_emittedEvents` can no longer exceed `_producedEvents`):
+Two cooperating changes in the runtime, not per-case patches. Every event handed to the run's stream
+is counted through `EventWatermark`, which reserves a slot before the event can become visible and
+rolls the reservation back when a write is cancelled or rejected, so the producer watermark and the
+consumer count describe exactly the same events and neither can run ahead of the other:
 
 - `ToolCompletionGate` (`src/PiSharp.Runtime/Sessions/ToolCompletionGate.cs`) holds a tool from the
   moment its work returns until its completion event is published. `DurableToolFunction` opens the
@@ -124,7 +125,7 @@ documented difference when differences are not allowed.
 | --- | --- |
 | Full differential corpus (41 cases, fresh artifacts) | 41 match / 0 differ |
 | Focused parity suites | 257 passed |
-| Gate and writer regression suites | 6 passed |
+| Gate, watermark and writer regression suites | 11 passed |
 | Python comparator/calibration controls | 13 passed |
 | `dotnet format --verify-no-changes` | clean |
 | `dotnet build --warnaserror` | clean |
