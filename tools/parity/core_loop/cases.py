@@ -259,14 +259,25 @@ CASES = [
          [dict(t='tool', calls=[dict(name=GATE_APPEND, args=dict(id='f4a', token='t-F4-1')),
                                 dict(name=GATE_APPEND, args=dict(id='f4b', token='t-F4-2'))]),
           dict(t='text', text='NEXT-OK')],
+         # Both tools are blocked when the abort arrives. The releases are ordered explicitly so the
+         # two aborted tools cannot race each other for the side-effect log: teardown releasing every
+         # gate at once made the observed effect order a scheduling artifact of the fixture rather
+         # than a product behavior.
          ['prompt GO', 'wait marker gate-append-f4a-started', 'wait marker gate-append-f4b-started',
-          'abort', 'settled', 'get_state', 'prompt NEXT', 'settled', 'get_state'],
+          'abort', 'release t-F4-1', 'wait marker gate-append-f4a-done',
+          'release t-F4-2', 'wait marker gate-append-f4b-done',
+          'settled', 'get_state', 'prompt NEXT', 'settled', 'get_state'],
          ['t-F4-1', 't-F4-2'], 2),
     case('F5', 'steer while one tool blocked and one completed',
          [dict(t='tool', calls=[dict(name=APPEND, args=dict(id='f5a')),
                                 dict(name=GATE, args=dict(token='t-F5'))]),
           dict(t='text', text='TOOLS-DONE')],
-         ['prompt GO', 'wait marker append-f5a-done', 'wait marker gate-t-F5-started',
+         # The steer is issued only after the product itself has published the completed tool: the
+         # fixture marker is written before the MCP response reaches the client, so steering on it
+         # races a few milliseconds of transport latency instead of testing steering while a sibling
+         # tool is still blocked (see the calibration notes in the milestone receipt).
+         ['prompt GO', 'wait marker append-f5a-done', 'wait tool_execution_end 1',
+          'wait marker gate-t-F5-started',
           'steer S1', 'release t-F5', 'settled', 'get_state'],
          ['t-F5'], 1),
     case('F6', 'steer queued after the last tool completed',
@@ -317,7 +328,7 @@ CASES = [
           dict(t='text', text='N4'),
           dict(t='text', text='A5')],
          ['prompt GO', 'wait marker gate-append-h1a-started', 'wait marker append-h1b-done',
-          'steer S1', 'follow_up F1', 'release t-H1-1', 'settled',
+          'wait tool_execution_end 1', 'steer S1', 'follow_up F1', 'release t-H1-1', 'settled',
           'prompt NEXT', 'settled', 'get_state', 'restart --continue',
           'prompt AGAIN', 'settled', 'get_state', 'get_entries'],
          ['t-H1-1'], 3),

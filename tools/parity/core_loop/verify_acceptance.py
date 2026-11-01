@@ -16,6 +16,7 @@ The verifier fails (exit 1) if any of the following holds:
   * the evidence belongs to the wrong Pi SHA,
   * the evidence belongs to the wrong PiSharp SHA,
   * a required result is unresolved (one-sided / error / absent status),
+  * a case differs while the contract permits no documented differences,
   * the observed case totals do not match the frozen contract.
 
 It never relies on a summary file alone: every claim is re-derived from the
@@ -49,11 +50,16 @@ def verify(contract_path):
     contract_dir = contract_path.parent
 
     failures = []
+    # A milestone that claims parity must not keep a documented-difference escape hatch open. The
+    # contract states whether ordinary differences are permitted; when they are not, a differing
+    # case fails acceptance even if it names a justification.
+    allow_differences = bool(contract.get('allowDocumentedDifferences', True))
     expected_total = int(contract['summary']['total'])
     expected_match = int(contract['summary']['match'])
     expected_safety = int(contract['summary'].get('intentionalSafety', 0))
     expected_unresolved = int(contract['summary'].get('unresolved', 0))
 
+    observed_differences = []
     observed_match = 0
     observed_safety = 0
     observed_unresolved = 0
@@ -109,6 +115,7 @@ def verify(contract_path):
             if expected_status != 'match':
                 failures.append(f'{case_id}: status match but contract expects {expected_status}')
         else:  # differ
+            observed_differences.append(case_id)
             if expected_status in ('intentional-safety', 'known-difference'):
                 observed_safety += 1
                 # A justified difference (intentional safety or a documented known
@@ -119,6 +126,11 @@ def verify(contract_path):
                 failures.append(f'{case_id}: status differ but contract expects match')
             else:
                 failures.append(f'{case_id}: unexpected contract status {expected_status}')
+
+    if not allow_differences and observed_differences:
+        failures.append(
+            f'{len(observed_differences)} case(s) differ but the contract permits no documented '
+            f'differences: {", ".join(observed_differences)}')
 
     # Frozen totals must match the observed evidence.
     if observed_total != expected_total:

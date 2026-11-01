@@ -88,124 +88,135 @@ internal sealed class RpcEventWriter(JsonLineWriter output, Func<JsonObject?>? g
         {
             await foreach (var item in events)
             {
-                projector.SetThinkingLevel(run.ThinkingLevel);
-                if (observeEvent is not null) await observeEvent(item);
-                if (item.Type == "prompt_accepted")
+                try
                 {
-                    // An accepted prompt starts a new agent run whenever no agent run is open: the
-                    // first prompt, and also a queued steering/follow-up batch delivered after a
-                    // failed or completed turn (pinned Pi emits agent_start for that continuation).
-                    if (!agentOpen)
+                    projector.SetThinkingLevel(run.ThinkingLevel);
+                    if (observeEvent is not null) await observeEvent(item);
+                    if (item.Type == "prompt_accepted")
+                    {
+                        // An accepted prompt starts a new agent run whenever no agent run is open: the
+                        // first prompt, and also a queued steering/follow-up batch delivered after a
+                        // failed or completed turn (pinned Pi emits agent_start for that continuation).
+                        if (!agentOpen)
+                        {
+                            runStartHead = item.RunStartHead;
+                            await output.EmitAsync(new { type = "agent_start" }, CancellationToken.None);
+                            agentOpen = true;
+                            lock (_projectorGate) projector.BeginAgent();
+                        }
+                        accepted = true;
+                        turnStartHead = item.RunStartHead;
+                        if (!turnOpen)
+                        {
+                            await output.EmitAsync(new { type = "turn_start" }, CancellationToken.None);
+                            turnOpen = true;
+                            lock (_projectorGate) projector.BeginTurn();
+                        }
+                        pendingPromptMessages.Add(item);
+                        continue;
+                    }
+                    if (item.Type == "steering_message_accepted")
+                    {
+                        IReadOnlyList<object> promptRecords;
+                        lock (_projectorGate) promptRecords = projector.ProjectPrompt(item, run.Conversation);
+                        foreach (var record in promptRecords)
+                            await output.EmitAsync(record, CancellationToken.None);
+                        continue;
+                    }
+                    if (item.Type == "agent_attempt_started")
                     {
                         runStartHead = item.RunStartHead;
+                        turnStartHead = item.RunStartHead;
+                        await output.EmitAsync(new { type = "agent_start" }, CancellationToken.None);
+                        await output.EmitAsync(new { type = "turn_start" }, CancellationToken.None);
+                        agentOpen = true;
+                        lock (_projectorGate) projector.BeginAgent();
+                        turnOpen = true;
+                        continue;
+                    }
+                    if (item.Type == "prompt_rejected") continue;
+                    if (item.Type == "queue_update" && pendingPromptMessages.Count > 0)
+                    {
+                        pendingQueueUpdates.Add(item);
+                        continue;
+                    }
+                    if (item.Type == "model_request_started" ||
+                        pendingPromptMessages.Count > 0 && item.Type is "turn_completed" or "turn_failed" or "turn_interrupted")
+                    {
+                        JsonObject? currentSystemMessage;
+                        lock (_projectorGate) currentSystemMessage = getSystemMessage?.Invoke();
+                        // Seed from the restored session so a resumed conversation reports no system
+                        // message when nothing changed, and reports one when a section or the tool
+                        // loadout did change while the session was closed.
+                        _lastSystemMessage ??= getPersistedSystemMessage?.Invoke();
+                        if (currentSystemMessage is not null &&
+                            !EquivalentSystemMessage(_lastSystemMessage, currentSystemMessage))
+                        {
+                            IReadOnlyList<object> systemRecords;
+                            lock (_projectorGate) systemRecords = projector.ProjectSystemMessage(currentSystemMessage);
+                            foreach (var record in systemRecords)
+                                await output.EmitAsync(record, CancellationToken.None);
+                            lock (_projectorGate) _lastSystemMessage = currentSystemMessage.DeepClone().AsObject();
+                        }
+                        for (var index = 0; index < pendingPromptMessages.Count; index++)
+                        {
+                            if (index < pendingQueueUpdates.Count)
+                                await EmitBufferedQueueUpdateAsync(pendingQueueUpdates[index]);
+                            IReadOnlyList<object> promptRecords;
+                            lock (_projectorGate) promptRecords = projector.ProjectPrompt(
+                                pendingPromptMessages[index], run.Conversation);
+                            foreach (var record in promptRecords)
+                                await output.EmitAsync(record, CancellationToken.None);
+                        }
+                        for (var index = pendingPromptMessages.Count; index < pendingQueueUpdates.Count; index++)
+                            await EmitBufferedQueueUpdateAsync(pendingQueueUpdates[index]);
+                        pendingPromptMessages.Clear();
+                        pendingQueueUpdates.Clear();
+                    }
+                    if (item.Type == "agent_settled")
+                    {
+                        // A drain snapshot that never found its prompt must still be reported.
+                        foreach (var buffered in pendingQueueUpdates)
+                            await EmitBufferedQueueUpdateAsync(buffered);
+                        pendingQueueUpdates.Clear();
+                        if (accepted) await output.EmitAsync(new { type = "agent_settled", aborted = item.Aborted ?? false },
+                            CancellationToken.None);
+                        continue;
+                    }
+                    if (item.Type == "assistant_turn_started" && !agentOpen)
+                    {
+                        // A continuation batch delivered after a failed or completed turn opens a new
+                        // turn without a fresh prompt_accepted; pinned Pi starts a new agent run for it.
                         await output.EmitAsync(new { type = "agent_start" }, CancellationToken.None);
                         agentOpen = true;
                         lock (_projectorGate) projector.BeginAgent();
                     }
-                    accepted = true;
-                    turnStartHead = item.RunStartHead;
-                    if (!turnOpen)
-                    {
-                        await output.EmitAsync(new { type = "turn_start" }, CancellationToken.None);
-                        turnOpen = true;
-                        lock (_projectorGate) projector.BeginTurn();
-                    }
-                    pendingPromptMessages.Add(item);
-                    continue;
-                }
-                if (item.Type == "steering_message_accepted")
-                {
-                    IReadOnlyList<object> promptRecords;
-                    lock (_projectorGate) promptRecords = projector.ProjectPrompt(item, run.Conversation);
-                    foreach (var record in promptRecords)
+                    if (item.Type == "assistant_turn_started" && turnOpen) continue;
+                    IReadOnlyList<object> records;
+                    lock (_projectorGate)
+                        records = projector.Project(item, run.Conversation, turnStartHead, runStartHead,
+                            accepted, api, turnOpen);
+                    foreach (var record in records)
                         await output.EmitAsync(record, CancellationToken.None);
-                    continue;
+                    if (item.Type == "auto_retry_end") SignalRetryEndEmitted();
+                    if (item.Type == "assistant_turn_started") turnOpen = true;
+                    if (item.Type is "assistant_turn_completed" or "turn_failed" or "turn_interrupted") turnOpen = false;
+                    // These close the agent run: the projector emits agent_end for them.
+                    if (item.Type is "turn_failed" or "turn_interrupted" or "agent_run_completed") agentOpen = false;
+                    if (item.Type == "agent_run_completed") succeeded = true;
                 }
-                if (item.Type == "agent_attempt_started")
+                finally
                 {
-                    runStartHead = item.RunStartHead;
-                    turnStartHead = item.RunStartHead;
-                    await output.EmitAsync(new { type = "agent_start" }, CancellationToken.None);
-                    await output.EmitAsync(new { type = "turn_start" }, CancellationToken.None);
-                    agentOpen = true;
-                    lock (_projectorGate) projector.BeginAgent();
-                    turnOpen = true;
-                    continue;
+                    // Everything this event had to publish is written: a command path waiting to emit a
+                    // queue update can now continue without overtaking it.
+                    run.NoteEventEmitted();
                 }
-                if (item.Type == "prompt_rejected") continue;
-                if (item.Type == "queue_update" && pendingPromptMessages.Count > 0)
-                {
-                    pendingQueueUpdates.Add(item);
-                    continue;
-                }
-                if (item.Type == "model_request_started" ||
-                    pendingPromptMessages.Count > 0 && item.Type is "turn_completed" or "turn_failed" or "turn_interrupted")
-                {
-                    JsonObject? currentSystemMessage;
-                    lock (_projectorGate) currentSystemMessage = getSystemMessage?.Invoke();
-                    // Seed from the restored session so a resumed conversation reports no system
-                    // message when nothing changed, and reports one when a section or the tool
-                    // loadout did change while the session was closed.
-                    _lastSystemMessage ??= getPersistedSystemMessage?.Invoke();
-                    if (currentSystemMessage is not null &&
-                        !EquivalentSystemMessage(_lastSystemMessage, currentSystemMessage))
-                    {
-                        IReadOnlyList<object> systemRecords;
-                        lock (_projectorGate) systemRecords = projector.ProjectSystemMessage(currentSystemMessage);
-                        foreach (var record in systemRecords)
-                            await output.EmitAsync(record, CancellationToken.None);
-                        lock (_projectorGate) _lastSystemMessage = currentSystemMessage.DeepClone().AsObject();
-                    }
-                    for (var index = 0; index < pendingPromptMessages.Count; index++)
-                    {
-                        if (index < pendingQueueUpdates.Count)
-                            await EmitBufferedQueueUpdateAsync(pendingQueueUpdates[index]);
-                        IReadOnlyList<object> promptRecords;
-                        lock (_projectorGate) promptRecords = projector.ProjectPrompt(
-                            pendingPromptMessages[index], run.Conversation);
-                        foreach (var record in promptRecords)
-                            await output.EmitAsync(record, CancellationToken.None);
-                    }
-                    for (var index = pendingPromptMessages.Count; index < pendingQueueUpdates.Count; index++)
-                        await EmitBufferedQueueUpdateAsync(pendingQueueUpdates[index]);
-                    pendingPromptMessages.Clear();
-                    pendingQueueUpdates.Clear();
-                }
-                if (item.Type == "agent_settled")
-                {
-                    // A drain snapshot that never found its prompt must still be reported.
-                    foreach (var buffered in pendingQueueUpdates)
-                        await EmitBufferedQueueUpdateAsync(buffered);
-                    pendingQueueUpdates.Clear();
-                    if (accepted) await output.EmitAsync(new { type = "agent_settled", aborted = item.Aborted ?? false },
-                        CancellationToken.None);
-                    continue;
-                }
-                if (item.Type == "assistant_turn_started" && !agentOpen)
-                {
-                    // A continuation batch delivered after a failed or completed turn opens a new
-                    // turn without a fresh prompt_accepted; pinned Pi starts a new agent run for it.
-                    await output.EmitAsync(new { type = "agent_start" }, CancellationToken.None);
-                    agentOpen = true;
-                    lock (_projectorGate) projector.BeginAgent();
-                }
-                if (item.Type == "assistant_turn_started" && turnOpen) continue;
-                IReadOnlyList<object> records;
-                lock (_projectorGate)
-                    records = projector.Project(item, run.Conversation, turnStartHead, runStartHead,
-                        accepted, api, turnOpen);
-                foreach (var record in records)
-                    await output.EmitAsync(record, CancellationToken.None);
-                if (item.Type == "auto_retry_end") SignalRetryEndEmitted();
-                if (item.Type == "assistant_turn_started") turnOpen = true;
-                if (item.Type is "assistant_turn_completed" or "turn_failed" or "turn_interrupted") turnOpen = false;
-                // These close the agent run: the projector emits agent_end for them.
-                if (item.Type is "turn_failed" or "turn_interrupted" or "agent_run_completed") agentOpen = false;
-                if (item.Type == "agent_run_completed") succeeded = true;
             }
         }
         finally
         {
+            // The consumer has stopped: a command path waiting for these records must not block on them.
+            run.NoteEventStreamCompleted();
             lock (_projectorGate)
             {
                 if (ReferenceEquals(_activeProjector, projector))

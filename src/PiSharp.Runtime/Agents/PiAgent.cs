@@ -42,6 +42,9 @@ public sealed class PiAgent
     private ReasoningOptions? _reasoning;
     private readonly ToolBatchTermination _toolBatchTermination = new();
     private DurableExecution? _active;
+
+    /// <summary>Tools that returned from their work but have not published their completion yet.</summary>
+    internal ToolCompletionGate ToolCompletions { get; } = new();
     private ConversationSession? _extensionConversation;
     private int _isRunning;
     private int _activeConversationRuns;
@@ -420,7 +423,8 @@ public sealed class PiAgent
         _runtimeToolFunctions[name] = new DurableToolFunction(registration.Function, () => _active,
             PublishEvent, _toolBatchTermination, () => Volatile.Read(ref _currentToolLoadout),
             () => _runtimeToolFunctions, _toolHooks, registration.OutputSchema, _codemodeModels,
-            registration.ReachesTools, registration.Namespace, () => _extensionContext, _extensionEvents);
+            registration.ReachesTools, registration.Namespace, () => _extensionContext, _extensionEvents,
+            ToolCompletions);
     }
 
     internal void SetExtensionConversation(ConversationSession conversation) =>

@@ -119,18 +119,34 @@ def main(argv=None):
     def tamper_total_mismatch(contract, evidence):
         contract['summary']['total'] += 1
 
+    def synthesize_difference(contract, evidence, justification=True):
+        """Turn one accepted case into a documented difference, whatever the contract says."""
+        target = next(e for e in contract['cases'] if e['expectedStatus'] == 'match')
+        evidence_file = evidence / f"{target['id']}.json"
+        data = load(evidence_file)
+        data['status'] = 'differ'
+        data['diffs'] = ['events[0] ["tool_end"] != ["queue"]']
+        evidence_file.write_text(json.dumps(data, indent=2) + '\n', encoding='utf-8')
+        target['expectedStatus'] = 'known-difference'
+        contract['summary']['match'] -= 1
+        contract['summary'].setdefault('intentionalSafety', 0)
+        contract['summary']['intentionalSafety'] = contract['summary'].get('intentionalSafety', 0) + 1
+        if justification:
+            target['justification'] = 'synthetic control case'
+        return target
+
     def tamper_differ_as_match(contract, evidence):
-        target = next((e for e in contract['cases'] if e['expectedStatus'] == 'known-difference'), None)
-        if target is None:
-            raise SystemExit('no differ case')
+        synthesize_difference(contract, evidence)
+        target = next(e for e in contract['cases'] if e['expectedStatus'] == 'known-difference')
         target['expectedStatus'] = 'match'
         del target['justification']
 
     def tamper_missing_justification(contract, evidence):
-        target = next((e for e in contract['cases'] if e['expectedStatus'] == 'known-difference'), None)
-        if target is None:
-            raise SystemExit('no differ case')
-        del target['justification']
+        synthesize_difference(contract, evidence, justification=False)
+
+    def tamper_documented_difference_not_allowed(contract, evidence):
+        synthesize_difference(contract, evidence)
+        contract['allowDocumentedDifferences'] = False
 
     ok = True
     ok &= expect_reject('drop-case', tamper_drop_case)
@@ -140,6 +156,8 @@ def main(argv=None):
     ok &= expect_reject('total-mismatch', tamper_total_mismatch)
     ok &= expect_reject('differ-as-match', tamper_differ_as_match)
     ok &= expect_reject('missing-justification', tamper_missing_justification)
+    ok &= expect_reject('documented-difference-not-allowed',
+                        tamper_documented_difference_not_allowed)
 
     for name, rejected, snippet in controls:
         status = 'ok (rejected)' if rejected else 'FAIL (not rejected)'

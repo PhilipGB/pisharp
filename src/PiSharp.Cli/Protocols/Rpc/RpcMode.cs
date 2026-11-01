@@ -270,8 +270,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                                         "Agent is already processing. Specify streamingBehavior ('steer' or 'followUp') to queue the message.");
                                     break;
                                 }
-                                currentRun.QueueRpcInput(promptMessage, expanded, promptStreamingBehavior == "steer",
-                                    item => PublishQueueUpdate(currentRun, item));
+                                await currentRun.QueueRpcInputAsync(promptMessage, expanded,
+                                    promptStreamingBehavior == "steer", item => PublishQueueUpdate(currentRun, item));
                                 await RespondPromptAsync(id, true, "queued");
                                 break;
                             }
@@ -344,8 +344,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             { await RespondAsync(id, type, false, error.Message); break; }
                             var queueContents = new List<AIContent> { new TextContent(queuedExpanded) };
                             if (queueImages is not null) queueContents.AddRange(queueImages);
-                            queueRun.QueueRpcInput(new ChatMessage(ChatRole.User, queueContents), queuedExpanded, type == "steer",
-                                item => PublishQueueUpdate(queueRun, item));
+                            await queueRun.QueueRpcInputAsync(new ChatMessage(ChatRole.User, queueContents), queuedExpanded,
+                                type == "steer", item => PublishQueueUpdate(queueRun, item));
                             await RespondQueuedInputAsync(id, type, true);
                             break;
                         case "clear_queue":

@@ -71,6 +71,26 @@ def collect(runs, key):
     return values
 
 
+def classify(pi_orders, sharp_orders):
+    """Independent calibration flags for one ordered observable.
+
+    Pi varying never excuses PiSharp producing an order Pi never produced, so the flags are
+    reported separately instead of as one mutually exclusive verdict.
+    """
+    flags = []
+    if len(pi_orders) > 1:
+        flags.append('pi-varies')
+    if len(sharp_orders) > 1:
+        flags.append('pisharp-varies')
+    if any(order not in pi_orders for order in sharp_orders):
+        flags.append('pisharp-outside-pi-observed')
+    if not flags:
+        return flags
+    if len(pi_orders) == 1 and len(sharp_orders) == 1:
+        flags.append('gap')
+    return flags
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--runs', type=int, default=15,
@@ -105,19 +125,9 @@ def main():
             sharp_values = collect(sharp_runs, key)
             pi_orders = [entry['value'] for entry in pi_values]
             sharp_orders = [entry['value'] for entry in sharp_values]
-            # The dimensions are reported independently: Pi varying does not excuse PiSharp
-            # producing an order Pi never produced, which a single mutually exclusive verdict hides.
-            flags = []
-            if len(pi_orders) > 1:
-                flags.append('pi-varies')
-            if len(sharp_orders) > 1:
-                flags.append('pisharp-varies')
-            if any(order not in pi_orders for order in sharp_orders):
-                flags.append('pisharp-outside-pi-observed')
+            flags = classify(pi_orders, sharp_orders)
             if not flags:
                 continue
-            if len(pi_orders) == 1 and len(sharp_orders) == 1:
-                flags.append('gap')
             case_report[key] = dict(
                 flags=flags,
                 piOrders=pi_orders,

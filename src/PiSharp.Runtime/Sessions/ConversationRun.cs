@@ -388,6 +388,71 @@ public sealed partial class ConversationRun
     public void QueueRpcInput(string prompt, bool steering, Action<AgentLifecycleEvent> publishQueueUpdate)
         => _promptDelivery.QueueRpcInput(prompt, steering, publishQueueUpdate);
 
+    private readonly object _eventProgressGate = new();
+    private long _producedEvents;
+    private long _emittedEvents;
+    private TaskCompletionSource? _drainSignal;
+
+    /// <summary>Counts an event handed to the run's stream, before any consumer can reorder it.</summary>
+    private void NoteEventProduced()
+    {
+        lock (_eventProgressGate) _producedEvents++;
+    }
+
+    /// <summary>Counts an event whose records the consumer has finished writing.</summary>
+    internal void NoteEventEmitted()
+    {
+        TaskCompletionSource? drained = null;
+        lock (_eventProgressGate)
+        {
+            _emittedEvents++;
+            if (_emittedEvents >= _producedEvents)
+            {
+                drained = _drainSignal;
+                _drainSignal = null;
+            }
+        }
+        drained?.TrySetResult();
+    }
+
+    /// <summary>
+    /// Releases a pending drain wait when the run's event stream has ended, so acceptance never
+    /// depends on records that no consumer will write.
+    /// </summary>
+    internal void NoteEventStreamCompleted()
+    {
+        TaskCompletionSource? drained;
+        lock (_eventProgressGate)
+        {
+            _emittedEvents = _producedEvents;
+            drained = _drainSignal;
+            _drainSignal = null;
+        }
+        drained?.TrySetResult();
+    }
+
+    /// <summary>Completes once every event produced so far has been written by the consumer.</summary>
+    internal Task WaitForEventDrainAsync()
+    {
+        lock (_eventProgressGate)
+        {
+            if (_emittedEvents >= _producedEvents) return Task.CompletedTask;
+            return (_drainSignal ??= new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously)).Task;
+        }
+    }
+
+    /// <summary>
+    /// Queues input only once every tool that already finished its work has published its completion, so an
+    /// accepted steer is never observed before it. Pinned Pi gets this ordering from a single event loop.
+    /// </summary>
+    public async Task QueueRpcInputAsync(string prompt, bool steering,
+        Action<AgentLifecycleEvent> publishQueueUpdate)
+    {
+        await _agent.ToolCompletions.WaitForIdleAsync().ConfigureAwait(false);
+        await WaitForEventDrainAsync().ConfigureAwait(false);
+        _promptDelivery.QueueRpcInput(prompt, steering, publishQueueUpdate);
+    }
+
     private bool TryQueue(string prompt, bool steering, string kind)
         => _promptDelivery.TryQueueActive(prompt, steering, kind);
 
@@ -663,6 +728,7 @@ public sealed partial class ConversationRun
         var initialRunBoundaryVersion = _boundaryContextVersion;
         void Publish(AgentLifecycleEvent value)
         {
+            NoteEventProduced();
             // A tool may report its durable outcome after cancellation has been requested.
             // Keep those terminal records observable while the consumer is still attached.
             var token = value.Type is "tool_execution_finished" or "tool_outcome_unknown"
@@ -942,6 +1008,9 @@ public sealed partial class ConversationRun
             consumerClosed.Cancel();
             linked.Cancel();
             await pump;
+            // No consumer remains for this stream: release any command path waiting for it, so a
+            // queued steer accepted during teardown cannot wait for records that will never be written.
+            NoteEventStreamCompleted();
         }
     }
 

@@ -17,7 +17,7 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
     Func<IDictionary<string, object?>, PiSharpToolReach?>? reachesTools = null,
     PiSharpToolNamespace? toolNamespace = null,
     Func<PiSharpExtensionContext?>? currentExtensionContext = null,
-    NativeExtensionEventDispatcher? messageEvents = null) : DelegatingAIFunction(inner)
+    NativeExtensionEventDispatcher? messageEvents = null, ToolCompletionGate? completionGate = null) : DelegatingAIFunction(inner)
 {
     private readonly ToolResultSchemaValidator _outputValidator = new(outputSchema);
 
@@ -162,6 +162,10 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
                 }
             }
         }
+        // The tool's work is done. Hold the completion gate until this call has published its result so an
+        // accepted steer cannot be observed before a tool that already finished (pinned Pi orders these on
+        // one event loop; see ToolCompletionGate).
+        using var completionScope = completionGate?.Begin();
         var resultArguments = invocationArguments.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
         var resultContext = new PiSharpToolResultContext(Name, toolCallId, parentToolCallId,
             resultArguments, value, failure);

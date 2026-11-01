@@ -192,10 +192,23 @@ def compare_views(a, b, label):
 FIELDS = ('events', 'providerRequests', 'effects', 'mcpCalls', 'state', 'entries', 'error')
 
 
+# Calls issued from one assistant turn are dispatched concurrently by both implementations (pinned Pi
+# maps over the call array and awaits Promise.all; PiSharp starts each call's request concurrently).
+# The arrival order at the MCP server is therefore scheduler-determined: pinned Pi itself was measured
+# producing both orders for the same case under load (see the calibration note in the milestone
+# receipt). Only this observable is compared without regard to arrival order, and only as a multiset:
+# every other ordered observable stays strict.
+MULTISET_FIELDS = {'mcpCalls'}
+
+
 def compare_case(view_pi, view_pisharp):
     diffs = []
     for field in FIELDS:
-        diffs.extend(compare_views(view_pi.get(field), view_pisharp.get(field), field))
+        left, right = view_pi.get(field), view_pisharp.get(field)
+        if field in MULTISET_FIELDS:
+            left = sorted(json.dumps(item, sort_keys=True, default=str) for item in left or [])
+            right = sorted(json.dumps(item, sort_keys=True, default=str) for item in right or [])
+        diffs.extend(compare_views(left, right, field))
     return diffs
 
 
