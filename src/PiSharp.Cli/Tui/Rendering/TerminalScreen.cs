@@ -612,6 +612,15 @@ public sealed class TerminalScreen : IDisposable
         }
     }
 
+    internal void SetMermaidRenderingMode(string mode)
+    {
+        ArgumentNullException.ThrowIfNull(mode);
+        lock (_gate)
+        {
+            if (_conversationPresentation.SetMermaidMode(mode)) _render.Request();
+        }
+    }
+
     internal void SetShowHardwareCursor(bool enabled)
     {
         lock (_gate)

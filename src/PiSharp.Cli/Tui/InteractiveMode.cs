@@ -71,6 +71,7 @@ internal static class InteractiveMode
             sessionNavigationReference?.RefreshPicker();
             presentation.RefreshTerminalTheme();
             terminalScreen?.SetMarkdownCodeBlockIndent(projectBinding.Settings.MarkdownCodeBlockIndent ?? UserSettings.DefaultMarkdownCodeBlockIndent);
+            terminalScreen?.SetMermaidRenderingMode(projectBinding.Settings.EffectiveMarkdownMermaid);
         }
         Task ReloadResources() => projectTransitions.ReloadAsync(usesDefaultToolsSetting,
             presentation.ConfigureMcpAuthorizationUrlPresenter, RefreshProjectUi, presentation.LoadSessionTranscript);

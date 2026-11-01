@@ -69,6 +69,8 @@ internal sealed class TerminalSettingsCommands(string agentDirectory, ActiveProj
         }
         else if (setting == "markdown.codeBlockIndent")
             presentation.Screen?.SetMarkdownCodeBlockIndent(projectBinding.Settings.MarkdownCodeBlockIndent ?? UserSettings.DefaultMarkdownCodeBlockIndent);
+        else if (setting == "markdown.mermaid")
+            presentation.Screen?.SetMermaidRenderingMode(projectBinding.Settings.EffectiveMarkdownMermaid);
         if (announce)
         {
             var displayValue = setting == "httpProxy" ? value is null ? "(default)" : "(configured)" : value ?? "(default)";

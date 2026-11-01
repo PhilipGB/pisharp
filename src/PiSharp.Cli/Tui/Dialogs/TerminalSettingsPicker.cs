@@ -18,8 +18,8 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, ProviderMode
     // The prompt's first-ten order is authoritative; later shared entries follow Pi's current
     // source order, including session sharing after follow-up mode (Pi's absent Transport item is omitted).
     // PiSharp-only options follow the shared settings.
-    // Directly relevant Pi entries for Mermaid rendering, cache miss notices and changelog
-    // collapsing are out of scope because PiSharp has no corresponding renderer, cache-cost
+    // Directly relevant Pi entries for cache miss notices and changelog
+    // collapsing are out of scope because PiSharp has no corresponding cache-cost
     // diagnostics or update-notification subsystem. Later supported entries retain source order.
     internal static readonly Setting[] Settings =
     [
@@ -38,6 +38,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, ProviderMode
         new("sessionShareDestination", "Session share destination", "Where to upload sessions with /share (auto prefers Radius when authenticated, otherwise GitHub Gist)"),
         new("httpIdleTimeoutMs", "HTTP idle timeout", "Maximum wait for provider response headers or body data; 0 disables this idle limit."),
         new("hideThinkingBlock", "Hide thinking", "Hide reasoning blocks in the interactive transcript."),
+        new("markdown.mermaid", "Mermaid diagrams", "Render Mermaid code blocks as Unicode diagrams."),
         new("quietStartup", "Quiet startup", "Disable verbose printing at startup; header keeps only the startup header."),
         new("defaultProjectTrust", "Default project trust", "Fallback decision for protected project resources.", UserOnly: true),
         new("modelThinkingLevels", "Default thinking per model", "Override the default thinking level for a specific model.", UserOnly: true),
@@ -308,6 +309,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, ProviderMode
         "retry.provider.timeoutMs" => settings.Retry?.Provider?.TimeoutMs?.ToString(System.Globalization.CultureInfo.InvariantCulture),
         "httpIdleTimeoutMs" => settings.HttpIdleTimeoutMs?.ToString(System.Globalization.CultureInfo.InvariantCulture),
         "markdown.codeBlockIndent" => settings.MarkdownCodeBlockIndent,
+        "markdown.mermaid" => settings.MarkdownMermaid,
         "fullscreenWheelScrollLines" => settings.FullscreenWheelScrollLines?.ToSettingValue(),
         _ => null
     };
@@ -449,6 +451,12 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, ProviderMode
             values.Add(("auto", "auto", "Auto detect", "Use the terminal capability detected from the environment."));
             values.Add(("true", "true", "Enabled", "Use 24-bit true-color theme values."));
             values.Add(("false", "false", "Disabled", "Limit theme output to the 256-color palette."));
+        }
+        else if (setting.Id == "markdown.mermaid")
+        {
+            values.Add(("off", "off", "Off", "Never render Mermaid diagrams; always show the source code block."));
+            values.Add(("final", "final", "Final", "Render Mermaid diagrams only in completed output, not while streaming."));
+            values.Add(("streaming", "streaming", "Streaming (default)", "Render Mermaid diagrams while streaming and in completed output."));
         }
         else
         {

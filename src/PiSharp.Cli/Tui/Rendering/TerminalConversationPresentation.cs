@@ -9,6 +9,7 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
     TerminalImageRenderer imageRenderer, Func<int> columns, Func<TerminalTheme> getTheme)
 {
     private string _markdownCodeBlockIndent = "  ";
+    private string _mermaidMode = "streaming";
     private int _outputPadding = 1;
     private string _toolExpandKeyLabel = "Ctrl+O";
     private string _liveAssistant = "";
@@ -69,6 +70,15 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
     {
         if (string.Equals(_markdownCodeBlockIndent, indent, StringComparison.Ordinal)) return false;
         _markdownCodeBlockIndent = indent;
+        ReRenderMarkdown();
+        return true;
+    }
+
+    public bool SetMermaidMode(string mode)
+    {
+        var effective = mode is "off" or "final" ? mode : "streaming";
+        if (string.Equals(_mermaidMode, effective, StringComparison.Ordinal)) return false;
+        _mermaidMode = effective;
         ReRenderMarkdown();
         return true;
     }
@@ -469,8 +479,8 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
     {
         var width = Math.Max(1, columns() - 2 * _outputPadding);
         var rendered = streaming
-            ? TerminalMarkdownRenderer.RenderStreaming(markdown, width, getTheme(), _markdownCodeBlockIndent)
-            : TerminalMarkdownRenderer.Render(markdown, width, getTheme(), _markdownCodeBlockIndent);
+            ? TerminalMarkdownRenderer.RenderStreaming(markdown, width, getTheme(), _markdownCodeBlockIndent, mermaidMode: _mermaidMode)
+            : TerminalMarkdownRenderer.Render(markdown, width, getTheme(), _markdownCodeBlockIndent, mermaidMode: _mermaidMode);
         return "\n" + rendered;
     }
 

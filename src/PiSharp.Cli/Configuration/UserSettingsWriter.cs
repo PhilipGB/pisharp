@@ -317,6 +317,7 @@ internal static class UserSettingsWriter
             "tuiMode" when userScope => value is null or "regular" or "fullscreen",
             "sessionShareDestination" => value is null or "auto" or "gist" or "radius",
             "markdown.codeBlockIndent" => true,
+            "markdown.mermaid" => value is null or "off" or "final" or "streaming",
             "httpIdleTimeoutMs" => value is null || string.Equals(value, "disabled", StringComparison.OrdinalIgnoreCase) ||
                 int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var idleTimeout) && idleTimeout >= 0,
             "httpProxy" when userScope => value is null || IsValidHttpProxy(value),

@@ -38,6 +38,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="Tui\Rendering\Mermaid\mermaid-render.mjs" Link="Mermaid\mermaid-render.mjs" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Tui\Rendering\Mermaid\dist\*.js" Link="Mermaid\dist\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Tui\Rendering\Mermaid\LICENSE.grok-mermaid" Link="Mermaid\LICENSE.grok-mermaid" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\PiSharp.Runtime\PiSharp.Runtime.csproj" />
     <InternalsVisibleTo Include="PiSharp.Tests" />
     <InternalsVisibleTo Include="PiSharp.CompactionOracle" />
