@@ -398,7 +398,7 @@ OAuth, late registration and the full event surface remain open. See the
 [API guide](extensions.md) and
 [milestone receipt](parity/fixtures/native-extension-provider-mcp-virtual-models-2026-10-17.md).
 
-## Active milestone — Native Extension Controls & Configuration — 2026-10-17
+## Historical milestone — Native Extension Controls & Configuration — 2026-10-17
 
 Work is on `milestone/native-extension-controls-configuration`, based on
 `15b7acceb9c41a5b278b005ac5df6dadad7cda48`; the configured Pi reference stays

@@ -16,7 +16,7 @@ See the [source-pinned inventory](fixtures/compaction-context-management-invento
 
 ## Completed milestone — Complete RPC Protocol and Command Parity — 2026-10-29
 
-PR #29 is merged at `480f058a95713fbc51b6904d4450da68bcda886c`. The frozen RPC contract has 24/24 checkpoints and 252/252 mandatory cases. Exact-head push and PR CI, the evidence publisher, and independent clean-checkout verification passed; Q0 recorded 4,009/4,009 .NET tests. The 20 credential-dependent Pi cases remain unverified; the managed-package corpus remains scoped to its historical milestone. See the [milestone receipt](fixtures/rpc-protocol-command-parity/README.md) and [source-pinned inventory](fixtures/rpc-protocol-command-parity/inventory.json).
+PR #29 is merged at `480f058a95713fbc51b6904d4450da68bcda886c`. The prerequisite base is `646db89bd396b8089b1b9a058fa96b1489f4d0cd`, pinned Pi is `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`, and implementation source is `0af1b7f8091ac2805fc7ca505333552ae8876c21`. The frozen RPC contract has 24/24 checkpoints and 252/252 mandatory cases. Exact-head push and PR CI, the evidence publisher, and independent clean-checkout verification passed; Q0 recorded 4,009/4,009 .NET tests. The 20 credential-dependent Pi cases remain unverified; the managed-package corpus remains scoped to its historical milestone. See the [milestone receipt](fixtures/rpc-protocol-command-parity/README.md) and [source-pinned inventory](fixtures/rpc-protocol-command-parity/inventory.json).
 
 ## Completed milestone — Complete Managed Package Lifecycle and Resource Distribution Parity — 2026-10-27
 
