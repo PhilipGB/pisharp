@@ -558,6 +558,9 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     private async Task CancelActivePromptAsync()
     {
         if (_active is not { IsCompleted: false } active) return;
+        // A tool that already finished must publish its completion before the cancellation of its
+        // siblings is observed (pinned Pi orders these on one event loop).
+        await CurrentRun.WaitForCompletedToolPublicationAsync();
         _abort?.Cancel();
         try { await active; }
         catch (OperationCanceledException) { }

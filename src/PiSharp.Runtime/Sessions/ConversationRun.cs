@@ -431,6 +431,17 @@ public sealed partial class ConversationRun
         drained?.TrySetResult();
     }
 
+    /// <summary>
+    /// Waits until every tool that already returned for this run has published its completion and the
+    /// consumer has written it. An abort or a queue mutation must not be observed before a tool that
+    /// had already finished, which is the ordering pinned Pi gets from its single event loop.
+    /// </summary>
+    public async Task WaitForCompletedToolPublicationAsync()
+    {
+        await _agent.ToolCompletions.WaitForIdleAsync().ConfigureAwait(false);
+        await WaitForEventDrainAsync().ConfigureAwait(false);
+    }
+
     /// <summary>Completes once every event produced so far has been written by the consumer.</summary>
     internal Task WaitForEventDrainAsync()
     {
