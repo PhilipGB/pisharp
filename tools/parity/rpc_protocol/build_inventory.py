@@ -608,7 +608,7 @@ def main() -> None:
                 "id": "RPC-SCOPED-THINKING-SUFFIX",
                 "capability": "set_model scoped :thinking selection",
                 "classification": "previously-open-gap-requires-exact-pin-process-test",
-                "evidence": "TODO.md RPC progress entry and docs/parity/fixtures/rpc-scoped-model-thinking-baseline.md",
+                "evidence": "docs/continuation.md RPC progress entry and docs/parity/fixtures/rpc-scoped-model-thinking-baseline.md",
                 "observation": "Scoped model selection was compared, while explicit scoped :thinking suffix behavior remained open.",
                 "requiredCheckpoint": "R9",
                 "resolution": "Capture pinned Pi and PiSharp process behavior for explicit suffix and precedence cases.",

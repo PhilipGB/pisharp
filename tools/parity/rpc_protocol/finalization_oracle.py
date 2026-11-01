@@ -27,7 +27,7 @@ ROOT = Path(__file__).resolve().parents[3]
 HERE = Path(__file__).resolve().parent
 E0_CHILD_CHECKPOINTS = ("P0", "P1", "V0", "V1", *[f"R{i}" for i in range(1, 16)], "D0", "Q0")
 LEDGER_PATHS = (
-    "TODO.md", "docs/continuation.md", "docs/parity/feature-matrix.md", "docs/parity/execution-ledger.json",
+    "docs/continuation.md", "docs/parity/feature-matrix.md", "docs/parity/execution-ledger.json",
 )
 CI0_CASE_IDS = (
     "CI0.push-workflow-exact-head", "CI0.pull-request-workflow-exact-head",

@@ -109,7 +109,7 @@ Tests use deterministic agent and local HTTP fixtures; no live provider key is n
 
 ## Contributor and agent workflow
 
-1. Start with [`TODO.md`](TODO.md) and [`docs/continuation.md`](docs/continuation.md), then inspect the current source and worktree. Treat checkpoint prose as historical until verified.
+1. Start with [`docs/continuation.md`](docs/continuation.md) and the [feature matrix](docs/parity/feature-matrix.md), then inspect the current source and worktree. Treat checkpoint prose as historical until verified.
 2. Read the feature matrix, detailed inventory and execution ledger before choosing a parity gap. Compare current Pi documentation, implementation and tests for that capability.
 3. Add deterministic tests and process-level or differential evidence when behavior crosses a protocol or process boundary. Record limitations honestly.
 4. Extract a cohesive boundary when the next capability touches concentrated behavior; avoid broad refactors that are not needed for the slice.

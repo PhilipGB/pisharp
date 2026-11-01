@@ -620,7 +620,7 @@ def _run_e0(output_dir: Path, evidence_root: Path) -> dict[str, Any]:
     summary_path = _summary_path()
     receipt_path = ROOT / "docs/parity/fixtures/compaction-context-management-parity-2026-10-28.md"
     docs_paths = [ROOT / "docs/parity/feature-matrix.md", ROOT / "docs/parity/execution-ledger.json",
-                  ROOT / "TODO.md", ROOT / "docs/continuation.md", receipt_path]
+                  ROOT / "docs/continuation.md", receipt_path]
     checks: dict[str, dict[str, Any]] = {}
     raw_paths: list[Path] = []
     predecessors: list[tuple[str, Path, Path, list[dict[str, Any]]]] = []

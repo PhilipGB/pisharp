@@ -35,7 +35,7 @@ Use xUnit (`[Fact]`/`[Theory]`), naming files and classes `<Feature>Tests` and m
 
 Recent commits use imperative subjects such as “Align startup spacing with Pi.” Keep commits focused. PR descriptions should explain the behavior change, validation commands/results, relevant issues, and remaining limitations; include terminal captures for visual changes.
 
-Before parity work, review `TODO.md`, `docs/continuation.md`, and `docs/parity/feature-matrix.md`. Update relevant inventories, fixtures, and the execution ledger when evidence changes.
+Before parity work, review `docs/continuation.md` and `docs/parity/feature-matrix.md`. Update relevant inventories, fixtures, and the execution ledger when evidence changes.
 
 Write generated parity captures to `artifacts/parity/<run>/` (Git ignored). Commit reviewed, compact evidence under `docs/parity/fixtures/` with source pins, scope and limitations. Keep raw streams out of routine commits; ignored local archives need a separate backup for long-term retention.
 

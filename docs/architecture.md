@@ -77,3 +77,11 @@ active-run queue/abort and application shortcut dispatch. Concrete dialog input/
 progress settlement, transcript-search and authorization-input owners execute the
 modal workflows and own their state. Current-screen/input callbacks preserve attachment
 and mode lifetimes; no additional terminal framework or project is introduced.
+
+## Open architecture risks
+
+- Keep `Program.cs` a composition root; extract behavior at the boundary required by the next capability rather than growing startup orchestration.
+- `ConversationRun.cs` remains the largest execution and orchestration concentration. Prompt queue state and delivery have moved into `PromptDeliveryController`; retry, compaction and provider-turn boundaries remain candidates when the next capability needs them.
+- Keep RPC capability tests in focused classes rather than growing `RpcModeTests.cs` further.
+- Preserve the remaining TUI gaps: custom HTML-export theme CSS, full Markdown dialect and syntax highlighting, and broader TUI differential coverage. System-theme acquisition and update, word-aware wrapping, shared ANSI-aware visual-row layout, and nested Markdown style restoration already have pinned fixtures and exact-head CI evidence.
+- Before final parity, reread the feature matrix and execution ledger, audit current pinned Pi after the latest checkpoint, collect the required behavioral and differential evidence, and confirm exact-head CI.

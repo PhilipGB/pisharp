@@ -1975,10 +1975,11 @@ def execute_committed_evidence(output: Path) -> int:
     receipt_link = 'parity/fixtures/managed-package-lifecycle-parity.md'
     feature_text = (ROOT / 'docs/parity/feature-matrix.md').read_text(encoding='utf-8')
     continuation_text = (ROOT / 'docs/continuation.md').read_text(encoding='utf-8')
-    todo_text = (ROOT / 'TODO.md').read_text(encoding='utf-8')
     feature_valid = active_heading in feature_text and receipt_link in feature_text
     continuation_valid = active_heading in continuation_text and receipt_link in continuation_text
-    todo_valid = active_heading in todo_text and receipt_link in todo_text
+    # TODO.md was retired in favour of the continuation ledger; keep the frozen
+    # evidence.todo case ID but resolve it against the replacement document.
+    todo_valid = continuation_valid
 
     ledger_path = ROOT / 'docs/parity/execution-ledger.json'
     ledger_valid = False
@@ -1997,7 +1998,7 @@ def execute_committed_evidence(output: Path) -> int:
 
     tracked_paths = [COMMITTED_EVIDENCE_RECEIPT, ledger_path,
                      ROOT / 'docs/parity/feature-matrix.md', ROOT / 'docs/continuation.md',
-                     ROOT / 'TODO.md', *fixture_paths.values()]
+                     *fixture_paths.values()]
     all_committed = all(_committed_file_matches_head(path) for path in tracked_paths)
     source_links_valid = fixture_matches.get('source-links.json', False)
     inventory_valid = fixture_matches.get('inventory.json', False)
