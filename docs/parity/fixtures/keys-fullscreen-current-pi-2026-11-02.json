@@ -79,7 +79,15 @@
     "fullSuite": "4077 passed, 0 failed, 0 skipped",
     "format": "dotnet format PiSharp.slnx --verify-no-changes passed",
     "build": "warnings-as-errors build passed with 0 warnings and 0 errors",
-    "failFirst": "A detached worktree at c4802599 ran three equivalent regressions using only APIs available before this change: missing prompt bindings, stale live search count, and search shortcut not closing. All 3 failed on the baseline and all pass after the correction. A fourth baseline regression navigated to the live assistant anchor; it stayed at the bottom row (STREAM_ROW_16) instead of STREAM_ROW_00."
+    "failFirst": "A detached worktree at c4802599 ran three equivalent regressions using only APIs available before this change: missing prompt bindings, stale live search count, and search shortcut not closing. All 3 failed on the baseline and all pass after the correction. A fourth baseline regression navigated to the live assistant anchor; it stayed at the bottom row (STREAM_ROW_16) instead of STREAM_ROW_00.",
+    "exactHeadCi": {
+      "headSha": "bbdfcd4f269b29fe1a65d64733e68ba62514f82e",
+      "run": "41433813339",
+      "result": "success",
+      "duplicateRun": "41433821583",
+      "duplicateResult": "success",
+      "tests": "4077 passed, 0 failed, 0 skipped"
+    }
   },
   "behaviours": [
     "Ctrl+Shift+Up/Down and Ctrl+Up/Down jump between user and assistant OSC-133-style semantic anchors, matching pinned Pi's marker semantics.",

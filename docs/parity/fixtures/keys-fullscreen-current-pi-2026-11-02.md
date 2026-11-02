@@ -101,6 +101,9 @@ Local validation: `dotnet format --verify-no-changes` passed, the
 warnings-as-errors build passed with zero warnings/errors, and the full suite
 passed 4,077/4,077 with zero skips.
 
+Exact-head CI on `bbdfcd4f269b29fe1a65d64733e68ba62514f82e`: Linux CI runs
+`41433813339` and `41433821583` both passed with 4,077 tests and zero skips.
+
 ## Limits
 
 The paired raw byte streams and full cell matrices are not identical, so this
