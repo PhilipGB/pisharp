@@ -90,6 +90,11 @@ Local validation: `dotnet format --verify-no-changes` passed, the
 warnings-as-errors build passed with zero warnings/errors, and the full suite
 passed 4,076/4,076 with zero skips.
 
+Exact-head CI on `0af7ae23029066c2e503c3b23edb3462a776aaad`: Linux CI run
+`41379335882` passed. A duplicate run `41379340543` initially failed the
+unrelated `RpcCompactionProcessTests.RpcProcessUsesPiSplitTurnCompactionAndCustomInstructionsForHistoryOnly`
+timing case; the failed-job rerun passed all 4,076 tests.
+
 ## Limits
 
 The paired raw byte streams and full cell matrices are not identical, so this

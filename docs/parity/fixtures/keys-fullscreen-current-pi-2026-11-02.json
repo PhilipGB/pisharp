@@ -69,7 +69,15 @@
     "fullSuite": "4076 passed, 0 failed, 0 skipped",
     "format": "dotnet format PiSharp.slnx --verify-no-changes passed",
     "build": "warnings-as-errors build passed with 0 warnings and 0 errors",
-    "failFirst": "A detached worktree at c4802599 ran three equivalent regressions using only APIs available before this change: missing prompt bindings, stale live search count, and search shortcut not closing. All 3 failed on the baseline and all pass after the correction."
+    "failFirst": "A detached worktree at c4802599 ran three equivalent regressions using only APIs available before this change: missing prompt bindings, stale live search count, and search shortcut not closing. All 3 failed on the baseline and all pass after the correction.",
+    "exactHeadCi": {
+      "headSha": "0af7ae23029066c2e503c3b23edb3462a776aaad",
+      "run": "41379335882",
+      "result": "success",
+      "duplicateRun": "41379340543",
+      "duplicateResult": "success after rerunning an unrelated RPC compaction timing failure",
+      "tests": "4076 passed, 0 failed, 0 skipped"
+    }
   },
   "behaviours": [
     "Ctrl+Shift+Up/Down and Ctrl+Up/Down jump between user and assistant OSC-133-style semantic anchors, matching pinned Pi's marker semantics.",
