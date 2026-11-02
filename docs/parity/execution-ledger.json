@@ -8217,7 +8217,7 @@
     {
       "id": "tool-result-contracts",
       "title": "Tools: structured output and explicit failure results",
-      "status": "in_progress",
+      "status": "verified",
       "source": "docs/parity/fixtures/tool-orchestration-virtual-model-audit-2026-09-29.md",
       "acceptance": [
         "Expose schema-backed machine-readable results separately from model-facing text/images and UI details",
@@ -8226,12 +8226,17 @@
       ],
       "implementation": [
         "PiSharpToolResult separates model-facing text/images, UI details, structured JSON, returned error state, usage and termination. PiSharpToolRegistration carries an output schema; JsonSchema.Net validates successful structured content after result hooks on root and nested calls.",
-        "DurableToolFunction keeps returned errors separate from thrown exceptions in checkpoints and canonical FunctionResultContent, and single-call termination stops MAF continuation. ObservedChatClient projects model text/images while Pi JSONL preserves the structured contract."
+        "DurableToolFunction keeps returned errors separate from thrown exceptions in checkpoints and canonical FunctionResultContent. ToolBatchSequencer serializes batches containing a ToolExecutionMode.Sequential tool while MAF remains the owner of invocation, iteration and the all-or-nothing termination flag.",
+        "ConversationSession splits M.E.AI combined concurrent tool results into one canonical toolResult message per call; ProviderTurnJournal appends finalized results in assistant call order, including provider-only unknown-tool results. Pi JSONL marks thrown exceptions separately from returned errors.",
+        "Result hooks preserve explicitly replaced details, usage and termination, retain original details and usage for text-only replacement, drop structured content when content is replaced without replacement data, convert a throwing hook to a returned error result, and keep output-schema violations as visible returned errors in both lifecycle and RPC projections."
       ],
       "evidence": [
-        "Current Pi AgentToolResult, ToolDefinition, ToolResultEventBase and before/after tool-hook contracts were inspected at 4259686d9290c0d73ae7192b796aee3e530a9779.",
-        "ToolResultContractTests covers returned-error separation, nested structured/image results, provider text/image projection, native and Pi JSONL round trips, RPC structured/image/usage projection, output-schema rejection and single-call termination. Exact-head Linux CI run 36558027552 passed 824/824 tests, 0 skipped.",
-        "Multi-call termination, full protocol/provider differential coverage and output-schema error policy remain open; the capability stays in progress."
+        "Current Pi AgentToolResult, ToolDefinition, ToolResultEventBase and before/after tool-hook contracts were inspected at 4259686d9290c0d73ae7192b796aee3e530a9779 and rechecked at pinned b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6.",
+        "Historical ToolResultContractTests covered returned-error separation, nested structured/image results, provider text/image projection, native and Pi JSONL round trips, RPC structured/image/usage projection, output-schema rejection and single-call termination. Exact-head Linux CI run 36558027552 passed 824/824 tests, 0 skipped.",
+        "ToolResultContractMatrixTests executes all 34 required cases T01-T12, E01-E07, R01-R05, H01-H05 and P01-P05 at implementation source 17188f1bc6d42864b8e5e2e798063d3629b6610c. It asserts request counts, exactly-once execution, call IDs, canonical and Pi JSONL order, returned-versus-thrown error state, structured/details/usage/images, progress order, hook mutations, nested parent identity, schema rejection and no replay after a terminating batch. H06/H07 additionally prove explicit hook details replacement and text-only detail retention against pinned Pi.",
+        "tools/parity/tool_result_contracts/differential.py ran against pinned Pi b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6: 29/30 cases match and one documented intentional safety difference remains (E05 outputSchema: Pi treats it as declarative; PiSharp validates and returns a visible error). No unresolved differential remains.",
+        "docs/parity/fixtures/tool-result-contracts/acceptance-manifest.json maps every matrix case to the three ledger acceptance criteria, executable test evidence, request/execution counts, canonical and Pi JSONL result IDs/order/states, and explicit provider-bound result IDs/order/error states. tools/parity/tool_result_contracts/verify.py passes against the committed manifest and evidence; verify_negative_controls.py rejects altered provider identity, ordering, error state and canonical error state.",
+        "Local validation at implementation 17188f1b: focused matrix 34/34 plus H06/H07, full .NET suite 4113/4113 with zero skips, formatting verification and warnings-as-errors build pass. Exact-head CI evidence is recorded in the PR description after publication."
       ],
       "dependencies": [],
       "handover_review": {

@@ -8,9 +8,30 @@
 
 ## Current state — 2026-11-01
 
-Current status is based on `main` at `80357982b960ce1b7d44237f20eff4a035372640`. The latest merged milestones are the [Complete RPC Protocol and Command Parity](parity/fixtures/rpc-protocol-command-parity/README.md) (PR #29, `480f058a`), [resource path and glob matching parity](parity/fixtures/resource-glob-matching-parity/README.md) (PR #30, `fc75ba2a`), [core agent-loop active-queue parity](parity/core-loop-active-queue-parity-milestone-receipt.md) (PR #31, `50cbb591`) and [Mermaid Markdown parity](parity/fixtures/mermaid-markdown-parity.md) (PR #32, `80357982`). Global parity remains `in_progress` at **13 verified, 148 in progress and 33 not started** across the 194 required capabilities. The next step is to select the next capability from the feature matrix and execution ledger, audit pinned Pi for it, and record the resulting evidence. Open architecture risks are tracked in the [architecture document](architecture.md#open-architecture-risks).
+Current status is based on `main` at `80357982b960ce1b7d44237f20eff4a035372640`. The latest merged milestones are the [Complete RPC Protocol and Command Parity](parity/fixtures/rpc-protocol-command-parity/README.md) (PR #29, `480f058a`), [resource path and glob matching parity](parity/fixtures/resource-glob-matching-parity/README.md) (PR #30, `fc75ba2a`), [core agent-loop active-queue parity](parity/core-loop-active-queue-parity-milestone-receipt.md) (PR #31, `50cbb591`) and [Mermaid Markdown parity](parity/fixtures/mermaid-markdown-parity.md) (PR #32, `80357982`). Global parity remains `in_progress` at **14 verified, 147 in progress and 33 not started** across the 194 required capabilities. The next step is to select the next capability from the feature matrix and execution ledger, audit pinned Pi for it, and record the resulting evidence. Open architecture risks are tracked in the [architecture document](architecture.md#open-architecture-risks).
 
 The milestone entries below retain their historical wording and are superseded by this section wherever they describe a milestone as active or a merged PR as open.
+
+## Completed milestone — Complete Tool-Result Contract Parity — 2026-11-02
+
+The `tool-result-contracts` capability is verified at implementation source
+`17188f1bc6d42864b8e5e2e798063d3629b6610c` against pinned Pi
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The committed
+[acceptance manifest](parity/fixtures/tool-result-contracts/acceptance-manifest.json)
+maps all 34 required cases to executable tests, request/execution counts, result
+IDs/order/states and the original ledger criteria. The
+[pinned-Pi differential](parity/fixtures/tool-result-contracts/differential.json)
+passes 29/30 probes with one documented intentional safety difference: E05, where
+pinned Pi treats `outputSchema` as declarative and PiSharp validates it.
+
+Review corrections make schema violations report both lifecycle and RPC result error
+state, preserve explicitly replaced hook details while retaining original details for
+text-only replacements, and verify provider-bound result IDs, ordering and error state
+against explicit manifest expectations. Negative controls prove altered provider
+identity, ordering or error state is rejected. Cases without an independent
+differential are listed explicitly in the manifest with their reasons. Exact-head CI
+and the draft PR are recorded in the PR description; see the
+[evidence README](parity/fixtures/tool-result-contracts/README.md).
 
 ## Completed milestone — Compaction, Context Budget, Overflow and Usage Parity — 2026-10-28
 

@@ -304,6 +304,22 @@ public sealed class ConversationSession
             message.MessageId = AppendCustomMessage(customMessage).Id;
             return;
         }
+        // Pi records one toolResult message per call. M.E.AI can hand back one message with
+        // several concurrent results; split it so call identity and ordering survive export.
+        var results = message.Role == ChatRole.Tool
+            ? message.Contents.OfType<FunctionResultContent>().ToArray()
+            : [];
+        if (results.Length > 1)
+        {
+            var shared = message.Contents.Where(content => content is not FunctionResultContent).ToArray();
+            for (var index = 0; index < results.Length; index++)
+            {
+                AIContent[] contents = index == 0 ? [results[index], .. shared] : [results[index]];
+                Tree.Append("chat", ConversationMessageCodec.EncodeMessage(
+                    new ChatMessage(ChatRole.Tool, contents), nestedToolCalls));
+            }
+            return;
+        }
         Tree.Append("chat", ConversationMessageCodec.EncodeMessage(message, nestedToolCalls));
     }
 

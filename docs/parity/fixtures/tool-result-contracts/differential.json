@@ -1,0 +1,1714 @@
+{
+  "schema": 1,
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "pisharpSha": "17188f1bc6d42864b8e5e2e798063d3629b6610c",
+  "normalization": "Compares provider request counts, executed tool counts, canonical result call IDs, model text, error state, termination hints, structured content, details, usage, image counts and result order. Sequential event order is compared for T11; parallel completion order is not an ordering claim. Pi records a thrown tool failure as an error toolResult; PiSharp additionally keeps a thrown exception marker in canonical history and M.E.AI supplies generic provider text for that in-run request, so the canonical result text and error state are compared instead of that provider-only text.",
+  "classification": {
+    "E03": "canonical text/error match; PiSharp provider-only text is generic M.E.AI text for thrown exceptions while canonical history retains the Pi error text and a distinct exception marker."
+  },
+  "summary": {
+    "total": 30,
+    "match": 29,
+    "differ": 1,
+    "intentionalSafety": 1,
+    "unresolved": 0
+  },
+  "cases": {
+    "T01": {
+      "status": "match",
+      "diffs": [],
+      "classification": null,
+      "pi": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "result 0",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "result 0",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      }
+    },
+    "T02": {
+      "status": "match",
+      "diffs": [],
+      "classification": null,
+      "pi": {
+        "requests": 1,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "result 0",
+            "isError": false,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 1,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "result 0",
+            "isError": false,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      }
+    },
+    "T03": {
+      "status": "match",
+      "diffs": [],
+      "classification": null,
+      "pi": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "result 0",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-1",
+            "text": "result 1",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "result 0",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-1",
+            "text": "result 1",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      }
+    },
+    "T04": {
+      "status": "match",
+      "diffs": [],
+      "classification": null,
+      "pi": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "result 0",
+            "isError": false,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-1",
+            "text": "result 1",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "result 0",
+            "isError": false,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-1",
+            "text": "result 1",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      }
+    },
+    "T05": {
+      "status": "match",
+      "diffs": [],
+      "classification": null,
+      "pi": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "result 0",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-1",
+            "text": "result 1",
+            "isError": false,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "result 0",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-1",
+            "text": "result 1",
+            "isError": false,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      }
+    },
+    "T06": {
+      "status": "match",
+      "diffs": [],
+      "classification": null,
+      "pi": {
+        "requests": 1,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "result 0",
+            "isError": false,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-1",
+            "text": "result 1",
+            "isError": false,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 1,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "result 0",
+            "isError": false,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-1",
+            "text": "result 1",
+            "isError": false,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      }
+    },
+    "T07": {
+      "status": "match",
+      "diffs": [],
+      "classification": null,
+      "pi": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1,
+          "tool2": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "result 0",
+            "isError": false,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-1",
+            "text": "result 1",
+            "isError": false,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-2",
+            "text": "result 2",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1,
+          "tool2": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "result 0",
+            "isError": false,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-1",
+            "text": "result 1",
+            "isError": false,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-2",
+            "text": "result 2",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      }
+    },
+    "T08": {
+      "status": "match",
+      "diffs": [],
+      "classification": null,
+      "pi": {
+        "requests": 1,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1,
+          "tool2": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "result 0",
+            "isError": false,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-1",
+            "text": "result 1",
+            "isError": false,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-2",
+            "text": "result 2",
+            "isError": false,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 1,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1,
+          "tool2": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "result 0",
+            "isError": false,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-1",
+            "text": "result 1",
+            "isError": false,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-2",
+            "text": "result 2",
+            "isError": false,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      }
+    },
+    "T09": {
+      "status": "match",
+      "diffs": [],
+      "classification": null,
+      "pi": {
+        "requests": 1,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "result 0",
+            "isError": false,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-1",
+            "text": "result 1",
+            "isError": true,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 1,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "result 0",
+            "isError": false,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-1",
+            "text": "result 1",
+            "isError": true,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      }
+    },
+    "T10": {
+      "status": "match",
+      "diffs": [],
+      "classification": null,
+      "pi": {
+        "requests": 1,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "result 0",
+            "isError": false,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-1",
+            "text": "result 1",
+            "isError": false,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 1,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "result 0",
+            "isError": false,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-1",
+            "text": "result 1",
+            "isError": false,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      }
+    },
+    "T11": {
+      "status": "match",
+      "diffs": [],
+      "classification": null,
+      "pi": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "first",
+            "isError": false,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-1",
+            "text": "second",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "first",
+            "isError": false,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-1",
+            "text": "second",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      }
+    },
+    "T12": {
+      "status": "match",
+      "diffs": [],
+      "classification": null,
+      "pi": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "result 0",
+            "isError": false,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-1",
+            "text": "result 1",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "result 0",
+            "isError": false,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-1",
+            "text": "result 1",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      }
+    },
+    "E02": {
+      "status": "match",
+      "diffs": [],
+      "classification": null,
+      "pi": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "bad",
+            "isError": true,
+            "terminate": false,
+            "structured": {
+              "count": 2
+            },
+            "details": {
+              "source": "domain"
+            },
+            "usage": null,
+            "images": 0
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "bad",
+            "isError": true,
+            "terminate": false,
+            "structured": {
+              "count": 2
+            },
+            "details": {
+              "source": "domain"
+            },
+            "usage": null,
+            "images": 0
+          }
+        ]
+      }
+    },
+    "E03": {
+      "status": "match",
+      "diffs": [],
+      "classification": null,
+      "pi": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "boom",
+            "isError": true,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "boom",
+            "isError": true,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      }
+    },
+    "E04": {
+      "status": "match",
+      "diffs": [],
+      "classification": null,
+      "pi": {
+        "requests": 2,
+        "executions": {},
+        "results": [
+          {
+            "callId": "call-unknown",
+            "isError": true,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-invalid",
+            "isError": true,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-blocked",
+            "isError": true,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "executions": {},
+        "results": [
+          {
+            "callId": "call-unknown",
+            "isError": true,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-invalid",
+            "isError": true,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-blocked",
+            "isError": true,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      }
+    },
+    "E05": {
+      "status": "differ",
+      "diffs": [
+        "/results/0/isError",
+        "/results/0/structured",
+        "/results/0/text"
+      ],
+      "classification": {
+        "classification": "intentional_safety_strengthening",
+        "reason": "Pinned Pi treats outputSchema as declarative and accepts invalid structured output; PiSharp validates the declared schema and records a visible returned error."
+      },
+      "pi": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "invalid",
+            "isError": false,
+            "terminate": false,
+            "structured": {
+              "count": "wrong"
+            },
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "Tool structured content does not match its output schema.",
+            "isError": true,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      }
+    },
+    "E06": {
+      "status": "match",
+      "diffs": [],
+      "classification": null,
+      "pi": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "bad",
+            "isError": true,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-1",
+            "text": "good",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "bad",
+            "isError": true,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-1",
+            "text": "good",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      }
+    },
+    "E07": {
+      "status": "match",
+      "diffs": [],
+      "pi": {
+        "single": {
+          "requests": 1,
+          "executions": {
+            "tool0": 1
+          },
+          "results": [
+            {
+              "callId": "call-0",
+              "text": "bad",
+              "isError": true,
+              "terminate": true,
+              "structured": null,
+              "details": null,
+              "usage": null,
+              "images": 0
+            }
+          ]
+        },
+        "mixed": {
+          "requests": 2,
+          "executions": {
+            "tool0": 1,
+            "tool1": 1
+          },
+          "results": [
+            {
+              "callId": "call-0",
+              "text": "bad",
+              "isError": true,
+              "terminate": true,
+              "structured": null,
+              "details": null,
+              "usage": null,
+              "images": 0
+            },
+            {
+              "callId": "call-1",
+              "text": "good",
+              "isError": false,
+              "terminate": false,
+              "structured": null,
+              "details": null,
+              "usage": null,
+              "images": 0
+            }
+          ]
+        }
+      },
+      "pisharp": {
+        "single": {
+          "requests": 1,
+          "executions": {
+            "tool0": 1
+          },
+          "results": [
+            {
+              "callId": "call-0",
+              "text": "bad",
+              "isError": true,
+              "terminate": true,
+              "structured": null,
+              "details": null,
+              "usage": null,
+              "images": 0
+            }
+          ]
+        },
+        "mixed": {
+          "requests": 2,
+          "executions": {
+            "tool0": 1,
+            "tool1": 1
+          },
+          "results": [
+            {
+              "callId": "call-0",
+              "text": "bad",
+              "isError": true,
+              "terminate": true,
+              "structured": null,
+              "details": null,
+              "usage": null,
+              "images": 0
+            },
+            {
+              "callId": "call-1",
+              "text": "good",
+              "isError": false,
+              "terminate": false,
+              "structured": null,
+              "details": null,
+              "usage": null,
+              "images": 0
+            }
+          ]
+        }
+      }
+    },
+    "H01": {
+      "status": "match",
+      "diffs": [],
+      "classification": null,
+      "pi": {
+        "requests": 1,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "ok",
+            "isError": false,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 1,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "ok",
+            "isError": false,
+            "terminate": true,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      }
+    },
+    "H02": {
+      "status": "match",
+      "diffs": [],
+      "classification": null,
+      "pi": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "ok",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "ok",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      }
+    },
+    "H03": {
+      "status": "match",
+      "diffs": [],
+      "classification": null,
+      "pi": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "hooked",
+            "isError": true,
+            "terminate": false,
+            "structured": null,
+            "details": {
+              "ui": 1
+            },
+            "usage": 7,
+            "images": 0
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "hooked",
+            "isError": true,
+            "terminate": false,
+            "structured": null,
+            "details": {
+              "ui": 1
+            },
+            "usage": 7,
+            "images": 0
+          }
+        ]
+      }
+    },
+    "H04": {
+      "status": "match",
+      "diffs": [],
+      "classification": null,
+      "pi": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "redacted",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": {
+              "ui": 1
+            },
+            "usage": 7,
+            "images": 0
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "redacted",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": {
+              "ui": 1
+            },
+            "usage": 7,
+            "images": 0
+          }
+        ]
+      }
+    },
+    "H05": {
+      "status": "match",
+      "diffs": [],
+      "classification": null,
+      "pi": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "hook boom",
+            "isError": true,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "hook boom",
+            "isError": true,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      }
+    },
+    "H06": {
+      "status": "match",
+      "diffs": [],
+      "classification": null,
+      "pi": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "hooked",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": {
+              "ui": 2
+            },
+            "usage": 7,
+            "images": 0
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "hooked",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": {
+              "ui": 2
+            },
+            "usage": 7,
+            "images": 0
+          }
+        ]
+      }
+    },
+    "H07": {
+      "status": "match",
+      "diffs": [],
+      "classification": null,
+      "pi": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "hooked",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": {
+              "ui": 1
+            },
+            "usage": 7,
+            "images": 0
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "hooked",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": {
+              "ui": 1
+            },
+            "usage": 7,
+            "images": 0
+          }
+        ]
+      }
+    },
+    "R01": {
+      "status": "match",
+      "diffs": [],
+      "classification": null,
+      "pi": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "model text",
+            "isError": false,
+            "terminate": false,
+            "structured": {
+              "count": 2
+            },
+            "details": {
+              "ui": "details"
+            },
+            "usage": 11,
+            "images": 0
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "model text",
+            "isError": false,
+            "terminate": false,
+            "structured": {
+              "count": 2
+            },
+            "details": {
+              "ui": "details"
+            },
+            "usage": 11,
+            "images": 0
+          }
+        ]
+      }
+    },
+    "R02": {
+      "status": "match",
+      "diffs": [],
+      "classification": null,
+      "pi": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "valid",
+            "isError": false,
+            "terminate": false,
+            "structured": {
+              "count": 2
+            },
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "valid",
+            "isError": false,
+            "terminate": false,
+            "structured": {
+              "count": 2
+            },
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      }
+    },
+    "R03": {
+      "status": "match",
+      "diffs": [],
+      "classification": null,
+      "pi": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "with image",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 1
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "with image",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 1
+          }
+        ]
+      }
+    },
+    "R04": {
+      "status": "match",
+      "diffs": [],
+      "classification": null,
+      "pi": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "finished",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": 13,
+            "images": 0
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "finished",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": 13,
+            "images": 0
+          }
+        ]
+      }
+    },
+    "P01": {
+      "status": "match",
+      "diffs": [],
+      "classification": null,
+      "pi": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1,
+          "tool2": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "result 0",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-1",
+            "text": "result 1",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-2",
+            "text": "result 2",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1,
+          "tool2": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "result 0",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-1",
+            "text": "result 1",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          },
+          {
+            "callId": "call-2",
+            "text": "result 2",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": null,
+            "usage": null,
+            "images": 0
+          }
+        ]
+      }
+    }
+  }
+}
