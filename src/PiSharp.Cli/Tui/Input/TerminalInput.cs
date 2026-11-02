@@ -462,7 +462,14 @@ public sealed class TerminalInput
         if (value == 13) return Key(ConsoleKey.Enter, '\n');
         if (value is 8 or 127) return Key(ConsoleKey.Backspace, '\b');
         if (value == 9) return Key(ConsoleKey.Tab, '\t');
-        if (value < 32) return Key((ConsoleKey)(ConsoleKey.A + value - 1), (char)value, control: true);
+        if (value == 0) return Key(ConsoleKey.Spacebar, ' ', control: true);
+        if (value < 32) return Key(value switch
+        {
+            28 => ConsoleKey.Oem5,
+            29 => ConsoleKey.Oem6,
+            31 => ConsoleKey.OemMinus,
+            _ => (ConsoleKey)(ConsoleKey.A + value - 1)
+        }, (char)value, control: true);
         if (value < 128)
         {
             var character = (char)value;

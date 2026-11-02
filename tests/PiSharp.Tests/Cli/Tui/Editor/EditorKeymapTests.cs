@@ -299,7 +299,7 @@ public sealed class EditorKeymapTests
     }
 
     [Fact]
-    public async Task EditorBindingTakesPrecedenceOverApplicationShortcutInTheEditorContext()
+    public async Task ApplicationShortcutTakesPrecedenceOverEditorBindingInTheEditorContext()
     {
         var directory = Path.Combine(Path.GetTempPath(), "pisharp-keymap-context-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(directory);
@@ -308,17 +308,42 @@ public sealed class EditorKeymapTests
             File.WriteAllText(Path.Combine(directory, "keybindings.json"), "{ \"tui.input.submit\": \"ctrl+x\" }");
             var editor = new TerminalEditor(agentDirectory: directory);
             editor.Prefill("submit this draft");
+            string? dispatched = null;
+
+            Assert.True(await editor.HandleApplicationShortcutAsync(Key(ConsoleKey.X, ConsoleModifiers.Control), action =>
+            {
+                dispatched = action;
+                return Task.CompletedTask;
+            }));
+
+            Assert.Equal("app.message.copy", dispatched);
+            Assert.Equal("submit this draft", editor.Draft);
+            Assert.Contains("Submit input (tui.input.submit)", editor.Hotkeys);
+        }
+        finally { Directory.Delete(directory, recursive: true); }
+    }
+
+    [Fact]
+    public async Task HistoryBindingsRemainAboveApplicationShortcuts()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "pisharp-keymap-history-app-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            File.WriteAllText(Path.Combine(directory, "keybindings.json"),
+                "{ \"tui.editor.historyPrevious\": \"ctrl+p\" }");
+            var editor = new TerminalEditor(agentDirectory: directory);
+            editor.Prefill("draft");
             var dispatched = false;
 
-            Assert.False(await editor.HandleApplicationShortcutAsync(Key(ConsoleKey.X, ConsoleModifiers.Control), _ =>
+            Assert.False(await editor.HandleApplicationShortcutAsync(Key(ConsoleKey.P, ConsoleModifiers.Control), _ =>
             {
                 dispatched = true;
                 return Task.CompletedTask;
             }));
 
             Assert.False(dispatched);
-            Assert.Equal("submit this draft", editor.Draft);
-            Assert.Contains("Submit input (tui.input.submit)", editor.Hotkeys);
+            Assert.True(editor.MatchesKeybinding("tui.editor.historyPrevious", Key(ConsoleKey.P, ConsoleModifiers.Control)));
         }
         finally { Directory.Delete(directory, recursive: true); }
     }

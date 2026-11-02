@@ -194,6 +194,33 @@ public sealed class TerminalInputTests
     }
 
     [Fact]
+    public void DecodesLegacyControlBytesForMutationKeybindings()
+    {
+        var reader = new TerminalInput(new MemoryStream(
+            "\u0000\u001c\u001d\u001f\u001b\u001f\u001b\u001cX"u8.ToArray()));
+
+        var space = reader.Read().Key!.Value;
+        Assert.Equal((ConsoleKey.Spacebar, ' ', ConsoleModifiers.Control),
+            (space.Key, space.KeyChar, space.Modifiers));
+        var ctrlBackslash = reader.Read().Key!.Value;
+        Assert.Equal((ConsoleKey.Oem5, ConsoleModifiers.Control), (ctrlBackslash.Key, ctrlBackslash.Modifiers));
+        var ctrlBracket = reader.Read().Key!.Value;
+        Assert.Equal((ConsoleKey.Oem6, ConsoleModifiers.Control), (ctrlBracket.Key, ctrlBracket.Modifiers));
+        var undo = reader.Read().Key!.Value;
+        Assert.Equal((ConsoleKey.OemMinus, ConsoleModifiers.Control), (undo.Key, undo.Modifiers));
+        Assert.True(new EditorKeymap().Matches("tui.editor.undo", undo));
+        var altUndo = reader.Read().Key!.Value;
+        Assert.Equal((ConsoleKey.OemMinus, ConsoleModifiers.Control | ConsoleModifiers.Alt),
+            (altUndo.Key, altUndo.Modifiers));
+        var altBackslash = reader.Read().Key!.Value;
+        Assert.Equal((ConsoleKey.Oem5, ConsoleModifiers.Control | ConsoleModifiers.Alt),
+            (altBackslash.Key, altBackslash.Modifiers));
+
+        Assert.True(reader.TryRead(0, out var following));
+        Assert.Equal('X', following.Key?.KeyChar);
+    }
+
+    [Fact]
     public void DecodesKittyKeyEventsAndConsumesNegotiationReplies()
     {
         var reader = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes(
