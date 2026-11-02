@@ -1,7 +1,7 @@
 # Editor mutation parity — 2026-11-02
 
 Pinned Pi: `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
-PiSharp implementation commit: `9caa431bc0f3e9867f924f3f7935c630d3f1e4a2`.
+PiSharp implementation commit: `2ae4c8757634df29c8108ccc735bd2c164733181`.
 
 This receipt covers the `keys-editor-mutation` contract: Backspace, Delete/Ctrl+D,
 Ctrl+W/Alt+Backspace, Alt+D/Alt+Delete, Ctrl+U/K, Ctrl+Y, Alt+Y and Ctrl+-
@@ -28,6 +28,11 @@ corrected:
   application shortcuts, and an active completion cycle keeps Shift+Tab as
   completion. The existing `ConfiguredSubmitBindingAndHotkeysCommandWorkThroughLinuxPty`
   test was moved off the colliding Ctrl+X / `app.message.copy` key.
+- The dedicated external-editor path also carried an editor-key collision
+  restriction, so a user binding such as `tui.editor.deleteWordBackward: ctrl+g`
+  skipped terminal suspension and dispatched the action through the generic path.
+  The restriction is removed: the external editor always runs through the
+  suspend/restore path, and the colliding editor action no longer wins.
 
 ## Evidence
 
@@ -43,14 +48,19 @@ Deterministic checks:
 - `TerminalInputTests.DecodesLegacyControlBytesForMutationKeybindings` covers the
   legacy decode. Configured mutation bindings and reload are covered at buffer,
   keymap and PTY level.
-- Six real Linux PTY cases pass: mutation states, kill ring/yank-pop, configured
+- Seven real Linux PTY cases pass: mutation states, kill ring/yank-pop, configured
   bindings plus `/reload`, widget/application precedence, provider submission
-  with cancellation and termios restoration, and empty-editor Ctrl+D exit.
+  with cancellation and termios restoration, empty-editor Ctrl+D exit, and an
+  external-editor collision that verifies suspension, restoration and draft
+  preservation.
 
 Fail-first: in a detached worktree at `24a1aa0e2f1c9bca8c449d48f1b6566c850891ee`,
 `MutationFailFirstTests.LegacyCtrlMinusDecodesToTheUndoBinding` and
 `MutationFailFirstTests.ApplicationShortcutWinsOverACollidingEditorBinding` both
-fail on the baseline and pass after the correction.
+fail on the baseline. In a detached worktree at `9caa431b`,
+`EditorMutationPtyTests.ExternalEditorShortcutWinsOverCollidingMutationBindingAndRestoresTerminalThroughLinuxPty`
+fails because the editor is launched in raw mode; it passes after the dedicated
+path is used.
 
 Pinned Pi differential:
 
@@ -59,8 +69,8 @@ Pinned Pi differential:
   and raw HTTP match. `tools/parity/terminal/assert_editor_mutation.py` checks the
   normalized editor text at every checkpoint and the final provider-visible user
   message (`provider visible input`) for both products.
-- The paired full-cell comparison still reports unrelated differences: 19,493
-  total cell/state differences, 10,195 render differences and 487
+- The paired full-cell comparison still reports unrelated differences: 19,490
+  total cell/state differences, 10,192 render differences and 483
   control-boundary differences. Pinned Pi writes normal-buffer setup bytes before
   entering the alternate screen; PiSharp enters it first. PiSharp also renders
   the `/reload` completion status in the transcript at the reload checkpoint
@@ -84,7 +94,7 @@ python3 tools/parity/terminal/run.py --pi /home/philip/Projects/pi-pinned \
   --output artifacts/parity/keys-editor-mutation-paired
 python3 tools/parity/terminal/assert_editor_mutation.py \
   artifacts/parity/keys-editor-mutation-paired/report.json
-python3 tools/parity/verify_keys_editor_mutation.py --implementation HEAD \
+python3 tools/parity/verify_keys_editor_mutation.py \
   --pi /home/philip/Projects/pi-pinned \
   --report artifacts/parity/keys-editor-mutation-paired/report.json
 ```
@@ -93,11 +103,12 @@ The acceptance manifest is
 `docs/parity/fixtures/keys-editor-mutation-acceptance-2026-11-02.json`. The
 verifier rejects missing, failed, skipped or unsupported cases, stale
 implementation SHAs, unresolved required comparisons and missing PTY/provider
-evidence, and runs 12 negative controls under `--self-test`.
+evidence, validates every M01-M15 oracle/test/PTY/checkpoint reference and runs
+17 negative controls under `--self-test`.
 
 Local validation: `dotnet format --verify-no-changes` passed, the
 warnings-as-errors build passed with zero warnings/errors, and the full suite
-passed 4,179/4,179 with zero skips.
+passed 4,180/4,180 with zero skips.
 
 ## Findings
 

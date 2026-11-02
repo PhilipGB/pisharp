@@ -23,12 +23,12 @@
     "rawHttpMatch": true,
     "namedCheckpoints": 24,
     "semanticAssertion": "passed",
-    "renderDifferences": 10195,
-    "controlBoundaryDifferences": 487,
-    "totalCellStateDifferences": 19493,
+    "renderDifferences": 10192,
+    "controlBoundaryDifferences": 483,
+    "totalCellStateDifferences": 19490,
     "rawBytes": {
       "pi": 13824,
-      "pisharp": 13845
+      "pisharp": 13444
     },
     "normalization": "Named editor checkpoints compare normalized editor text and the final provider-visible user message. Full-cell theme, control-sequence and transcript-status differences remain recorded rather than normalized."
   },
@@ -75,5 +75,5 @@
       "impact": "The required M12 contract covers grapheme clusters, combining characters and multiline boundaries. ICU dictionary-based CJK word breaking needs an ICU segmentation dependency or embedded dictionary and remains a documented, non-required finding."
     }
   ],
-  "implementationSha": "9caa431bc0f3e9867f924f3f7935c630d3f1e4a2"
+  "implementationSha": "2ae4c8757634df29c8108ccc735bd2c164733181"
 }

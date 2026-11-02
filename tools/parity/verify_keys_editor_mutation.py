@@ -63,6 +63,41 @@ def validate_manifest(manifest, implementation):
             'Manifest must list required theories, facts and PTY evidence ids.')
 
 
+def validate_case_references(manifest, oracle, results, evidence_ids, checkpoint_ids):
+    tests = manifest['requiredTests']
+    allowed_tests = set(tests['facts']) | set(tests['theories'])
+    passing = {name for name, outcome in results if outcome == 'Passed'}
+    scenario_names = set((oracle.get('scenarios') or {}).keys())
+    for case in manifest.get('cases') or []:
+        for name in case.get('oracle') or []:
+            require(name in scenario_names,
+                    f"{case['id']} references a nonexistent oracle scenario: {name!r}.")
+        for method in case.get('tests') or []:
+            require(method in allowed_tests,
+                    f"{case['id']} references a test outside requiredTests: {method!r}.")
+            require(any(name == method or name.startswith(method + '(') for name in passing),
+                    f"{case['id']} references a test that did not pass: {method!r}.")
+        for evidence_id in case.get('pty') or []:
+            require(evidence_id in tests['ptyEvidence'],
+                    f"{case['id']} references a PTY record outside requiredTests: {evidence_id!r}.")
+            require(evidence_id in evidence_ids,
+                    f"{case['id']} references a missing PTY record: {evidence_id!r}.")
+        for checkpoint in case.get('terminalCheckpoints') or []:
+            require(checkpoint in checkpoint_ids,
+                    f"{case['id']} references a missing terminal checkpoint: {checkpoint!r}.")
+    referenced_tests = {method for case in manifest['cases'] for method in (case.get('tests') or [])}
+    require(referenced_tests == allowed_tests,
+            f'Required tests are not referenced by any case: {sorted(allowed_tests - referenced_tests)}.')
+    referenced_evidence = {evidence_id for case in manifest['cases'] for evidence_id in (case.get('pty') or [])}
+    require(referenced_evidence == set(tests['ptyEvidence']),
+            f'PTY evidence is not referenced by any case: '
+            f'{sorted(set(tests["ptyEvidence"]) - referenced_evidence)}.')
+    referenced_scenarios = {name for case in manifest['cases'] for name in (case.get('oracle') or [])}
+    require(referenced_scenarios == scenario_names,
+            f'Oracle scenarios are not referenced by any case: '
+            f'{sorted(scenario_names - referenced_scenarios)}.')
+
+
 def validate_oracle(oracle, manifest):
     require(oracle.get('piSha') == manifest.get('piSha'),
             f"Oracle pin is {oracle.get('piSha')!r}, expected {manifest.get('piSha')!r}.")
@@ -145,9 +180,10 @@ def validate_evidence(path, manifest, implementation):
     require(details.get('requests') == 2, 'Provider lifecycle evidence did not capture both requests.')
     require(details.get('termiosRestored') is True, 'Provider lifecycle evidence did not restore termios.')
     for record in records:
-        if record.get('id') in ('pty-provider-lifecycle', 'pty-ctrl-d-exit'):
+        if record.get('id') in ('pty-provider-lifecycle', 'pty-ctrl-d-exit', 'pty-external-editor'):
             require((record.get('details') or {}).get('termiosRestored') is True,
                     f"PTY evidence {record.get('id')} did not record terminal restoration.")
+    return set(ids)
 
 
 def validate_report_data(report, manifest):
@@ -253,6 +289,43 @@ def self_test(manifest, oracle):
     bad_http = {'fixture': 'terminal-editor-mutation', 'piSha': manifest['piSha'],
                 'cases': [{'id': '100x30-dark-fullscreen', 'scenarioErrors': {}, 'httpMatch': False}]}
     rejects(lambda: validate_report_data(bad_http, manifest), 'provider HTTP mismatch')
+
+    compact = load_json(manifest['evidence'])
+    checkpoint_ids = set(compact.get('checkpoints') or [])
+    evidence_ids = set(manifest['requiredTests']['ptyEvidence'])
+    synthetic_results = ([(method, 'Passed') for method in manifest['requiredTests']['facts']] +
+                         [(manifest['requiredTests']['theories'][0], 'Passed')])
+    validate_case_references(manifest, oracle, synthetic_results, evidence_ids, checkpoint_ids)
+
+    bad_oracle_ref = copy.deepcopy(manifest)
+    bad_oracle_ref['cases'][0]['oracle'] = ['nonexistent oracle scenario']
+    rejects(lambda: validate_case_references(bad_oracle_ref, oracle, synthetic_results,
+                                             evidence_ids, checkpoint_ids),
+            'nonexistent oracle scenario reference')
+
+    bad_test_ref = copy.deepcopy(manifest)
+    bad_test_ref['cases'][0]['tests'] = ['PiSharp.Tests.EditorMutationParityTests.DoesNotExist']
+    rejects(lambda: validate_case_references(bad_test_ref, oracle, synthetic_results,
+                                             evidence_ids, checkpoint_ids),
+            'nonexistent test reference')
+
+    bad_pty_ref = copy.deepcopy(manifest)
+    bad_pty_ref['cases'][0]['pty'] = ['pty-nonexistent']
+    rejects(lambda: validate_case_references(bad_pty_ref, oracle, synthetic_results,
+                                             evidence_ids, checkpoint_ids),
+            'nonexistent PTY evidence reference')
+
+    bad_checkpoint_ref = copy.deepcopy(manifest)
+    bad_checkpoint_ref['cases'][12]['terminalCheckpoints'] = ['nonexistent-checkpoint']
+    rejects(lambda: validate_case_references(bad_checkpoint_ref, oracle, synthetic_results,
+                                             evidence_ids, checkpoint_ids),
+            'nonexistent terminal checkpoint reference')
+
+    unreferenced = copy.deepcopy(manifest)
+    next(case for case in unreferenced['cases'] if case['id'] == 'M13')['tests'] = []
+    rejects(lambda: validate_case_references(unreferenced, oracle, synthetic_results,
+                                             evidence_ids, checkpoint_ids),
+            'required test not referenced by any case')
     print('negative controls passed')
 
 
@@ -305,8 +378,12 @@ def main():
         raise VerificationError('--skip-tests requires --trx and --evidence; required executable evidence is missing.')
     else:
         trx, evidence = run_focused_tests(implementation)
-    validate_trx(trx_results(trx), manifest, len(oracle['scenarios']))
-    validate_evidence(evidence, manifest, implementation)
+    results = trx_results(trx)
+    validate_trx(results, manifest, len(oracle['scenarios']))
+    evidence_ids = validate_evidence(evidence, manifest, implementation)
+    compact = load_json(manifest['evidence'])
+    validate_case_references(manifest, oracle, results, evidence_ids,
+                             set(compact.get('checkpoints') or []))
     report = load_json(args.report)
     validate_report_data(report, manifest)
     run(['python3', str(ROOT / manifest['terminalAssertion']), str(args.report)])
