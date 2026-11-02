@@ -8,7 +8,7 @@ public sealed class EditorViewportTests
     public void MultilineAndWrappedInputKeepsCursorWithinViewport()
     {
         var frame = EditorViewport.Layout("abcdefgh\nmore text", 11, 9, 5);
-        Assert.Equal(["❯ abcdef", "│ gh", "│ more t", "│ ext"], frame.Rows);
+        Assert.Equal(["❯ abcdef", "│ gh", "│ more ", "│ text"], frame.Rows);
         Assert.Equal(2, frame.CursorRow);
         Assert.Equal(5, frame.CursorColumn);
     }
@@ -31,9 +31,9 @@ public sealed class EditorViewportTests
     {
         var text = "a界e\u0301🙂z";
         var frame = EditorViewport.Layout(text, text.IndexOf('z'), 8, 4);
-        Assert.Equal(["❯ a界e\u0301", "│ 🙂z"], frame.Rows);
+        Assert.Equal(["❯ a界", "│ e\u0301🙂z"], frame.Rows);
         Assert.Equal(1, frame.CursorRow);
-        Assert.Equal(5, frame.CursorColumn);
+        Assert.Equal(6, frame.CursorColumn);
         var withinCluster = text.IndexOf('\u0301');
         Assert.Throws<ArgumentException>(() => EditorViewport.Layout(text, withinCluster, 8, 4));
         var family = "👩‍👩‍👧‍👦";
@@ -77,12 +77,12 @@ public sealed class EditorViewportTests
         var text = "a界e\u0301🙂z";
         var frame = EditorViewport.Layout(text, text.Length, 8, 4);
 
-        Assert.Equal(["a界e\u0301", "🙂z"], frame.ContentRows);
+        Assert.Equal(["a界", "e\u0301🙂z"], frame.ContentRows);
         Assert.Equal(0, frame.RowMaps[0].OffsetAt(0));
         Assert.Equal(1, frame.RowMaps[0].OffsetAt(1));
         Assert.Equal(2, frame.RowMaps[0].OffsetAt(3));
-        Assert.Equal(4, frame.RowMaps[1].OffsetAt(0));
-        Assert.Equal(text.Length, frame.RowMaps[1].OffsetAt(3));
-        Assert.Equal((4, 6), (frame.RowMaps[1].Cells[0].StartOffset, frame.RowMaps[1].Cells[0].EndOffset));
+        Assert.Equal(2, frame.RowMaps[1].OffsetAt(0));
+        Assert.Equal(text.Length, frame.RowMaps[1].OffsetAt(4));
+        Assert.Equal((2, 4), (frame.RowMaps[1].Cells[0].StartOffset, frame.RowMaps[1].Cells[0].EndOffset));
     }
 }

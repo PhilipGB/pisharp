@@ -44,6 +44,7 @@ public sealed class TerminalScreen : IDisposable
     private string _editorText = "";
     private readonly TranscriptSearchController _search = new();
     private int _editorCursor;
+    private int _editorScrollOffset;
     private int? _editorSelectionStart;
     private int? _editorSelectionEnd;
     private IReadOnlyList<EditorCompletionSuggestion> _editorSuggestions = [];
@@ -380,6 +381,16 @@ public sealed class TerminalScreen : IDisposable
                 }
             }
             _render.Request(immediate);
+        }
+    }
+
+    internal int EditorLayoutWidth
+    {
+        get
+        {
+            var columns = Columns();
+            var padding = Math.Clamp(_editorPaddingX, 0, Math.Max(0, (columns - 2) / 2));
+            return Math.Max(1, columns - padding * 2 - 1);
         }
     }
 
@@ -1834,7 +1845,9 @@ public sealed class TerminalScreen : IDisposable
         var footerHeight = rows >= 5 ? 2 : rows > 2 ? 1 : 0;
         var borderHeight = rows - footerHeight >= 4 ? 2 : 0;
         var maxEditorLines = Math.Max(1, Math.Min((int)(rows * 0.3), rows - footerHeight - borderHeight - 1));
-        var editor = EditorViewport.Layout(_editorText, _editorCursor, columns, maxEditorLines, showPrompt: false);
+        var editor = EditorViewport.Layout(_editorText, _editorCursor, columns, maxEditorLines, showPrompt: false,
+            scrollOffset: _editorScrollOffset);
+        _editorScrollOffset = editor.ScrollOffset;
         var editorHeight = editor.Rows.Count + borderHeight;
         if (rows - editorHeight - footerHeight < 1 && borderHeight > 0)
         {
@@ -1873,7 +1886,9 @@ public sealed class TerminalScreen : IDisposable
             _extensionCustomOverlay, _extensionCustomOverlayOptions,
             _extensionCustomPanel ?? _extensionEditorReplacement, _extensionWorkingFrameVerbatim,
             _transcriptBottomKeyLabel, _transcriptSearchPanel, _transientScrollbarVisible,
-            _transcriptSearchCursorColumn, transientFlashes: _selectionFlashes.Messages);
+            _transcriptSearchCursorColumn, transientFlashes: _selectionFlashes.Messages,
+            editorScrollOffset: _editorScrollOffset);
+        _editorScrollOffset = frame.EditorScrollOffset;
         if (frame.ScrollOffset != _scrollOffset) ShowTransientScrollbarLocked();
         _scrollOffset = frame.ScrollOffset;
         _lastColumns = frame.Columns;

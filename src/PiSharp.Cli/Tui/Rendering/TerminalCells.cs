@@ -8,6 +8,7 @@ internal static class TerminalCells
 {
     public static int Width(string element)
     {
+        if (element == "\t") return 3;
         var width = 0;
         var hasEmojiPresentationCharacter = false;
         foreach (var rune in element.EnumerateRunes())

@@ -12,9 +12,11 @@ public sealed class EditorBuffer
     private sealed record Snapshot(string Text, int Cursor, int? SelectionAnchor);
     private sealed record ExtensionEditState(string Text, int Cursor, Snapshot[] Undo, string[] History,
         int HistoryIndex, string Draft, int DraftCursor, int? SelectionAnchor, int? PreferredColumn,
-        bool CoalesceTypedWord, LastEditAction LastEditAction, string? LastYankedText, string[] KillRing);
+        int? SnappedFromCursorColumn, bool CoalesceTypedWord, LastEditAction LastEditAction,
+        string? LastYankedText, string[] KillRing);
     private enum LastEditAction { None, Kill, Yank }
     private enum KillDirection { Backward, Forward }
+    private enum JumpDirection { Forward, Backward }
 
     private readonly List<string> _history = [];
     private readonly object _gate = new();
@@ -26,7 +28,11 @@ public sealed class EditorBuffer
     private string _draft = "";
     private int _draftCursor;
     private int? _selectionAnchor;
-    private int? _preferredColumn;
+    private int? _preferredVisualColumn;
+    private int? _snappedFromCursorColumn;
+    private int _layoutWidth = int.MaxValue;
+    private int _terminalRows = 24;
+    private JumpDirection? _jumpDirection;
     private bool _coalesceTypedWord;
     private LastEditAction _lastEditAction;
     private string? _lastYankedText;
@@ -73,6 +79,39 @@ public sealed class EditorBuffer
     public IReadOnlyList<string> History { get { lock (_gate) return _history.ToArray(); } }
     internal object SyncRoot => _gate;
 
+    public int LayoutWidth { get { lock (_gate) return _layoutWidth; } }
+    public int TerminalRows { get { lock (_gate) return _terminalRows; } }
+    internal bool IsJumpModeActive { get { lock (_gate) return _jumpDirection is not null; } }
+
+    internal EditorAction HandleJumpText(string text)
+    {
+        lock (_gate)
+        {
+            if (_jumpDirection is not { } direction) return EditorAction.None;
+            _version++;
+            _jumpDirection = null;
+            JumpToChar(text, direction);
+            return EditorAction.Render;
+        }
+    }
+
+    public void SetLayoutWidth(int width)
+    {
+        if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width));
+        lock (_gate) _layoutWidth = width;
+    }
+
+    public void SetTerminalRows(int rows)
+    {
+        if (rows <= 0) throw new ArgumentOutOfRangeException(nameof(rows));
+        lock (_gate) _terminalRows = rows;
+    }
+
+    internal void AddHistoryEntry(string text)
+    {
+        lock (_gate) AddHistory(text);
+    }
+
     internal EditorBufferSnapshot CaptureSnapshot()
     {
         lock (_gate)
@@ -86,8 +125,8 @@ public sealed class EditorBuffer
     {
         lock (_gate)
             return new ExtensionEditState(_text, Cursor, [.. _undo],
-                [.. _history], _historyIndex, _draft, _draftCursor, _selectionAnchor, _preferredColumn,
-                _coalesceTypedWord, _lastEditAction, _lastYankedText, _killRing.Capture());
+                [.. _history], _historyIndex, _draft, _draftCursor, _selectionAnchor, _preferredVisualColumn,
+                _snappedFromCursorColumn, _coalesceTypedWord, _lastEditAction, _lastYankedText, _killRing.Capture());
     }
 
     internal void BeginExtensionEdit(string? text)
@@ -95,14 +134,15 @@ public sealed class EditorBuffer
         lock (_gate)
         {
             _version++;
-            _text = text ?? string.Empty;
+            _text = NormalizeText(text ?? string.Empty);
             Cursor = _text.Length;
             _historyIndex = _history.Count;
             _draft = _text;
             _draftCursor = Cursor;
             _undo.Clear();
             ClearSelection();
-            _preferredColumn = null;
+            _preferredVisualColumn = null;
+            _snappedFromCursorColumn = null;
             _coalesceTypedWord = false;
             BreakKillYankChain();
         }
@@ -126,7 +166,8 @@ public sealed class EditorBuffer
             _draft = state.Draft;
             _draftCursor = state.DraftCursor;
             _selectionAnchor = state.SelectionAnchor;
-            _preferredColumn = state.PreferredColumn;
+            _preferredVisualColumn = state.PreferredColumn;
+            _snappedFromCursorColumn = state.SnappedFromCursorColumn;
             _coalesceTypedWord = state.CoalesceTypedWord;
             _lastEditAction = state.LastEditAction;
             _lastYankedText = state.LastYankedText;
@@ -141,17 +182,30 @@ public sealed class EditorBuffer
             _version++;
             var control = key.Modifiers.HasFlag(ConsoleModifiers.Control);
             var alt = key.Modifiers.HasFlag(ConsoleModifiers.Alt);
-            var vertical = _keymap.Matches("tui.editor.cursorUp", key) || _keymap.Matches("tui.editor.cursorDown", key) ||
-                _keymap.Matches("tui.editor.selectUp", key) || _keymap.Matches("tui.editor.selectDown", key);
             var kill = _keymap.Matches("tui.editor.deleteWordBackward", key) ||
                 _keymap.Matches("tui.editor.deleteWordForward", key) ||
                 _keymap.Matches("tui.editor.deleteToLineStart", key) ||
                 _keymap.Matches("tui.editor.deleteToLineEnd", key);
             var yank = _keymap.Matches("tui.editor.yank", key) || _keymap.Matches("tui.editor.yankPop", key);
             if (!kill && !yank) BreakKillYankChain();
-            var printable = !control && !alt && !char.IsControl(key.KeyChar);
+            var printable = !control && !alt && !char.IsControl(key.KeyChar) && key.KeyChar != '\0';
             if (!printable) _coalesceTypedWord = false;
-            if (!vertical) _preferredColumn = null;
+
+            if (_jumpDirection is { } pendingJump)
+            {
+                if (_keymap.Matches("tui.editor.jumpForward", key) || _keymap.Matches("tui.editor.jumpBackward", key))
+                {
+                    _jumpDirection = null;
+                    return EditorAction.None;
+                }
+                if (printable)
+                {
+                    _jumpDirection = null;
+                    JumpToChar(key.KeyChar.ToString(), pendingJump);
+                    return EditorAction.Render;
+                }
+                _jumpDirection = null;
+            }
 
             if (_keymap.Matches("tui.input.newLine", key) || key.Key == ConsoleKey.Enter && alt)
             {
@@ -189,6 +243,18 @@ public sealed class EditorBuffer
             else if (_keymap.Matches("tui.editor.cursorWordRight", key)) MoveCursor(SelectionEnd ?? MoveWordRight(Cursor));
             else if (_keymap.Matches("tui.editor.cursorLineStart", key)) MoveCursor(LineStart(Cursor));
             else if (_keymap.Matches("tui.editor.cursorLineEnd", key)) MoveCursor(LineEnd(Cursor));
+            else if (_keymap.Matches("tui.editor.pageUp", key)) return MovePage(-1);
+            else if (_keymap.Matches("tui.editor.pageDown", key)) return MovePage(1);
+            else if (_keymap.Matches("tui.editor.jumpForward", key))
+            {
+                _jumpDirection = JumpDirection.Forward;
+                return EditorAction.None;
+            }
+            else if (_keymap.Matches("tui.editor.jumpBackward", key))
+            {
+                _jumpDirection = JumpDirection.Backward;
+                return EditorAction.None;
+            }
             else if (_keymap.Matches("tui.editor.deleteCharBackward", key))
                 DeleteRange(SelectionStart ?? PreviousBoundary(Cursor), SelectionEnd ?? Cursor);
             else if (_keymap.Matches("tui.editor.deleteCharForward", key))
@@ -217,8 +283,8 @@ public sealed class EditorBuffer
         lock (_gate)
         {
             _version++;
-            var safe = new string(text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n')
-                .Where(c => c is '\n' or '\t' || !char.IsControl(c)).ToArray());
+            var safe = new string(NormalizeText(text)
+                .Where(c => c is '\n' || !char.IsControl(c)).ToArray());
             if (safe.Length == 0) return EditorAction.None;
             InsertAtomic(safe);
             BreakKillYankChain();
@@ -237,7 +303,8 @@ public sealed class EditorBuffer
             _historyIndex = _history.Count;
             _undo.Clear();
             _coalesceTypedWord = false;
-            _preferredColumn = null;
+            _preferredVisualColumn = null;
+            _snappedFromCursorColumn = null;
             ClearSelection();
             BreakKillYankChain();
             return true;
@@ -256,7 +323,8 @@ public sealed class EditorBuffer
             _draftCursor = 0;
             _undo.Clear();
             _coalesceTypedWord = false;
-            _preferredColumn = null;
+            _preferredVisualColumn = null;
+            _snappedFromCursorColumn = null;
             ClearSelection();
             BreakKillYankChain();
         }
@@ -278,7 +346,8 @@ public sealed class EditorBuffer
             ExitHistoryBrowsing();
             RememberDraft();
             _coalesceTypedWord = false;
-            _preferredColumn = null;
+            _preferredVisualColumn = null;
+            _snappedFromCursorColumn = null;
             BreakKillYankChain();
         }
     }
@@ -289,6 +358,7 @@ public sealed class EditorBuffer
         {
             _version++;
             ArgumentNullException.ThrowIfNull(text);
+            text = NormalizeText(text);
             var nextCursor = Math.Clamp(cursor ?? text.Length, 0, text.Length);
             if (!string.Equals(_text, text, StringComparison.Ordinal)) PushUndoSnapshot();
             _text = text;
@@ -297,7 +367,8 @@ public sealed class EditorBuffer
             ExitHistoryBrowsing();
             RememberDraft();
             _coalesceTypedWord = false;
-            _preferredColumn = null;
+            _preferredVisualColumn = null;
+            _snappedFromCursorColumn = null;
             BreakKillYankChain();
         }
     }
@@ -315,7 +386,8 @@ public sealed class EditorBuffer
             ExitHistoryBrowsing();
             RememberDraft();
             _coalesceTypedWord = false;
-            _preferredColumn = null;
+            _preferredVisualColumn = null;
+            _snappedFromCursorColumn = null;
             BreakKillYankChain();
         }
     }
@@ -350,7 +422,8 @@ public sealed class EditorBuffer
                 _text = _draft;
                 Cursor = _draftCursor;
                 ClearSelection();
-                _preferredColumn = null;
+                _preferredVisualColumn = null;
+                _snappedFromCursorColumn = null;
                 _coalesceTypedWord = false;
                 return EditorAction.Render;
             }
@@ -360,76 +433,201 @@ public sealed class EditorBuffer
         _text = _history[_historyIndex];
         Cursor = direction < 0 ? 0 : _text.Length;
         ClearSelection();
-        _preferredColumn = null;
+        _preferredVisualColumn = null;
+        _snappedFromCursorColumn = null;
         _coalesceTypedWord = false;
         return EditorAction.Render;
     }
 
     private EditorAction MoveVertical(int direction, bool extendSelection = false)
     {
-        var currentStart = LineStart(Cursor);
-        var currentEnd = LineEnd(Cursor);
+        var lines = EditorVisualLines.Build(_text, _layoutWidth);
+        var current = FindCurrentVisualLine(lines);
+        var lineStart = LineStart(Cursor);
+        var lineEnd = LineEnd(Cursor);
         if (direction < 0)
         {
-            if (currentStart > 0)
+            if (current == 0)
             {
-                var preferred = _preferredColumn ?? Cursor - currentStart;
-                var previousEnd = currentStart - 1;
-                var previousStart = LineStart(previousEnd);
-                SetCursor(SnapToBoundary(previousStart + Math.Min(preferred, previousEnd - previousStart)), extendSelection);
-                _preferredColumn = preferred;
+                if (extendSelection)
+                {
+                    if (Cursor > lineStart)
+                    {
+                        SetCursor(lineStart, extendSelection: true);
+                        return EditorAction.Render;
+                    }
+                    return EditorAction.None;
+                }
+
+                if (_historyIndex < _history.Count || _text.Length == 0 || Cursor == lineStart)
+                    return NavigateHistory(-1);
+                SetCursor(lineStart, extendSelection: false);
                 return EditorAction.Render;
             }
 
+            MoveToVisualLine(lines, current, current - 1, extendSelection);
+            return EditorAction.Render;
+        }
+
+        if (current == lines.Count - 1)
+        {
             if (extendSelection)
             {
-                if (Cursor > currentStart)
+                if (Cursor < lineEnd)
                 {
-                    SetCursor(currentStart, extendSelection: true);
-                    _preferredColumn = null;
+                    SetCursor(lineEnd, extendSelection: true);
                     return EditorAction.Render;
                 }
                 return EditorAction.None;
             }
 
-            if (_historyIndex < _history.Count || _text.Length == 0 || Cursor == currentStart)
-                return NavigateHistory(-1);
-            Cursor = currentStart;
-            ClearSelection();
-            _preferredColumn = null;
-            return EditorAction.Render;
-        }
-
-        if (currentEnd < _text.Length)
-        {
-            var preferred = _preferredColumn ?? Cursor - currentStart;
-            var nextStart = currentEnd + 1;
-            var nextEnd = LineEnd(nextStart);
-            SetCursor(SnapToBoundary(nextStart + Math.Min(preferred, nextEnd - nextStart)), extendSelection);
-            _preferredColumn = preferred;
-            return EditorAction.Render;
-        }
-
-        if (extendSelection)
-        {
-            if (Cursor < currentEnd)
+            if (_historyIndex < _history.Count) return NavigateHistory(1);
+            if (Cursor < lineEnd)
             {
-                SetCursor(currentEnd, extendSelection: true);
-                _preferredColumn = null;
+                SetCursor(lineEnd, extendSelection: false);
                 return EditorAction.Render;
             }
             return EditorAction.None;
         }
 
-        if (_historyIndex < _history.Count) return NavigateHistory(1);
-        if (Cursor < currentEnd)
+        MoveToVisualLine(lines, current, current + 1, extendSelection);
+        return EditorAction.Render;
+    }
+
+    private EditorAction MovePage(int direction)
+    {
+        var lines = EditorVisualLines.Build(_text, _layoutWidth);
+        var current = FindCurrentVisualLine(lines);
+        var pageSize = Math.Max(5, (int)Math.Floor(_terminalRows * 0.3));
+        var target = Math.Clamp(current + direction * pageSize, 0, lines.Count - 1);
+        MoveToVisualLine(lines, current, target, extendSelection: false);
+        return EditorAction.Render;
+    }
+
+    private void MoveToVisualLine(IReadOnlyList<EditorVisualLines.VisualLine> lines, int current, int target,
+        bool extendSelection)
+    {
+        var currentLine = lines[current];
+        var targetLine = lines[target];
+        int currentVisualColumn;
+        if (_snappedFromCursorColumn is { } snapped)
         {
-            Cursor = currentEnd;
-            ClearSelection();
-            _preferredColumn = null;
-            return EditorAction.Render;
+            var snappedLine = EditorVisualLines.FindVisualLine(lines, currentLine.LogicalLine, snapped, current);
+            currentVisualColumn = snapped - lines[snappedLine].StartOffset;
         }
-        return EditorAction.None;
+        else
+        {
+            currentVisualColumn = Cursor - currentLine.StartOffset;
+        }
+
+        var lastSourceSegment = current == lines.Count - 1 ||
+            lines[current + 1].LogicalLine != currentLine.LogicalLine;
+        var sourceMax = lastSourceSegment ? currentLine.Length : Math.Max(0, currentLine.Length - 1);
+        var lastTargetSegment = target == lines.Count - 1 ||
+            lines[target + 1].LogicalLine != targetLine.LogicalLine;
+        var targetMax = lastTargetSegment ? targetLine.Length : Math.Max(0, targetLine.Length - 1);
+        var moveToColumn = ComputeVerticalMoveColumn(currentVisualColumn, sourceMax, targetMax);
+
+        var logicalEnd = LineEnd(targetLine.StartOffset);
+        var targetOffset = Math.Min(targetLine.StartOffset + moveToColumn, logicalEnd);
+        SetVerticalCursor(targetOffset, extendSelection);
+
+        var logicalStart = LineStart(targetLine.StartOffset);
+        var starts = StringInfo.ParseCombiningCharacters(_text[logicalStart..logicalEnd]);
+        for (var index = 0; index < starts.Length; index++)
+        {
+            var start = logicalStart + starts[index];
+            if (start > Cursor) break;
+            var end = index + 1 < starts.Length ? logicalStart + starts[index + 1] : logicalEnd;
+            var length = end - start;
+            if (length <= 1 || Cursor >= end) continue;
+            var isContinuation = start < targetLine.StartOffset;
+            var movingDown = target > current;
+            if (isContinuation && movingDown)
+            {
+                var next = target + 1;
+                while (next < lines.Count && lines[next].LogicalLine == targetLine.LogicalLine &&
+                       lines[next].StartOffset < end) next++;
+                if (next < lines.Count)
+                {
+                    MoveToVisualLine(lines, current, next, extendSelection);
+                    return;
+                }
+            }
+
+            _snappedFromCursorColumn = Cursor;
+            SetVerticalCursor(start, extendSelection);
+            return;
+        }
+
+        _snappedFromCursorColumn = null;
+    }
+
+    private int ComputeVerticalMoveColumn(int currentVisualColumn, int sourceMaxVisualColumn, int targetMaxVisualColumn)
+    {
+        var hasPreferred = _preferredVisualColumn is not null;
+        var cursorInMiddle = currentVisualColumn < sourceMaxVisualColumn;
+        var targetTooShort = targetMaxVisualColumn < currentVisualColumn;
+        if (!hasPreferred || cursorInMiddle)
+        {
+            if (targetTooShort)
+            {
+                _preferredVisualColumn = currentVisualColumn;
+                return targetMaxVisualColumn;
+            }
+
+            _preferredVisualColumn = null;
+            _snappedFromCursorColumn = null;
+            return currentVisualColumn;
+        }
+
+        var targetCantFitPreferred = targetMaxVisualColumn < _preferredVisualColumn;
+        if (targetTooShort || targetCantFitPreferred) return targetMaxVisualColumn;
+        var result = _preferredVisualColumn ?? currentVisualColumn;
+        _preferredVisualColumn = null;
+        _snappedFromCursorColumn = null;
+        return result;
+    }
+
+    private void SetVerticalCursor(int offset, bool extendSelection)
+    {
+        if (!extendSelection)
+        {
+            Cursor = offset;
+            ClearSelection();
+            return;
+        }
+
+        _selectionAnchor ??= Cursor;
+        Cursor = offset;
+        if (_selectionAnchor == Cursor) _selectionAnchor = null;
+    }
+
+    private int FindCurrentVisualLine(IReadOnlyList<EditorVisualLines.VisualLine> lines) =>
+        EditorVisualLines.FindVisualLine(lines, LogicalLineAt(Cursor), Cursor, lines.Count - 1);
+
+    private int LogicalLineAt(int offset)
+    {
+        var line = 0;
+        for (var index = 0; index < offset; index++)
+            if (_text[index] == '\n') line++;
+        return line;
+    }
+
+    private void JumpToChar(string character, JumpDirection direction)
+    {
+        if (character.Length == 0) return;
+        if (direction == JumpDirection.Forward)
+        {
+            if (Cursor >= _text.Length) return;
+            var index = _text.IndexOf(character, Cursor + 1, StringComparison.Ordinal);
+            if (index >= 0) SetCursor(index, extendSelection: false);
+            return;
+        }
+
+        if (Cursor == 0) return;
+        var previous = _text.LastIndexOf(character, Cursor - 1, StringComparison.Ordinal);
+        if (previous >= 0) SetCursor(previous, extendSelection: false);
     }
 
     private EditorAction Undo()
@@ -443,7 +641,8 @@ public sealed class EditorBuffer
         _historyIndex = _history.Count;
         RememberDraft();
         _coalesceTypedWord = false;
-        _preferredColumn = null;
+        _preferredVisualColumn = null;
+        _snappedFromCursorColumn = null;
         return EditorAction.Render;
     }
 
@@ -459,7 +658,8 @@ public sealed class EditorBuffer
         ClearSelection();
         RememberDraft();
         _coalesceTypedWord = text != "\n";
-        _preferredColumn = null;
+        _preferredVisualColumn = null;
+        _snappedFromCursorColumn = null;
     }
 
     private void InsertAtomic(string text)
@@ -474,7 +674,8 @@ public sealed class EditorBuffer
         ClearSelection();
         RememberDraft();
         _coalesceTypedWord = false;
-        _preferredColumn = null;
+        _preferredVisualColumn = null;
+        _snappedFromCursorColumn = null;
     }
 
     private void DeleteRange(int start, int end)
@@ -502,7 +703,8 @@ public sealed class EditorBuffer
         ExitHistoryBrowsing();
         RememberDraft();
         _coalesceTypedWord = false;
-        _preferredColumn = null;
+        _preferredVisualColumn = null;
+        _snappedFromCursorColumn = null;
     }
 
     private void DeleteWordBackward()
@@ -577,7 +779,8 @@ public sealed class EditorBuffer
         ExitHistoryBrowsing();
         RememberDraft();
         _coalesceTypedWord = false;
-        _preferredColumn = null;
+        _preferredVisualColumn = null;
+        _snappedFromCursorColumn = null;
         _lastEditAction = LastEditAction.Yank;
         _lastYankedText = text;
         return EditorAction.Render;
@@ -600,7 +803,8 @@ public sealed class EditorBuffer
         ExitHistoryBrowsing();
         RememberDraft();
         _coalesceTypedWord = false;
-        _preferredColumn = null;
+        _preferredVisualColumn = null;
+        _snappedFromCursorColumn = null;
         _lastEditAction = LastEditAction.Yank;
         _lastYankedText = text;
         return EditorAction.Render;
@@ -640,6 +844,8 @@ public sealed class EditorBuffer
 
     private void SetCursor(int cursor, bool extendSelection)
     {
+        _preferredVisualColumn = null;
+        _snappedFromCursorColumn = null;
         if (extendSelection)
         {
             _selectionAnchor ??= Cursor;
@@ -739,6 +945,9 @@ public sealed class EditorBuffer
         }
         return index;
     }
+
+    private static string NormalizeText(string text) =>
+        text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n').Replace("\t", "    ", StringComparison.Ordinal);
 
     private static bool IsWordElement(string element) => element.EnumerateRunes().Any(rune =>
     {

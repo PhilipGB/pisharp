@@ -406,7 +406,11 @@ public sealed class EditorKeymapTests
     public void ActiveScreenSearchAndPagingBindingsDecodeFromTerminalInput()
     {
         var keymap = new EditorKeymap();
-        var searchInput = new TerminalInput(new MemoryStream([6]));
+        var shiftSearch = keymap.Matches("tui.altScreen.search",
+            Key(ConsoleKey.F, ConsoleModifiers.Control | ConsoleModifiers.Shift));
+        var searchInput = shiftSearch
+            ? new TerminalInput(new MemoryStream("\u001b[102;6u"u8.ToArray()))
+            : new TerminalInput(new MemoryStream([6]));
         var toolOutputInput = new TerminalInput(new MemoryStream([15]));
         var pageInput = new TerminalInput(new MemoryStream("\u001b[5~"u8.ToArray()));
 
