@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Microsoft.Extensions.AI;
+using PiSharp.Cli.Protocols;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Sessions;
@@ -275,9 +276,15 @@ public sealed class ToolResultContractMatrixTests
         Assert.Contains("does not match", finished.Error);
         Assert.True(ToolResultOutput.TryReadContract(result, out var contract));
         Assert.True(contract.IsError);
+        Assert.True(finished.ToolResultIsError);
         Assert.Contains("does not match", contract.Text);
         Assert.Contains("does not match", harness.Client.Requests[1].ToolResults.Single().Text);
         Assert.Equal(2, harness.Client.RequestCount);
+        var projected = new RpcEventProjector().Project(finished, harness.Session, null, null, true, null)
+            .Select(item => JsonSerializer.SerializeToElement(item))
+            .Single(item => item.GetProperty("type").GetString() == "tool_execution_end");
+        Assert.True(projected.GetProperty("isError").GetBoolean());
+        Assert.True(projected.GetProperty("result").GetProperty("isError").GetBoolean());
 
         Evidence.Write("E05", nameof(OutputSchemaViolationIsAVisibleErrorResult),
             harness.Observation("E05", 2, new { error = finished.Error }));
@@ -611,6 +618,64 @@ public sealed class ToolResultContractMatrixTests
     }
 
     [Fact]
+    public async Task ContentReplacementKeepsExplicitlyReplacedDetails()
+    {
+        await using var harness = await MatrixHarness.RunAsync("H06",
+            [new ProviderTurn(Calls(1), "done")],
+            [MatrixHarness.ResultTool("tool0", () => new PiSharpToolResult("original",
+                Details: new { ui = 1 }, StructuredContent: Json("""{"count":1}"""),
+                Usage: new UsageDetails { TotalTokenCount = 7 }))],
+            resultHooks:
+            [
+                (context, _) =>
+                {
+                    context.Result = Json("""{"Text":"hooked","Details":{"ui":2}}""");
+                    return ValueTask.CompletedTask;
+                }
+            ]);
+        await harness.ExecuteAsync("hook details");
+        Assert.Equal("hooked", harness.Client.Requests[1].ToolResults.Single().Text);
+        Assert.True(ToolResultOutput.TryReadContract(Assert.Single(harness.CanonicalResults()), out var canonical));
+        Assert.Equal("hooked", canonical.Text);
+        Assert.Equal(2, JsonSerializer.SerializeToElement(canonical.Details,
+            new JsonSerializerOptions(JsonSerializerDefaults.Web)).GetProperty("ui").GetInt32());
+        Assert.Null(canonical.StructuredContent);
+        Assert.Equal(7, canonical.Usage!.TotalTokenCount);
+
+        Evidence.Write("H06", nameof(ContentReplacementKeepsExplicitlyReplacedDetails),
+            harness.Observation("H06", 2, new { details = "replaced" }));
+    }
+
+    [Fact]
+    public async Task TextOnlyContractReplacementRetainsOriginalDetails()
+    {
+        await using var harness = await MatrixHarness.RunAsync("H07",
+            [new ProviderTurn(Calls(1), "done")],
+            [MatrixHarness.ResultTool("tool0", () => new PiSharpToolResult("original",
+                Details: new { ui = 1 }, StructuredContent: Json("""{"count":1}"""),
+                Usage: new UsageDetails { TotalTokenCount = 7 }))],
+            resultHooks:
+            [
+                (context, _) =>
+                {
+                    context.Result = new PiSharpToolResult("hooked");
+                    return ValueTask.CompletedTask;
+                }
+            ]);
+        await harness.ExecuteAsync("hook text only");
+        Assert.Equal("hooked", harness.Client.Requests[1].ToolResults.Single().Text);
+        Assert.True(ToolResultOutput.TryReadContract(Assert.Single(harness.CanonicalResults()), out var canonical));
+        Assert.Equal("hooked", canonical.Text);
+        Assert.Equal(1, JsonSerializer.SerializeToElement(canonical.Details,
+            new JsonSerializerOptions(JsonSerializerDefaults.Web)).GetProperty("ui").GetInt32());
+        Assert.Null(canonical.StructuredContent);
+        Assert.Equal(7, canonical.Usage!.TotalTokenCount);
+
+        Evidence.Write("H07", nameof(TextOnlyContractReplacementRetainsOriginalDetails),
+            harness.Observation("H07", 2, new { details = "retained" }));
+    }
+
+    [Fact]
     public async Task ProviderContinuationReceivesEveryResultInModelCallOrder()
     {
         var release = new[] { Signal(), Signal(), Signal() };
@@ -764,7 +829,7 @@ internal sealed record ToolCall(string Id, string Name, IReadOnlyDictionary<stri
 internal sealed record ProviderTurn(IReadOnlyList<ToolCall> Calls, string FinalText = "done");
 
 internal sealed record ProviderToolResult(string CallId, string? Text, string? ExceptionType,
-    string? ExceptionMessage, int ImageCount, JsonElement? StructuredContent);
+    string? ExceptionMessage, bool IsError, int ImageCount, JsonElement? StructuredContent);
 
 internal sealed record ProviderRequest(int Index, IReadOnlyList<string> UserTexts,
     IReadOnlyList<string> ToolCallIds, IReadOnlyList<ProviderToolResult> ToolResults,
@@ -793,6 +858,8 @@ internal sealed class MatrixClient(IReadOnlyList<ProviderTurn> turns) : IChatCli
                 .Select(result => new ProviderToolResult(result.CallId,
                     result.Result as string ?? result.Result?.ToString(),
                     result.Exception?.GetType().Name, result.Exception?.Message,
+                    result.Exception is not null ||
+                    ToolResultOutput.TryReadContract(result, out var contract) && contract.IsError,
                     snapshot.SelectMany(message => message.Contents).OfType<DataContent>().Count(),
                     result.AdditionalProperties?.TryGetValue(
                         ToolResultOutput.StructuredContentProperty, out var structured) == true
@@ -898,6 +965,11 @@ internal sealed class MatrixHarness : IAsyncDisposable
     public IReadOnlyList<FunctionResultContent> CanonicalResults() => Session.ActiveMessages()
         .SelectMany(message => message.Contents).OfType<FunctionResultContent>().ToArray();
 
+    private bool IsCanonicalError(string callId) => CanonicalResults()
+        .Where(result => result.CallId == callId)
+        .Any(result => result.Exception is not null ||
+            ToolResultOutput.TryReadContract(result, out var contract) && contract.IsError);
+
     public IReadOnlyList<JsonElement> PiJsonlResults() => PiJsonlSessionInterchange.ProjectEntries(Session)
         .Where(entry => entry.TryGetProperty("message", out var message) &&
             message.GetProperty("role").GetString() == "toolResult")
@@ -961,6 +1033,7 @@ internal sealed class MatrixHarness : IAsyncDisposable
                 result.CallId,
                 result.Text,
                 result.ExceptionType,
+                isError = IsCanonicalError(result.CallId) || result.IsError,
                 result.ImageCount,
                 structured = result.StructuredContent?.GetRawText()
             }).ToArray()

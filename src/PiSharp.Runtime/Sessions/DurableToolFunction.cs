@@ -216,21 +216,42 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
             failure = null;
         }
         if (resultContext.ResultChanged && !ReferenceEquals(resultContext.Result, originalResult) &&
-            !ToolResultOutput.TryReadContract(resultContext.Result, out _) && originalContract is not null)
+            originalContract is not null)
         {
-            // A content-only replacement keeps the original details, usage and termination hint,
-            // but drops structured content that may no longer match the replacement.
-            var replacementText = ToolResultOutput.TryRead(resultContext.Result, out var text, out _)
-                ? text
-                : resultContext.Result?.ToString() ?? string.Empty;
-            resultContext.Result = originalContract with
+            var readable = ToolResultOutput.TryRead(resultContext.Result, out var replacementText,
+                out var replacementDetails);
+            if (!readable) replacementText = resultContext.Result?.ToString() ?? string.Empty;
+            // Pi keeps the original details and usage when a hook replaces only content, but an
+            // explicitly supplied replacement wins. Replacing content also drops structured data
+            // and images that no longer describe it.
+            if (ToolResultOutput.TryReadContract(resultContext.Result, out var replacementContract))
             {
-                Text = replacementText,
-                StructuredContent = null,
-                Images = null,
-                IsError = resultContext.IsError,
-                Error = resultContext.IsError ? resultContext.Error : null
-            };
+                var contentReplaced = !string.Equals(replacementContract.Text, originalContract.Text,
+                    StringComparison.Ordinal);
+                resultContext.Result = replacementContract with
+                {
+                    Details = replacementContract.Details ?? originalContract.Details,
+                    StructuredContent = contentReplaced ? replacementContract.StructuredContent :
+                        replacementContract.StructuredContent ?? originalContract.StructuredContent,
+                    Images = contentReplaced ? replacementContract.Images :
+                        replacementContract.Images ?? originalContract.Images,
+                    Usage = replacementContract.Usage ?? originalContract.Usage,
+                    IsError = resultContext.IsError,
+                    Error = resultContext.IsError ? resultContext.Error : null
+                };
+            }
+            else
+            {
+                resultContext.Result = originalContract with
+                {
+                    Text = replacementText,
+                    Details = replacementDetails ?? originalContract.Details,
+                    StructuredContent = null,
+                    Images = null,
+                    IsError = resultContext.IsError,
+                    Error = resultContext.IsError ? resultContext.Error : null
+                };
+            }
         }
         value = resultContext.Result;
         failure = resultContext.Exception;
@@ -268,6 +289,7 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
                     IsError: true, Error: error.Message);
                 resultContext.IsError = true;
                 resultContext.Error = error.Message;
+                ToolResultOutput.TryReadContract(resultContext.Result, out contract);
             }
         }
         if (failure is not null)

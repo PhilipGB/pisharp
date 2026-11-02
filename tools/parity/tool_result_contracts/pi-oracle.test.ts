@@ -192,6 +192,14 @@ it("writes the pinned tool-result contract oracle", async () => {
 	output.H05 = await run({ tools: [tool("tool0", async () => value("original"))],
 		turns: [[{ id: "call-0", name: "tool0" }]],
 		afterToolCall: () => { throw new Error("hook boom"); } });
+	output.H06 = await run({ tools: [tool("tool0", async () => ({
+		...value("original"), details: { ui: 1 }, structuredContent: { count: 1 }, usage: usage(7) }))],
+		turns: [[{ id: "call-0", name: "tool0" }]],
+		afterToolCall: () => ({ content: [{ type: "text", text: "hooked" }], details: { ui: 2 } }) });
+	output.H07 = await run({ tools: [tool("tool0", async () => ({
+		...value("original"), details: { ui: 1 }, structuredContent: { count: 1 }, usage: usage(7) }))],
+		turns: [[{ id: "call-0", name: "tool0" }]],
+		afterToolCall: () => ({ content: [{ type: "text", text: "hooked" }] }) });
 
 	output.R01 = await run({ tools: [tool("tool0", async () => ({
 		...value("model text"), details: { ui: "details" }, structuredContent: { count: 2 }, usage: usage(11) }))],

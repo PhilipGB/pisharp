@@ -15,11 +15,21 @@ def state(call_id, is_error=False, terminate=False):
     return {'callId': call_id, 'isError': is_error, 'terminate': terminate}
 
 
+def provider_results(requests, states):
+    if requests <= 1:
+        return []
+    return [{
+        'request': requests,
+        'results': [{'callId': item['callId'], 'isError': item['isError']} for item in states],
+    }]
+
+
 def simple(case, criteria, test, requests, executions, states, differential):
     return dict(id=case, criteria=criteria, test=test,
                 expected={'requests': requests,
                           'executions': {name: count for name, count in executions.items() if count},
-                          'resultStates': states},
+                          'resultStates': states,
+                          'providerResults': provider_results(requests, states)},
                 differential=differential)
 
 
@@ -133,7 +143,19 @@ def observed(observation, expected):
             'isError': item['isError'],
             'terminate': item['terminate'],
         } for item in observation.get('piJsonl', [])],
+        'providerResults': observed_provider_results(observation),
     }
+
+
+def observed_provider_results(observation):
+    return [{
+        'request': request['index'],
+        'results': [{
+            'callId': result['callId'],
+            'isError': result['isError'],
+        } for result in request.get('toolResults', [])],
+    } for request in sorted(observation.get('providerRequests', []), key=lambda item: item['index'])
+        if request.get('toolResults')]
 
 
 def verify_observed(case, observation, expected):
@@ -146,6 +168,9 @@ def verify_observed(case, observation, expected):
               for item in observation['canonical']]
     if states != expected['resultStates']:
         raise SystemExit(f'{case}: canonical states {states} != {expected["resultStates"]}')
+    provider = observed_provider_results(observation)
+    if provider != expected['providerResults']:
+        raise SystemExit(f'{case}: provider results {provider} != {expected["providerResults"]}')
 
 
 def main():
@@ -175,6 +200,10 @@ def main():
                     'executions': {'tool0': 1} if name == 'single' else {'tool0': 1, 'tool1': 1},
                     'resultStates': [state('call-0', True, True)] if name == 'single'
                     else [state('call-0', True, True), state('call-1')],
+                    'providerResults': provider_results(
+                        1 if name == 'single' else 2,
+                        [state('call-0', True, True)] if name == 'single'
+                        else [state('call-0', True, True), state('call-1')]),
                 }
                 verify_observed(f'E07-{name}', sub, sub_expected)
             actual = {'single': observed(observation['single'], None),

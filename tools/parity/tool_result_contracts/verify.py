@@ -33,6 +33,15 @@ def state_list(observation):
              'terminate': bool(item.get('terminate'))} for item in observation['canonical']]
 
 
+def provider_state_list(observation):
+    return [{
+        'request': request['index'],
+        'results': [{'callId': result['callId'], 'isError': bool(result['isError'])}
+                    for result in request.get('toolResults', [])],
+    } for request in sorted(observation.get('providerRequests', []), key=lambda item: item['index'])
+        if request.get('toolResults')]
+
+
 def verify_observation(label, observation, expected, failures):
     if observation.get('requests') != expected['requests']:
         failures.append(f'{label}: provider requests {observation.get("requests")} != {expected["requests"]}')
@@ -42,6 +51,12 @@ def verify_observation(label, observation, expected, failures):
     states = state_list(observation)
     if states != expected['resultStates']:
         failures.append(f'{label}: canonical result states {states} != {expected["resultStates"]}')
+    provider_states = provider_state_list(observation)
+    if 'providerResults' not in expected:
+        failures.append(f'{label}: manifest lacks explicit providerResults expectations')
+    elif provider_states != expected['providerResults']:
+        failures.append(f'{label}: provider-bound result states {provider_states} != '
+                        f'{expected["providerResults"]}')
     jsonl_states = [{'callId': item['callId'], 'isError': bool(item['isError']),
                      'terminate': bool(item.get('terminate'))}
                     for item in observation.get('piJsonl', [])]
@@ -103,6 +118,9 @@ def verify(repo, manifest_path):
                     if name == 'single' else
                     [{'callId': 'call-0', 'isError': True, 'terminate': True},
                      {'callId': 'call-1', 'isError': False, 'terminate': False}],
+                    'providerResults': [] if name == 'single' else
+                    [{'request': 2, 'results': [{'callId': 'call-0', 'isError': True},
+                                                {'callId': 'call-1', 'isError': False}]}],
                 }
                 verify_observation(f'E07-{name}', observation[name], sub_expected, failures)
         else:

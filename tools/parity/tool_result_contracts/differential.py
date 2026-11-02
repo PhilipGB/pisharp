@@ -26,7 +26,7 @@ repo = Path(__file__).resolve().parents[3]
 probes = Path(__file__).resolve().parent
 
 CASES = [f'T{index:02d}' for index in range(1, 13)] + [
-    'E02', 'E03', 'E04', 'E05', 'E06', 'E07', 'H01', 'H02', 'H03', 'H04', 'H05',
+    'E02', 'E03', 'E04', 'E05', 'E06', 'E07', 'H01', 'H02', 'H03', 'H04', 'H05', 'H06', 'H07',
     'R01', 'R02', 'R03', 'R04', 'P01',
 ]
 TEXT_IGNORED = {'E04'}
