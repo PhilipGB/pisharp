@@ -775,7 +775,6 @@ public sealed class TerminalEditor
                 _lastClearAtMilliseconds = now;
             }
             if (enableApplicationActions && next.Key is { } externalEditorKey &&
-                !_keymap.MatchesEditorAction(externalEditorKey) &&
                 _keymap.MatchIdleApplicationAction(externalEditorKey) is { } externalAction && externalAction == "app.editor.external")
             {
                 ClearLine();

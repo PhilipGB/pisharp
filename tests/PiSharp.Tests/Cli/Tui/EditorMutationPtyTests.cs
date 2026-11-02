@@ -647,6 +647,108 @@ public sealed class EditorMutationPtyTests
         lock (EvidenceGate) File.AppendAllText(path, record + "\n");
     }
 
+    [Fact]
+    public async Task ExternalEditorShortcutWinsOverCollidingMutationBindingAndRestoresTerminalThroughLinuxPty()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = TemporaryDirectory("mutation-external-editor");
+        var agent = Path.Combine(root, "agent");
+        var before = Path.Combine(root, "stty-before");
+        var after = Path.Combine(root, "stty-after");
+        var editorStty = Path.Combine(root, "editor-stty");
+        var editorDraft = Path.Combine(root, "editor-draft");
+        Process? process = null;
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(agent, "keybindings.json"),
+                """
+                { "tui.editor.deleteWordBackward": "ctrl+g" }
+                """);
+            var editorScript = Path.Combine(root, "fake external editor.sh");
+            await File.WriteAllTextAsync(editorScript, """
+                #!/bin/sh
+                stty -g > "$PISHARP_EDITOR_STTY"
+                cp "$1" "$PISHARP_EDITOR_DRAFT"
+                printf '%s edited' "$(cat "$1")" > "$1"
+                """);
+            File.SetUnixFileMode(editorScript,
+                UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            var start = new ProcessStartInfo("/usr/bin/script")
+            {
+                WorkingDirectory = root,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            start.ArgumentList.Add("-q");
+            start.ArgumentList.Add("-e");
+            start.ArgumentList.Add("-c");
+            start.ArgumentList.Add($"stty rows 24 cols 100; stty -g > {ShellQuote(before)}; " +
+                $"dotnet {ShellQuote(typeof(CliArguments).Assembly.Location)} --local --offline --no-session --no-tools; " +
+                $"status=$?; stty -g > {ShellQuote(after)}; exit $status");
+            start.ArgumentList.Add("/dev/null");
+            start.Environment["PISHARP_AGENT_DIR"] = agent;
+            start.Environment["PISHARP_EDITOR_STTY"] = editorStty;
+            start.Environment["PISHARP_EDITOR_DRAFT"] = editorDraft;
+            start.Environment["VISUAL"] = $"/bin/sh {ShellQuote(editorScript)}";
+            process = Process.Start(start);
+            Assert.NotNull(process);
+
+            var screen = new PtyScreenCapture(process);
+            var stdout = screen.ReadCompletion;
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var timeout = Timeout(30);
+            await screen.InputReady.WaitAsync(timeout.Token);
+
+            async Task SendAsync(string input)
+            {
+                await process.StandardInput.WriteAsync(input);
+                await process.StandardInput.FlushAsync();
+            }
+
+            await SendAsync("draft words");
+            await screen.WaitForFrameAsync(frame => frame.Contains("draft words", StringComparison.Ordinal))
+                .WaitAsync(timeout.Token);
+            await SendAsync("\u0007");
+            await screen.WaitForFrameAsync(frame => frame.Contains("draft words edited", StringComparison.Ordinal))
+                .WaitAsync(timeout.Token);
+
+            Assert.Contains("Launching external editor:", screen.CapturedOutput);
+            Assert.True(File.Exists(editorStty), "The external editor did not run.");
+            Assert.True(File.Exists(editorDraft), "The external editor did not receive the draft file.");
+            Assert.Equal("draft words", await File.ReadAllTextAsync(editorDraft));
+            Assert.Equal((await File.ReadAllTextAsync(before)).Trim(),
+                (await File.ReadAllTextAsync(editorStty)).Trim());
+
+            await SendAsync("\u0001\u000b");
+            await screen.WaitForFrameAsync(frame => !frame.Contains("draft words edited", StringComparison.Ordinal))
+                .WaitAsync(timeout.Token);
+            await SendAsync("\u0003\u0003");
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+            _ = await stdout;
+
+            Assert.Equal(0, process.ExitCode);
+            Assert.Equal((await File.ReadAllTextAsync(before)).Trim(),
+                (await File.ReadAllTextAsync(after)).Trim());
+            Assert.DoesNotContain("Agent error", await stdout);
+            Assert.DoesNotContain("Exception:", await stderr);
+            RecordEvidence("pty-external-editor", new
+            {
+                exitCode = process.ExitCode,
+                draft = "draft words",
+                editedDraft = "draft words edited",
+                termiosRestored = true
+            });
+        }
+        finally
+        {
+            if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
+            process?.Dispose();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     private static Process Start(string root)
     {
         var agent = Path.Combine(root, "agent");
