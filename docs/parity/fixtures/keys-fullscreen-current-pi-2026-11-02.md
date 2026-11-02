@@ -50,6 +50,11 @@ Deterministic checks:
   live search count changes, Enter/Shift+Enter, Escape close, draft preservation,
   cancellation and terminal restoration.
 
+Fail-first: equivalent regressions using only pre-change APIs were run in a
+detached worktree at `c4802599`. All three failed on the baseline and pass after
+the correction: prompt-navigation bindings missing, live search result count
+stale, and the search shortcut not closing the search widget.
+
 Pinned Pi differential:
 
 - Same-Pi calibration: 48 canonical render frames, **0 differences**.
