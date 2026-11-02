@@ -2784,7 +2784,7 @@ public sealed class TerminalPtyTests
         try
         {
             await File.WriteAllTextAsync(Path.Combine(agentDirectory, "keybindings.json"), """
-                { "tui.input.submit": "ctrl+x" }
+                { "tui.input.submit": "ctrl+n" }
                 """);
             var assembly = typeof(CliArguments).Assembly.Location;
             var start = new ProcessStartInfo("/usr/bin/script")
@@ -2800,7 +2800,7 @@ public sealed class TerminalPtyTests
             Assert.NotNull(process);
             var stdout = process.StandardOutput.ReadToEndAsync();
             var stderr = process.StandardError.ReadToEndAsync();
-            await process.StandardInput.WriteAsync("/hotkeys\u0018/quit\u0018");
+            await process.StandardInput.WriteAsync("/hotkeys\u000e/quit\u000e");
             process.StandardInput.Close();
             using var limit = new CancellationTokenSource(TimeSpan.FromSeconds(12));
             try { await process.WaitForExitAsync(limit.Token); }
@@ -2808,7 +2808,7 @@ public sealed class TerminalPtyTests
 
             var output = await stdout;
             Assert.Equal(0, process.ExitCode);
-            Assert.Contains("ctrl+x", output);
+            Assert.Contains("ctrl+n", output);
             Assert.Contains("Submit input (tui.input.submit)", output);
             Assert.DoesNotContain("Agent error", await stderr);
         }

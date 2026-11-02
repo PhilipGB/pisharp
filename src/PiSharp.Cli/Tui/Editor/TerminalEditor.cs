@@ -658,7 +658,7 @@ public sealed class TerminalEditor
                 return true;
             }
         }
-        if (next.Key is { } clipboardKey && dispatchApplicationAction is not null && !_keymap.MatchesEditorAction(clipboardKey))
+        if (next.Key is { } clipboardKey && dispatchApplicationAction is not null)
         {
             if (_keymap.Matches("app.message.copy", clipboardKey))
             {
@@ -940,8 +940,9 @@ public sealed class TerminalEditor
             return true;
         }
         var hasCompletionCycle = WithEditorState(() => _completionCycle is not null);
-        if (_keymap.MatchesEditorAction(key) &&
-            !(_keymap.Matches("app.thinking.cycle", key) && !hasCompletionCycle)) return false;
+        if (_keymap.Matches("tui.editor.historyPrevious", key) || _keymap.Matches("tui.editor.historyNext", key))
+            return false;
+        if (_keymap.Matches("app.thinking.cycle", key) && hasCompletionCycle) return false;
         var action = _keymap.MatchIdleApplicationAction(key);
         if (action is null) return false;
         if (action != "app.suspend") beforeDispatch?.Invoke();
