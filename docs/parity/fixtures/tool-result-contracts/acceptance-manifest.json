@@ -1,0 +1,1951 @@
+{
+  "schema": 1,
+  "capability": "tool-result-contracts",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "implementationSha": "aee6cdf64aaaab56a690f91aa3a57895816b629a",
+  "evidenceHeadPolicy": "implementationSha is the source head that produced the executable evidence. Any later commit on the publication branch may touch only the committed evidence, this manifest/tooling, the execution-ledger entry and continuation notes; the verifier rejects any other changed path.",
+  "evidenceDirectory": "docs/parity/fixtures/tool-result-contracts/evidence",
+  "differentialEvidence": "docs/parity/fixtures/tool-result-contracts/differential.json",
+  "ledgerCriteria": [
+    {
+      "id": "C1",
+      "text": "Expose schema-backed machine-readable results separately from model-facing text/images and UI details"
+    },
+    {
+      "id": "C2",
+      "text": "Preserve explicit tool error state, usage, progress updates and termination through provider/session/export paths"
+    },
+    {
+      "id": "C3",
+      "text": "Keep thrown exceptions and returned error results behaviorally distinct where Pi does"
+    }
+  ],
+  "cases": [
+    {
+      "id": "T01",
+      "criteria": [
+        "C2"
+      ],
+      "test": "ToolResultContractMatrixTests.TerminationPermutations",
+      "evidence": "evidence/T01.json",
+      "expected": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "actual": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "match",
+        "case": "T01"
+      }
+    },
+    {
+      "id": "T02",
+      "criteria": [
+        "C2"
+      ],
+      "test": "ToolResultContractMatrixTests.TerminationPermutations",
+      "evidence": "evidence/T02.json",
+      "expected": {
+        "requests": 1,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          }
+        ]
+      },
+      "actual": {
+        "requests": 1,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "match",
+        "case": "T02"
+      }
+    },
+    {
+      "id": "T03",
+      "criteria": [
+        "C2"
+      ],
+      "test": "ToolResultContractMatrixTests.TerminationPermutations",
+      "evidence": "evidence/T03.json",
+      "expected": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "actual": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": false
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "match",
+        "case": "T03"
+      }
+    },
+    {
+      "id": "T04",
+      "criteria": [
+        "C2"
+      ],
+      "test": "ToolResultContractMatrixTests.TerminationPermutations",
+      "evidence": "evidence/T04.json",
+      "expected": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "actual": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": false
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "match",
+        "case": "T04"
+      }
+    },
+    {
+      "id": "T05",
+      "criteria": [
+        "C2"
+      ],
+      "test": "ToolResultContractMatrixTests.TerminationPermutations",
+      "evidence": "evidence/T05.json",
+      "expected": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": true
+          }
+        ]
+      },
+      "actual": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": true
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": true
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "match",
+        "case": "T05"
+      }
+    },
+    {
+      "id": "T06",
+      "criteria": [
+        "C2"
+      ],
+      "test": "ToolResultContractMatrixTests.TerminationPermutations",
+      "evidence": "evidence/T06.json",
+      "expected": {
+        "requests": 1,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": true
+          }
+        ]
+      },
+      "actual": {
+        "requests": 1,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": true
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": true
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "match",
+        "case": "T06"
+      }
+    },
+    {
+      "id": "T07",
+      "criteria": [
+        "C2"
+      ],
+      "test": "ToolResultContractMatrixTests.TerminationPermutations",
+      "evidence": "evidence/T07.json",
+      "expected": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1,
+          "tool2": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": true
+          },
+          {
+            "callId": "call-2",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "actual": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1,
+          "tool2": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": true
+          },
+          {
+            "callId": "call-2",
+            "isError": false,
+            "terminate": false
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": true
+          },
+          {
+            "callId": "call-2",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "match",
+        "case": "T07"
+      }
+    },
+    {
+      "id": "T08",
+      "criteria": [
+        "C2"
+      ],
+      "test": "ToolResultContractMatrixTests.TerminationPermutations",
+      "evidence": "evidence/T08.json",
+      "expected": {
+        "requests": 1,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1,
+          "tool2": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": true
+          },
+          {
+            "callId": "call-2",
+            "isError": false,
+            "terminate": true
+          }
+        ]
+      },
+      "actual": {
+        "requests": 1,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1,
+          "tool2": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": true
+          },
+          {
+            "callId": "call-2",
+            "isError": false,
+            "terminate": true
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": true
+          },
+          {
+            "callId": "call-2",
+            "isError": false,
+            "terminate": true
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "match",
+        "case": "T08"
+      }
+    },
+    {
+      "id": "T09",
+      "criteria": [
+        "C2"
+      ],
+      "test": "ToolResultContractMatrixTests.TerminationPermutations",
+      "evidence": "evidence/T09.json",
+      "expected": {
+        "requests": 1,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          },
+          {
+            "callId": "call-1",
+            "isError": true,
+            "terminate": true
+          }
+        ]
+      },
+      "actual": {
+        "requests": 1,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          },
+          {
+            "callId": "call-1",
+            "isError": true,
+            "terminate": true
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          },
+          {
+            "callId": "call-1",
+            "isError": true,
+            "terminate": true
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "match",
+        "case": "T09"
+      }
+    },
+    {
+      "id": "T10",
+      "criteria": [
+        "C2"
+      ],
+      "test": "ToolResultContractMatrixTests.ParallelToolsCompleteInReverseOrderWithoutChangingTerminationOrResultOrder",
+      "evidence": "evidence/T10.json",
+      "expected": {
+        "requests": 1,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": true
+          }
+        ]
+      },
+      "actual": {
+        "requests": 1,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": true
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": true
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "match",
+        "case": "T10"
+      }
+    },
+    {
+      "id": "T11",
+      "criteria": [
+        "C2"
+      ],
+      "test": "ToolResultContractMatrixTests.SequentialToolsBothExecuteBeforeTheMixedBatchContinues",
+      "evidence": "evidence/T11.json",
+      "expected": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "actual": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": false
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "match",
+        "case": "T11"
+      }
+    },
+    {
+      "id": "T12",
+      "criteria": [
+        "C2"
+      ],
+      "test": "ToolResultContractMatrixTests.ParallelMixedBatchRunsEveryToolBeforeContinuing",
+      "evidence": "evidence/T12.json",
+      "expected": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "actual": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": false
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "match",
+        "case": "T12"
+      }
+    },
+    {
+      "id": "E01",
+      "criteria": [
+        "C2"
+      ],
+      "test": "ToolResultContractMatrixTests.SuccessfulResultContinuesWithFalseErrorState",
+      "evidence": "evidence/E01.json",
+      "expected": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "actual": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "match",
+        "case": "T01",
+        "note": "Successful continuation is the T01 path."
+      }
+    },
+    {
+      "id": "E02",
+      "criteria": [
+        "C2",
+        "C3"
+      ],
+      "test": "ToolResultContractMatrixTests.ReturnedErrorIsNotAThrownException",
+      "evidence": "evidence/E02.json",
+      "expected": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": true,
+            "terminate": false
+          }
+        ]
+      },
+      "actual": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": true,
+            "terminate": false
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-0",
+            "isError": true,
+            "terminate": false
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "match",
+        "case": "E02"
+      }
+    },
+    {
+      "id": "E03",
+      "criteria": [
+        "C2",
+        "C3"
+      ],
+      "test": "ToolResultContractMatrixTests.ThrownExceptionRemainsDistinctFromReturnedError",
+      "evidence": "evidence/E03.json",
+      "expected": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": true,
+            "terminate": false
+          }
+        ]
+      },
+      "actual": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": true,
+            "terminate": false
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-0",
+            "isError": true,
+            "terminate": false
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "match",
+        "case": "E03",
+        "note": "Canonical text/error match; M.E.AI supplies generic provider-only text for thrown exceptions."
+      }
+    },
+    {
+      "id": "E04",
+      "criteria": [
+        "C2"
+      ],
+      "test": "ToolResultContractMatrixTests.UnknownInvalidAndBlockedInvocationsProduceErrorsWithoutRunningHandlers",
+      "evidence": "evidence/E04.json",
+      "expected": {
+        "requests": 2,
+        "executions": {},
+        "resultStates": [
+          {
+            "callId": "call-unknown",
+            "isError": true,
+            "terminate": false
+          },
+          {
+            "callId": "call-invalid",
+            "isError": true,
+            "terminate": false
+          },
+          {
+            "callId": "call-blocked",
+            "isError": true,
+            "terminate": false
+          }
+        ]
+      },
+      "actual": {
+        "requests": 2,
+        "executions": {},
+        "resultStates": [
+          {
+            "callId": "call-unknown",
+            "isError": true,
+            "terminate": false
+          },
+          {
+            "callId": "call-invalid",
+            "isError": true,
+            "terminate": false
+          },
+          {
+            "callId": "call-blocked",
+            "isError": true,
+            "terminate": false
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-unknown",
+            "isError": true,
+            "terminate": false
+          },
+          {
+            "callId": "call-invalid",
+            "isError": true,
+            "terminate": false
+          },
+          {
+            "callId": "call-blocked",
+            "isError": true,
+            "terminate": false
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "match",
+        "case": "E04"
+      }
+    },
+    {
+      "id": "E05",
+      "criteria": [
+        "C1",
+        "C2"
+      ],
+      "test": "ToolResultContractMatrixTests.OutputSchemaViolationIsAVisibleErrorResult",
+      "evidence": "evidence/E05.json",
+      "expected": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": true,
+            "terminate": false
+          }
+        ]
+      },
+      "actual": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": true,
+            "terminate": false
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-0",
+            "isError": true,
+            "terminate": false
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "intentional-difference",
+        "case": "E05",
+        "reason": "Pinned Pi treats outputSchema as declarative; PiSharp validates it and returns a visible error."
+      }
+    },
+    {
+      "id": "E06",
+      "criteria": [
+        "C2",
+        "C3"
+      ],
+      "test": "ToolResultContractMatrixTests.FailedAndSuccessfulSiblingBothContinueBecauseFailureDoesNotTerminate",
+      "evidence": "evidence/E06.json",
+      "expected": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": true,
+            "terminate": false
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "actual": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": true,
+            "terminate": false
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": false
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-0",
+            "isError": true,
+            "terminate": false
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "match",
+        "case": "E06"
+      }
+    },
+    {
+      "id": "E07",
+      "criteria": [
+        "C2"
+      ],
+      "test": "ToolResultContractMatrixTests.ErrorResultTerminationStillDependsOnTheWholeBatch",
+      "evidence": "evidence/E07.json",
+      "expected": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": true,
+            "terminate": true
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "actual": {
+        "single": {
+          "requests": 1,
+          "executions": {
+            "tool0": 1
+          },
+          "resultStates": [
+            {
+              "callId": "call-0",
+              "isError": true,
+              "terminate": true
+            }
+          ],
+          "piJsonlResultStates": [
+            {
+              "callId": "call-0",
+              "isError": true,
+              "terminate": true
+            }
+          ]
+        },
+        "mixed": {
+          "requests": 2,
+          "executions": {
+            "tool0": 1,
+            "tool1": 1
+          },
+          "resultStates": [
+            {
+              "callId": "call-0",
+              "isError": true,
+              "terminate": true
+            },
+            {
+              "callId": "call-1",
+              "isError": false,
+              "terminate": false
+            }
+          ],
+          "piJsonlResultStates": [
+            {
+              "callId": "call-0",
+              "isError": true,
+              "terminate": true
+            },
+            {
+              "callId": "call-1",
+              "isError": false,
+              "terminate": false
+            }
+          ]
+        }
+      },
+      "status": "passed",
+      "differential": {
+        "status": "match",
+        "case": "E07"
+      }
+    },
+    {
+      "id": "R01",
+      "criteria": [
+        "C1"
+      ],
+      "test": "ToolResultContractMatrixTests.TextStructuredAndUiDetailsStayDistinct",
+      "evidence": "evidence/R01.json",
+      "expected": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "actual": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "match",
+        "case": "R01"
+      }
+    },
+    {
+      "id": "R02",
+      "criteria": [
+        "C1"
+      ],
+      "test": "ToolResultContractMatrixTests.ValidStructuredOutputPassesTheDeclaredSchemaWithoutLosingData",
+      "evidence": "evidence/R02.json",
+      "expected": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "actual": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "match",
+        "case": "R02"
+      }
+    },
+    {
+      "id": "R03",
+      "criteria": [
+        "C1"
+      ],
+      "test": "ToolResultContractMatrixTests.TextAndImageContentReachTheModelAndTheCanonicalResult",
+      "evidence": "evidence/R03.json",
+      "expected": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "actual": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "match",
+        "case": "R03"
+      }
+    },
+    {
+      "id": "R04",
+      "criteria": [
+        "C2"
+      ],
+      "test": "ToolResultContractMatrixTests.ProgressUpdatesAreOrderedAndFinalUsageIsRetained",
+      "evidence": "evidence/R04.json",
+      "expected": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "actual": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "match",
+        "case": "R04"
+      }
+    },
+    {
+      "id": "R05",
+      "criteria": [
+        "C1",
+        "C2"
+      ],
+      "test": "ToolResultContractMatrixTests.NestedStructuredResultAndErrorMetadataReachTheParent",
+      "evidence": "evidence/R05.json",
+      "expected": {
+        "requests": 2,
+        "executions": {
+          "parent": 1,
+          "child": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "actual": {
+        "requests": 2,
+        "executions": {
+          "child": 1,
+          "parent": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "not-applicable",
+        "reason": "Pinned Pi owns nested execution in its coding-agent session; the agent-loop oracle does not expose parent association."
+      }
+    },
+    {
+      "id": "H01",
+      "criteria": [
+        "C2"
+      ],
+      "test": "ToolResultContractMatrixTests.ResultHookCanRequestTermination",
+      "evidence": "evidence/H01.json",
+      "expected": {
+        "requests": 1,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          }
+        ]
+      },
+      "actual": {
+        "requests": 1,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "match",
+        "case": "H01"
+      }
+    },
+    {
+      "id": "H02",
+      "criteria": [
+        "C2"
+      ],
+      "test": "ToolResultContractMatrixTests.ResultHookCanCancelTerminationAndContinue",
+      "evidence": "evidence/H02.json",
+      "expected": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "actual": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "match",
+        "case": "H02"
+      }
+    },
+    {
+      "id": "H03",
+      "criteria": [
+        "C2"
+      ],
+      "test": "ToolResultContractMatrixTests.ResultHookTextAndErrorAreObservedByEventsProviderAndHistory",
+      "evidence": "evidence/H03.json",
+      "expected": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": true,
+            "terminate": false
+          }
+        ]
+      },
+      "actual": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": true,
+            "terminate": false
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-0",
+            "isError": true,
+            "terminate": false
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "match",
+        "case": "H03"
+      }
+    },
+    {
+      "id": "H04",
+      "criteria": [
+        "C1",
+        "C2"
+      ],
+      "test": "ToolResultContractMatrixTests.ContentOnlyHookReplacementDropsStructuredContentButKeepsMetadata",
+      "evidence": "evidence/H04.json",
+      "expected": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "actual": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "match",
+        "case": "H04"
+      }
+    },
+    {
+      "id": "H05",
+      "criteria": [
+        "C2",
+        "C3"
+      ],
+      "test": "ToolResultContractMatrixTests.ThrowingResultHookBecomesAnErrorResultNotASuccess",
+      "evidence": "evidence/H05.json",
+      "expected": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": true,
+            "terminate": false
+          }
+        ]
+      },
+      "actual": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": true,
+            "terminate": false
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-0",
+            "isError": true,
+            "terminate": false
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "match",
+        "case": "H05"
+      }
+    },
+    {
+      "id": "P01",
+      "criteria": [
+        "C2"
+      ],
+      "test": "ToolResultContractMatrixTests.ProviderContinuationReceivesEveryResultInModelCallOrder",
+      "evidence": "evidence/P01.json",
+      "expected": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1,
+          "tool2": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": false
+          },
+          {
+            "callId": "call-2",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "actual": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1,
+          "tool2": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": false
+          },
+          {
+            "callId": "call-2",
+            "isError": false,
+            "terminate": false
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          },
+          {
+            "callId": "call-1",
+            "isError": false,
+            "terminate": false
+          },
+          {
+            "callId": "call-2",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "match",
+        "case": "P01"
+      }
+    },
+    {
+      "id": "P02",
+      "criteria": [
+        "C2"
+      ],
+      "test": "ToolResultContractMatrixTests.CanonicalSaveAndReloadPreservesTheResultWithoutReexecution",
+      "evidence": "evidence/P02.json",
+      "expected": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "actual": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": false
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "not-applicable",
+        "reason": "PiSharp canonical session JSON is an implementation persistence boundary; pinned Pi has no equivalent API. Session JSONL persistence parity is covered by the merged session milestone."
+      }
+    },
+    {
+      "id": "P03",
+      "criteria": [
+        "C2"
+      ],
+      "test": "ToolResultContractMatrixTests.PiJsonlRoundTripPreservesSupportedResultFields",
+      "evidence": "evidence/P03.json",
+      "expected": {
+        "requests": 1,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          }
+        ]
+      },
+      "actual": {
+        "requests": 1,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "not-applicable",
+        "reason": "Pi JSONL parser and interchange parity is owned by the merged session milestone differential; this case proves PiSharp result-field round-trip."
+      }
+    },
+    {
+      "id": "P04",
+      "criteria": [
+        "C2",
+        "C3"
+      ],
+      "test": "ToolResultContractMatrixTests.ReturnedAndThrownToolErrorsRemainDistinctAfterReload",
+      "evidence": "evidence/P04.json",
+      "expected": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": true,
+            "terminate": false
+          },
+          {
+            "callId": "call-1",
+            "isError": true,
+            "terminate": false
+          }
+        ]
+      },
+      "actual": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1,
+          "tool1": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": true,
+            "terminate": false
+          },
+          {
+            "callId": "call-1",
+            "isError": true,
+            "terminate": false
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-0",
+            "isError": true,
+            "terminate": false
+          },
+          {
+            "callId": "call-1",
+            "isError": true,
+            "terminate": false
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "not-applicable",
+        "reason": "Pinned Pi session records only isError and has no thrown-exception marker to differentiate after reload."
+      }
+    },
+    {
+      "id": "P05",
+      "criteria": [
+        "C2"
+      ],
+      "test": "ToolResultContractMatrixTests.TerminatingBatchIsNotReplayedByANewUserTurn",
+      "evidence": "evidence/P05.json",
+      "expected": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          }
+        ]
+      },
+      "actual": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "resultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          }
+        ],
+        "piJsonlResultStates": [
+          {
+            "callId": "call-0",
+            "isError": false,
+            "terminate": true
+          }
+        ]
+      },
+      "status": "passed",
+      "differential": {
+        "status": "covered-by",
+        "cases": [
+          "P01"
+        ],
+        "reason": "Provider continuation after a terminating batch is the P01 continuation boundary; the matrix test asserts no replay."
+      }
+    }
+  ],
+  "summary": {
+    "total": 34,
+    "passed": 34,
+    "failed": 0,
+    "blocked": 0,
+    "differentialMatch": 28,
+    "differentialIntentional": 1,
+    "differentialNotApplicable": 5
+  }
+}

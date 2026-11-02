@@ -1,0 +1,142 @@
+{
+  "case": "E04",
+  "test": "UnknownInvalidAndBlockedInvocationsProduceErrorsWithoutRunningHandlers",
+  "implementationSha": "aee6cdf64aaaab56a690f91aa3a57895816b629a",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "status": "passed",
+  "observations": {
+    "caseId": "E04",
+    "expectedRequests": 2,
+    "requests": 2,
+    "executions": {
+      "blocked": 0,
+      "invalid": 0
+    },
+    "calls": [],
+    "order": [
+      "start:call-invalid",
+      "end:call-invalid",
+      "start:call-blocked",
+      "end:call-blocked"
+    ],
+    "finished": [
+      {
+        "toolCallId": "call-invalid",
+        "tool": "invalid",
+        "isError": true,
+        "terminate": false,
+        "text": "Object of type \u0027System.String\u0027 cannot be converted to type \u0027System.Int32\u0027.",
+        "error": "Object of type \u0027System.String\u0027 cannot be converted to type \u0027System.Int32\u0027.",
+        "structured": null,
+        "usage": null
+      },
+      {
+        "toolCallId": "call-blocked",
+        "tool": "blocked",
+        "isError": true,
+        "terminate": false,
+        "text": "policy blocked",
+        "error": "policy blocked",
+        "structured": null,
+        "usage": null
+      }
+    ],
+    "canonical": [
+      {
+        "callId": "call-unknown",
+        "exception": null,
+        "text": "Tool unknown not found",
+        "isError": true,
+        "terminate": false,
+        "structured": null,
+        "details": "{}",
+        "usage": null,
+        "images": null
+      },
+      {
+        "callId": "call-invalid",
+        "exception": "ToolFailureException",
+        "text": "Object of type \u0027System.String\u0027 cannot be converted to type \u0027System.Int32\u0027.",
+        "isError": true,
+        "terminate": false,
+        "structured": null,
+        "details": "{}",
+        "usage": null,
+        "images": null
+      },
+      {
+        "callId": "call-blocked",
+        "exception": "ToolFailureException",
+        "text": "policy blocked",
+        "isError": true,
+        "terminate": false,
+        "structured": null,
+        "details": "{}",
+        "usage": null,
+        "images": null
+      }
+    ],
+    "piJsonl": [
+      {
+        "callId": "call-unknown",
+        "isError": true,
+        "terminate": false,
+        "text": "Tool unknown not found"
+      },
+      {
+        "callId": "call-invalid",
+        "isError": true,
+        "terminate": false,
+        "text": "Object of type \u0027System.String\u0027 cannot be converted to type \u0027System.Int32\u0027."
+      },
+      {
+        "callId": "call-blocked",
+        "isError": true,
+        "terminate": false,
+        "text": "policy blocked"
+      }
+    ],
+    "providerRequests": [
+      {
+        "index": 1,
+        "toolCallIds": [],
+        "toolResults": []
+      },
+      {
+        "index": 2,
+        "toolCallIds": [
+          "call-unknown",
+          "call-invalid",
+          "call-blocked"
+        ],
+        "toolResults": [
+          {
+            "callId": "call-unknown",
+            "text": "Error: Requested function \u0022unknown\u0022 not found.",
+            "exceptionType": null,
+            "imageCount": 0,
+            "structured": null
+          },
+          {
+            "callId": "call-invalid",
+            "text": "Error: Function failed.",
+            "exceptionType": "ArgumentException",
+            "imageCount": 0,
+            "structured": null
+          },
+          {
+            "callId": "call-blocked",
+            "text": "Error: Function failed.",
+            "exceptionType": "PiSharpToolCallBlockedException",
+            "imageCount": 0,
+            "structured": null
+          }
+        ]
+      }
+    ],
+    "detail": {
+      "invalidExecutions": 0,
+      "blockedExecutions": 0
+    }
+  }
+}

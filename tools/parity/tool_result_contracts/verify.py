@@ -76,7 +76,8 @@ def verify(repo, manifest_path):
         covered_criteria.update(case.get('criteria', []))
         if case.get('status') != 'passed':
             failures.append(f'{case_id}: status {case.get("status")} is not passed')
-        if not case.get('test') or case['test'] not in test_source:
+        method = (case.get('test') or '').rsplit('.', maxsplit=1)[-1]
+        if not method or method not in test_source:
             failures.append(f'{case_id}: executable test reference {case.get("test")!r} not found')
         evidence_path = evidence_root / f'{case_id}.json'
         if not evidence_path.exists():

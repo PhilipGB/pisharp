@@ -1,0 +1,78 @@
+{
+  "case": "E05",
+  "test": "OutputSchemaViolationIsAVisibleErrorResult",
+  "implementationSha": "aee6cdf64aaaab56a690f91aa3a57895816b629a",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "status": "passed",
+  "observations": {
+    "caseId": "E05",
+    "expectedRequests": 2,
+    "requests": 2,
+    "executions": {
+      "tool0": 1
+    },
+    "calls": [],
+    "order": [
+      "start:call-0",
+      "end:call-0"
+    ],
+    "finished": [
+      {
+        "toolCallId": "call-0",
+        "tool": "tool0",
+        "isError": true,
+        "terminate": null,
+        "text": "Tool structured content does not match its output schema.",
+        "error": "Tool structured content does not match its output schema.",
+        "structured": null,
+        "usage": null
+      }
+    ],
+    "canonical": [
+      {
+        "callId": "call-0",
+        "exception": null,
+        "text": "Tool structured content does not match its output schema.",
+        "isError": true,
+        "terminate": false,
+        "structured": null,
+        "details": "{}",
+        "usage": null,
+        "images": null
+      }
+    ],
+    "piJsonl": [
+      {
+        "callId": "call-0",
+        "isError": true,
+        "terminate": false,
+        "text": "Tool structured content does not match its output schema."
+      }
+    ],
+    "providerRequests": [
+      {
+        "index": 1,
+        "toolCallIds": [],
+        "toolResults": []
+      },
+      {
+        "index": 2,
+        "toolCallIds": [
+          "call-0"
+        ],
+        "toolResults": [
+          {
+            "callId": "call-0",
+            "text": "Tool structured content does not match its output schema.",
+            "exceptionType": null,
+            "imageCount": 0,
+            "structured": null
+          }
+        ]
+      }
+    ],
+    "detail": {
+      "error": "Tool structured content does not match its output schema."
+    }
+  }
+}

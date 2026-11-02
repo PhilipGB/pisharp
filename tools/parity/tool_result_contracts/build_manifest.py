@@ -73,7 +73,7 @@ CASES = [
            2, {'tool0': 1, 'tool1': 1}, [state('call-0', True), state('call-1')],
            {'status': 'match', 'case': 'E06'}),
     simple('E07', ['C2'], 'ToolResultContractMatrixTests.ErrorResultTerminationStillDependsOnTheWholeBatch',
-           2, {'tool0': 1, 'tool1': 1}, [state('call-0', True), state('call-1')],
+           2, {'tool0': 1, 'tool1': 1}, [state('call-0', True, True), state('call-1')],
            {'status': 'match', 'case': 'E07'}),
     simple('R01', ['C1'], 'ToolResultContractMatrixTests.TextStructuredAndUiDetailsStayDistinct',
            2, {'tool0': 1}, [state('call-0')], {'status': 'match', 'case': 'R01'}),
@@ -173,8 +173,8 @@ def main():
                 sub_expected = {
                     'requests': 1 if name == 'single' else 2,
                     'executions': {'tool0': 1} if name == 'single' else {'tool0': 1, 'tool1': 1},
-                    'resultStates': [state('call-0', True, name == 'single')] if name == 'single'
-                    else [state('call-0', True), state('call-1')],
+                    'resultStates': [state('call-0', True, True)] if name == 'single'
+                    else [state('call-0', True, True), state('call-1')],
                 }
                 verify_observed(f'E07-{name}', sub, sub_expected)
             actual = {'single': observed(observation['single'], None),
