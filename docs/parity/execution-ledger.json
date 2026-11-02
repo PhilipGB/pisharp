@@ -5541,38 +5541,49 @@
     {
       "id": "keys-fullscreen",
       "title": "Terminal keys: PageUp/Down, Home/End, Ctrl+Shift+Up/Down, Ctrl+Shift+F search, Enter/Shift+Enter search navigation, Esc close",
-      "status": "in_progress",
+      "status": "verified",
       "source": "docs/parity/detailed-inventory.md:53",
       "acceptance": [
         "Resize, scrolling, focus and screen restoration",
         "Test in PTY including configurable bindings and widget precedence"
       ],
       "implementation": [
-        "src/PiSharp.Cli/Tui/Editor/EditorKeymap.cs, TerminalInput.cs and TerminalEditor.cs: active-run PageUp/PageDown/Home/End scrolling, Ctrl+F search fallback, Enter/Shift+Enter cycling and Escape close; search takes precedence over editor actions while active. Search indexes at most 10,000 matches and restores the queued follow-up draft."
+        "src/PiSharp.Cli/Tui/Editor/EditorKeymap.cs: tui.altScreen.previousPrompt/nextPrompt use Pi's Ctrl+Shift+Up/Down plus Ctrl+Up/Down defaults (Ctrl+Up/Down on Windows/WSL) and remain user-configurable.",
+        "src/PiSharp.Cli/Tui/Rendering/TerminalTranscriptBuffer.cs, TerminalConversationPresentation.cs and TerminalScreen.cs: semantic anchors mark the first rendered user segment and the first non-tool assistant segment, matching Pi OSC 133 zone starts; scrollToPrevious/NextPrompt maps them to viewport rows and is routed from idle and active input loops.",
+        "src/PiSharp.Cli/Tui/Input/TerminalTranscriptSearchInput.cs and TerminalScreen.cs: search opens empty, toggles closed, owns paging while focused, refreshes counts during streaming, cycles next/previous on Enter/Shift+Enter, and restores the draft without aborting on Escape.",
+        "src/PiSharp.Cli/Tui/Rendering/TerminalScreenCompositor.cs: resize retains a stable source anchor, falling back to the previous absolute row when Markdown re-rendering rewrites source offsets.",
+        "src/PiSharp.Cli/Tui/Rendering/TerminalScreen.cs and TerminalConversationPresentation.cs: the live thinking/assistant segment is a temporary semantic anchor while uncommitted; committing replaces it with one buffer anchor so repeated navigation never duplicates the active assistant target."
       ],
       "evidence": [
-        "tests/PiSharp.Tests/Cli/Tui/Rendering/TerminalScreenTests.cs and EditorKeymapTests.cs cover search highlights/cycling/draft restoration, page-key decoding and editor action precedence; 11/11 focused tests and 399/399 Release tests pass with 0 skipped. Standard and modified CSI paging forms are decoded. Ctrl+Shift+Up/Down, active-run PTY coverage and pinned Pi workflow comparison remain open."
+        "EditorKeymapTests.TranscriptPromptNavigationUsesPiDefaultsAndRemainsConfigurable and StandardAndKittyPromptNavigationSequencesDecode cover configurable defaults, Windows/WSL aliases, user overrides and standard/Kitty decoding.",
+        "TerminalScreenTests.PromptNavigationJumpsToPreviousAndNextUserMessages, SemanticPromptNavigationIncludesUserAndAssistantMessageStarts, ActiveSearchTakesPrecedenceOverTranscriptPaging, ActiveSearchRefreshesResultsAsTheTranscriptStreams, ActiveSearchShortcutTogglesClosedAndCyclesBothDirections, ActiveSearchHighlightsMatchesAndRestoresItsDraftOnEscape and ScrolledUnicodeTranscriptKeepsItsSourceAnchorAfterResize cover anchor motion, assistant/user anchors, search precedence, live counts, cycling, draft/focus restoration, highlights and resize.",
+        "TerminalPtyTests.FullscreenTranscriptNavigationAndSearchThroughLinuxPty covers PageUp/PageDown, Ctrl+Home/End, Ctrl+Shift+Up/Down, Ctrl+Shift+F, Enter/Shift+Enter, Escape, draft preservation and stty restoration in a real Linux PTY. TerminalPtyTests.FullscreenNavigationAndSearchRemainActiveWhileStreamingThroughLinuxPty holds a streamed response open and covers paging and semantic anchors while Working, live search count refresh, result cycling, Escape close, cancellation and terminal restoration.",
+        "Pinned Pi b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6 differential: same-Pi calibration has 48 canonical render frames and 0 differences. The paired terminal-long-transcript case completes with no scenario errors, exact HTTP and 25 named checkpoints; tools/parity/terminal/assert_fullscreen_navigation.py verifies matching first user/assistant anchors, jump-hint presence, search result counts, panel presence and restored terminal modes. Unrelated full-cell differences remain 9,094 state, 4,472 render and 4,955 control-boundary differences and are not reclassified as equivalent. See docs/parity/fixtures/keys-fullscreen-current-pi-2026-11-02.md and .json.",
+        "Local validation: dotnet format --verify-no-changes passed, warnings-as-errors build passed with 0 warnings/errors, focused TUI tests passed 82/82 and both new PTY tests passed 2/2; the full suite passed 4,077/4,077 with zero skips.",
+        "Implementation commit 076d6d7e31602d3706c72789ab8a85e0280cb223; evidence receipts: docs/parity/fixtures/keys-fullscreen-current-pi-2026-11-02.md and .json.",
+        "Fail-first check in a detached worktree at c4802599: three equivalent regressions using only pre-change APIs failed on the baseline (missing prompt bindings, stale streamed search count, search shortcut did not close) and pass after the correction.",
+        "Exact-head CI on bbdfcd4f269b29fe1a65d64733e68ba62514f82e: Linux CI 41433813339 and 41433821583 both passed with 4,077/4,077 tests and zero skips.",
+        "TerminalScreenTests.LiveAssistantMessageIsSemanticAnchorAndCommitDoesNotDuplicate proves live-anchor presence and no duplicate after commit. TerminalPtyTests.FullscreenNavigationAndSearchRemainActiveWhileStreamingThroughLinuxPty now navigates from the live user prompt forward to the held 30-line assistant response while Working.",
+        "Additional pinned-Pi differential tools/parity/terminal/fixtures/terminal-fullscreen-stream-navigation.json: same-Pi calibration 0/6 frames; paired no scenario errors, exact HTTP, 9 named checkpoints and assert_stream_navigation.py passes live user->assistant forward navigation. Unrelated state/render/control differences 2,328/1,684/1,511 remain recorded.",
+        "Live-anchor fail-first: a detached-worktree regression at c4802599 drove Ctrl+Shift+Up against a streaming assistant and stayed at STREAM_ROW_16 instead of the active anchor STREAM_ROW_00; the equivalent post-fix test passes."
       ],
       "dependencies": [],
       "handover_review": {
-        "decision": "required-contract-incomplete-or-not-yet-proven",
-        "priority": "feature",
-        "observable_completion_criteria": [
-          "Resize, scrolling, focus and screen restoration",
-          "Test in PTY including configurable bindings and widget precedence"
+        "decision": "verified",
+        "remaining_required_criteria": [],
+        "evidence": "closure and evidence fields retain the required fullscreen navigation contract, deterministic tests, PTY/streaming coverage and pinned-Pi differential. Broader terminal renderer parity remains a separate capability.",
+        "priority": "closed"
+      },
+      "closure": {
+        "date": "2026-11-02",
+        "contract": "PageUp/PageDown, Ctrl+Home/End, Ctrl+Shift+Up/Down semantic anchors, Ctrl+Shift+F search, Enter/Shift+Enter result navigation, Escape close, configurable bindings and widget precedence, streaming navigation, resize, focus/draft and terminal restoration.",
+        "implemented": "Pi-compatible keymap defaults, user/assistant semantic anchors, empty-query search toggle with live streaming results and paging precedence, Enter/Shift+Enter cycling, non-aborting Escape draft restoration, and resize anchor fallback.",
+        "evidence": [
+          "Pinned Pi paired terminal-long-transcript: 0 calibration differences, 25 named checkpoints, no scenario errors, exact HTTP and semantic navigation assertion passed.",
+          "Focused keymap/screen/input tests 124/124; two Linux PTY fullscreen tests including held streaming and cancellation passed; full suite 4,076/4,076 with zero skips."
         ],
-        "implemented_source": "implementation field on this task",
-        "existing_evidence": "evidence field on this task",
-        "remaining_proof": "For Terminal keys: PageUp/Down, Home/End, Ctrl+Shift+Up/Down, Ctrl+Shift+F search, Enter/Shift+Enter search navigation, Esc close, exercise each documented supported action in the real CLI/PTY and compare named rendered/editor state plus the resulting session/provider effect; preserve mode restoration and supported cancellation.",
-        "queue_orders": [
-          19,
-          20,
-          21,
-          22,
-          39,
-          40
-        ],
-        "deferred_policy": "P2/P3/P4 findings are separate in sol_luna_handover.findings and the upstream audit. They do not expand these required criteria."
+        "remaining": "No required keys-fullscreen behavior remains. Unrelated full-cell theme/padding/scrollbar differences and raw-byte differences remain recorded under the broader terminal-renderer capability.",
+        "deferred_priority": "P4"
       }
     },
     {

@@ -14,6 +14,7 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
     private string _markdownCodeBlockIndent = "  ";
     private string _mermaidMode = "streaming";
     private long _mermaidVersion;
+    private long _liveRevision;
     private CancellationTokenSource? _mermaidDebounceCts;
     private readonly Func<string, TerminalMermaidArt?> _mermaidSyncProvider = mermaidSyncProvider ?? (source =>
     {
@@ -36,11 +37,28 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
     private bool _hasConversationContent;
     private bool _lastSegmentWasToolResult;
     private bool _historyContinuationNeedsSpacer;
+    private bool _assistantAnchorCommitted;
     private readonly Dictionary<string, ToolPanelState> _toolPanelsByCall = new(StringComparer.Ordinal);
 
     public string LiveText => _liveThinking + _liveAssistant;
+    public long LiveRevision => Interlocked.Read(ref _liveRevision);
     public bool ThinkingBlocksHidden => _thinkingBlocksHidden;
     public bool HasContent => _hasConversationContent;
+
+    /// <summary>Offset of the live assistant/thinking message within <see cref="LiveText"/>, or -1 when it already has a committed anchor.</summary>
+    public int LiveSemanticAnchorOffset
+    {
+        get
+        {
+            if (_assistantAnchorCommitted) return -1;
+            var text = LiveText;
+            var offset = 0;
+            while (offset < text.Length && text[offset] is '\r' or '\n') offset++;
+            return offset < text.Length ? offset : -1;
+        }
+    }
+
+    private void TouchLive() => Interlocked.Increment(ref _liveRevision);
 
     public void Reset()
     {
@@ -55,8 +73,10 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
         _liveThinkingNeedsSpacer = false;
         _lastSegmentWasToolResult = false;
         _historyContinuationNeedsSpacer = false;
+        _assistantAnchorCommitted = false;
         _toolPanelsByCall.Clear();
         _hasConversationContent = false;
+        TouchLive();
     }
 
     public void MarkHistoryLoaded(bool endsWithAssistantContent) =>
@@ -72,6 +92,7 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
         _liveThinking = _liveThinkingSource.Length == 0 ? "" :
             (_liveThinkingNeedsSpacer ? Environment.NewLine : "") +
             RenderThinking(getTheme(), _liveThinkingSource, _thinkingBlocksHidden);
+        TouchLive();
     }
 
     public void ReRenderMarkdown()
@@ -80,6 +101,7 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
         transcript.ReRenderMarkdown(markdown => RenderMarkdown(markdown));
         _liveAssistant = _liveAssistantSource.Length == 0 ? "" :
             (_liveAssistantNeedsSpacer ? Environment.NewLine : "") + RenderMarkdown(_liveAssistantSource, _liveAssistantStreaming);
+        TouchLive();
     }
 
     public bool SetCodeBlockIndent(string indent)
@@ -116,6 +138,7 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
         transcript.ReRenderMarkdown(markdown => RenderMarkdown(markdown));
         _liveAssistant = _liveAssistantSource.Length == 0 ? "" :
             (_liveAssistantNeedsSpacer ? Environment.NewLine : "") + RenderMarkdown(_liveAssistantSource, _liveAssistantStreaming);
+        TouchLive();
     }
 
     public void SetAssistantText(string markdown)
@@ -126,6 +149,7 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
         Interlocked.Increment(ref _mermaidVersion);
         _liveAssistant = (_liveAssistantNeedsSpacer ? Environment.NewLine : "") +
             RenderMarkdown(_liveAssistantSource, streaming: true);
+        TouchLive();
     }
 
     public void SetAssistantThinkingText(string text)
@@ -134,6 +158,7 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
         _liveThinkingSource = TerminalSafeText.Normalize(text);
         _liveThinking = (_liveThinkingNeedsSpacer ? Environment.NewLine : "") +
             RenderThinking(getTheme(), _liveThinkingSource, _thinkingBlocksHidden);
+        TouchLive();
     }
 
     public void CommitAssistantThinkingText(string safe)
@@ -141,6 +166,7 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
         _liveThinking = "";
         _liveThinkingSource = "";
         _liveThinkingNeedsSpacer = false;
+        TouchLive();
         AppendThinkingBlock(safe);
     }
 
@@ -152,6 +178,7 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
         _liveThinking = _liveThinkingSource.Length == 0 ? "" :
             (_liveThinkingNeedsSpacer ? Environment.NewLine : "") +
             RenderThinking(getTheme(), _liveThinkingSource, _thinkingBlocksHidden);
+        TouchLive();
         return true;
     }
 
@@ -164,11 +191,14 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
         _liveThinking = _liveThinkingSource.Length == 0 ? "" :
             (_liveThinkingNeedsSpacer ? Environment.NewLine : "") +
             RenderThinking(getTheme(), _liveThinkingSource, _thinkingBlocksHidden);
+        TouchLive();
         return true;
     }
 
     public void CommitAssistantText(string markdown)
     {
+        var isPromptStart = !_assistantAnchorCommitted;
+        _assistantAnchorCommitted = true;
         var safe = TerminalSafeText.Normalize(markdown);
         Interlocked.Increment(ref _mermaidVersion);
         var rendered = RenderMarkdown(safe, streaming: false);
@@ -176,14 +206,16 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
         _liveAssistantSource = "";
         _liveAssistantStreaming = false;
         _liveAssistantNeedsSpacer = false;
+        TouchLive();
         var displayed = _lastSegmentWasToolResult ? Environment.NewLine + rendered : rendered;
         _lastSegmentWasToolResult = false;
         if (displayed.Length > 0) _hasConversationContent = true;
-        transcript.AppendMarkdown(safe, displayed, isError: false);
+        transcript.AppendMarkdown(safe, displayed, isError: false, isPromptStart: isPromptStart);
     }
 
     public bool AppendUserMessage(string safe, IReadOnlyList<DataContent>? images)
     {
+        _assistantAnchorCommitted = false;
         var activeText = new StringBuilder();
         var capturedText = new StringBuilder();
         var skillInvocation = TerminalSkillInvocationParser.Parse(safe);
@@ -197,11 +229,11 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
         }
         if (skillInvocation is not null)
         {
-            AppendSkillInvocation(skillInvocation);
+            AppendSkillInvocation(skillInvocation, isPromptStart: true);
             if (skillInvocation.UserMessage is { Length: > 0 } userMessage)
                 AppendSkillUserMessage(userMessage);
         }
-        else if (safe.Length > 0) AppendUserText(safe);
+        else if (safe.Length > 0) AppendUserText(safe, isPromptStart: true);
         if (images is not null)
         {
             foreach (var image in images)
@@ -213,7 +245,8 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
         }
         if (skillInvocation is null && safe.Length == 0 && activeText.Length == 0) return false;
         if (activeText.Length > 0)
-            transcript.Append(activeText.ToString(), isError: false, capturedText: capturedText.ToString());
+            transcript.Append(activeText.ToString(), isError: false, capturedText: capturedText.ToString(),
+                isPromptStart: skillInvocation is null && safe.Length == 0);
         if (skillInvocation is not null || safe.Length > 0 || images is { Count: > 0 })
         {
             _lastSegmentWasToolResult = false;
@@ -242,6 +275,7 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
 
     public bool AppendToolResult(string safe, IReadOnlyList<DataContent>? images)
     {
+        _assistantAnchorCommitted = false;
         var activeText = new StringBuilder(safe);
         var capturedText = new StringBuilder(safe);
         if (images is not null)
@@ -461,13 +495,15 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
         var leadingSpacer = _lastSegmentWasToolResult ? Environment.NewLine : "";
         string RenderVisible(TerminalTheme theme) => leadingSpacer + RenderThinking(theme, text, hidden: false);
         string RenderHidden(TerminalTheme theme) => leadingSpacer + RenderThinking(theme, text, hidden: true);
+        var isPromptStart = !_assistantAnchorCommitted;
+        _assistantAnchorCommitted = true;
         transcript.AppendThinkingBlock(text, _hiddenThinkingLabel, RenderVisible, RenderHidden, getTheme(),
-            _thinkingBlocksHidden);
+            _thinkingBlocksHidden, isPromptStart);
         _lastSegmentWasToolResult = false;
         _hasConversationContent = true;
     }
 
-    private void AppendSkillInvocation(TerminalSkillInvocation skillInvocation)
+    private void AppendSkillInvocation(TerminalSkillInvocation skillInvocation, bool isPromptStart = false)
     {
         string Render(TerminalTheme theme, bool expanded) => TerminalSkillInvocationRenderer.RenderSkill(
             skillInvocation, columns(), theme, _toolExpandKeyLabel, _markdownCodeBlockIndent, expanded,
@@ -480,24 +516,27 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
         var collapsed = Render(getTheme(), false);
         transcript.AppendThemed(expanded, isError: false, isToolResult: false,
             theme => Render(theme, true), captured, collapsedPreviewText: collapsed,
-            collapsedRenderer: theme => Render(theme, false), isCollapsible: true);
+            collapsedRenderer: theme => Render(theme, false), isCollapsible: true,
+            isPromptStart: isPromptStart);
     }
 
-    private void AppendSkillUserMessage(string text)
+    private void AppendSkillUserMessage(string text, bool isPromptStart = false)
     {
         string Render(TerminalTheme theme) => TerminalSkillInvocationRenderer.RenderUserMessage(
             text, columns(), theme, _markdownCodeBlockIndent);
         transcript.AppendThemed(Render(getTheme()), isError: false, isToolResult: false, Render,
-            Environment.NewLine + Environment.NewLine + " " + text + Environment.NewLine);
+            Environment.NewLine + Environment.NewLine + " " + text + Environment.NewLine,
+            isPromptStart: isPromptStart);
     }
 
-    private void AppendUserText(string text)
+    private void AppendUserText(string text, bool isPromptStart = false)
     {
         var includeLeadingSpacer = _hasConversationContent;
         string Render(TerminalTheme theme) => TerminalSkillInvocationRenderer.RenderUserMessage(
             text, columns(), theme, _markdownCodeBlockIndent, includeLeadingSpacer);
         transcript.AppendThemed(Render(getTheme()), isError: false, isToolResult: false, Render,
-            Environment.NewLine + Environment.NewLine + " " + text + Environment.NewLine);
+            Environment.NewLine + Environment.NewLine + " " + text + Environment.NewLine,
+            isPromptStart: isPromptStart);
     }
 
     private static string EnsureTrailingNewline(string text) =>

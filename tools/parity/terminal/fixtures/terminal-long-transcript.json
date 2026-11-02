@@ -231,6 +231,121 @@
       "renderMatch": true
     },
     {
+      "id": "scroll-to-top",
+      "send": "\u001b[57423;5u",
+      "expect": "user-entry-01",
+      "renderMatch": true
+    },
+    {
+      "id": "next-prompt-from-top",
+      "send": "\u001b[57420;6u",
+      "expect": "user-entry-02",
+      "notExpect": "user-entry-01",
+      "renderMatch": true
+    },
+    {
+      "id": "scroll-live-tail",
+      "send": "\u001b[57424;5u",
+      "expect": "assistant-entry-30",
+      "renderMatch": true
+    },
+    {
+      "id": "previous-prompt",
+      "send": "\u001b[57419;6u",
+      "expect": "user-entry-30",
+      "renderMatch": true
+    },
+    {
+      "id": "previous-prompt-earlier",
+      "send": "\u001b[57419;6u",
+      "expect": "user-entry-29",
+      "notExpect": "user-entry-30",
+      "renderMatch": true
+    },
+    {
+      "id": "prompt-resize",
+      "resize": {
+        "columns": 44,
+        "rows": 14
+      },
+      "expect": "Jump to latest message",
+      "allowStaticFrame": true,
+      "renderMatch": true
+    },
+    {
+      "id": "prompt-after-resize",
+      "send": "\u001b[57419;6u",
+      "expect": "user-entry-28",
+      "renderMatch": true
+    },
+    {
+      "id": "resize-restore",
+      "resize": {
+        "columns": 80,
+        "rows": 24
+      },
+      "expect": "Jump to latest message",
+      "allowStaticFrame": true,
+      "renderMatch": true
+    },
+    {
+      "id": "scroll-to-bottom-after-prompts",
+      "send": "\u001b[57424;5u",
+      "expect": "assistant-entry-30",
+      "renderMatch": true
+    },
+    {
+      "id": "search-placeholder-reopen",
+      "send": "\u001b[102;6u",
+      "expect": "Find in transcript",
+      "renderMatch": true
+    },
+    {
+      "id": "search-toggle-close",
+      "send": "\u001b[102;6u",
+      "expect": "assistant-entry-30",
+      "notExpect": "Find in transcript",
+      "renderMatch": true
+    },
+    {
+      "id": "search-reopen",
+      "send": "\u001b[102;6u",
+      "expect": "Find in transcript",
+      "renderMatch": true
+    },
+    {
+      "id": "search-paste-query",
+      "send": "\u001b[200~assistant-entry-0\u001b[201~",
+      "expect": "assistant-entry-0",
+      "expectCursorChange": true,
+      "renderMatch": true
+    },
+    {
+      "id": "search-cycle-next",
+      "send": "\r",
+      "expect": "2/9",
+      "renderMatch": true
+    },
+    {
+      "id": "search-cycle-previous",
+      "send": "\u001b[13;2u",
+      "expect": "1/9",
+      "renderMatch": true
+    },
+    {
+      "id": "search-escape-close",
+      "send": "\u001b",
+      "expect": "assistant-entry-01",
+      "notExpect": "↑ Shift+Enter",
+      "renderMatch": true
+    },
+    {
+      "id": "search-close-live-tail",
+      "send": "\u001b[57424;5u",
+      "expect": "assistant-entry-30",
+      "renderMatch": true
+    },
+    {
       "id": "exit",
       "send": "\u0003\u0003",
       "exit": true
@@ -247,6 +362,23 @@
     "search-cursor-left",
     "search-close",
     "scroll-to-bottom",
+    "scroll-to-top",
+    "next-prompt-from-top",
+    "scroll-live-tail",
+    "previous-prompt",
+    "previous-prompt-earlier",
+    "prompt-resize",
+    "prompt-after-resize",
+    "resize-restore",
+    "scroll-to-bottom-after-prompts",
+    "search-placeholder-reopen",
+    "search-toggle-close",
+    "search-reopen",
+    "search-paste-query",
+    "search-cycle-next",
+    "search-cycle-previous",
+    "search-escape-close",
+    "search-close-live-tail",
     "exit"
   ]
 }

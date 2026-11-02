@@ -529,6 +529,68 @@ public sealed class TerminalScreenTests
     }
 
     [Fact]
+    public void PromptNavigationJumpsToPreviousAndNextUserMessages()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var columns = 48;
+        var rows = 12;
+        using var screen = new TerminalScreen(output, error, () => columns, () => rows);
+        for (var index = 1; index <= 4; index++)
+        {
+            screen.AppendUserMessage($"prompt {index}");
+            for (var detail = 1; detail <= 3; detail++)
+                screen.AppendThemedTranscriptLine($"detail {index}.{detail}", "text", isError: false);
+        }
+
+        var bottom = CurrentFrame(output, rows, columns);
+        Assert.Contains("detail 4.3", bottom);
+        Assert.Equal(0, screen.TranscriptScrollOffset);
+
+        screen.ScrollToPreviousPrompt();
+        var firstPrompt = FirstPromptLine(CurrentFrame(output, rows, columns));
+        var firstNumber = firstPrompt[^1];
+        screen.ScrollToPreviousPrompt();
+        var earlierPrompt = FirstPromptLine(CurrentFrame(output, rows, columns));
+        Assert.True(earlierPrompt[^1] < firstNumber);
+        screen.ScrollToNextPrompt();
+        Assert.Equal(firstPrompt, FirstPromptLine(CurrentFrame(output, rows, columns)));
+        screen.ScrollToNextPrompt();
+        Assert.Equal("prompt 4", FirstPromptLine(CurrentFrame(output, rows, columns)));
+        screen.ScrollToBottom();
+        Assert.Equal(0, screen.TranscriptScrollOffset);
+
+        screen.ScrollToBottom();
+        var firstResizeStart = output.GetStringBuilder().Length;
+        columns = 36;
+        rows = 10;
+        screen.RefreshIfResized();
+        screen.ScrollToPreviousPrompt();
+        var firstResized = FirstPromptLine(CurrentFrame(output, rows, columns, firstResizeStart));
+        Assert.True(screen.TranscriptScrollOffset > 0);
+        var secondResizeStart = output.GetStringBuilder().Length;
+        columns = 52;
+        rows = 16;
+        screen.RefreshIfResized();
+        screen.ScrollToPreviousPrompt();
+        var secondResized = FirstPromptLine(CurrentFrame(output, rows, columns, secondResizeStart));
+        Assert.True(secondResized[^1] < firstResized[^1]);
+        screen.Dispose();
+
+        static string FirstPromptLine(string frame) => frame.Split('\n')
+            .Select(line => Regex.Match(line, @"prompt [1-4]"))
+            .First(match => match.Success).Value;
+    }
+
+    private static string CurrentFrame(StringWriter output, int rows, int columns, int start = 0)
+    {
+        var text = output.ToString();
+        var frames = TerminalOutputFrameReader.Read(text[start..], rows, columns);
+        Assert.NotEmpty(frames);
+        return frames[^1].Screen;
+    }
+
+    [Fact]
     public void TranscriptScrollbarExpiresWhileJumpToLatestHintRemainsVisible()
     {
         using var output = new StringWriter();
@@ -575,6 +637,72 @@ public sealed class TerminalScreenTests
     }
 
     [Fact]
+    public void LiveAssistantMessageIsSemanticAnchorAndCommitDoesNotDuplicate()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        const int columns = 100;
+        const int rows = 30;
+        using var screen = new TerminalScreen(output, error, () => columns, () => rows);
+        var assistant = string.Join('\n', Enumerable.Range(0, 40).Select(index => $"STREAM_ROW_{index:D2}"));
+        screen.AppendUserMessage("Stream a long answer.");
+        screen.SetAssistantText(assistant);
+        Assert.Equal(2, screen.SemanticAnchorSourceOffsets(columns).Count);
+
+        screen.ScrollToPreviousPrompt();
+        Assert.Equal("STREAM_ROW_00", TopAnchorLine(CurrentFrame(output, rows, columns)));
+        screen.ScrollToPreviousPrompt();
+        Assert.Equal("Stream a long answer.", TopAnchorLine(CurrentFrame(output, rows, columns)));
+        screen.ScrollToNextPrompt();
+        Assert.Equal("STREAM_ROW_00", TopAnchorLine(CurrentFrame(output, rows, columns)));
+
+        screen.CommitAssistantText(assistant);
+        Assert.Equal(2, screen.SemanticAnchorSourceOffsets(columns).Count);
+        screen.ScrollToPreviousPrompt();
+        screen.ScrollToPreviousPrompt();
+        Assert.Equal("Stream a long answer.", TopAnchorLine(CurrentFrame(output, rows, columns)));
+        screen.ScrollToNextPrompt();
+        Assert.Equal("STREAM_ROW_00", TopAnchorLine(CurrentFrame(output, rows, columns)));
+        screen.Dispose();
+
+        static string TopAnchorLine(string frame) => frame.Split('\n')
+            .Select(line => line.Trim().TrimEnd('│', '┃').Trim())
+            .First(line => line.StartsWith("Stream a long answer.", StringComparison.Ordinal) ||
+                line.StartsWith("STREAM_ROW_", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void SemanticPromptNavigationIncludesUserAndAssistantMessageStarts()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        const int columns = 48;
+        const int rows = 12;
+        using var screen = new TerminalScreen(output, error, () => columns, () => rows);
+        screen.AppendUserMessage("prompt 1");
+        screen.CommitAssistantText("assistant 1\n\n" + string.Join('\n', Enumerable.Repeat("detail 1", 6)));
+        screen.AppendUserMessage("prompt 2");
+        screen.CommitAssistantText("assistant 2\n\n" + string.Join('\n', Enumerable.Repeat("detail 2", 6)));
+
+        screen.ScrollToPreviousPrompt();
+        Assert.Equal("assistant 2", TopAnchorLine(CurrentFrame(output, rows, columns)));
+        screen.ScrollToPreviousPrompt();
+        Assert.Equal("prompt 2", TopAnchorLine(CurrentFrame(output, rows, columns)));
+        screen.ScrollToPreviousPrompt();
+        Assert.Equal("assistant 1", TopAnchorLine(CurrentFrame(output, rows, columns)));
+        screen.ScrollToPreviousPrompt();
+        Assert.Equal("prompt 1", TopAnchorLine(CurrentFrame(output, rows, columns)));
+        screen.ScrollToNextPrompt();
+        Assert.Equal("assistant 1", TopAnchorLine(CurrentFrame(output, rows, columns)));
+        screen.Dispose();
+
+        static string TopAnchorLine(string frame) => frame.Split('\n')
+            .Select(line => line.Trim().TrimEnd('│', '┃').Trim())
+            .First(line => line.StartsWith("prompt ", StringComparison.Ordinal) ||
+                line.StartsWith("assistant ", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void IdleEditorRoutesKittyTranscriptKeysToScrollAndSearch()
     {
         using var output = new StringWriter();
@@ -596,6 +724,9 @@ public sealed class TerminalScreenTests
         Assert.True(editor.HandleIdleTranscriptInput(new(new ConsoleKeyInfo('\u001b', ConsoleKey.Escape,
             false, false, false), null)));
         var restoredDraft = editor.Draft;
+        Assert.True(editor.HandleIdleTranscriptInput(new(new ConsoleKeyInfo('\0', ConsoleKey.End,
+            false, false, true), null)));
+        Assert.Equal(0, screen.TranscriptScrollOffset);
         screen.Dispose();
 
         Assert.True(scrollOffset > 0);
@@ -904,6 +1035,138 @@ public sealed class TerminalScreenTests
         Assert.Contains("2/2", nextFrame);
         Assert.Contains("\u001b[7mneedle", nextFrame);
         Assert.DoesNotContain("\u001b[7mneedle", closeFrame);
+        Assert.Equal("draft to keep", editor.Draft);
+        Assert.False(aborted);
+    }
+
+    [Fact]
+    public async Task ActiveSearchStartsFromParsedCtrlShiftFInput()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        using var screen = new TerminalScreen(output, error, () => 80, () => 12);
+        screen.Output.Write("stream content\n");
+        var editor = new TerminalEditor();
+        editor.AttachScreen(screen);
+        Task<bool> Queue(string text, bool followUp, CancellationToken token) => Task.FromResult(true);
+        IReadOnlyList<string> ClearQueue() => [];
+        void Abort() { }
+        var input = new TerminalInput(new MemoryStream("\u001b[102;6u"u8.ToArray()));
+        Assert.True(input.TryRead(0, out var search));
+
+        await editor.HandleActiveInputAsync(search, Queue, ClearQueue, Abort);
+        editor.AttachScreen(screen);
+        var frame = CurrentFrame(output, 12, 80);
+        screen.Dispose();
+
+        Assert.Contains("Find in transcript", frame);
+    }
+
+    [Fact]
+    public async Task ActiveSearchTakesPrecedenceOverTranscriptPaging()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        using var screen = new TerminalScreen(output, error, () => 60, () => 14);
+        for (var index = 0; index < 30; index++) screen.Output.WriteLine($"message {index:D2}");
+        var editor = new TerminalEditor();
+        editor.Prefill("draft");
+        editor.AttachScreen(screen);
+        Task<bool> Queue(string text, bool followUp, CancellationToken token) => Task.FromResult(true);
+        IReadOnlyList<string> ClearQueue() => [];
+        void Abort() { }
+
+        await editor.HandleActiveInputAsync(
+            new(new ConsoleKeyInfo('\0', ConsoleKey.F, shift: true, alt: false, control: true), null),
+            Queue, ClearQueue, Abort);
+        editor.AttachScreen(screen);
+        await editor.HandleActiveInputAsync(new(null, "message"), Queue, ClearQueue, Abort);
+        editor.AttachScreen(screen);
+        var searchOffset = screen.TranscriptScrollOffset;
+        await editor.HandleActiveInputAsync(
+            new(new ConsoleKeyInfo('\0', ConsoleKey.PageUp, false, false, false), null),
+            Queue, ClearQueue, Abort);
+        editor.AttachScreen(screen);
+        var frame = CurrentFrame(output, 14, 60);
+        screen.Dispose();
+
+        Assert.Equal(searchOffset, screen.TranscriptScrollOffset);
+        Assert.Contains("/30", frame);
+        Assert.Contains("Shift+Enter", frame);
+    }
+
+    [Fact]
+    public async Task ActiveSearchRefreshesResultsAsTheTranscriptStreams()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        using var screen = new TerminalScreen(output, error, () => 60, () => 14);
+        screen.Output.Write("needle one\n");
+        var editor = new TerminalEditor();
+        editor.Prefill("draft");
+        editor.AttachScreen(screen);
+        Task<bool> Queue(string text, bool followUp, CancellationToken token) => Task.FromResult(true);
+        IReadOnlyList<string> ClearQueue() => [];
+        void Abort() { }
+
+        await editor.HandleActiveInputAsync(
+            new(new ConsoleKeyInfo('\0', ConsoleKey.F, shift: true, alt: false, control: true), null),
+            Queue, ClearQueue, Abort);
+        editor.AttachScreen(screen);
+        await editor.HandleActiveInputAsync(new(null, "needle"), Queue, ClearQueue, Abort);
+        editor.AttachScreen(screen);
+        var beforeStream = CurrentFrame(output, 14, 60);
+
+        screen.Output.Write("needle two\n");
+        editor.AttachScreen(screen);
+        var afterStream = CurrentFrame(output, 14, 60);
+        screen.Dispose();
+
+        Assert.Contains("1/1", beforeStream);
+        Assert.Contains("1/2", afterStream);
+    }
+
+    [Fact]
+    public async Task ActiveSearchShortcutTogglesClosedAndCyclesBothDirections()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        using var screen = new TerminalScreen(output, error, () => 60, () => 12);
+        screen.Output.Write("needle one\nother\nneedle two\nneedle three\n");
+        var editor = new TerminalEditor();
+        editor.Prefill("draft to keep");
+        editor.AttachScreen(screen);
+        var aborted = false;
+        Task<bool> Queue(string text, bool followUp, CancellationToken token) => Task.FromResult(true);
+        IReadOnlyList<string> ClearQueue() => [];
+        void Abort() => aborted = true;
+        var searchKey = new TerminalInputEvent(new ConsoleKeyInfo('\0', ConsoleKey.F,
+            shift: true, alt: false, control: true), null);
+
+        await editor.HandleActiveInputAsync(searchKey, Queue, ClearQueue, Abort);
+        editor.AttachScreen(screen);
+        await editor.HandleActiveInputAsync(new(null, "needle"), Queue, ClearQueue, Abort);
+        editor.AttachScreen(screen);
+        var first = CurrentFrame(output, 12, 60);
+        await editor.HandleActiveInputAsync(
+            new(new ConsoleKeyInfo('\r', ConsoleKey.Enter, false, false, false), null), Queue, ClearQueue, Abort);
+        editor.AttachScreen(screen);
+        var next = CurrentFrame(output, 12, 60);
+        await editor.HandleActiveInputAsync(
+            new(new ConsoleKeyInfo('\r', ConsoleKey.Enter, shift: true, alt: false, control: false), null),
+            Queue, ClearQueue, Abort);
+        editor.AttachScreen(screen);
+        var previous = CurrentFrame(output, 12, 60);
+        await editor.HandleActiveInputAsync(searchKey, Queue, ClearQueue, Abort);
+        editor.AttachScreen(screen);
+        var closed = CurrentFrame(output, 12, 60);
+        screen.Dispose();
+
+        Assert.Contains("1/3", first);
+        Assert.Contains("2/3", next);
+        Assert.Contains("1/3", previous);
+        Assert.DoesNotContain("Find in transcript", closed);
+        Assert.DoesNotContain("\u001b[7mneedle", closed);
         Assert.Equal("draft to keep", editor.Draft);
         Assert.False(aborted);
     }

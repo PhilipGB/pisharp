@@ -28,8 +28,8 @@ internal sealed class TerminalScreenCompositor
     private bool _clearMainScreen;
     private int? _previousContentHeight;
     private int _regularViewportTop;
-    private TerminalTextLayout.LayoutResult? _previousTranscriptLayout;
     private int _previousTranscriptFirstVisualRow;
+    private TerminalTextLayout.LayoutResult? _previousTranscriptLayout;
     private int _previousTranscriptScrollOffset;
 
     public TerminalScreenCompositor(TextWriter output, TerminalImageRenderer images, bool useAlternateScreen = true)
@@ -180,6 +180,12 @@ internal sealed class TerminalScreenCompositor
         {
             var anchorSourceIndex = previousLayout.SourceIndexAtVisualRow(_previousTranscriptFirstVisualRow);
             var anchoredFirstRow = transcriptLayout.VisualRowAt(anchorSourceIndex);
+            // Markdown re-rendering can rewrite source offsets between layouts. Keep the source anchor
+            // when the anchored row still shows the same content; otherwise retain the absolute row.
+            if (Math.Abs(anchoredFirstRow - _previousTranscriptFirstVisualRow) > transcriptHeight &&
+                !SameRowContent(previousLayout.Rows[_previousTranscriptFirstVisualRow],
+                    transcriptLayout.Rows[anchoredFirstRow]))
+                anchoredFirstRow = _previousTranscriptFirstVisualRow;
             scrollOffset = TerminalTranscriptViewport.ScrollOffsetForFirstRow(
                 transcriptLayout.RowCount, anchoredFirstRow, transcriptHeight);
         }
@@ -188,8 +194,8 @@ internal sealed class TerminalScreenCompositor
             out var firstVisualRow);
         scrollOffset = renderedScrollOffset;
         var showScrollbar = transientScrollbarVisible || scrollOffset != initialScrollOffset;
-        _previousTranscriptLayout = transcriptLayout;
         _previousTranscriptFirstVisualRow = firstVisualRow;
+        _previousTranscriptLayout = transcriptLayout;
         _previousTranscriptScrollOffset = scrollOffset;
         var rows = Enumerable.Repeat("", height).ToArray();
         for (var index = 0; index < extensionHeaderHeight; index++)
@@ -590,6 +596,15 @@ internal sealed class TerminalScreenCompositor
         if (!row.StartsWith("\u001b[48;", StringComparison.Ordinal)) return 0;
         var end = row.IndexOf('m');
         return end < 0 ? 0 : end + 1;
+    }
+
+    private static bool SameRowContent(string previous, string current)
+    {
+        var previousText = TerminalTextLayout.StripFormatting(previous).Trim();
+        var currentText = TerminalTextLayout.StripFormatting(current).Trim();
+        if (previousText.Length == 0 || currentText.Length == 0) return false;
+        var length = Math.Min(12, Math.Min(previousText.Length, currentText.Length));
+        return previousText.AsSpan(0, length).SequenceEqual(currentText.AsSpan(0, length));
     }
 
     internal static bool IsBlankRow(string row)

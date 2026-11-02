@@ -10,7 +10,6 @@ internal sealed class TerminalTranscriptSearchInput(EditorBuffer buffer, EditorK
     private string _savedDraft = "";
     private int _savedCursor;
     private EditorBufferSnapshot _savedEditorSnapshot;
-    private string _lastSearchQuery = "";
 
     public bool IsActive => _searchingTranscript;
     public EditorBufferSnapshot CaptureEditorSnapshotForDisplay() =>
@@ -25,9 +24,10 @@ internal sealed class TerminalTranscriptSearchInput(EditorBuffer buffer, EditorK
             _savedEditorSnapshot = snapshot;
             _savedDraft = snapshot.Text;
             _savedCursor = snapshot.Cursor;
-            buffer.SetText(_lastSearchQuery);
+            buffer.SetText("");
         }
         _searchingTranscript = true;
+        screen.SetSearchResultRefresher(RefreshFromScreen);
         Update();
     }
 
@@ -40,6 +40,11 @@ internal sealed class TerminalTranscriptSearchInput(EditorBuffer buffer, EditorK
         }
         if (next.Key is { } key)
         {
+            if (keymap.Matches("tui.altScreen.search", key))
+            {
+                Close();
+                return true;
+            }
             if (keymap.Matches("tui.altScreen.searchClose", key) || keymap.Matches("app.interrupt", key))
             {
                 Close();
@@ -67,24 +72,37 @@ internal sealed class TerminalTranscriptSearchInput(EditorBuffer buffer, EditorK
     {
         if (getScreen() is not { IsActive: true } screen) return;
         var snapshot = buffer.CaptureSnapshot();
+        UpdatePanel(screen, snapshot, direction, requestRender: true);
+    }
+
+    private void RefreshFromScreen()
+    {
+        if (!_searchingTranscript || getScreen() is not { IsActive: true } screen) return;
+        UpdatePanel(screen, buffer.CaptureSnapshot(), direction: 0, requestRender: false);
+    }
+
+    private void UpdatePanel(TerminalScreen screen, EditorBufferSnapshot snapshot, int direction,
+        bool requestRender)
+    {
         var query = snapshot.Text;
-        var state = screen.SearchTranscript(query, direction);
+        var state = screen.SearchTranscript(query, direction, requestRender);
         var (panel, cursorOffset) = RenderPanel(query, snapshot.Cursor, state, screen.TerminalWidth);
         var panelWidth = PanelWidth(screen.TerminalWidth);
         var panelLeft = Math.Max(0, screen.TerminalWidth - panelWidth - 1);
-        screen.SetTranscriptSearchPanel(panel, panelLeft + 1 + cursorOffset);
+        screen.SetTranscriptSearchPanel(panel, panelLeft + 1 + cursorOffset, requestRender);
     }
 
     public void Close()
     {
+        var screen = getScreen();
+        screen?.SetSearchResultRefresher(null);
         lock (buffer.SyncRoot)
         {
-            _lastSearchQuery = buffer.Text;
             _searchingTranscript = false;
             buffer.SetText(_savedDraft, _savedCursor);
         }
-        getScreen()?.ClearTranscriptSearch();
-        getScreen()?.SetTranscriptSearchPanel(null);
+        screen?.ClearTranscriptSearch();
+        screen?.SetTranscriptSearchPanel(null);
     }
 
     private (IReadOnlyList<string> Panel, int CursorOffset) RenderPanel(string query, int cursor,

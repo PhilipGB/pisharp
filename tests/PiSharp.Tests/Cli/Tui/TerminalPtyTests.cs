@@ -3372,6 +3372,396 @@ public sealed class TerminalPtyTests
         return Process.Start(start) ?? throw new InvalidOperationException("Could not start the settings PTY fixture.");
     }
 
+    [Fact]
+    public async Task FullscreenTranscriptNavigationAndSearchThroughLinuxPty()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-fullscreen-nav-pty-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        Directory.CreateDirectory(agent);
+        var sessionPath = Path.Combine(root, "navigation.jsonl");
+        var settingsBefore = Path.Combine(root, "stty-before");
+        var settingsAfter = Path.Combine(root, "stty-after");
+        await File.WriteAllTextAsync(sessionPath, NavigationSessionJsonl(root));
+        await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), """
+            {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","apiKey":"fixture-key",
+              "models":[{"id":"fixture-model","api":"openai-responses"}]}}}
+            """);
+        Process? process = null;
+        try
+        {
+            var start = new ProcessStartInfo("/usr/bin/script")
+            {
+                WorkingDirectory = root,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            start.ArgumentList.Add("-q");
+            start.ArgumentList.Add("-e");
+            start.ArgumentList.Add("-c");
+            start.ArgumentList.Add($"stty rows 24 cols 80; stty -g > {ShellQuote(settingsBefore)}; " +
+                $"dotnet {ShellQuote(typeof(CliArguments).Assembly.Location)} --offline --no-tools " +
+                $"--session {ShellQuote(sessionPath)}; status=$?; stty -g > {ShellQuote(settingsAfter)}; exit $status");
+            start.ArgumentList.Add("/dev/null");
+            start.Environment["PISHARP_AGENT_DIR"] = agent;
+            process = Process.Start(start);
+            Assert.NotNull(process);
+
+            var screen = new PtyScreenCapture(process, 24, 80);
+            var stdout = screen.ReadCompletion;
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            await screen.InputReady.WaitAsync(timeout.Token);
+
+            async Task SendAsync(string input)
+            {
+                await process.StandardInput.WriteAsync(input);
+                await process.StandardInput.FlushAsync();
+            }
+
+            async Task<string> WaitForAsync(Func<string, bool> predicate, string description)
+            {
+                try
+                {
+                    return await screen.WaitForFrameAsync(predicate).WaitAsync(timeout.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw new InvalidOperationException($"Timed out waiting for {description}. Current frame:\n{screen.LastFrame}");
+                }
+            }
+
+            static string TopAnchorLine(string frame) => frame.Split('\n')
+                .Select(line => line.Trim().TrimEnd('│', '┃').Trim())
+                .First(line => line.StartsWith("NAV_PROMPT_", StringComparison.Ordinal) ||
+                    line.StartsWith("detail 04.", StringComparison.Ordinal));
+
+            await WaitForAsync(frame => frame.Contains("detail 04.24", StringComparison.Ordinal), "live transcript tail");
+
+            await SendAsync("\u001b[5~");
+            await WaitForAsync(frame => frame.Contains("Jump to latest message", StringComparison.Ordinal), "page-up hint");
+            await SendAsync("\u001b[6~");
+            await WaitForAsync(frame => !frame.Contains("Jump to latest message", StringComparison.Ordinal), "page-down live tail");
+
+            await SendAsync("\u001b[1;5H");
+            await WaitForAsync(frame => frame.Contains("NAV_PROMPT_01", StringComparison.Ordinal) &&
+                !frame.Contains("NAV_PROMPT_02", StringComparison.Ordinal), "Ctrl+Home transcript top");
+            await SendAsync("\u001b[1;5F");
+            await WaitForAsync(frame => frame.Contains("detail 04.24", StringComparison.Ordinal) &&
+                !frame.Contains("NAV_PROMPT_01", StringComparison.Ordinal), "Ctrl+End transcript bottom");
+
+            await SendAsync("\u001b[1;6A");
+            await WaitForAsync(frame => TopAnchorLine(frame) == "detail 04.01" &&
+                frame.Contains("Jump to latest message", StringComparison.Ordinal), "previous semantic anchor");
+            await SendAsync("\u001b[1;6A");
+            await WaitForAsync(frame => TopAnchorLine(frame) == "NAV_PROMPT_04", "older semantic anchor");
+            await SendAsync("\u001b[1;6B");
+            await WaitForAsync(frame => TopAnchorLine(frame) == "detail 04.01", "next semantic anchor");
+
+            await SendAsync("draft to keep");
+            await WaitForAsync(frame => frame.Contains("draft to keep", StringComparison.Ordinal), "editor draft");
+            await SendAsync("\u001b[102;6u");
+            await WaitForAsync(frame => frame.Contains("Find in transcript", StringComparison.Ordinal), "search panel");
+            await SendAsync("detail 03");
+            await WaitForAsync(frame => frame.Contains("1/24", StringComparison.Ordinal) &&
+                frame.Contains("detail 03.01", StringComparison.Ordinal), "first search result");
+            await SendAsync("\r");
+            await WaitForAsync(frame => frame.Contains("2/24", StringComparison.Ordinal), "next search result");
+            await SendAsync("\u001b[13;2u");
+            await WaitForAsync(frame => frame.Contains("1/24", StringComparison.Ordinal), "previous search result");
+            await SendAsync("\u001b");
+            var closed = await WaitForAsync(frame => !frame.Contains("Shift+Enter", StringComparison.Ordinal) &&
+                frame.Contains("draft to keep", StringComparison.Ordinal), "search close");
+            Assert.Contains("detail 03.01", closed, StringComparison.Ordinal);
+
+            await SendAsync("\u001b[1;5F");
+            await WaitForAsync(frame => frame.Contains("detail 04.24", StringComparison.Ordinal) &&
+                !frame.Contains("Jump to latest message", StringComparison.Ordinal), "return to live tail");
+            await SendAsync("\u0015");
+            await WaitForAsync(frame => !frame.Contains("draft to keep", StringComparison.Ordinal), "cleared draft");
+            await SendAsync("/quit\r");
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+            var output = await stdout;
+
+            Assert.Equal(0, process.ExitCode);
+            Assert.Equal(await File.ReadAllTextAsync(settingsBefore), await File.ReadAllTextAsync(settingsAfter));
+            Assert.Contains("\u001b[?1049l", output);
+            Assert.DoesNotContain("Agent error", output);
+            Assert.DoesNotContain("Exception:", await stderr);
+        }
+        finally
+        {
+            if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
+            process?.Dispose();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task FullscreenNavigationAndSearchRemainActiveWhileStreamingThroughLinuxPty()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-stream-nav-pty-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        Directory.CreateDirectory(agent);
+        var sessionPath = Path.Combine(root, "navigation.jsonl");
+        var settingsBefore = Path.Combine(root, "stty-before");
+        var settingsAfter = Path.Combine(root, "stty-after");
+        await File.WriteAllTextAsync(sessionPath, NavigationSessionJsonl(root));
+        using var listener = StartLoopbackListener(out var port);
+        var models = """
+            {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:PORT/v1","apiKey":"fixture-key",
+              "models":[{"id":"fixture-model","api":"openai-responses"}]}}}
+            """.Replace("PORT", port.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                StringComparison.Ordinal);
+        await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), models);
+        var firstRequest = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var secondRequest = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseMore = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseFinish = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var serverTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        var server = Task.Run(async () =>
+        {
+            for (var index = 0; index < 2; index++)
+            {
+                HttpListenerContext request;
+                try { request = await listener.GetContextAsync().WaitAsync(serverTimeout.Token); }
+                catch (OperationCanceledException) { return; }
+                using var reader = new StreamReader(request.Request.InputStream);
+                _ = await reader.ReadToEndAsync(serverTimeout.Token);
+                (index == 0 ? firstRequest : secondRequest).TrySetResult();
+                try
+                {
+                    request.Response.ContentType = "text/event-stream";
+                    request.Response.KeepAlive = false;
+                    await using var writer = new StreamWriter(request.Response.OutputStream);
+                    await writer.WriteAsync($"data: {{\"type\":\"response.created\",\"response\":{{\"id\":\"resp_{index}\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"in_progress\",\"output\":[]}}}}\n\n");
+                    var firstDelta = index == 0
+                        ? string.Join("\\n", Enumerable.Range(0, 30).Select(row => $"STREAM_ALPHA_{row:D2}")) + "\\n"
+                        : "STREAM_SECOND\\n";
+                    await writer.WriteAsync($"data: {{\"type\":\"response.output_text.delta\",\"item_id\":\"msg_{index}\",\"output_index\":0,\"content_index\":0,\"delta\":\"{firstDelta}\"}}\n\n");
+                    await writer.FlushAsync();
+                    if (index == 0)
+                    {
+                        await releaseMore.Task.WaitAsync(serverTimeout.Token);
+                        await writer.WriteAsync("data: {\"type\":\"response.output_text.delta\",\"item_id\":\"msg_0\",\"output_index\":0,\"content_index\":0,\"delta\":\"STREAM_BETA\\n\"}\n\n");
+                        await writer.FlushAsync();
+                        await releaseFinish.Task.WaitAsync(serverTimeout.Token);
+                        await writer.WriteAsync("data: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp_0\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"completed\",\"output\":[]}}\n\n");
+                        await writer.WriteAsync("data: [DONE]\n\n");
+                        await writer.FlushAsync();
+                    }
+                    else
+                        await Task.Delay(Timeout.Infinite, serverTimeout.Token);
+                    request.Response.Close();
+                }
+                catch (Exception error) when (error is OperationCanceledException or IOException or ObjectDisposedException)
+                {
+                    request.Response.Abort();
+                }
+            }
+        });
+
+        Process? process = null;
+        try
+        {
+            var start = new ProcessStartInfo("/usr/bin/script")
+            {
+                WorkingDirectory = root,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            start.ArgumentList.Add("-q");
+            start.ArgumentList.Add("-e");
+            start.ArgumentList.Add("-c");
+            start.ArgumentList.Add($"stty rows 24 cols 80; stty -g > {ShellQuote(settingsBefore)}; " +
+                $"dotnet {ShellQuote(typeof(CliArguments).Assembly.Location)} --offline --no-tools " +
+                $"--session {ShellQuote(sessionPath)}; status=$?; stty -g > {ShellQuote(settingsAfter)}; exit $status");
+            start.ArgumentList.Add("/dev/null");
+            start.Environment["PISHARP_AGENT_DIR"] = agent;
+            process = Process.Start(start);
+            Assert.NotNull(process);
+
+            var screen = new PtyScreenCapture(process, 24, 80);
+            var stdout = screen.ReadCompletion;
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            await screen.InputReady.WaitAsync(timeout.Token);
+
+            async Task SendAsync(string input)
+            {
+                await process.StandardInput.WriteAsync(input);
+                await process.StandardInput.FlushAsync();
+            }
+
+            async Task<string> WaitForAsync(Func<string, bool> predicate, string description)
+            {
+                try
+                {
+                    return await screen.WaitForFrameAsync(predicate).WaitAsync(timeout.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw new InvalidOperationException($"Timed out waiting for {description}. Current frame:\n{screen.LastFrame}");
+                }
+            }
+
+            static string TopAnchorLine(string frame) => frame.Split('\n')
+                .Select(line => line.Trim().TrimEnd('│', '┃').Trim())
+                .First(line => line.StartsWith("NAV_PROMPT_", StringComparison.Ordinal) ||
+                    line.StartsWith("detail 04.", StringComparison.Ordinal) ||
+                    line.StartsWith("stream one", StringComparison.Ordinal) ||
+                    line.StartsWith("STREAM_ALPHA", StringComparison.Ordinal));
+
+            await WaitForAsync(frame => frame.Contains("detail 04.24", StringComparison.Ordinal), "live transcript tail");
+            await SendAsync("stream one\r");
+            await firstRequest.Task.WaitAsync(timeout.Token);
+            await WaitForAsync(frame => frame.Contains("STREAM_ALPHA", StringComparison.Ordinal) &&
+                frame.Contains("Working", StringComparison.Ordinal), "first streamed chunk");
+
+            await SendAsync("\u001b[1;6A");
+            await WaitForAsync(frame => TopAnchorLine(frame).StartsWith("STREAM_ALPHA_", StringComparison.Ordinal) &&
+                frame.Contains("Working", StringComparison.Ordinal), "live assistant anchor during stream");
+            await SendAsync("\u001b[1;6A");
+            await WaitForAsync(frame => TopAnchorLine(frame) == "stream one" &&
+                frame.Contains("Working", StringComparison.Ordinal), "live user anchor during stream");
+            await SendAsync("\u001b[1;6B");
+            await WaitForAsync(frame => TopAnchorLine(frame).StartsWith("STREAM_ALPHA_", StringComparison.Ordinal) &&
+                frame.Contains("Working", StringComparison.Ordinal), "forward to live assistant anchor during stream");
+            await SendAsync("\u001b[1;5F");
+            await WaitForAsync(frame => frame.Contains("STREAM_ALPHA_29", StringComparison.Ordinal) &&
+                !frame.Contains("Jump to latest message", StringComparison.Ordinal), "live tail before paging");
+
+            await SendAsync("\u001b[5~");
+            await WaitForAsync(frame => frame.Contains("Jump to latest message", StringComparison.Ordinal) &&
+                frame.Contains("Working", StringComparison.Ordinal), "page up during stream");
+            await SendAsync("\u001b[1;5F");
+            await WaitForAsync(frame => frame.Contains("STREAM_ALPHA_29", StringComparison.Ordinal) &&
+                !frame.Contains("Jump to latest message", StringComparison.Ordinal), "live output during stream");
+
+            await SendAsync("draft during stream");
+            await WaitForAsync(frame => frame.Contains("draft during stream", StringComparison.Ordinal), "streaming draft");
+            await SendAsync("\u001b[102;6u");
+            await WaitForAsync(frame => frame.Contains("Shift+Enter", StringComparison.Ordinal), "search during stream");
+            await SendAsync("STREAM_");
+            await WaitForAsync(frame => frame.Contains("15/30", StringComparison.Ordinal), "streamed search result");
+            releaseMore.TrySetResult();
+            await WaitForAsync(frame => frame.Contains("15/31", StringComparison.Ordinal) &&
+                frame.Contains("STREAM_BETA", StringComparison.Ordinal), "live search result refresh");
+            await SendAsync("\r");
+            await WaitForAsync(frame => frame.Contains("16/31", StringComparison.Ordinal), "next streamed result");
+            await SendAsync("\u001b[13;2u");
+            await WaitForAsync(frame => frame.Contains("15/31", StringComparison.Ordinal), "previous streamed result");
+            await SendAsync("\u001b");
+            await WaitForAsync(frame => !frame.Contains("Shift+Enter", StringComparison.Ordinal) &&
+                frame.Contains("draft during stream", StringComparison.Ordinal), "stream search close");
+            releaseFinish.TrySetResult();
+            await WaitForAsync(frame => frame.Contains("STREAM_BETA", StringComparison.Ordinal) &&
+                !frame.Contains("Working", StringComparison.Ordinal), "first stream completion");
+            await SendAsync("x");
+            await WaitForAsync(frame => frame.Contains("draft during streamx", StringComparison.Ordinal),
+                "stream draft preserved");
+
+            await SendAsync("stream two\r");
+            await secondRequest.Task.WaitAsync(timeout.Token);
+            await WaitForAsync(frame => frame.Contains("STREAM_SECOND", StringComparison.Ordinal) &&
+                frame.Contains("Working", StringComparison.Ordinal), "second active stream");
+            await SendAsync("cancel draft");
+            await SendAsync("\u001b[102;6u");
+            await SendAsync("STREAM_SECOND");
+            await WaitForAsync(frame => frame.Contains("Shift+Enter", StringComparison.Ordinal) &&
+                frame.Contains("1/1", StringComparison.Ordinal), "active cancellation search");
+            await SendAsync("\u001b");
+            await WaitForAsync(frame => !frame.Contains("Shift+Enter", StringComparison.Ordinal) &&
+                frame.Contains("cancel draft", StringComparison.Ordinal), "cancellation search close");
+            await SendAsync("\u001b");
+            await WaitForAsync(frame => frame.Contains("Operation aborted", StringComparison.Ordinal) &&
+                !frame.Contains("Enter steers", StringComparison.Ordinal), "aborted stream");
+            await SendAsync("y");
+            await WaitForAsync(frame => frame.Contains("cancel drafty", StringComparison.Ordinal),
+                "cancellation draft preserved");
+            await SendAsync("\u0015");
+            await SendAsync("/quit\r");
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+            var output = await stdout;
+            serverTimeout.Cancel();
+            try { await server.WaitAsync(timeout.Token); } catch (OperationCanceledException) { }
+
+            Assert.Equal(0, process.ExitCode);
+            Assert.Equal(await File.ReadAllTextAsync(settingsBefore), await File.ReadAllTextAsync(settingsAfter));
+            Assert.Contains("\u001b[?1049l", output);
+            Assert.DoesNotContain("Agent error", output);
+            Assert.DoesNotContain("Exception:", await stderr);
+        }
+        finally
+        {
+            if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
+            process?.Dispose();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    private static string NavigationSessionJsonl(string workingDirectory)
+    {
+        var lines = new List<string>
+        {
+            JsonSerializer.Serialize(new
+            {
+                type = "session",
+                version = 3,
+                id = "fullscreen-navigation",
+                timestamp = "2025-01-01T00:00:00Z",
+                cwd = workingDirectory
+            })
+        };
+        string? parentId = null;
+        var id = 1;
+        for (var prompt = 1; prompt <= 4; prompt++)
+        {
+            var userId = $"user-{id++}";
+            lines.Add(JsonSerializer.Serialize(new
+            {
+                type = "message",
+                id = userId,
+                parentId,
+                timestamp = "2025-01-01T00:00:01Z",
+                message = new
+                {
+                    role = "user",
+                    content = new[] { new { type = "text", text = $"NAV_PROMPT_{prompt:D2}" } },
+                    timestamp = 1735689601000L
+                }
+            }));
+            var assistantId = $"assistant-{id++}";
+            var details = string.Join('\n', Enumerable.Range(1, 24)
+                .Select(detail => $"detail {prompt:D2}.{detail:D2}"));
+            lines.Add(JsonSerializer.Serialize(new
+            {
+                type = "message",
+                id = assistantId,
+                parentId = userId,
+                timestamp = "2025-01-01T00:00:02Z",
+                message = new
+                {
+                    role = "assistant",
+                    content = new[] { new { type = "text", text = details } },
+                    api = "openai-responses",
+                    provider = "fixture",
+                    model = "fixture-model",
+                    usage = new { input = 1, output = 1, cacheRead = 0, cacheWrite = 0, totalTokens = 2 },
+                    stopReason = "stop",
+                    timestamp = 1735689602000L
+                }
+            }));
+            parentId = assistantId;
+        }
+        return string.Join('\n', lines) + "\n";
+    }
+
     private static string EditorInputLine(string frame)
     {
         return frame.Split('\n').Select(line => line.Trim())

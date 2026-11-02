@@ -33,6 +33,20 @@ Only actions shown by `/hotkeys` are recognized. Unknown action names are ignore
 | `app.message.followUp` | Alt+Enter; Ctrl+Q on Windows and WSL | Queue a follow-up message during a run |
 | `app.message.dequeue` | Alt+Up; Alt+Q on Windows and WSL | Restore queued messages during a run |
 
+## Fullscreen transcript actions
+
+| Action | Default | Behavior |
+|---|---|---|
+| `tui.altScreen.pageUp` / `tui.altScreen.pageDown` | PageUp / PageDown | Scroll the transcript by one page while the editor keeps its draft |
+| `tui.altScreen.previousPrompt` | Ctrl+Shift+Up, Ctrl+Up; Ctrl+Up on Windows and WSL | Jump to the previous semantic user or assistant message anchor |
+| `tui.altScreen.nextPrompt` | Ctrl+Shift+Down, Ctrl+Down; Ctrl+Down on Windows and WSL | Jump to the next semantic user or assistant message anchor |
+| `tui.altScreen.top` / `tui.altScreen.bottom` | Ctrl+Home / Ctrl+End | Scroll to the oldest content or return to live output |
+| `tui.altScreen.search` | Ctrl+Shift+F; Ctrl+F on Windows and WSL, plus a Ctrl+F fallback | Open or close rendered-transcript search; the search widget owns subsequent keys |
+| `tui.altScreen.searchNext` / `tui.altScreen.searchPrevious` | Enter / Shift+Enter | Select the next or previous case-insensitive match |
+| `tui.altScreen.searchClose` | Escape | Close search, restore the editor draft and keep the selected transcript position |
+
+Fullscreen navigation applies while idle and during an active run. Search opens with an empty query, highlights up to 10,000 matches, refreshes its count as streamed output arrives and reveals the selected match. Escape closes search without aborting the run; Escape aborts only after search is closed. Unmodified Home/End stay in the editor, matching Pi; Ctrl+Home/Ctrl+End scroll the transcript.
+
 ## Prompt editor actions
 
 | Action | Default | Behavior |

@@ -26,16 +26,16 @@ internal sealed class TerminalTranscriptBuffer
     public int Revision { get; private set; }
 
     public void Append(string text, bool isError, bool isToolResult = false,
-        string? capturedText = null, string? collapsedPreviewText = null)
+        string? capturedText = null, string? collapsedPreviewText = null, bool isPromptStart = false)
     {
         if (text.Length == 0) return;
         Capture(capturedText ?? text, isError);
-        if (!isToolResult && _segments.Count > 0 && !_segments[^1].IsCollapsible &&
+        if (!isPromptStart && !isToolResult && _segments.Count > 0 && !_segments[^1].IsCollapsible &&
             _segments[^1].MarkdownSource is null && _segments[^1].ThemeRenderer is null)
             _segments[^1].Text.Append(text);
         else
             _segments.Add(new(isToolResult, new StringBuilder(text),
-                isToolResult ? collapsedPreviewText ?? text : null));
+                isToolResult ? collapsedPreviewText ?? text : null, isPromptStart: isPromptStart));
         _transcriptCharacters += text.Length;
         TrimTranscript();
         Revision++;
@@ -43,12 +43,12 @@ internal sealed class TerminalTranscriptBuffer
 
     public void AppendCaptured(string text, bool isError) => Capture(text, isError);
 
-    public void AppendMarkdown(string source, string rendered, bool isError)
+    public void AppendMarkdown(string source, string rendered, bool isError, bool isPromptStart = false)
     {
         if (rendered.Length == 0) return;
         Capture(rendered, isError);
         _segments.Add(new(false, new StringBuilder(rendered), null,
-            source.Length <= MaximumTranscriptCharacters ? source : null));
+            source.Length <= MaximumTranscriptCharacters ? source : null, isPromptStart: isPromptStart));
         _transcriptCharacters += rendered.Length;
         TrimTranscript();
         Revision++;
@@ -56,7 +56,7 @@ internal sealed class TerminalTranscriptBuffer
 
     public void AppendThinkingBlock(string source, string hiddenText,
         Func<TerminalTheme, string> visibleRenderer, Func<TerminalTheme, string> hiddenRenderer,
-        TerminalTheme theme, bool hidden)
+        TerminalTheme theme, bool hidden, bool isPromptStart = false)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentException.ThrowIfNullOrWhiteSpace(hiddenText);
@@ -73,7 +73,8 @@ internal sealed class TerminalTranscriptBuffer
         _segments.Add(new(false, new StringBuilder(rendered), null,
             themeRenderer: selectedRenderer, isThinkingBlock: true, thinkingSource: boundedSource,
             hiddenThinkingText: hiddenText, visibleThinkingRenderer: visibleRenderer,
-            hiddenThinkingRenderer: hiddenRenderer, thinkingHidden: hidden, capturedThinkingChunk: captured));
+            hiddenThinkingRenderer: hiddenRenderer, thinkingHidden: hidden, capturedThinkingChunk: captured,
+            isPromptStart: isPromptStart));
         _transcriptCharacters += rendered.Length;
         TrimTranscript();
         Revision++;
@@ -81,7 +82,8 @@ internal sealed class TerminalTranscriptBuffer
 
     public void AppendThemed(string rendered, bool isError, bool isToolResult,
         Func<TerminalTheme, string> themeRenderer, string capturedText, string? collapsedPreviewText = null,
-        Func<TerminalTheme, string>? collapsedRenderer = null, bool isCollapsible = false)
+        Func<TerminalTheme, string>? collapsedRenderer = null, bool isCollapsible = false,
+        bool isPromptStart = false)
     {
         ArgumentNullException.ThrowIfNull(themeRenderer);
         if (rendered.Length == 0) return;
@@ -89,7 +91,8 @@ internal sealed class TerminalTranscriptBuffer
         var collapsible = isToolResult || isCollapsible;
         _segments.Add(new(collapsible, new StringBuilder(rendered),
             collapsible ? collapsedPreviewText ?? rendered : null,
-            themeRenderer: themeRenderer, collapsedRenderer: collapsedRenderer));
+            themeRenderer: themeRenderer, collapsedRenderer: collapsedRenderer,
+            isPromptStart: isPromptStart));
         _transcriptCharacters += rendered.Length;
         TrimTranscript();
         Revision++;
@@ -216,24 +219,38 @@ internal sealed class TerminalTranscriptBuffer
         return GetText(width, latestStatus: null);
     }
 
+    /// <summary>Source offsets of Pi's OSC 133 semantic anchors in the text returned by <see cref="GetText"/>.</summary>
+    public IReadOnlyList<int> GetSemanticAnchorSourceOffsets(int width)
+    {
+        var offsets = new List<int>();
+        _ = GetText(width, latestStatus: null, offsets);
+        return offsets;
+    }
+
     public string GetTextForScrollback(int width, TerminalTheme theme)
     {
         ArgumentNullException.ThrowIfNull(theme);
         return GetText(width, _latestStatusRenderer is { } renderLatest ? () => renderLatest(theme) : null);
     }
 
-    private string GetText(int width, Func<string>? latestStatus)
+    private string GetText(int width, Func<string>? latestStatus, List<int>? promptOffsets = null)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(width, 1);
         var output = new StringBuilder(_transcriptCharacters);
         foreach (var segment in _segments)
         {
-            if (segment.IsStatusMessage && latestStatus is not null)
-                output.Append(latestStatus());
-            else
-                output.Append(segment.IsCollapsible && !IsExpanded
+            var text = segment.IsStatusMessage && latestStatus is not null
+                ? latestStatus()
+                : segment.IsCollapsible && !IsExpanded
                     ? GetCollapsedPreview(segment, width)
-                    : segment.Text.ToString());
+                    : segment.Text.ToString();
+            if (segment.IsPromptStart && promptOffsets is not null)
+            {
+                var offset = 0;
+                while (offset < text.Length && text[offset] is '\r' or '\n') offset++;
+                promptOffsets.Add(output.Length + offset);
+            }
+            output.Append(text);
         }
         return output.ToString();
     }
@@ -341,6 +358,7 @@ internal sealed class TerminalTranscriptBuffer
             first.MarkdownSource = null;
             first.ThemeRenderer = null;
             first.CollapsedRenderer = null;
+            first.IsPromptStart = false;
             first.IsThinkingBlock = false;
             first.ThinkingSource = null;
             first.VisibleThinkingRenderer = null;
@@ -541,11 +559,12 @@ internal sealed class TerminalTranscriptBuffer
         string? thinkingSource = null, string? hiddenThinkingText = null,
         Func<TerminalTheme, string>? visibleThinkingRenderer = null,
         Func<TerminalTheme, string>? hiddenThinkingRenderer = null, bool thinkingHidden = false,
-        CapturedChunkBuilder? capturedThinkingChunk = null)
+        CapturedChunkBuilder? capturedThinkingChunk = null, bool isPromptStart = false)
     {
         public bool IsCollapsible { get; } = isCollapsible;
         public bool KeepLastPreviewLine { get; set; }
         public bool IsStatusMessage { get; } = isStatusMessage;
+        public bool IsPromptStart { get; set; } = isPromptStart;
         public bool IsThinkingBlock { get; set; } = isThinkingBlock;
         public bool ThinkingHidden { get; set; } = thinkingHidden;
         public StringBuilder Text { get; } = text;

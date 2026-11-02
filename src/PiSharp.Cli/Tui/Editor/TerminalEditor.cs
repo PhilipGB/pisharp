@@ -637,6 +637,16 @@ public sealed class TerminalEditor
                 screen.ScrollPage(up: false);
                 return true;
             }
+            if (_keymap.Matches("tui.altScreen.previousPrompt", screenKey))
+            {
+                screen.ScrollToPreviousPrompt();
+                return true;
+            }
+            if (_keymap.Matches("tui.altScreen.nextPrompt", screenKey))
+            {
+                screen.ScrollToNextPrompt();
+                return true;
+            }
             if (_keymap.Matches("tui.altScreen.top", screenKey))
             {
                 screen.ScrollToTop();
@@ -899,6 +909,10 @@ public sealed class TerminalEditor
             screen.ScrollPage(up: true);
         else if (_keymap.Matches("tui.altScreen.pageDown", key))
             screen.ScrollPage(up: false);
+        else if (_keymap.Matches("tui.altScreen.previousPrompt", key))
+            screen.ScrollToPreviousPrompt();
+        else if (_keymap.Matches("tui.altScreen.nextPrompt", key))
+            screen.ScrollToNextPrompt();
         else if (_keymap.Matches("tui.altScreen.top", key))
             screen.ScrollToTop();
         else if (_keymap.Matches("tui.altScreen.bottom", key))
