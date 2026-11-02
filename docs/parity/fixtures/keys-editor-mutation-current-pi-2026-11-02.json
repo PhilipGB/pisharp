@@ -1,0 +1,79 @@
+{
+  "capability": "keys-editor-mutation",
+  "date": "2026-11-02",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "fixture": "tools/parity/terminal/fixtures/terminal-editor-mutation.json",
+  "case": "100x30-dark-fullscreen",
+  "oracle": "docs/parity/fixtures/keys-editor-mutation-pi-oracle-2026-11-02.json",
+  "oracleScenarios": 53,
+  "commands": [
+    "node tools/parity/editor-mutation-oracle.mjs --pi /home/philip/Projects/pi-pinned --output docs/parity/fixtures/keys-editor-mutation-pi-oracle-2026-11-02.json",
+    "dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --filter \"FullyQualifiedName~EditorMutationParityTests|FullyQualifiedName~EditorMutationPtyTests\"",
+    "python3 tools/parity/terminal/run.py --pi /home/philip/Projects/pi-pinned --fixture tools/parity/terminal/fixtures/terminal-editor-mutation.json --case 100x30-dark-fullscreen --calibrate --semantic-only --output artifacts/parity/keys-editor-mutation-calibration",
+    "python3 tools/parity/terminal/run.py --pi /home/philip/Projects/pi-pinned --fixture tools/parity/terminal/fixtures/terminal-editor-mutation.json --case 100x30-dark-fullscreen --semantic-only --output artifacts/parity/keys-editor-mutation-paired",
+    "python3 tools/parity/terminal/assert_editor_mutation.py artifacts/parity/keys-editor-mutation-paired/report.json"
+  ],
+  "calibration": {
+    "differences": 0,
+    "canonicalRenderFrames": 38
+  },
+  "paired": {
+    "scenarioErrors": {},
+    "httpMatch": true,
+    "rawHttpMatch": true,
+    "namedCheckpoints": 24,
+    "semanticAssertion": "passed",
+    "renderDifferences": 10195,
+    "controlBoundaryDifferences": 487,
+    "totalCellStateDifferences": 19493,
+    "rawBytes": {
+      "pi": 13824,
+      "pisharp": 13845
+    },
+    "normalization": "Named editor checkpoints compare normalized editor text and the final provider-visible user message. Full-cell theme, control-sequence and transcript-status differences remain recorded rather than normalized."
+  },
+  "checkpoints": [
+    "startup",
+    "type-draft",
+    "ctrl-w-first",
+    "ctrl-w-second",
+    "ctrl-y-restore",
+    "alt-d-delete",
+    "ctrl-k-line-end",
+    "ctrl-y-line",
+    "undo-yank",
+    "ctrl-y-line-restored",
+    "backspace-draft",
+    "delete-grapheme",
+    "kill-ring-yank",
+    "kill-ring-pop-older",
+    "kill-ring-pop-newer",
+    "kill-ring-pop-inert",
+    "submit-mutations",
+    "submit-visible",
+    "submit-request",
+    "reload-bindings",
+    "configured-type",
+    "configured-delete",
+    "configured-yank",
+    "configured-undo",
+    "exit"
+  ],
+  "findings": [
+    {
+      "id": "terminal-render-control-differences",
+      "required": false,
+      "classification": "unrelated_terminal_rendering_and_control_sequence_difference",
+      "observation": "The paired run has 19,492 total cell/state differences, 10,194 canonical render differences and 485 control-boundary differences. Pinned Pi writes normal-buffer setup bytes before entering the alternate screen; PiSharp enters the alternate screen first. PiSharp also renders the /reload completion status in the transcript at the reload checkpoint where the pinned Pi frame is empty.",
+      "impact": "None of these differences change editor text, cursor-visible lifecycle, terminal restoration, or the submitted provider message."
+    },
+    {
+      "id": "cjk-word-segmentation",
+      "required": false,
+      "classification": "out_of_matrix_unicode_dictionary_difference",
+      "observation": "Pinned Pi delegates word boundaries to Intl.Segmenter (ICU). For \u4f60\u597d\u4e16\u754c, Ctrl+W deletes \u4e16\u754c and Alt+D deletes \u4f60\u597d; PiSharp treats the contiguous Han run as one word.",
+      "impact": "The required M12 contract covers grapheme clusters, combining characters and multiline boundaries. ICU dictionary-based CJK word breaking needs an ICU segmentation dependency or embedded dictionary and remains a documented, non-required finding."
+    }
+  ],
+  "implementationSha": "9caa431bc0f3e9867f924f3f7935c630d3f1e4a2"
+}

@@ -1,0 +1,280 @@
+{
+  "id": "terminal-editor-mutation",
+  "settings": {
+    "quietStartup": true
+  },
+  "arguments": {
+    "pi": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--no-session",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-tools",
+      "--no-context-files",
+      "--system-prompt",
+      "You are a terminal parity fixture."
+    ],
+    "pisharp": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--no-session",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-tools",
+      "--no-approve",
+      "--no-context-files",
+      "--system-prompt",
+      "You are a terminal parity fixture."
+    ]
+  },
+  "fixtureBehavior": {
+    "chatResponseContentByRequest": [
+      "MUTATION_HTTP_OK"
+    ]
+  },
+  "dimensions": [
+    {
+      "columns": 100,
+      "rows": 30
+    }
+  ],
+  "themes": [
+    "dark"
+  ],
+  "modes": [
+    "fullscreen"
+  ],
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "type-draft",
+      "send": "one two three",
+      "expect": "one two three"
+    },
+    {
+      "id": "ctrl-w-first",
+      "send": "\u0017",
+      "expect": "one two "
+    },
+    {
+      "id": "ctrl-w-second",
+      "send": "\u0017",
+      "expect": "one ",
+      "notExpect": "one two "
+    },
+    {
+      "id": "ctrl-y-restore",
+      "send": "\u0019",
+      "expect": "one two three"
+    },
+    {
+      "id": "alt-d-delete",
+      "send": "\u0001\u001b[100;3u",
+      "expect": " two three",
+      "notExpect": "one two three"
+    },
+    {
+      "id": "ctrl-k-line-end",
+      "send": "\u000b",
+      "expect": "fixture-model",
+      "notExpect": "two three"
+    },
+    {
+      "id": "ctrl-y-line",
+      "send": "\u0019",
+      "expect": "one two three"
+    },
+    {
+      "id": "undo-yank",
+      "send": "\u001f",
+      "expect": "fixture-model",
+      "notExpect": "two three"
+    },
+    {
+      "id": "ctrl-y-line-restored",
+      "send": "\u0019",
+      "expect": "one two three"
+    },
+    {
+      "id": "ctrl-a-ctrl-k-clear",
+      "send": "\u0001\u000b",
+      "expect": "fixture-model",
+      "notExpect": "two three"
+    },
+    {
+      "id": "backspace-draft",
+      "send": "abc\u007f",
+      "expect": "ab",
+      "notExpect": "abc"
+    },
+    {
+      "id": "delete-grapheme",
+      "send": "\u0001\u001b[3~",
+      "expect": "b",
+      "notExpect": "ab"
+    },
+    {
+      "id": "kill-ring-draft",
+      "send": "\u0001\u000b\u0001\u000b"
+    },
+    {
+      "id": "kill-ring-type",
+      "send": "one alpha",
+      "expect": "one alpha"
+    },
+    {
+      "id": "kill-ring-first",
+      "send": "\u0017",
+      "expect": "one "
+    },
+    {
+      "id": "kill-ring-second",
+      "send": "\u0001\u000b",
+      "expect": "fixture-model",
+      "notExpect": "one "
+    },
+    {
+      "id": "kill-ring-yank",
+      "send": "\u0019",
+      "expect": "one "
+    },
+    {
+      "id": "kill-ring-pop-older",
+      "send": "\u001b[121;3u",
+      "expect": "alpha",
+      "notExpect": "one alpha"
+    },
+    {
+      "id": "kill-ring-pop-newer",
+      "send": "\u001b[121;3u",
+      "expect": "b",
+      "notExpect": "alpha"
+    },
+    {
+      "id": "kill-ring-pop-inert",
+      "send": "x\u001b[121;3u",
+      "expect": "bx",
+      "notExpect": "one x"
+    },
+    {
+      "id": "submit-draft-prepare",
+      "send": "\u0001\u000b",
+      "expect": "fixture-model",
+      "notExpect": "one x"
+    },
+    {
+      "id": "submit-draft",
+      "send": "draft prompt",
+      "expect": "draft prompt"
+    },
+    {
+      "id": "submit-mutations",
+      "send": "\u0017\u0019\u0001\u001b[100;3u\u0005\u0015",
+      "expect": "fixture-model",
+      "notExpect": "draft prompt"
+    },
+    {
+      "id": "submit-visible",
+      "send": "provider visible input",
+      "expect": "provider visible input"
+    },
+    {
+      "id": "submit-request",
+      "send": "\r",
+      "expect": "MUTATION_HTTP_OK"
+    },
+    {
+      "id": "seed-mutation-bindings",
+      "writeFiles": {
+        "agent": {
+          "keybindings.json": {
+            "tui.editor.deleteWordBackward": "ctrl+n",
+            "tui.editor.yank": "alt+u",
+            "tui.editor.undo": "alt+o"
+          }
+        }
+      },
+      "allowStaticFrame": true
+    },
+    {
+      "id": "reload-bindings",
+      "send": "/reload\r",
+      "expect": "Reloaded keybindings"
+    },
+    {
+      "id": "configured-type",
+      "send": "gamma delta",
+      "expect": "gamma delta"
+    },
+    {
+      "id": "configured-delete",
+      "send": "\u000e",
+      "expect": "gamma ",
+      "notExpect": "gamma delta"
+    },
+    {
+      "id": "configured-yank",
+      "send": "\u001b[117;3u",
+      "expect": "gamma delta"
+    },
+    {
+      "id": "configured-undo",
+      "send": "\u001b[111;3u",
+      "expect": "gamma ",
+      "notExpect": "gamma delta"
+    },
+    {
+      "id": "configured-clear",
+      "send": "\u0001\u000b",
+      "expect": "fixture-model",
+      "notExpect": "gamma"
+    },
+    {
+      "id": "exit",
+      "send": "\u0003\u0003",
+      "exit": true
+    }
+  ],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  },
+  "assertionFrames": [
+    "startup",
+    "type-draft",
+    "ctrl-w-first",
+    "ctrl-w-second",
+    "ctrl-y-restore",
+    "alt-d-delete",
+    "ctrl-k-line-end",
+    "ctrl-y-line",
+    "undo-yank",
+    "ctrl-y-line-restored",
+    "backspace-draft",
+    "delete-grapheme",
+    "kill-ring-yank",
+    "kill-ring-pop-older",
+    "kill-ring-pop-newer",
+    "kill-ring-pop-inert",
+    "submit-mutations",
+    "submit-visible",
+    "submit-request",
+    "reload-bindings",
+    "configured-type",
+    "configured-delete",
+    "configured-yank",
+    "configured-undo",
+    "exit"
+  ]
+}

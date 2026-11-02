@@ -1,0 +1,379 @@
+{
+  "schema": 1,
+  "capability": "keys-editor-mutation",
+  "date": "2026-11-02",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "implementationSha": "9caa431bc0f3e9867f924f3f7935c630d3f1e4a2",
+  "oracle": "docs/parity/fixtures/keys-editor-mutation-pi-oracle-2026-11-02.json",
+  "terminalFixture": "tools/parity/terminal/fixtures/terminal-editor-mutation.json",
+  "terminalAssertion": "tools/parity/terminal/assert_editor_mutation.py",
+  "evidence": "docs/parity/fixtures/keys-editor-mutation-current-pi-2026-11-02.json",
+  "requiredTests": {
+    "theories": [
+      "PiSharp.Tests.EditorMutationParityTests.MatchesPinnedPi"
+    ],
+    "facts": [
+      "PiSharp.Tests.EditorMutationParityTests.SelectionDeletionReplacementAndKillsKeepCursorAndUndoIntegrity",
+      "PiSharp.Tests.EditorMutationParityTests.SelectionAcrossGraphemesAndLinesUsesLinearOffsets",
+      "PiSharp.Tests.EditorMutationParityTests.YankReplacesSelectionAndUndoRestoresIt",
+      "PiSharp.Tests.EditorMutationParityTests.CtrlDExitsOnlyWhenTheEditorIsEmpty",
+      "PiSharp.Tests.EditorMutationParityTests.ConfiguredMutationBindingsReplaceDefaultsAndReloadAppliesChanges",
+      "PiSharp.Tests.EditorMutationPtyTests.MutationKeysReachPiEditorStatesThroughLinuxPty",
+      "PiSharp.Tests.EditorMutationPtyTests.KillRingYankAndYankPopMatchPiThroughLinuxPty",
+      "PiSharp.Tests.EditorMutationPtyTests.ConfiguredMutationBindingsAndReloadApplyThroughLinuxPty",
+      "PiSharp.Tests.EditorMutationPtyTests.WidgetAndApplicationShortcutsTakePrecedenceOverMutationKeysThroughLinuxPty",
+      "PiSharp.Tests.EditorMutationPtyTests.MutationSubmissionReachesTheProviderAndRestoresTheTerminalThroughLinuxPty",
+      "PiSharp.Tests.EditorMutationPtyTests.CtrlDExitsAnEmptyEditorAndRestoresTheTerminalThroughLinuxPty",
+      "PiSharp.Tests.TerminalInputTests.DecodesLegacyControlBytesForMutationKeybindings",
+      "PiSharp.Tests.EditorKeymapTests.ApplicationShortcutTakesPrecedenceOverEditorBindingInTheEditorContext",
+      "PiSharp.Tests.EditorKeymapTests.HistoryBindingsRemainAboveApplicationShortcuts"
+    ],
+    "ptyEvidence": [
+      "pty-mutation-keys",
+      "pty-kill-ring",
+      "pty-configured-reload",
+      "pty-widget-precedence",
+      "pty-provider-lifecycle",
+      "pty-ctrl-d-exit"
+    ]
+  },
+  "cases": [
+    {
+      "id": "M01",
+      "behavior": "Backspace deletes the previous character",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "backspace deletes previous grapheme",
+        "backspace merges previous line",
+        "backspace at start is a no-op",
+        "unicode combining mark survives backspace"
+      ],
+      "tests": [
+        "PiSharp.Tests.EditorMutationParityTests.MatchesPinnedPi"
+      ],
+      "pty": [
+        "pty-mutation-keys"
+      ]
+    },
+    {
+      "id": "M02",
+      "behavior": "Delete/Ctrl+D deletes forward; Ctrl+D exits only when appropriate",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "forward delete removes next grapheme",
+        "forward delete merges next line",
+        "forward delete at document end does not exit"
+      ],
+      "tests": [
+        "PiSharp.Tests.EditorMutationParityTests.MatchesPinnedPi",
+        "PiSharp.Tests.EditorMutationParityTests.CtrlDExitsOnlyWhenTheEditorIsEmpty",
+        "PiSharp.Tests.EditorMutationPtyTests.CtrlDExitsAnEmptyEditorAndRestoresTheTerminalThroughLinuxPty"
+      ],
+      "pty": [
+        "pty-ctrl-d-exit",
+        "pty-mutation-keys"
+      ]
+    },
+    {
+      "id": "M03",
+      "behavior": "Ctrl+W/Alt+Backspace deletes the previous word",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "ctrl-w deletes previous word",
+        "ctrl-w skips trailing whitespace",
+        "ctrl-w stops at punctuation",
+        "ctrl-w keeps connector words",
+        "ctrl-w stops at apostrophe boundary",
+        "ctrl-w handles decimals",
+        "alt-backspace deletes previous word",
+        "alt-backspace skips whitespace"
+      ],
+      "tests": [
+        "PiSharp.Tests.EditorMutationParityTests.MatchesPinnedPi"
+      ],
+      "pty": [
+        "pty-mutation-keys"
+      ]
+    },
+    {
+      "id": "M04",
+      "behavior": "Alt+D/Alt+Delete deletes the next word",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "alt-d deletes next word",
+        "alt-d stops at punctuation",
+        "alt-d keeps connector words",
+        "alt-d handles decimals",
+        "alt-delete deletes next word"
+      ],
+      "tests": [
+        "PiSharp.Tests.EditorMutationParityTests.MatchesPinnedPi"
+      ],
+      "pty": [
+        "pty-mutation-keys"
+      ]
+    },
+    {
+      "id": "M05",
+      "behavior": "Ctrl+U deletes to line start",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "ctrl-u deletes to line start",
+        "ctrl-u merges previous line at start",
+        "ctrl-u at document start is a no-op"
+      ],
+      "tests": [
+        "PiSharp.Tests.EditorMutationParityTests.MatchesPinnedPi"
+      ],
+      "pty": [
+        "pty-mutation-keys",
+        "pty-provider-lifecycle"
+      ]
+    },
+    {
+      "id": "M06",
+      "behavior": "Ctrl+K deletes to line end",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "ctrl-k deletes to line end",
+        "ctrl-k merges next line at end",
+        "ctrl-k at document end is a no-op"
+      ],
+      "tests": [
+        "PiSharp.Tests.EditorMutationParityTests.MatchesPinnedPi"
+      ],
+      "pty": [
+        "pty-mutation-keys"
+      ]
+    },
+    {
+      "id": "M07",
+      "behavior": "Ctrl+Y restores the most recent killed text",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "ctrl-y restores most recent kill",
+        "ctrl-y restores a multiline kill",
+        "ctrl-y without a kill is a no-op"
+      ],
+      "tests": [
+        "PiSharp.Tests.EditorMutationParityTests.MatchesPinnedPi"
+      ],
+      "pty": [
+        "pty-kill-ring",
+        "pty-provider-lifecycle"
+      ]
+    },
+    {
+      "id": "M08",
+      "behavior": "Alt+Y cycles kill-ring entries only in the valid yank-pop state",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "alt-y cycles kill ring after yank",
+        "alt-y is inert before a yank",
+        "alt-y stops after an unrelated action",
+        "alt-y restores a previous multiline yank"
+      ],
+      "tests": [
+        "PiSharp.Tests.EditorMutationParityTests.MatchesPinnedPi"
+      ],
+      "pty": [
+        "pty-kill-ring"
+      ]
+    },
+    {
+      "id": "M09",
+      "behavior": "Consecutive kills accumulate in Pi-compatible order; unrelated actions break the chain",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "consecutive backward kills accumulate",
+        "consecutive forward kills accumulate",
+        "mixed kills preserve prepend then append order",
+        "cursor movement breaks the kill chain",
+        "typing breaks the kill chain",
+        "multiline kills keep newline order"
+      ],
+      "tests": [
+        "PiSharp.Tests.EditorMutationParityTests.MatchesPinnedPi"
+      ],
+      "pty": [
+        "pty-mutation-keys",
+        "pty-kill-ring"
+      ]
+    },
+    {
+      "id": "M10",
+      "behavior": "Ctrl+- undo restores text and cursor correctly, including grouped edits",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "undo groups typed words",
+        "undo keeps spaces as boundaries",
+        "undo separates newline edits",
+        "undo restores a kill and cursor",
+        "undo reverts a yank",
+        "undo restores a backspace",
+        "undo restores a forward delete",
+        "undo groups typing after cursor movement",
+        "undo reverts each kill separately",
+        "undo reverts yank-pop steps",
+        "undo with no edits is a no-op"
+      ],
+      "tests": [
+        "PiSharp.Tests.EditorMutationParityTests.MatchesPinnedPi",
+        "PiSharp.Tests.TerminalInputTests.DecodesLegacyControlBytesForMutationKeybindings"
+      ],
+      "pty": [
+        "pty-mutation-keys",
+        "pty-configured-reload"
+      ]
+    },
+    {
+      "id": "M11",
+      "behavior": "Selection deletion/replacement maintains cursor and selection integrity",
+      "status": "pass",
+      "required": true,
+      "oracle": [],
+      "tests": [
+        "PiSharp.Tests.EditorMutationParityTests.SelectionDeletionReplacementAndKillsKeepCursorAndUndoIntegrity",
+        "PiSharp.Tests.EditorMutationParityTests.SelectionAcrossGraphemesAndLinesUsesLinearOffsets",
+        "PiSharp.Tests.EditorMutationParityTests.YankReplacesSelectionAndUndoRestoresIt"
+      ],
+      "pty": [
+        "pty-mutation-keys"
+      ]
+    },
+    {
+      "id": "M12",
+      "behavior": "Unicode graphemes, combining characters and multiline boundaries are handled correctly",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "backspace deletes previous grapheme",
+        "forward delete removes next grapheme",
+        "unicode combining mark survives backspace",
+        "unicode emoji word deletion stops at emoji",
+        "backspace merges previous line",
+        "forward delete merges next line",
+        "ctrl-w merges previous line",
+        "alt-d merges next line",
+        "multiline kills keep newline order"
+      ],
+      "tests": [
+        "PiSharp.Tests.EditorMutationParityTests.MatchesPinnedPi",
+        "PiSharp.Tests.EditorMutationParityTests.SelectionAcrossGraphemesAndLinesUsesLinearOffsets"
+      ],
+      "pty": [
+        "pty-mutation-keys"
+      ]
+    },
+    {
+      "id": "M13",
+      "behavior": "Configured keybindings override defaults; reload applies changes",
+      "status": "pass",
+      "required": true,
+      "oracle": [],
+      "tests": [
+        "PiSharp.Tests.EditorMutationParityTests.ConfiguredMutationBindingsReplaceDefaultsAndReloadAppliesChanges",
+        "PiSharp.Tests.EditorMutationPtyTests.ConfiguredMutationBindingsAndReloadApplyThroughLinuxPty"
+      ],
+      "pty": [
+        "pty-configured-reload"
+      ],
+      "terminalCheckpoints": [
+        "reload-bindings",
+        "configured-type",
+        "configured-delete",
+        "configured-yank",
+        "configured-undo"
+      ]
+    },
+    {
+      "id": "M14",
+      "behavior": "Widget and application shortcuts take precedence in the correct context",
+      "status": "pass",
+      "required": true,
+      "oracle": [],
+      "tests": [
+        "PiSharp.Tests.EditorKeymapTests.ApplicationShortcutTakesPrecedenceOverEditorBindingInTheEditorContext",
+        "PiSharp.Tests.EditorKeymapTests.HistoryBindingsRemainAboveApplicationShortcuts",
+        "PiSharp.Tests.EditorMutationPtyTests.WidgetAndApplicationShortcutsTakePrecedenceOverMutationKeysThroughLinuxPty"
+      ],
+      "pty": [
+        "pty-widget-precedence"
+      ]
+    },
+    {
+      "id": "M15",
+      "behavior": "Real PTY mutation and submission produce the correct provider-visible input; terminal modes restore on exit/cancellation",
+      "status": "pass",
+      "required": true,
+      "oracle": [],
+      "tests": [
+        "PiSharp.Tests.EditorMutationPtyTests.MutationKeysReachPiEditorStatesThroughLinuxPty",
+        "PiSharp.Tests.EditorMutationPtyTests.KillRingYankAndYankPopMatchPiThroughLinuxPty",
+        "PiSharp.Tests.EditorMutationPtyTests.MutationSubmissionReachesTheProviderAndRestoresTheTerminalThroughLinuxPty",
+        "PiSharp.Tests.EditorMutationPtyTests.CtrlDExitsAnEmptyEditorAndRestoresTheTerminalThroughLinuxPty"
+      ],
+      "pty": [
+        "pty-mutation-keys",
+        "pty-kill-ring",
+        "pty-provider-lifecycle",
+        "pty-ctrl-d-exit"
+      ],
+      "terminalCheckpoints": [
+        "submit-visible",
+        "submit-request",
+        "exit"
+      ]
+    }
+  ],
+  "requiredComparisons": [
+    {
+      "id": "editor-buffer-pinned-pi-oracle",
+      "status": "match",
+      "required": true,
+      "artifact": "docs/parity/fixtures/keys-editor-mutation-pi-oracle-2026-11-02.json",
+      "scenarios": 53
+    },
+    {
+      "id": "terminal-editor-checkpoints",
+      "status": "match",
+      "required": true,
+      "artifact": "docs/parity/fixtures/keys-editor-mutation-current-pi-2026-11-02.json",
+      "checkpoints": 24
+    },
+    {
+      "id": "provider-visible-submission",
+      "status": "match",
+      "required": true,
+      "artifact": "docs/parity/fixtures/keys-editor-mutation-current-pi-2026-11-02.json"
+    },
+    {
+      "id": "terminal-restoration",
+      "status": "match",
+      "required": true,
+      "artifact": "docs/parity/fixtures/keys-editor-mutation-current-pi-2026-11-02.json"
+    }
+  ],
+  "findings": [
+    {
+      "id": "terminal-render-control-differences",
+      "required": false,
+      "classification": "unrelated_terminal_rendering_and_control_sequence_difference"
+    },
+    {
+      "id": "cjk-word-segmentation",
+      "required": false,
+      "classification": "out_of_matrix_unicode_dictionary_difference"
+    }
+  ]
+}

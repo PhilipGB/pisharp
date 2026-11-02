@@ -1,0 +1,450 @@
+{
+  "backspace deletes previous grapheme": {
+    "text": "a😀éb",
+    "steps": [
+      "bs",
+      "bs",
+      "bs"
+    ]
+  },
+  "backspace merges previous line": {
+    "text": "ab\ncd",
+    "offset": 3,
+    "steps": [
+      "bs",
+      "ctrl-minus"
+    ]
+  },
+  "backspace at start is a no-op": {
+    "text": "abc",
+    "offset": 0,
+    "steps": [
+      "bs"
+    ]
+  },
+  "forward delete removes next grapheme": {
+    "text": "a😀éb",
+    "steps": [
+      "ctrl-a",
+      "ctrl-d",
+      "ctrl-d",
+      "ctrl-minus"
+    ]
+  },
+  "forward delete merges next line": {
+    "text": "ab\ncd",
+    "offset": 2,
+    "steps": [
+      "ctrl-d",
+      "ctrl-minus"
+    ]
+  },
+  "forward delete at document end does not exit": {
+    "text": "abc",
+    "offset": 3,
+    "steps": [
+      "ctrl-d"
+    ]
+  },
+  "ctrl-w deletes previous word": {
+    "text": "hello world",
+    "steps": [
+      "ctrl-w"
+    ]
+  },
+  "ctrl-w skips trailing whitespace": {
+    "text": "hello   ",
+    "steps": [
+      "ctrl-w"
+    ]
+  },
+  "ctrl-w stops at punctuation": {
+    "text": "hello-world",
+    "steps": [
+      "ctrl-w",
+      "ctrl-w",
+      "ctrl-w"
+    ]
+  },
+  "ctrl-w keeps connector words": {
+    "text": "foo_bar baz",
+    "steps": [
+      "ctrl-w"
+    ]
+  },
+  "ctrl-w stops at apostrophe boundary": {
+    "text": "don't",
+    "steps": [
+      "ctrl-w",
+      "ctrl-w",
+      "ctrl-w"
+    ]
+  },
+  "ctrl-w handles decimals": {
+    "text": "12.34",
+    "steps": [
+      "ctrl-w",
+      "ctrl-w"
+    ]
+  },
+  "ctrl-w merges previous line": {
+    "text": "one\ntwo",
+    "steps": [
+      "ctrl-w",
+      "ctrl-w",
+      "ctrl-y"
+    ]
+  },
+  "alt-backspace deletes previous word": {
+    "text": "one two three",
+    "steps": [
+      "alt-bs"
+    ]
+  },
+  "alt-backspace skips whitespace": {
+    "text": "trailing  ",
+    "steps": [
+      "alt-bs"
+    ]
+  },
+  "alt-d deletes next word": {
+    "text": "hello world",
+    "offset": 0,
+    "steps": [
+      "alt-d"
+    ]
+  },
+  "alt-d stops at punctuation": {
+    "text": "hello-world",
+    "offset": 0,
+    "steps": [
+      "alt-d",
+      "alt-d",
+      "alt-d"
+    ]
+  },
+  "alt-d keeps connector words": {
+    "text": "foo_bar baz",
+    "offset": 0,
+    "steps": [
+      "alt-d"
+    ]
+  },
+  "alt-d handles decimals": {
+    "text": "12.34",
+    "offset": 0,
+    "steps": [
+      "alt-d",
+      "alt-d"
+    ]
+  },
+  "alt-delete deletes next word": {
+    "text": "one two",
+    "offset": 0,
+    "steps": [
+      "alt-del"
+    ]
+  },
+  "alt-d merges next line": {
+    "text": "one\ntwo",
+    "offset": 0,
+    "steps": [
+      "alt-d",
+      "alt-d",
+      "ctrl-y"
+    ]
+  },
+  "ctrl-u deletes to line start": {
+    "text": "abc def",
+    "offset": 4,
+    "steps": [
+      "ctrl-u"
+    ]
+  },
+  "ctrl-u merges previous line at start": {
+    "text": "A\nB\nC",
+    "steps": [
+      "ctrl-u",
+      "ctrl-u",
+      "ctrl-u",
+      "ctrl-u",
+      "ctrl-y"
+    ]
+  },
+  "ctrl-u at document start is a no-op": {
+    "text": "A\nB",
+    "offset": 0,
+    "steps": [
+      "ctrl-u"
+    ]
+  },
+  "ctrl-k deletes to line end": {
+    "text": "abc def",
+    "offset": 4,
+    "steps": [
+      "ctrl-k"
+    ]
+  },
+  "ctrl-k merges next line at end": {
+    "text": "A\nB\nC",
+    "offset": 1,
+    "steps": [
+      "ctrl-k",
+      "ctrl-k",
+      "ctrl-k",
+      "ctrl-k",
+      "ctrl-y"
+    ]
+  },
+  "ctrl-k at document end is a no-op": {
+    "text": "ab\ncd",
+    "offset": 5,
+    "steps": [
+      "ctrl-k"
+    ]
+  },
+  "ctrl-y restores most recent kill": {
+    "text": "hello world",
+    "steps": [
+      "ctrl-w",
+      "ctrl-y"
+    ]
+  },
+  "ctrl-y restores a multiline kill": {
+    "text": "alpha\nbeta",
+    "offset": 5,
+    "steps": [
+      "ctrl-k",
+      "ctrl-k",
+      "ctrl-y"
+    ]
+  },
+  "ctrl-y without a kill is a no-op": {
+    "text": "abc",
+    "steps": [
+      "ctrl-y"
+    ]
+  },
+  "alt-y cycles kill ring after yank": {
+    "text": "",
+    "steps": [
+      "set:one alpha",
+      "pos:9",
+      "ctrl-w",
+      "set:two beta",
+      "pos:8",
+      "ctrl-w",
+      "set:three gamma",
+      "pos:11",
+      "ctrl-w",
+      "set:",
+      "ctrl-y",
+      "alt-y",
+      "alt-y",
+      "alt-y"
+    ]
+  },
+  "alt-y is inert before a yank": {
+    "text": "abc",
+    "steps": [
+      "ctrl-w",
+      "alt-y"
+    ]
+  },
+  "alt-y stops after an unrelated action": {
+    "text": "",
+    "steps": [
+      "set:one alpha",
+      "pos:9",
+      "ctrl-w",
+      "set:two beta",
+      "pos:8",
+      "ctrl-w",
+      "set:",
+      "ctrl-y",
+      "type:x",
+      "alt-y"
+    ]
+  },
+  "alt-y restores a previous multiline yank": {
+    "text": "alpha\nbeta\ngamma",
+    "steps": [
+      "pos:10",
+      "ctrl-u",
+      "set:keep",
+      "pos:0",
+      "ctrl-k",
+      "set:",
+      "ctrl-y",
+      "alt-y",
+      "alt-y"
+    ]
+  },
+  "consecutive backward kills accumulate": {
+    "text": "one two three",
+    "steps": [
+      "ctrl-w",
+      "ctrl-w",
+      "ctrl-w",
+      "ctrl-y"
+    ]
+  },
+  "consecutive forward kills accumulate": {
+    "text": "one two three",
+    "offset": 0,
+    "steps": [
+      "alt-d",
+      "alt-d",
+      "alt-d",
+      "ctrl-y"
+    ]
+  },
+  "mixed kills preserve prepend then append order": {
+    "text": "one two three",
+    "offset": 4,
+    "steps": [
+      "ctrl-k",
+      "ctrl-w",
+      "ctrl-y"
+    ]
+  },
+  "cursor movement breaks the kill chain": {
+    "text": "one two three",
+    "steps": [
+      "ctrl-w",
+      "ctrl-a",
+      "ctrl-w",
+      "ctrl-y"
+    ]
+  },
+  "typing breaks the kill chain": {
+    "text": "one two three",
+    "steps": [
+      "ctrl-w",
+      "type:x",
+      "ctrl-w",
+      "ctrl-y"
+    ]
+  },
+  "undo groups typed words": {
+    "text": "",
+    "steps": [
+      "type:hello world",
+      "ctrl-minus"
+    ]
+  },
+  "undo keeps spaces as boundaries": {
+    "text": "",
+    "steps": [
+      "type:hello  ",
+      "ctrl-minus",
+      "ctrl-minus",
+      "ctrl-minus"
+    ]
+  },
+  "undo separates newline edits": {
+    "text": "",
+    "steps": [
+      "type:hello",
+      "newline",
+      "type:world",
+      "ctrl-minus",
+      "ctrl-minus",
+      "ctrl-minus"
+    ]
+  },
+  "undo restores a kill and cursor": {
+    "text": "hello world",
+    "offset": 5,
+    "steps": [
+      "ctrl-w",
+      "ctrl-minus"
+    ]
+  },
+  "undo reverts a yank": {
+    "text": "hello world",
+    "steps": [
+      "ctrl-w",
+      "ctrl-y",
+      "ctrl-minus"
+    ]
+  },
+  "undo restores a backspace": {
+    "text": "hello",
+    "steps": [
+      "bs",
+      "ctrl-minus"
+    ]
+  },
+  "undo restores a forward delete": {
+    "text": "hello",
+    "steps": [
+      "ctrl-a",
+      "ctrl-d",
+      "ctrl-minus"
+    ]
+  },
+  "undo groups typing after cursor movement": {
+    "text": "",
+    "steps": [
+      "type:hello",
+      "left",
+      "type:x",
+      "ctrl-minus"
+    ]
+  },
+  "undo reverts each kill separately": {
+    "text": "hello world",
+    "steps": [
+      "ctrl-w",
+      "ctrl-w",
+      "ctrl-minus",
+      "ctrl-minus"
+    ]
+  },
+  "undo reverts yank-pop steps": {
+    "text": "",
+    "steps": [
+      "set:one alpha",
+      "pos:9",
+      "ctrl-w",
+      "set:two beta",
+      "pos:8",
+      "ctrl-w",
+      "set:",
+      "ctrl-y",
+      "alt-y",
+      "ctrl-minus",
+      "ctrl-minus"
+    ]
+  },
+  "unicode combining mark survives backspace": {
+    "text": "éx",
+    "steps": [
+      "bs",
+      "bs"
+    ]
+  },
+  "unicode emoji word deletion stops at emoji": {
+    "text": "emoji😀test",
+    "steps": [
+      "ctrl-w"
+    ]
+  },
+  "multiline kills keep newline order": {
+    "text": "A\nB\nC",
+    "steps": [
+      "ctrl-u",
+      "ctrl-u",
+      "ctrl-u",
+      "ctrl-u",
+      "ctrl-y"
+    ]
+  },
+  "undo with no edits is a no-op": {
+    "text": "",
+    "steps": [
+      "ctrl-minus"
+    ]
+  }
+}
