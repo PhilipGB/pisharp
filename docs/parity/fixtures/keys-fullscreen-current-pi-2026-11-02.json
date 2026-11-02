@@ -81,5 +81,6 @@
   "limitations": [
     "The paired products still differ in unrelated full-screen cell styling, padding, scrollbar cells and render-frame count; the semantic navigation assertion passes all named checkpoints.",
     "Raw bytes are not identical; HTTP traces and scenario completion match."
-  ]
+  ],
+  "implementationSha": "076d6d7e31602d3706c72789ab8a85e0280cb223"
 }

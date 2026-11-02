@@ -1,6 +1,7 @@
 # Fullscreen transcript navigation parity — 2026-11-02
 
 Pinned Pi: `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
+PiSharp implementation commit: `076d6d7e31602d3706c72789ab8a85e0280cb223`.
 
 This receipt covers the `keys-fullscreen` contract only: PageUp/PageDown,
 Ctrl+Home/End, Ctrl+Shift+Up/Down semantic anchors, Ctrl+Shift+F search,
