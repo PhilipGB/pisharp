@@ -1183,16 +1183,30 @@ public sealed class TerminalScreen : IDisposable
 
     internal void ScrollToNextPrompt() => ScrollToPrompt(1);
 
+    internal IReadOnlyList<int> SemanticAnchorSourceOffsets(int width)
+    {
+        var offsets = _transcript.GetSemanticAnchorSourceOffsets(width).ToList();
+        var liveOffset = _conversationPresentation.LiveSemanticAnchorOffset;
+        if (liveOffset >= 0)
+        {
+            var transcriptLength = GetTranscriptTextLocked(width).Length -
+                _conversationPresentation.LiveText.Length;
+            offsets.Add(transcriptLength + liveOffset);
+        }
+        return offsets;
+    }
+
     private void ScrollToPrompt(int direction)
     {
         lock (_gate)
         {
             if (!_active) return;
             var width = Math.Max(1, Columns() - 2 * _outputPad);
-            var promptOffsets = _transcript.GetSemanticAnchorSourceOffsets(width);
+            var promptOffsets = SemanticAnchorSourceOffsets(width);
             if (promptOffsets.Count == 0) return;
             var prefix = StartupContentPrefixLocked();
-            var layout = TerminalTextLayout.Create(prefix + GetTranscriptTextLocked(width), width);
+            var transcriptText = GetTranscriptTextLocked(width);
+            var layout = TerminalTextLayout.Create(prefix + transcriptText, width);
             var viewportHeight = Math.Max(1, _lastTranscriptHeight > 0 ? _lastTranscriptHeight : Rows());
             var firstVisibleRow = Math.Max(0, layout.RowCount - viewportHeight - _scrollOffset);
             int? target = null;

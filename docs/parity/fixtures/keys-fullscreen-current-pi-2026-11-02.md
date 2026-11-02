@@ -24,6 +24,11 @@ resize and terminal restoration.
 - Fullscreen scroll compensation now detects when Markdown re-rendering has made
   a source offset point at unrelated content during resize and falls back to the
   previous absolute row. Stable text keeps its source anchor.
+- The live streaming assistant/thinking segment is included as a temporary
+  semantic anchor (`LiveSemanticAnchorOffset`). Its first non-empty live row can
+  be targeted forward while the response is still held. Committing the message
+  replaces the temporary target with exactly one committed anchor; the anchor
+  count remains two for a user plus assistant turn.
 
 ## Evidence
 
@@ -48,12 +53,18 @@ Deterministic checks:
 - `TerminalPtyTests.FullscreenNavigationAndSearchRemainActiveWhileStreamingThroughLinuxPty`
   holds a loopback provider stream open, exercises paging, semantic anchors,
   live search count changes, Enter/Shift+Enter, Escape close, draft preservation,
-  cancellation and terminal restoration.
+  cancellation and terminal restoration. It also navigates from the live user
+  prompt forward to the active 30-line assistant response while `Working`.
+- `TerminalScreenTests.LiveAssistantMessageIsSemanticAnchorAndCommitDoesNotDuplicate`
+  proves the live anchor is present before commit and does not duplicate after
+  commit.
 
 Fail-first: equivalent regressions using only pre-change APIs were run in a
 detached worktree at `c4802599`. All three failed on the baseline and pass after
 the correction: prompt-navigation bindings missing, live search result count
-stale, and the search shortcut not closing the search widget.
+stale, and the search shortcut not closing the search widget. A fourth baseline
+case could not reach the live assistant anchor at all (it stayed at
+`STREAM_ROW_16` instead of `STREAM_ROW_00`).
 
 Pinned Pi differential:
 
@@ -88,12 +99,7 @@ python3 tools/parity/terminal/assert_fullscreen_navigation.py \
 
 Local validation: `dotnet format --verify-no-changes` passed, the
 warnings-as-errors build passed with zero warnings/errors, and the full suite
-passed 4,076/4,076 with zero skips.
-
-Exact-head CI on `0af7ae23029066c2e503c3b23edb3462a776aaad`: Linux CI run
-`41379335882` passed. A duplicate run `41379340543` initially failed the
-unrelated `RpcCompactionProcessTests.RpcProcessUsesPiSplitTurnCompactionAndCustomInstructionsForHistoryOnly`
-timing case; the failed-job rerun passed all 4,076 tests.
+passed 4,077/4,077 with zero skips.
 
 ## Limits
 

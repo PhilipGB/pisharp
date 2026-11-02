@@ -45,6 +45,19 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
     public bool ThinkingBlocksHidden => _thinkingBlocksHidden;
     public bool HasContent => _hasConversationContent;
 
+    /// <summary>Offset of the live assistant/thinking message within <see cref="LiveText"/>, or -1 when it already has a committed anchor.</summary>
+    public int LiveSemanticAnchorOffset
+    {
+        get
+        {
+            if (_assistantAnchorCommitted) return -1;
+            var text = LiveText;
+            var offset = 0;
+            while (offset < text.Length && text[offset] is '\r' or '\n') offset++;
+            return offset < text.Length ? offset : -1;
+        }
+    }
+
     private void TouchLive() => Interlocked.Increment(ref _liveRevision);
 
     public void Reset()

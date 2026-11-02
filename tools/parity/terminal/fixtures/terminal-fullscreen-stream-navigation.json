@@ -1,0 +1,137 @@
+{
+  "id": "terminal-fullscreen-stream-navigation",
+  "settings": {
+    "quietStartup": true
+  },
+  "arguments": {
+    "pi": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--no-session",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-tools",
+      "--no-context-files",
+      "--system-prompt",
+      "You are a terminal parity fixture."
+    ],
+    "pisharp": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--no-session",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-tools",
+      "--no-approve",
+      "--no-context-files",
+      "--system-prompt",
+      "You are a terminal parity fixture."
+    ]
+  },
+  "fixtureBehavior": {
+    "chatRequestGates": [
+      "stream-nav-request"
+    ],
+    "chatResponseChunksByRequest": [
+      [
+        "STREAM_ROW_00\nSTREAM_ROW_01\nSTREAM_ROW_02\nSTREAM_ROW_03\nSTREAM_ROW_04\nSTREAM_ROW_05\nSTREAM_ROW_06\nSTREAM_ROW_07\nSTREAM_ROW_08\nSTREAM_ROW_09\nSTREAM_ROW_10\nSTREAM_ROW_11\nSTREAM_ROW_12\nSTREAM_ROW_13\nSTREAM_ROW_14\nSTREAM_ROW_15\nSTREAM_ROW_16\nSTREAM_ROW_17\nSTREAM_ROW_18\nSTREAM_ROW_19\nSTREAM_ROW_20\nSTREAM_ROW_21\nSTREAM_ROW_22\nSTREAM_ROW_23\nSTREAM_ROW_24\nSTREAM_ROW_25\nSTREAM_ROW_26\nSTREAM_ROW_27\nSTREAM_ROW_28\nSTREAM_ROW_29\nSTREAM_ROW_30\nSTREAM_ROW_31\nSTREAM_ROW_32\nSTREAM_ROW_33\nSTREAM_ROW_34\nSTREAM_ROW_35\nSTREAM_ROW_36\nSTREAM_ROW_37\nSTREAM_ROW_38\nSTREAM_ROW_39\n"
+      ]
+    ],
+    "chatResponseFinishGates": [
+      "stream-nav-finish"
+    ]
+  },
+  "dimensions": [
+    {
+      "columns": 100,
+      "rows": 30
+    }
+  ],
+  "themes": [
+    "dark"
+  ],
+  "modes": [
+    "fullscreen"
+  ],
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "start-stream",
+      "send": "Stream a long answer.\r",
+      "waitGatesAfter": [
+        "stream-nav-request"
+      ],
+      "allowStaticFrame": true,
+      "expect": "STREAM_ROW_39"
+    },
+    {
+      "id": "live-previous-assistant",
+      "send": "\u001b[57419;6u",
+      "expect": "STREAM_ROW_00",
+      "allowStaticFrame": true,
+      "notExpect": "\u2503"
+    },
+    {
+      "id": "live-previous-user",
+      "send": "\u001b[57419;6u",
+      "expect": "Stream a long answer.",
+      "allowStaticFrame": true,
+      "notExpect": "\u2503"
+    },
+    {
+      "id": "live-next-assistant",
+      "send": "\u001b[57420;6u",
+      "expect": "STREAM_ROW_00",
+      "allowStaticFrame": true,
+      "notExpect": "Stream a long answer."
+    },
+    {
+      "id": "live-next-settled",
+      "expect": "STREAM_ROW_00",
+      "notExpect": "\u2502",
+      "allowStaticFrame": true
+    },
+    {
+      "id": "live-return-bottom",
+      "send": "\u001b[57424;5u",
+      "expect": "STREAM_ROW_39",
+      "allowStaticFrame": true,
+      "notExpect": "\u2503"
+    },
+    {
+      "id": "abort-stream",
+      "send": "\u001b",
+      "expect": "Operation aborted"
+    },
+    {
+      "id": "exit",
+      "send": "\u0003\u0003",
+      "exit": true
+    }
+  ],
+  "assertionFrames": [
+    "startup",
+    "start-stream",
+    "live-previous-assistant",
+    "live-previous-user",
+    "live-next-assistant",
+    "live-next-settled",
+    "live-return-bottom",
+    "abort-stream",
+    "exit"
+  ],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  }
+}

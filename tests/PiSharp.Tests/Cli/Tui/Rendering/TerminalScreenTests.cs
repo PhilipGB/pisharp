@@ -637,6 +637,41 @@ public sealed class TerminalScreenTests
     }
 
     [Fact]
+    public void LiveAssistantMessageIsSemanticAnchorAndCommitDoesNotDuplicate()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        const int columns = 100;
+        const int rows = 30;
+        using var screen = new TerminalScreen(output, error, () => columns, () => rows);
+        var assistant = string.Join('\n', Enumerable.Range(0, 40).Select(index => $"STREAM_ROW_{index:D2}"));
+        screen.AppendUserMessage("Stream a long answer.");
+        screen.SetAssistantText(assistant);
+        Assert.Equal(2, screen.SemanticAnchorSourceOffsets(columns).Count);
+
+        screen.ScrollToPreviousPrompt();
+        Assert.Equal("STREAM_ROW_00", TopAnchorLine(CurrentFrame(output, rows, columns)));
+        screen.ScrollToPreviousPrompt();
+        Assert.Equal("Stream a long answer.", TopAnchorLine(CurrentFrame(output, rows, columns)));
+        screen.ScrollToNextPrompt();
+        Assert.Equal("STREAM_ROW_00", TopAnchorLine(CurrentFrame(output, rows, columns)));
+
+        screen.CommitAssistantText(assistant);
+        Assert.Equal(2, screen.SemanticAnchorSourceOffsets(columns).Count);
+        screen.ScrollToPreviousPrompt();
+        screen.ScrollToPreviousPrompt();
+        Assert.Equal("Stream a long answer.", TopAnchorLine(CurrentFrame(output, rows, columns)));
+        screen.ScrollToNextPrompt();
+        Assert.Equal("STREAM_ROW_00", TopAnchorLine(CurrentFrame(output, rows, columns)));
+        screen.Dispose();
+
+        static string TopAnchorLine(string frame) => frame.Split('\n')
+            .Select(line => line.Trim().TrimEnd('│', '┃').Trim())
+            .First(line => line.StartsWith("Stream a long answer.", StringComparison.Ordinal) ||
+                line.StartsWith("STREAM_ROW_", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void SemanticPromptNavigationIncludesUserAndAssistantMessageStarts()
     {
         using var output = new StringWriter();

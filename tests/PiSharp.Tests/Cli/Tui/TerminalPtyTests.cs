@@ -3538,7 +3538,10 @@ public sealed class TerminalPtyTests
                     request.Response.KeepAlive = false;
                     await using var writer = new StreamWriter(request.Response.OutputStream);
                     await writer.WriteAsync($"data: {{\"type\":\"response.created\",\"response\":{{\"id\":\"resp_{index}\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"in_progress\",\"output\":[]}}}}\n\n");
-                    await writer.WriteAsync($"data: {{\"type\":\"response.output_text.delta\",\"item_id\":\"msg_{index}\",\"output_index\":0,\"content_index\":0,\"delta\":\"{(index == 0 ? "STREAM_ALPHA\\n" : "STREAM_SECOND\\n")}\"}}\n\n");
+                    var firstDelta = index == 0
+                        ? string.Join("\\n", Enumerable.Range(0, 30).Select(row => $"STREAM_ALPHA_{row:D2}")) + "\\n"
+                        : "STREAM_SECOND\\n";
+                    await writer.WriteAsync($"data: {{\"type\":\"response.output_text.delta\",\"item_id\":\"msg_{index}\",\"output_index\":0,\"content_index\":0,\"delta\":\"{firstDelta}\"}}\n\n");
                     await writer.FlushAsync();
                     if (index == 0)
                     {
@@ -3609,7 +3612,9 @@ public sealed class TerminalPtyTests
             static string TopAnchorLine(string frame) => frame.Split('\n')
                 .Select(line => line.Trim().TrimEnd('│', '┃').Trim())
                 .First(line => line.StartsWith("NAV_PROMPT_", StringComparison.Ordinal) ||
-                    line.StartsWith("detail 04.", StringComparison.Ordinal));
+                    line.StartsWith("detail 04.", StringComparison.Ordinal) ||
+                    line.StartsWith("stream one", StringComparison.Ordinal) ||
+                    line.StartsWith("STREAM_ALPHA", StringComparison.Ordinal));
 
             await WaitForAsync(frame => frame.Contains("detail 04.24", StringComparison.Ordinal), "live transcript tail");
             await SendAsync("stream one\r");
@@ -3617,14 +3622,24 @@ public sealed class TerminalPtyTests
             await WaitForAsync(frame => frame.Contains("STREAM_ALPHA", StringComparison.Ordinal) &&
                 frame.Contains("Working", StringComparison.Ordinal), "first streamed chunk");
 
+            await SendAsync("\u001b[1;6A");
+            await WaitForAsync(frame => TopAnchorLine(frame).StartsWith("STREAM_ALPHA_", StringComparison.Ordinal) &&
+                frame.Contains("Working", StringComparison.Ordinal), "live assistant anchor during stream");
+            await SendAsync("\u001b[1;6A");
+            await WaitForAsync(frame => TopAnchorLine(frame) == "stream one" &&
+                frame.Contains("Working", StringComparison.Ordinal), "live user anchor during stream");
+            await SendAsync("\u001b[1;6B");
+            await WaitForAsync(frame => TopAnchorLine(frame).StartsWith("STREAM_ALPHA_", StringComparison.Ordinal) &&
+                frame.Contains("Working", StringComparison.Ordinal), "forward to live assistant anchor during stream");
+            await SendAsync("\u001b[1;5F");
+            await WaitForAsync(frame => frame.Contains("STREAM_ALPHA_29", StringComparison.Ordinal) &&
+                !frame.Contains("Jump to latest message", StringComparison.Ordinal), "live tail before paging");
+
             await SendAsync("\u001b[5~");
             await WaitForAsync(frame => frame.Contains("Jump to latest message", StringComparison.Ordinal) &&
                 frame.Contains("Working", StringComparison.Ordinal), "page up during stream");
-            await SendAsync("\u001b[1;6A");
-            await WaitForAsync(frame => TopAnchorLine(frame) == "detail 04.01" &&
-                frame.Contains("Working", StringComparison.Ordinal), "previous semantic anchor during stream");
             await SendAsync("\u001b[1;5F");
-            await WaitForAsync(frame => frame.Contains("STREAM_ALPHA", StringComparison.Ordinal) &&
+            await WaitForAsync(frame => frame.Contains("STREAM_ALPHA_29", StringComparison.Ordinal) &&
                 !frame.Contains("Jump to latest message", StringComparison.Ordinal), "live output during stream");
 
             await SendAsync("draft during stream");
@@ -3632,14 +3647,14 @@ public sealed class TerminalPtyTests
             await SendAsync("\u001b[102;6u");
             await WaitForAsync(frame => frame.Contains("Shift+Enter", StringComparison.Ordinal), "search during stream");
             await SendAsync("STREAM_");
-            await WaitForAsync(frame => frame.Contains("1/1", StringComparison.Ordinal), "streamed search result");
+            await WaitForAsync(frame => frame.Contains("15/30", StringComparison.Ordinal), "streamed search result");
             releaseMore.TrySetResult();
-            await WaitForAsync(frame => frame.Contains("1/2", StringComparison.Ordinal) &&
+            await WaitForAsync(frame => frame.Contains("15/31", StringComparison.Ordinal) &&
                 frame.Contains("STREAM_BETA", StringComparison.Ordinal), "live search result refresh");
             await SendAsync("\r");
-            await WaitForAsync(frame => frame.Contains("2/2", StringComparison.Ordinal), "next streamed result");
+            await WaitForAsync(frame => frame.Contains("16/31", StringComparison.Ordinal), "next streamed result");
             await SendAsync("\u001b[13;2u");
-            await WaitForAsync(frame => frame.Contains("1/2", StringComparison.Ordinal), "previous streamed result");
+            await WaitForAsync(frame => frame.Contains("15/31", StringComparison.Ordinal), "previous streamed result");
             await SendAsync("\u001b");
             await WaitForAsync(frame => !frame.Contains("Shift+Enter", StringComparison.Ordinal) &&
                 frame.Contains("draft during stream", StringComparison.Ordinal), "stream search close");

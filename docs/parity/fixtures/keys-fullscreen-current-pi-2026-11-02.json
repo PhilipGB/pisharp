@@ -7,7 +7,10 @@
   "commands": [
     "python3 tools/parity/terminal/run.py --pi /home/philip/Projects/pi-pinned --fixture tools/parity/terminal/fixtures/terminal-long-transcript.json --case 80x24-dark-fullscreen --calibrate --semantic-only --output artifacts/parity/keys-fullscreen-long-transcript-calibration6",
     "python3 tools/parity/terminal/run.py --pi /home/philip/Projects/pi-pinned --fixture tools/parity/terminal/fixtures/terminal-long-transcript.json --case 80x24-dark-fullscreen --semantic-only --output artifacts/parity/keys-fullscreen-long-transcript-paired7",
-    "python3 tools/parity/terminal/assert_fullscreen_navigation.py artifacts/parity/keys-fullscreen-long-transcript-paired7/report.json"
+    "python3 tools/parity/terminal/assert_fullscreen_navigation.py artifacts/parity/keys-fullscreen-long-transcript-paired7/report.json",
+    "python3 tools/parity/terminal/run.py --pi /home/philip/Projects/pi-pinned --fixture tools/parity/terminal/fixtures/terminal-fullscreen-stream-navigation.json --calibrate --semantic-only --output artifacts/parity/keys-fullscreen-stream-nav-calibration-final2",
+    "python3 tools/parity/terminal/run.py --pi /home/philip/Projects/pi-pinned --fixture tools/parity/terminal/fixtures/terminal-fullscreen-stream-navigation.json --semantic-only --output artifacts/parity/keys-fullscreen-stream-nav-paired3",
+    "python3 tools/parity/terminal/assert_stream_navigation.py artifacts/parity/keys-fullscreen-stream-nav-paired3/report.json"
   ],
   "calibration": {
     "differences": 0,
@@ -48,7 +51,13 @@
     "search-query",
     "search-cursor-left",
     "long-transcript-tail",
-    "exit"
+    "exit",
+    "live-previous-assistant",
+    "live-previous-user",
+    "live-next-assistant",
+    "live-next-settled",
+    "live-return-bottom",
+    "abort-stream"
   ],
   "nativeTests": [
     "EditorKeymapTests.TranscriptPromptNavigationUsesPiDefaultsAndRemainsConfigurable",
@@ -62,26 +71,20 @@
     "TerminalScreenTests.ActiveSearchHighlightsMatchesAndRestoresItsDraftOnEscape",
     "TerminalScreenTests.ScrolledUnicodeTranscriptKeepsItsSourceAnchorAfterResize",
     "TerminalPtyTests.FullscreenTranscriptNavigationAndSearchThroughLinuxPty",
-    "TerminalPtyTests.FullscreenNavigationAndSearchRemainActiveWhileStreamingThroughLinuxPty"
+    "TerminalPtyTests.FullscreenNavigationAndSearchRemainActiveWhileStreamingThroughLinuxPty",
+    "TerminalScreenTests.LiveAssistantMessageIsSemanticAnchorAndCommitDoesNotDuplicate"
   ],
   "nativeResults": {
-    "focusedTests": "124/124 TUI keymap, screen and input tests; 2/2 fullscreen PTY tests",
-    "fullSuite": "4076 passed, 0 failed, 0 skipped",
+    "focusedTests": "82/82 TUI screen/keymap/fullscreen PTY tests",
+    "fullSuite": "4077 passed, 0 failed, 0 skipped",
     "format": "dotnet format PiSharp.slnx --verify-no-changes passed",
     "build": "warnings-as-errors build passed with 0 warnings and 0 errors",
-    "failFirst": "A detached worktree at c4802599 ran three equivalent regressions using only APIs available before this change: missing prompt bindings, stale live search count, and search shortcut not closing. All 3 failed on the baseline and all pass after the correction.",
-    "exactHeadCi": {
-      "headSha": "0af7ae23029066c2e503c3b23edb3462a776aaad",
-      "run": "41379335882",
-      "result": "success",
-      "duplicateRun": "41379340543",
-      "duplicateResult": "success after rerunning an unrelated RPC compaction timing failure",
-      "tests": "4076 passed, 0 failed, 0 skipped"
-    }
+    "failFirst": "A detached worktree at c4802599 ran three equivalent regressions using only APIs available before this change: missing prompt bindings, stale live search count, and search shortcut not closing. All 3 failed on the baseline and all pass after the correction. A fourth baseline regression navigated to the live assistant anchor; it stayed at the bottom row (STREAM_ROW_16) instead of STREAM_ROW_00."
   },
   "behaviours": [
     "Ctrl+Shift+Up/Down and Ctrl+Up/Down jump between user and assistant OSC-133-style semantic anchors, matching pinned Pi's marker semantics.",
     "PageUp/PageDown and Ctrl+Home/Ctrl+End scroll while idle and during active streaming; unmodified Home/End stay in the editor.",
+    "The live streaming assistant/thinking segment is a temporary semantic anchor; committing it replaces that temporary target with exactly one committed anchor.",
     "Ctrl+Shift+F opens search with an empty query, toggles closed, owns PageUp while active and refreshes result counts as streamed text arrives.",
     "Enter and Shift+Enter cycle matches; Escape closes search, restores the editor draft and keeps the selected transcript position.",
     "Resize keeps the reading anchor using source anchoring for stable text and absolute-row fallback when Markdown re-rendering rewrites offsets.",
@@ -89,7 +92,21 @@
   ],
   "limitations": [
     "The paired products still differ in unrelated full-screen cell styling, padding, scrollbar cells and render-frame count; the semantic navigation assertion passes all named checkpoints.",
-    "Raw bytes are not identical; HTTP traces and scenario completion match."
+    "Raw bytes are not identical; HTTP traces and scenario completion match.",
+    "The live-stream fixture still has unrelated full-cell differences (2,328 state, 1,684 render, 1,511 control-boundary); the live-anchor assertion and HTTP traces match."
   ],
-  "implementationSha": "076d6d7e31602d3706c72789ab8a85e0280cb223"
+  "implementationSha": "076d6d7e31602d3706c72789ab8a85e0280cb223",
+  "fixture2": "tools/parity/terminal/fixtures/terminal-fullscreen-stream-navigation.json",
+  "case2": "100x30-dark-fullscreen",
+  "liveStreaming": {
+    "calibrationDifferences": 0,
+    "canonicalRenderFrames": 6,
+    "pairedScenarioErrors": {},
+    "httpMatch": true,
+    "namedCheckpoints": 9,
+    "semanticAssertion": "passed: live user prompt -> live assistant anchor forward navigation matched pinned Pi",
+    "stateDifferences": 2328,
+    "renderDifferences": 1684,
+    "controlBoundaryDifferences": 1511
+  }
 }
