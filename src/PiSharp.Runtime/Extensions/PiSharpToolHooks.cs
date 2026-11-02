@@ -44,10 +44,51 @@ public sealed class PiSharpToolResultContext(
     public string ToolCallId { get; } = toolCallId;
     public string? ParentToolCallId { get; } = parentToolCallId;
     public IReadOnlyDictionary<string, object?> Arguments { get; } = arguments;
-    public object? Result { get; set; } = result;
+    private object? _result = result;
+    private bool _isError = exception is not null;
+
+    public object? Result
+    {
+        get => _result;
+        set
+        {
+            _result = value;
+            ResultChanged = true;
+            if (value is PiSharpToolResult typed && !IsErrorChanged)
+            {
+                _isError = typed.IsError;
+                Error = typed.Error;
+            }
+        }
+    }
+
     public Exception? Exception { get; set; } = exception;
-    public bool IsError { get; set; } = exception is not null;
+
+    public bool IsError
+    {
+        get => _isError;
+        set
+        {
+            _isError = value;
+            IsErrorChanged = true;
+        }
+    }
+
     public string? Error { get; set; } = exception?.Message;
+
+    internal bool ResultChanged { get; private set; }
+    internal bool IsErrorChanged { get; private set; }
+
+    internal void NormalizeAfterHooks()
+    {
+        if (Exception is not null)
+        {
+            _isError = true;
+            Error ??= Exception.Message;
+        }
+        else if (!_isError)
+            Error = null;
+    }
 }
 
 /// <summary>Asynchronous policy hook run before every model or nested tool call.</summary>
@@ -88,15 +129,7 @@ internal sealed class PiSharpToolHookPipeline(
             await hook(context, cancellationToken).ConfigureAwait(false);
         }
 
-        if (context.Exception is not null)
-        {
-            context.IsError = true;
-            context.Error ??= context.Exception.Message;
-        }
-        else if (!context.IsError)
-        {
-            context.Error = null;
-        }
+        context.NormalizeAfterHooks();
     }
 }
 

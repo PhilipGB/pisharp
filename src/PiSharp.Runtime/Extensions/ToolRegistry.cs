@@ -12,6 +12,13 @@ public enum ToolExposure
     Hidden
 }
 
+/// <summary>Whether a batch containing this tool may invoke its calls concurrently.</summary>
+public enum ToolExecutionMode
+{
+    Parallel,
+    Sequential
+}
+
 /// <summary>A named group of related tools, with optional discovery metadata such as MCP instructions.</summary>
 public sealed record PiSharpToolNamespace(string Name, string? Description = null, string? Instructions = null,
     IReadOnlyList<string>? Aliases = null);
@@ -49,7 +56,8 @@ public sealed record PiSharpToolRegistration(
     string? PromptSnippet = null,
     IReadOnlyList<string>? PromptGuidelines = null,
     Func<IDictionary<string, object?>, PiSharpToolReach?>? ReachesTools = null,
-    System.Text.Json.JsonElement? ConstrainedSampling = null);
+    System.Text.Json.JsonElement? ConstrainedSampling = null,
+    ToolExecutionMode ExecutionMode = ToolExecutionMode.Parallel);
 
 /// <summary>Changes an active loadout's model-facing declaration projection.</summary>
 public sealed record ToolLoadoutChanges(

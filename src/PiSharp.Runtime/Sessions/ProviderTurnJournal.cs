@@ -76,28 +76,55 @@ internal sealed class ProviderTurnJournal(ConversationSession conversation,
         }
         var provider = ObservedChatClient.NormalizeReadImagesForHistory(providerHistory());
         var canonical = hasCompacted() ? conversation.ActiveMessages() : conversation.ContextMessages();
-        AppendMissingMessages(hasCompacted() ? provider.Skip(historyCount()) : provider, canonical);
+        AppendMissingMessages(hasCompacted() ? provider.Skip(historyCount()) : provider, canonical,
+            includeToolMessages: false);
         if (completed.Message is { } assistant && !conversation.Tree.ActivePath().Skip(_completedPathLength)
                 .Any(entry => entry.Type == "chat" && ProviderTurnHistoryReconciler.AreEquivalent(
                     ConversationMessageCodec.RestoreEntry(entry), assistant)))
             conversation.Append(assistant);
-        foreach (var result in _history.MissingToolResults(conversation.ActiveMessages()))
-            foreach (var normalized in ObservedChatClient.NormalizeReadImagesForHistory([result]))
-                conversation.Append(normalized, NestedCallsFor(normalized));
+        AppendOrderedToolResults(completed.Message, provider);
         _completedPathLength = conversation.Tree.ActivePath().Count;
         return completed;
     }
 
     public void RestoreMissingMessages(List<ChatMessage> provider) => _history.RestoreMissingMessages(provider);
 
+    private void AppendOrderedToolResults(ChatMessage? assistant, IReadOnlyList<ChatMessage> provider)
+    {
+        var known = conversation.ActiveMessages().SelectMany(message => message.Contents.OfType<FunctionResultContent>())
+            .Select(result => result.CallId).ToHashSet(StringComparer.Ordinal);
+        var recorded = _history.MissingToolResults(conversation.ActiveMessages());
+        var recordedIds = recorded.SelectMany(message => message.Contents.OfType<FunctionResultContent>())
+            .Select(result => result.CallId).ToHashSet(StringComparer.Ordinal);
+        var providerOnly = provider.Where(message => message.Role == ChatRole.Tool)
+            .SelectMany(message => message.Contents.OfType<FunctionResultContent>())
+            .Where(result => !known.Contains(result.CallId) && !recordedIds.Contains(result.CallId))
+            .Select(result => new ChatMessage(ChatRole.Tool, [result])).ToArray();
+        var covered = known.Concat(recordedIds)
+            .Concat(providerOnly.SelectMany(message => message.Contents.OfType<FunctionResultContent>())
+                .Select(result => result.CallId)).ToHashSet(StringComparer.Ordinal);
+        // Calls M.E.AI rejects before invoking a wrapped tool (for example an unknown declaration)
+        // still need one Pi-shaped final result in canonical history.
+        var unrecorded = assistant?.Contents.OfType<FunctionCallContent>()
+            .Where(call => !covered.Contains(call.CallId))
+            .Select(call => new ChatMessage(ChatRole.Tool,
+                [new FunctionResultContent(call.CallId, new PiSharpToolResult($"Tool {call.Name} not found",
+                    Details: new Dictionary<string, object?>(), IsError: true, Error: $"Tool {call.Name} not found"))]))
+            .ToArray() ?? [];
+        foreach (var result in OrderByAssistantCalls(assistant, [.. recorded, .. providerOnly, .. unrecorded]))
+            foreach (var normalized in ObservedChatClient.NormalizeReadImagesForHistory([result]))
+                conversation.Append(normalized, NestedCallsFor(normalized));
+    }
+
     public void AppendMissingMessages(IEnumerable<ChatMessage> provider, List<ChatMessage> canonical,
-        IReadOnlyList<ChatMessage>? knownHistory = null)
+        IReadOnlyList<ChatMessage>? knownHistory = null, bool includeToolMessages = true)
     {
         var knownCallIds = (knownHistory ?? canonical).SelectMany(message => message.Contents.OfType<FunctionResultContent>())
             .Select(result => result.CallId).ToHashSet(StringComparer.Ordinal);
         var canonicalIndex = 0;
         foreach (var providerMessage in provider)
         {
+            if (!includeToolMessages && providerMessage.Role == ChatRole.Tool) continue;
             var matchEnd = _history.FindEquivalentRangeEnd(canonical, canonicalIndex, providerMessage);
             if (matchEnd >= 0)
             {

@@ -2371,7 +2371,7 @@ public sealed class RpcModeTests
         await WaitForAsync(output, "Already compacted");
         channel.Writer.Complete();
         await serving.WaitAsync(TimeSpan.FromSeconds(5));
-        Assert.Equal(5, session.ActiveMessages().Count);
+        Assert.Equal(6, session.ActiveMessages().Count);
         Assert.Equal(2, session.ContextMessages().Count);
         var lines = output.Lines();
         using var response = JsonDocument.Parse(Assert.Single(lines, line =>
@@ -2380,7 +2380,7 @@ public sealed class RpcModeTests
         var data = response.RootElement.GetProperty("data");
         Assert.Equal("summary\n\n<read-files>\nnotes.md\n</read-files>\n\n<modified-files>\nsrc/app.cs\n</modified-files>",
             data.GetProperty("summary").GetString());
-        Assert.Equal(session.Tree.Entries[4].Id, data.GetProperty("firstKeptEntryId").GetString());
+        Assert.Equal(session.Tree.Entries[5].Id, data.GetProperty("firstKeptEntryId").GetString());
         Assert.True(data.GetProperty("tokensBefore").GetInt32() > data.GetProperty("estimatedTokensAfter").GetInt32());
         var details = data.GetProperty("details");
         Assert.Equal(["notes.md"], details.GetProperty("readFiles").EnumerateArray()

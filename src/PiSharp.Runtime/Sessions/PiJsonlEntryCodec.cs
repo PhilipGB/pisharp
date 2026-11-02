@@ -529,8 +529,8 @@ internal static class PiJsonlEntryCodec
                     };
                 }
                 var preservedResult = new FunctionResultContent(callId, preservedOutput);
-                if (BoolProperty(message, "isError"))
-                    preservedResult.Exception = new ToolFailureException("Pi session records a failed tool result.");
+                if (BoolProperty(message, "piSharpToolException"))
+                    preservedResult.Exception = new ToolFailureException("Pi session records a thrown tool failure.");
                 ImportDuration(preservedResult, message);
                 return new ChatMessage(ChatRole.Tool, [preservedResult]);
             }
@@ -601,12 +601,7 @@ internal static class PiJsonlEntryCodec
         if (node.Type == "interrupted")
             return new JsonObject { ["type"] = "message", ["message"] = ProjectInterruptedMessage(session, node, api) };
         if (node.Type == "chat")
-        {
-            var messageElement = node.Payload.GetProperty("Message");
-            var message = messageElement.Deserialize<ChatMessage>(AIJsonUtilities.DefaultOptions)
-                ?? throw new InvalidDataException($"Missing message at {node.Id}.");
-            return ExportMessage(session, node, message);
-        }
+            return ExportMessage(session, node, ConversationMessageCodec.RestoreEntry(node));
         if (node.Type == "bash_execution")
         {
             var record = node.Payload.Deserialize<BashExecutionRecord>(new JsonSerializerOptions(JsonSerializerDefaults.Web))
@@ -835,6 +830,7 @@ internal static class PiJsonlEntryCodec
             if (result is not null && ToolResultOutput.TryRead(result.Result, out _, out var details) && details is not null)
                 messageObject["details"] = JsonSerializer.SerializeToNode(details, new JsonSerializerOptions(JsonSerializerDefaults.Web));
             messageObject["isError"] = result?.Exception is not null || contract?.IsError == true;
+            if (result?.Exception is not null) messageObject["piSharpToolException"] = true;
             if (contract is not null) messageObject["piSharpToolResult"] = JsonSerializer.SerializeToNode(contract);
             if (contract?.Usage is { } toolUsage) messageObject["usage"] = ProjectToolUsage(toolUsage, contract.Cost);
             if (contract?.Terminate == true) messageObject["terminate"] = true;

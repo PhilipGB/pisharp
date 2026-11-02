@@ -41,6 +41,7 @@ public sealed class PiAgent
     private readonly SemaphoreSlim _runGate = new(1, 1);
     private ReasoningOptions? _reasoning;
     private readonly ToolBatchTermination _toolBatchTermination = new();
+    private readonly ToolBatchSequencer _toolBatchSequencer = new();
     private DurableExecution? _active;
 
     /// <summary>Tools that returned from their work but have not published their completion yet.</summary>
@@ -424,7 +425,18 @@ public sealed class PiAgent
             PublishEvent, _toolBatchTermination, () => Volatile.Read(ref _currentToolLoadout),
             () => _runtimeToolFunctions, _toolHooks, registration.OutputSchema, _codemodeModels,
             registration.ReachesTools, registration.Namespace, () => _extensionContext, _extensionEvents,
-            ToolCompletions);
+            ToolCompletions, _toolBatchSequencer, BatchRequiresSequential);
+    }
+
+    private bool BatchRequiresSequential(FunctionInvocationContext context)
+    {
+        var assistant = context.Messages.LastOrDefault(message => message.Role == ChatRole.Assistant &&
+            message.Contents.OfType<FunctionCallContent>().Any());
+        if (assistant is null) return false;
+        lock (_runtimeToolGate)
+            return assistant.Contents.OfType<FunctionCallContent>().Any(call =>
+                _runtimeToolRegistrations.TryGetValue(call.Name, out var registration) &&
+                registration.ExecutionMode == ToolExecutionMode.Sequential);
     }
 
     internal void SetExtensionConversation(ConversationSession conversation) =>

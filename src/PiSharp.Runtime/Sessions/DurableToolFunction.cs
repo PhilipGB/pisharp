@@ -17,7 +17,8 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
     Func<IDictionary<string, object?>, PiSharpToolReach?>? reachesTools = null,
     PiSharpToolNamespace? toolNamespace = null,
     Func<PiSharpExtensionContext?>? currentExtensionContext = null,
-    NativeExtensionEventDispatcher? messageEvents = null, ToolCompletionGate? completionGate = null) : DelegatingAIFunction(inner)
+    NativeExtensionEventDispatcher? messageEvents = null, ToolCompletionGate? completionGate = null,
+    ToolBatchSequencer? sequencing = null, Func<FunctionInvocationContext, bool>? batchRequiresSequential = null) : DelegatingAIFunction(inner)
 {
     private readonly ToolResultSchemaValidator _outputValidator = new(outputSchema);
 
@@ -34,7 +35,12 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
         var isCallable = snapshot is null || snapshot.ActiveToolNames.Contains(Name, StringComparer.Ordinal) ||
             snapshot.Callable.Any(tool => string.Equals(tool.Function.Name, Name, StringComparison.Ordinal));
         var nestedInvocation = PiSharpToolExecutionContext.GetNestedInvocation(arguments);
-        var callContent = nestedInvocation is null ? FunctionInvokingChatClient.CurrentContext?.CallContent : null;
+        var invocationContext = nestedInvocation is null ? FunctionInvokingChatClient.CurrentContext : null;
+        using var sequenceScope = invocationContext is not null && sequencing is not null &&
+            batchRequiresSequential?.Invoke(invocationContext) == true
+            ? await sequencing.EnterAsync(invocationContext, true, cancellationToken)
+            : null;
+        var callContent = invocationContext?.CallContent;
         var toolCallId = nestedInvocation?.CallId ?? callContent?.CallId ?? Guid.NewGuid().ToString("N");
         var parentToolCallId = nestedInvocation?.ParentCallId;
         var callArguments = callContent is { Arguments: { } argumentsContent }
@@ -184,6 +190,8 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
             resultContext.IsError = true;
             resultContext.Error = returned.Error ?? returned.Text;
         }
+        var originalResult = resultContext.Result;
+        ToolResultOutput.TryReadContract(originalResult, out var originalContract);
         try
         {
             if (toolHooks is not null)
@@ -191,17 +199,38 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
         }
         catch (OperationCanceledException error) when (cancellationToken.IsCancellationRequested)
         {
-            failure ??= error;
-            resultContext.Exception = failure;
+            resultContext.Exception = error;
             resultContext.IsError = true;
-            resultContext.Error ??= failure.Message;
+            resultContext.Error ??= error.Message;
+            failure = error;
         }
         catch (Exception error)
         {
-            failure = failure is null ? error : new AggregateException(failure, error);
-            resultContext.Exception = failure;
+            // Pinned Pi turns a failed result hook into an ordinary error result and keeps the
+            // completed tool round in the conversation.
+            resultContext.Exception = null;
+            resultContext.Result = new PiSharpToolResult(error.Message, Details: new Dictionary<string, object?>(),
+                IsError: true, Error: error.Message);
             resultContext.IsError = true;
-            resultContext.Error = failure.Message;
+            resultContext.Error = error.Message;
+            failure = null;
+        }
+        if (resultContext.ResultChanged && !ReferenceEquals(resultContext.Result, originalResult) &&
+            !ToolResultOutput.TryReadContract(resultContext.Result, out _) && originalContract is not null)
+        {
+            // A content-only replacement keeps the original details, usage and termination hint,
+            // but drops structured content that may no longer match the replacement.
+            var replacementText = ToolResultOutput.TryRead(resultContext.Result, out var text, out _)
+                ? text
+                : resultContext.Result?.ToString() ?? string.Empty;
+            resultContext.Result = originalContract with
+            {
+                Text = replacementText,
+                StructuredContent = null,
+                Images = null,
+                IsError = resultContext.IsError,
+                Error = resultContext.IsError ? resultContext.Error : null
+            };
         }
         value = resultContext.Result;
         failure = resultContext.Exception;
@@ -229,9 +258,14 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
             try { _outputValidator.Validate(value); }
             catch (Exception error)
             {
-                failure = error;
+                // PiSharp validates declared output schemas on top of Pi's declarative contract;
+                // a violation is a visible returned error, never a successful tool result.
+                failure = null;
                 value = null;
                 contract = null;
+                resultContext.Exception = null;
+                resultContext.Result = new PiSharpToolResult(error.Message, Details: new Dictionary<string, object?>(),
+                    IsError: true, Error: error.Message);
                 resultContext.IsError = true;
                 resultContext.Error = error.Message;
             }
@@ -270,6 +304,14 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
             contract = new PiSharpToolResult(failure!.Message, Details: new Dictionary<string, object?>(),
                 IsError: true, Error: failure.Message);
             value = contract;
+        }
+        else if (failure is not null && !ToolResultOutput.TryReadContract(value, out _))
+        {
+            var message = string.IsNullOrWhiteSpace(failure.Message) ? "Tool execution failed." : failure.Message;
+            contract = new PiSharpToolResult(message, Details: new Dictionary<string, object?>(),
+                IsError: true, Error: message);
+            value = contract;
+            resultContext.Result = contract;
         }
         if (nestedInvocation is not null)
         {
@@ -362,7 +404,7 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
             publish(new("tool_outcome_unknown", Tool: Name, OperationId: id, IsError: true, Error: error.Message));
             throw;
         }
-        if (nestedInvocation is null && FunctionInvokingChatClient.CurrentContext is { } invocationContext &&
+        if (invocationContext is not null &&
             termination.Record(invocationContext, failure is null && contract?.Terminate == true))
             invocationContext.Terminate = true;
         publish(new("tool_execution_finished", Text: resultText, Tool: Name, OperationId: id,
