@@ -2,7 +2,7 @@
   "schema": 1,
   "capability": "tool-result-contracts",
   "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-  "implementationSha": "aee6cdf64aaaab56a690f91aa3a57895816b629a",
+  "implementationSha": "17188f1bc6d42864b8e5e2e798063d3629b6610c",
   "evidenceHeadPolicy": "implementationSha is the source head that produced the executable evidence. Any later commit on the publication branch may touch only the committed evidence, this manifest/tooling, the execution-ledger entry and continuation notes; the verifier rejects any other changed path.",
   "evidenceDirectory": "docs/parity/fixtures/tool-result-contracts/evidence",
   "differentialEvidence": "docs/parity/fixtures/tool-result-contracts/differential.json",
@@ -39,6 +39,17 @@
             "isError": false,
             "terminate": false
           }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              }
+            ]
+          }
         ]
       },
       "actual": {
@@ -58,6 +69,17 @@
             "callId": "call-0",
             "isError": false,
             "terminate": false
+          }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              }
+            ]
           }
         ]
       },
@@ -85,7 +107,8 @@
             "isError": false,
             "terminate": true
           }
-        ]
+        ],
+        "providerResults": []
       },
       "actual": {
         "requests": 1,
@@ -105,7 +128,8 @@
             "isError": false,
             "terminate": true
           }
-        ]
+        ],
+        "providerResults": []
       },
       "status": "passed",
       "differential": {
@@ -137,6 +161,21 @@
             "isError": false,
             "terminate": false
           }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              },
+              {
+                "callId": "call-1",
+                "isError": false
+              }
+            ]
+          }
         ]
       },
       "actual": {
@@ -167,6 +206,21 @@
             "callId": "call-1",
             "isError": false,
             "terminate": false
+          }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              },
+              {
+                "callId": "call-1",
+                "isError": false
+              }
+            ]
           }
         ]
       },
@@ -200,6 +254,21 @@
             "isError": false,
             "terminate": false
           }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              },
+              {
+                "callId": "call-1",
+                "isError": false
+              }
+            ]
+          }
         ]
       },
       "actual": {
@@ -230,6 +299,21 @@
             "callId": "call-1",
             "isError": false,
             "terminate": false
+          }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              },
+              {
+                "callId": "call-1",
+                "isError": false
+              }
+            ]
           }
         ]
       },
@@ -263,6 +347,21 @@
             "isError": false,
             "terminate": true
           }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              },
+              {
+                "callId": "call-1",
+                "isError": false
+              }
+            ]
+          }
         ]
       },
       "actual": {
@@ -293,6 +392,21 @@
             "callId": "call-1",
             "isError": false,
             "terminate": true
+          }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              },
+              {
+                "callId": "call-1",
+                "isError": false
+              }
+            ]
           }
         ]
       },
@@ -326,7 +440,8 @@
             "isError": false,
             "terminate": true
           }
-        ]
+        ],
+        "providerResults": []
       },
       "actual": {
         "requests": 1,
@@ -357,7 +472,8 @@
             "isError": false,
             "terminate": true
           }
-        ]
+        ],
+        "providerResults": []
       },
       "status": "passed",
       "differential": {
@@ -395,6 +511,25 @@
             "isError": false,
             "terminate": false
           }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              },
+              {
+                "callId": "call-1",
+                "isError": false
+              },
+              {
+                "callId": "call-2",
+                "isError": false
+              }
+            ]
+          }
         ]
       },
       "actual": {
@@ -436,6 +571,25 @@
             "callId": "call-2",
             "isError": false,
             "terminate": false
+          }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              },
+              {
+                "callId": "call-1",
+                "isError": false
+              },
+              {
+                "callId": "call-2",
+                "isError": false
+              }
+            ]
           }
         ]
       },
@@ -475,7 +629,8 @@
             "isError": false,
             "terminate": true
           }
-        ]
+        ],
+        "providerResults": []
       },
       "actual": {
         "requests": 1,
@@ -517,7 +672,8 @@
             "isError": false,
             "terminate": true
           }
-        ]
+        ],
+        "providerResults": []
       },
       "status": "passed",
       "differential": {
@@ -549,7 +705,8 @@
             "isError": true,
             "terminate": true
           }
-        ]
+        ],
+        "providerResults": []
       },
       "actual": {
         "requests": 1,
@@ -580,7 +737,8 @@
             "isError": true,
             "terminate": true
           }
-        ]
+        ],
+        "providerResults": []
       },
       "status": "passed",
       "differential": {
@@ -612,7 +770,8 @@
             "isError": false,
             "terminate": true
           }
-        ]
+        ],
+        "providerResults": []
       },
       "actual": {
         "requests": 1,
@@ -643,7 +802,8 @@
             "isError": false,
             "terminate": true
           }
-        ]
+        ],
+        "providerResults": []
       },
       "status": "passed",
       "differential": {
@@ -675,6 +835,21 @@
             "isError": false,
             "terminate": false
           }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              },
+              {
+                "callId": "call-1",
+                "isError": false
+              }
+            ]
+          }
         ]
       },
       "actual": {
@@ -705,6 +880,21 @@
             "callId": "call-1",
             "isError": false,
             "terminate": false
+          }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              },
+              {
+                "callId": "call-1",
+                "isError": false
+              }
+            ]
           }
         ]
       },
@@ -738,6 +928,21 @@
             "isError": false,
             "terminate": false
           }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              },
+              {
+                "callId": "call-1",
+                "isError": false
+              }
+            ]
+          }
         ]
       },
       "actual": {
@@ -769,6 +974,21 @@
             "isError": false,
             "terminate": false
           }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              },
+              {
+                "callId": "call-1",
+                "isError": false
+              }
+            ]
+          }
         ]
       },
       "status": "passed",
@@ -795,6 +1015,17 @@
             "isError": false,
             "terminate": false
           }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              }
+            ]
+          }
         ]
       },
       "actual": {
@@ -814,6 +1045,17 @@
             "callId": "call-0",
             "isError": false,
             "terminate": false
+          }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              }
+            ]
           }
         ]
       },
@@ -843,6 +1085,17 @@
             "isError": true,
             "terminate": false
           }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": true
+              }
+            ]
+          }
         ]
       },
       "actual": {
@@ -862,6 +1115,17 @@
             "callId": "call-0",
             "isError": true,
             "terminate": false
+          }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": true
+              }
+            ]
           }
         ]
       },
@@ -890,6 +1154,17 @@
             "isError": true,
             "terminate": false
           }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": true
+              }
+            ]
+          }
         ]
       },
       "actual": {
@@ -909,6 +1184,17 @@
             "callId": "call-0",
             "isError": true,
             "terminate": false
+          }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": true
+              }
+            ]
           }
         ]
       },
@@ -945,6 +1231,25 @@
             "isError": true,
             "terminate": false
           }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-unknown",
+                "isError": true
+              },
+              {
+                "callId": "call-invalid",
+                "isError": true
+              },
+              {
+                "callId": "call-blocked",
+                "isError": true
+              }
+            ]
+          }
         ]
       },
       "actual": {
@@ -983,6 +1288,25 @@
             "isError": true,
             "terminate": false
           }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-unknown",
+                "isError": true
+              },
+              {
+                "callId": "call-invalid",
+                "isError": true
+              },
+              {
+                "callId": "call-blocked",
+                "isError": true
+              }
+            ]
+          }
         ]
       },
       "status": "passed",
@@ -1010,6 +1334,17 @@
             "isError": true,
             "terminate": false
           }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": true
+              }
+            ]
+          }
         ]
       },
       "actual": {
@@ -1029,6 +1364,17 @@
             "callId": "call-0",
             "isError": true,
             "terminate": false
+          }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": true
+              }
+            ]
           }
         ]
       },
@@ -1064,6 +1410,21 @@
             "isError": false,
             "terminate": false
           }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": true
+              },
+              {
+                "callId": "call-1",
+                "isError": false
+              }
+            ]
+          }
         ]
       },
       "actual": {
@@ -1094,6 +1455,21 @@
             "callId": "call-1",
             "isError": false,
             "terminate": false
+          }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": true
+              },
+              {
+                "callId": "call-1",
+                "isError": false
+              }
+            ]
           }
         ]
       },
@@ -1127,6 +1503,21 @@
             "isError": false,
             "terminate": false
           }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": true
+              },
+              {
+                "callId": "call-1",
+                "isError": false
+              }
+            ]
+          }
         ]
       },
       "actual": {
@@ -1148,7 +1539,8 @@
               "isError": true,
               "terminate": true
             }
-          ]
+          ],
+          "providerResults": []
         },
         "mixed": {
           "requests": 2,
@@ -1179,6 +1571,21 @@
               "isError": false,
               "terminate": false
             }
+          ],
+          "providerResults": [
+            {
+              "request": 2,
+              "results": [
+                {
+                  "callId": "call-0",
+                  "isError": true
+                },
+                {
+                  "callId": "call-1",
+                  "isError": false
+                }
+              ]
+            }
           ]
         }
       },
@@ -1206,6 +1613,17 @@
             "isError": false,
             "terminate": false
           }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              }
+            ]
+          }
         ]
       },
       "actual": {
@@ -1225,6 +1643,17 @@
             "callId": "call-0",
             "isError": false,
             "terminate": false
+          }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              }
+            ]
           }
         ]
       },
@@ -1252,6 +1681,17 @@
             "isError": false,
             "terminate": false
           }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              }
+            ]
+          }
         ]
       },
       "actual": {
@@ -1271,6 +1711,17 @@
             "callId": "call-0",
             "isError": false,
             "terminate": false
+          }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              }
+            ]
           }
         ]
       },
@@ -1298,6 +1749,17 @@
             "isError": false,
             "terminate": false
           }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              }
+            ]
+          }
         ]
       },
       "actual": {
@@ -1317,6 +1779,17 @@
             "callId": "call-0",
             "isError": false,
             "terminate": false
+          }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              }
+            ]
           }
         ]
       },
@@ -1344,6 +1817,17 @@
             "isError": false,
             "terminate": false
           }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              }
+            ]
+          }
         ]
       },
       "actual": {
@@ -1363,6 +1847,17 @@
             "callId": "call-0",
             "isError": false,
             "terminate": false
+          }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              }
+            ]
           }
         ]
       },
@@ -1392,6 +1887,17 @@
             "isError": false,
             "terminate": false
           }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              }
+            ]
+          }
         ]
       },
       "actual": {
@@ -1412,6 +1918,17 @@
             "callId": "call-0",
             "isError": false,
             "terminate": false
+          }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              }
+            ]
           }
         ]
       },
@@ -1439,7 +1956,8 @@
             "isError": false,
             "terminate": true
           }
-        ]
+        ],
+        "providerResults": []
       },
       "actual": {
         "requests": 1,
@@ -1459,7 +1977,8 @@
             "isError": false,
             "terminate": true
           }
-        ]
+        ],
+        "providerResults": []
       },
       "status": "passed",
       "differential": {
@@ -1485,6 +2004,17 @@
             "isError": false,
             "terminate": false
           }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              }
+            ]
+          }
         ]
       },
       "actual": {
@@ -1504,6 +2034,17 @@
             "callId": "call-0",
             "isError": false,
             "terminate": false
+          }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              }
+            ]
           }
         ]
       },
@@ -1531,6 +2072,17 @@
             "isError": true,
             "terminate": false
           }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": true
+              }
+            ]
+          }
         ]
       },
       "actual": {
@@ -1550,6 +2102,17 @@
             "callId": "call-0",
             "isError": true,
             "terminate": false
+          }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": true
+              }
+            ]
           }
         ]
       },
@@ -1578,6 +2141,17 @@
             "isError": false,
             "terminate": false
           }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              }
+            ]
+          }
         ]
       },
       "actual": {
@@ -1597,6 +2171,17 @@
             "callId": "call-0",
             "isError": false,
             "terminate": false
+          }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              }
+            ]
           }
         ]
       },
@@ -1625,6 +2210,17 @@
             "isError": true,
             "terminate": false
           }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": true
+              }
+            ]
+          }
         ]
       },
       "actual": {
@@ -1644,6 +2240,17 @@
             "callId": "call-0",
             "isError": true,
             "terminate": false
+          }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": true
+              }
+            ]
           }
         ]
       },
@@ -1683,6 +2290,25 @@
             "isError": false,
             "terminate": false
           }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              },
+              {
+                "callId": "call-1",
+                "isError": false
+              },
+              {
+                "callId": "call-2",
+                "isError": false
+              }
+            ]
+          }
         ]
       },
       "actual": {
@@ -1725,6 +2351,25 @@
             "isError": false,
             "terminate": false
           }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              },
+              {
+                "callId": "call-1",
+                "isError": false
+              },
+              {
+                "callId": "call-2",
+                "isError": false
+              }
+            ]
+          }
         ]
       },
       "status": "passed",
@@ -1751,6 +2396,17 @@
             "isError": false,
             "terminate": false
           }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              }
+            ]
+          }
         ]
       },
       "actual": {
@@ -1770,6 +2426,17 @@
             "callId": "call-0",
             "isError": false,
             "terminate": false
+          }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              }
+            ]
           }
         ]
       },
@@ -1797,7 +2464,8 @@
             "isError": false,
             "terminate": true
           }
-        ]
+        ],
+        "providerResults": []
       },
       "actual": {
         "requests": 1,
@@ -1817,7 +2485,8 @@
             "isError": false,
             "terminate": true
           }
-        ]
+        ],
+        "providerResults": []
       },
       "status": "passed",
       "differential": {
@@ -1850,6 +2519,21 @@
             "isError": true,
             "terminate": false
           }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": true
+              },
+              {
+                "callId": "call-1",
+                "isError": true
+              }
+            ]
+          }
         ]
       },
       "actual": {
@@ -1881,6 +2565,21 @@
             "isError": true,
             "terminate": false
           }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": true
+              },
+              {
+                "callId": "call-1",
+                "isError": true
+              }
+            ]
+          }
         ]
       },
       "status": "passed",
@@ -1907,6 +2606,17 @@
             "isError": false,
             "terminate": true
           }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              }
+            ]
+          }
         ]
       },
       "actual": {
@@ -1926,6 +2636,17 @@
             "callId": "call-0",
             "isError": false,
             "terminate": true
+          }
+        ],
+        "providerResults": [
+          {
+            "request": 2,
+            "results": [
+              {
+                "callId": "call-0",
+                "isError": false
+              }
+            ]
           }
         ]
       },

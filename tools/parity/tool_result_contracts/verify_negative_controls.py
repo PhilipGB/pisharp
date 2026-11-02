@@ -39,9 +39,9 @@ def write(path, value):
     Path(path).write_text(json.dumps(value, indent=2) + '\n', encoding='utf-8')
 
 
-def run_verifier(manifest_path):
+def run_verifier(manifest_path, verifier):
     result = subprocess.run(
-        [sys.executable, str(VERIFIER), '--repo', str(ROOT), '--manifest', str(manifest_path)],
+        [sys.executable, str(verifier), '--repo', str(ROOT), '--manifest', str(manifest_path)],
         capture_output=True, text=True)
     return result.returncode, (result.stdout + result.stderr)
 
@@ -55,7 +55,7 @@ def evidence_with_provider_results(evidence, minimum=1):
     raise SystemExit('no evidence file with provider-bound results')
 
 
-def with_tamper(manifest_path, tamper, name):
+def with_tamper(manifest_path, tamper, name, verifier):
     manifest = load(manifest_path)
     evidence = Path(manifest['evidenceDirectory'])
     if not evidence.is_absolute():
@@ -68,14 +68,16 @@ def with_tamper(manifest_path, tamper, name):
         manifest['evidenceDirectory'] = str(evidence_copy)
         tamper(manifest, evidence_copy)
         write(manifest_copy, manifest)
-        return run_verifier(manifest_copy)
+        return run_verifier(manifest_copy, verifier)
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--manifest', type=Path, default=DEFAULT_MANIFEST)
+    parser.add_argument('--verifier', type=Path, default=VERIFIER)
     args = parser.parse_args(argv)
     manifest_path = args.manifest.resolve()
+    verifier = args.verifier.resolve()
 
     def tamper_drop_case(manifest, evidence):
         dropped = manifest['cases'].pop()
@@ -125,7 +127,7 @@ def main(argv=None):
 
     ok = True
     for name, tamper in controls:
-        code, output = with_tamper(manifest_path, tamper, name)
+        code, output = with_tamper(manifest_path, tamper, name, verifier)
         rejected = code != 0
         ok &= rejected
         status = 'ok (rejected)' if rejected else 'FAIL (not rejected)'

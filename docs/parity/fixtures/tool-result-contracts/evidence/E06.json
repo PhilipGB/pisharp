@@ -1,7 +1,7 @@
 {
   "case": "E06",
   "test": "FailedAndSuccessfulSiblingBothContinueBecauseFailureDoesNotTerminate",
-  "implementationSha": "aee6cdf64aaaab56a690f91aa3a57895816b629a",
+  "implementationSha": "17188f1bc6d42864b8e5e2e798063d3629b6610c",
   "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
   "status": "passed",
   "observations": {
@@ -96,6 +96,7 @@
             "callId": "call-0",
             "text": "bad",
             "exceptionType": null,
+            "isError": true,
             "imageCount": 0,
             "structured": null
           },
@@ -103,6 +104,7 @@
             "callId": "call-1",
             "text": "good",
             "exceptionType": null,
+            "isError": false,
             "imageCount": 0,
             "structured": null
           }

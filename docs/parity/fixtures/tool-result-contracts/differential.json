@@ -1,14 +1,14 @@
 {
   "schema": 1,
   "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-  "pisharpSha": "aee6cdf64aaaab56a690f91aa3a57895816b629a",
+  "pisharpSha": "17188f1bc6d42864b8e5e2e798063d3629b6610c",
   "normalization": "Compares provider request counts, executed tool counts, canonical result call IDs, model text, error state, termination hints, structured content, details, usage, image counts and result order. Sequential event order is compared for T11; parallel completion order is not an ordering claim. Pi records a thrown tool failure as an error toolResult; PiSharp additionally keeps a thrown exception marker in canonical history and M.E.AI supplies generic provider text for that in-run request, so the canonical result text and error state are compared instead of that provider-only text.",
   "classification": {
     "E03": "canonical text/error match; PiSharp provider-only text is generic M.E.AI text for thrown exceptions while canonical history retains the Pi error text and a distinct exception marker."
   },
   "summary": {
-    "total": 28,
-    "match": 27,
+    "total": 30,
+    "match": 29,
     "differ": 1,
     "intentionalSafety": 1,
     "unresolved": 0
@@ -1354,6 +1354,96 @@
             "structured": null,
             "details": null,
             "usage": null,
+            "images": 0
+          }
+        ]
+      }
+    },
+    "H06": {
+      "status": "match",
+      "diffs": [],
+      "classification": null,
+      "pi": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "hooked",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": {
+              "ui": 2
+            },
+            "usage": 7,
+            "images": 0
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "hooked",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": {
+              "ui": 2
+            },
+            "usage": 7,
+            "images": 0
+          }
+        ]
+      }
+    },
+    "H07": {
+      "status": "match",
+      "diffs": [],
+      "classification": null,
+      "pi": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "hooked",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": {
+              "ui": 1
+            },
+            "usage": 7,
+            "images": 0
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "executions": {
+          "tool0": 1
+        },
+        "results": [
+          {
+            "callId": "call-0",
+            "text": "hooked",
+            "isError": false,
+            "terminate": false,
+            "structured": null,
+            "details": {
+              "ui": 1
+            },
+            "usage": 7,
             "images": 0
           }
         ]

@@ -15,22 +15,23 @@ The milestone entries below retain their historical wording and are superseded b
 ## Completed milestone — Complete Tool-Result Contract Parity — 2026-11-02
 
 The `tool-result-contracts` capability is verified at implementation source
-`aee6cdf64aaaab56a690f91aa3a57895816b629a` against pinned Pi
+`17188f1bc6d42864b8e5e2e798063d3629b6610c` against pinned Pi
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The committed
 [acceptance manifest](parity/fixtures/tool-result-contracts/acceptance-manifest.json)
 maps all 34 required cases to executable tests, request/execution counts, result
 IDs/order/states and the original ledger criteria. The
 [pinned-Pi differential](parity/fixtures/tool-result-contracts/differential.json)
-passes 27/28 cases with one documented intentional safety difference: E05, where
+passes 29/30 probes with one documented intentional safety difference: E05, where
 pinned Pi treats `outputSchema` as declarative and PiSharp validates it.
 
-Corrections cover all-or-nothing termination for sequential and parallel batches,
-one canonical toolResult record per call, provider-visible result order, result-hook
-content/metadata invalidation and hook failures, visible schema violations, and
-returned-versus-thrown error state across canonical and Pi JSONL reloads. Cases
-without an independent differential are listed explicitly in the manifest with
-their reasons. Exact-head CI and the draft PR are recorded in the PR description;
-see the [evidence README](parity/fixtures/tool-result-contracts/README.md).
+Review corrections make schema violations report both lifecycle and RPC result error
+state, preserve explicitly replaced hook details while retaining original details for
+text-only replacements, and verify provider-bound result IDs, ordering and error state
+against explicit manifest expectations. Negative controls prove altered provider
+identity, ordering or error state is rejected. Cases without an independent
+differential are listed explicitly in the manifest with their reasons. Exact-head CI
+and the draft PR are recorded in the PR description; see the
+[evidence README](parity/fixtures/tool-result-contracts/README.md).
 
 ## Completed milestone — Compaction, Context Budget, Overflow and Usage Parity — 2026-10-28
 
