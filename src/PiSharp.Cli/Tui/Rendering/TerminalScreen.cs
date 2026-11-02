@@ -70,6 +70,9 @@ public sealed class TerminalScreen : IDisposable
     private string _transcriptBottomKeyLabel = "Ctrl+End";
     private IReadOnlyList<string>? _transcriptSearchPanel;
     private int? _transcriptSearchCursorColumn;
+    private Action? _searchResultRefresher;
+    private int _lastSearchTranscriptRevision = -1;
+    private long _lastSearchLiveRevision = -1;
     private int _lastImagePruneRevision = -1;
     private string _footer = "Enter steers · follow-up queues · Escape aborts";
     private readonly TerminalScreenNotifications _notifications;
@@ -1176,6 +1179,47 @@ public sealed class TerminalScreen : IDisposable
         }
     }
 
+    internal void ScrollToPreviousPrompt() => ScrollToPrompt(-1);
+
+    internal void ScrollToNextPrompt() => ScrollToPrompt(1);
+
+    private void ScrollToPrompt(int direction)
+    {
+        lock (_gate)
+        {
+            if (!_active) return;
+            var width = Math.Max(1, Columns() - 2 * _outputPad);
+            var promptOffsets = _transcript.GetSemanticAnchorSourceOffsets(width);
+            if (promptOffsets.Count == 0) return;
+            var prefix = StartupContentPrefixLocked();
+            var layout = TerminalTextLayout.Create(prefix + GetTranscriptTextLocked(width), width);
+            var viewportHeight = Math.Max(1, _lastTranscriptHeight > 0 ? _lastTranscriptHeight : Rows());
+            var firstVisibleRow = Math.Max(0, layout.RowCount - viewportHeight - _scrollOffset);
+            int? target = null;
+            foreach (var offset in promptOffsets)
+            {
+                var row = layout.VisualRowAt(prefix.Length + offset);
+                if (direction < 0 && row < firstVisibleRow) target = row;
+                else if (direction > 0 && row > firstVisibleRow)
+                {
+                    target = row;
+                    break;
+                }
+            }
+            if (target is not { } promptRow) return;
+            var next = TerminalTranscriptViewport.ScrollOffsetForFirstRow(
+                layout.RowCount, promptRow, viewportHeight);
+            if (next == _scrollOffset) return;
+            SetScrollOffsetLocked(next);
+        }
+    }
+
+    private string StartupContentPrefixLocked()
+    {
+        var content = _startupContent?.Invoke(_theme, Columns(), _startupExpanded);
+        return string.IsNullOrEmpty(content) ? "" : content + "\n";
+    }
+
     internal TerminalMouseResult HandleMouse(TerminalMouseEvent mouse)
     {
         lock (_gate)
@@ -1195,7 +1239,7 @@ public sealed class TerminalScreen : IDisposable
         }
     }
 
-    internal TranscriptSearchState SearchTranscript(string query, int direction = 0)
+    internal TranscriptSearchState SearchTranscript(string query, int direction = 0, bool requestRender = true)
     {
         ArgumentNullException.ThrowIfNull(query);
         query = TerminalSafeText.Normalize(query);
@@ -1215,7 +1259,7 @@ public sealed class TerminalScreen : IDisposable
             }
             _search.SetQuery(query, direction, anchorOffset);
             _ = _search.Highlight(text, _theme);
-            _render.Request();
+            if (requestRender) _render.Request();
             return _search.State;
         }
     }
@@ -1261,7 +1305,8 @@ public sealed class TerminalScreen : IDisposable
         }
     }
 
-    internal void SetTranscriptSearchPanel(IReadOnlyList<string>? lines, int? cursorColumn = null)
+    internal void SetTranscriptSearchPanel(IReadOnlyList<string>? lines, int? cursorColumn = null,
+        bool requestRender = true)
     {
         var safe = lines?.ToArray();
         lock (_gate)
@@ -1269,8 +1314,13 @@ public sealed class TerminalScreen : IDisposable
             if (!_active) return;
             _transcriptSearchPanel = safe;
             _transcriptSearchCursorColumn = safe is null ? null : cursorColumn;
-            _render.Request(immediate: safe is not null);
+            if (requestRender) _render.Request(immediate: safe is not null);
         }
+    }
+
+    internal void SetSearchResultRefresher(Action? refresh)
+    {
+        lock (_gate) _searchResultRefresher = refresh;
     }
 
     internal string? ActiveAuthorizationUrl
@@ -1784,6 +1834,14 @@ public sealed class TerminalScreen : IDisposable
             _lastImagePruneRevision = _transcript.Revision;
         }
         var transcriptWidth = Math.Max(1, columns);
+        if (_searchResultRefresher is not null && _search.Query.Length > 0 &&
+            (_transcript.Revision != _lastSearchTranscriptRevision ||
+             _conversationPresentation.LiveRevision != _lastSearchLiveRevision))
+        {
+            _lastSearchTranscriptRevision = _transcript.Revision;
+            _lastSearchLiveRevision = _conversationPresentation.LiveRevision;
+            _searchResultRefresher();
+        }
         var transcript = _images.LayoutTranscript(GetTranscriptTextLocked(transcriptWidth),
             transcriptWidth, Math.Max(1, transcriptHeight - 2));
         var frame = _compositor.Compose(_editorText, _editorCursor, _editorSelectionStart, _editorSelectionEnd,

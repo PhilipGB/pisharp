@@ -394,6 +394,69 @@ public sealed class EditorKeymapTests
     }
 
     [Fact]
+    public void TranscriptPromptNavigationUsesPiDefaultsAndRemainsConfigurable()
+    {
+        var defaults = new EditorKeymap();
+        var previous = defaults.Matches("tui.altScreen.previousPrompt",
+            Key(ConsoleKey.UpArrow, ConsoleModifiers.Control | ConsoleModifiers.Shift));
+        var previousFallback = defaults.Matches("tui.altScreen.previousPrompt",
+            Key(ConsoleKey.UpArrow, ConsoleModifiers.Control));
+        var next = defaults.Matches("tui.altScreen.nextPrompt",
+            Key(ConsoleKey.DownArrow, ConsoleModifiers.Control | ConsoleModifiers.Shift));
+        var nextFallback = defaults.Matches("tui.altScreen.nextPrompt",
+            Key(ConsoleKey.DownArrow, ConsoleModifiers.Control));
+        var windowsBindings = OperatingSystem.IsWindows() || OperatingSystem.IsLinux() &&
+            (Environment.GetEnvironmentVariable("WSL_DISTRO_NAME") is not null ||
+             Environment.GetEnvironmentVariable("WSL_INTEROP") is not null);
+        Assert.Equal(!windowsBindings, previous);
+        Assert.True(previousFallback);
+        Assert.Equal(!windowsBindings, next);
+        Assert.True(nextFallback);
+        Assert.Contains("Jump to previous semantic prompt (tui.altScreen.previousPrompt)", defaults.FormatHotkeys());
+        Assert.Contains("Jump to next semantic prompt (tui.altScreen.nextPrompt)", defaults.FormatHotkeys());
+
+        var directory = Path.Combine(Path.GetTempPath(), "pisharp-keymap-prompt-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            File.WriteAllText(Path.Combine(directory, "keybindings.json"), """
+                {
+                  "tui.altScreen.previousPrompt": "alt+[",
+                  "tui.altScreen.nextPrompt": []
+                }
+                """);
+            var configured = new EditorKeymap(directory);
+            Assert.True(configured.Matches("tui.altScreen.previousPrompt", Key(ConsoleKey.Oem4, ConsoleModifiers.Alt)));
+            Assert.False(configured.Matches("tui.altScreen.previousPrompt",
+                Key(ConsoleKey.UpArrow, ConsoleModifiers.Control)));
+            Assert.False(configured.Matches("tui.altScreen.nextPrompt",
+                Key(ConsoleKey.DownArrow, ConsoleModifiers.Control)));
+        }
+        finally { Directory.Delete(directory, recursive: true); }
+    }
+
+    [Fact]
+    public void StandardAndKittyPromptNavigationSequencesDecode()
+    {
+        var keymap = new EditorKeymap();
+        var standardPrevious = new TerminalInput(new MemoryStream("\u001b[1;6A"u8.ToArray()));
+        var standardNext = new TerminalInput(new MemoryStream("\u001b[1;6B"u8.ToArray()));
+        var kittyPrevious = new TerminalInput(new MemoryStream("\u001b[57419;6u"u8.ToArray()));
+        var kittyNext = new TerminalInput(new MemoryStream("\u001b[57420;6u"u8.ToArray()));
+
+        Assert.True(standardPrevious.TryRead(0, out var previous));
+        Assert.True(standardNext.TryRead(0, out var next));
+        Assert.True(kittyPrevious.TryRead(0, out var kittyUp));
+        Assert.True(kittyNext.TryRead(0, out var kittyDown));
+        Assert.True(keymap.Matches("tui.altScreen.previousPrompt", previous.Key!.Value));
+        Assert.True(keymap.Matches("tui.altScreen.nextPrompt", next.Key!.Value));
+        Assert.True(keymap.Matches("tui.altScreen.previousPrompt", kittyUp.Key!.Value));
+        Assert.True(keymap.Matches("tui.altScreen.nextPrompt", kittyDown.Key!.Value));
+        Assert.False(keymap.MatchesEditorAction(previous.Key!.Value));
+        Assert.False(keymap.MatchesEditorAction(next.Key!.Value));
+    }
+
+    [Fact]
     public async Task ApplicationCycleShortcutsDispatchAndPreserveTheEditorDraft()
     {
         var editor = new TerminalEditor();

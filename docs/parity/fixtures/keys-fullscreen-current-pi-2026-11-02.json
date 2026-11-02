@@ -1,0 +1,85 @@
+{
+  "capability": "keys-fullscreen",
+  "date": "2026-11-02",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "fixture": "tools/parity/terminal/fixtures/terminal-long-transcript.json",
+  "case": "80x24-dark-fullscreen",
+  "commands": [
+    "python3 tools/parity/terminal/run.py --pi /home/philip/Projects/pi-pinned --fixture tools/parity/terminal/fixtures/terminal-long-transcript.json --case 80x24-dark-fullscreen --calibrate --semantic-only --output artifacts/parity/keys-fullscreen-long-transcript-calibration6",
+    "python3 tools/parity/terminal/run.py --pi /home/philip/Projects/pi-pinned --fixture tools/parity/terminal/fixtures/terminal-long-transcript.json --case 80x24-dark-fullscreen --semantic-only --output artifacts/parity/keys-fullscreen-long-transcript-paired7",
+    "python3 tools/parity/terminal/assert_fullscreen_navigation.py artifacts/parity/keys-fullscreen-long-transcript-paired7/report.json"
+  ],
+  "calibration": {
+    "differences": 0,
+    "canonicalRenderFrames": 48
+  },
+  "paired": {
+    "scenarioErrors": {},
+    "httpMatch": true,
+    "namedCheckpoints": 25,
+    "semanticAssertion": "passed",
+    "terminalCellDifferences": 9094,
+    "renderDifferences": 4472,
+    "controlBoundaryDifferences": 4955,
+    "normalization": "Named checkpoints retain exact terminal state in the report. The semantic assertion compares the top user/assistant anchor, jump-hint presence, search result count and search-panel presence; it does not treat unrelated theme, padding and scrollbar cell differences as equivalent navigation behaviour."
+  },
+  "checkpoints": [
+    "scroll-to-top",
+    "next-prompt-from-top",
+    "previous-prompt",
+    "previous-prompt-earlier",
+    "prompt-resize",
+    "prompt-after-resize",
+    "resize-restore",
+    "page-up",
+    "scroll-live-tail",
+    "scroll-to-bottom",
+    "scroll-to-bottom-after-prompts",
+    "search-open",
+    "search-placeholder-reopen",
+    "search-toggle-close",
+    "search-reopen",
+    "search-paste-query",
+    "search-cycle-next",
+    "search-cycle-previous",
+    "search-close",
+    "search-escape-close",
+    "search-close-live-tail",
+    "search-query",
+    "search-cursor-left",
+    "long-transcript-tail",
+    "exit"
+  ],
+  "nativeTests": [
+    "EditorKeymapTests.TranscriptPromptNavigationUsesPiDefaultsAndRemainsConfigurable",
+    "EditorKeymapTests.StandardAndKittyPromptNavigationSequencesDecode",
+    "TerminalScreenTests.PromptNavigationJumpsToPreviousAndNextUserMessages",
+    "TerminalScreenTests.SemanticPromptNavigationIncludesUserAndAssistantMessageStarts",
+    "TerminalScreenTests.IdleEditorRoutesKittyTranscriptKeysToScrollAndSearch",
+    "TerminalScreenTests.ActiveSearchTakesPrecedenceOverTranscriptPaging",
+    "TerminalScreenTests.ActiveSearchRefreshesResultsAsTheTranscriptStreams",
+    "TerminalScreenTests.ActiveSearchShortcutTogglesClosedAndCyclesBothDirections",
+    "TerminalScreenTests.ActiveSearchHighlightsMatchesAndRestoresItsDraftOnEscape",
+    "TerminalScreenTests.ScrolledUnicodeTranscriptKeepsItsSourceAnchorAfterResize",
+    "TerminalPtyTests.FullscreenTranscriptNavigationAndSearchThroughLinuxPty",
+    "TerminalPtyTests.FullscreenNavigationAndSearchRemainActiveWhileStreamingThroughLinuxPty"
+  ],
+  "nativeResults": {
+    "focusedTests": "124/124 TUI keymap, screen and input tests; 2/2 fullscreen PTY tests",
+    "fullSuite": "4076 passed, 0 failed, 0 skipped",
+    "format": "dotnet format PiSharp.slnx --verify-no-changes passed",
+    "build": "warnings-as-errors build passed with 0 warnings and 0 errors"
+  },
+  "behaviours": [
+    "Ctrl+Shift+Up/Down and Ctrl+Up/Down jump between user and assistant OSC-133-style semantic anchors, matching pinned Pi's marker semantics.",
+    "PageUp/PageDown and Ctrl+Home/Ctrl+End scroll while idle and during active streaming; unmodified Home/End stay in the editor.",
+    "Ctrl+Shift+F opens search with an empty query, toggles closed, owns PageUp while active and refreshes result counts as streamed text arrives.",
+    "Enter and Shift+Enter cycle matches; Escape closes search, restores the editor draft and keeps the selected transcript position.",
+    "Resize keeps the reading anchor using source anchoring for stable text and absolute-row fallback when Markdown re-rendering rewrites offsets.",
+    "Cancellation and exit close search, restore the editor draft and return the tty/alternate-screen modes to their prior state."
+  ],
+  "limitations": [
+    "The paired products still differ in unrelated full-screen cell styling, padding, scrollbar cells and render-frame count; the semantic navigation assertion passes all named checkpoints.",
+    "Raw bytes are not identical; HTTP traces and scenario completion match."
+  ]
+}
