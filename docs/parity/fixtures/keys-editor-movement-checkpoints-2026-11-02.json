@@ -90,6 +90,15 @@
             "y": 26
           }
         },
+        "movement-jump-separate": {
+          "editor": [
+            "aXY,b,c"
+          ],
+          "cursor": {
+            "x": 3,
+            "y": 26
+          }
+        },
         "history-up": {
           "editor": [
             "draft line one",
@@ -370,6 +379,15 @@
           }
         },
         "movement-jump-buffered": {
+          "editor": [
+            "aXY,b,c"
+          ],
+          "cursor": {
+            "x": 3,
+            "y": 20
+          }
+        },
+        "movement-jump-separate": {
           "editor": [
             "aXY,b,c"
           ],

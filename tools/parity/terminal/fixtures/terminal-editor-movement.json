@@ -136,6 +136,38 @@
       "expect": "aXY,b,c"
     },
     {
+      "id": "movement-jump-separate-clear",
+      "send": "\u0001\u0015\u000b\u0001\u0015\u000b\u0001\u0015\u000b\u0001\u0015\u000b",
+      "expect": "fixture-model",
+      "notExpect": "aXY,b,c"
+    },
+    {
+      "id": "movement-jump-separate-type",
+      "send": "a,b,c",
+      "expect": "a,b,c"
+    },
+    {
+      "id": "movement-jump-separate-home",
+      "send": "\u0001",
+      "expect": "a,b,c"
+    },
+    {
+      "id": "movement-jump-separate-start",
+      "send": "\u001d",
+      "expect": "a,b,c",
+      "allowStaticFrame": true
+    },
+    {
+      "id": "movement-jump-separate-target",
+      "send": ",",
+      "expect": "a,b,c"
+    },
+    {
+      "id": "movement-jump-separate",
+      "send": "XY",
+      "expect": "aXY,b,c"
+    },
+    {
       "id": "movement-clear",
       "send": "\u0001\u000b",
       "expect": "fixture-model",
@@ -282,6 +314,7 @@
     "movement-end",
     "movement-jump-comma",
     "movement-jump-buffered",
+    "movement-jump-separate",
     "history-up",
     "history-up-start",
     "history-up-newest",

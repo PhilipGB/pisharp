@@ -383,7 +383,8 @@
       "terminalCheckpoints": [
         "movement-jump-comma",
         "configured-jump",
-        "movement-jump-buffered"
+        "movement-jump-buffered",
+        "movement-jump-separate"
       ]
     },
     {
@@ -517,7 +518,7 @@
       "required": true,
       "artifact": "docs/parity/fixtures/keys-editor-movement-checkpoints-2026-11-02.json",
       "cases": 2,
-      "checkpoints": 28
+      "checkpoints": 29
     },
     {
       "id": "terminal-calibration",

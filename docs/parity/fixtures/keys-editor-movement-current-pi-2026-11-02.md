@@ -66,9 +66,10 @@ Fail-first: in a detached worktree at
 Pinned Pi differential:
 
 - Same-Pi calibration: 0 differences at both `100x30` and `80x24`.
-- Paired run: 28 named editor checkpoints per height matched by
+- Paired run: 29 named editor checkpoints per height matched by
   `tools/parity/terminal/assert_editor_movement.py`; no scenario errors; exact
-  HTTP and raw HTTP.
+  HTTP and raw HTTP. Buffered and separately delivered jump checkpoints both
+  produce `aXY,b,c` with cursor column 3.
 - Provider user texts and ordering are exactly `first history prompt`,
   `second history prompt`, `provider movement input`; navigation alone submits
   no request.
