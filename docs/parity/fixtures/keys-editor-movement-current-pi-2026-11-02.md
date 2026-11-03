@@ -1,7 +1,7 @@
 # Editor movement and history parity — 2026-11-02
 
 Pinned Pi: `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
-PiSharp implementation commit: `f18581926c2ac5ae8af0b54407ff62272191ee02`.
+PiSharp implementation commit: `d8e1413e1c5f29d8cdcc573c03a3e44a12f3f076`.
 
 This receipt covers the `keys-editor-movement-history` contract: Left/Right,
 Ctrl+B/F, Alt/Ctrl+arrows, Alt+B/F, Home/End, Ctrl+A/E, Up/Down visual-line
@@ -35,7 +35,12 @@ movement and a basic history list. The audit confirmed these defects:
   Pi's `tui.editor.cursorRight`. The non-Windows search default is now
   `Ctrl+Shift+F` only.
 - Legacy F1-F12 sequences were not decoded. `TerminalInput` now decodes
-  `ESC[11~` through `ESC[24~`, modified F-keys, and their Kitty equivalents.
+  `ESC[11~` through `ESC[24~`, modified F-keys with explicit noncontiguous
+  xterm codes (including F6 at `ESC[17;5~`), and their Kitty equivalents.
+- Buffered printable input after jump activation could be consumed as one
+  literal search string. Pinned Pi treats the first buffered grapheme as the
+  jump target and types the remainder; `EditorBuffer.HandleJumpText` now does
+  the same and has a real PTY regression (`aXY,b,c`).
 
 ## Evidence
 
@@ -49,10 +54,10 @@ Deterministic checks:
   cases pass.
 - Selection, configurable-binding, malformed-fallback, Unicode-width and
   fail-first tests are listed in the acceptance manifest.
-- Six real Linux PTY cases pass: movement keys, visual/page/fullscreen
-  precedence, configured bindings plus `/reload`, widget/application
-  precedence, history/draft restoration with provider submission and termios
-  restoration, and external-editor suspension.
+- Seven real Linux PTY cases pass: movement keys, buffered jump input,
+  visual/page/fullscreen precedence, configured bindings plus `/reload`,
+  widget/application precedence, history/draft restoration with provider
+  submission and termios restoration, and external-editor suspension.
 
 Fail-first: in a detached worktree at
 `9cbbd62f61032294396e6706b4c3ee67f8b994e4`, all seven
@@ -61,7 +66,7 @@ Fail-first: in a detached worktree at
 Pinned Pi differential:
 
 - Same-Pi calibration: 0 differences at both `100x30` and `80x24`.
-- Paired run: 27 named editor checkpoints per height matched by
+- Paired run: 28 named editor checkpoints per height matched by
   `tools/parity/terminal/assert_editor_movement.py`; no scenario errors; exact
   HTTP and raw HTTP.
 - Provider user texts and ordering are exactly `first history prompt`,
@@ -97,11 +102,11 @@ verifier rejects missing, duplicate, failed, skipped or unsupported cases,
 stale implementation SHAs, incorrect Pi SHAs, unresolved comparisons,
 nonexistent oracle/test/PTY/checkpoint references, altered cursor or history
 observations, incorrect provider text or request order, and missing terminal
-restoration. It runs 23 negative controls under `--self-test`.
+restoration. It runs 25 negative controls under `--self-test`, including mutations passed through the real checkpoint and provider validators.
 
 Local validation: `dotnet format --verify-no-changes` passed, the
-warnings-as-errors build passed with zero warnings/errors, 119 focused movement
-tests passed, and the full suite passed 4,283/4,283 with zero skips.
+warnings-as-errors build passed with zero warnings/errors, 113 focused movement
+tests passed, and the full suite passed 4,286/4,286 with zero skips.
 
 ## Findings
 

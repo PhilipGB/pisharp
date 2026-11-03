@@ -3,7 +3,7 @@
   "capability": "keys-editor-movement-history",
   "date": "2026-11-02",
   "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-  "implementationSha": "f18581926c2ac5ae8af0b54407ff62272191ee02",
+  "implementationSha": "d8e1413e1c5f29d8cdcc573c03a3e44a12f3f076",
   "oracle": "docs/parity/fixtures/keys-editor-movement-pi-oracle-2026-11-02.json",
   "terminalFixture": "tools/parity/terminal/fixtures/terminal-editor-movement.json",
   "terminalAssertion": "tools/parity/terminal/assert_editor_movement.py",
@@ -45,7 +45,10 @@
       "PiSharp.Tests.EditorBufferTests.KeyboardSelectionMovesByGraphemeAndPlainMovementCollapsesIt",
       "PiSharp.Tests.EditorBufferTests.TypingAndDeletingReplaceKeyboardSelectionAndUndoRestoresIt",
       "PiSharp.Tests.EditorMutationParityTests.SelectionDeletionReplacementAndKillsKeepCursorAndUndoIntegrity",
-      "PiSharp.Tests.TerminalInputTests.DecodesLegacyControlBytesForMutationKeybindings"
+      "PiSharp.Tests.TerminalInputTests.DecodesLegacyControlBytesForMutationKeybindings",
+      "PiSharp.Tests.EditorMovementParityTests.BufferedJumpTextConsumesOnlyTheNextGrapheme",
+      "PiSharp.Tests.EditorMovementPtyTests.BufferedJumpConsumesOnlyTheNextGraphemeThroughLinuxPty",
+      "PiSharp.Tests.EditorMovementBindingTests.ModifiedFunctionKeysMapToExplicitNoncontiguousCodes"
     ],
     "ptyEvidence": [
       "pty-movement-keys",
@@ -53,7 +56,8 @@
       "pty-configured-reload",
       "pty-widget-precedence",
       "pty-provider-lifecycle",
-      "pty-external-editor"
+      "pty-external-editor",
+      "pty-jump-buffered"
     ]
   },
   "cases": [
@@ -367,15 +371,19 @@
         "PiSharp.Tests.MovementFailFirstTests.CtrlBracketAndCharacterEnterJumpMode",
         "PiSharp.Tests.MovementFailFirstTests.CtrlBracketKeymapEntersJumpMode",
         "PiSharp.Tests.EditorMovementPtyTests.CharacterWordLineAndJumpMovementReachEditorStatesThroughLinuxPty",
-        "PiSharp.Tests.EditorMovementPtyTests.ConfiguredMovementBindingsAndReloadApplyThroughLinuxPty"
+        "PiSharp.Tests.EditorMovementPtyTests.ConfiguredMovementBindingsAndReloadApplyThroughLinuxPty",
+        "PiSharp.Tests.EditorMovementParityTests.BufferedJumpTextConsumesOnlyTheNextGrapheme",
+        "PiSharp.Tests.EditorMovementPtyTests.BufferedJumpConsumesOnlyTheNextGraphemeThroughLinuxPty"
       ],
       "pty": [
         "pty-movement-keys",
-        "pty-configured-reload"
+        "pty-configured-reload",
+        "pty-jump-buffered"
       ],
       "terminalCheckpoints": [
         "movement-jump-comma",
-        "configured-jump"
+        "configured-jump",
+        "movement-jump-buffered"
       ]
     },
     {
@@ -446,7 +454,8 @@
         "PiSharp.Tests.MovementFailFirstTests.LegacyF9Decodes",
         "PiSharp.Tests.EditorMovementPtyTests.ConfiguredMovementBindingsAndReloadApplyThroughLinuxPty",
         "PiSharp.Tests.EditorMovementPtyTests.WidgetAndApplicationShortcutsTakePrecedenceOverMovementKeysThroughLinuxPty",
-        "PiSharp.Tests.EditorMovementPtyTests.ExternalEditorShortcutWinsOverCollidingMovementBindingAndRestoresTerminalThroughLinuxPty"
+        "PiSharp.Tests.EditorMovementPtyTests.ExternalEditorShortcutWinsOverCollidingMovementBindingAndRestoresTerminalThroughLinuxPty",
+        "PiSharp.Tests.EditorMovementBindingTests.ModifiedFunctionKeysMapToExplicitNoncontiguousCodes"
       ],
       "pty": [
         "pty-configured-reload",
@@ -473,7 +482,8 @@
         "PiSharp.Tests.EditorMovementPtyTests.WidgetAndApplicationShortcutsTakePrecedenceOverMovementKeysThroughLinuxPty",
         "PiSharp.Tests.EditorMovementPtyTests.HistoryDraftRestorationAndSubmissionReachTheProviderThroughLinuxPty",
         "PiSharp.Tests.EditorMovementPtyTests.ExternalEditorShortcutWinsOverCollidingMovementBindingAndRestoresTerminalThroughLinuxPty",
-        "PiSharp.Tests.TerminalInputTests.DecodesLegacyControlBytesForMutationKeybindings"
+        "PiSharp.Tests.TerminalInputTests.DecodesLegacyControlBytesForMutationKeybindings",
+        "PiSharp.Tests.EditorMovementPtyTests.BufferedJumpConsumesOnlyTheNextGraphemeThroughLinuxPty"
       ],
       "pty": [
         "pty-movement-keys",
@@ -481,7 +491,8 @@
         "pty-configured-reload",
         "pty-widget-precedence",
         "pty-provider-lifecycle",
-        "pty-external-editor"
+        "pty-external-editor",
+        "pty-jump-buffered"
       ],
       "terminalCheckpoints": [
         "startup",
@@ -506,7 +517,7 @@
       "required": true,
       "artifact": "docs/parity/fixtures/keys-editor-movement-checkpoints-2026-11-02.json",
       "cases": 2,
-      "checkpoints": 27
+      "checkpoints": 28
     },
     {
       "id": "terminal-calibration",
