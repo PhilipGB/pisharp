@@ -3,7 +3,7 @@
   "capability": "keys-model-display",
   "date": "2026-11-03",
   "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-  "implementationSha": "d611b742a91093f8a87be738c37f02a4f413236a",
+  "implementationSha": "80abc9a194c310ed6de9dd1e458d22042b5fc227",
   "oracle": "docs/parity/fixtures/keys-model-display-pi-oracle-2026-11-03.json",
   "checkpoints": "docs/parity/fixtures/keys-model-display-checkpoints-2026-11-03.json",
   "terminalFixtures": [
