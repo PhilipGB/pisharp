@@ -294,7 +294,7 @@ public sealed class ProviderLoginTuiTests
                         {
                             authorizationUrlVisible.TrySetResult();
                             if (current.Contains(customCopyKey ? "Ctrl+Shift+C to copy" : "Ctrl+X to copy",
-                                    StringComparison.Ordinal) && current.Contains("Esc to cancel", StringComparison.Ordinal))
+                                    StringComparison.Ordinal) && current.Contains("Escape to cancel", StringComparison.Ordinal))
                                 copyHintsVisible.TrySetResult();
                         }
                         if (current.Contains(clipboardUnavailable

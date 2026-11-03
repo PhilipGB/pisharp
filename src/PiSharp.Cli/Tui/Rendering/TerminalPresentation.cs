@@ -172,6 +172,8 @@ internal sealed class TerminalPresentation : IDisposable
         _terminalScreen?.SetShowTerminalProgress(settings.ShowTerminalProgress == true);
         _terminalScreen?.SetFullscreenWheelScrollLines(settings.FullscreenWheelScrollLines ??
             FullscreenWheelScrollSetting.Automatic);
+        if (_terminalScreen is not null)
+            _terminalScreen.CopyOnSelect = settings.FullscreenCopyOnSelect ?? true;
     }
 
     public void Dispose()

@@ -56,9 +56,18 @@ internal sealed class AvailableModelSnapshot
     public void RecordModel(ModelDescriptor model)
     {
         lock (_availableProviderGate)
-            _availableModelSnapshot = _availableModelSnapshot.Where(existing =>
-                    !string.Equals(ModelKey(existing), ModelKey(model), StringComparison.Ordinal))
-                .Append(model).ToArray();
+        {
+            var key = ModelKey(model);
+            var index = Array.FindIndex(_availableModelSnapshot, existing =>
+                string.Equals(ModelKey(existing), key, StringComparison.Ordinal));
+            if (index >= 0)
+            {
+                var next = _availableModelSnapshot.ToArray();
+                next[index] = model;
+                _availableModelSnapshot = next;
+            }
+            else _availableModelSnapshot = _availableModelSnapshot.Append(model).ToArray();
+        }
     }
 
     private static string ModelKey(ModelDescriptor model) => $"{model.Provider}\0{model.Id}";

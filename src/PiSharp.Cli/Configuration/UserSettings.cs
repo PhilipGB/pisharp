@@ -130,7 +130,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
     int? AutocompleteMaxVisible = null, bool? ClearOnShrink = null, bool? ShowTerminalProgress = null,
     IReadOnlyList<NativeExtensionPackageSource>? NativeExtensions = null,
     FullscreenWheelScrollSetting? FullscreenWheelScrollLines = null, string? TuiMode = null,
-    BranchSummarySettings? BranchSummary = null, string? DoubleEscapeAction = null)
+    BranchSummarySettings? BranchSummary = null, string? DoubleEscapeAction = null,
+    bool? FullscreenCopyOnSelect = null)
 {
     public const int DefaultHttpIdleTimeoutMs = 300_000;
     public const string DefaultMarkdownCodeBlockIndent = "  ";
@@ -190,6 +191,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         string? sessionShareDestination = null;
         string? tuiMode = null;
         string? doubleEscapeAction = null;
+        bool? fullscreenCopyOnSelect = null;
         FullscreenWheelScrollSetting? fullscreenWheelScrollLines = null;
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var property in document.RootElement.EnumerateObject())
@@ -234,6 +236,13 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             if (property.Name == "fullscreenWheelScrollLines")
             {
                 fullscreenWheelScrollLines = FullscreenWheelScrollSetting.Parse(property.Value);
+                continue;
+            }
+            if (property.Name == "fullscreenCopyOnSelect")
+            {
+                if (property.Value.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+                    throw new InvalidDataException("settings.json fullscreenCopyOnSelect must be a boolean.");
+                fullscreenCopyOnSelect = property.Value.GetBoolean();
                 continue;
             }
             if (property.Name is "editorPaddingX" or "outputPad" or "autocompleteMaxVisible")
@@ -470,7 +479,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             enableSkillCommands, extensions, skills, prompts, themes, shellCommandPrefix, sessionShareDestination, packages,
             npmCommand, thinkingBudgets, autoResizeImages, showHardwareCursor, editorPaddingX, outputPad,
             autocompleteMaxVisible, clearOnShrink, showTerminalProgress, nativeExtensions, fullscreenWheelScrollLines,
-            tuiMode, branchSummary, doubleEscapeAction);
+            tuiMode, branchSummary, doubleEscapeAction, fullscreenCopyOnSelect);
     }
 
     public static string GetSettingsPath(string agentDirectory, Func<string, string?> environment) =>
@@ -527,7 +536,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         project.BranchSummary is null ? BranchSummary : new BranchSummarySettings(
             project.BranchSummary.ReserveTokens ?? BranchSummary?.ReserveTokens,
             project.BranchSummary.SkipPrompt ?? BranchSummary?.SkipPrompt),
-        project.DoubleEscapeAction ?? DoubleEscapeAction);
+        project.DoubleEscapeAction ?? DoubleEscapeAction,
+        project.FullscreenCopyOnSelect ?? FullscreenCopyOnSelect);
 
     public string? GetModelThinkingLevel(string provider, string modelId) =>
         ModelThinkingLevels?.GetValueOrDefault($"{provider}/{modelId}");

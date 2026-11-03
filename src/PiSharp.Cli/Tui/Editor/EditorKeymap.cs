@@ -14,9 +14,10 @@ public sealed class EditorKeymap
     {
         "app.interrupt", "app.clear", "app.exit", "app.suspend", "app.thinking.cycle",
         "app.model.cycleForward", "app.model.cycleBackward", "app.model.select", "app.tools.expand",
-        "app.thinking.toggle", "app.editor.external", "app.message.copy", "app.message.followUp",
-        "tui.input.submit", "tui.select.confirm", "tui.select.cancel", "tui.input.copy",
-        "tui.editor.deleteToLineEnd"
+        "app.thinking.toggle", "app.thinking.save", "app.editor.external", "app.message.copy",
+        "app.message.followUp", "tui.input.submit", "tui.input.tab", "tui.select.up",
+        "tui.select.down", "tui.select.pageUp", "tui.select.pageDown", "tui.select.confirm",
+        "tui.select.cancel", "tui.input.copy", "tui.editor.deleteToLineEnd"
     };
     private static readonly string[] IdleApplicationActions = ["app.suspend", "app.thinking.cycle", "app.thinking.toggle", "app.model.cycleForward", "app.model.cycleBackward", "app.model.select", "app.tools.expand", "app.editor.external", "app.message.copy", "app.clipboard.pasteImage", "app.settings.open", "app.session.tree", "app.session.fork", "app.session.resume"];
 
@@ -24,7 +25,7 @@ public sealed class EditorKeymap
     {
         ["tui.input.submit"] = new("Submit input", ["enter"]),
         ["tui.input.newLine"] = new("Insert a new line", ["shift+enter", "ctrl+j"]),
-        ["tui.input.tab"] = new("Complete input", ["tab", "shift+tab"]),
+        ["tui.input.tab"] = new("Tab / autocomplete", ["tab"]),
         ["tui.editor.cursorUp"] = new("Move up or browse older history", ["up"]),
         ["tui.editor.cursorDown"] = new("Move down or browse newer history", ["down"]),
         ["tui.editor.historyPrevious"] = new("Browse older prompt history", []),
@@ -62,7 +63,7 @@ public sealed class EditorKeymap
         ["app.exit"] = new("Exit when editor is empty", ["ctrl+d"]),
         ["app.suspend"] = new("Suspend to background", OperatingSystem.IsWindows() ? [] : ["ctrl+z"]),
         ["app.model.cycleForward"] = new("Cycle to next model", ["ctrl+p"]),
-        ["app.model.cycleBackward"] = new("Cycle to previous model", IsWindowsBindings() ? ["alt+p"] : ["ctrl+shift+p", "alt+p"]),
+        ["app.model.cycleBackward"] = new("Cycle to previous model", IsWindowsBindings() ? ["alt+p"] : ["shift+ctrl+p"]),
         ["app.model.select"] = new("Open model selector", ["ctrl+l"]),
         ["app.editor.external"] = new("Open external editor", ["ctrl+g"]),
         ["app.message.copy"] = new("Copy selection or last assistant message", ["ctrl+x"]),
@@ -80,10 +81,17 @@ public sealed class EditorKeymap
         ["app.models.reorderUp"] = new("Move model earlier in the scope", ["alt+up"]),
         ["app.models.reorderDown"] = new("Move model later in the scope", ["alt+down"]),
         ["app.thinking.cycle"] = new("Cycle thinking level", ["shift+tab"]),
+        ["app.thinking.save"] = new("Save thinking level", ["ctrl+s"]),
         ["app.thinking.toggle"] = new("Toggle thinking block visibility", ["ctrl+t"]),
         ["app.tools.expand"] = new("Expand or collapse tool output", ["ctrl+o"]),
         ["app.message.followUp"] = new("Queue a follow-up message", IsWindowsBindings() ? ["ctrl+q"] : ["alt+enter"]),
         ["app.message.dequeue"] = new("Restore queued messages", IsWindowsBindings() ? ["alt+q"] : ["alt+up"]),
+        ["tui.select.up"] = new("Move selection up", ["up"]),
+        ["tui.select.down"] = new("Move selection down", ["down"]),
+        ["tui.select.pageUp"] = new("Selection page up", ["pageup"]),
+        ["tui.select.pageDown"] = new("Selection page down", ["pagedown"]),
+        ["tui.select.confirm"] = new("Confirm selection", ["enter"]),
+        ["tui.select.cancel"] = new("Cancel selection", ["escape", "ctrl+c"]),
         ["tui.altScreen.pageUp"] = new("Scroll transcript up one page", ["pageup"]),
         ["tui.altScreen.pageDown"] = new("Scroll transcript down one page", ["pagedown"]),
         ["tui.altScreen.previousPrompt"] = new("Jump to previous semantic prompt",
@@ -140,7 +148,7 @@ public sealed class EditorKeymap
                     "ctrl" => "Ctrl",
                     "shift" => "Shift",
                     "alt" => "Alt",
-                    "esc" or "escape" => "Esc",
+                    "esc" or "escape" => "Escape",
                     "pageup" => "PageUp",
                     "pagedown" => "PageDown",
                     _ => part.Length == 0 ? part : char.ToUpperInvariant(part[0]) + part[1..]
@@ -287,7 +295,7 @@ public sealed class EditorKeymap
             "ctrl" => "Ctrl",
             "shift" => "Shift",
             "alt" => "Alt",
-            "esc" => "Esc",
+            "esc" => "Escape",
             "pageup" => "PageUp",
             "pagedown" => "PageDown",
             _ => part.Length == 0 ? part : char.ToUpperInvariant(part[0]) + part[1..]

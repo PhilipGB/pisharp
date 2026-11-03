@@ -1,20 +1,21 @@
 namespace PiSharp.Cli.Tui;
 
 /// <summary>Runs reusable modal list interactions through the active terminal screen.</summary>
-internal sealed class TerminalOverlayHost(TerminalInput input)
+internal sealed class TerminalOverlayHost(TerminalInput input, EditorKeymap? keymap = null)
 {
     public TerminalSelection<T>? Select<T>(TerminalScreen screen, string title,
         IReadOnlyList<TerminalSelectionOption<T>> options, string? selectedKey = null,
         IReadOnlyList<TerminalSelectionOption<T>>? scopedOptions = null,
         string allLabel = "All", string scopedLabel = "Scoped", string emptyMessage = "No matching items",
         string? actionHint = null,
-        Func<TerminalSelectionList<T>, TerminalInputEvent, bool>? handleInput = null)
+        Func<TerminalSelectionList<T>, TerminalInputEvent, bool>? handleInput = null,
+        string saveAction = "app.models.save")
     {
         Func<TerminalSelectionList<T>, TerminalInputEvent, ValueTask<bool>>? asyncHandler = handleInput is null
             ? null
             : (list, input) => ValueTask.FromResult(handleInput(list, input));
         return SelectCoreAsync(screen, title, options, selectedKey, scopedOptions, allLabel, scopedLabel,
-            emptyMessage, actionHint, asyncHandler, null, CancellationToken.None).GetAwaiter().GetResult();
+            emptyMessage, actionHint, asyncHandler, null, CancellationToken.None, saveAction).GetAwaiter().GetResult();
     }
 
     public Task<TerminalSelection<T>?> SelectAsync<T>(TerminalScreen screen, string title,
@@ -24,13 +25,14 @@ internal sealed class TerminalOverlayHost(TerminalInput input)
         string? actionHint = null,
         Func<TerminalSelectionList<T>, TerminalInputEvent, Task<bool>>? handleInput = null,
         CancellationToken cancellationToken = default,
-        Func<TerminalSelectionList<T>, Task>? onIdle = null)
+        Func<TerminalSelectionList<T>, Task>? onIdle = null,
+        string saveAction = "app.models.save")
     {
         Func<TerminalSelectionList<T>, TerminalInputEvent, ValueTask<bool>>? asyncHandler = handleInput is null
             ? null
             : (list, input) => new ValueTask<bool>(handleInput(list, input));
         return SelectCoreAsync(screen, title, options, selectedKey, scopedOptions, allLabel, scopedLabel,
-            emptyMessage, actionHint, asyncHandler, onIdle, cancellationToken);
+            emptyMessage, actionHint, asyncHandler, onIdle, cancellationToken, saveAction);
     }
 
     private async Task<TerminalSelection<T>?> SelectCoreAsync<T>(TerminalScreen screen, string title,
@@ -38,11 +40,11 @@ internal sealed class TerminalOverlayHost(TerminalInput input)
         IReadOnlyList<TerminalSelectionOption<T>>? scopedOptions, string allLabel, string scopedLabel,
         string emptyMessage, string? actionHint,
         Func<TerminalSelectionList<T>, TerminalInputEvent, ValueTask<bool>>? handleInput,
-        Func<TerminalSelectionList<T>, Task>? onIdle, CancellationToken cancellationToken)
+        Func<TerminalSelectionList<T>, Task>? onIdle, CancellationToken cancellationToken, string saveAction)
     {
         ArgumentNullException.ThrowIfNull(screen);
         var list = new TerminalSelectionList<T>(title, options, selectedKey, scopedOptions,
-            allLabel, scopedLabel, emptyMessage, actionHint);
+            allLabel, scopedLabel, emptyMessage, actionHint, keymap, saveAction);
         try
         {
             while (screen.IsActive)

@@ -19,18 +19,23 @@ public sealed class EditorCompletionTests
     }
 
     [Fact]
-    public async Task ShiftTabCyclesBackwardAndWraps()
+    public async Task ShiftTabIsReservedForTheThinkingCycleInsteadOfBackwardCompletion()
     {
         var editor = new TerminalEditor();
         editor.Prefill("/mod");
 
         await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
-        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t', ConsoleModifiers.Shift));
-        Assert.Equal("/models", editor.Draft);
-        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t', ConsoleModifiers.Shift));
         Assert.Equal("/model", editor.Draft);
-        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t', ConsoleModifiers.Shift));
-        Assert.Equal("/models", editor.Draft);
+
+        string? action = null;
+        Assert.True(await editor.HandleApplicationShortcutAsync(
+            Key(ConsoleKey.Tab, '\t', ConsoleModifiers.Shift), dispatched =>
+            {
+                action = dispatched;
+                return Task.CompletedTask;
+            }));
+        Assert.Equal("app.thinking.cycle", action);
+        Assert.Equal("/model", editor.Draft);
     }
 
     [Fact]
