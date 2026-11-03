@@ -5,6 +5,7 @@ using PiSharp.Cli.Tui;
 namespace PiSharp.Tests;
 
 /// <summary>Source-pinned Mermaid cases mirroring Pi's mermaid.test.ts at b06c1f2.</summary>
+[Collection("Console writers")]
 public sealed class TerminalMermaidTests
 {
     private static string StripSgr(string text) => Regex.Replace(text, "\\u001b\\[[0-9;]*m", "");

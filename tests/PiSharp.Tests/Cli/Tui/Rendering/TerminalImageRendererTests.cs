@@ -5,6 +5,7 @@ using SkiaSharp;
 
 namespace PiSharp.Tests;
 
+[Collection("Console writers")]
 public sealed class TerminalImageRendererTests
 {
     [Fact]

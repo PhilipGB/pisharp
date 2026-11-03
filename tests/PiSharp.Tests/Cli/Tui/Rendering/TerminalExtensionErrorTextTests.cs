@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace PiSharp.Tests;
 
+[Collection("Console writers")]
 public sealed class TerminalExtensionErrorTextTests
 {
     [Fact]

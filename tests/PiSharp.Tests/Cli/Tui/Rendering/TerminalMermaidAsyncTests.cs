@@ -4,6 +4,7 @@ using PiSharp.Cli.Tui;
 namespace PiSharp.Tests;
 
 /// <summary>P1 responsiveness: Mermaid must not hold the screen lock while waiting for external execution.</summary>
+[Collection("Console writers")]
 public sealed class TerminalMermaidAsyncTests
 {
     private static string StripSgr(string text) => Regex.Replace(text, "\\u001b\\[[0-9;]*m", "");

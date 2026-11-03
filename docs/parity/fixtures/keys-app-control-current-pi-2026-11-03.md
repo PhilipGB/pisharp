@@ -11,7 +11,7 @@ acceptance verifier all passed. The draft PR remains open and unmerged.
 | Item | Value |
 | --- | --- |
 | Pinned Pi | `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` |
-| PiSharp implementation commit | `ee2e308f69bb573bcc3aab48752126173d74e8b8` |
+| PiSharp implementation commit | `487ae4e51e1c294ba44c2e1345f4dd9ec869b20e` |
 | Starting `main` | `78a2b044757ea548426521e45795bc8268a84513` |
 | Acceptance manifest | `docs/parity/fixtures/keys-app-control-acceptance-2026-11-03.json` |
 | Pinned-Pi oracle | `docs/parity/fixtures/keys-app-control-pi-oracle-2026-11-03.json` |

@@ -5,6 +5,7 @@ using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Tests;
 
+[Collection("Console writers")]
 public sealed class CodemodeTimerTests
 {
     [Fact]
