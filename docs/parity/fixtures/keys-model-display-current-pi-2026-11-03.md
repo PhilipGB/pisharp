@@ -41,9 +41,10 @@ Implementation: `b8d50e6631c543551372152fa83d441aebf957de`.
 - Ctrl+T writes `hideThinkingBlock`; restart starts hidden and the first toggle
   reports visible.
 - Ctrl+O reports expanded/collapsed; Ctrl+X writes the last assistant message.
+- Disabled selector bindings render no stale default shortcuts; the fallback labels are used only without a configured keymap.
 - Deterministic keymap/channel tests, focused PTY tests and rebinding/widget
   precedence tests pass.
-- Focused suite 39/39, full suite 4,389/4,389, zero skips; `dotnet format`
+- Focused suite 40/40, full suite 4,390/4,390, zero skips; `dotnet format`
   clean; warnings-as-errors build clean.
 
 ## Documented non-required differences

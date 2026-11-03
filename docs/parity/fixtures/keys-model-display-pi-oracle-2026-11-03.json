@@ -340,7 +340,14 @@
             "ctrl+x"
           ]
         },
-        "copyOnSelectDefault": true
+        "copyOnSelectDefault": true,
+        "disabledDisplay": [
+          "tui.select.cancel",
+          "tui.input.tab",
+          "app.models.save",
+          "tui.select.up",
+          "tui.select.down"
+        ]
       }
     },
     "M14": {
