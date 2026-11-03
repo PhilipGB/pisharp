@@ -594,7 +594,7 @@ public sealed class ProviderChatClientFactoryTests
     public async Task ProviderStreamIdleSettingCancelsAStalledLoopbackStream(string protocol)
     {
         using var listener = StartLoopbackListener(out var port);
-        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(12));
         var requests = 0;
         var server = Task.Run(async () =>
         {
@@ -619,7 +619,9 @@ public sealed class ProviderChatClientFactoryTests
                     await writer.WriteAsync("event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"first\"}}\n\n");
                 }
                 await writer.FlushAsync();
-                await Task.Delay(900, deadline.Token);
+                // Keep the stream stalled well past the idle deadline so a completion-only
+                // implementation cannot satisfy the test by emitting the final event.
+                await Task.Delay(4_000, deadline.Token);
                 await writer.WriteAsync(protocol == "openai-responses"
                     ? "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp_idle\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"completed\",\"output\":[]}}\n\ndata: [DONE]\n\n"
                     : "event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n");
@@ -631,7 +633,7 @@ public sealed class ProviderChatClientFactoryTests
         var selection = Selection("fixture", protocol == "openai-responses"
             ? $"http://127.0.0.1:{port}/v1" : $"http://127.0.0.1:{port}", protocol);
         var client = ProviderChatClientFactory.Create(selection,
-            new ProviderRetrySettings(TimeoutMs: 5_000), httpIdleTimeoutMs: 250);
+            new ProviderRetrySettings(TimeoutMs: 5_000), httpIdleTimeoutMs: 1_000);
         var updates = 0;
         var firstUpdate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var streaming = Task.Run(async () =>
@@ -651,7 +653,7 @@ public sealed class ProviderChatClientFactoryTests
 
         Assert.Contains("no update", error.Message, StringComparison.OrdinalIgnoreCase);
         Assert.True(Volatile.Read(ref updates) > 0, "The provider did not emit the initial stream update.");
-        Assert.True(timer.Elapsed < TimeSpan.FromMilliseconds(700), $"The provider stream took {timer.Elapsed}.");
+        Assert.True(timer.Elapsed < TimeSpan.FromMilliseconds(3_000), $"The provider stream took {timer.Elapsed}.");
         await server.WaitAsync(deadline.Token);
         Assert.Equal(1, requests);
     }
