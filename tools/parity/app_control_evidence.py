@@ -38,9 +38,14 @@ def checkpoint(frame):
     state = frame["state"]
     modes = state.get("modes", {})
     private = modes.get("private", {})
+    lines = viewport_lines(state)
+    separators = [index for index, line in enumerate(lines) if line.lstrip().startswith("─")]
+    editor_top = separators[-2] if len(separators) >= 2 else 0
+    cursor = state.get("cursor", {})
     return {
         "editor": editor_lines(state),
-        "cursor": state.get("cursor", {}),
+        "cursor": cursor,
+        "editorRow": cursor.get("y", 0) - editor_top,
         "activeScreen": state.get("activeScreen"),
         "temporaryModes": sorted(mode for mode in TEMPORARY_PRIVATE_MODES if private.get(mode, False)),
         "bracketedPasteMode": bool(modes.get("bracketedPasteMode", False)),

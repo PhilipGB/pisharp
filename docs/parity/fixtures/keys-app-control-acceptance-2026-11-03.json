@@ -3,7 +3,7 @@
   "capability": "keys-app-control",
   "date": "2026-11-03",
   "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-  "implementationSha": "5310dc3be8c071fb419759cf609b20ac42abc43c",
+  "implementationSha": "c09c1b6baab3353f386ecc2f9402dfdc31194909",
   "oracle": "docs/parity/fixtures/keys-app-control-pi-oracle-2026-11-03.json",
   "checkpoints": "docs/parity/fixtures/keys-app-control-checkpoints-2026-11-03.json",
   "terminalFixtures": [
@@ -53,7 +53,9 @@
       "PiSharp.Tests.TerminalPtyTests.FullscreenTranscriptNavigationAndSearchThroughLinuxPty",
       "PiSharp.Tests.TerminalInputTests.ActiveEditorRoutesEnterAltEnterAndEscapeWithPendingRestoration",
       "PiSharp.Tests.Runtime.Tools.BashProcessLifetimeTests.CancellationKillsChildAndDetachedGrandchildBeforeSettling",
-      "PiSharp.Tests.Runtime.Extensions.ExtensionSessionStateTests.SessionLifecycleCallbacksAreOrderedFailureIsolatedAndScopedToTheRun"
+      "PiSharp.Tests.ExtensionSessionStateTests.SessionLifecycleCallbacksAreOrderedFailureIsolatedAndScopedToTheRun",
+      "PiSharp.Tests.AppControlPtyTests.RegularModeDoubleEscapeAfterBashEntryOpensTheTreeSelectorThroughLinuxPty",
+      "PiSharp.Tests.TerminalScreenTests.RegularModeOverlayIsRenderedIntoTheMainScreen"
     ],
     "ptyEvidence": [
       "pty-app-idle-controls",
@@ -301,7 +303,9 @@
         "PiSharp.Tests.AppControlTests.DoubleEscapeOpensTheConfiguredSelectorWithinTheWindow",
         "PiSharp.Tests.AppControlTests.DoubleEscapeOutsideTheWindowDoesNotOpenASelector",
         "PiSharp.Tests.AppControlPtyTests.DoubleEscapeHonoursTheConfiguredActionAndReturnsToTheEditor",
-        "PiSharp.Tests.AppControlTests.DoubleEscapeDrivesTheConfiguredSelectorThroughTheEditorLoop"
+        "PiSharp.Tests.AppControlTests.DoubleEscapeDrivesTheConfiguredSelectorThroughTheEditorLoop",
+        "PiSharp.Tests.AppControlPtyTests.RegularModeDoubleEscapeAfterBashEntryOpensTheTreeSelectorThroughLinuxPty",
+        "PiSharp.Tests.TerminalScreenTests.RegularModeOverlayIsRenderedIntoTheMainScreen"
       ],
       "pty": [
         "pty-app-double-escape-tree"
@@ -358,7 +362,9 @@
         "PiSharp.Tests.AppControlTests.RebindingSuspensionAndCancellationDoesNotDisableTheirSafeguards",
         "PiSharp.Tests.AppControlTests.LegacyAndKittyEscapeDecodeToTheSameApplicationAction",
         "PiSharp.Tests.AppControlTests.ApplicationSelectionTreeHasNoDefaultBindingButCanBeConfigured",
-        "PiSharp.Tests.AppControlTests.WindowsSuspensionReportsPinnedPiUnsupportedActionWithoutClaimingJobControl"
+        "PiSharp.Tests.AppControlTests.WindowsSuspensionReportsPinnedPiUnsupportedActionWithoutClaimingJobControl",
+        "PiSharp.Tests.AppControlTests.LegacyDoubleEscapeDecodesAsTwoInterrupts",
+        "PiSharp.Tests.AppControlTests.EscapeFollowedByAnArrowSequenceDecodesAsEscapeThenArrow"
       ],
       "pty": [
         "pty-app-double-escape-none"
@@ -394,7 +400,7 @@
       "tests": [
         "PiSharp.Tests.AppControlPtyTests.ShutdownPathsRestoreTheTerminalAndExitCleanlyThroughLinuxPty",
         "PiSharp.Tests.TerminalSuspendPtyTests.CtrlZSuspendRestoresTerminalSettingsAndResumePreservesTheDraft",
-        "PiSharp.Tests.Runtime.Extensions.ExtensionSessionStateTests.SessionLifecycleCallbacksAreOrderedFailureIsolatedAndScopedToTheRun"
+        "PiSharp.Tests.ExtensionSessionStateTests.SessionLifecycleCallbacksAreOrderedFailureIsolatedAndScopedToTheRun"
       ],
       "pty": [
         "pty-app-shutdown-quit",

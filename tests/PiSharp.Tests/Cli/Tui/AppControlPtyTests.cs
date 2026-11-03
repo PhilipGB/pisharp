@@ -257,8 +257,8 @@ public sealed class AppControlPtyTests
             await SendAsync("\u0015!echo BASH_AFTER_OK\r");
             await WaitForAsync(frame => frame.Contains("BASH_AFTER_OK", StringComparison.Ordinal),
                 "subsequent Bash command executes");
-            await SendAsync("\u0015");
-            await SendAsync("\u0003\u0003");
+            await Task.Delay(500);
+            await SendAsync("\u0015/quit\r");
             await process.WaitForExitAsync(timeout.Token);
             var output = await stdout;
             Assert.Equal(0, process.ExitCode);

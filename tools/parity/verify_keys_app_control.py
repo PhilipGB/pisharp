@@ -153,8 +153,11 @@ def validate_checkpoints(checkpoints, manifest):
             require(left["editor"] == right["editor"],
                     f"{key}/{checkpoint_id} editor text differs: {left['editor']!r} != {right['editor']!r}.")
             if not is_exit:
-                require(left["cursor"] == right["cursor"],
-                        f"{key}/{checkpoint_id} cursor differs: {left['cursor']} != {right['cursor']}.")
+                require(left["cursor"].get("x") == right["cursor"].get("x"),
+                        f"{key}/{checkpoint_id} cursor column differs: {left['cursor']} != {right['cursor']}.")
+                require(left.get("editorRow") == right.get("editorRow"),
+                        f"{key}/{checkpoint_id} editor cursor row differs: "
+                        f"{left.get('editorRow')} != {right.get('editorRow')}.")
             else:
                 require(left["activeScreen"] == "normal" and right["activeScreen"] == "normal",
                         f"{key}/{checkpoint_id} did not restore the normal screen.")
@@ -204,9 +207,9 @@ def validate_case_references(manifest, oracle, results, evidence_ids, index, by_
     distinct = {entry for entry in a16.get("terminalCheckpoints") or [] if entry.count("/") == 2}
     require(len(distinct) >= 20,
             f"A16 names {len(distinct)} dimension/case/checkpoint observations, expected at least 20.")
-    require(any(entry.startswith("100x30-") for entry in distinct), "A16 has no 100x30 checkpoint.")
-    require(any(entry.startswith("80x24-") for entry in distinct), "A16 has no 80x24 checkpoint.")
-    require(any(entry.startswith("120x40-") for entry in distinct), "A16 has no 120x40 checkpoint.")
+    require(any("/100x30-" in entry for entry in distinct), "A16 has no 100x30 checkpoint.")
+    require(any("/80x24-" in entry for entry in distinct), "A16 has no 80x24 checkpoint.")
+    require(any("/120x40-" in entry for entry in distinct), "A16 has no 120x40 checkpoint.")
 
 
 def validate_oracle_pty_scenarios(oracle, index, by_fixture):
@@ -326,6 +329,7 @@ def run_focused_tests(implementation):
         "FullyQualifiedName~AppControlTests",
         "FullyQualifiedName~AppControlParityTests",
         "FullyQualifiedName~AppControlPtyTests",
+        "FullyQualifiedName~TerminalScreenTests.RegularModeOverlayIsRenderedIntoTheMainScreen",
         "FullyQualifiedName~TerminalSuspendPtyTests",
         "FullyQualifiedName~TerminalPtyTests.DoubleCtrlCExitsInteractiveProcess",
         "FullyQualifiedName~TerminalPtyTests.FullscreenTranscriptNavigationAndSearchThroughLinuxPty",
