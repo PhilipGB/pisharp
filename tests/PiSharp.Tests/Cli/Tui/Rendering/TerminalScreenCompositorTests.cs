@@ -4,6 +4,7 @@ using PiSharp.Extensions.Abstractions;
 
 namespace PiSharp.Tests;
 
+[Collection("Console writers")]
 public sealed class TerminalScreenCompositorTests
 {
     [Fact]

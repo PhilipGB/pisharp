@@ -10,6 +10,7 @@ using SkiaSharp;
 
 namespace PiSharp.Tests;
 
+[Collection("Console writers")]
 public sealed class TerminalScreenTests
 {
     [Fact]
@@ -222,6 +223,20 @@ public sealed class TerminalScreenTests
         Assert.Contains("modal overlay", output.ToString());
         clock.Advance(TimeSpan.FromMilliseconds(16));
         Assert.Equal(1, Count(output.ToString(), "\u001b[?2026h"));
+    }
+
+    [Fact]
+    public void RegularModeOverlayIsRenderedIntoTheMainScreen()
+    {
+        using var output = new StringWriter();
+        var compositor = new TerminalScreenCompositor(output, new TerminalImageRenderer(),
+            useAlternateScreen: false);
+        var frame = compositor.Compose("draft", 5, null, null, "", "footer", ["modal overlay"], 0, 80, 24,
+            new TranscriptSearchController(), new TerminalMouseRouter());
+        compositor.Render(frame);
+        var text = output.ToString();
+        Assert.Contains("modal overlay", text);
+        Assert.DoesNotContain("\u001b[?1049h", text);
     }
 
     [Fact]

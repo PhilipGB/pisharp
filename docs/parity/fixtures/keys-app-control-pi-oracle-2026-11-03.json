@@ -1,0 +1,157 @@
+{
+  "capability": "keys-app-control",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "sources": [
+    { "path": "packages/coding-agent/src/modes/interactive/interactive-mode.ts", "anchors": ["this.defaultEditor.onEscape = () => {", "this.session.isBashRunning", "this.isBashMode", "getDoubleEscapeAction()", "this.lastEscapeTime < 500", "private handleCtrlC(): void", "private handleCtrlD(): void", "private handleCtrlZ(): void", "restoreQueuedMessagesToEditor(options?: { abort?: boolean; currentText?: string })"] },
+    { "path": "packages/coding-agent/src/modes/interactive/components/custom-editor.ts", "anchors": ["if (this.keybindings.matches(data, \"app.interrupt\"))", "if (!this.isShowingAutocomplete())", "if (this.keybindings.matches(data, \"app.exit\"))", "if (this.getText().length === 0)", "super.handleInput(data)"] },
+    { "path": "packages/coding-agent/src/core/keybindings.ts", "anchors": ["\"app.interrupt\": { defaultKeys: \"escape\"", "\"app.clear\": { defaultKeys: \"ctrl+c\"", "\"app.exit\": { defaultKeys: \"ctrl+d\"", "defaultKeys: process.platform === \"win32\" ? [] : \"ctrl+z\""] },
+    { "path": "packages/coding-agent/src/core/settings-defaults.ts", "anchors": ["doubleEscapeAction: \"tree\""] },
+    { "path": "packages/coding-agent/src/core/settings-manager.ts", "anchors": ["getDoubleEscapeAction(): \"fork\" | \"tree\" | \"none\"", "setDoubleEscapeAction(action: \"fork\" | \"tree\" | \"none\")"] },
+    { "path": "packages/coding-agent/docs/keybindings.md", "anchors": ["app.interrupt", "app.clear", "app.exit", "app.suspend"] },
+    { "path": "packages/coding-agent/docs/settings.md", "anchors": ["doubleEscapeAction"] }
+  ],
+  "scenarios": {
+    "a01-idle-escape-nonempty": {
+      "operation": "idle-escape",
+      "source": ["interactive-mode.ts:3070-3094", "custom-editor.ts:handleInput"],
+      "text": "draft",
+      "setting": "tree",
+      "escapeAt": [1000],
+      "expected": { "text": "draft", "actions": [] }
+    },
+    "a01-idle-escape-whitespace": {
+      "operation": "idle-escape",
+      "source": ["interactive-mode.ts:3079"],
+      "text": "   ",
+      "setting": "tree",
+      "escapeAt": [1000, 1200],
+      "expected": { "text": "   ", "actions": ["app.session.tree"] }
+    },
+    "a01-idle-escape-empty-single": {
+      "operation": "idle-escape",
+      "source": ["interactive-mode.ts:3081-3093"],
+      "text": "",
+      "setting": "tree",
+      "escapeAt": [1000],
+      "expected": { "text": "", "actions": [] }
+    },
+    "a04-bash-entry-escape": {
+      "operation": "idle-escape",
+      "source": ["interactive-mode.ts:3075-3078"],
+      "text": "  !echo hi",
+      "setting": "tree",
+      "escapeAt": [1000],
+      "expected": { "text": "", "actions": [] }
+    },
+    "a06-ctrl-c-clears-draft": {
+      "operation": "ctrl-c",
+      "source": ["interactive-mode.ts:4281-4289"],
+      "text": "alpha beta",
+      "cursor": 5,
+      "expected": { "text": "", "cursor": 0, "selection": null }
+    },
+    "a07-ctrl-c-window-499": {
+      "operation": "ctrl-c-window",
+      "source": ["interactive-mode.ts:4282"],
+      "elapsed": [0, 499],
+      "expected": { "exits": [false, true] }
+    },
+    "a07-ctrl-c-window-500": {
+      "operation": "ctrl-c-window",
+      "source": ["interactive-mode.ts:4282"],
+      "elapsed": [0, 500],
+      "expected": { "exits": [false, false] }
+    },
+    "a07-ctrl-c-window-501": {
+      "operation": "ctrl-c-window",
+      "source": ["interactive-mode.ts:4282"],
+      "elapsed": [0, 501],
+      "expected": { "exits": [false, false] }
+    },
+    "a08-ctrl-d-empty": {
+      "operation": "ctrl-d",
+      "source": ["interactive-mode.ts:4291-4294", "custom-editor.ts:handleInput"],
+      "text": "",
+      "expected": { "action": "exit" }
+    },
+    "a08-ctrl-d-grapheme": {
+      "operation": "ctrl-d",
+      "source": ["interactive-mode.ts:4299-4304", "custom-editor.ts:handleInput"],
+      "text": "a😀éb",
+      "cursor": 1,
+      "expected": { "action": "render", "text": "aéb", "cursor": 1 }
+    },
+    "a08-ctrl-d-selection": {
+      "operation": "ctrl-d",
+      "source": ["custom-editor.ts:handleInput", "packages/tui/src/components/editor.ts"],
+      "text": "alpha beta",
+      "cursor": 1,
+      "selectRight": 2,
+      "expected": { "action": "render", "text": "aha beta", "cursor": 1 }
+    },
+    "a12-double-escape-tree": {
+      "operation": "idle-escape",
+      "source": ["interactive-mode.ts:3081-3093", "settings-defaults.ts:45"],
+      "text": "",
+      "setting": "tree",
+      "escapeAt": [1000, 1400],
+      "expected": { "text": "", "actions": ["app.session.tree"] }
+    },
+    "a12-double-escape-fork": {
+      "operation": "idle-escape",
+      "source": ["interactive-mode.ts:3086-3089"],
+      "text": "",
+      "setting": "fork",
+      "escapeAt": [1000, 1400],
+      "expected": { "text": "", "actions": ["app.session.fork"] }
+    },
+    "a12-double-escape-none": {
+      "operation": "idle-escape",
+      "source": ["interactive-mode.ts:3083"],
+      "text": "",
+      "setting": "none",
+      "escapeAt": [1000, 1400],
+      "expected": { "text": "", "actions": [] }
+    },
+    "a13-rebound-bindings": {
+      "operation": "bindings",
+      "source": ["keybindings.ts:APP_KEYBINDINGS", "custom-editor.ts:handleInput"],
+      "bindings": {
+        "app.interrupt": ["f7"],
+        "app.clear": [],
+        "app.exit": ["ctrl+q"],
+        "app.suspend": ["f8"]
+      },
+      "expected": {
+        "matches": { "app.interrupt": "f7", "app.exit": "ctrl+q", "app.suspend": "f8" },
+        "disabled": ["app.clear"],
+        "notMatches": { "app.interrupt": "escape", "app.suspend": "ctrl+z" }
+      }
+    },
+    "a13-keyboard-equivalence": {
+      "operation": "keyboard",
+      "source": ["keybindings.ts:APP_KEYBINDINGS", "custom-editor.ts:handleInput"],
+      "legacy": "1b",
+      "kitty": "1b5b323775",
+      "expected": { "key": "escape", "action": "app.interrupt" }
+    }
+  },
+  "ptyScenarios": {
+    "a01": ["tree/app-escape-idle"],
+    "a02": ["tree/app-prompt", "bash/app-bash-cancel"],
+    "a03": ["bash/app-bash-cancel", "bash/app-bash-subsequent", "bash/app-bash-responsive"],
+    "a04": ["tree/app-bash-entry", "tree/app-escape-bash-entry"],
+    "a05": ["tree/app-tree-dismissed", "suspend/app-suspended", "suspend/app-resumed"],
+    "a06": ["tree/app-ctrl-c-clear", "tree/app-editor-after-tree"],
+    "a07": ["tree/app-quit", "fork/app-quit"],
+    "a08": ["tree/app-ctrl-d-delete", "tree/app-quit"],
+    "a09": ["suspend/app-suspend-draft", "suspend/app-suspended"],
+    "a10": ["suspend/app-suspend-resized", "suspend/app-resumed", "suspend/app-resumed-edited", "suspend/app-quit"],
+    "a11": ["tree/app-tree-dismissed"],
+    "a12": ["fork/app-fork-dismissed", "none/app-double-escape-none"],
+    "a13": ["none/app-editor-after-none"],
+    "a14": ["bash/app-bash-cancel", "bash/app-bash-subsequent"],
+    "a15": ["tree/app-quit", "fork/app-quit", "none/app-quit", "bash/app-quit", "suspend/app-quit"],
+    "a16": ["tree/app-idle-draft", "tree/app-ctrl-d-delete", "tree/app-ctrl-c-clear", "tree/app-bash-entry", "tree/app-escape-bash-entry", "tree/app-editor-after-tree", "fork/app-editor-after-fork", "none/app-editor-after-none", "bash/app-bash-responsive", "bash/app-bash-subsequent", "suspend/app-suspend-draft", "suspend/app-suspended", "suspend/app-suspend-resized", "suspend/app-resumed", "suspend/app-resumed-edited"]
+  }
+}

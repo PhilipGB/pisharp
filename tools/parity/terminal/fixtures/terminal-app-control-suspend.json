@@ -1,0 +1,19 @@
+{
+  "id": "terminal-app-control-suspend",
+  "settings": { "quietStartup": true },
+  "dimensions": [{ "columns": 80, "rows": 24 }, { "columns": 120, "rows": 40 }],
+  "themes": ["dark"],
+  "modes": ["fullscreen", "regular"],
+  "terminal": { "keyboardProtocol": "kitty", "jobControl": true },
+  "actions": [
+    { "id": "app-startup", "expect": "fixture-model" },
+    { "id": "app-suspend-draft", "send": "\u001b[200~draft survives suspension\u001b[201~", "expect": "draft survives suspension" },
+    { "id": "app-suspended", "send": "\u001a", "expect": "suspended:tty-restored:1" },
+    { "id": "app-suspend-resized", "resize": { "columns": 100, "rows": 30 }, "expect": "suspended:tty-restored", "allowStaticFrame": true },
+    { "id": "app-resumed", "send": "resume\n", "expect": "draft survives suspension", "notExpect": "suspended:tty-restored" },
+    { "id": "app-resumed-edited", "send": "x", "expect": "draft survives suspensionx" },
+    { "id": "app-quit", "send": "\u0015\u0003\u0003", "exit": true }
+  ],
+  "assertionFrames": ["app-startup", "app-suspend-draft", "app-suspended", "app-suspend-resized",
+    "app-resumed", "app-resumed-edited", "app-quit"]
+}

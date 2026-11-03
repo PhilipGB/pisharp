@@ -38,7 +38,11 @@ public sealed class TerminalEditor
     private string? _lastRenderedEditorText;
     private bool _toolResultsExpanded;
     private long? _lastClearAtMilliseconds;
+    private long? _lastEscapeAtMilliseconds;
+    private Func<string>? _getDoubleEscapeAction;
+    private Func<long> _clockMilliseconds = static () => Environment.TickCount64;
     private CompletionCycle? _completionCycle;
+    private string? _pendingBashSubmission;
     public TerminalEditor(Func<IReadOnlyList<string>>? commands = null, string? agentDirectory = null,
         Func<string>? getWorkingDirectory = null, bool initiallyExpanded = false,
         Func<string, string?>? describeCommand = null,
@@ -88,6 +92,14 @@ public sealed class TerminalEditor
         RefreshExtensionShortcuts();
         _screen?.SetToolExpandKeyLabel(_keymap.GetDisplayKeys("app.tools.expand"));
         _screen?.SetTranscriptBottomKeyLabel(_keymap.GetDisplayKeys("tui.altScreen.bottom"));
+    }
+
+    internal void SetDoubleEscapeActionProvider(Func<string>? provider) => _getDoubleEscapeAction = provider;
+
+    internal void SetDoublePressClock(Func<long> clock)
+    {
+        ArgumentNullException.ThrowIfNull(clock);
+        _clockMilliseconds = clock;
     }
 
     public void AttachScreen(TerminalScreen? screen)
@@ -508,7 +520,8 @@ public sealed class TerminalEditor
     public async Task MonitorRunAsync(Func<string, bool, CancellationToken, Task<bool>> queue,
         Func<IReadOnlyList<string>> clearQueue, Action abort, CancellationToken cancellationToken,
         Func<string, Task>? dispatchApplicationAction = null,
-        Func<ExtensionShortcutInfo, CancellationToken, Task>? dispatchExtensionShortcut = null)
+        Func<ExtensionShortcutInfo, CancellationToken, Task>? dispatchExtensionShortcut = null,
+        Action? requestShutdown = null)
     {
         using var inputLoop = EnterInputLoop();
         try
@@ -526,7 +539,7 @@ public sealed class TerminalEditor
                     continue;
                 }
                 if (!await HandleActiveInputAsync(next, queue, clearQueue, abort, cancellationToken, dispatchApplicationAction,
-                    dispatchExtensionShortcut)) break;
+                    dispatchExtensionShortcut, requestShutdown)) break;
                 Render();
             }
         }
@@ -542,11 +555,14 @@ public sealed class TerminalEditor
         Func<string, bool, CancellationToken, Task<bool>> queue, Func<IReadOnlyList<string>> clearQueue,
         Action abort, CancellationToken cancellationToken = default,
         Func<string, Task>? dispatchApplicationAction = null,
-        Func<ExtensionShortcutInfo, CancellationToken, Task>? dispatchExtensionShortcut = null)
+        Func<ExtensionShortcutInfo, CancellationToken, Task>? dispatchExtensionShortcut = null,
+        Action? requestShutdown = null)
     {
         var isCompletionKey = next.Key is { } possibleCompletionKey &&
             _keymap.Matches("tui.input.tab", possibleCompletionKey);
-        if (!isCompletionKey)
+        var isInterruptKey = next.Key is { } possibleInterruptKey &&
+            _keymap.Matches("app.interrupt", possibleInterruptKey);
+        if (!isCompletionKey && !isInterruptKey)
         {
             WithEditorState(() => { _completionCycle = null; });
             CancelCompletionRequest();
@@ -605,11 +621,34 @@ public sealed class TerminalEditor
             }
             return true;
         }
-        if (next.Key is { } key && (_keymap.Matches("app.interrupt", key) || _keymap.Matches("app.clear", key)))
+        if (isInterruptKey)
         {
+            if (WithEditorState(() => _completionCycle is not null))
+            {
+                WithEditorState(() => { _completionCycle = null; });
+                CancelCompletionRequest();
+                return true;
+            }
+            CancelCompletionRequest();
             RestorePending(clearQueue());
             abort();
             return false;
+        }
+        if (next.Key is { } exitKey && _keymap.Matches("app.exit", exitKey) &&
+            WithEditorState(() => _buffer.Text.Length == 0))
+        {
+            requestShutdown?.Invoke();
+            return false;
+        }
+        if (next.Key is { } clearKey && _keymap.Matches("app.clear", clearKey))
+        {
+            if (RegisterClearPress())
+            {
+                requestShutdown?.Invoke();
+                return false;
+            }
+            WithEditorState(_buffer.Clear);
+            return true;
         }
         if (next.Key is { } dequeueKey && _keymap.Matches("app.message.dequeue", dequeueKey))
         {
@@ -731,6 +770,8 @@ public sealed class TerminalEditor
         Func<ExtensionShortcutInfo, CancellationToken, Task>? dispatchExtensionShortcut = null)
     {
         ArgumentNullException.ThrowIfNull(dispatchApplicationAction);
+        if (Interlocked.Exchange(ref _pendingBashSubmission, null) is { } pendingBashSubmission)
+            return pendingBashSubmission;
         WithEditorState(() => { _completionCycle = null; });
         using var inputLoop = EnterInputLoop();
         using var mode = TerminalMode.Enter(_screen);
@@ -749,7 +790,9 @@ public sealed class TerminalEditor
             if (next.IsControl) continue;
             var isCompletionKey = next.Key is { } possibleCompletionKey &&
                 _keymap.Matches("tui.input.tab", possibleCompletionKey);
-            if (!isCompletionKey)
+            var isInterruptKey = next.Key is { } possibleInterruptKey &&
+                _keymap.Matches("app.interrupt", possibleInterruptKey);
+            if (!isCompletionKey && !isInterruptKey)
             {
                 WithEditorState(() => { _completionCycle = null; });
                 CancelCompletionRequest();
@@ -776,15 +819,19 @@ public sealed class TerminalEditor
                 return null;
             }
             if (HandleIdleTranscriptInput(next)) continue;
+            if (enableApplicationActions && next.Key is { } interruptKey &&
+                _keymap.Matches("app.interrupt", interruptKey))
+            {
+                if (await HandleIdleEscapeAsync(dispatchApplicationAction)) Render();
+                continue;
+            }
             if (enableApplicationActions && next.Key is { } clearKey && _keymap.Matches("app.clear", clearKey))
             {
-                var now = Environment.TickCount64;
-                if (_lastClearAtMilliseconds is { } previous && now - previous < 500)
+                if (RegisterClearPress())
                 {
                     ExitInputLoop();
                     return null;
                 }
-                _lastClearAtMilliseconds = now;
             }
             if (enableApplicationActions && next.Key is { } externalEditorKey &&
                 _keymap.MatchIdleApplicationAction(externalEditorKey) is { } externalAction && externalAction == "app.editor.external")
@@ -906,6 +953,122 @@ public sealed class TerminalEditor
             }
         }
     }
+
+    internal bool RegisterClearPress()
+    {
+        var now = _clockMilliseconds();
+        if (_lastClearAtMilliseconds is { } previous && now - previous < DoublePressWindowMilliseconds)
+            return true;
+        _lastClearAtMilliseconds = now;
+        return false;
+    }
+
+    internal async Task<bool> HandleIdleEscapeAsync(Func<string, Task> dispatchApplicationAction)
+    {
+        if (WithEditorState(() => _completionCycle is not null))
+        {
+            WithEditorState(() => { _completionCycle = null; });
+            CancelCompletionRequest();
+            return true;
+        }
+        CancelCompletionRequest();
+        var text = WithEditorState(() => _buffer.Text);
+        if (text.TrimStart().StartsWith('!'))
+        {
+            WithEditorState(_buffer.Clear);
+            return true;
+        }
+        if (!string.IsNullOrWhiteSpace(text)) return true;
+        var action = _getDoubleEscapeAction?.Invoke() ?? UserSettings.DefaultDoubleEscapeAction;
+        if (action is not ("tree" or "fork")) return true;
+        var now = _clockMilliseconds();
+        if (_lastEscapeAtMilliseconds is { } previous && now - previous < TerminalEditor.DoublePressWindowMilliseconds)
+        {
+            _lastEscapeAtMilliseconds = null;
+            await DispatchApplicationActionAsync(dispatchApplicationAction,
+                action == "tree" ? "app.session.tree" : "app.session.fork");
+        }
+        else _lastEscapeAtMilliseconds = now;
+        return true;
+    }
+
+    /// <summary>Route input to the editor while an interactive Bash command runs; Escape aborts it.</summary>
+    public async Task MonitorBashAsync(Action abort, Task operation, CancellationToken cancellationToken,
+        Action? requestShutdown = null)
+    {
+        ArgumentNullException.ThrowIfNull(abort);
+        ArgumentNullException.ThrowIfNull(operation);
+        using var inputLoop = EnterInputLoop();
+        try
+        {
+            using var mode = TerminalMode.Enter(_screen);
+            var input = EnsureInput();
+            Render();
+            while (!operation.IsCompleted && !cancellationToken.IsCancellationRequested)
+            {
+                UpdateEditorGeometry();
+                if (!TryReadExtensionInput(input, 30, out var next))
+                {
+                    _screen?.RefreshIfResized();
+                    continue;
+                }
+                if (next.IsEndOfStream || next.IsControl) continue;
+                if (InterceptExtensionInput(ref next)) continue;
+                if (next.Mouse is { } mouse)
+                {
+                    var result = _screen?.HandleMouse(mouse) ?? default;
+                    if (result.ClearEditorSelection) WithEditorState(_buffer.ClearSelection);
+                    if (result.EditorCursorOffset is { } cursor) WithEditorState(() => _buffer.SetCursor(cursor));
+                    Render();
+                    continue;
+                }
+                if (next.Key is { } key && _keymap.Matches("app.interrupt", key))
+                {
+                    abort();
+                    return;
+                }
+                if (next.Key is { } clearKey && _keymap.Matches("app.clear", clearKey))
+                {
+                    if (RegisterClearPress())
+                    {
+                        requestShutdown?.Invoke();
+                        return;
+                    }
+                    WithEditorState(_buffer.Clear);
+                    Render();
+                    continue;
+                }
+                if (next.Text is not null) WithEditorState(() => _buffer.InsertText(next.Text));
+                else if (next.Key is { } editorKey)
+                {
+                    var action = WithEditorState(() => _buffer.Handle(editorKey));
+                    if (action == EditorAction.Submit)
+                    {
+                        var submitted = WithEditorState(() =>
+                        {
+                            if (!_buffer.TrySubmit(out var value)) return null;
+                            _buffer.Clear();
+                            return value;
+                        });
+                        if (!string.IsNullOrWhiteSpace(submitted))
+                            _pendingBashSubmission = _pendingBashSubmission is null
+                                ? submitted
+                                : _pendingBashSubmission + "\n" + submitted;
+                        continue;
+                    }
+                    if (action == EditorAction.Exit)
+                    {
+                        requestShutdown?.Invoke();
+                        return;
+                    }
+                }
+                Render();
+            }
+        }
+        finally { ClearLine(); }
+    }
+
+    internal const int DoublePressWindowMilliseconds = 500;
 
     internal bool HandleIdleTranscriptInput(TerminalInputEvent next)
     {

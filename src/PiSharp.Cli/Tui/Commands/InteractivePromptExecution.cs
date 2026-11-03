@@ -13,7 +13,8 @@ internal sealed class InteractivePromptExecution(TerminalEditor? editor, Termina
     Func<ModelSelection> getModelSelection, Func<UserSettings> getUserSettings,
     Func<string, bool, CancellationToken, Task> executeBash, Func<string, Task> handleAction,
     Func<PiSharp.Runtime.Extensions.ExtensionShortcutInfo, CancellationToken, Task>? handleExtensionShortcut,
-    Func<string, CancellationToken, Task<bool>>? tryExecuteExtensionCommand) : IDisposable
+    Func<string, CancellationToken, Task<bool>>? tryExecuteExtensionCommand,
+    Action? requestShutdown = null) : IDisposable
 {
     private readonly CancellationTokenSource _monitorStop = new();
     private Task _monitor = Task.CompletedTask;
@@ -73,7 +74,7 @@ internal sealed class InteractivePromptExecution(TerminalEditor? editor, Termina
                 _monitorStarted = true;
                 _monitor = editor.MonitorRunAsync(QueueActiveInputAsync,
                     () => getRun().ClearPendingPrompts().InDeliveryOrder, cancellation.Cancel, _monitorStop.Token,
-                    handleAction, handleExtensionShortcut);
+                    handleAction, handleExtensionShortcut, requestShutdown);
                 return;
             }
             transcript.Render(update);

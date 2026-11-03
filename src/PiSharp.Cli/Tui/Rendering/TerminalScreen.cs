@@ -41,6 +41,8 @@ public sealed class TerminalScreen : IDisposable
     private readonly TerminalMouseRouter _mouse;
     private TextWriter? _installedOut;
     private TextWriter? _installedError;
+    private TerminalScreen? _previousScreen;
+    private static readonly List<TerminalScreen> s_activeScreens = [];
     private string _editorText = "";
     private readonly TranscriptSearchController _search = new();
     private int _editorCursor;
@@ -261,6 +263,11 @@ public sealed class TerminalScreen : IDisposable
         lock (_gate)
         {
             if (!_active || _activated) return;
+            lock (s_activeScreens)
+            {
+                _previousScreen = s_activeScreens.Count > 0 ? s_activeScreens[^1] : null;
+                s_activeScreens.Add(this);
+            }
             Console.SetOut(_out);
             Console.SetError(_error);
             _installedOut = Console.Out;
@@ -1733,14 +1740,21 @@ public sealed class TerminalScreen : IDisposable
                 terminalModeShutdownPrepared = _terminalModeShutdownPrepared;
                 if (_activated)
                 {
-                    Attempt(() =>
+                    lock (s_activeScreens)
                     {
-                        if (ReferenceEquals(Console.Out, _installedOut)) Console.SetOut(_originalOut);
-                    });
-                    Attempt(() =>
-                    {
-                        if (ReferenceEquals(Console.Error, _installedError)) Console.SetError(_originalError);
-                    });
+                        Attempt(() =>
+                        {
+                            if (ReferenceEquals(Console.Out, _installedOut))
+                                Console.SetOut(_previousScreen?._installedOut ?? _originalOut);
+                        });
+                        Attempt(() =>
+                        {
+                            if (ReferenceEquals(Console.Error, _installedError))
+                                Console.SetError(_previousScreen?._installedError ?? _originalError);
+                        });
+                        s_activeScreens.Remove(this);
+                        _previousScreen = null;
+                    }
                 }
 
                 Attempt(() =>

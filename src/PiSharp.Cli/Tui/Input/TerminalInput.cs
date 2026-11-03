@@ -13,6 +13,7 @@ public sealed class TerminalInput
     private readonly bool _standardInput;
     private readonly Queue<byte> _retainedBytes = new();
     private readonly Queue<TerminalInputEvent> _retainedEvents = new();
+    private int _pendingEscapes;
     private List<byte>? _currentRawInput;
     private List<byte>? _replyBytes;
     private long? _protocolDeadline;
@@ -54,8 +55,14 @@ public sealed class TerminalInput
     public bool TryRead(int timeoutMilliseconds, out TerminalInputEvent value)
     {
         var timeout = timeoutMilliseconds;
-        while (_retainedEvents.Count > 0)
+        while (_pendingEscapes > 0 || _retainedEvents.Count > 0)
         {
+            if (_pendingEscapes > 0)
+            {
+                value = ReadNext();
+                if (!value.IsControl) return true;
+                continue;
+            }
             var retained = _retainedEvents.Dequeue();
             if (retained.IsControl) continue;
             value = retained;
@@ -190,6 +197,11 @@ public sealed class TerminalInput
 
     private TerminalInputEvent ReadNext()
     {
+        if (_pendingEscapes > 0)
+        {
+            _pendingEscapes--;
+            return Key(ConsoleKey.Escape) with { RawData = "\u001b" };
+        }
         var rawInput = new List<byte>(8);
         var previousRawInput = _currentRawInput;
         _currentRawInput = rawInput;
@@ -207,6 +219,30 @@ public sealed class TerminalInput
     {
         if (!Available(40)) return Key(ConsoleKey.Escape);
         var second = ReadByte();
+        if (second == 27)
+        {
+            // Esc Esc is two interrupts; Esc + CSI/OSC/SS3 is one interrupt followed by a key.
+            var third = Available(10) ? ReadByte() : -1;
+            if (third is '[' or 'O' or ']')
+            {
+                _retainedEvents.Enqueue(ParseEscapeSequence((char)third));
+                DropLastRawByte();
+                return Key(ConsoleKey.Escape);
+            }
+            _pendingEscapes++;
+            DropLastRawByte();
+            if (third >= 0)
+            {
+                _retainedEvents.Enqueue(ByteToEvent((byte)third));
+                DropLastRawByte();
+            }
+            return Key(ConsoleKey.Escape);
+        }
+        return ParseEscapeSequence((char)second);
+    }
+
+    private TerminalInputEvent ParseEscapeSequence(char second)
+    {
         if (second == ']') return ReadOsc();
         if (second is '[' or 'O')
         {
@@ -282,6 +318,12 @@ public sealed class TerminalInput
             return new(new ConsoleKeyInfo(key.KeyChar, key.Key, key.Modifiers.HasFlag(ConsoleModifiers.Shift), true,
                 key.Modifiers.HasFlag(ConsoleModifiers.Control)), null);
         return plain;
+    }
+
+    private void DropLastRawByte()
+    {
+        if (_currentRawInput is { Count: > 0 }) _currentRawInput.RemoveAt(_currentRawInput.Count - 1);
+        if (_replyBytes is { Count: > 0 }) _replyBytes.RemoveAt(_replyBytes.Count - 1);
     }
 
     private static bool TryDecodeSgrMouse(string code, out TerminalMouseEvent mouse)

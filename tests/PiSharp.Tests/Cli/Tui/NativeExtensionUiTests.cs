@@ -10,6 +10,7 @@ using PiSharp.Runtime.Resources;
 
 namespace PiSharp.Tests;
 
+[Collection("Console writers")]
 public sealed class NativeExtensionUiTests
 {
     [Fact]

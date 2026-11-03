@@ -38,6 +38,7 @@ public sealed class TerminalSuspendPtyTests
             Assert.NotNull(process);
             var draftVisible = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var suspended = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var resized = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var resumed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var edited = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var resumeStart = -1;
@@ -46,6 +47,7 @@ public sealed class TerminalSuspendPtyTests
             {
                 if (output.Contains(draft, StringComparison.Ordinal)) draftVisible.TrySetResult();
                 if (output.Contains("suspended:tty-restored", StringComparison.Ordinal)) suspended.TrySetResult();
+                if (output.Contains("resized:30:100", StringComparison.Ordinal)) resized.TrySetResult();
                 var offset = Volatile.Read(ref resumeStart);
                 if (offset < 0 || offset > output.Length) return;
                 var following = output[offset..];
@@ -62,6 +64,8 @@ public sealed class TerminalSuspendPtyTests
                 await draftVisible.Task.WaitAsync(timeout.Token);
                 await SendAsync("\u001a");
                 await suspended.Task.WaitAsync(timeout.Token);
+                await SendAsync("resize 30 100\n");
+                await resized.Task.WaitAsync(timeout.Token);
                 Volatile.Write(ref resumeStart, capture.Output.Length);
                 await SendAsync("resume\n");
                 await resumed.Task.WaitAsync(timeout.Token);
@@ -71,7 +75,17 @@ public sealed class TerminalSuspendPtyTests
                 await process.WaitForExitAsync(timeout.Token);
                 Assert.Equal(0, process.ExitCode);
                 Assert.DoesNotContain("Shortcut action failed:", await capture.Completion);
+                Assert.Contains("resized:30:100", capture.Output);
                 Assert.Empty(await stderr);
+                RecordEvidence("pty-app-suspend-resume-" + mode, new
+                {
+                    exitCode = process.ExitCode,
+                    mode,
+                    resizedDuringSuspension = true,
+                    termiosRestored = true,
+                    draftPreserved = true,
+                    inputAfterResume = "x"
+                });
             }
             finally
             {
@@ -87,5 +101,20 @@ public sealed class TerminalSuspendPtyTests
             }
         }
         finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    private static void RecordEvidence(string id, object details)
+    {
+        var path = Environment.GetEnvironmentVariable("PISHARP_APP_CONTROL_EVIDENCE");
+        if (string.IsNullOrWhiteSpace(path)) return;
+        var implementation = Environment.GetEnvironmentVariable("PISHARP_IMPLEMENTATION_SHA") ?? "";
+        var record = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            id,
+            implementation,
+            platform = "linux",
+            details
+        });
+        File.AppendAllText(path, record + Environment.NewLine);
     }
 }

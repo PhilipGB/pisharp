@@ -2,6 +2,7 @@ using PiSharp.Cli.Tui;
 
 namespace PiSharp.Tests;
 
+[Collection("Console writers")]
 public sealed class TerminalSelectionFlashesTests
 {
     [Fact]

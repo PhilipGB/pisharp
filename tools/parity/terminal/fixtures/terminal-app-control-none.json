@@ -1,0 +1,17 @@
+{
+  "id": "terminal-app-control-none",
+  "settings": { "quietStartup": true, "doubleEscapeAction": "none" },
+  "fixtureBehavior": { "chatResponseContentByRequest": ["APP_CONTROL_REPLY"] },
+  "dimensions": [{ "columns": 80, "rows": 24 }, { "columns": 120, "rows": 40 }],
+  "themes": ["dark"],
+  "modes": ["fullscreen", "regular"],
+  "terminal": { "keyboardProtocol": "kitty" },
+  "actions": [
+    { "id": "app-startup", "expect": "fixture-model" },
+    { "id": "app-prompt", "send": "first app control prompt\r", "expect": "APP_CONTROL_REPLY", "notExpect": "Working" },
+    { "id": "app-double-escape-none", "send": "\u001b[27u\u001b[27u", "expect": "fixture-model", "allowStaticFrame": true },
+    { "id": "app-editor-after-none", "send": "\u001b[200~after none\u001b[201~", "expect": "after none" },
+    { "id": "app-quit", "send": "\u0015/quit\r", "exit": true }
+  ],
+  "assertionFrames": ["app-startup", "app-prompt", "app-double-escape-none", "app-editor-after-none", "app-quit"]
+}

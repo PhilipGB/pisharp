@@ -18,7 +18,7 @@ public sealed class EditorKeymap
         "tui.input.submit", "tui.select.confirm", "tui.select.cancel", "tui.input.copy",
         "tui.editor.deleteToLineEnd"
     };
-    private static readonly string[] IdleApplicationActions = ["app.suspend", "app.thinking.cycle", "app.thinking.toggle", "app.model.cycleForward", "app.model.cycleBackward", "app.model.select", "app.tools.expand", "app.editor.external", "app.message.copy", "app.clipboard.pasteImage", "app.settings.open", "app.session.fork", "app.session.resume"];
+    private static readonly string[] IdleApplicationActions = ["app.suspend", "app.thinking.cycle", "app.thinking.toggle", "app.model.cycleForward", "app.model.cycleBackward", "app.model.select", "app.tools.expand", "app.editor.external", "app.message.copy", "app.clipboard.pasteImage", "app.settings.open", "app.session.tree", "app.session.fork", "app.session.resume"];
 
     private static readonly IReadOnlyDictionary<string, Definition> s_definitions = new Dictionary<string, Definition>(StringComparer.Ordinal)
     {
@@ -68,6 +68,7 @@ public sealed class EditorKeymap
         ["app.message.copy"] = new("Copy selection or last assistant message", ["ctrl+x"]),
         ["app.clipboard.pasteImage"] = new("Paste clipboard image or text", IsWindowsBindings() ? ["alt+v"] : ["ctrl+v"]),
         ["app.settings.open"] = new("Open settings", []),
+        ["app.session.tree"] = new("Open session tree", []),
         ["app.session.resume"] = new("Open session selector", []),
         ["app.session.fork"] = new("Open fork selector", []),
         ["app.session.rename"] = new("Rename selected session", ["ctrl+r"]),
