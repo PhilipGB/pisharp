@@ -319,7 +319,7 @@ internal sealed class TerminalSelectionList<T>
     }
 
     private string KeyLabel(string action, string fallback) =>
-        _keymap?.GetDisplayKeys(action) ?? fallback;
+        _keymap is null ? fallback : _keymap.GetDisplayKeys(action) ?? "";
 
     private bool MatchesSelect(string action, ConsoleKeyInfo key, ConsoleKey fallbackKey) =>
         _keymap is null

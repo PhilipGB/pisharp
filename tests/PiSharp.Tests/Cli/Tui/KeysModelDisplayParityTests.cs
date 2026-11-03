@@ -89,6 +89,8 @@ public sealed class KeysModelDisplayParityTests
         }
         if (expected.TryGetProperty("rebindable", out var rebindable))
             asserted |= AssertRebindable(rebindable);
+        if (expected.TryGetProperty("disabledDisplay", out var disabledDisplay))
+            asserted |= AssertDisabledDisplay(disabledDisplay);
 
         Assert.True(asserted, $"{name} made no executable oracle assertion.");
     }
@@ -181,6 +183,31 @@ public sealed class KeysModelDisplayParityTests
             asserted = true;
         }
         return asserted;
+    }
+
+    private static bool AssertDisabledDisplay(JsonElement disabledDisplay)
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "pisharp-oracle-disabled-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var disabled = disabledDisplay.EnumerateArray().Select(item => item.GetString()!).ToArray();
+            File.WriteAllText(Path.Combine(directory, "keybindings.json"),
+                JsonSerializer.Serialize(disabled.ToDictionary(action => action, _ => Array.Empty<string>())));
+            var keymap = new EditorKeymap(directory);
+            foreach (var action in disabled)
+                Assert.Null(keymap.GetDisplayKeys(action));
+
+            var options = new[] { new TerminalSelectionOption<string>("one", "one", "one") };
+            var scoped = new TerminalSelectionList<string>("Select model", options, "one",
+                scopedOptions: options, keymap: keymap);
+            var hints = string.Join('\n', scoped.RenderModelPicker(80, TerminalTheme.Default, "hint", "",
+                refreshSuccess: true, model => model, out _, out _));
+            foreach (var stale in new[] { "Escape/Ctrl+C", "Ctrl+S", "Tab" })
+                Assert.DoesNotContain(stale, hints, StringComparison.Ordinal);
+            return true;
+        }
+        finally { Directory.Delete(directory, true); }
     }
 
     private static bool AssertRebindable(JsonElement rebindable)

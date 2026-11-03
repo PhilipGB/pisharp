@@ -322,6 +322,43 @@ public sealed class KeysModelDisplayTests
     }
 
     [Fact]
+    public void SelectionOverlayDoesNotAdvertiseDisabledBindings()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "pisharp-disabled-keys-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            File.WriteAllText(Path.Combine(directory, "keybindings.json"), """
+                {"tui.select.cancel":[],"tui.input.tab":[],"app.models.save":[],"tui.select.up":[],"tui.select.down":[]}
+                """);
+            var keymap = new EditorKeymap(directory);
+            var options = new[] { new TerminalSelectionOption<string>("first", "first", "first") };
+            var scoped = new TerminalSelectionList<string>("Select model", options, "first",
+                scopedOptions: options, keymap: keymap);
+
+            var scopedHints = string.Join('\n', scoped.RenderModelPicker(80, TerminalTheme.Default, "hint", "",
+                refreshSuccess: true, model => model, out _, out _));
+            Assert.DoesNotContain("Escape/Ctrl+C", scopedHints, StringComparison.Ordinal);
+            Assert.DoesNotContain("Ctrl+S", scopedHints, StringComparison.Ordinal);
+            Assert.DoesNotContain("Tab", scopedHints, StringComparison.Ordinal);
+
+            var all = new TerminalSelectionList<string>("Select model", options, "first", keymap: keymap);
+            var allHints = string.Join('\n', all.RenderModelPicker(80, TerminalTheme.Default, "hint", "",
+                refreshSuccess: true, model => model, out _, out _));
+            Assert.DoesNotContain("Escape/Ctrl+C to cancel", allHints, StringComparison.Ordinal);
+            Assert.DoesNotContain("Ctrl+S to set as default", allHints, StringComparison.Ordinal);
+
+            // The fallback remains for callers that did not supply a keymap.
+            var fallback = new TerminalSelectionList<string>("Select model", options, "first");
+            var fallbackHints = string.Join('\n', fallback.RenderModelPicker(80, TerminalTheme.Default, "hint", "",
+                refreshSuccess: true, model => model, out _, out _));
+            Assert.Contains("Ctrl+S to set as default", fallbackHints, StringComparison.Ordinal);
+            Assert.Contains("Escape/Ctrl+C to cancel", fallbackHints, StringComparison.Ordinal);
+        }
+        finally { Directory.Delete(directory, true); }
+    }
+
+    [Fact]
     public void ThinkingSelectorUsesTheAppThinkingSaveBindingInsteadOfTheModelSaveBinding()
     {
         var directory = Path.Combine(Path.GetTempPath(), "pisharp-thinking-keys-" + Guid.NewGuid().ToString("N"));
