@@ -10,7 +10,7 @@
     { "id": "app-startup", "expect": "fixture-model" },
     { "id": "app-prompt", "send": "first app control prompt\r", "expect": "APP_CONTROL_REPLY", "notExpect": "Working" },
     { "id": "app-double-escape-fork", "send": "\u001b[27u\u001b[27u", "expect": "first app control prompt" },
-    { "id": "app-fork-dismissed", "send": "\u001b", "expect": "fixture-model" },
+    { "id": "app-fork-dismissed", "send": "\u001b[27u", "expect": "fixture-model" },
     { "id": "app-editor-after-fork", "send": "\u001b[200~after fork selector\u001b[201~", "expect": "after fork selector" },
     { "id": "app-quit", "send": "\u0015\u0003\u0003", "exit": true }
   ],

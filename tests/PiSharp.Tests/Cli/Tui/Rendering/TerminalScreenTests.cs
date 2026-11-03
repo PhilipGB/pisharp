@@ -225,6 +225,22 @@ public sealed class TerminalScreenTests
     }
 
     [Fact]
+    public void RegularModeOverlayIsRenderedIntoTheMainScreen()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        using var screen = new TerminalScreen(output, error, () => 80, () => 24,
+            new TerminalImageRenderer(), TerminalTheme.Default, queryTerminalColors: false,
+            useAlternateScreen: false);
+        screen.Activate();
+        screen.SetEditor("draft", 5);
+        screen.SetOverlay(["modal overlay"]);
+        var text = output.ToString();
+        Assert.Contains("modal overlay", text);
+        Assert.DoesNotContain("\u001b[?1049h", text);
+    }
+
+    [Fact]
     public void ModelPickerScreenKeepsWarningColorAcrossWrappedHintPadding()
     {
         const int width = 44;

@@ -534,6 +534,70 @@ public sealed class AppControlPtyTests
         throw new InvalidOperationException("Could not start the app-control provider listener.");
     }
 
+    [Fact]
+    public async Task RegularModeDoubleEscapeAfterBashEntryOpensTheTreeSelectorThroughLinuxPty()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = TemporaryDirectory("app-control-escape-regular");
+        var agent = Path.Combine(root, "agent");
+        Directory.CreateDirectory(agent);
+        var sessionPath = Path.Combine(root, "app-control.jsonl");
+        await File.WriteAllTextAsync(sessionPath, SessionJsonl(root));
+        await File.WriteAllTextAsync(Path.Combine(agent, "settings.json"),
+            "{\"quietStartup\":true,\"tuiMode\":\"regular\",\"doubleEscapeAction\":\"tree\"}");
+        await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), """
+            {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","apiKey":"fixture-key",
+              "models":[{"id":"fixture-model","api":"openai-responses"}]}}}
+            """);
+        Process? process = null;
+        try
+        {
+            process = StartWithArguments(root, agent,
+                $"--offline --no-tools --session {ShellQuote(sessionPath)}");
+            var screen = new PtyScreenCapture(process, 24, 80);
+            var stdout = screen.ReadCompletion;
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            await screen.InputReady.WaitAsync(timeout.Token);
+
+            async Task SendAsync(string input)
+            {
+                await process.StandardInput.WriteAsync(input);
+                await process.StandardInput.FlushAsync();
+            }
+
+            async Task WaitForAsync(Func<string, bool> predicate, string description)
+            {
+                try { await screen.WaitForFrameAsync(predicate).WaitAsync(timeout.Token); }
+                catch (OperationCanceledException)
+                {
+                    throw new InvalidOperationException($"{description} timed out. Current frame:\n{screen.LastFrame}");
+                }
+            }
+
+            await WaitForAsync(frame => frame.Contains("ASSISTANT_2", StringComparison.Ordinal),
+                "restored session transcript");
+            await SendAsync("!echo BASH_ENTRY_SHOULD_NOT_RUN");
+            await WaitForAsync(frame => frame.Contains("BASH_ENTRY_SHOULD_NOT_RUN", StringComparison.Ordinal),
+                "bash-entry draft");
+            await SendAsync("\u001b");
+            await WaitForAsync(frame => !frame.Contains("BASH_ENTRY_SHOULD_NOT_RUN", StringComparison.Ordinal),
+                "bash-entry clear");
+            await SendAsync("\u001b[27u\u001b[27u");
+            await WaitForAsync(frame => frame.Contains("Conversation tree", StringComparison.Ordinal),
+                "regular-mode double Escape tree");
+            await SendAsync("\u001b");
+            await WaitForAsync(frame => !frame.Contains("Conversation tree", StringComparison.Ordinal),
+                "tree dismissal");
+            await SendAsync("\u0003\u0003");
+            await process.WaitForExitAsync(timeout.Token);
+            _ = await stdout;
+            Assert.Equal(0, process.ExitCode);
+            Assert.DoesNotContain("Exception:", await stderr);
+        }
+        finally { Cleanup(process, root); }
+    }
+
     private static Process Start(string root, string settingsBefore, string settingsAfter)
     {
         var agent = Path.Combine(root, "agent");
