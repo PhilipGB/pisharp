@@ -115,7 +115,7 @@ condition, active-session retention and dismissal handoff are verified.
 | Format | `dotnet format PiSharp.slnx --verify-no-changes` pass |
 | Build | `dotnet build PiSharp.slnx --warnaserror` 0 warnings/0 errors |
 | Acceptance verifier + negative controls | passed; 25 negative controls rejected |
-| Exact-head CI | pending push |
+| Exact-head CI | Linux CI run `41586112603` passed on evidence head `4c3298e6d8041e816ef977e2cee63127b85d750e` |
 
 ## Non-required differences and limitations
 
