@@ -261,6 +261,39 @@ def user_text(request):
     raise VerificationError('Request had no user message.')
 
 
+def validate_checkpoint_case(case_id, expected_case, observed):
+    checkpoints = expected_case.get('checkpoints') or {}
+    frames = observed['frames']
+    require(set(frames['pi']) == set(frames['pisharp']),
+            f"{case_id} named checkpoints differ between products.")
+    require(set(checkpoints) <= set(frames['pi']),
+            f"{case_id} is missing pinned-Pi checkpoints.")
+    for product in ('pi', 'pisharp'):
+        for checkpoint, state_expected in checkpoints.items():
+            state = frames[product][checkpoint]['state']
+            actual_lines = editor_lines(viewport_lines(state))
+            require(actual_lines == state_expected['editor'],
+                    f"{case_id}/{product}/{checkpoint} editor differs from pinned Pi.")
+            cursor = state.get('cursor') or {}
+            require((cursor.get('x'), cursor.get('y')) ==
+                    (state_expected['cursor']['x'], state_expected['cursor']['y']),
+                    f"{case_id}/{product}/{checkpoint} cursor differs from pinned Pi.")
+        exit_state = frames[product]['exit']['state']
+        require(exit_state.get('activeScreen') == 'normal',
+                f"{case_id}/{product} did not restore the normal screen.")
+        require(exit_state.get('cursor', {}).get('visible') is True,
+                f"{case_id}/{product} did not restore a visible cursor.")
+        modes = exit_state.get('modes', {}).get('private', {})
+        leaked = [mode for mode in TEMPORARY_PRIVATE_MODES if modes.get(mode, False)]
+        require(not leaked, f"{case_id}/{product} left temporary modes active: {leaked}.")
+        texts = observed['requests'][product]
+        require(len(texts) == len(EXPECTED_REQUESTS),
+                f"{case_id}/{product} submitted {len(texts)} requests, "
+                f"expected {len(EXPECTED_REQUESTS)}.")
+        require(texts == EXPECTED_REQUESTS,
+                f"{case_id}/{product} provider texts are {texts!r}, expected {EXPECTED_REQUESTS!r}.")
+
+
 def validate_checkpoints(checkpoint_file, report):
     expected = load_json(checkpoint_file)
     require(expected.get('piSha') == PI_SHA,
@@ -271,40 +304,13 @@ def validate_checkpoints(checkpoint_file, report):
     for case in report.get('cases') or []:
         observation = cases.get(case['id'])
         require(observation is not None, f"{case['id']} has no pinned-Pi checkpoint observation.")
-        checkpoints = observation.get('checkpoints') or {}
-        checkpoint_ids.update(checkpoints)
+        checkpoint_ids.update(observation.get('checkpoints') or {})
         evidence = load_assertions(Path(report.get('_directory', '')) / case['assertionEvidence'])
         frames = {product: {frame['id']: frame for frame in evidence[product]['frames']}
                   for product in ('pi', 'pisharp')}
-        require(set(frames['pi']) == set(frames['pisharp']),
-                f"{case['id']} named checkpoints differ between products.")
-        require(set(checkpoints) <= set(frames['pi']),
-                f"{case['id']} is missing pinned-Pi checkpoints.")
-        for product in ('pi', 'pisharp'):
-            for checkpoint, state_expected in checkpoints.items():
-                state = frames[product][checkpoint]['state']
-                actual_lines = editor_lines(viewport_lines(state))
-                require(actual_lines == state_expected['editor'],
-                        f"{case['id']}/{product}/{checkpoint} editor differs from pinned Pi.")
-                cursor = state.get('cursor') or {}
-                require((cursor.get('x'), cursor.get('y')) ==
-                        (state_expected['cursor']['x'], state_expected['cursor']['y']),
-                        f"{case['id']}/{product}/{checkpoint} cursor differs from pinned Pi.")
-            exit_state = frames[product]['exit']['state']
-            require(exit_state.get('activeScreen') == 'normal',
-                    f"{case['id']}/{product} did not restore the normal screen.")
-            require(exit_state.get('cursor', {}).get('visible') is True,
-                    f"{case['id']}/{product} did not restore a visible cursor.")
-            modes = exit_state.get('modes', {}).get('private', {})
-            leaked = [mode for mode in TEMPORARY_PRIVATE_MODES if modes.get(mode, False)]
-            require(not leaked, f"{case['id']}/{product} left temporary modes active: {leaked}.")
-            requests = evidence[product]['http']
-            require(len(requests) == len(EXPECTED_REQUESTS),
-                    f"{case['id']}/{product} submitted {len(requests)} requests, "
-                    f"expected {len(EXPECTED_REQUESTS)}.")
-            texts = [user_text(request) for request in requests]
-            require(texts == EXPECTED_REQUESTS,
-                    f"{case['id']}/{product} provider texts are {texts!r}, expected {EXPECTED_REQUESTS!r}.")
+        requests = {product: [user_text(request) for request in evidence[product]['http']]
+                    for product in ('pi', 'pisharp')}
+        validate_checkpoint_case(case['id'], observation, {'frames': frames, 'requests': requests})
     return checkpoint_ids
 
 
@@ -462,44 +468,64 @@ def self_test(manifest, oracle, checkpoint_file):
                                              evidence_ids, checkpoint_ids),
             'required test not referenced by any case')
 
-    bad_expected = copy.deepcopy(compact)
-    first_case = next(iter(bad_expected['cases'].values()))
-    first_checkpoint = next(iter(first_case['checkpoints'].values()))
-    first_checkpoint['cursor']['x'] = (first_checkpoint['cursor']['x'] or 0) + 1
-    rejects(lambda: _reject_altered_checkpoint(bad_expected), 'altered expected cursor observation')
+    checkpoint_case = next(iter(compact['cases'].values()))
+    observed = _observed_from_checkpoint_case(checkpoint_case)
+    validate_checkpoint_case('100x30-dark-fullscreen', checkpoint_case, observed)
 
-    invalid_history = copy.deepcopy(compact)
-    invalid_history['cases']['100x30-dark-fullscreen']['checkpoints']['history-up-newest']['editor'] = [
-        'draft line one', 'draft line two']
-    rejects(lambda: _reject_altered_checkpoint(invalid_history), 'invalid history ordering')
+    bad_cursor = copy.deepcopy(checkpoint_case)
+    bad_cursor['checkpoints']['movement-draft']['cursor']['x'] += 1
+    rejects(lambda: validate_checkpoint_case('100x30-dark-fullscreen', bad_cursor, observed),
+            'altered expected cursor observation')
 
-    bad_provider = copy.deepcopy(compact)
-    bad_provider['cases']['100x30-dark-fullscreen']['providerText'] = 'wrong text'
-    rejects(lambda: _reject_provider(bad_provider), 'incorrect provider-visible text')
-    bad_count = copy.deepcopy(compact)
-    bad_count['cases']['100x30-dark-fullscreen']['requests'] = 2
-    rejects(lambda: _reject_provider(bad_count), 'incorrect provider request count/order')
+    bad_history = copy.deepcopy(checkpoint_case)
+    bad_history['checkpoints']['history-up-newest']['editor'] = ['draft line one', 'draft line two']
+    rejects(lambda: validate_checkpoint_case('100x30-dark-fullscreen', bad_history, observed),
+            'invalid history ordering')
+
+    bad_provider_text = copy.deepcopy(observed)
+    bad_provider_text['requests']['pi'] = [EXPECTED_REQUESTS[0], EXPECTED_REQUESTS[1], 'wrong text']
+    rejects(lambda: validate_checkpoint_case('100x30-dark-fullscreen', checkpoint_case, bad_provider_text),
+            'incorrect provider-visible text')
+
+    bad_provider_count = copy.deepcopy(observed)
+    bad_provider_count['requests']['pisharp'] = EXPECTED_REQUESTS[:2]
+    rejects(lambda: validate_checkpoint_case('100x30-dark-fullscreen', checkpoint_case, bad_provider_count),
+            'incorrect provider request count/order')
+
+    missing_restoration = copy.deepcopy(observed)
+    missing_restoration['frames']['pi']['exit']['state']['cursor']['visible'] = False
+    rejects(lambda: validate_checkpoint_case('100x30-dark-fullscreen', checkpoint_case, missing_restoration),
+            'missing terminal-restoration evidence')
+
     print('negative controls passed')
 
 
-def _reject_altered_checkpoint(checkpoint_evidence):
-    case = checkpoint_evidence['cases']['100x30-dark-fullscreen']
-    expected = case['checkpoints']
-    actual = expected['history-up-newest']['editor']
-    if actual != ['second history prompt']:
-        raise VerificationError('Altered history checkpoint was detected.')
-    if expected['movement-draft']['cursor']['x'] != 16:
-        raise VerificationError('Altered cursor checkpoint was detected.')
-    raise VerificationError('Altered checkpoint evidence was not detected.')
+def _observed_from_checkpoint_case(checkpoint_case):
+    frames = {}
+    for product in ('pi', 'pisharp'):
+        product_frames = {}
+        for checkpoint, observation in checkpoint_case['checkpoints'].items():
+            product_frames[checkpoint] = {'state': {
+                'viewport': _viewport_for(observation['editor']),
+                'cursor': dict(observation['cursor']),
+                'activeScreen': 'alternate',
+                'modes': {'private': {}},
+            }}
+        exit_cursor = dict(checkpoint_case['checkpoints']['exit']['cursor'])
+        exit_cursor['visible'] = True
+        product_frames['exit'] = {'state': {
+            'viewport': _viewport_for([]),
+            'cursor': exit_cursor,
+            'activeScreen': 'normal',
+            'modes': {'private': {}},
+        }}
+        frames[product] = product_frames
+    return {'frames': frames, 'requests': {product: list(EXPECTED_REQUESTS) for product in ('pi', 'pisharp')}}
 
 
-def _reject_provider(checkpoint_evidence):
-    case = checkpoint_evidence['cases']['100x30-dark-fullscreen']
-    if case.get('providerText', 'provider movement input') != 'provider movement input':
-        raise VerificationError('Incorrect provider-visible text was detected.')
-    if case.get('requests', 3) != 3:
-        raise VerificationError('Incorrect provider request count was detected.')
-    raise VerificationError('Incorrect provider evidence was not detected.')
+def _viewport_for(lines):
+    separator = {'cells': [{'chars': '─' * 20}]}
+    return [separator, *[{'cells': [{'chars': line}]} for line in lines], separator]
 
 
 def _trx_document(results):

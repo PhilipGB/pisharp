@@ -115,9 +115,31 @@
       "expect": "alpha beta gamma delta"
     },
     {
+      "id": "movement-jump-buffered-clear",
+      "send": "\u0001\u0015\u000b\u0001\u0015\u000b\u0001\u0015\u000b\u0001\u0015\u000b",
+      "expect": "fixture-model",
+      "notExpect": "alpha beta gamma delta"
+    },
+    {
+      "id": "movement-jump-buffered-type",
+      "send": "a,b,c",
+      "expect": "a,b,c"
+    },
+    {
+      "id": "movement-jump-buffered-home",
+      "send": "\u0001",
+      "expect": "a,b,c"
+    },
+    {
+      "id": "movement-jump-buffered",
+      "send": "\u001d,XY",
+      "expect": "aXY,b,c"
+    },
+    {
       "id": "movement-clear",
       "send": "\u0001\u000b",
-      "expect": "fixture-model"
+      "expect": "fixture-model",
+      "notExpect": "aXY,b,c"
     },
     {
       "id": "history-draft",
@@ -259,6 +281,7 @@
     "movement-home",
     "movement-end",
     "movement-jump-comma",
+    "movement-jump-buffered",
     "history-up",
     "history-up-start",
     "history-up-newest",

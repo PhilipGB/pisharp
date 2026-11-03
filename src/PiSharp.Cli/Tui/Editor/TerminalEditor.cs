@@ -214,7 +214,7 @@ public sealed class TerminalEditor
                     text = input.ReadAvailableText(next, out var following);
                     if (following is not null) input.PushBack(following);
                 }
-                var action = WithEditorState(() => _buffer.IsJumpModeActive
+                var action = WithEditorState(() => _buffer.IsJumpModeActive && !next.IsPaste
                     ? _buffer.HandleJumpText(text)
                     : _buffer.InsertText(text));
                 if (action == EditorAction.Render) Render();
@@ -709,7 +709,7 @@ public sealed class TerminalEditor
         {
             if (next.Text is not null)
             {
-                if (_buffer.IsJumpModeActive) _buffer.HandleJumpText(next.Text);
+                if (_buffer.IsJumpModeActive && !next.IsPaste) _buffer.HandleJumpText(next.Text);
                 else _buffer.InsertText(next.Text);
             }
             else _buffer.Handle(next.Key!.Value);
@@ -866,7 +866,7 @@ public sealed class TerminalEditor
                 {
                     text = input.ReadAvailableText(next, out following);
                 }
-                action = WithEditorState(() => _buffer.IsJumpModeActive
+                action = WithEditorState(() => _buffer.IsJumpModeActive && !next.IsPaste
                     ? _buffer.HandleJumpText(text)
                     : _buffer.InsertText(text));
                 if (!next.IsExtensionRewrite && following?.Key is { } bufferedSubmitKey &&

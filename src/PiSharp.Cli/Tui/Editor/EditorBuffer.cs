@@ -87,10 +87,13 @@ public sealed class EditorBuffer
     {
         lock (_gate)
         {
-            if (_jumpDirection is not { } direction) return EditorAction.None;
+            if (_jumpDirection is not { } direction || text.Length == 0) return EditorAction.None;
             _version++;
+            var target = StringInfo.GetNextTextElement(text);
+            var remainder = text[target.Length..];
             _jumpDirection = null;
-            JumpToChar(text, direction);
+            JumpToChar(target, direction);
+            if (remainder.Length > 0) InsertTyped(remainder);
             return EditorAction.Render;
         }
     }

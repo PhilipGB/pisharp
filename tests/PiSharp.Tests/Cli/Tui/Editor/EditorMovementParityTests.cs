@@ -76,6 +76,21 @@ public sealed class EditorMovementParityTests
 
 
     [Fact]
+    public void BufferedJumpTextConsumesOnlyTheNextGrapheme()
+    {
+        var editor = new EditorBuffer();
+        editor.SetText("a,b,c");
+        editor.SetCursor(0);
+        editor.Handle(Key(ConsoleKey.Oem6, control: true));
+        editor.HandleJumpText(",XY");
+        Assert.Equal("aXY,b,c", editor.Text);
+        Assert.Equal(3, editor.Cursor);
+        Assert.False(editor.IsJumpModeActive);
+        editor.Handle(Key(ConsoleKey.NoName, 'Z'));
+        Assert.Equal("aXYZ,b,c", editor.Text);
+    }
+
+    [Fact]
     public void LegacyCtrlBracketEntersJumpMode()
     {
         var reader = new PiSharp.Cli.Tui.TerminalInput(new MemoryStream("\u001d,"u8.ToArray()));

@@ -114,6 +114,64 @@ public sealed class EditorMovementPtyTests
     }
 
     [Fact]
+    public async Task BufferedJumpConsumesOnlyTheNextGraphemeThroughLinuxPty()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = TemporaryDirectory("movement-jump-buffered");
+        Process? process = null;
+        try
+        {
+            process = Start(root);
+            var screen = new PtyScreenCapture(process);
+            var stdout = screen.ReadCompletion;
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var timeout = Timeout(30);
+            await screen.InputReady.WaitAsync(timeout.Token);
+
+            async Task SendAsync(string input)
+            {
+                await process.StandardInput.WriteAsync(input);
+                await process.StandardInput.FlushAsync();
+            }
+
+            await SendAsync("a,b,c");
+            await screen.WaitForFrameAsync(frame => EditorText(frame) == "a,b,c").WaitAsync(timeout.Token);
+            await SendAsync("\u0001");
+            await screen.WaitForCursorAsync((_, column) => column == 0).WaitAsync(timeout.Token);
+            await SendAsync("\u001d,XY");
+            await screen.WaitForFrameAsync(frame => EditorText(frame) == "aXY,b,c").WaitAsync(timeout.Token);
+            await screen.WaitForCursorAsync((_, column) => column == 3).WaitAsync(timeout.Token);
+            await SendAsync("Z");
+            await screen.WaitForFrameAsync(frame => EditorText(frame) == "aXYZ,b,c").WaitAsync(timeout.Token);
+
+            await SendAsync("\u0001\u0015\u000b");
+            await screen.WaitForFrameAsync(frame => !frame.Contains("aXYZ,b,c", StringComparison.Ordinal))
+                .WaitAsync(timeout.Token);
+            await SendAsync("\u0003/quit\r");
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+            _ = await stdout;
+            Assert.Equal(0, process.ExitCode);
+            Assert.DoesNotContain("Agent error", await stdout);
+            Assert.DoesNotContain("Exception:", await stderr);
+            RecordEvidence("pty-jump-buffered", new
+            {
+                exitCode = process.ExitCode,
+                bufferedTarget = ",",
+                bufferedRemainder = "XY",
+                editorAfterJump = "aXY,b,c",
+                cursorAfterJump = 3
+            });
+        }
+        finally
+        {
+            if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
+            process?.Dispose();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task VerticalVisualLinePageAndFullscreenPrecedenceMatchThroughLinuxPty()
     {
         if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;

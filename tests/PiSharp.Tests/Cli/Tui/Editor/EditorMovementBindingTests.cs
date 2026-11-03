@@ -57,6 +57,29 @@ public sealed class EditorMovementBindingTests
     }
 
     [Fact]
+    public void ModifiedFunctionKeysMapToExplicitNoncontiguousCodes()
+    {
+        int[] codes = [11, 12, 13, 14, 15, 17, 18, 19, 20, 21, 23, 24];
+        var unmodified = new StringBuilder();
+        var modified = new StringBuilder();
+        for (var index = 0; index < codes.Length; index++)
+        {
+            unmodified.Append($"\u001b[{codes[index]}~");
+            modified.Append($"\u001b[{codes[index]};5~");
+        }
+        var plainReader = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes(unmodified.ToString())));
+        var modifiedReader = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes(modified.ToString())));
+        for (var index = 0; index < codes.Length; index++)
+        {
+            var expected = (ConsoleKey)((int)ConsoleKey.F1 + index);
+            Assert.Equal(expected, plainReader.Read().Key!.Value.Key);
+            var control = modifiedReader.Read().Key!.Value;
+            Assert.Equal(expected, control.Key);
+            Assert.Equal(ConsoleModifiers.Control, control.Modifiers);
+        }
+    }
+
+    [Fact]
     public void LegacyAndKittyMovementInputDecodesToPiKeys()
     {
         var reader = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes(
