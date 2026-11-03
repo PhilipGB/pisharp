@@ -229,6 +229,13 @@ public sealed class TerminalScreen : IDisposable
         get { lock (_gate) return _mouse.SelectedText; }
     }
 
+    internal bool IsAlternateScreen => _useAlternateScreen;
+
+    /// <summary>Pi's fullscreen copy-on-select default; a disabled value is owned by the settings capability.</summary>
+    internal bool CopyOnSelect { get; set; } = true;
+
+    internal void FlashCopyConfirmation() => SetSelectionFlash("Copied!");
+
     internal void SetSelectionClipboard(TerminalClipboard clipboard)
     {
         ArgumentNullException.ThrowIfNull(clipboard);
@@ -1132,7 +1139,15 @@ public sealed class TerminalScreen : IDisposable
             _panelCursorColumn = null;
             _panelCursorVisible = false;
             _footer = TerminalSafeText.Normalize(footer);
-            _notifications.PublishStatus(safe, TerminalStatusNotificationKind.Info, isExtension: true);
+            if (_useAlternateScreen)
+                _notifications.PublishStatus(safe, TerminalStatusNotificationKind.Info, isExtension: true);
+            else
+            {
+                string Render(TerminalTheme theme) => Environment.NewLine + Environment.NewLine +
+                    theme.Style("dim", safe);
+                _transcript.AppendThemedStatus(Render(_theme), Render,
+                    Environment.NewLine + Environment.NewLine + " " + safe);
+            }
             _render.Request();
         }
     }

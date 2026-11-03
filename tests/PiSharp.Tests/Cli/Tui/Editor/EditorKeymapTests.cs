@@ -516,8 +516,11 @@ public sealed class EditorKeymapTests
 
         Assert.Equal(["app.model.cycleForward", "app.thinking.cycle", "app.model.cycleBackward"], actions);
         Assert.Equal("keep this draft", editor.Draft);
-        Assert.Equal("app.model.cycleBackward", new EditorKeymap().MatchIdleApplicationAction(
-            Key(ConsoleKey.P, ConsoleModifiers.Alt)));
+        if (windowsBindings)
+            Assert.Equal("app.model.cycleBackward", new EditorKeymap().MatchIdleApplicationAction(
+                Key(ConsoleKey.P, ConsoleModifiers.Alt)));
+        else
+            Assert.Null(new EditorKeymap().MatchIdleApplicationAction(Key(ConsoleKey.P, ConsoleModifiers.Alt)));
     }
 
     [Fact]

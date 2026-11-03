@@ -23,6 +23,8 @@ internal sealed class TerminalSelectionList<T>
     private readonly string _emptyMessage;
     private readonly string? _allLabel;
     private readonly string? _scopedLabel;
+    private readonly EditorKeymap? _keymap;
+    private readonly string _saveAction;
     private IReadOnlyList<TerminalSelectionOption<T>> _activeOptions;
     private IReadOnlyList<TerminalSelectionOption<T>> _filteredOptions;
     private string _query = "";
@@ -38,10 +40,12 @@ internal sealed class TerminalSelectionList<T>
     public TerminalSelectionList(string title, IReadOnlyList<TerminalSelectionOption<T>> allOptions,
         string? selectedKey = null, IReadOnlyList<TerminalSelectionOption<T>>? scopedOptions = null,
         string allLabel = "All", string scopedLabel = "Scoped", string emptyMessage = "No matching items",
-        string? actionHint = null)
+        string? actionHint = null, EditorKeymap? keymap = null, string saveAction = "app.models.save")
     {
         _title = Clean(title);
         _actionHint = string.IsNullOrWhiteSpace(actionHint) ? null : Clean(actionHint);
+        _keymap = keymap;
+        _saveAction = saveAction;
         _allOptions = Sanitize(allOptions);
         _scopedOptions = scopedOptions is null ? null : Sanitize(scopedOptions);
         _emptyMessage = Clean(emptyMessage);
@@ -115,20 +119,32 @@ internal sealed class TerminalSelectionList<T>
         }
         if (input.Key is { } key)
         {
-            if (key.Key == ConsoleKey.Escape || key.Key == ConsoleKey.C && key.Modifiers.HasFlag(ConsoleModifiers.Control))
+            if (MatchesSelect("tui.select.cancel", key, ConsoleKey.Escape) ||
+                (_keymap is null && key.Key == ConsoleKey.C && key.Modifiers.HasFlag(ConsoleModifiers.Control)))
                 return TerminalSelectionAction.Cancel;
-            if (key.Key == ConsoleKey.Enter) return Selected is null ? TerminalSelectionAction.Continue : TerminalSelectionAction.Accept;
-            if (key.Key == ConsoleKey.S && key.Modifiers.HasFlag(ConsoleModifiers.Control))
+            if (MatchesSelect("tui.select.confirm", key, ConsoleKey.Enter))
+                return Selected is null ? TerminalSelectionAction.Continue : TerminalSelectionAction.Accept;
+            if (_keymap is null
+                    ? key.Key == ConsoleKey.S && key.Modifiers.HasFlag(ConsoleModifiers.Control)
+                    : _keymap.Matches(_saveAction, key))
                 return Selected is null ? TerminalSelectionAction.Continue : TerminalSelectionAction.AcceptAsDefault;
-            if (key.Key == ConsoleKey.Tab && _scopedOptions is not null)
+            if (MatchesSelect("tui.input.tab", key, ConsoleKey.Tab) && _scopedOptions is not null)
             {
                 ToggleScope();
                 return TerminalSelectionAction.Continue;
             }
-            if (key.Key == ConsoleKey.UpArrow) { MoveSelection(-1); return TerminalSelectionAction.Continue; }
-            if (key.Key == ConsoleKey.DownArrow) { MoveSelection(1); return TerminalSelectionAction.Continue; }
-            if (key.Key == ConsoleKey.PageUp) { MoveSelection(-VisibleItemCount(_lastHeight)); return TerminalSelectionAction.Continue; }
-            if (key.Key == ConsoleKey.PageDown) { MoveSelection(VisibleItemCount(_lastHeight)); return TerminalSelectionAction.Continue; }
+            if (MatchesSelect("tui.select.up", key, ConsoleKey.UpArrow)) { MoveSelection(-1); return TerminalSelectionAction.Continue; }
+            if (MatchesSelect("tui.select.down", key, ConsoleKey.DownArrow)) { MoveSelection(1); return TerminalSelectionAction.Continue; }
+            if (MatchesSelect("tui.select.pageUp", key, ConsoleKey.PageUp))
+            {
+                MoveSelection(-VisibleItemCount(_lastHeight));
+                return TerminalSelectionAction.Continue;
+            }
+            if (MatchesSelect("tui.select.pageDown", key, ConsoleKey.PageDown))
+            {
+                MoveSelection(VisibleItemCount(_lastHeight));
+                return TerminalSelectionAction.Continue;
+            }
             if (key.Key == ConsoleKey.Home) { _selectedIndex = 0; return TerminalSelectionAction.Continue; }
             if (key.Key == ConsoleKey.End) { _selectedIndex = Math.Max(0, _filteredOptions.Count - 1); return TerminalSelectionAction.Continue; }
             if (key.Key == ConsoleKey.Backspace) { RemoveLastQueryElement(); return TerminalSelectionAction.Continue; }
@@ -152,7 +168,7 @@ internal sealed class TerminalSelectionList<T>
         _lastHeight = height;
         var lines = new List<string> { _title };
         if (_scopedOptions is not null)
-            lines.Add($"Scope: {(IsScoped ? _scopedLabel : _allLabel)} · Tab to switch");
+            lines.Add($"Scope: {(IsScoped ? _scopedLabel : _allLabel)} · {KeyLabel("tui.input.tab", "Tab")} to switch");
         lines.Add($"Search: {_query}");
         lines.Add(new string('-', Math.Min(width, Math.Max(1, TerminalTextLayout.Width(_title)))));
 
@@ -189,8 +205,11 @@ internal sealed class TerminalSelectionList<T>
 
         var actionHint = _actionHint is null ? "" : $" · {_actionHint}";
         lines.Add(_scopedOptions is not null
-            ? $"↑↓ move · type to filter · Tab scope{actionHint} · Enter select · Esc close"
-            : $"↑↓ move · type to filter{actionHint} · Enter select · Esc close");
+            ? $"{KeyLabel("tui.select.up", "↑")}/{KeyLabel("tui.select.down", "↓")} move · type to filter · " +
+              $"{KeyLabel("tui.input.tab", "Tab")} scope{actionHint} · {KeyLabel("tui.select.confirm", "Enter")} select · " +
+              $"{KeyLabel("tui.select.cancel", "Esc")} close"
+            : $"{KeyLabel("tui.select.up", "↑")}/{KeyLabel("tui.select.down", "↓")} move · type to filter{actionHint} · " +
+              $"{KeyLabel("tui.select.confirm", "Enter")} select · {KeyLabel("tui.select.cancel", "Esc")} close");
         var maximumContentLines = Math.Max(1, height - 2);
         return lines.Take(maximumContentLines).Select(line => TerminalTranscriptViewport.Clip(line, width)).ToArray();
     }
@@ -220,7 +239,7 @@ internal sealed class TerminalSelectionList<T>
             lines.Add("Scope: " + (IsScoped ? theme.Style("muted", _allLabel ?? "all") :
                 theme.Style("accent", _allLabel ?? "all")) + " | " +
               (IsScoped ? theme.Style("accent", _scopedLabel ?? "scoped") : theme.Style("muted", _scopedLabel ?? "scoped")) +
-              theme.Style("muted", " · Tab to switch"));
+              theme.Style("muted", " · " + KeyLabel("tui.input.tab", "Tab") + " to switch"));
         lines.AddRange(["", "> " + _query + "\u001b[7m \u001b[27m", ""]);
         cursorRow = lines.Count - 2;
         cursorColumn = 3 + TerminalTextLayout.Width(_query);
@@ -262,8 +281,11 @@ internal sealed class TerminalSelectionList<T>
         }
         lines.Add("");
         lines.Add(theme.Style("dim", _scopedOptions is null
-            ? "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
-            : "  ↑↓ move · type to filter · Tab scope · Enter select · Esc close"));
+            ? $"  {KeyLabel("tui.select.confirm", "Enter")} to select · {KeyLabel(_saveAction, "Ctrl+S")} to set as default · " +
+              $"{KeyLabel("tui.select.cancel", "Escape/Ctrl+C")} to cancel"
+            : $"  {KeyLabel("tui.select.up", "↑")}/{KeyLabel("tui.select.down", "↓")} move · type to filter · " +
+              $"{KeyLabel("tui.input.tab", "Tab")} scope · {KeyLabel("tui.select.confirm", "Enter")} select · " +
+              $"{KeyLabel("tui.select.cancel", "Esc")} close"));
         lines.Add(Border());
         return lines.Select(line => line.Length == 0
             ? "" : Pad(TerminalTranscriptViewport.Clip(line, width))).ToArray();
@@ -295,6 +317,14 @@ internal sealed class TerminalSelectionList<T>
         var restoredIndex = IndexOf(selectedKey, _filteredOptions);
         _selectedIndex = restoredIndex >= 0 ? restoredIndex : Math.Clamp(_selectedIndex, 0, Math.Max(0, _filteredOptions.Count - 1));
     }
+
+    private string KeyLabel(string action, string fallback) =>
+        _keymap is null ? fallback : _keymap.GetDisplayKeys(action) ?? "";
+
+    private bool MatchesSelect(string action, ConsoleKeyInfo key, ConsoleKey fallbackKey) =>
+        _keymap is null
+            ? key.Key == fallbackKey && key.Modifiers == ConsoleModifiers.None
+            : _keymap.Matches(action, key);
 
     private void MoveSelection(int offset)
     {

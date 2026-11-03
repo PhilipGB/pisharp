@@ -1,0 +1,251 @@
+{
+  "id": "terminal-keys-model-display",
+  "settings": {
+    "quietStartup": true,
+    "defaultThinkingLevel": "medium"
+  },
+  "modelReasoning": true,
+  "files": {
+    "pi": {
+      "models.json": {
+        "providers": {
+          "fixture": {
+            "baseUrl": "{router}/v1",
+            "apiKey": "fixture-key",
+            "api": "openai-completions",
+            "models": [
+              {
+                "id": "fixture-model",
+                "name": "Fixture Model",
+                "api": "openai-completions",
+                "reasoning": true
+              },
+              {
+                "id": "alpha",
+                "name": "Alpha Model",
+                "api": "openai-completions",
+                "reasoning": true
+              },
+              {
+                "id": "beta",
+                "name": "Beta Model",
+                "api": "openai-completions",
+                "reasoning": true
+              }
+            ]
+          }
+        }
+      }
+    },
+    "pisharp": {
+      "models.json": {
+        "providers": {
+          "fixture": {
+            "baseUrl": "{router}/v1",
+            "apiKey": "fixture-key",
+            "api": "openai-completions",
+            "models": [
+              {
+                "id": "fixture-model",
+                "name": "Fixture Model",
+                "api": "openai-completions",
+                "reasoning": true
+              },
+              {
+                "id": "alpha",
+                "name": "Alpha Model",
+                "api": "openai-completions",
+                "reasoning": true
+              },
+              {
+                "id": "beta",
+                "name": "Beta Model",
+                "api": "openai-completions",
+                "reasoning": true
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "dimensions": [
+    {
+      "columns": 80,
+      "rows": 24
+    },
+    {
+      "columns": 120,
+      "rows": 40
+    }
+  ],
+  "themes": [
+    "dark"
+  ],
+  "modes": [
+    "fullscreen",
+    "regular"
+  ],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  },
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "model-cycle-forward",
+      "send": "\u0010",
+      "expect": "Switched to Alpha Model (thinking: medium)"
+    },
+    {
+      "id": "model-cycle-forward-second",
+      "send": "\u0010",
+      "expect": "Switched to Beta Model (thinking: medium)"
+    },
+    {
+      "id": "model-cycle-backward",
+      "send": "\u001b[112;6u",
+      "expect": "Switched to Alpha Model (thinking: medium)"
+    },
+    {
+      "id": "model-cycle-backward-wrap",
+      "send": "\u001b[112;6u",
+      "expect": "Switched to Fixture Model (thinking: medium)"
+    },
+    {
+      "id": "selector-open",
+      "send": "\f",
+      "expect": "Model Name: Fixture Model"
+    },
+    {
+      "id": "selector-cancel",
+      "send": "\u001b",
+      "notExpect": "Model Name:"
+    },
+    {
+      "id": "selector-select-beta",
+      "send": "\f",
+      "expect": "Model Name: Fixture Model"
+    },
+    {
+      "id": "selector-search-beta",
+      "send": "beta",
+      "expect": "> beta"
+    },
+    {
+      "id": "selector-confirm-beta",
+      "send": "\r",
+      "expect": "Model: beta"
+    },
+    {
+      "id": "first-prompt",
+      "send": "first prompt\r",
+      "expect": "fixture reply",
+      "allowStaticFrame": true
+    },
+    {
+      "id": "selector-open-alpha",
+      "send": "\f",
+      "expect": "Model Name: Beta Model"
+    },
+    {
+      "id": "selector-search-alpha",
+      "send": "alpha",
+      "expect": "> alpha"
+    },
+    {
+      "id": "selector-confirm-alpha",
+      "send": "\r",
+      "expect": "Model: alpha"
+    },
+    {
+      "id": "second-prompt",
+      "send": "second prompt\r",
+      "expect": "fixture reply",
+      "allowStaticFrame": true
+    },
+    {
+      "id": "thinking-cycle",
+      "send": "\u001b[Z",
+      "expect": "Thinking level: high"
+    },
+    {
+      "id": "tool-expand",
+      "send": "\u000f",
+      "expect": "Tool output: expanded"
+    },
+    {
+      "id": "thinking-toggle",
+      "send": "\u0014",
+      "expect": "Thinking blocks: hidden"
+    },
+    {
+      "id": "copy-last-assistant",
+      "send": "\u0018",
+      "expect": "Copied",
+      "expectClipboardWrite": true
+    },
+    {
+      "id": "quit",
+      "send": "\u0015/quit\r",
+      "exit": true
+    }
+  ],
+  "assertionFrames": [
+    "startup",
+    "model-cycle-forward",
+    "model-cycle-forward-second",
+    "model-cycle-backward",
+    "model-cycle-backward-wrap",
+    "selector-open",
+    "selector-cancel",
+    "selector-select-beta",
+    "selector-search-beta",
+    "selector-confirm-beta",
+    "first-prompt",
+    "selector-open-alpha",
+    "selector-search-alpha",
+    "selector-confirm-alpha",
+    "second-prompt",
+    "thinking-cycle",
+    "tool-expand",
+    "thinking-toggle",
+    "copy-last-assistant",
+    "quit"
+  ],
+  "arguments": {
+    "pi": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--no-session",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-tools",
+      "--no-context-files",
+      "--system-prompt",
+      "You are a terminal parity fixture."
+    ],
+    "pisharp": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--no-session",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-tools",
+      "--no-context-files",
+      "--system-prompt",
+      "You are a terminal parity fixture.",
+      "--no-approve"
+    ]
+  }
+}

@@ -106,7 +106,7 @@ public sealed class McpOAuthTuiTests
                             if (target is not null && FindFrame(current, target, "Ctrl+click to open") is not null &&
                                 current.Contains(customCopyKey ? "Ctrl+Shift+C to copy" : "Ctrl+X to copy",
                                     StringComparison.Ordinal) &&
-                                current.Contains("Esc to cancel", StringComparison.Ordinal))
+                                current.Contains("Escape to cancel", StringComparison.Ordinal))
                                 notificationFrameVisible.TrySetResult();
                         }
                         if (current.Contains(clipboardUnavailable
@@ -155,7 +155,7 @@ public sealed class McpOAuthTuiTests
             Assert.True(CountOccurrences(frame!, Osc8Open(authorizationUrl!)) >= 2,
                 "The wrapped authorization URL must reopen its OSC 8 target on each visible row.");
             Assert.Contains(Osc8Open(authorizationUrl!) + "Ctrl+click to open" + Osc8Close, frame!);
-            Assert.Contains("Esc to cancel", captured, StringComparison.Ordinal);
+            Assert.Contains("Escape to cancel", captured, StringComparison.Ordinal);
             Assert.Contains("redirect URL", captured, StringComparison.OrdinalIgnoreCase);
             Assert.Contains(customCopyKey ? "Ctrl+Shift+C to copy" : "Ctrl+X to copy", captured,
                 StringComparison.Ordinal);

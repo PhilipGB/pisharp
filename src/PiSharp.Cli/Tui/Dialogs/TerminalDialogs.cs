@@ -8,13 +8,14 @@ internal sealed class TerminalDialogs(EditorKeymap keymap, Func<TerminalInput> g
         IReadOnlyList<TerminalSelectionOption<T>>? scopedOptions = null,
         string allLabel = "All", string scopedLabel = "Scoped", string emptyMessage = "No matching items",
         string? actionHint = null,
-        Func<TerminalSelectionList<T>, TerminalInputEvent, bool>? handleInput = null)
+        Func<TerminalSelectionList<T>, TerminalInputEvent, bool>? handleInput = null,
+        string saveAction = "app.models.save")
     {
         if (getScreen() is not { IsActive: true } screen) return null;
         var input = getInput();
         using var mode = TerminalMode.Enter(screen);
-        return new TerminalOverlayHost(input).Select(screen, title, options, selectedKey, scopedOptions,
-            allLabel, scopedLabel, emptyMessage, actionHint, handleInput);
+        return new TerminalOverlayHost(input, keymap).Select(screen, title, options, selectedKey, scopedOptions,
+            allLabel, scopedLabel, emptyMessage, actionHint, handleInput, saveAction);
     }
 
     public TerminalSettingsListSelection? ShowSettingsList(string title,
@@ -68,13 +69,14 @@ internal sealed class TerminalDialogs(EditorKeymap keymap, Func<TerminalInput> g
         string? actionHint = null,
         Func<TerminalSelectionList<T>, TerminalInputEvent, Task<bool>>? handleInput = null,
         CancellationToken cancellationToken = default,
-        Func<TerminalSelectionList<T>, Task>? onIdle = null)
+        Func<TerminalSelectionList<T>, Task>? onIdle = null,
+        string saveAction = "app.models.save")
     {
         if (getScreen() is not { IsActive: true } screen) return null;
         var input = getInput();
         using var mode = TerminalMode.Enter(screen);
-        return await new TerminalOverlayHost(input).SelectAsync(screen, title, options, selectedKey, scopedOptions,
-            allLabel, scopedLabel, emptyMessage, actionHint, handleInput, cancellationToken, onIdle).ConfigureAwait(false);
+        return await new TerminalOverlayHost(input, keymap).SelectAsync(screen, title, options, selectedKey, scopedOptions,
+            allLabel, scopedLabel, emptyMessage, actionHint, handleInput, cancellationToken, onIdle, saveAction).ConfigureAwait(false);
     }
 
     public TerminalSelection<T>? ShowModelSelectionList<T>(
@@ -87,7 +89,7 @@ internal sealed class TerminalDialogs(EditorKeymap keymap, Func<TerminalInput> g
         var input = getInput();
         using var mode = TerminalMode.Enter(screen);
         var list = new TerminalSelectionList<T>("Select model", options, selectedKey, scopedOptions,
-            allLabel: "all", scopedLabel: "scoped", emptyMessage: "No matching models");
+            allLabel: "all", scopedLabel: "scoped", emptyMessage: "No matching models", keymap: keymap);
         var preservePanel = false;
         using var refreshCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         refreshCancellation.CancelAfter(TimeSpan.FromSeconds(15));

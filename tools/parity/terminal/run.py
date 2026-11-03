@@ -31,7 +31,7 @@ WORKSPACE = Path('/tmp/pisharp-terminal-fixture-workspace')
 AGENT_DIRECTORY = Path('/tmp/pisharp-terminal-fixture-agent')
 
 
-def write_scenario_files(files, base):
+def write_scenario_files(files, base, replacements=None):
     root = base.resolve()
     for name, content in files.items():
         path = (base / name).resolve()
@@ -42,7 +42,10 @@ def write_scenario_files(files, base):
             path.write_bytes(base64.b64decode(content['$base64'], validate=True))
         else:
             text = content if isinstance(content, str) else json.dumps(content)
-            path.write_text(text.replace('{workspace}', str(WORKSPACE)))
+            text = text.replace('{workspace}', str(WORKSPACE))
+            for source, target in (replacements or {}).items():
+                text = text.replace(source, target)
+            path.write_text(text)
 
 
 def prepare_workspace(scenario, workspace=None):
@@ -302,7 +305,7 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
                  cost=dict(input=0, output=0, cacheRead=0, cacheWrite=0))
     (agent / 'models.json').write_text(json.dumps(dict(providers=dict(fixture=dict(baseUrl=server.url + '/v1',
                                                                                  apiKey='fixture-key', api='openai-completions', models=[model])))))
-    write_scenario_files(scenario.get('files', {}).get(label, {}), agent)
+    write_scenario_files(scenario.get('files', {}).get(label, {}), agent, {'{router}': server.url})
     if label == 'pisharp' and scenario.get('copyPisharpExtensionTo'):
         if pisharp_extension is None or not pisharp_extension.is_file():
             raise ValueError('This fixture requires --pisharp-extension to stage configured local extensions')

@@ -1,5 +1,6 @@
 using PiSharp.Cli.Composition;
 using PiSharp.Extensions.Abstractions;
+using PiSharp.Runtime.Providers;
 
 namespace PiSharp.Cli.Tui;
 
@@ -42,7 +43,10 @@ internal sealed class TerminalModelSelectionCommands(ProviderModelRuntime modelR
         var nextThinking = _navigation.NextThinkingLevel(modelBinding.Selection, modelBinding.Thinking);
         if (nextThinking is null) return;
         await modelTransitions.SelectThinkingLevelAsync(nextThinking);
-        Console.WriteLine($"Thinking level: {modelBinding.Thinking}");
+        var label = $"Thinking level: {modelBinding.Thinking}";
+        if (presentation.Screen is { IsActive: true } screen)
+            screen.ShowModelChangeStatus(presentation.IdleFooter(), label);
+        else Console.WriteLine(label);
     }
 
     public async Task CycleModelAsync(int direction)
@@ -52,6 +56,14 @@ internal sealed class TerminalModelSelectionCommands(ProviderModelRuntime modelR
         var compatibleThinking = modelRuntimeController.ResolveThinkingLevelForModelSwitch(nextSelection, modelBinding.Thinking);
         await modelTransitions.ApplySelectionAsync(nextSelection, compatibleThinking,
             PiSharpExtensionModelSelectionSource.Cycle);
-        ShowModelChangeStatus();
+        var thinking = FormatThinkingSuffix(nextSelection.Model, modelBinding.Thinking);
+        var label = $"Switched to {nextSelection.Model.Name ?? nextSelection.Model.Id}{thinking}";
+        if (presentation.Screen is { IsActive: true } screen)
+            screen.ShowModelChangeStatus(presentation.IdleFooter(), label);
+        else Console.WriteLine(label);
     }
+
+    internal static string FormatThinkingSuffix(ModelDescriptor model, string thinking) =>
+        model.Reasoning == true && !thinking.Equals("off", StringComparison.OrdinalIgnoreCase)
+            ? $" (thinking: {thinking})" : "";
 }

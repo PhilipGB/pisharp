@@ -8,12 +8,18 @@ internal static class TerminalClipboardActions
     public static async Task CopyLastAssistantAsync(TerminalClipboard clipboard, ConversationSession conversation,
         TerminalScreen? screen, TextWriter output)
     {
-        var selected = screen?.SelectedText;
-        var text = selected ?? conversation.ActiveMessages()
+        if (screen is { IsAlternateScreen: true, CopyOnSelect: false } &&
+            !string.IsNullOrEmpty(screen.SelectedText) &&
+            await screen.CopySelectionToClipboardAsync())
+            return;
+
+        var text = conversation.ActiveMessages()
             .LastOrDefault(message => message.Role == ChatRole.Assistant)?.Text?.Trim();
-        if (string.IsNullOrEmpty(text)) throw new InvalidOperationException("No selected text or agent messages to copy yet.");
+        if (string.IsNullOrEmpty(text)) throw new InvalidOperationException("No agent messages to copy yet.");
         await clipboard.CopyTextAsync(text);
-        output.WriteLine(selected is null ? "Copied last agent message to clipboard" : "Copied selected text to clipboard");
+        if (screen is { IsAlternateScreen: true }) screen.FlashCopyConfirmation();
+        else if (screen is { IsActive: true }) screen.AppendThemedStatusLine("Copied last agent message to clipboard");
+        else output.WriteLine("Copied last agent message to clipboard");
     }
 
     public static async Task CopyAuthorizationUrlAsync(TerminalClipboard clipboard, TerminalScreen? screen,

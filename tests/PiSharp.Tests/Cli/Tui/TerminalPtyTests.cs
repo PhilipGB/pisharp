@@ -1592,7 +1592,7 @@ public sealed class TerminalPtyTests
             var readCommand = Path.Combine(bin, "wl-paste");
             var writeCommand = Path.Combine(bin, "wl-copy");
             await File.WriteAllTextAsync(readCommand, "#!/bin/sh\nprintf 'clipboard paste text'\n");
-            await File.WriteAllTextAsync(writeCommand, "#!/bin/sh\ncat > \"$PISHARP_CLIP_CAPTURE\"\n");
+            await File.WriteAllTextAsync(writeCommand, "#!/bin/sh\n{ cat; printf '\\n'; } >> \"$PISHARP_CLIP_CAPTURE\"\n");
             var mode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
             File.SetUnixFileMode(readCommand, mode);
             File.SetUnixFileMode(writeCommand, mode);
@@ -1624,9 +1624,7 @@ public sealed class TerminalPtyTests
                 var outputLock = new object();
                 var inputReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 var pasteRendered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-                var shortcutCopyCompleted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-                var slashCopyCompleted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-                var copyStatusEnd = 0;
+
                 var stdout = Task.Run(async () =>
                 {
                     var buffer = new char[1024];
@@ -1640,17 +1638,22 @@ public sealed class TerminalPtyTests
                             var current = outputBuilder.ToString();
                             if (current.Contains("\u001b[?2004h", StringComparison.Ordinal)) inputReady.TrySetResult();
                             if (current.Contains("clipboard paste text", StringComparison.Ordinal)) pasteRendered.TrySetResult();
-                            var statusAt = current.IndexOf("Copied last agent message to clipboard", copyStatusEnd, StringComparison.Ordinal);
-                            if (statusAt >= 0)
-                            {
-                                copyStatusEnd = statusAt + "Copied last agent message to clipboard".Length;
-                                if (!shortcutCopyCompleted.Task.IsCompleted) shortcutCopyCompleted.TrySetResult();
-                                else slashCopyCompleted.TrySetResult();
-                            }
                         }
                     }
                     lock (outputLock) return outputBuilder.ToString();
                 });
+                async Task WaitForCopyAsync(int expected)
+                {
+                    using var copyTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
+                    while (true)
+                    {
+                        copyTimeout.Token.ThrowIfCancellationRequested();
+                        if (File.Exists(capture) &&
+                            CountOccurrences(await File.ReadAllTextAsync(capture), "assistant response to copy") >= expected)
+                            return;
+                        await Task.Delay(20, copyTimeout.Token);
+                    }
+                }
                 var stderr = process.StandardError.ReadToEndAsync();
                 using var readyTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
                 await inputReady.Task.WaitAsync(readyTimeout.Token);
@@ -1668,10 +1671,10 @@ public sealed class TerminalPtyTests
                 }
                 await process.StandardInput.WriteAsync("\u0015\u0018");
                 await process.StandardInput.FlushAsync();
-                await shortcutCopyCompleted.Task.WaitAsync(TimeSpan.FromSeconds(12));
+                await WaitForCopyAsync(1);
                 await process.StandardInput.WriteAsync("/copy\r");
                 await process.StandardInput.FlushAsync();
-                await slashCopyCompleted.Task.WaitAsync(TimeSpan.FromSeconds(12));
+                await WaitForCopyAsync(2);
                 await process.StandardInput.WriteAsync("/quit\r");
                 await process.StandardInput.FlushAsync();
                 process.StandardInput.Close();
@@ -1682,8 +1685,10 @@ public sealed class TerminalPtyTests
 
                 Assert.Equal(0, process.ExitCode);
                 Assert.Contains("clipboard paste text", output);
-                Assert.Contains("Copied last agent message to clipboard", output);
-                Assert.Equal("assistant response to copy", await File.ReadAllTextAsync(capture));
+                Assert.Contains("Copied!", output);
+                Assert.Equal(2, CountOccurrences(await File.ReadAllTextAsync(capture), "assistant response to copy"));
+                Assert.Equal("assistant response to copy\nassistant response to copy\n",
+                    (await File.ReadAllTextAsync(capture)).Replace("\r\n", "\n"));
                 Assert.DoesNotContain("Shortcut action failed:", output);
                 Assert.DoesNotContain("Exception:", await stderr);
             }
@@ -2453,8 +2458,10 @@ public sealed class TerminalPtyTests
             await WaitForEditorAsync("/model");
             await SendAsync("\t");
             await WaitForEditorAsync("/models");
+            // Pinned Pi binds only Tab to completion; Shift+Tab cycles thinking and must not
+            // mutate the editor draft.
             await SendAsync("\u001b[Z");
-            await WaitForEditorAsync("/model");
+            await WaitForEditorAsync("/models");
 
             await SendAsync("\u0015");
             await WaitForEditorAsync("");

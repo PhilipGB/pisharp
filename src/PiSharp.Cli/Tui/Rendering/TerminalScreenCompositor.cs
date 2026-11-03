@@ -425,7 +425,7 @@ internal sealed class TerminalScreenCompositor
                 RestorationCursorRow: editorStart + borderHeight / 2 + editor.CursorRow,
                 DocumentRows: documentRows, DocumentCursorRow: documentCursorRow,
                 DocumentCursorColumn: editor.CursorColumn + boundedEditorPadding + 1,
-                SuspensionRows: suspensionRows, OverlayVisible: overlay is not null);
+                SuspensionRows: suspensionRows, OverlayVisible: true);
             return ApplyTransientFlash(
                 ApplyExtensionOverlay(panelFrame, extensionCustomOverlay, extensionCustomOverlayOptions, activeTheme),
                 transientFlashes ?? (transientFlash is null ? [] : [transientFlash]));

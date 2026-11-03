@@ -6,6 +6,12 @@ namespace PiSharp.Cli.Tui;
 /// <summary>Edits drafts and routes idle and active-run input to application actions and terminal dialogs.</summary>
 public sealed class TerminalEditor
 {
+    internal static readonly string[] ActiveApplicationActions =
+    [
+        "app.thinking.cycle", "app.thinking.toggle", "app.model.cycleForward",
+        "app.model.cycleBackward", "app.model.select"
+    ];
+
     private sealed record CompletionCandidate(string DisplayText, string ReplacementText, bool Native,
         string? Description = null);
     private sealed record CompletionCycle(IReadOnlyList<CompletionCandidate> Candidates, int SelectedIndex,
@@ -372,9 +378,10 @@ public sealed class TerminalEditor
         IReadOnlyList<TerminalSelectionOption<T>>? scopedOptions = null,
         string allLabel = "All", string scopedLabel = "Scoped", string emptyMessage = "No matching items",
         string? actionHint = null,
-        Func<TerminalSelectionList<T>, TerminalInputEvent, bool>? handleInput = null) =>
+        Func<TerminalSelectionList<T>, TerminalInputEvent, bool>? handleInput = null,
+        string saveAction = "app.models.save") =>
         _dialogs.ShowSelectionList(title, options, selectedKey, scopedOptions, allLabel, scopedLabel, emptyMessage,
-            actionHint, handleInput);
+            actionHint, handleInput, saveAction);
 
     internal TerminalSettingsListSelection? ShowSettingsList(string title,
         IReadOnlyList<TerminalSettingsListItem> items, string? selectedKey, string scopeLabel,
@@ -388,9 +395,10 @@ public sealed class TerminalEditor
         string? actionHint = null,
         Func<TerminalSelectionList<T>, TerminalInputEvent, Task<bool>>? handleInput = null,
         CancellationToken cancellationToken = default,
-        Func<TerminalSelectionList<T>, Task>? onIdle = null) =>
+        Func<TerminalSelectionList<T>, Task>? onIdle = null,
+        string saveAction = "app.models.save") =>
         _dialogs.ShowSelectionListAsync(title, options, selectedKey, scopedOptions, allLabel, scopedLabel,
-            emptyMessage, actionHint, handleInput, cancellationToken, onIdle);
+            emptyMessage, actionHint, handleInput, cancellationToken, onIdle, saveAction);
 
     internal TerminalSelection<T>? ShowModelSelectionList<T>(
         IReadOnlyList<TerminalSelectionOption<T>> options, string? selectedKey, string hint,
@@ -662,11 +670,14 @@ public sealed class TerminalEditor
                 _transcriptSearch.Start();
                 return true;
             }
-            if (dispatchApplicationAction is not null && !_keymap.MatchesEditorAction(screenKey) &&
-                _keymap.Matches("app.thinking.toggle", screenKey))
+            if (dispatchApplicationAction is not null && !_keymap.MatchesEditorAction(screenKey))
             {
-                await DispatchApplicationActionAsync(dispatchApplicationAction, "app.thinking.toggle");
-                return true;
+                foreach (var action in ActiveApplicationActions)
+                {
+                    if (!_keymap.Matches(action, screenKey)) continue;
+                    await DispatchApplicationActionAsync(dispatchApplicationAction, action);
+                    return true;
+                }
             }
             if (_keymap.Matches("app.tools.expand", screenKey))
             {
@@ -1115,10 +1126,8 @@ public sealed class TerminalEditor
             await dispatchExtensionShortcut(extensionShortcut, cancellationToken);
             return true;
         }
-        var hasCompletionCycle = WithEditorState(() => _completionCycle is not null);
         if (_keymap.Matches("tui.editor.historyPrevious", key) || _keymap.Matches("tui.editor.historyNext", key))
             return false;
-        if (_keymap.Matches("app.thinking.cycle", key) && hasCompletionCycle) return false;
         var action = _keymap.MatchIdleApplicationAction(key);
         if (action is null) return false;
         if (action != "app.suspend") beforeDispatch?.Invoke();

@@ -11,8 +11,9 @@ internal sealed class TerminalThinkingSelector(TerminalEditor editor)
         var levels = ThinkingLevels.AvailableForModel(selection.Model.Reasoning, selection.Model.ThinkingLevelMap);
         var options = CreateOptions(levels, currentLevel, defaultLevel);
         var selected = await editor.ShowSelectionListAsync("Thinking Level", options, currentLevel,
-            actionHint: "Shift+Tab cycles thinking levels in-session · Ctrl+S sets the selected level as default",
-            cancellationToken: cancellationToken).ConfigureAwait(false);
+            actionHint: $"{editor.GetDisplayKeys("app.thinking.cycle")} cycles thinking levels in-session · " +
+                $"{editor.GetDisplayKeys("app.thinking.save")} sets the selected level as default",
+            cancellationToken: cancellationToken, saveAction: "app.thinking.save").ConfigureAwait(false);
         return selected is null ? null : new(selected.Option.Value, selected.SetAsDefault);
     }
 
