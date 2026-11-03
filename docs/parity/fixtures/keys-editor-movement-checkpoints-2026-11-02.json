@@ -1,0 +1,592 @@
+{
+  "schema": 1,
+  "capability": "keys-editor-movement-history",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "source": "same-Pi calibration of tools/parity/terminal/fixtures/terminal-editor-movement.json",
+  "cases": {
+    "100x30-dark-fullscreen": {
+      "checkpoints": {
+        "startup": {
+          "editor": [],
+          "cursor": {
+            "x": 0,
+            "y": 26
+          }
+        },
+        "seed-one-submit": {
+          "editor": [],
+          "cursor": {
+            "x": 0,
+            "y": 26
+          }
+        },
+        "seed-two-submit": {
+          "editor": [],
+          "cursor": {
+            "x": 0,
+            "y": 26
+          }
+        },
+        "movement-draft": {
+          "editor": [
+            "alpha beta gamma delta"
+          ],
+          "cursor": {
+            "x": 22,
+            "y": 26
+          }
+        },
+        "movement-left": {
+          "editor": [
+            "alpha beta gamma delta"
+          ],
+          "cursor": {
+            "x": 21,
+            "y": 26
+          }
+        },
+        "movement-word-left": {
+          "editor": [
+            "alpha beta gamma delta"
+          ],
+          "cursor": {
+            "x": 17,
+            "y": 26
+          }
+        },
+        "movement-home": {
+          "editor": [
+            "alpha beta gamma delta"
+          ],
+          "cursor": {
+            "x": 0,
+            "y": 26
+          }
+        },
+        "movement-end": {
+          "editor": [
+            "alpha beta gamma delta"
+          ],
+          "cursor": {
+            "x": 22,
+            "y": 26
+          }
+        },
+        "movement-jump-comma": {
+          "editor": [
+            "alpha beta gamma delta"
+          ],
+          "cursor": {
+            "x": 22,
+            "y": 26
+          }
+        },
+        "movement-jump-buffered": {
+          "editor": [
+            "aXY,b,c"
+          ],
+          "cursor": {
+            "x": 3,
+            "y": 26
+          }
+        },
+        "movement-jump-separate": {
+          "editor": [
+            "aXY,b,c"
+          ],
+          "cursor": {
+            "x": 3,
+            "y": 26
+          }
+        },
+        "history-up": {
+          "editor": [
+            "draft line one",
+            "draft line two"
+          ],
+          "cursor": {
+            "x": 14,
+            "y": 25
+          }
+        },
+        "history-up-start": {
+          "editor": [
+            "draft line one",
+            "draft line two"
+          ],
+          "cursor": {
+            "x": 0,
+            "y": 25
+          }
+        },
+        "history-up-newest": {
+          "editor": [
+            "second history prompt"
+          ],
+          "cursor": {
+            "x": 0,
+            "y": 26
+          }
+        },
+        "history-up-older": {
+          "editor": [
+            "first history prompt"
+          ],
+          "cursor": {
+            "x": 0,
+            "y": 26
+          }
+        },
+        "history-down-newer": {
+          "editor": [
+            "second history prompt"
+          ],
+          "cursor": {
+            "x": 21,
+            "y": 26
+          }
+        },
+        "history-down-draft": {
+          "editor": [
+            "draft line one",
+            "draft line two"
+          ],
+          "cursor": {
+            "x": 0,
+            "y": 25
+          }
+        },
+        "page-draft": {
+          "editor": [
+            "w019 w020 w021 w022 w023 w024 w025 w026 w027 w028 w029 w030 w031 w032 w033 w034 w035 w036 w037",
+            "w038 w039 w040 w041 w042 w043 w044 w045 w046 w047 w048 w049 w050 w051 w052 w053 w054 w055 w056",
+            "w057 w058 w059 w060 w061 w062 w063 w064 w065 w066 w067 w068 w069 w070 w071 w072 w073 w074 w075",
+            "w076 w077 w078 w079 w080 w081 w082 w083 w084 w085 w086 w087 w088 w089 w090 w091 w092 w093 w094",
+            "w095 w096 w097 w098 w099 w100 w101 w102 w103 w104 w105 w106 w107 w108 w109 w110 w111 w112 w113",
+            "w114 w115 w116 w117 w118 w119 w120 w121 w122 w123 w124 w125 w126 w127 w128 w129 w130 w131 w132",
+            "w133 w134 w135 w136 w137 w138 w139 w140 w141 w142 w143 w144 w145 w146 w147 w148 w149 w150 w151",
+            "w152 w153 w154 w155 w156 w157 w158 w159 w160 w161 w162 w163 w164 w165 w166 w167 w168 w169 w170",
+            "w171 w172 w173 w174 w175 w176 w177 w178 w179"
+          ],
+          "cursor": {
+            "x": 44,
+            "y": 26
+          }
+        },
+        "page-home": {
+          "editor": [
+            "w000 w001 w002 w003 w004 w005 w006 w007 w008 w009 w010 w011 w012 w013 w014 w015 w016 w017 w018",
+            "w019 w020 w021 w022 w023 w024 w025 w026 w027 w028 w029 w030 w031 w032 w033 w034 w035 w036 w037",
+            "w038 w039 w040 w041 w042 w043 w044 w045 w046 w047 w048 w049 w050 w051 w052 w053 w054 w055 w056",
+            "w057 w058 w059 w060 w061 w062 w063 w064 w065 w066 w067 w068 w069 w070 w071 w072 w073 w074 w075",
+            "w076 w077 w078 w079 w080 w081 w082 w083 w084 w085 w086 w087 w088 w089 w090 w091 w092 w093 w094",
+            "w095 w096 w097 w098 w099 w100 w101 w102 w103 w104 w105 w106 w107 w108 w109 w110 w111 w112 w113",
+            "w114 w115 w116 w117 w118 w119 w120 w121 w122 w123 w124 w125 w126 w127 w128 w129 w130 w131 w132",
+            "w133 w134 w135 w136 w137 w138 w139 w140 w141 w142 w143 w144 w145 w146 w147 w148 w149 w150 w151",
+            "w152 w153 w154 w155 w156 w157 w158 w159 w160 w161 w162 w163 w164 w165 w166 w167 w168 w169 w170"
+          ],
+          "cursor": {
+            "x": 0,
+            "y": 18
+          }
+        },
+        "page-fullscreen-down": {
+          "editor": [
+            "w000 w001 w002 w003 w004 w005 w006 w007 w008 w009 w010 w011 w012 w013 w014 w015 w016 w017 w018",
+            "w019 w020 w021 w022 w023 w024 w025 w026 w027 w028 w029 w030 w031 w032 w033 w034 w035 w036 w037",
+            "w038 w039 w040 w041 w042 w043 w044 w045 w046 w047 w048 w049 w050 w051 w052 w053 w054 w055 w056",
+            "w057 w058 w059 w060 w061 w062 w063 w064 w065 w066 w067 w068 w069 w070 w071 w072 w073 w074 w075",
+            "w076 w077 w078 w079 w080 w081 w082 w083 w084 w085 w086 w087 w088 w089 w090 w091 w092 w093 w094",
+            "w095 w096 w097 w098 w099 w100 w101 w102 w103 w104 w105 w106 w107 w108 w109 w110 w111 w112 w113",
+            "w114 w115 w116 w117 w118 w119 w120 w121 w122 w123 w124 w125 w126 w127 w128 w129 w130 w131 w132",
+            "w133 w134 w135 w136 w137 w138 w139 w140 w141 w142 w143 w144 w145 w146 w147 w148 w149 w150 w151",
+            "w152 w153 w154 w155 w156 w157 w158 w159 w160 w161 w162 w163 w164 w165 w166 w167 w168 w169 w170"
+          ],
+          "cursor": {
+            "x": 0,
+            "y": 18
+          }
+        },
+        "page-editor-down": {
+          "editor": [
+            "w019 w020 w021 w022 w023 w024 w025 w026 w027 w028 w029 w030 w031 w032 w033 w034 w035 w036 w037",
+            "w038 w039 w040 w041 w042 w043 w044 w045 w046 w047 w048 w049 w050 w051 w052 w053 w054 w055 w056",
+            "w057 w058 w059 w060 w061 w062 w063 w064 w065 w066 w067 w068 w069 w070 w071 w072 w073 w074 w075",
+            "w076 w077 w078 w079 w080 w081 w082 w083 w084 w085 w086 w087 w088 w089 w090 w091 w092 w093 w094",
+            "w095 w096 w097 w098 w099 w100 w101 w102 w103 w104 w105 w106 w107 w108 w109 w110 w111 w112 w113",
+            "w114 w115 w116 w117 w118 w119 w120 w121 w122 w123 w124 w125 w126 w127 w128 w129 w130 w131 w132",
+            "w133 w134 w135 w136 w137 w138 w139 w140 w141 w142 w143 w144 w145 w146 w147 w148 w149 w150 w151",
+            "w152 w153 w154 w155 w156 w157 w158 w159 w160 w161 w162 w163 w164 w165 w166 w167 w168 w169 w170",
+            "w171 w172 w173 w174 w175 w176 w177 w178 w179"
+          ],
+          "cursor": {
+            "x": 0,
+            "y": 26
+          }
+        },
+        "page-editor-up": {
+          "editor": [
+            "w000 w001 w002 w003 w004 w005 w006 w007 w008 w009 w010 w011 w012 w013 w014 w015 w016 w017 w018",
+            "w019 w020 w021 w022 w023 w024 w025 w026 w027 w028 w029 w030 w031 w032 w033 w034 w035 w036 w037",
+            "w038 w039 w040 w041 w042 w043 w044 w045 w046 w047 w048 w049 w050 w051 w052 w053 w054 w055 w056",
+            "w057 w058 w059 w060 w061 w062 w063 w064 w065 w066 w067 w068 w069 w070 w071 w072 w073 w074 w075",
+            "w076 w077 w078 w079 w080 w081 w082 w083 w084 w085 w086 w087 w088 w089 w090 w091 w092 w093 w094",
+            "w095 w096 w097 w098 w099 w100 w101 w102 w103 w104 w105 w106 w107 w108 w109 w110 w111 w112 w113",
+            "w114 w115 w116 w117 w118 w119 w120 w121 w122 w123 w124 w125 w126 w127 w128 w129 w130 w131 w132",
+            "w133 w134 w135 w136 w137 w138 w139 w140 w141 w142 w143 w144 w145 w146 w147 w148 w149 w150 w151",
+            "w152 w153 w154 w155 w156 w157 w158 w159 w160 w161 w162 w163 w164 w165 w166 w167 w168 w169 w170"
+          ],
+          "cursor": {
+            "x": 0,
+            "y": 18
+          }
+        },
+        "reload-bindings": {
+          "editor": [],
+          "cursor": {
+            "x": 0,
+            "y": 26
+          }
+        },
+        "configured-type": {
+          "editor": [
+            "gamma delta epsilon"
+          ],
+          "cursor": {
+            "x": 19,
+            "y": 26
+          }
+        },
+        "configured-word-left": {
+          "editor": [
+            "gamma delta epsilon"
+          ],
+          "cursor": {
+            "x": 12,
+            "y": 26
+          }
+        },
+        "configured-jump": {
+          "editor": [
+            "gamma delta epsilon"
+          ],
+          "cursor": {
+            "x": 13,
+            "y": 26
+          }
+        },
+        "final-type": {
+          "editor": [
+            "provider movement input"
+          ],
+          "cursor": {
+            "x": 23,
+            "y": 26
+          }
+        },
+        "final-submit": {
+          "editor": [],
+          "cursor": {
+            "x": 0,
+            "y": 26
+          }
+        },
+        "exit": {
+          "editor": [],
+          "cursor": {
+            "x": 0,
+            "y": 26
+          }
+        }
+      },
+      "requests": 3
+    },
+    "80x24-dark-fullscreen": {
+      "checkpoints": {
+        "startup": {
+          "editor": [],
+          "cursor": {
+            "x": 0,
+            "y": 20
+          }
+        },
+        "seed-one-submit": {
+          "editor": [],
+          "cursor": {
+            "x": 0,
+            "y": 20
+          }
+        },
+        "seed-two-submit": {
+          "editor": [],
+          "cursor": {
+            "x": 0,
+            "y": 20
+          }
+        },
+        "movement-draft": {
+          "editor": [
+            "alpha beta gamma delta"
+          ],
+          "cursor": {
+            "x": 22,
+            "y": 20
+          }
+        },
+        "movement-left": {
+          "editor": [
+            "alpha beta gamma delta"
+          ],
+          "cursor": {
+            "x": 21,
+            "y": 20
+          }
+        },
+        "movement-word-left": {
+          "editor": [
+            "alpha beta gamma delta"
+          ],
+          "cursor": {
+            "x": 17,
+            "y": 20
+          }
+        },
+        "movement-home": {
+          "editor": [
+            "alpha beta gamma delta"
+          ],
+          "cursor": {
+            "x": 0,
+            "y": 20
+          }
+        },
+        "movement-end": {
+          "editor": [
+            "alpha beta gamma delta"
+          ],
+          "cursor": {
+            "x": 22,
+            "y": 20
+          }
+        },
+        "movement-jump-comma": {
+          "editor": [
+            "alpha beta gamma delta"
+          ],
+          "cursor": {
+            "x": 22,
+            "y": 20
+          }
+        },
+        "movement-jump-buffered": {
+          "editor": [
+            "aXY,b,c"
+          ],
+          "cursor": {
+            "x": 3,
+            "y": 20
+          }
+        },
+        "movement-jump-separate": {
+          "editor": [
+            "aXY,b,c"
+          ],
+          "cursor": {
+            "x": 3,
+            "y": 20
+          }
+        },
+        "history-up": {
+          "editor": [
+            "draft line one",
+            "draft line two"
+          ],
+          "cursor": {
+            "x": 14,
+            "y": 19
+          }
+        },
+        "history-up-start": {
+          "editor": [
+            "draft line one",
+            "draft line two"
+          ],
+          "cursor": {
+            "x": 0,
+            "y": 19
+          }
+        },
+        "history-up-newest": {
+          "editor": [
+            "second history prompt"
+          ],
+          "cursor": {
+            "x": 0,
+            "y": 20
+          }
+        },
+        "history-up-older": {
+          "editor": [
+            "first history prompt"
+          ],
+          "cursor": {
+            "x": 0,
+            "y": 20
+          }
+        },
+        "history-down-newer": {
+          "editor": [
+            "second history prompt"
+          ],
+          "cursor": {
+            "x": 21,
+            "y": 20
+          }
+        },
+        "history-down-draft": {
+          "editor": [
+            "draft line one",
+            "draft line two"
+          ],
+          "cursor": {
+            "x": 0,
+            "y": 19
+          }
+        },
+        "page-draft": {
+          "editor": [
+            "w075 w076 w077 w078 w079 w080 w081 w082 w083 w084 w085 w086 w087 w088 w089",
+            "w090 w091 w092 w093 w094 w095 w096 w097 w098 w099 w100 w101 w102 w103 w104",
+            "w105 w106 w107 w108 w109 w110 w111 w112 w113 w114 w115 w116 w117 w118 w119",
+            "w120 w121 w122 w123 w124 w125 w126 w127 w128 w129 w130 w131 w132 w133 w134",
+            "w135 w136 w137 w138 w139 w140 w141 w142 w143 w144 w145 w146 w147 w148 w149",
+            "w150 w151 w152 w153 w154 w155 w156 w157 w158 w159 w160 w161 w162 w163 w164",
+            "w165 w166 w167 w168 w169 w170 w171 w172 w173 w174 w175 w176 w177 w178 w179"
+          ],
+          "cursor": {
+            "x": 74,
+            "y": 20
+          }
+        },
+        "page-home": {
+          "editor": [
+            "w000 w001 w002 w003 w004 w005 w006 w007 w008 w009 w010 w011 w012 w013 w014",
+            "w015 w016 w017 w018 w019 w020 w021 w022 w023 w024 w025 w026 w027 w028 w029",
+            "w030 w031 w032 w033 w034 w035 w036 w037 w038 w039 w040 w041 w042 w043 w044",
+            "w045 w046 w047 w048 w049 w050 w051 w052 w053 w054 w055 w056 w057 w058 w059",
+            "w060 w061 w062 w063 w064 w065 w066 w067 w068 w069 w070 w071 w072 w073 w074",
+            "w075 w076 w077 w078 w079 w080 w081 w082 w083 w084 w085 w086 w087 w088 w089",
+            "w090 w091 w092 w093 w094 w095 w096 w097 w098 w099 w100 w101 w102 w103 w104"
+          ],
+          "cursor": {
+            "x": 0,
+            "y": 14
+          }
+        },
+        "page-fullscreen-down": {
+          "editor": [
+            "w000 w001 w002 w003 w004 w005 w006 w007 w008 w009 w010 w011 w012 w013 w014",
+            "w015 w016 w017 w018 w019 w020 w021 w022 w023 w024 w025 w026 w027 w028 w029",
+            "w030 w031 w032 w033 w034 w035 w036 w037 w038 w039 w040 w041 w042 w043 w044",
+            "w045 w046 w047 w048 w049 w050 w051 w052 w053 w054 w055 w056 w057 w058 w059",
+            "w060 w061 w062 w063 w064 w065 w066 w067 w068 w069 w070 w071 w072 w073 w074",
+            "w075 w076 w077 w078 w079 w080 w081 w082 w083 w084 w085 w086 w087 w088 w089",
+            "w090 w091 w092 w093 w094 w095 w096 w097 w098 w099 w100 w101 w102 w103 w104"
+          ],
+          "cursor": {
+            "x": 0,
+            "y": 14
+          }
+        },
+        "page-editor-down": {
+          "editor": [
+            "w015 w016 w017 w018 w019 w020 w021 w022 w023 w024 w025 w026 w027 w028 w029",
+            "w030 w031 w032 w033 w034 w035 w036 w037 w038 w039 w040 w041 w042 w043 w044",
+            "w045 w046 w047 w048 w049 w050 w051 w052 w053 w054 w055 w056 w057 w058 w059",
+            "w060 w061 w062 w063 w064 w065 w066 w067 w068 w069 w070 w071 w072 w073 w074",
+            "w075 w076 w077 w078 w079 w080 w081 w082 w083 w084 w085 w086 w087 w088 w089",
+            "w090 w091 w092 w093 w094 w095 w096 w097 w098 w099 w100 w101 w102 w103 w104",
+            "w105 w106 w107 w108 w109 w110 w111 w112 w113 w114 w115 w116 w117 w118 w119"
+          ],
+          "cursor": {
+            "x": 0,
+            "y": 20
+          }
+        },
+        "page-editor-up": {
+          "editor": [
+            "w000 w001 w002 w003 w004 w005 w006 w007 w008 w009 w010 w011 w012 w013 w014",
+            "w015 w016 w017 w018 w019 w020 w021 w022 w023 w024 w025 w026 w027 w028 w029",
+            "w030 w031 w032 w033 w034 w035 w036 w037 w038 w039 w040 w041 w042 w043 w044",
+            "w045 w046 w047 w048 w049 w050 w051 w052 w053 w054 w055 w056 w057 w058 w059",
+            "w060 w061 w062 w063 w064 w065 w066 w067 w068 w069 w070 w071 w072 w073 w074",
+            "w075 w076 w077 w078 w079 w080 w081 w082 w083 w084 w085 w086 w087 w088 w089",
+            "w090 w091 w092 w093 w094 w095 w096 w097 w098 w099 w100 w101 w102 w103 w104"
+          ],
+          "cursor": {
+            "x": 0,
+            "y": 14
+          }
+        },
+        "reload-bindings": {
+          "editor": [],
+          "cursor": {
+            "x": 0,
+            "y": 20
+          }
+        },
+        "configured-type": {
+          "editor": [
+            "gamma delta epsilon"
+          ],
+          "cursor": {
+            "x": 19,
+            "y": 20
+          }
+        },
+        "configured-word-left": {
+          "editor": [
+            "gamma delta epsilon"
+          ],
+          "cursor": {
+            "x": 12,
+            "y": 20
+          }
+        },
+        "configured-jump": {
+          "editor": [
+            "gamma delta epsilon"
+          ],
+          "cursor": {
+            "x": 13,
+            "y": 20
+          }
+        },
+        "final-type": {
+          "editor": [
+            "provider movement input"
+          ],
+          "cursor": {
+            "x": 23,
+            "y": 20
+          }
+        },
+        "final-submit": {
+          "editor": [],
+          "cursor": {
+            "x": 0,
+            "y": 20
+          }
+        },
+        "exit": {
+          "editor": [],
+          "cursor": {
+            "x": 0,
+            "y": 23
+          }
+        }
+      },
+      "requests": 3
+    }
+  }
+}

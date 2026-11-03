@@ -62,6 +62,7 @@ public sealed class TerminalEditor
     private const string Prompt = "❯ ";
     private int _renderedRows;
     private int _cursorRow;
+    private int _normalEditorScrollOffset;
 
     public string Draft => WithEditorState(() => _buffer.CaptureSnapshot().Text);
     internal EditorBufferSnapshot CaptureDraftState() => WithEditorState(_buffer.CaptureSnapshot);
@@ -150,6 +151,7 @@ public sealed class TerminalEditor
         while (shouldContinue())
         {
             cancellationToken.ThrowIfCancellationRequested();
+            UpdateEditorGeometry();
             if (!TryReadExtensionInput(input, 40, out var next))
             {
                 _screen?.RefreshIfResized();
@@ -212,7 +214,10 @@ public sealed class TerminalEditor
                     text = input.ReadAvailableText(next, out var following);
                     if (following is not null) input.PushBack(following);
                 }
-                WithEditorState(() => _buffer.InsertText(text));
+                var action = WithEditorState(() => _buffer.IsJumpModeActive && !next.IsPaste
+                    ? _buffer.HandleJumpText(text)
+                    : _buffer.InsertText(text));
+                if (action == EditorAction.Render) Render();
             }
             else if (next.Key is { } key)
             {
@@ -247,6 +252,7 @@ public sealed class TerminalEditor
 
     internal bool HandleExtensionEditKey(ConsoleKeyInfo key)
     {
+        UpdateEditorGeometry();
         var action = WithEditorState(() => _buffer.Handle(key));
         if (action == EditorAction.Render) Render();
         return action != EditorAction.None;
@@ -512,6 +518,7 @@ public sealed class TerminalEditor
             Render();
             while (!cancellationToken.IsCancellationRequested)
             {
+                UpdateEditorGeometry();
                 if (!TryReadActiveExtensionInput(input, 50, cancellationToken, out var next))
                 {
                     _screen?.RefreshIfResized();
@@ -700,7 +707,11 @@ public sealed class TerminalEditor
         if (next.Key is null && next.Text is null) return true;
         WithEditorState(() =>
         {
-            if (next.Text is not null) _buffer.InsertText(next.Text);
+            if (next.Text is not null)
+            {
+                if (_buffer.IsJumpModeActive && !next.IsPaste) _buffer.HandleJumpText(next.Text);
+                else _buffer.InsertText(next.Text);
+            }
             else _buffer.Handle(next.Key!.Value);
         });
         return true;
@@ -728,6 +739,7 @@ public sealed class TerminalEditor
         while (true)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            UpdateEditorGeometry();
             if (!TryReadExtensionInput(input, 40, out var next))
             {
                 _screen?.RefreshIfResized();
@@ -854,7 +866,9 @@ public sealed class TerminalEditor
                 {
                     text = input.ReadAvailableText(next, out following);
                 }
-                action = WithEditorState(() => _buffer.InsertText(text));
+                action = WithEditorState(() => _buffer.IsJumpModeActive && !next.IsPaste
+                    ? _buffer.HandleJumpText(text)
+                    : _buffer.InsertText(text));
                 if (!next.IsExtensionRewrite && following?.Key is { } bufferedSubmitKey &&
                     _keymap.Matches("tui.input.submit", bufferedSubmitKey))
                 {
@@ -1126,8 +1140,21 @@ public sealed class TerminalEditor
         }
     }
 
+    private void UpdateEditorGeometry()
+    {
+        var rows = TerminalScreen.ReadRows();
+        var columns = TerminalScreen.ReadColumns();
+        var width = _screen is { IsActive: true } ? _screen.EditorLayoutWidth : Math.Max(1, columns - 3);
+        WithEditorState(() =>
+        {
+            _buffer.SetLayoutWidth(width);
+            _buffer.SetTerminalRows(rows);
+        });
+    }
+
     private void Render()
     {
+        UpdateEditorGeometry();
         if (_screen is { IsActive: true })
         {
             var (snapshot, suggestions) = WithEditorState(() =>
@@ -1157,7 +1184,9 @@ public sealed class TerminalEditor
         var width = TerminalScreen.ReadColumns();
         var height = TerminalScreen.ReadRows();
         var editor = WithEditorState(_buffer.CaptureSnapshot);
-        var frame = EditorViewport.Layout(editor.Text, editor.Cursor, width, Math.Max(1, height / 3));
+        var frame = EditorViewport.Layout(editor.Text, editor.Cursor, width, Math.Max(1, height / 3),
+            scrollOffset: _normalEditorScrollOffset);
+        _normalEditorScrollOffset = frame.ScrollOffset;
         ClearLine();
         for (var row = 0; row < frame.Rows.Count; row++)
         {

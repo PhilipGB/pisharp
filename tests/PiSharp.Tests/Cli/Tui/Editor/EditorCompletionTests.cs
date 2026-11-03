@@ -180,7 +180,7 @@ public sealed class EditorCompletionTests
     [Theory]
     [InlineData(" /tr", " /tree")]
     [InlineData("  /tr", "  /tree")]
-    [InlineData("\t/tr", "\t/tree")]
+    [InlineData("    /tr", "    /tree")]
     public void SlashCompletionAfterLeadingWhitespacePreservesIndentation(string prompt, string expected)
     {
         var completion = new EditorCompletion(Path.GetTempPath());

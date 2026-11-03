@@ -1,0 +1,568 @@
+{
+  "schema": 1,
+  "capability": "keys-editor-movement-history",
+  "date": "2026-11-02",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "implementationSha": "d8e1413e1c5f29d8cdcc573c03a3e44a12f3f076",
+  "oracle": "docs/parity/fixtures/keys-editor-movement-pi-oracle-2026-11-02.json",
+  "terminalFixture": "tools/parity/terminal/fixtures/terminal-editor-movement.json",
+  "terminalAssertion": "tools/parity/terminal/assert_editor_movement.py",
+  "evidence": "docs/parity/fixtures/keys-editor-movement-checkpoints-2026-11-02.json",
+  "requiredTests": {
+    "theories": [
+      "PiSharp.Tests.EditorMovementParityTests.MatchesPinnedPi"
+    ],
+    "facts": [
+      "PiSharp.Tests.EditorMovementParityTests.LegacyCtrlBracketEntersJumpMode",
+      "PiSharp.Tests.EditorMovementParityTests.KittyCtrlBracketEntersJumpMode",
+      "PiSharp.Tests.EditorMovementPtyTests.CharacterWordLineAndJumpMovementReachEditorStatesThroughLinuxPty",
+      "PiSharp.Tests.EditorMovementPtyTests.VerticalVisualLinePageAndFullscreenPrecedenceMatchThroughLinuxPty",
+      "PiSharp.Tests.EditorMovementPtyTests.ConfiguredMovementBindingsAndReloadApplyThroughLinuxPty",
+      "PiSharp.Tests.EditorMovementPtyTests.WidgetAndApplicationShortcutsTakePrecedenceOverMovementKeysThroughLinuxPty",
+      "PiSharp.Tests.EditorMovementPtyTests.HistoryDraftRestorationAndSubmissionReachTheProviderThroughLinuxPty",
+      "PiSharp.Tests.EditorMovementPtyTests.ExternalEditorShortcutWinsOverCollidingMovementBindingAndRestoresTerminalThroughLinuxPty",
+      "PiSharp.Tests.EditorSelectionMovementTests.SelectionExtensionRespectsGraphemesWordsLinesAndVisualRows",
+      "PiSharp.Tests.EditorSelectionMovementTests.SelectionReplacementDeletionAndUndoOperateOnTheSelectedRange",
+      "PiSharp.Tests.EditorSelectionMovementTests.SubmissionUsesTheCompleteDraftAndMouseSelectionDoesNotMoveTheCursor",
+      "PiSharp.Tests.EditorMovementBindingTests.ConfiguredMovementBindingsReplaceDisableAndFallBackLikePi",
+      "PiSharp.Tests.EditorMovementBindingTests.CtrlShiftRightRemainsSelectionRatherThanWordMovement",
+      "PiSharp.Tests.EditorMovementBindingTests.LegacyAndKittyMovementInputDecodesToPiKeys",
+      "PiSharp.Tests.MovementFailFirstTests.SetTextExpandsTabsLikePi",
+      "PiSharp.Tests.MovementFailFirstTests.CtrlBracketAndCharacterEnterJumpMode",
+      "PiSharp.Tests.MovementFailFirstTests.PageDownMovesEditorCursorByPiFormula",
+      "PiSharp.Tests.MovementFailFirstTests.EditorWrapsAtWordBoundariesLikePi",
+      "PiSharp.Tests.MovementFailFirstTests.CtrlFRemainsCursorRightInFullscreen",
+      "PiSharp.Tests.MovementFailFirstTests.LegacyF9Decodes",
+      "PiSharp.Tests.MovementFailFirstTests.CtrlBracketKeymapEntersJumpMode",
+      "PiSharp.Tests.EditorViewportTests.MultilineAndWrappedInputKeepsCursorWithinViewport",
+      "PiSharp.Tests.EditorViewportTests.WideAndCombiningGraphemesUseTerminalCellsNotUtf16Length",
+      "PiSharp.Tests.EditorViewportTests.RowMapsConvertTerminalCellsToGraphemeSafeSourceOffsetsAcrossWrapping",
+      "PiSharp.Tests.EditorKeymapTests.HistoryBindingsRemainAboveApplicationShortcuts",
+      "PiSharp.Tests.EditorKeymapTests.ApplicationShortcutTakesPrecedenceOverEditorBindingInTheEditorContext",
+      "PiSharp.Tests.EditorKeymapTests.ActiveScreenSearchAndPagingBindingsDecodeFromTerminalInput",
+      "PiSharp.Tests.EditorKeymapTests.PromptSelectionUsesConfigurableNamedEditorActions",
+      "PiSharp.Tests.EditorBufferTests.PromptHistoryTrimsConsecutiveDuplicatesAndKeepsTheNewestHundredEntries",
+      "PiSharp.Tests.EditorBufferTests.KeyboardSelectionMovesByGraphemeAndPlainMovementCollapsesIt",
+      "PiSharp.Tests.EditorBufferTests.TypingAndDeletingReplaceKeyboardSelectionAndUndoRestoresIt",
+      "PiSharp.Tests.EditorMutationParityTests.SelectionDeletionReplacementAndKillsKeepCursorAndUndoIntegrity",
+      "PiSharp.Tests.TerminalInputTests.DecodesLegacyControlBytesForMutationKeybindings",
+      "PiSharp.Tests.EditorMovementParityTests.BufferedJumpTextConsumesOnlyTheNextGrapheme",
+      "PiSharp.Tests.EditorMovementPtyTests.BufferedJumpConsumesOnlyTheNextGraphemeThroughLinuxPty",
+      "PiSharp.Tests.EditorMovementBindingTests.ModifiedFunctionKeysMapToExplicitNoncontiguousCodes"
+    ],
+    "ptyEvidence": [
+      "pty-movement-keys",
+      "pty-visual-page",
+      "pty-configured-reload",
+      "pty-widget-precedence",
+      "pty-provider-lifecycle",
+      "pty-external-editor",
+      "pty-jump-buffered"
+    ]
+  },
+  "cases": [
+    {
+      "id": "N01",
+      "behavior": "Character movement (Left, Right, Ctrl+B, Ctrl+F)",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "n01-left-right-graphemes",
+        "n01-cross-logical-lines",
+        "n01-document-boundaries",
+        "n01-ctrl-b-f",
+        "n01-emoji-zwj",
+        "n01-combining-multiline"
+      ],
+      "tests": [
+        "PiSharp.Tests.EditorMovementParityTests.MatchesPinnedPi",
+        "PiSharp.Tests.MovementFailFirstTests.CtrlFRemainsCursorRightInFullscreen",
+        "PiSharp.Tests.EditorMovementPtyTests.CharacterWordLineAndJumpMovementReachEditorStatesThroughLinuxPty"
+      ],
+      "pty": [
+        "pty-movement-keys"
+      ],
+      "terminalCheckpoints": [
+        "startup",
+        "movement-draft",
+        "movement-left"
+      ]
+    },
+    {
+      "id": "N02",
+      "behavior": "Word movement (Alt/Ctrl arrows, Alt+B/F)",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "n02-word-ascii",
+        "n02-word-cross-lines",
+        "n02-word-punctuation-unicode",
+        "n02-word-whitespace",
+        "n02-alt-right",
+        "n02-ctrl-right",
+        "n02-alt-f",
+        "n02-alt-left",
+        "n02-ctrl-left",
+        "n02-alt-b"
+      ],
+      "tests": [
+        "PiSharp.Tests.EditorMovementParityTests.MatchesPinnedPi",
+        "PiSharp.Tests.EditorMovementBindingTests.CtrlShiftRightRemainsSelectionRatherThanWordMovement",
+        "PiSharp.Tests.EditorMovementPtyTests.CharacterWordLineAndJumpMovementReachEditorStatesThroughLinuxPty"
+      ],
+      "pty": [
+        "pty-movement-keys"
+      ],
+      "terminalCheckpoints": [
+        "movement-word-left",
+        "configured-word-left"
+      ]
+    },
+    {
+      "id": "N03",
+      "behavior": "Logical line boundaries (Home/End, Ctrl+A/E)",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "n03-home-end",
+        "n03-soft-wrap-logical",
+        "n03-repeated-stable",
+        "n03-ctrl-home-not-line-start"
+      ],
+      "tests": [
+        "PiSharp.Tests.EditorMovementParityTests.MatchesPinnedPi",
+        "PiSharp.Tests.EditorMovementPtyTests.CharacterWordLineAndJumpMovementReachEditorStatesThroughLinuxPty"
+      ],
+      "pty": [
+        "pty-movement-keys"
+      ],
+      "terminalCheckpoints": [
+        "movement-home",
+        "movement-end"
+      ]
+    },
+    {
+      "id": "N04",
+      "behavior": "Vertical visual-line navigation (Up/Down)",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "n04-visual-lines",
+        "n04-wrapped-traversal",
+        "n04-multiline-wrapped",
+        "n04-empty-short-long",
+        "n04-history-not-premature"
+      ],
+      "tests": [
+        "PiSharp.Tests.EditorMovementParityTests.MatchesPinnedPi",
+        "PiSharp.Tests.EditorMovementPtyTests.VerticalVisualLinePageAndFullscreenPrecedenceMatchThroughLinuxPty"
+      ],
+      "pty": [
+        "pty-visual-page"
+      ],
+      "terminalCheckpoints": [
+        "page-home",
+        "page-editor-down",
+        "page-editor-up"
+      ]
+    },
+    {
+      "id": "N05",
+      "behavior": "Preferred visual column",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "n05-sticky-column",
+        "n05-successive-short",
+        "n05-horizontal-reset",
+        "n05-rewrap-resize",
+        "n05-grapheme-snap",
+        "n05-page-preserves-preferred"
+      ],
+      "tests": [
+        "PiSharp.Tests.EditorMovementParityTests.MatchesPinnedPi",
+        "PiSharp.Tests.EditorMovementPtyTests.VerticalVisualLinePageAndFullscreenPrecedenceMatchThroughLinuxPty"
+      ],
+      "pty": [
+        "pty-visual-page"
+      ],
+      "terminalCheckpoints": [
+        "page-editor-down",
+        "page-editor-up"
+      ]
+    },
+    {
+      "id": "N06",
+      "behavior": "Unicode and terminal-width boundaries",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "n06-unicode-widths",
+        "n06-tab-normalization",
+        "n06-wrap-boundary",
+        "n06-narrow-width",
+        "n06-resize",
+        "n06-cjk-wrap"
+      ],
+      "tests": [
+        "PiSharp.Tests.EditorMovementParityTests.MatchesPinnedPi",
+        "PiSharp.Tests.EditorViewportTests.MultilineAndWrappedInputKeepsCursorWithinViewport",
+        "PiSharp.Tests.EditorViewportTests.WideAndCombiningGraphemesUseTerminalCellsNotUtf16Length",
+        "PiSharp.Tests.EditorViewportTests.RowMapsConvertTerminalCellsToGraphemeSafeSourceOffsetsAcrossWrapping",
+        "PiSharp.Tests.MovementFailFirstTests.EditorWrapsAtWordBoundariesLikePi",
+        "PiSharp.Tests.EditorMovementPtyTests.VerticalVisualLinePageAndFullscreenPrecedenceMatchThroughLinuxPty"
+      ],
+      "pty": [
+        "pty-visual-page"
+      ],
+      "terminalCheckpoints": [
+        "page-draft",
+        "movement-jump-comma"
+      ]
+    },
+    {
+      "id": "N07",
+      "behavior": "Up at the first visual line",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "n07-up-line-start",
+        "n07-up-at-start",
+        "n07-empty-editor",
+        "n07-empty-history",
+        "n07-soft-wrap",
+        "n07-multiline-first-line"
+      ],
+      "tests": [
+        "PiSharp.Tests.EditorMovementParityTests.MatchesPinnedPi",
+        "PiSharp.Tests.EditorMovementPtyTests.HistoryDraftRestorationAndSubmissionReachTheProviderThroughLinuxPty"
+      ],
+      "pty": [
+        "pty-provider-lifecycle"
+      ],
+      "terminalCheckpoints": [
+        "history-up",
+        "history-up-start",
+        "history-up-newest"
+      ]
+    },
+    {
+      "id": "N08",
+      "behavior": "Down at the last visual line",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "n08-down-line-end",
+        "n08-history-newer-draft",
+        "n08-multiline-history",
+        "n08-wrapped-history",
+        "n08-down-boundary-stable"
+      ],
+      "tests": [
+        "PiSharp.Tests.EditorMovementParityTests.MatchesPinnedPi",
+        "PiSharp.Tests.EditorMovementPtyTests.HistoryDraftRestorationAndSubmissionReachTheProviderThroughLinuxPty"
+      ],
+      "pty": [
+        "pty-provider-lifecycle"
+      ],
+      "terminalCheckpoints": [
+        "history-down-newer",
+        "history-down-draft"
+      ]
+    },
+    {
+      "id": "N09",
+      "behavior": "Explicit history bindings and precedence",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "n09-explicit-history-middle",
+        "n09-explicit-history-wrapped",
+        "n09-explicit-history-empty",
+        "n09-explicit-history-exhausted",
+        "n09-disabled-history"
+      ],
+      "tests": [
+        "PiSharp.Tests.EditorMovementParityTests.MatchesPinnedPi",
+        "PiSharp.Tests.EditorKeymapTests.HistoryBindingsRemainAboveApplicationShortcuts",
+        "PiSharp.Tests.EditorMovementPtyTests.HistoryDraftRestorationAndSubmissionReachTheProviderThroughLinuxPty",
+        "PiSharp.Tests.EditorMovementPtyTests.ConfiguredMovementBindingsAndReloadApplyThroughLinuxPty"
+      ],
+      "pty": [
+        "pty-provider-lifecycle",
+        "pty-configured-reload"
+      ],
+      "terminalCheckpoints": [
+        "history-up-newest",
+        "history-down-newer",
+        "reload-bindings"
+      ]
+    },
+    {
+      "id": "N10",
+      "behavior": "History draft restoration",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "n10-draft-restoration",
+        "n10-draft-restoration-wrapped",
+        "n10-edit-recalled",
+        "n10-draft-after-history-edit"
+      ],
+      "tests": [
+        "PiSharp.Tests.EditorMovementParityTests.MatchesPinnedPi",
+        "PiSharp.Tests.EditorMovementPtyTests.HistoryDraftRestorationAndSubmissionReachTheProviderThroughLinuxPty",
+        "PiSharp.Tests.EditorSelectionMovementTests.SubmissionUsesTheCompleteDraftAndMouseSelectionDoesNotMoveTheCursor"
+      ],
+      "pty": [
+        "pty-provider-lifecycle"
+      ],
+      "terminalCheckpoints": [
+        "history-down-draft",
+        "final-type"
+      ]
+    },
+    {
+      "id": "N11",
+      "behavior": "History storage and boundaries",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "n11-history-storage",
+        "n11-consecutive-duplicates",
+        "n11-navigation-order",
+        "n11-boundary-stability",
+        "n11-eviction"
+      ],
+      "tests": [
+        "PiSharp.Tests.EditorMovementParityTests.MatchesPinnedPi",
+        "PiSharp.Tests.EditorMovementPtyTests.HistoryDraftRestorationAndSubmissionReachTheProviderThroughLinuxPty",
+        "PiSharp.Tests.EditorBufferTests.PromptHistoryTrimsConsecutiveDuplicatesAndKeepsTheNewestHundredEntries"
+      ],
+      "pty": [
+        "pty-provider-lifecycle"
+      ],
+      "terminalCheckpoints": [
+        "seed-one-submit",
+        "seed-two-submit",
+        "history-up-older"
+      ]
+    },
+    {
+      "id": "N12",
+      "behavior": "Character jumping (Ctrl+], Ctrl+Alt+])",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "n12-jump-forward",
+        "n12-jump-backward",
+        "n12-jump-case-sensitive",
+        "n12-jump-multiline",
+        "n12-jump-current-excluded",
+        "n12-jump-cancel-shortcut",
+        "n12-jump-control-cancels",
+        "n12-jump-no-match",
+        "n12-jump-repeated"
+      ],
+      "tests": [
+        "PiSharp.Tests.EditorMovementParityTests.MatchesPinnedPi",
+        "PiSharp.Tests.EditorMovementParityTests.LegacyCtrlBracketEntersJumpMode",
+        "PiSharp.Tests.EditorMovementParityTests.KittyCtrlBracketEntersJumpMode",
+        "PiSharp.Tests.MovementFailFirstTests.CtrlBracketAndCharacterEnterJumpMode",
+        "PiSharp.Tests.MovementFailFirstTests.CtrlBracketKeymapEntersJumpMode",
+        "PiSharp.Tests.EditorMovementPtyTests.CharacterWordLineAndJumpMovementReachEditorStatesThroughLinuxPty",
+        "PiSharp.Tests.EditorMovementPtyTests.ConfiguredMovementBindingsAndReloadApplyThroughLinuxPty",
+        "PiSharp.Tests.EditorMovementParityTests.BufferedJumpTextConsumesOnlyTheNextGrapheme",
+        "PiSharp.Tests.EditorMovementPtyTests.BufferedJumpConsumesOnlyTheNextGraphemeThroughLinuxPty"
+      ],
+      "pty": [
+        "pty-movement-keys",
+        "pty-configured-reload",
+        "pty-jump-buffered"
+      ],
+      "terminalCheckpoints": [
+        "movement-jump-comma",
+        "configured-jump",
+        "movement-jump-buffered",
+        "movement-jump-separate"
+      ]
+    },
+    {
+      "id": "N13",
+      "behavior": "Page navigation and precedence",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "n13-page-down-up",
+        "n13-page-rows-24",
+        "n13-page-rows-40",
+        "n13-page-wrapped",
+        "n13-page-boundaries",
+        "n13-ctrl-page",
+        "n13-page-preserves-column",
+        "n15-configured-page"
+      ],
+      "tests": [
+        "PiSharp.Tests.EditorMovementParityTests.MatchesPinnedPi",
+        "PiSharp.Tests.EditorMovementPtyTests.VerticalVisualLinePageAndFullscreenPrecedenceMatchThroughLinuxPty",
+        "PiSharp.Tests.MovementFailFirstTests.PageDownMovesEditorCursorByPiFormula"
+      ],
+      "pty": [
+        "pty-visual-page"
+      ],
+      "terminalCheckpoints": [
+        "page-fullscreen-down",
+        "page-editor-down",
+        "page-editor-up"
+      ]
+    },
+    {
+      "id": "N14",
+      "behavior": "Selection and movement integrity",
+      "status": "pass",
+      "required": true,
+      "oracle": [],
+      "tests": [
+        "PiSharp.Tests.EditorSelectionMovementTests.SelectionExtensionRespectsGraphemesWordsLinesAndVisualRows",
+        "PiSharp.Tests.EditorSelectionMovementTests.SelectionReplacementDeletionAndUndoOperateOnTheSelectedRange",
+        "PiSharp.Tests.EditorSelectionMovementTests.SubmissionUsesTheCompleteDraftAndMouseSelectionDoesNotMoveTheCursor",
+        "PiSharp.Tests.EditorBufferTests.KeyboardSelectionMovesByGraphemeAndPlainMovementCollapsesIt",
+        "PiSharp.Tests.EditorBufferTests.TypingAndDeletingReplaceKeyboardSelectionAndUndoRestoresIt",
+        "PiSharp.Tests.EditorMutationParityTests.SelectionDeletionReplacementAndKillsKeepCursorAndUndoIntegrity",
+        "PiSharp.Tests.EditorKeymapTests.PromptSelectionUsesConfigurableNamedEditorActions"
+      ],
+      "pty": [],
+      "terminalCheckpoints": []
+    },
+    {
+      "id": "N15",
+      "behavior": "Configurable bindings and precedence",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "n15-configured-movement",
+        "n15-disabled-movement",
+        "n15-configured-history",
+        "n15-configured-page"
+      ],
+      "tests": [
+        "PiSharp.Tests.EditorMovementParityTests.MatchesPinnedPi",
+        "PiSharp.Tests.EditorMovementBindingTests.ConfiguredMovementBindingsReplaceDisableAndFallBackLikePi",
+        "PiSharp.Tests.EditorMovementBindingTests.LegacyAndKittyMovementInputDecodesToPiKeys",
+        "PiSharp.Tests.EditorKeymapTests.ApplicationShortcutTakesPrecedenceOverEditorBindingInTheEditorContext",
+        "PiSharp.Tests.EditorKeymapTests.ActiveScreenSearchAndPagingBindingsDecodeFromTerminalInput",
+        "PiSharp.Tests.MovementFailFirstTests.SetTextExpandsTabsLikePi",
+        "PiSharp.Tests.MovementFailFirstTests.LegacyF9Decodes",
+        "PiSharp.Tests.EditorMovementPtyTests.ConfiguredMovementBindingsAndReloadApplyThroughLinuxPty",
+        "PiSharp.Tests.EditorMovementPtyTests.WidgetAndApplicationShortcutsTakePrecedenceOverMovementKeysThroughLinuxPty",
+        "PiSharp.Tests.EditorMovementPtyTests.ExternalEditorShortcutWinsOverCollidingMovementBindingAndRestoresTerminalThroughLinuxPty",
+        "PiSharp.Tests.EditorMovementBindingTests.ModifiedFunctionKeysMapToExplicitNoncontiguousCodes"
+      ],
+      "pty": [
+        "pty-configured-reload",
+        "pty-widget-precedence",
+        "pty-external-editor"
+      ],
+      "terminalCheckpoints": [
+        "reload-bindings",
+        "configured-type",
+        "configured-word-left",
+        "configured-jump"
+      ]
+    },
+    {
+      "id": "N16",
+      "behavior": "End-to-end PTY and provider behaviour",
+      "status": "pass",
+      "required": true,
+      "oracle": [],
+      "tests": [
+        "PiSharp.Tests.EditorMovementPtyTests.CharacterWordLineAndJumpMovementReachEditorStatesThroughLinuxPty",
+        "PiSharp.Tests.EditorMovementPtyTests.VerticalVisualLinePageAndFullscreenPrecedenceMatchThroughLinuxPty",
+        "PiSharp.Tests.EditorMovementPtyTests.ConfiguredMovementBindingsAndReloadApplyThroughLinuxPty",
+        "PiSharp.Tests.EditorMovementPtyTests.WidgetAndApplicationShortcutsTakePrecedenceOverMovementKeysThroughLinuxPty",
+        "PiSharp.Tests.EditorMovementPtyTests.HistoryDraftRestorationAndSubmissionReachTheProviderThroughLinuxPty",
+        "PiSharp.Tests.EditorMovementPtyTests.ExternalEditorShortcutWinsOverCollidingMovementBindingAndRestoresTerminalThroughLinuxPty",
+        "PiSharp.Tests.TerminalInputTests.DecodesLegacyControlBytesForMutationKeybindings",
+        "PiSharp.Tests.EditorMovementPtyTests.BufferedJumpConsumesOnlyTheNextGraphemeThroughLinuxPty"
+      ],
+      "pty": [
+        "pty-movement-keys",
+        "pty-visual-page",
+        "pty-configured-reload",
+        "pty-widget-precedence",
+        "pty-provider-lifecycle",
+        "pty-external-editor",
+        "pty-jump-buffered"
+      ],
+      "terminalCheckpoints": [
+        "startup",
+        "movement-draft",
+        "final-type",
+        "final-submit",
+        "exit"
+      ]
+    }
+  ],
+  "requiredComparisons": [
+    {
+      "id": "editor-buffer-pinned-pi-oracle",
+      "status": "match",
+      "required": true,
+      "artifact": "docs/parity/fixtures/keys-editor-movement-pi-oracle-2026-11-02.json",
+      "scenarios": 82
+    },
+    {
+      "id": "terminal-editor-checkpoints",
+      "status": "match",
+      "required": true,
+      "artifact": "docs/parity/fixtures/keys-editor-movement-checkpoints-2026-11-02.json",
+      "cases": 2,
+      "checkpoints": 29
+    },
+    {
+      "id": "terminal-calibration",
+      "status": "match",
+      "required": true,
+      "artifact": "artifacts/parity/keys-editor-movement-calibration/report.json",
+      "cases": 2,
+      "differences": 0
+    },
+    {
+      "id": "provider-visible-submission",
+      "status": "match",
+      "required": true,
+      "artifact": "docs/parity/fixtures/keys-editor-movement-checkpoints-2026-11-02.json",
+      "requests": 3
+    },
+    {
+      "id": "history-draft-restoration",
+      "status": "match",
+      "required": true,
+      "artifact": "docs/parity/fixtures/keys-editor-movement-checkpoints-2026-11-02.json"
+    },
+    {
+      "id": "terminal-restoration",
+      "status": "match",
+      "required": true,
+      "artifact": "docs/parity/fixtures/keys-editor-movement-checkpoints-2026-11-02.json"
+    }
+  ],
+  "findings": [
+    {
+      "id": "cjk-word-segmentation",
+      "required": false,
+      "classification": "out_of_matrix_unicode_dictionary_difference"
+    },
+    {
+      "id": "keyboard-selection-extension",
+      "required": false,
+      "classification": "pisharp_extension_not_supported_by_pinned_pi_editor"
+    },
+    {
+      "id": "terminal-render-control-differences",
+      "required": false,
+      "classification": "unrelated_terminal_rendering_and_control_sequence_difference"
+    }
+  ]
+}

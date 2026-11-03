@@ -54,7 +54,8 @@ internal sealed class TerminalScreenCompositor
         int ContentHeight = 0, IReadOnlyList<string>? RestorationRows = null,
         int TranscriptStartRow = 0, int TranscriptHeight = 0,
         int RestorationCursorRow = -1, IReadOnlyList<string>? DocumentRows = null,
-        int DocumentCursorRow = -1, int DocumentCursorColumn = -1, IReadOnlyList<string>? SuspensionRows = null);
+        int DocumentCursorRow = -1, int DocumentCursorColumn = -1, IReadOnlyList<string>? SuspensionRows = null,
+        int EditorScrollOffset = 0);
 
     public Frame Compose(string editorText, int editorCursor, int? editorSelectionStart, int? editorSelectionEnd,
         string transcriptText, string footer,
@@ -86,7 +87,8 @@ internal sealed class TerminalScreenCompositor
         IReadOnlyList<string>? transcriptSearchPanel = null,
         bool transientScrollbarVisible = false,
         int? transcriptSearchCursorColumn = null,
-        string? transientFlash = null, IReadOnlyList<string>? transientFlashes = null)
+        string? transientFlash = null, IReadOnlyList<string>? transientFlashes = null,
+        int editorScrollOffset = 0)
     {
         var activeTheme = theme ?? TerminalTheme.Default;
         var initialScrollOffset = scrollOffset;
@@ -128,7 +130,8 @@ internal sealed class TerminalScreenCompositor
         if (focusedComponentRows is { Count: > 0 } && allFocusedComponentRows!.Count > focusedComponentRows.Count)
             focusedComponentRows[^1] = activeTheme.Style("muted", "…") + new string(' ', Math.Max(0, columns - 1));
         var editorLayout = EditorViewport.Layout(focusedComponentRows is null ? editorText : string.Empty,
-            focusedComponentRows is null ? editorCursor : 0, editorColumns, maxEditorLines, showPrompt: false);
+            focusedComponentRows is null ? editorCursor : 0, editorColumns, maxEditorLines, showPrompt: false,
+            scrollOffset: editorScrollOffset);
         var editor = editorLayout with { MouseCellOffset = Math.Max(0, editorLayout.MouseCellOffset + boundedEditorPadding) };
         var editorContentHeight = focusedComponentRows?.Count ?? editor.Rows.Count;
         var editorHeight = editorContentHeight + borderHeight;
@@ -437,7 +440,7 @@ internal sealed class TerminalScreenCompositor
             RestorationCursorRow: editorStart + borderHeight / 2 + editor.CursorRow,
             DocumentRows: documentRows, DocumentCursorRow: documentCursorRow,
             DocumentCursorColumn: editor.CursorColumn + boundedEditorPadding + 1,
-            SuspensionRows: suspensionRows);
+            SuspensionRows: suspensionRows, EditorScrollOffset: editor.ScrollOffset);
         var presented = ApplyExtensionOverlay(frame, extensionCustomOverlay, extensionCustomOverlayOptions, activeTheme);
         if (focusedComponentRows is not null) presented = presented with { CursorVisible = false };
         return ApplyTransientFlash(presented, transientFlashes ?? (transientFlash is null ? [] : [transientFlash]));

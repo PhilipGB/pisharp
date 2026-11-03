@@ -1,0 +1,337 @@
+{
+  "id": "terminal-editor-movement",
+  "settings": {
+    "quietStartup": true
+  },
+  "arguments": {
+    "pi": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--no-session",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-tools",
+      "--no-context-files",
+      "--system-prompt",
+      "You are a terminal parity fixture."
+    ],
+    "pisharp": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--no-session",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-tools",
+      "--no-approve",
+      "--no-context-files",
+      "--system-prompt",
+      "You are a terminal parity fixture."
+    ]
+  },
+  "fixtureBehavior": {
+    "chatResponseContentByRequest": [
+      "FIXTURE_SEED_ONE",
+      "FIXTURE_SEED_TWO",
+      "FIXTURE_FINAL"
+    ]
+  },
+  "dimensions": [
+    {
+      "columns": 100,
+      "rows": 30
+    },
+    {
+      "columns": 80,
+      "rows": 24
+    }
+  ],
+  "themes": [
+    "dark"
+  ],
+  "modes": [
+    "fullscreen"
+  ],
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "seed-one-type",
+      "send": "first history prompt",
+      "expect": "first history prompt"
+    },
+    {
+      "id": "seed-one-submit",
+      "send": "\r",
+      "expect": "FIXTURE_SEED_ONE"
+    },
+    {
+      "id": "seed-two-type",
+      "send": "second history prompt",
+      "expect": "second history prompt"
+    },
+    {
+      "id": "seed-two-submit",
+      "send": "\r",
+      "expect": "FIXTURE_SEED_TWO"
+    },
+    {
+      "id": "movement-draft",
+      "send": "alpha beta gamma delta",
+      "expect": "alpha beta gamma delta"
+    },
+    {
+      "id": "movement-left",
+      "send": "\u001b[D",
+      "expect": "alpha beta gamma delta"
+    },
+    {
+      "id": "movement-word-left",
+      "send": "\u001b[1;3D",
+      "expect": "alpha beta gamma delta"
+    },
+    {
+      "id": "movement-home",
+      "send": "\u0001",
+      "expect": "alpha beta gamma delta"
+    },
+    {
+      "id": "movement-end",
+      "send": "\u0005",
+      "expect": "alpha beta gamma delta"
+    },
+    {
+      "id": "movement-jump-comma",
+      "send": "\u001d,",
+      "expect": "alpha beta gamma delta"
+    },
+    {
+      "id": "movement-jump-buffered-clear",
+      "send": "\u0001\u0015\u000b\u0001\u0015\u000b\u0001\u0015\u000b\u0001\u0015\u000b",
+      "expect": "fixture-model",
+      "notExpect": "alpha beta gamma delta"
+    },
+    {
+      "id": "movement-jump-buffered-type",
+      "send": "a,b,c",
+      "expect": "a,b,c"
+    },
+    {
+      "id": "movement-jump-buffered-home",
+      "send": "\u0001",
+      "expect": "a,b,c"
+    },
+    {
+      "id": "movement-jump-buffered",
+      "send": "\u001d,XY",
+      "expect": "aXY,b,c"
+    },
+    {
+      "id": "movement-jump-separate-clear",
+      "send": "\u0001\u0015\u000b\u0001\u0015\u000b\u0001\u0015\u000b\u0001\u0015\u000b",
+      "expect": "fixture-model",
+      "notExpect": "aXY,b,c"
+    },
+    {
+      "id": "movement-jump-separate-type",
+      "send": "a,b,c",
+      "expect": "a,b,c"
+    },
+    {
+      "id": "movement-jump-separate-home",
+      "send": "\u0001",
+      "expect": "a,b,c"
+    },
+    {
+      "id": "movement-jump-separate-start",
+      "send": "\u001d",
+      "expect": "a,b,c",
+      "allowStaticFrame": true
+    },
+    {
+      "id": "movement-jump-separate-target",
+      "send": ",",
+      "expect": "a,b,c"
+    },
+    {
+      "id": "movement-jump-separate",
+      "send": "XY",
+      "expect": "aXY,b,c"
+    },
+    {
+      "id": "movement-clear",
+      "send": "\u0001\u000b",
+      "expect": "fixture-model",
+      "notExpect": "aXY,b,c"
+    },
+    {
+      "id": "history-draft",
+      "send": "draft line one\ndraft line two",
+      "expect": "draft line one"
+    },
+    {
+      "id": "history-up",
+      "send": "\u001b[A",
+      "expect": "draft line one"
+    },
+    {
+      "id": "history-up-start",
+      "send": "\u001b[A",
+      "expect": "draft line one"
+    },
+    {
+      "id": "history-up-newest",
+      "send": "\u001b[A",
+      "expect": "second history prompt"
+    },
+    {
+      "id": "history-up-older",
+      "send": "\u001b[A",
+      "expect": "first history prompt"
+    },
+    {
+      "id": "history-down-newer",
+      "send": "\u001b[B",
+      "expect": "second history prompt"
+    },
+    {
+      "id": "history-down-draft",
+      "send": "\u001b[B",
+      "expect": "draft line one"
+    },
+    {
+      "id": "history-clear",
+      "send": "\u0001\u0015\u000b\u0001\u0015\u000b\u0001\u0015\u000b\u0001\u0015\u000b",
+      "expect": "fixture-model",
+      "notExpect": "draft line one"
+    },
+    {
+      "id": "page-draft",
+      "send": "w000 w001 w002 w003 w004 w005 w006 w007 w008 w009 w010 w011 w012 w013 w014 w015 w016 w017 w018 w019 w020 w021 w022 w023 w024 w025 w026 w027 w028 w029 w030 w031 w032 w033 w034 w035 w036 w037 w038 w039 w040 w041 w042 w043 w044 w045 w046 w047 w048 w049 w050 w051 w052 w053 w054 w055 w056 w057 w058 w059 w060 w061 w062 w063 w064 w065 w066 w067 w068 w069 w070 w071 w072 w073 w074 w075 w076 w077 w078 w079 w080 w081 w082 w083 w084 w085 w086 w087 w088 w089 w090 w091 w092 w093 w094 w095 w096 w097 w098 w099 w100 w101 w102 w103 w104 w105 w106 w107 w108 w109 w110 w111 w112 w113 w114 w115 w116 w117 w118 w119 w120 w121 w122 w123 w124 w125 w126 w127 w128 w129 w130 w131 w132 w133 w134 w135 w136 w137 w138 w139 w140 w141 w142 w143 w144 w145 w146 w147 w148 w149 w150 w151 w152 w153 w154 w155 w156 w157 w158 w159 w160 w161 w162 w163 w164 w165 w166 w167 w168 w169 w170 w171 w172 w173 w174 w175 w176 w177 w178 w179",
+      "expect": "w179"
+    },
+    {
+      "id": "page-home",
+      "send": "\u0001",
+      "expect": "w000"
+    },
+    {
+      "id": "page-fullscreen-down",
+      "send": "\u001b[6~",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "page-editor-down",
+      "send": "\u001b[6;5~",
+      "expect": "w1"
+    },
+    {
+      "id": "page-editor-up",
+      "send": "\u001b[5;5~",
+      "expect": "w000"
+    },
+    {
+      "id": "page-clear",
+      "send": "\u0001\u0015\u000b\u0001\u0015\u000b\u0001\u0015\u000b\u0001\u0015\u000b",
+      "expect": "fixture-model",
+      "notExpect": "w179"
+    },
+    {
+      "id": "seed-movement-bindings",
+      "writeFiles": {
+        "agent": {
+          "keybindings.json": {
+            "tui.editor.cursorWordLeft": "f9",
+            "tui.editor.jumpForward": "alt+j",
+            "tui.editor.pageDown": "f10"
+          }
+        }
+      },
+      "allowStaticFrame": true
+    },
+    {
+      "id": "reload-bindings",
+      "send": "/reload\r",
+      "expect": "Reloaded keybindings"
+    },
+    {
+      "id": "configured-type",
+      "send": "gamma delta epsilon",
+      "expect": "gamma delta epsilon"
+    },
+    {
+      "id": "configured-word-left",
+      "send": "\u001b[20~",
+      "expect": "gamma delta epsilon"
+    },
+    {
+      "id": "configured-jump",
+      "send": "\u001b[106;3up",
+      "expect": "gamma delta epsilon"
+    },
+    {
+      "id": "configured-clear",
+      "send": "\u0001\u0015\u000b\u0001\u0015\u000b\u0001\u0015\u000b\u0001\u0015\u000b",
+      "expect": "fixture-model",
+      "notExpect": "gamma delta epsilon"
+    },
+    {
+      "id": "final-type",
+      "send": "provider movement input",
+      "expect": "provider movement input"
+    },
+    {
+      "id": "final-submit",
+      "send": "\r",
+      "expect": "FIXTURE_FINAL"
+    },
+    {
+      "id": "exit",
+      "send": "\u0003\u0003",
+      "exit": true
+    }
+  ],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  },
+  "assertionFrames": [
+    "startup",
+    "seed-one-submit",
+    "seed-two-submit",
+    "movement-draft",
+    "movement-left",
+    "movement-word-left",
+    "movement-home",
+    "movement-end",
+    "movement-jump-comma",
+    "movement-jump-buffered",
+    "movement-jump-separate",
+    "history-up",
+    "history-up-start",
+    "history-up-newest",
+    "history-up-older",
+    "history-down-newer",
+    "history-down-draft",
+    "page-draft",
+    "page-fullscreen-down",
+    "page-home",
+    "page-editor-down",
+    "page-editor-up",
+    "reload-bindings",
+    "configured-type",
+    "configured-word-left",
+    "configured-jump",
+    "final-type",
+    "final-submit",
+    "exit"
+  ]
+}

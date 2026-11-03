@@ -2,7 +2,8 @@ namespace PiSharp.Tests;
 
 internal static class TerminalOutputFrameReader
 {
-    internal readonly record struct Frame(int Start, string Screen, string Output);
+    internal readonly record struct Frame(int Start, string Screen, string Output,
+        int CursorRow = 0, int CursorColumn = 0);
 
     public static IReadOnlyList<Frame> Read(string output, int rows, int columns)
     {
@@ -26,7 +27,7 @@ internal static class TerminalOutputFrameReader
                 if (frameStart >= 0)
                     frames.Add(new(frameStart,
                         string.Join(Environment.NewLine, screen.Select(line => new string(line))),
-                        output[(frameStart + begin.Length)..index]));
+                        output[(frameStart + begin.Length)..index], cursorRow, cursorColumn));
                 frameStart = -1;
                 index += end.Length;
                 continue;
