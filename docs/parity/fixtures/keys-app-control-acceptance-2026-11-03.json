@@ -1,0 +1,513 @@
+{
+  "schema": 1,
+  "capability": "keys-app-control",
+  "date": "2026-11-03",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "implementationSha": "PENDING",
+  "oracle": "docs/parity/fixtures/keys-app-control-pi-oracle-2026-11-03.json",
+  "checkpoints": "docs/parity/fixtures/keys-app-control-checkpoints-2026-11-03.json",
+  "terminalFixtures": [
+    "tools/parity/terminal/fixtures/terminal-app-control-tree.json",
+    "tools/parity/terminal/fixtures/terminal-app-control-fork.json",
+    "tools/parity/terminal/fixtures/terminal-app-control-none.json",
+    "tools/parity/terminal/fixtures/terminal-app-control-bash.json",
+    "tools/parity/terminal/fixtures/terminal-app-control-suspend.json",
+    "tools/parity/terminal/fixtures/terminal-abort-stream.json"
+  ],
+  "requiredTests": {
+    "theories": [
+      "PiSharp.Tests.AppControlParityTests.MatchesPinnedPi"
+    ],
+    "facts": [
+      "PiSharp.Tests.AppControlParityTests.OracleInventoryNamesThePinnedPiSources",
+      "PiSharp.Tests.AppControlTests.IdleEscapeLeavesNonemptyDraftAndDispatchesNothing",
+      "PiSharp.Tests.AppControlTests.IdleEscapeExitsBashEntryModeByClearingTheDraft",
+      "PiSharp.Tests.AppControlTests.DoubleEscapeOpensTheConfiguredSelectorWithinTheWindow",
+      "PiSharp.Tests.AppControlTests.DoubleEscapeOutsideTheWindowDoesNotOpenASelector",
+      "PiSharp.Tests.AppControlTests.DoubleEscapeRequiresAnEmptyEditor",
+      "PiSharp.Tests.AppControlTests.NoneDisablesDoubleEscapeNavigation",
+      "PiSharp.Tests.AppControlTests.LegacyDoubleEscapeDecodesAsTwoInterrupts",
+      "PiSharp.Tests.AppControlTests.EscapeFollowedByAnArrowSequenceDecodesAsEscapeThenArrow",
+      "PiSharp.Tests.AppControlTests.DoubleEscapeDrivesTheConfiguredSelectorThroughTheEditorLoop",
+      "PiSharp.Tests.AppControlTests.CtrlCDoublePressUsesTheFiveHundredMillisecondWindow",
+      "PiSharp.Tests.AppControlTests.CtrlCClearsEditorAndResetsCursorAndSelection",
+      "PiSharp.Tests.AppControlTests.CtrlDExitsOnlyWhenTheEditorIsEmpty",
+      "PiSharp.Tests.AppControlTests.CtrlDForwardDeleteHonoursSelectionAndGraphemes",
+      "PiSharp.Tests.AppControlTests.DeleteKeyRemainsForwardDeleteAndDoesNotExit",
+      "PiSharp.Tests.AppControlTests.DoubleEscapeSettingParsesAndProducesTheEffectiveValue",
+      "PiSharp.Tests.AppControlTests.DoubleEscapeSettingDefaultsAndRejectsInvalidValues",
+      "PiSharp.Tests.AppControlTests.TrustedProjectDoubleEscapeActionOverridesTheUserValue",
+      "PiSharp.Tests.AppControlTests.ApplicationControlBindingsCanBeReboundAndDisabled",
+      "PiSharp.Tests.AppControlTests.EmptyBindingsDisableTheirApplicationActions",
+      "PiSharp.Tests.AppControlTests.RebindingSuspensionAndCancellationDoesNotDisableTheirSafeguards",
+      "PiSharp.Tests.AppControlTests.LegacyAndKittyEscapeDecodeToTheSameApplicationAction",
+      "PiSharp.Tests.AppControlTests.WindowsSuspensionReportsPinnedPiUnsupportedActionWithoutClaimingJobControl",
+      "PiSharp.Tests.AppControlTests.ApplicationSelectionTreeHasNoDefaultBindingButCanBeConfigured",
+      "PiSharp.Tests.AppControlPtyTests.EscapeCtrlCAndCtrlDFollowIdleEditorSemanticsThroughLinuxPty",
+      "PiSharp.Tests.AppControlPtyTests.DoubleEscapeHonoursTheConfiguredActionAndReturnsToTheEditor",
+      "PiSharp.Tests.AppControlPtyTests.EscapeCancelsInteractiveBashAndLeavesThePromptUsableThroughLinuxPty",
+      "PiSharp.Tests.AppControlPtyTests.ShutdownPathsRestoreTheTerminalAndExitCleanlyThroughLinuxPty",
+      "PiSharp.Tests.AppControlPtyTests.EscapeDuringStreamingRestoresQueuedMessagesAndStartsNoExtraRequestThroughLinuxPty",
+      "PiSharp.Tests.TerminalSuspendPtyTests.CtrlZSuspendRestoresTerminalSettingsAndResumePreservesTheDraft",
+      "PiSharp.Tests.TerminalPtyTests.DoubleCtrlCExitsInteractiveProcess",
+      "PiSharp.Tests.TerminalPtyTests.FullscreenTranscriptNavigationAndSearchThroughLinuxPty",
+      "PiSharp.Tests.TerminalInputTests.ActiveEditorRoutesEnterAltEnterAndEscapeWithPendingRestoration",
+      "PiSharp.Tests.Runtime.Tools.BashProcessLifetimeTests.CancellationKillsChildAndDetachedGrandchildBeforeSettling",
+      "PiSharp.Tests.Runtime.Extensions.ExtensionSessionStateTests.SessionLifecycleCallbacksAreOrderedFailureIsolatedAndScopedToTheRun"
+    ],
+    "ptyEvidence": [
+      "pty-app-idle-controls",
+      "pty-app-double-escape-tree",
+      "pty-app-double-escape-fork",
+      "pty-app-double-escape-none",
+      "pty-app-bash-cancel",
+      "pty-app-shutdown-quit",
+      "pty-app-shutdown-ctrl-d",
+      "pty-app-shutdown-ctrl-c",
+      "pty-app-shutdown-bash-cancel",
+      "pty-app-stream-cancel",
+      "pty-app-suspend-resume-fullscreen",
+      "pty-app-suspend-resume-regular"
+    ]
+  },
+  "oracleScenarioCount": 16,
+  "cases": [
+    {
+      "id": "A01",
+      "behavior": "Escape while idle preserves nonempty drafts, clears Bash-entry mode, requires an empty editor for double Escape, and creates no request",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "a01-idle-escape-nonempty",
+        "a01-idle-escape-whitespace",
+        "a01-idle-escape-empty-single",
+        "a04-bash-entry-escape"
+      ],
+      "tests": [
+        "PiSharp.Tests.AppControlParityTests.MatchesPinnedPi",
+        "PiSharp.Tests.AppControlTests.IdleEscapeLeavesNonemptyDraftAndDispatchesNothing",
+        "PiSharp.Tests.AppControlPtyTests.EscapeCtrlCAndCtrlDFollowIdleEditorSemanticsThroughLinuxPty"
+      ],
+      "pty": [
+        "pty-app-idle-controls"
+      ],
+      "terminalCheckpoints": [
+        "tree/app-idle-draft",
+        "tree/app-escape-idle"
+      ]
+    },
+    {
+      "id": "A02",
+      "behavior": "Escape during model streaming restores steering then follow-up then the current draft, aborts the run, suppresses late content, and a subsequent prompt is submitted",
+      "status": "pass",
+      "required": true,
+      "oracle": [],
+      "tests": [
+        "PiSharp.Tests.AppControlPtyTests.EscapeDuringStreamingRestoresQueuedMessagesAndStartsNoExtraRequestThroughLinuxPty",
+        "PiSharp.Tests.TerminalInputTests.ActiveEditorRoutesEnterAltEnterAndEscapeWithPendingRestoration",
+        "PiSharp.Tests.TerminalPtyTests.FullscreenTranscriptNavigationAndSearchThroughLinuxPty"
+      ],
+      "pty": [
+        "pty-app-stream-cancel"
+      ],
+      "terminalCheckpoints": [
+        "abort-stream/start-stream",
+        "abort-stream/abort-stream",
+        "abort-stream/exit"
+      ]
+    },
+    {
+      "id": "A03",
+      "behavior": "Escape aborts interactive Bash, terminates its process group, leaves the prompt responsive, and accepts a later command",
+      "status": "pass",
+      "required": true,
+      "oracle": [],
+      "tests": [
+        "PiSharp.Tests.AppControlPtyTests.EscapeCancelsInteractiveBashAndLeavesThePromptUsableThroughLinuxPty",
+        "PiSharp.Tests.Runtime.Tools.BashProcessLifetimeTests.CancellationKillsChildAndDetachedGrandchildBeforeSettling"
+      ],
+      "pty": [
+        "pty-app-bash-cancel"
+      ],
+      "terminalCheckpoints": [
+        "bash/app-bash-cancel",
+        "bash/app-bash-responsive",
+        "bash/app-bash-subsequent"
+      ]
+    },
+    {
+      "id": "A04",
+      "behavior": "Escape exits Bash-entry mode by clearing the draft without executing the command",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "a04-bash-entry-escape"
+      ],
+      "tests": [
+        "PiSharp.Tests.AppControlParityTests.MatchesPinnedPi",
+        "PiSharp.Tests.AppControlTests.IdleEscapeExitsBashEntryModeByClearingTheDraft",
+        "PiSharp.Tests.AppControlPtyTests.EscapeCtrlCAndCtrlDFollowIdleEditorSemanticsThroughLinuxPty"
+      ],
+      "pty": [
+        "pty-app-idle-controls"
+      ],
+      "terminalCheckpoints": [
+        "tree/app-bash-entry",
+        "tree/app-escape-bash-entry"
+      ]
+    },
+    {
+      "id": "A05",
+      "behavior": "Completion, modal, search and active-operation contexts consume Escape before the idle editor",
+      "status": "pass",
+      "required": true,
+      "oracle": [],
+      "tests": [
+        "PiSharp.Tests.AppControlPtyTests.EscapeCtrlCAndCtrlDFollowIdleEditorSemanticsThroughLinuxPty",
+        "PiSharp.Tests.AppControlPtyTests.DoubleEscapeHonoursTheConfiguredActionAndReturnsToTheEditor",
+        "PiSharp.Tests.TerminalPtyTests.FullscreenTranscriptNavigationAndSearchThroughLinuxPty"
+      ],
+      "pty": [
+        "pty-app-idle-controls",
+        "pty-app-double-escape-tree",
+        "pty-app-suspend-resume-fullscreen"
+      ],
+      "terminalCheckpoints": [
+        "tree/app-tree-dismissed",
+        "suspend/app-suspended",
+        "suspend/app-resumed"
+      ]
+    },
+    {
+      "id": "A06",
+      "behavior": "The first Ctrl+C clears the editor, resets cursor and selection, and leaves the prompt usable",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "a06-ctrl-c-clears-draft"
+      ],
+      "tests": [
+        "PiSharp.Tests.AppControlParityTests.MatchesPinnedPi",
+        "PiSharp.Tests.AppControlTests.CtrlCClearsEditorAndResetsCursorAndSelection",
+        "PiSharp.Tests.AppControlPtyTests.EscapeCtrlCAndCtrlDFollowIdleEditorSemanticsThroughLinuxPty"
+      ],
+      "pty": [
+        "pty-app-idle-controls"
+      ],
+      "terminalCheckpoints": [
+        "tree/app-ctrl-c-clear",
+        "tree/app-editor-after-tree"
+      ]
+    },
+    {
+      "id": "A07",
+      "behavior": "Two Ctrl+C presses within 500 ms exit; the boundary is deterministic and terminal state is restored",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "a07-ctrl-c-window-499",
+        "a07-ctrl-c-window-500",
+        "a07-ctrl-c-window-501"
+      ],
+      "tests": [
+        "PiSharp.Tests.AppControlParityTests.MatchesPinnedPi",
+        "PiSharp.Tests.AppControlTests.CtrlCDoublePressUsesTheFiveHundredMillisecondWindow",
+        "PiSharp.Tests.AppControlPtyTests.ShutdownPathsRestoreTheTerminalAndExitCleanlyThroughLinuxPty",
+        "PiSharp.Tests.TerminalPtyTests.DoubleCtrlCExitsInteractiveProcess"
+      ],
+      "pty": [
+        "pty-app-shutdown-ctrl-c",
+        "pty-app-shutdown-quit"
+      ],
+      "terminalCheckpoints": [
+        "tree/app-quit",
+        "fork/app-quit"
+      ]
+    },
+    {
+      "id": "A08",
+      "behavior": "Ctrl+D exits only an empty editor and otherwise forward-deletes with grapheme and selection integrity",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "a08-ctrl-d-empty",
+        "a08-ctrl-d-grapheme",
+        "a08-ctrl-d-selection"
+      ],
+      "tests": [
+        "PiSharp.Tests.AppControlParityTests.MatchesPinnedPi",
+        "PiSharp.Tests.AppControlTests.CtrlDExitsOnlyWhenTheEditorIsEmpty",
+        "PiSharp.Tests.AppControlTests.CtrlDForwardDeleteHonoursSelectionAndGraphemes",
+        "PiSharp.Tests.AppControlTests.DeleteKeyRemainsForwardDeleteAndDoesNotExit",
+        "PiSharp.Tests.AppControlPtyTests.ShutdownPathsRestoreTheTerminalAndExitCleanlyThroughLinuxPty"
+      ],
+      "pty": [
+        "pty-app-shutdown-ctrl-d",
+        "pty-app-idle-controls"
+      ],
+      "terminalCheckpoints": [
+        "tree/app-ctrl-d-delete",
+        "tree/app-quit"
+      ]
+    },
+    {
+      "id": "A09",
+      "behavior": "Ctrl+Z restores raw-mode-dependent terminal state before suspending the foreground group",
+      "status": "pass",
+      "required": true,
+      "oracle": [],
+      "tests": [
+        "PiSharp.Tests.TerminalSuspendPtyTests.CtrlZSuspendRestoresTerminalSettingsAndResumePreservesTheDraft"
+      ],
+      "pty": [
+        "pty-app-suspend-resume-fullscreen",
+        "pty-app-suspend-resume-regular"
+      ],
+      "terminalCheckpoints": [
+        "suspend/app-suspend-draft",
+        "suspend/app-suspended"
+      ]
+    },
+    {
+      "id": "A10",
+      "behavior": "Foreground resumption restores the terminal, redraws the correct draft at the resized dimensions, and preserves input and final restoration",
+      "status": "pass",
+      "required": true,
+      "oracle": [],
+      "tests": [
+        "PiSharp.Tests.TerminalSuspendPtyTests.CtrlZSuspendRestoresTerminalSettingsAndResumePreservesTheDraft"
+      ],
+      "pty": [
+        "pty-app-suspend-resume-fullscreen",
+        "pty-app-suspend-resume-regular"
+      ],
+      "terminalCheckpoints": [
+        "suspend/app-suspend-resized",
+        "suspend/app-resumed",
+        "suspend/app-resumed-edited",
+        "suspend/app-quit"
+      ]
+    },
+    {
+      "id": "A11",
+      "behavior": "With the tree setting, two Escape presses inside the window open the tree selector and dismissing it restores a usable editor",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "a12-double-escape-tree"
+      ],
+      "tests": [
+        "PiSharp.Tests.AppControlParityTests.MatchesPinnedPi",
+        "PiSharp.Tests.AppControlTests.DoubleEscapeOpensTheConfiguredSelectorWithinTheWindow",
+        "PiSharp.Tests.AppControlTests.DoubleEscapeOutsideTheWindowDoesNotOpenASelector",
+        "PiSharp.Tests.AppControlPtyTests.DoubleEscapeHonoursTheConfiguredActionAndReturnsToTheEditor",
+        "PiSharp.Tests.AppControlTests.DoubleEscapeDrivesTheConfiguredSelectorThroughTheEditorLoop"
+      ],
+      "pty": [
+        "pty-app-double-escape-tree"
+      ],
+      "terminalCheckpoints": [
+        "tree/app-tree-dismissed",
+        "tree/app-editor-after-tree"
+      ]
+    },
+    {
+      "id": "A12",
+      "behavior": "Fork, tree and none settings dispatch the correct double-Escape action only under the empty-editor conditions",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "a12-double-escape-fork",
+        "a12-double-escape-none",
+        "a12-double-escape-tree"
+      ],
+      "tests": [
+        "PiSharp.Tests.AppControlParityTests.MatchesPinnedPi",
+        "PiSharp.Tests.AppControlTests.DoubleEscapeOpensTheConfiguredSelectorWithinTheWindow",
+        "PiSharp.Tests.AppControlTests.NoneDisablesDoubleEscapeNavigation",
+        "PiSharp.Tests.AppControlTests.DoubleEscapeRequiresAnEmptyEditor",
+        "PiSharp.Tests.AppControlTests.DoubleEscapeSettingParsesAndProducesTheEffectiveValue",
+        "PiSharp.Tests.AppControlTests.TrustedProjectDoubleEscapeActionOverridesTheUserValue",
+        "PiSharp.Tests.AppControlPtyTests.DoubleEscapeHonoursTheConfiguredActionAndReturnsToTheEditor",
+        "PiSharp.Tests.AppControlTests.DoubleEscapeSettingDefaultsAndRejectsInvalidValues"
+      ],
+      "pty": [
+        "pty-app-double-escape-fork",
+        "pty-app-double-escape-none"
+      ],
+      "terminalCheckpoints": [
+        "fork/app-fork-dismissed",
+        "fork/app-editor-after-fork",
+        "none/app-double-escape-none",
+        "none/app-editor-after-none"
+      ]
+    },
+    {
+      "id": "A13",
+      "behavior": "Named bindings replace defaults, empty arrays disable actions, legacy and Kitty Escape are equivalent, and rebinding cannot bypass suspension/cancellation safeguards",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "a13-rebound-bindings",
+        "a13-keyboard-equivalence"
+      ],
+      "tests": [
+        "PiSharp.Tests.AppControlParityTests.MatchesPinnedPi",
+        "PiSharp.Tests.AppControlTests.ApplicationControlBindingsCanBeReboundAndDisabled",
+        "PiSharp.Tests.AppControlTests.EmptyBindingsDisableTheirApplicationActions",
+        "PiSharp.Tests.AppControlTests.RebindingSuspensionAndCancellationDoesNotDisableTheirSafeguards",
+        "PiSharp.Tests.AppControlTests.LegacyAndKittyEscapeDecodeToTheSameApplicationAction",
+        "PiSharp.Tests.AppControlTests.ApplicationSelectionTreeHasNoDefaultBindingButCanBeConfigured",
+        "PiSharp.Tests.AppControlTests.WindowsSuspensionReportsPinnedPiUnsupportedActionWithoutClaimingJobControl"
+      ],
+      "pty": [
+        "pty-app-double-escape-none"
+      ],
+      "terminalCheckpoints": [
+        "none/app-editor-after-none"
+      ]
+    },
+    {
+      "id": "A14",
+      "behavior": "Cancellation propagates to a controlled long-running operation, kills child and detached grandchild processes, and leaves later tool execution functional",
+      "status": "pass",
+      "required": true,
+      "oracle": [],
+      "tests": [
+        "PiSharp.Tests.Runtime.Tools.BashProcessLifetimeTests.CancellationKillsChildAndDetachedGrandchildBeforeSettling",
+        "PiSharp.Tests.AppControlPtyTests.EscapeCancelsInteractiveBashAndLeavesThePromptUsableThroughLinuxPty"
+      ],
+      "pty": [
+        "pty-app-bash-cancel"
+      ],
+      "terminalCheckpoints": [
+        "bash/app-bash-cancel",
+        "bash/app-bash-subsequent"
+      ]
+    },
+    {
+      "id": "A15",
+      "behavior": "Normal, Ctrl+C, Ctrl+D, cancellation and suspend/resume shutdowns restore terminal state, complete lifecycle exactly once, and issue no teardown provider request",
+      "status": "pass",
+      "required": true,
+      "oracle": [],
+      "tests": [
+        "PiSharp.Tests.AppControlPtyTests.ShutdownPathsRestoreTheTerminalAndExitCleanlyThroughLinuxPty",
+        "PiSharp.Tests.TerminalSuspendPtyTests.CtrlZSuspendRestoresTerminalSettingsAndResumePreservesTheDraft",
+        "PiSharp.Tests.Runtime.Extensions.ExtensionSessionStateTests.SessionLifecycleCallbacksAreOrderedFailureIsolatedAndScopedToTheRun"
+      ],
+      "pty": [
+        "pty-app-shutdown-quit",
+        "pty-app-shutdown-ctrl-c",
+        "pty-app-shutdown-ctrl-d",
+        "pty-app-shutdown-bash-cancel",
+        "pty-app-suspend-resume-fullscreen"
+      ],
+      "terminalCheckpoints": [
+        "tree/app-quit",
+        "fork/app-quit",
+        "none/app-quit",
+        "bash/app-quit",
+        "suspend/app-quit"
+      ]
+    },
+    {
+      "id": "A16",
+      "behavior": "Paired real-PTY differential at 80x24, 120x40 and 100x30 across fullscreen and regular modes, with calibrated Pi observations",
+      "status": "pass",
+      "required": true,
+      "oracle": [],
+      "tests": [
+        "PiSharp.Tests.AppControlParityTests.MatchesPinnedPi",
+        "PiSharp.Tests.AppControlPtyTests.EscapeCtrlCAndCtrlDFollowIdleEditorSemanticsThroughLinuxPty",
+        "PiSharp.Tests.AppControlPtyTests.DoubleEscapeHonoursTheConfiguredActionAndReturnsToTheEditor",
+        "PiSharp.Tests.AppControlPtyTests.EscapeCancelsInteractiveBashAndLeavesThePromptUsableThroughLinuxPty",
+        "PiSharp.Tests.AppControlPtyTests.ShutdownPathsRestoreTheTerminalAndExitCleanlyThroughLinuxPty",
+        "PiSharp.Tests.AppControlParityTests.OracleInventoryNamesThePinnedPiSources"
+      ],
+      "pty": [
+        "pty-app-idle-controls",
+        "pty-app-double-escape-tree",
+        "pty-app-double-escape-fork",
+        "pty-app-double-escape-none",
+        "pty-app-bash-cancel",
+        "pty-app-shutdown-ctrl-c",
+        "pty-app-stream-cancel",
+        "pty-app-suspend-resume-fullscreen",
+        "pty-app-suspend-resume-regular"
+      ],
+      "terminalCheckpoints": [
+        "tree/80x24-dark-fullscreen/app-startup",
+        "tree/80x24-dark-fullscreen/app-idle-draft",
+        "tree/120x40-dark-fullscreen/app-ctrl-d-delete",
+        "tree/80x24-dark-regular/app-ctrl-c-clear",
+        "tree/120x40-dark-regular/app-bash-entry",
+        "tree/80x24-dark-fullscreen/app-escape-bash-entry",
+        "tree/80x24-dark-regular/app-tree-dismissed",
+        "tree/80x24-dark-fullscreen/app-editor-after-tree",
+        "fork/80x24-dark-fullscreen/app-prompt",
+        "fork/120x40-dark-fullscreen/app-fork-dismissed",
+        "fork/80x24-dark-regular/app-editor-after-fork",
+        "none/80x24-dark-fullscreen/app-double-escape-none",
+        "none/120x40-dark-fullscreen/app-editor-after-none",
+        "bash/80x24-dark-fullscreen/app-bash-start",
+        "bash/120x40-dark-regular/app-bash-cancel",
+        "bash/80x24-dark-regular/app-bash-responsive",
+        "bash/120x40-dark-fullscreen/app-bash-subsequent",
+        "suspend/80x24-dark-fullscreen/app-suspend-draft",
+        "suspend/120x40-dark-fullscreen/app-suspended",
+        "suspend/80x24-dark-regular/app-suspend-resized",
+        "suspend/120x40-dark-regular/app-resumed",
+        "suspend/80x24-dark-fullscreen/app-resumed-edited",
+        "abort-stream/100x30-dark-fullscreen/start-stream",
+        "abort-stream/100x30-dark-fullscreen/abort-stream"
+      ]
+    }
+  ],
+  "requiredComparisons": [
+    {
+      "id": "app-control-editor-oracle",
+      "required": true,
+      "status": "match",
+      "scenarios": 16
+    },
+    {
+      "id": "app-control-paired-pty",
+      "required": true,
+      "status": "match",
+      "cases": 21,
+      "checkpoints": 38
+    },
+    {
+      "id": "app-control-calibration",
+      "required": true,
+      "status": "match",
+      "cases": 21
+    },
+    {
+      "id": "app-control-provider-requests",
+      "required": true,
+      "status": "match"
+    }
+  ],
+  "findings": [
+    {
+      "id": "tree-selector-visual-style",
+      "required": false,
+      "classification": "non-required visual difference",
+      "detail": "Pi renders the double-Escape tree selector as an unboxed Session Tree list; PiSharp renders a boxed Conversation tree list with its retained tool_loadout/tool_transcript entries. Trigger, empty-editor gating, 500 ms window, active-session retention and dismissal handoff are verified; complete tree-selector parity remains out of scope."
+    },
+    {
+      "id": "transient-render-and-footer-differences",
+      "required": false,
+      "classification": "non-required visual difference",
+      "detail": "Full render streams retain transient loader frames, footer colors and normal-screen cursor rows that differ. Fixture-selected checkpoint editor text, logical cursor and lifecycle effects match; full raw-byte and full-render equality is not claimed."
+    },
+    {
+      "id": "windows-job-control",
+      "required": false,
+      "classification": "platform limitation",
+      "detail": "Unix job control is not claimed on Windows. PiSharp reports the pinned-Pi unsupported-action message and has no default app.suspend binding on Windows."
+    }
+  ]
+}

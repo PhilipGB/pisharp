@@ -36,6 +36,9 @@ internal sealed class TerminalApplicationActions(TerminalSettingsCommands settin
                 case "app.clipboard.pasteImage":
                     await inputActions.PasteImageAsync();
                     break;
+                case "app.session.tree":
+                    await sessionNavigation.SelectTreePointAsync();
+                    break;
                 case "app.session.resume":
                     await sessionNavigation.SelectSessionAsync();
                     break;

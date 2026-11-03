@@ -1,6 +1,8 @@
 """Supervise one foreground terminal job, including a bounded suspend/resume handshake."""
+import fcntl
 import os
 import signal
+import struct
 import sys
 import termios
 
@@ -48,7 +50,14 @@ def supervise(command):
                 raise RuntimeError('The suspended job did not restore terminal settings.')
             suspensions += 1
             print(f'\nsuspended:tty-restored:{suspensions}', flush=True)
-            if sys.stdin.readline().strip() != 'resume':
+            line = sys.stdin.readline().strip()
+            while line.startswith('resize '):
+                rows, columns = (int(value) for value in line.split()[1:3])
+                fcntl.ioctl(0, termios.TIOCSWINSZ, struct.pack('HHHH', rows, columns, 0, 0))
+                os.killpg(child, signal.SIGWINCH)
+                print(f'resized:{rows}:{columns}', flush=True)
+                line = sys.stdin.readline().strip()
+            if line != 'resume':
                 raise RuntimeError('Expected the supervised resume action.')
             os.tcsetpgrp(0, child)
             os.killpg(child, signal.SIGCONT)

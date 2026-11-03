@@ -27,7 +27,13 @@ internal sealed class TerminalConversationExecution
     {
         using var cancellation = new CancellationTokenSource();
         _activeRun = cancellation;
-        try { await ExecuteInteractiveBashAsync(command, excludeFromContext, cancellation.Token); }
+        try
+        {
+            var operation = ExecuteInteractiveBashAsync(command, excludeFromContext, cancellation.Token);
+            if (_presentation.Editor is { } editor)
+                await editor.MonitorBashAsync(cancellation.Cancel, operation, cancellation.Token);
+            await operation;
+        }
         finally { _activeRun = null; }
     }
 

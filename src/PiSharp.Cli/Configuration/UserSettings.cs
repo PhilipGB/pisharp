@@ -130,11 +130,16 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
     int? AutocompleteMaxVisible = null, bool? ClearOnShrink = null, bool? ShowTerminalProgress = null,
     IReadOnlyList<NativeExtensionPackageSource>? NativeExtensions = null,
     FullscreenWheelScrollSetting? FullscreenWheelScrollLines = null, string? TuiMode = null,
-    BranchSummarySettings? BranchSummary = null)
+    BranchSummarySettings? BranchSummary = null, string? DoubleEscapeAction = null)
 {
     public const int DefaultHttpIdleTimeoutMs = 300_000;
     public const string DefaultMarkdownCodeBlockIndent = "  ";
     public const string DefaultMarkdownMermaid = "streaming";
+    public const string DefaultDoubleEscapeAction = "tree";
+
+    public string EffectiveDoubleEscapeAction => DoubleEscapeAction is "fork" or "tree" or "none"
+        ? DoubleEscapeAction
+        : DefaultDoubleEscapeAction;
 
     public bool? TerminalTrueColorOverride => TerminalTrueColor switch
     {
@@ -184,6 +189,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         string? shellCommandPrefix = null;
         string? sessionShareDestination = null;
         string? tuiMode = null;
+        string? doubleEscapeAction = null;
         FullscreenWheelScrollSetting? fullscreenWheelScrollLines = null;
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var property in document.RootElement.EnumerateObject())
@@ -440,6 +446,11 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                         throw new InvalidDataException("settings.json tuiMode must be 'regular' or 'fullscreen'.");
                     tuiMode = value;
                     break;
+                case "doubleEscapeAction":
+                    if (value is not ("fork" or "tree" or "none"))
+                        throw new InvalidDataException("settings.json doubleEscapeAction must be 'fork', 'tree' or 'none'.");
+                    doubleEscapeAction = value;
+                    break;
                 case "steeringMode":
                     if (!PromptDeliveryModes.TryParseSettingValue(value, out var parsedSteeringMode))
                         throw new InvalidDataException("settings.json steeringMode must be all or one-at-a-time.");
@@ -459,7 +470,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             enableSkillCommands, extensions, skills, prompts, themes, shellCommandPrefix, sessionShareDestination, packages,
             npmCommand, thinkingBudgets, autoResizeImages, showHardwareCursor, editorPaddingX, outputPad,
             autocompleteMaxVisible, clearOnShrink, showTerminalProgress, nativeExtensions, fullscreenWheelScrollLines,
-            tuiMode, branchSummary);
+            tuiMode, branchSummary, doubleEscapeAction);
     }
 
     public static string GetSettingsPath(string agentDirectory, Func<string, string?> environment) =>
@@ -515,7 +526,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         TuiMode,
         project.BranchSummary is null ? BranchSummary : new BranchSummarySettings(
             project.BranchSummary.ReserveTokens ?? BranchSummary?.ReserveTokens,
-            project.BranchSummary.SkipPrompt ?? BranchSummary?.SkipPrompt));
+            project.BranchSummary.SkipPrompt ?? BranchSummary?.SkipPrompt),
+        project.DoubleEscapeAction ?? DoubleEscapeAction);
 
     public string? GetModelThinkingLevel(string provider, string modelId) =>
         ModelThinkingLevels?.GetValueOrDefault($"{provider}/{modelId}");

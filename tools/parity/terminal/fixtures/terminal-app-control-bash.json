@@ -1,0 +1,18 @@
+{
+  "id": "terminal-app-control-bash",
+  "settings": { "quietStartup": true },
+  "dimensions": [{ "columns": 80, "rows": 24 }, { "columns": 120, "rows": 40 }],
+  "themes": ["dark"],
+  "modes": ["fullscreen", "regular"],
+  "terminal": { "keyboardProtocol": "kitty" },
+  "actions": [
+    { "id": "app-startup", "expect": "fixture-model" },
+    { "id": "app-bash-start", "send": "!bash -c 'exec -a pisharp-app-control-child sleep 6'\r", "expect": "pisharp-app-control-child" },
+    { "id": "app-bash-cancel", "send": "\u001b", "expect": "$ bash", "allowStaticFrame": true },
+    { "id": "app-bash-responsive", "send": "\u001b[200~after bash escape\u001b[201~", "expect": "after bash escape" },
+    { "id": "app-bash-subsequent", "send": "\u0015!echo BASH_AFTER_OK\r", "expect": "BASH_AFTER_OK" },
+    { "id": "app-quit", "send": "\u0015\u0003\u0003", "exit": true }
+  ],
+  "assertionFrames": ["app-startup", "app-bash-start", "app-bash-cancel", "app-bash-responsive",
+    "app-bash-subsequent", "app-quit"]
+}

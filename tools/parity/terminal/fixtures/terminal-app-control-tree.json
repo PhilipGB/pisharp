@@ -1,0 +1,26 @@
+{
+  "id": "terminal-app-control-tree",
+  "settings": { "quietStartup": true, "doubleEscapeAction": "tree" },
+  "fixtureBehavior": { "chatResponseContentByRequest": ["APP_CONTROL_REPLY"] },
+  "dimensions": [{ "columns": 80, "rows": 24 }, { "columns": 120, "rows": 40 }],
+  "themes": ["dark"],
+  "modes": ["fullscreen", "regular"],
+  "terminal": { "keyboardProtocol": "kitty" },
+  "actions": [
+    { "id": "app-startup", "expect": "fixture-model" },
+    { "id": "app-prompt", "send": "first app control prompt\r", "expect": "APP_CONTROL_REPLY", "notExpect": "Working" },
+    { "id": "app-idle-draft", "send": "\u001b[200~draft to preserve\u001b[201~", "expect": "draft to preserve" },
+    { "id": "app-escape-idle", "send": "\u001b", "expect": "draft to preserve", "allowStaticFrame": true },
+    { "id": "app-ctrl-d-delete", "send": "\u0001\u0004", "expect": "raft to preserve", "notExpect": "draft to preserve" },
+    { "id": "app-ctrl-c-clear", "send": "\u0003", "notExpect": "raft to preserve" },
+    { "id": "app-bash-entry", "send": "!echo BASH_ENTRY_SHOULD_NOT_RUN", "expect": "BASH_ENTRY_SHOULD_NOT_RUN" },
+    { "id": "app-escape-bash-entry", "send": "\u001b", "notExpect": "BASH_ENTRY_SHOULD_NOT_RUN", "allowStaticFrame": true },
+    { "id": "app-double-escape-tree", "send": "\u001b[27u\u001b[27u", "expect": "user: first app control prompt" },
+    { "id": "app-tree-dismissed", "send": "\u001b", "expect": "fixture-model" },
+    { "id": "app-editor-after-tree", "send": "\u001b[200~after selector\u001b[201~", "expect": "after selector" },
+    { "id": "app-quit", "send": "\u0015\u0004", "exit": true }
+  ],
+  "assertionFrames": ["app-startup", "app-prompt", "app-idle-draft", "app-escape-idle", "app-ctrl-d-delete",
+    "app-ctrl-c-clear", "app-bash-entry", "app-escape-bash-entry",
+    "app-tree-dismissed", "app-editor-after-tree", "app-quit"]
+}

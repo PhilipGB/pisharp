@@ -5,11 +5,13 @@ namespace PiSharp.Cli.Tui;
 internal sealed class TerminalInputActions(ActiveProjectRuntime projectBinding, ActiveConversationRuntime conversationBinding,
     TerminalPresentation presentation)
 {
+    internal const string WindowsSuspendUnsupportedMessage = "Suspend to background is not supported on Windows";
+
     public async Task SuspendAsync()
     {
         if (OperatingSystem.IsWindows())
         {
-            Console.Error.WriteLine("Suspend to background is not supported on Windows");
+            Console.Error.WriteLine(WindowsSuspendUnsupportedMessage);
             return;
         }
 

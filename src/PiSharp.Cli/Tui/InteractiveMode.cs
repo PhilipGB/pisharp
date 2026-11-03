@@ -244,6 +244,7 @@ internal static class InteractiveMode
         }
 
         editor?.SetExtensionModalActionHandlers(HandleEditorApplicationAction, HandleExtensionShortcutAsync);
+        editor?.SetDoubleEscapeActionProvider(() => projectBinding.Settings.EffectiveDoubleEscapeAction);
 
         if (!string.IsNullOrWhiteSpace(prompt) || (projectBinding.Arguments.FileArguments?.Count ?? 0) > 0)
         {
