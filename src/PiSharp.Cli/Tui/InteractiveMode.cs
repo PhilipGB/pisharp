@@ -36,6 +36,11 @@ internal static class InteractiveMode
         var usesDefaultToolsSetting = startup.UsesDefaultToolsSetting;
         var prompt = projectBinding.Arguments.Prompt;
         var shutdownRequested = 0;
+        execution.RequestApplicationShutdown = () =>
+        {
+            Interlocked.Exchange(ref shutdownRequested, 1);
+            execution.AbortCurrentRun();
+        };
         TerminalSessionNavigation? sessionNavigationReference = null;
         var terminalThinkingSelector = editor is null ? null : new TerminalThinkingSelector(editor);
         var settingsCommands = new TerminalSettingsCommands(agentDirectory, projectBinding, modelBinding, conversationBinding,

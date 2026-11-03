@@ -598,6 +598,273 @@ public sealed class AppControlPtyTests
         finally { Cleanup(process, root); }
     }
 
+    [Fact]
+    public async Task ConfiguredInterruptRebindingCancelsStreamingAndDisablesEscapeThroughLinuxPty()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = TemporaryDirectory("app-control-rebind");
+        var agent = Path.Combine(root, "agent");
+        Directory.CreateDirectory(agent);
+        await File.WriteAllTextAsync(Path.Combine(agent, "settings.json"), "{\"quietStartup\":true}");
+        await File.WriteAllTextAsync(Path.Combine(agent, "keybindings.json"),
+            "{\"app.interrupt\":\"f7\",\"app.suspend\":\"f8\"}");
+        var before = Path.Combine(root, "stty-before");
+        var after = Path.Combine(root, "stty-after");
+        using var listener = StartLoopbackListener(out var port);
+        await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), """
+            {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:PORT/v1","apiKey":"fixture-key",
+              "models":[{"id":"fixture-model","api":"openai-responses"}]}}}
+            """.Replace("PORT", port.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                StringComparison.Ordinal));
+        var requests = new List<string>();
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var serverTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(40));
+        var server = Task.Run(async () =>
+        {
+            try
+            {
+                var request = await listener.GetContextAsync().WaitAsync(serverTimeout.Token);
+                using var reader = new StreamReader(request.Request.InputStream);
+                var body = await reader.ReadToEndAsync(serverTimeout.Token);
+                lock (requests) requests.Add(body);
+                request.Response.ContentType = "text/event-stream";
+                request.Response.KeepAlive = false;
+                await using var writer = new StreamWriter(request.Response.OutputStream);
+                await writer.WriteAsync(
+                    "data: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_rebind\",\"object\":\"response\"," +
+                    "\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"in_progress\",\"output\":[]}}\n\n");
+                await writer.WriteAsync(
+                    "data: {\"type\":\"response.output_text.delta\",\"item_id\":\"msg_0\",\"output_index\":0," +
+                    "\"content_index\":0,\"delta\":\"REBIND_STREAM\"}\n\n");
+                await writer.FlushAsync(serverTimeout.Token);
+                await release.Task.WaitAsync(serverTimeout.Token);
+            }
+            catch (Exception error) when (error is OperationCanceledException or HttpListenerException or
+                ObjectDisposedException or IOException)
+            {
+            }
+        });
+        Process? process = null;
+        try
+        {
+            process = StartWithTerminalCapture(root, agent,
+                "--provider fixture --model fixture-model --offline --no-session --no-tools", before, after);
+            var screen = new PtyScreenCapture(process, 24, 80);
+            var stdout = screen.ReadCompletion;
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(40));
+            await screen.InputReady.WaitAsync(timeout.Token);
+
+            async Task SendAsync(string input)
+            {
+                await process.StandardInput.WriteAsync(input);
+                await process.StandardInput.FlushAsync();
+            }
+
+            async Task WaitForAsync(Func<string, bool> predicate, string description)
+            {
+                try { await screen.WaitForFrameAsync(predicate).WaitAsync(timeout.Token); }
+                catch (OperationCanceledException)
+                {
+                    throw new InvalidOperationException($"{description} timed out. Current frame:\n{screen.LastFrame}");
+                }
+            }
+
+            await SendAsync("rebind stream prompt\r");
+            await WaitForAsync(frame => frame.Contains("REBIND_STREAM", StringComparison.Ordinal) &&
+                frame.Contains("Working", StringComparison.Ordinal), "streaming started");
+            await SendAsync("\u001b[200~rebind draft\u001b[201~");
+            await WaitForAsync(frame => frame.Contains("rebind draft", StringComparison.Ordinal), "streaming draft");
+            await SendAsync("\u001b[27u");
+            await Task.Delay(300);
+            await WaitForAsync(frame => frame.Contains("Working", StringComparison.Ordinal) &&
+                !frame.Contains("Operation aborted", StringComparison.Ordinal), "Escape is disabled by rebinding");
+            await SendAsync("\u001b[18~");
+            await WaitForAsync(frame => frame.Contains("Operation aborted", StringComparison.Ordinal) &&
+                frame.Contains("rebind draft", StringComparison.Ordinal), "F7 cancels the stream");
+            await SendAsync("\u0015/quit\r");
+            await process.WaitForExitAsync(timeout.Token);
+            var output = await stdout;
+            release.TrySetResult();
+            serverTimeout.Cancel();
+            try { await server.WaitAsync(timeout.Token); } catch (OperationCanceledException) { }
+
+            Assert.Equal(0, process.ExitCode);
+            Assert.Equal(await File.ReadAllTextAsync(before), await File.ReadAllTextAsync(after));
+            Assert.Contains("\u001b[?2004l", output);
+            Assert.DoesNotContain("Agent error", output);
+            Assert.DoesNotContain("Exception:", await stderr);
+            Assert.Single(requests);
+            RecordEvidence("pty-app-rebind", new
+            {
+                exitCode = process.ExitCode,
+                termiosRestored = true,
+                replacementCancelled = true,
+                originalBindingDisabled = true,
+                requests = requests.Count,
+                restoredDraft = "rebind draft"
+            });
+        }
+        finally
+        {
+            release.TrySetResult();
+            if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
+            process?.Dispose();
+            listener.Stop();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData("ctrl-c")]
+    [InlineData("ctrl-d")]
+    public async Task ActiveStreamingExitPathsRestoreTerminalThroughLinuxPty(string mode)
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = TemporaryDirectory("app-control-stream-exit-" + mode);
+        var agent = Path.Combine(root, "agent");
+        Directory.CreateDirectory(agent);
+        await File.WriteAllTextAsync(Path.Combine(agent, "settings.json"), "{\"quietStartup\":true}");
+        var before = Path.Combine(root, "stty-before");
+        var after = Path.Combine(root, "stty-after");
+        using var listener = StartLoopbackListener(out var port);
+        await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), """
+            {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:PORT/v1","apiKey":"fixture-key",
+              "models":[{"id":"fixture-model","api":"openai-responses"}]}}}
+            """.Replace("PORT", port.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                StringComparison.Ordinal));
+        var requests = new List<string>();
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var serverTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(40));
+        var server = Task.Run(async () =>
+        {
+            try
+            {
+                var request = await listener.GetContextAsync().WaitAsync(serverTimeout.Token);
+                using var reader = new StreamReader(request.Request.InputStream);
+                var body = await reader.ReadToEndAsync(serverTimeout.Token);
+                lock (requests) requests.Add(body);
+                request.Response.ContentType = "text/event-stream";
+                request.Response.KeepAlive = false;
+                await using var writer = new StreamWriter(request.Response.OutputStream);
+                await writer.WriteAsync(
+                    "data: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_exit\",\"object\":\"response\"," +
+                    "\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"in_progress\",\"output\":[]}}\n\n");
+                await writer.WriteAsync(
+                    "data: {\"type\":\"response.output_text.delta\",\"item_id\":\"msg_0\",\"output_index\":0," +
+                    "\"content_index\":0,\"delta\":\"STREAM_OPERATION\"}\n\n");
+                await writer.FlushAsync(serverTimeout.Token);
+                await release.Task.WaitAsync(serverTimeout.Token);
+            }
+            catch (Exception error) when (error is OperationCanceledException or HttpListenerException or
+                ObjectDisposedException or IOException)
+            {
+            }
+        });
+        Process? process = null;
+        try
+        {
+            process = StartWithTerminalCapture(root, agent,
+                "--provider fixture --model fixture-model --offline --no-session --no-tools", before, after);
+            var screen = new PtyScreenCapture(process, 24, 80);
+            var stdout = screen.ReadCompletion;
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(40));
+            await screen.InputReady.WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync("stream exit prompt\r");
+            await process.StandardInput.FlushAsync();
+            try
+            {
+                await screen.WaitForFrameAsync(frame => frame.Contains("STREAM_OPERATION", StringComparison.Ordinal) &&
+                    frame.Contains("Working", StringComparison.Ordinal)).WaitAsync(timeout.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                throw new InvalidOperationException($"Streaming did not start. Frame:\n{screen.LastFrame}");
+            }
+            await process.StandardInput.WriteAsync(mode == "ctrl-c" ? "\u0003\u0003" : "\u0004");
+            await process.StandardInput.FlushAsync();
+            await process.WaitForExitAsync(timeout.Token);
+            var output = await stdout;
+            Assert.Equal(0, process.ExitCode);
+            Assert.Equal(await File.ReadAllTextAsync(before), await File.ReadAllTextAsync(after));
+            Assert.Contains("\u001b[?2004l", output);
+            Assert.DoesNotContain("Agent error", output);
+            Assert.DoesNotContain("Exception:", await stderr);
+            RecordEvidence("pty-app-stream-exit-" + mode, new
+            {
+                exitCode = process.ExitCode,
+                mode,
+                termiosRestored = true,
+                requests = requests.Count,
+                streamWasActive = true
+            });
+        }
+        finally
+        {
+            release.TrySetResult();
+            if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
+            process?.Dispose();
+            listener.Stop();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData("ctrl-c")]
+    [InlineData("ctrl-d")]
+    public async Task ActiveBashExitPathsCancelChildrenAndRestoreTerminalThroughLinuxPty(string mode)
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = TemporaryDirectory("app-control-bash-exit-" + mode);
+        var agent = Path.Combine(root, "agent");
+        Directory.CreateDirectory(agent);
+        await File.WriteAllTextAsync(Path.Combine(agent, "settings.json"), "{\"quietStartup\":true}");
+        var before = Path.Combine(root, "stty-before");
+        var after = Path.Combine(root, "stty-after");
+        Process? process = null;
+        try
+        {
+            process = StartWithTerminalCapture(root, agent, "--local --offline --no-session --no-tools", before, after);
+            var screen = new PtyScreenCapture(process, 24, 80);
+            var stdout = screen.ReadCompletion;
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(40));
+            await screen.InputReady.WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync(
+                "!bash -c 'exec -a pisharp-app-control-child sleep 5'\r");
+            await process.StandardInput.FlushAsync();
+            try
+            {
+                await screen.WaitForFrameAsync(frame =>
+                    frame.Contains("pisharp-app-control-child", StringComparison.Ordinal)).WaitAsync(timeout.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                throw new InvalidOperationException($"Bash did not start. Frame:\n{screen.LastFrame}");
+            }
+            await Task.Delay(250);
+            await process.StandardInput.WriteAsync(mode == "ctrl-c" ? "\u0003\u0003" : "\u0004");
+            await process.StandardInput.FlushAsync();
+            await process.WaitForExitAsync(timeout.Token);
+            var output = await stdout;
+            Assert.Equal(0, process.ExitCode);
+            Assert.Equal(await File.ReadAllTextAsync(before), await File.ReadAllTextAsync(after));
+            Assert.Contains("\u001b[?2004l", output);
+            Assert.DoesNotContain("Agent error", output);
+            Assert.DoesNotContain("Exception:", await stderr);
+            Assert.Empty(FindProcesses("pisharp-app-control-child"));
+            RecordEvidence("pty-app-bash-exit-" + mode, new
+            {
+                exitCode = process.ExitCode,
+                mode,
+                termiosRestored = true,
+                survivingChildren = 0
+            });
+        }
+        finally { Cleanup(process, root); }
+    }
+
     private static Process Start(string root, string settingsBefore, string settingsAfter)
     {
         var agent = Path.Combine(root, "agent");
@@ -608,6 +875,13 @@ public sealed class AppControlPtyTests
             $"dotnet {ShellQuote(typeof(CliArguments).Assembly.Location)} {{arguments}}; status=$?; " +
             $"stty -g > {ShellQuote(settingsAfter)}; exit $status");
     }
+
+    private static Process StartWithTerminalCapture(string root, string agent, string arguments,
+        string settingsBefore, string settingsAfter) =>
+        StartWithArguments(root, agent, arguments,
+            $"stty rows 24 cols 80; stty -g > {ShellQuote(settingsBefore)}; " +
+            $"dotnet {ShellQuote(typeof(CliArguments).Assembly.Location)} {arguments}; status=$?; " +
+            $"stty -g > {ShellQuote(settingsAfter)}; exit $status");
 
     private static Process StartWithArguments(string root, string agent, string arguments, string? shellCommand = null)
     {

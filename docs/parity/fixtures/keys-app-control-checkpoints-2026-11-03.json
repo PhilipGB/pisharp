@@ -2,7 +2,7 @@
   "capability": "keys-app-control",
   "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
   "source": "tools/parity/terminal/fixtures/terminal-app-control-*.json",
-  "caseCount": 21,
+  "caseCount": 25,
   "cases": {
     "tree/80x24-dark-fullscreen": {
       "fixture": "tree",
@@ -4345,7 +4345,7 @@
         "httpMatch": true,
         "rawHttpDifferenceCount": 0,
         "renderDifferenceCount": null,
-        "comparedRenderFrameCount": 80
+        "comparedRenderFrameCount": 81
       },
       "calibration": {
         "scenarioErrors": {},
@@ -4476,7 +4476,7 @@
             "editor": [],
             "cursor": {
               "x": 0,
-              "y": 7,
+              "y": 8,
               "visible": false,
               "style": "block",
               "blink": false
@@ -4492,7 +4492,7 @@
             "editor": [],
             "cursor": {
               "x": 0,
-              "y": 7,
+              "y": 8,
               "visible": false,
               "style": "block",
               "blink": false
@@ -5869,6 +5869,1642 @@
         "requests": [
           "Send a response that can be aborted."
         ]
+      }
+    },
+    "rebind/80x24-dark-fullscreen": {
+      "fixture": "rebind",
+      "case": "80x24-dark-fullscreen",
+      "paired": {
+        "scenarioErrors": {},
+        "httpMatch": true,
+        "rawHttpDifferenceCount": 0,
+        "renderDifferenceCount": null,
+        "comparedRenderFrameCount": 74
+      },
+      "calibration": {
+        "scenarioErrors": {},
+        "differences": 0,
+        "httpMatch": true,
+        "renderDifferenceCount": null
+      },
+      "pi": {
+        "checkpoints": {
+          "app-startup": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-draft": {
+            "editor": [
+              "rebind draft"
+            ],
+            "cursor": {
+              "x": 12,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-default-clear-disabled": {
+            "editor": [
+              "rebind draft"
+            ],
+            "cursor": {
+              "x": 12,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-f7-clears": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-bash-start": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-default-interrupt-disabled": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-f8-cancels": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-bash-responsive": {
+            "editor": [
+              "after rebind cancel"
+            ],
+            "cursor": {
+              "x": 19,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-bash-subsequent": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-quit": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 18,
+              "visible": true,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 6,
+            "activeScreen": "normal",
+            "temporaryModes": [],
+            "bracketedPasteMode": false
+          }
+        },
+        "requests": []
+      },
+      "pisharp": {
+        "checkpoints": {
+          "app-startup": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-draft": {
+            "editor": [
+              "rebind draft"
+            ],
+            "cursor": {
+              "x": 12,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-default-clear-disabled": {
+            "editor": [
+              "rebind draft"
+            ],
+            "cursor": {
+              "x": 12,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-f7-clears": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-bash-start": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-default-interrupt-disabled": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-f8-cancels": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-bash-responsive": {
+            "editor": [
+              "after rebind cancel"
+            ],
+            "cursor": {
+              "x": 19,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-bash-subsequent": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-quit": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 22,
+              "visible": true,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 6,
+            "activeScreen": "normal",
+            "temporaryModes": [],
+            "bracketedPasteMode": false
+          }
+        },
+        "requests": []
+      }
+    },
+    "rebind/80x24-dark-regular": {
+      "fixture": "rebind",
+      "case": "80x24-dark-regular",
+      "paired": {
+        "scenarioErrors": {},
+        "httpMatch": true,
+        "rawHttpDifferenceCount": 0,
+        "renderDifferenceCount": null,
+        "comparedRenderFrameCount": 71
+      },
+      "calibration": {
+        "scenarioErrors": {},
+        "differences": 0,
+        "httpMatch": true,
+        "renderDifferenceCount": null
+      },
+      "pi": {
+        "checkpoints": {
+          "app-startup": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 2,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-draft": {
+            "editor": [
+              "rebind draft"
+            ],
+            "cursor": {
+              "x": 12,
+              "y": 2,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-default-clear-disabled": {
+            "editor": [
+              "rebind draft"
+            ],
+            "cursor": {
+              "x": 12,
+              "y": 2,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-f7-clears": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 2,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-bash-start": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 6,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-default-interrupt-disabled": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 6,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-f8-cancels": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 6,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-bash-responsive": {
+            "editor": [
+              "after rebind cancel"
+            ],
+            "cursor": {
+              "x": 19,
+              "y": 6,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-bash-subsequent": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 13,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-quit": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 18,
+              "visible": true,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 6,
+            "activeScreen": "normal",
+            "temporaryModes": [],
+            "bracketedPasteMode": false
+          }
+        },
+        "requests": []
+      },
+      "pisharp": {
+        "checkpoints": {
+          "app-startup": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 2,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-draft": {
+            "editor": [
+              "rebind draft"
+            ],
+            "cursor": {
+              "x": 12,
+              "y": 2,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-default-clear-disabled": {
+            "editor": [
+              "rebind draft"
+            ],
+            "cursor": {
+              "x": 12,
+              "y": 2,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-f7-clears": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 2,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-bash-start": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 7,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-default-interrupt-disabled": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 7,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-f8-cancels": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 8,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-bash-responsive": {
+            "editor": [
+              "after rebind cancel"
+            ],
+            "cursor": {
+              "x": 19,
+              "y": 10,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-bash-subsequent": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 17,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-quit": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 22,
+              "visible": true,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 6,
+            "activeScreen": "normal",
+            "temporaryModes": [],
+            "bracketedPasteMode": false
+          }
+        },
+        "requests": []
+      }
+    },
+    "rebind/120x40-dark-fullscreen": {
+      "fixture": "rebind",
+      "case": "120x40-dark-fullscreen",
+      "paired": {
+        "scenarioErrors": {},
+        "httpMatch": true,
+        "rawHttpDifferenceCount": 0,
+        "renderDifferenceCount": null,
+        "comparedRenderFrameCount": 74
+      },
+      "calibration": {
+        "scenarioErrors": {},
+        "differences": 0,
+        "httpMatch": true,
+        "renderDifferenceCount": null
+      },
+      "pi": {
+        "checkpoints": {
+          "app-startup": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-draft": {
+            "editor": [
+              "rebind draft"
+            ],
+            "cursor": {
+              "x": 12,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-default-clear-disabled": {
+            "editor": [
+              "rebind draft"
+            ],
+            "cursor": {
+              "x": 12,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-f7-clears": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-bash-start": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-default-interrupt-disabled": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-f8-cancels": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-bash-responsive": {
+            "editor": [
+              "after rebind cancel"
+            ],
+            "cursor": {
+              "x": 19,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-bash-subsequent": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-quit": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 18,
+              "visible": true,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 6,
+            "activeScreen": "normal",
+            "temporaryModes": [],
+            "bracketedPasteMode": false
+          }
+        },
+        "requests": []
+      },
+      "pisharp": {
+        "checkpoints": {
+          "app-startup": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-draft": {
+            "editor": [
+              "rebind draft"
+            ],
+            "cursor": {
+              "x": 12,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-default-clear-disabled": {
+            "editor": [
+              "rebind draft"
+            ],
+            "cursor": {
+              "x": 12,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-f7-clears": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-bash-start": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-default-interrupt-disabled": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-f8-cancels": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-bash-responsive": {
+            "editor": [
+              "after rebind cancel"
+            ],
+            "cursor": {
+              "x": 19,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-bash-subsequent": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-quit": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 22,
+              "visible": true,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 6,
+            "activeScreen": "normal",
+            "temporaryModes": [],
+            "bracketedPasteMode": false
+          }
+        },
+        "requests": []
+      }
+    },
+    "rebind/120x40-dark-regular": {
+      "fixture": "rebind",
+      "case": "120x40-dark-regular",
+      "paired": {
+        "scenarioErrors": {},
+        "httpMatch": true,
+        "rawHttpDifferenceCount": 0,
+        "renderDifferenceCount": null,
+        "comparedRenderFrameCount": 71
+      },
+      "calibration": {
+        "scenarioErrors": {},
+        "differences": 0,
+        "httpMatch": true,
+        "renderDifferenceCount": null
+      },
+      "pi": {
+        "checkpoints": {
+          "app-startup": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 2,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-draft": {
+            "editor": [
+              "rebind draft"
+            ],
+            "cursor": {
+              "x": 12,
+              "y": 2,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-default-clear-disabled": {
+            "editor": [
+              "rebind draft"
+            ],
+            "cursor": {
+              "x": 12,
+              "y": 2,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-f7-clears": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 2,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-bash-start": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 6,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-default-interrupt-disabled": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 6,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-f8-cancels": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 6,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-bash-responsive": {
+            "editor": [
+              "after rebind cancel"
+            ],
+            "cursor": {
+              "x": 19,
+              "y": 6,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-bash-subsequent": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 13,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-quit": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 18,
+              "visible": true,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 6,
+            "activeScreen": "normal",
+            "temporaryModes": [],
+            "bracketedPasteMode": false
+          }
+        },
+        "requests": []
+      },
+      "pisharp": {
+        "checkpoints": {
+          "app-startup": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 2,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-draft": {
+            "editor": [
+              "rebind draft"
+            ],
+            "cursor": {
+              "x": 12,
+              "y": 2,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-default-clear-disabled": {
+            "editor": [
+              "rebind draft"
+            ],
+            "cursor": {
+              "x": 12,
+              "y": 2,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-f7-clears": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 2,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-bash-start": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 7,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-default-interrupt-disabled": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 8,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-f8-cancels": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 10,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-bash-responsive": {
+            "editor": [
+              "after rebind cancel"
+            ],
+            "cursor": {
+              "x": 19,
+              "y": 10,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-rebind-bash-subsequent": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 17,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true
+          },
+          "app-quit": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 22,
+              "visible": true,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 6,
+            "activeScreen": "normal",
+            "temporaryModes": [],
+            "bracketedPasteMode": false
+          }
+        },
+        "requests": []
       }
     }
   }

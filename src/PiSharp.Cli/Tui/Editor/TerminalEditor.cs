@@ -520,7 +520,8 @@ public sealed class TerminalEditor
     public async Task MonitorRunAsync(Func<string, bool, CancellationToken, Task<bool>> queue,
         Func<IReadOnlyList<string>> clearQueue, Action abort, CancellationToken cancellationToken,
         Func<string, Task>? dispatchApplicationAction = null,
-        Func<ExtensionShortcutInfo, CancellationToken, Task>? dispatchExtensionShortcut = null)
+        Func<ExtensionShortcutInfo, CancellationToken, Task>? dispatchExtensionShortcut = null,
+        Action? requestShutdown = null)
     {
         using var inputLoop = EnterInputLoop();
         try
@@ -538,7 +539,7 @@ public sealed class TerminalEditor
                     continue;
                 }
                 if (!await HandleActiveInputAsync(next, queue, clearQueue, abort, cancellationToken, dispatchApplicationAction,
-                    dispatchExtensionShortcut)) break;
+                    dispatchExtensionShortcut, requestShutdown)) break;
                 Render();
             }
         }
@@ -554,7 +555,8 @@ public sealed class TerminalEditor
         Func<string, bool, CancellationToken, Task<bool>> queue, Func<IReadOnlyList<string>> clearQueue,
         Action abort, CancellationToken cancellationToken = default,
         Func<string, Task>? dispatchApplicationAction = null,
-        Func<ExtensionShortcutInfo, CancellationToken, Task>? dispatchExtensionShortcut = null)
+        Func<ExtensionShortcutInfo, CancellationToken, Task>? dispatchExtensionShortcut = null,
+        Action? requestShutdown = null)
     {
         var isCompletionKey = next.Key is { } possibleCompletionKey &&
             _keymap.Matches("tui.input.tab", possibleCompletionKey);
@@ -629,9 +631,19 @@ public sealed class TerminalEditor
             abort();
             return false;
         }
+        if (next.Key is { } exitKey && _keymap.Matches("app.exit", exitKey) &&
+            WithEditorState(() => _buffer.Text.Length == 0))
+        {
+            requestShutdown?.Invoke();
+            return false;
+        }
         if (next.Key is { } clearKey && _keymap.Matches("app.clear", clearKey))
         {
-            _lastClearAtMilliseconds = _clockMilliseconds();
+            if (RegisterClearPress())
+            {
+                requestShutdown?.Invoke();
+                return false;
+            }
             WithEditorState(_buffer.Clear);
             return true;
         }
@@ -975,7 +987,8 @@ public sealed class TerminalEditor
     }
 
     /// <summary>Route input to the editor while an interactive Bash command runs; Escape aborts it.</summary>
-    public async Task MonitorBashAsync(Action abort, Task operation, CancellationToken cancellationToken)
+    public async Task MonitorBashAsync(Action abort, Task operation, CancellationToken cancellationToken,
+        Action? requestShutdown = null)
     {
         ArgumentNullException.ThrowIfNull(abort);
         ArgumentNullException.ThrowIfNull(operation);
@@ -1010,7 +1023,11 @@ public sealed class TerminalEditor
                 }
                 if (next.Key is { } clearKey && _keymap.Matches("app.clear", clearKey))
                 {
-                    RegisterClearPress();
+                    if (RegisterClearPress())
+                    {
+                        requestShutdown?.Invoke();
+                        return;
+                    }
                     WithEditorState(_buffer.Clear);
                     Render();
                     continue;
@@ -1033,7 +1050,11 @@ public sealed class TerminalEditor
                                 : _pendingBashSubmission + "\n" + submitted;
                         continue;
                     }
-                    if (action == EditorAction.Exit) continue;
+                    if (action == EditorAction.Exit)
+                    {
+                        requestShutdown?.Invoke();
+                        return;
+                    }
                 }
                 Render();
             }

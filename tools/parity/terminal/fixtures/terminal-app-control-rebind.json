@@ -1,0 +1,45 @@
+{
+  "id": "terminal-app-control-rebind",
+  "settings": { "quietStartup": true },
+  "files": {
+    "agent": {
+      "keybindings.json": {
+        "app.clear": "f7",
+        "app.interrupt": "f8"
+      }
+    }
+  },
+  "dimensions": [{ "columns": 80, "rows": 24 }, { "columns": 120, "rows": 40 }],
+  "themes": ["dark"],
+  "modes": ["fullscreen", "regular"],
+  "terminal": { "keyboardProtocol": "kitty" },
+  "actions": [
+    { "id": "app-startup", "expect": "fixture-model" },
+    { "id": "app-rebind-draft", "send": "\u001b[200~rebind draft\u001b[201~", "expect": "rebind draft" },
+    {
+      "id": "app-rebind-default-clear-disabled",
+      "send": "\u0003",
+      "expect": "rebind draft",
+      "allowStaticFrame": true
+    },
+    { "id": "app-rebind-f7-clears", "send": "\u001b[18~", "notExpect": "rebind draft" },
+    {
+      "id": "app-rebind-bash-start",
+      "send": "!bash -c 'exec -a pisharp-app-control-child sleep 5'\r",
+      "expect": "pisharp-app-control-child"
+    },
+    {
+      "id": "app-rebind-default-interrupt-disabled",
+      "send": "\u001b[27u",
+      "expect": "pisharp-app-control-child",
+      "allowStaticFrame": true
+    },
+    { "id": "app-rebind-f8-cancels", "send": "\u001b[19~", "expect": "$ bash" },
+    { "id": "app-rebind-bash-responsive", "send": "\u001b[200~after rebind cancel\u001b[201~", "expect": "after rebind cancel" },
+    { "id": "app-rebind-bash-subsequent", "send": "\u0015!echo REBIND_OK\r", "expect": "REBIND_OK" },
+    { "id": "app-quit", "send": "\u0015/quit\r", "exit": true }
+  ],
+  "assertionFrames": ["app-startup", "app-rebind-draft", "app-rebind-default-clear-disabled",
+    "app-rebind-f7-clears", "app-rebind-bash-start", "app-rebind-default-interrupt-disabled",
+    "app-rebind-f8-cancels", "app-rebind-bash-responsive", "app-rebind-bash-subsequent", "app-quit"]
+}

@@ -12,7 +12,8 @@
     "tools/parity/terminal/fixtures/terminal-app-control-none.json",
     "tools/parity/terminal/fixtures/terminal-app-control-bash.json",
     "tools/parity/terminal/fixtures/terminal-app-control-suspend.json",
-    "tools/parity/terminal/fixtures/terminal-abort-stream.json"
+    "tools/parity/terminal/fixtures/terminal-abort-stream.json",
+    "tools/parity/terminal/fixtures/terminal-app-control-rebind.json"
   ],
   "requiredTests": {
     "theories": [
@@ -55,7 +56,12 @@
       "PiSharp.Tests.Runtime.Tools.BashProcessLifetimeTests.CancellationKillsChildAndDetachedGrandchildBeforeSettling",
       "PiSharp.Tests.ExtensionSessionStateTests.SessionLifecycleCallbacksAreOrderedFailureIsolatedAndScopedToTheRun",
       "PiSharp.Tests.AppControlPtyTests.RegularModeDoubleEscapeAfterBashEntryOpensTheTreeSelectorThroughLinuxPty",
-      "PiSharp.Tests.TerminalScreenTests.RegularModeOverlayIsRenderedIntoTheMainScreen"
+      "PiSharp.Tests.TerminalScreenTests.RegularModeOverlayIsRenderedIntoTheMainScreen",
+      "PiSharp.Tests.AppControlTests.ActiveStreamingDoubleCtrlCClearsThenRequestsShutdown",
+      "PiSharp.Tests.AppControlTests.ActiveStreamingCtrlDExitsOnlyWhenTheEditorIsEmpty",
+      "PiSharp.Tests.AppControlPtyTests.ActiveStreamingExitPathsRestoreTerminalThroughLinuxPty",
+      "PiSharp.Tests.AppControlPtyTests.ActiveBashExitPathsCancelChildrenAndRestoreTerminalThroughLinuxPty",
+      "PiSharp.Tests.AppControlPtyTests.ConfiguredInterruptRebindingCancelsStreamingAndDisablesEscapeThroughLinuxPty"
     ],
     "ptyEvidence": [
       "pty-app-idle-controls",
@@ -69,7 +75,12 @@
       "pty-app-shutdown-bash-cancel",
       "pty-app-stream-cancel",
       "pty-app-suspend-resume-fullscreen",
-      "pty-app-suspend-resume-regular"
+      "pty-app-suspend-resume-regular",
+      "pty-app-stream-exit-ctrl-c",
+      "pty-app-stream-exit-ctrl-d",
+      "pty-app-bash-exit-ctrl-c",
+      "pty-app-bash-exit-ctrl-d",
+      "pty-app-rebind"
     ]
   },
   "oracleScenarioCount": 16,
@@ -215,11 +226,16 @@
         "PiSharp.Tests.AppControlParityTests.MatchesPinnedPi",
         "PiSharp.Tests.AppControlTests.CtrlCDoublePressUsesTheFiveHundredMillisecondWindow",
         "PiSharp.Tests.AppControlPtyTests.ShutdownPathsRestoreTheTerminalAndExitCleanlyThroughLinuxPty",
-        "PiSharp.Tests.TerminalPtyTests.DoubleCtrlCExitsInteractiveProcess"
+        "PiSharp.Tests.TerminalPtyTests.DoubleCtrlCExitsInteractiveProcess",
+        "PiSharp.Tests.AppControlTests.ActiveStreamingDoubleCtrlCClearsThenRequestsShutdown",
+        "PiSharp.Tests.AppControlPtyTests.ActiveStreamingExitPathsRestoreTerminalThroughLinuxPty",
+        "PiSharp.Tests.AppControlPtyTests.ActiveBashExitPathsCancelChildrenAndRestoreTerminalThroughLinuxPty"
       ],
       "pty": [
         "pty-app-shutdown-ctrl-c",
-        "pty-app-shutdown-quit"
+        "pty-app-shutdown-quit",
+        "pty-app-stream-exit-ctrl-c",
+        "pty-app-bash-exit-ctrl-c"
       ],
       "terminalCheckpoints": [
         "tree/app-quit",
@@ -241,11 +257,16 @@
         "PiSharp.Tests.AppControlTests.CtrlDExitsOnlyWhenTheEditorIsEmpty",
         "PiSharp.Tests.AppControlTests.CtrlDForwardDeleteHonoursSelectionAndGraphemes",
         "PiSharp.Tests.AppControlTests.DeleteKeyRemainsForwardDeleteAndDoesNotExit",
-        "PiSharp.Tests.AppControlPtyTests.ShutdownPathsRestoreTheTerminalAndExitCleanlyThroughLinuxPty"
+        "PiSharp.Tests.AppControlPtyTests.ShutdownPathsRestoreTheTerminalAndExitCleanlyThroughLinuxPty",
+        "PiSharp.Tests.AppControlTests.ActiveStreamingCtrlDExitsOnlyWhenTheEditorIsEmpty",
+        "PiSharp.Tests.AppControlPtyTests.ActiveStreamingExitPathsRestoreTerminalThroughLinuxPty",
+        "PiSharp.Tests.AppControlPtyTests.ActiveBashExitPathsCancelChildrenAndRestoreTerminalThroughLinuxPty"
       ],
       "pty": [
         "pty-app-shutdown-ctrl-d",
-        "pty-app-idle-controls"
+        "pty-app-idle-controls",
+        "pty-app-stream-exit-ctrl-d",
+        "pty-app-bash-exit-ctrl-d"
       ],
       "terminalCheckpoints": [
         "tree/app-ctrl-d-delete",
@@ -364,13 +385,19 @@
         "PiSharp.Tests.AppControlTests.ApplicationSelectionTreeHasNoDefaultBindingButCanBeConfigured",
         "PiSharp.Tests.AppControlTests.WindowsSuspensionReportsPinnedPiUnsupportedActionWithoutClaimingJobControl",
         "PiSharp.Tests.AppControlTests.LegacyDoubleEscapeDecodesAsTwoInterrupts",
-        "PiSharp.Tests.AppControlTests.EscapeFollowedByAnArrowSequenceDecodesAsEscapeThenArrow"
+        "PiSharp.Tests.AppControlTests.EscapeFollowedByAnArrowSequenceDecodesAsEscapeThenArrow",
+        "PiSharp.Tests.AppControlPtyTests.ConfiguredInterruptRebindingCancelsStreamingAndDisablesEscapeThroughLinuxPty"
       ],
       "pty": [
-        "pty-app-double-escape-none"
+        "pty-app-double-escape-none",
+        "pty-app-rebind"
       ],
       "terminalCheckpoints": [
-        "none/app-editor-after-none"
+        "none/app-editor-after-none",
+        "rebind/app-rebind-default-clear-disabled",
+        "rebind/app-rebind-f7-clears",
+        "rebind/app-rebind-default-interrupt-disabled",
+        "rebind/app-rebind-f8-cancels"
       ]
     },
     {
@@ -400,14 +427,20 @@
       "tests": [
         "PiSharp.Tests.AppControlPtyTests.ShutdownPathsRestoreTheTerminalAndExitCleanlyThroughLinuxPty",
         "PiSharp.Tests.TerminalSuspendPtyTests.CtrlZSuspendRestoresTerminalSettingsAndResumePreservesTheDraft",
-        "PiSharp.Tests.ExtensionSessionStateTests.SessionLifecycleCallbacksAreOrderedFailureIsolatedAndScopedToTheRun"
+        "PiSharp.Tests.ExtensionSessionStateTests.SessionLifecycleCallbacksAreOrderedFailureIsolatedAndScopedToTheRun",
+        "PiSharp.Tests.AppControlPtyTests.ActiveStreamingExitPathsRestoreTerminalThroughLinuxPty",
+        "PiSharp.Tests.AppControlPtyTests.ActiveBashExitPathsCancelChildrenAndRestoreTerminalThroughLinuxPty"
       ],
       "pty": [
         "pty-app-shutdown-quit",
         "pty-app-shutdown-ctrl-c",
         "pty-app-shutdown-ctrl-d",
         "pty-app-shutdown-bash-cancel",
-        "pty-app-suspend-resume-fullscreen"
+        "pty-app-suspend-resume-fullscreen",
+        "pty-app-stream-exit-ctrl-c",
+        "pty-app-stream-exit-ctrl-d",
+        "pty-app-bash-exit-ctrl-c",
+        "pty-app-bash-exit-ctrl-d"
       ],
       "terminalCheckpoints": [
         "tree/app-quit",
@@ -429,7 +462,10 @@
         "PiSharp.Tests.AppControlPtyTests.DoubleEscapeHonoursTheConfiguredActionAndReturnsToTheEditor",
         "PiSharp.Tests.AppControlPtyTests.EscapeCancelsInteractiveBashAndLeavesThePromptUsableThroughLinuxPty",
         "PiSharp.Tests.AppControlPtyTests.ShutdownPathsRestoreTheTerminalAndExitCleanlyThroughLinuxPty",
-        "PiSharp.Tests.AppControlParityTests.OracleInventoryNamesThePinnedPiSources"
+        "PiSharp.Tests.AppControlParityTests.OracleInventoryNamesThePinnedPiSources",
+        "PiSharp.Tests.AppControlPtyTests.ActiveStreamingExitPathsRestoreTerminalThroughLinuxPty",
+        "PiSharp.Tests.AppControlPtyTests.ActiveBashExitPathsCancelChildrenAndRestoreTerminalThroughLinuxPty",
+        "PiSharp.Tests.AppControlPtyTests.ConfiguredInterruptRebindingCancelsStreamingAndDisablesEscapeThroughLinuxPty"
       ],
       "pty": [
         "pty-app-idle-controls",
@@ -440,7 +476,12 @@
         "pty-app-shutdown-ctrl-c",
         "pty-app-stream-cancel",
         "pty-app-suspend-resume-fullscreen",
-        "pty-app-suspend-resume-regular"
+        "pty-app-suspend-resume-regular",
+        "pty-app-stream-exit-ctrl-c",
+        "pty-app-bash-exit-ctrl-c",
+        "pty-app-stream-exit-ctrl-d",
+        "pty-app-bash-exit-ctrl-d",
+        "pty-app-rebind"
       ],
       "terminalCheckpoints": [
         "tree/80x24-dark-fullscreen/app-startup",
@@ -466,7 +507,11 @@
         "suspend/120x40-dark-regular/app-resumed",
         "suspend/80x24-dark-fullscreen/app-resumed-edited",
         "abort-stream/100x30-dark-fullscreen/start-stream",
-        "abort-stream/100x30-dark-fullscreen/abort-stream"
+        "abort-stream/100x30-dark-fullscreen/abort-stream",
+        "rebind/80x24-dark-fullscreen/app-rebind-f7-clears",
+        "rebind/120x40-dark-fullscreen/app-rebind-default-interrupt-disabled",
+        "rebind/80x24-dark-regular/app-rebind-f8-cancels",
+        "rebind/120x40-dark-regular/app-rebind-bash-subsequent"
       ]
     }
   ],
@@ -481,8 +526,8 @@
       "id": "app-control-paired-pty",
       "required": true,
       "status": "match",
-      "cases": 21,
-      "checkpoints": 38
+      "cases": 25,
+      "checkpoints": 48
     },
     {
       "id": "app-control-calibration",

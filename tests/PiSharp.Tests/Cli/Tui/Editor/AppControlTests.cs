@@ -9,6 +9,8 @@ public sealed class AppControlTests
     private static ConsoleKeyInfo Key(ConsoleKey key, char keyChar = '\0', bool shift = false, bool alt = false,
         bool control = false) => new(keyChar, key, shift, alt, control);
 
+    private static TerminalInputEvent Event(ConsoleKeyInfo key) => new(key, null);
+
     [Theory]
     [InlineData("draft")]
     [InlineData("  needs work  ")]
@@ -145,6 +147,44 @@ public sealed class AppControlTests
             return Task.CompletedTask;
         }));
         Assert.Equal(["app.session.fork"], actions);
+    }
+
+    [Fact]
+    public async Task ActiveStreamingDoubleCtrlCClearsThenRequestsShutdown()
+    {
+        var editor = new TerminalEditor();
+        var now = 1000L;
+        editor.SetDoublePressClock(() => now);
+        var shutdowns = 0;
+        Task<bool> Queue(string text, bool followUp, CancellationToken _) => Task.FromResult(true);
+        IReadOnlyList<string> Clear() => [];
+        var first = await editor.HandleActiveInputAsync(Event(Key(ConsoleKey.C, control: true)), Queue, Clear,
+            () => { }, requestShutdown: () => shutdowns++);
+        Assert.True(first);
+        Assert.Equal(0, shutdowns);
+        now += 499;
+        var second = await editor.HandleActiveInputAsync(Event(Key(ConsoleKey.C, control: true)), Queue, Clear,
+            () => { }, requestShutdown: () => shutdowns++);
+        Assert.False(second);
+        Assert.Equal(1, shutdowns);
+    }
+
+    [Fact]
+    public async Task ActiveStreamingCtrlDExitsOnlyWhenTheEditorIsEmpty()
+    {
+        var editor = new TerminalEditor();
+        var shutdowns = 0;
+        Task<bool> Queue(string text, bool followUp, CancellationToken _) => Task.FromResult(true);
+        IReadOnlyList<string> Clear() => [];
+        editor.Prefill("draft");
+        Assert.True(await editor.HandleActiveInputAsync(Event(Key(ConsoleKey.D, control: true)), Queue, Clear,
+            () => { }, requestShutdown: () => shutdowns++));
+        Assert.Equal("draft", editor.Draft);
+        Assert.Equal(0, shutdowns);
+        editor.SetDraft("");
+        Assert.False(await editor.HandleActiveInputAsync(Event(Key(ConsoleKey.D, control: true)), Queue, Clear,
+            () => { }, requestShutdown: () => shutdowns++));
+        Assert.Equal(1, shutdowns);
     }
 
     [Fact]

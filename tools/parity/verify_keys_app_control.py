@@ -20,6 +20,7 @@ EXPECTED_REQUESTS = {
     "bash": [],
     "suspend": [],
     "abort-stream": ["Send a response that can be aborted."],
+    "rebind": [],
 }
 EXIT_CHECKPOINT_SUFFIXES = ("quit", "exit")
 TEMP_PRIVATE_MODES = ("1000", "1002", "1003", "1004", "1006", "1049", "2004", "2026")
@@ -296,6 +297,17 @@ def validate_evidence(path, manifest, implementation):
         require(details.get("bracketedPasteActivated", 0) >= 1 and
                 details.get("bracketedPasteRestored", 0) >= 1,
                 f"Shutdown evidence for {path} lacks bracketed-paste restoration.")
+    for mode in ("ctrl-c", "ctrl-d"):
+        details = by_id[f"pty-app-stream-exit-{mode}"]
+        require(details.get("termiosRestored") is True and details.get("streamWasActive") is True,
+                f"Active streaming exit evidence is incomplete for {mode}.")
+        details = by_id[f"pty-app-bash-exit-{mode}"]
+        require(details.get("termiosRestored") is True and details.get("survivingChildren") == 0,
+                f"Active Bash exit evidence is incomplete for {mode}.")
+    rebind = by_id["pty-app-rebind"]
+    require(rebind.get("termiosRestored") is True and rebind.get("replacementCancelled") is True and
+            rebind.get("originalBindingDisabled") is True,
+            "Configurable application-control PTY evidence is incomplete.")
     stream = by_id["pty-app-stream-cancel"]
     require(stream.get("requests") == 2, "Streaming cancellation evidence did not record exactly two requests.")
     require(stream.get("restoredDraft") == "steer text\n\nfollow text\n\ncurrent draft",
@@ -488,6 +500,24 @@ def self_test(manifest, oracle, checkpoints, evidence_records, trx_results_value
     missing_restore["pty-app-shutdown-ctrl-d"] = copy.deepcopy(missing_restore["pty-app-shutdown-ctrl-d"])
     missing_restore["pty-app-shutdown-ctrl-d"]["details"]["termiosRestored"] = False
     rejects(lambda: validate_evidence_records(missing_restore, manifest, implementation), "missing terminal restoration")
+
+    rebind_broken = copy.deepcopy(evidence_records)
+    rebind_broken["pty-app-rebind"] = copy.deepcopy(rebind_broken["pty-app-rebind"])
+    rebind_broken["pty-app-rebind"]["details"]["replacementCancelled"] = False
+    rejects(lambda: validate_evidence_records(rebind_broken, manifest, implementation),
+            "configured replacement binding did not cancel")
+
+    active_terminal = copy.deepcopy(evidence_records)
+    active_terminal["pty-app-stream-exit-ctrl-c"] = copy.deepcopy(active_terminal["pty-app-stream-exit-ctrl-c"])
+    active_terminal["pty-app-stream-exit-ctrl-c"]["details"]["termiosRestored"] = False
+    rejects(lambda: validate_evidence_records(active_terminal, manifest, implementation),
+            "active streaming exit did not restore the terminal")
+
+    active_child = copy.deepcopy(evidence_records)
+    active_child["pty-app-bash-exit-ctrl-c"] = copy.deepcopy(active_child["pty-app-bash-exit-ctrl-c"])
+    active_child["pty-app-bash-exit-ctrl-c"]["details"]["survivingChildren"] = 1
+    rejects(lambda: validate_evidence_records(active_child, manifest, implementation),
+            "active Bash exit left a child process")
 
     failed_trx = [(name, "Failed" if name.startswith(manifest["requiredTests"]["facts"][0]) else outcome)
                   for name, outcome in trx_results_value]

@@ -12,7 +12,7 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-FIXTURES = ("tree", "fork", "none", "bash", "suspend", "abort-stream")
+FIXTURES = ("tree", "fork", "none", "bash", "suspend", "abort-stream", "rebind")
 TEMPORARY_PRIVATE_MODES = ("1000", "1002", "1003", "1004", "1006", "1049", "2004", "2026")
 
 

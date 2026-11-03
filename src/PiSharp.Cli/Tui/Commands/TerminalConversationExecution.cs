@@ -31,13 +31,20 @@ internal sealed class TerminalConversationExecution
         {
             var operation = ExecuteInteractiveBashAsync(command, excludeFromContext, cancellation.Token);
             if (_presentation.Editor is { } editor)
-                await editor.MonitorBashAsync(cancellation.Cancel, operation, cancellation.Token);
+            {
+                Action? requestShutdown = RequestApplicationShutdown is { } shutdown
+                    ? () => { cancellation.Cancel(); shutdown(); }
+                : null;
+                await editor.MonitorBashAsync(cancellation.Cancel, operation, cancellation.Token, requestShutdown);
+            }
             await operation;
         }
         finally { _activeRun = null; }
     }
 
     public InteractiveTranscript? ActiveTranscript { get; private set; }
+
+    public Action? RequestApplicationShutdown { get; set; }
     private CancellationTokenSource? _activeRun;
     private TaskCompletionSource? _activeRunCompletion;
 
@@ -88,7 +95,8 @@ internal sealed class TerminalConversationExecution
                 includeEstimateWhenNoMessages: includeEstimateWhenNoMessages,
                 providerContextTokens: providerContextTokens),
             () => _modelBinding.Selection, () => _projectBinding.Settings, ExecuteInteractiveBashAsync,
-            handleApplicationAction ?? (_ => Task.CompletedTask), handleExtensionShortcut, tryExecuteExtensionCommand);
+            handleApplicationAction ?? (_ => Task.CompletedTask), handleExtensionShortcut, tryExecuteExtensionCommand,
+            RequestApplicationShutdown);
         _presentation.Screen?.Activate();
         _presentation.Editor?.AttachScreen(_presentation.Screen);
         var transcript = _presentation.CreateInteractiveTranscript(interactive: !_print);
