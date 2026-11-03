@@ -11,7 +11,7 @@ acceptance verifier all passed. The draft PR remains open and unmerged.
 | Item | Value |
 | --- | --- |
 | Pinned Pi | `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` |
-| PiSharp implementation commit | `b51c0c9d70cb2659e6446b8905bbd08e1014d73e` |
+| PiSharp implementation commit | `2a2b30aac9f372b727c4ec2bd80f1e3c87a4b1bb` |
 | Starting `main` | `78a2b044757ea548426521e45795bc8268a84513` |
 | Acceptance manifest | `docs/parity/fixtures/keys-app-control-acceptance-2026-11-03.json` |
 | Pinned-Pi oracle | `docs/parity/fixtures/keys-app-control-pi-oracle-2026-11-03.json` |
@@ -65,16 +65,17 @@ equivalence. `AppControlParityTests.MatchesPinnedPi` replays all 16.
 ## Paired real-PTY differential
 
 Six fixtures: `terminal-app-control-tree`, `-fork`, `-none`, `-bash`, `-suspend`, and the existing
-`terminal-abort-stream`. The run covers 21 cases:
+`terminal-abort-stream`. The run covers 25 cases:
 
 - dimensions 80x24, 120x40 and 100x30;
+- configured `app.clear`/`app.interrupt` replacements with the original Ctrl+C/Escape bindings disabled;
 - fullscreen and regular modes;
 - doubleEscapeAction `tree`, `fork` and `none`;
 - idle Escape, Ctrl+C, Ctrl+D forward delete, Bash-entry Escape, tree/fork dismissal, interactive
   Bash cancellation and a later command, streaming abort, suspend/resize/resume and five exit paths.
 
-Same-Pi calibration reports `0` differences for all 21 cases. The paired report retains 140
-selected checkpoint observations over 38 distinct fixture/checkpoint names; every compared checkpoint matches in editor text and logical cursor, and every exit
+Same-Pi calibration reports `0` differences for all 25 cases. The paired report retains 180
+selected checkpoint observations over 48 distinct fixture/checkpoint names; every compared checkpoint matches in editor text and logical cursor, and every exit
 checkpoint restores the normal screen, a visible cursor and no temporary private modes. Provider
 request counts and user texts match exactly:
 
@@ -96,6 +97,11 @@ condition, active-session retention and dismissal handoff are verified.
 - `AppControlPtyTests.ShutdownPathsRestoreTheTerminal...` verifies `/quit`, Ctrl+D, double Ctrl+C and
   Bash-cancel-then-exit restore the captured `stty -g`, reactivate and restore bracketed paste, and
   exit zero.
+- `AppControlPtyTests.ActiveStreamingExitPaths...` and `ActiveBashExitPaths...` verify double Ctrl+C
+  and empty-editor Ctrl+D exit during streaming and Bash execution, restore termios, and leave no
+  marked Bash child alive.
+- `AppControlPtyTests.ConfiguredInterruptRebinding...` verifies a rebind where Escape no longer
+  cancels and F7 does, plus the terminal restoration and draft preservation path.
 - `TerminalSuspendPtyTests` verifies SIGTSTP restores canonical/echo/signal flags, a resize while
   suspended is applied, SIGCONT redraws the draft, later input is neither lost nor duplicated, and
   the final exit restores the original terminal.
@@ -108,13 +114,13 @@ condition, active-session retention and dismissal handoff are verified.
 | --- | --- |
 | A01–A16 required cases | 16/16 pass |
 | Pinned-Pi oracle scenarios | 16/16 |
-| Paired PTY cases / checkpoints | 21 / 38 |
+| Paired PTY cases / checkpoints | 25 / 48 distinct (180 observations) |
 | PTY evidence records | 12 |
-| Focused .NET tests | 68/68 passed, 0 skipped |
-| Full .NET suite | 4,346/4,346 passed, 0 skipped |
+| Focused .NET tests | 75/75 passed, 0 skipped |
+| Full .NET suite | 4,353/4,353 passed, 0 skipped |
 | Format | `dotnet format PiSharp.slnx --verify-no-changes` pass |
 | Build | `dotnet build PiSharp.slnx --warnaserror` 0 warnings/0 errors |
-| Acceptance verifier + negative controls | passed; 25 negative controls rejected |
+| Acceptance verification + negative controls | passed; 28 negative controls rejected |
 | Exact-head CI | Linux CI run `41586112603` passed on evidence head `4c3298e6d8041e816ef977e2cee63127b85d750e` |
 
 ## Non-required differences and limitations
