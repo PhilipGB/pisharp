@@ -11,7 +11,7 @@ acceptance verifier all passed. The draft PR remains open and unmerged.
 | Item | Value |
 | --- | --- |
 | Pinned Pi | `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` |
-| PiSharp implementation commit | `fcd4f53c718efa943695a0b3e542ea132bf20e14` |
+| PiSharp implementation commit | `b51c0c9d70cb2659e6446b8905bbd08e1014d73e` |
 | Starting `main` | `78a2b044757ea548426521e45795bc8268a84513` |
 | Acceptance manifest | `docs/parity/fixtures/keys-app-control-acceptance-2026-11-03.json` |
 | Pinned-Pi oracle | `docs/parity/fixtures/keys-app-control-pi-oracle-2026-11-03.json` |
@@ -73,8 +73,8 @@ Six fixtures: `terminal-app-control-tree`, `-fork`, `-none`, `-bash`, `-suspend`
 - idle Escape, Ctrl+C, Ctrl+D forward delete, Bash-entry Escape, tree/fork dismissal, interactive
   Bash cancellation and a later command, streaming abort, suspend/resize/resume and five exit paths.
 
-Same-Pi calibration reports `0` differences for all 21 cases. The paired report retains 38 named
-checkpoints; every compared checkpoint matches in editor text and logical cursor, and every exit
+Same-Pi calibration reports `0` differences for all 21 cases. The paired report retains 140
+selected checkpoint observations over 38 distinct fixture/checkpoint names; every compared checkpoint matches in editor text and logical cursor, and every exit
 checkpoint restores the normal screen, a visible cursor and no temporary private modes. Provider
 request counts and user texts match exactly:
 
@@ -110,12 +110,12 @@ condition, active-session retention and dismissal handoff are verified.
 | Pinned-Pi oracle scenarios | 16/16 |
 | Paired PTY cases / checkpoints | 21 / 38 |
 | PTY evidence records | 12 |
-| Focused .NET tests | pending |
-| Full .NET suite | pending |
+| Focused .NET tests | 68/68 passed, 0 skipped |
+| Full .NET suite | 4,346/4,346 passed, 0 skipped |
 | Format | `dotnet format PiSharp.slnx --verify-no-changes` pass |
 | Build | `dotnet build PiSharp.slnx --warnaserror` 0 warnings/0 errors |
-| Acceptance verifier + negative controls | pending |
-| Exact-head CI | pending |
+| Acceptance verifier + negative controls | passed; 25 negative controls rejected |
+| Exact-head CI | pending push |
 
 ## Non-required differences and limitations
 
