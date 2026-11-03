@@ -229,13 +229,11 @@ public sealed class TerminalScreenTests
     public void RegularModeOverlayIsRenderedIntoTheMainScreen()
     {
         using var output = new StringWriter();
-        using var error = new StringWriter();
-        using var screen = new TerminalScreen(output, error, () => 80, () => 24,
-            new TerminalImageRenderer(), TerminalTheme.Default, queryTerminalColors: false,
+        var compositor = new TerminalScreenCompositor(output, new TerminalImageRenderer(),
             useAlternateScreen: false);
-        screen.Activate();
-        screen.SetEditor("draft", 5);
-        screen.SetOverlay(["modal overlay"]);
+        var frame = compositor.Compose("draft", 5, null, null, "", "footer", ["modal overlay"], 0, 80, 24,
+            new TranscriptSearchController(), new TerminalMouseRouter());
+        compositor.Render(frame);
         var text = output.ToString();
         Assert.Contains("modal overlay", text);
         Assert.DoesNotContain("\u001b[?1049h", text);
