@@ -314,6 +314,8 @@ def validate_evidence(path, manifest, implementation):
             "Streaming cancellation evidence restored the wrong queue/draft order.")
     require(stream.get("aborted") is True and stream.get("lateStreamCorruptedDraft") is False,
             "Streaming cancellation evidence records an incorrect abort/late-stream outcome.")
+    require(stream.get("completionDismissedWithoutAbort") is True,
+            "Streaming completion dismissal evidence is missing or incorrect.")
     for mode in ("fullscreen", "regular"):
         details = by_id[f"pty-app-suspend-resume-{mode}"]
         require(details.get("resizedDuringSuspension") is True and details.get("termiosRestored") is True and
@@ -490,6 +492,12 @@ def self_test(manifest, oracle, checkpoints, evidence_records, trx_results_value
     bad_queue["pty-app-stream-cancel"] = copy.deepcopy(bad_queue["pty-app-stream-cancel"])
     bad_queue["pty-app-stream-cancel"]["details"]["restoredDraft"] = "follow text\n\nsteer text"
     rejects(lambda: validate_evidence_records(bad_queue, manifest, implementation), "incorrect queue restoration")
+
+    completion_broken = copy.deepcopy(evidence_records)
+    completion_broken["pty-app-stream-cancel"] = copy.deepcopy(completion_broken["pty-app-stream-cancel"])
+    completion_broken["pty-app-stream-cancel"]["details"]["completionDismissedWithoutAbort"] = False
+    rejects(lambda: validate_evidence_records(completion_broken, manifest, implementation),
+            "completion dismissal aborted the generation")
 
     wrong_action = copy.deepcopy(evidence_records)
     wrong_action["pty-app-double-escape-tree"] = copy.deepcopy(wrong_action["pty-app-double-escape-tree"])

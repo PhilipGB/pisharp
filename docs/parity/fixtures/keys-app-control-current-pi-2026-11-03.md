@@ -102,6 +102,10 @@ condition, active-session retention and dismissal handoff are verified.
   marked Bash child alive.
 - `AppControlPtyTests.ConfiguredInterruptRebinding...` verifies a rebind where Escape no longer
   cancels and F7 does, plus the terminal restoration and draft preservation path.
+- `AppControlTests.ActiveStreamingEscapeDismissesCompletionBeforeAborting` and the streaming PTY case
+  verify Tab → Escape dismisses the active completion widget without aborting generation; the next
+  Escape reaches the abort path. Pinned Pi's `custom-editor.ts` orders
+  `isShowingAutocomplete()` before `onEscape`, contained in the verified oracle source inventory.
 - `TerminalSuspendPtyTests` verifies SIGTSTP restores canonical/echo/signal flags, a resize while
   suspended is applied, SIGCONT redraws the draft, later input is neither lost nor duplicated, and
   the final exit restores the original terminal.
@@ -116,11 +120,11 @@ condition, active-session retention and dismissal handoff are verified.
 | Pinned-Pi oracle scenarios | 16/16 |
 | Paired PTY cases / checkpoints | 25 / 48 distinct (180 observations) |
 | PTY evidence records | 12 |
-| Focused .NET tests | 75/75 passed, 0 skipped |
-| Full .NET suite | 4,353/4,353 passed, 0 skipped |
+| Focused .NET tests | 76/76 passed, 0 skipped |
+| Full .NET suite | 4,354/4,354 passed, 0 skipped |
 | Format | `dotnet format PiSharp.slnx --verify-no-changes` pass |
 | Build | `dotnet build PiSharp.slnx --warnaserror` 0 warnings/0 errors |
-| Acceptance verification + negative controls | passed; 28 negative controls rejected |
+| Acceptance verification + negative controls | passed; 29 negative controls rejected |
 | Exact-head CI | Linux CI run `41586112603` passed on evidence head `4c3298e6d8041e816ef977e2cee63127b85d750e` |
 
 ## Non-required differences and limitations

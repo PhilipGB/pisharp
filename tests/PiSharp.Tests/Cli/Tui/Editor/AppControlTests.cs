@@ -150,6 +150,32 @@ public sealed class AppControlTests
     }
 
     [Fact]
+    public async Task ActiveStreamingEscapeDismissesCompletionBeforeAborting()
+    {
+        var editor = new TerminalEditor();
+        editor.Prefill("/mod");
+        var aborted = false;
+        var queued = new List<string>();
+        Task<bool> Queue(string text, bool followUp, CancellationToken _)
+        {
+            queued.Add(text);
+            return Task.FromResult(true);
+        }
+        IReadOnlyList<string> Clear() => [];
+        Assert.True(await editor.HandleActiveInputAsync(Event(Key(ConsoleKey.Tab, '\t')), Queue, Clear,
+            () => aborted = true));
+        Assert.Equal("/model", editor.Draft);
+        Assert.True(await editor.HandleActiveInputAsync(Event(Key(ConsoleKey.Escape)), Queue, Clear,
+            () => aborted = true));
+        Assert.False(aborted);
+        Assert.Equal("/model", editor.Draft);
+        Assert.Empty(queued);
+        Assert.False(await editor.HandleActiveInputAsync(Event(Key(ConsoleKey.Escape)), Queue, Clear,
+            () => aborted = true));
+        Assert.True(aborted);
+    }
+
+    [Fact]
     public async Task ActiveStreamingDoubleCtrlCClearsThenRequestsShutdown()
     {
         var editor = new TerminalEditor();

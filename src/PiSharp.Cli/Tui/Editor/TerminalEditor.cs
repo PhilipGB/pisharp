@@ -560,7 +560,9 @@ public sealed class TerminalEditor
     {
         var isCompletionKey = next.Key is { } possibleCompletionKey &&
             _keymap.Matches("tui.input.tab", possibleCompletionKey);
-        if (!isCompletionKey)
+        var isInterruptKey = next.Key is { } possibleInterruptKey &&
+            _keymap.Matches("app.interrupt", possibleInterruptKey);
+        if (!isCompletionKey && !isInterruptKey)
         {
             WithEditorState(() => { _completionCycle = null; });
             CancelCompletionRequest();
@@ -619,7 +621,7 @@ public sealed class TerminalEditor
             }
             return true;
         }
-        if (next.Key is { } key && _keymap.Matches("app.interrupt", key))
+        if (isInterruptKey)
         {
             if (WithEditorState(() => _completionCycle is not null))
             {
@@ -627,6 +629,7 @@ public sealed class TerminalEditor
                 CancelCompletionRequest();
                 return true;
             }
+            CancelCompletionRequest();
             RestorePending(clearQueue());
             abort();
             return false;
@@ -787,7 +790,9 @@ public sealed class TerminalEditor
             if (next.IsControl) continue;
             var isCompletionKey = next.Key is { } possibleCompletionKey &&
                 _keymap.Matches("tui.input.tab", possibleCompletionKey);
-            if (!isCompletionKey)
+            var isInterruptKey = next.Key is { } possibleInterruptKey &&
+                _keymap.Matches("app.interrupt", possibleInterruptKey);
+            if (!isCompletionKey && !isInterruptKey)
             {
                 WithEditorState(() => { _completionCycle = null; });
                 CancelCompletionRequest();
@@ -966,6 +971,7 @@ public sealed class TerminalEditor
             CancelCompletionRequest();
             return true;
         }
+        CancelCompletionRequest();
         var text = WithEditorState(() => _buffer.Text);
         if (text.TrimStart().StartsWith('!'))
         {

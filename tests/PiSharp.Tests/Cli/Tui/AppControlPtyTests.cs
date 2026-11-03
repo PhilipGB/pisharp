@@ -453,6 +453,15 @@ public sealed class AppControlPtyTests
             await SendAsync("stream one\r");
             await WaitForAsync(frame => frame.Contains("STREAM_ONE", StringComparison.Ordinal) &&
                 frame.Contains("Working", StringComparison.Ordinal), "streaming started");
+            await SendAsync("/mod\t");
+            await WaitForAsync(frame => frame.Contains("/model", StringComparison.Ordinal) &&
+                frame.Contains("Working", StringComparison.Ordinal), "completion applied during stream");
+            await SendAsync("\u001b[27u");
+            await Task.Delay(250);
+            await WaitForAsync(frame => frame.Contains("Working", StringComparison.Ordinal) &&
+                !frame.Contains("Operation aborted", StringComparison.Ordinal),
+                "completion dismissal does not abort the stream");
+            await SendAsync("\u0015");
             await SendAsync("steer text\r");
             await SendAsync("\u001b[13;3u");
             await SendAsync("follow text");
@@ -500,6 +509,7 @@ public sealed class AppControlPtyTests
                 requests = captured.Length,
                 restoredDraft = text,
                 aborted = true,
+                completionDismissedWithoutAbort = true,
                 lateStreamCorruptedDraft = false
             });
         }

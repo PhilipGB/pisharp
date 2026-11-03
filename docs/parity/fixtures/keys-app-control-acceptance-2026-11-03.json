@@ -61,7 +61,8 @@
       "PiSharp.Tests.AppControlTests.ActiveStreamingCtrlDExitsOnlyWhenTheEditorIsEmpty",
       "PiSharp.Tests.AppControlPtyTests.ActiveStreamingExitPathsRestoreTerminalThroughLinuxPty",
       "PiSharp.Tests.AppControlPtyTests.ActiveBashExitPathsCancelChildrenAndRestoreTerminalThroughLinuxPty",
-      "PiSharp.Tests.AppControlPtyTests.ConfiguredInterruptRebindingCancelsStreamingAndDisablesEscapeThroughLinuxPty"
+      "PiSharp.Tests.AppControlPtyTests.ConfiguredInterruptRebindingCancelsStreamingAndDisablesEscapeThroughLinuxPty",
+      "PiSharp.Tests.AppControlTests.ActiveStreamingEscapeDismissesCompletionBeforeAborting"
     ],
     "ptyEvidence": [
       "pty-app-idle-controls",
@@ -178,7 +179,8 @@
       "tests": [
         "PiSharp.Tests.AppControlPtyTests.EscapeCtrlCAndCtrlDFollowIdleEditorSemanticsThroughLinuxPty",
         "PiSharp.Tests.AppControlPtyTests.DoubleEscapeHonoursTheConfiguredActionAndReturnsToTheEditor",
-        "PiSharp.Tests.TerminalPtyTests.FullscreenTranscriptNavigationAndSearchThroughLinuxPty"
+        "PiSharp.Tests.TerminalPtyTests.FullscreenTranscriptNavigationAndSearchThroughLinuxPty",
+        "PiSharp.Tests.AppControlTests.ActiveStreamingEscapeDismissesCompletionBeforeAborting"
       ],
       "pty": [
         "pty-app-idle-controls",
