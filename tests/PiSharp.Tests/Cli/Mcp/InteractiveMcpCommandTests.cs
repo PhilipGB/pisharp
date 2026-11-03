@@ -6,6 +6,7 @@ using System.Text.Json;
 
 namespace PiSharp.Tests;
 
+[Collection("Console writers")]
 public sealed class InteractiveMcpCommandTests
 {
     [Fact]

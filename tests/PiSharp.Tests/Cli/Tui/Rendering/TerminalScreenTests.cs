@@ -10,6 +10,7 @@ using SkiaSharp;
 
 namespace PiSharp.Tests;
 
+[Collection("Console writers")]
 public sealed class TerminalScreenTests
 {
     [Fact]
