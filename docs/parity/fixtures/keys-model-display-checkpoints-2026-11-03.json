@@ -1,0 +1,4000 @@
+{
+  "capability": "keys-model-display",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "source": "tools/parity/terminal/fixtures/terminal-keys-model-display.json",
+  "caseCount": 4,
+  "cases": {
+    "80x24-dark-fullscreen": {
+      "fixture": "terminal-keys-model-display",
+      "case": "80x24-dark-fullscreen",
+      "paired": {
+        "scenarioErrors": {},
+        "httpMatch": true,
+        "rawHttpDifferenceCount": 0,
+        "renderDifferenceCount": null,
+        "comparedRenderFrameCount": 30,
+        "clipboardMatch": true
+      },
+      "calibration": {
+        "scenarioErrors": {},
+        "differences": 0,
+        "httpMatch": true,
+        "renderDifferenceCount": null
+      },
+      "pi": {
+        "checkpoints": {
+          "startup": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "model-cycle-forward": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • medium",
+            "status": "Switched to Alpha Model (thinking: medium)"
+          },
+          "model-cycle-forward-second": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": "Switched to Beta Model (thinking: medium)"
+          },
+          "model-cycle-backward": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • medium",
+            "status": "Switched to Alpha Model (thinking: medium)"
+          },
+          "model-cycle-backward-wrap": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": "Switched to Fixture Model (thinking: medium)"
+          },
+          "selector-open": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              ">",
+              "→ ✓ fixture-model [fixture]",
+              "    alpha [fixture]",
+              "    beta [fixture]",
+              "  Model Name: Fixture Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 2,
+              "y": 10,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "selector-cancel": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "selector-select-beta": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              ">",
+              "→ ✓ fixture-model [fixture]",
+              "    alpha [fixture]",
+              "    beta [fixture]",
+              "  Model Name: Fixture Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 2,
+              "y": 10,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "selector-search-beta": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              "> beta",
+              "→   beta [fixture]",
+              "  Model Name: Beta Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 6,
+              "y": 12,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "selector-confirm-beta": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": ""
+          },
+          "first-prompt": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": ""
+          },
+          "selector-open-alpha": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              ">",
+              "→ ✓ beta [fixture]",
+              "    fixture-model [fixture]",
+              "    alpha [fixture]",
+              "  Model Name: Beta Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 2,
+              "y": 10,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": ""
+          },
+          "selector-search-alpha": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              "> alpha",
+              "→   alpha [fixture]",
+              "  Model Name: Alpha Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 7,
+              "y": 12,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": ""
+          },
+          "selector-confirm-alpha": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • medium",
+            "status": ""
+          },
+          "second-prompt": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • medium",
+            "status": ""
+          },
+          "thinking-cycle": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": "Thinking level: high"
+          },
+          "tool-expand": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": "Tool output: expanded"
+          },
+          "thinking-toggle": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": "Thinking blocks: hidden"
+          },
+          "copy-last-assistant": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": "Thinking blocks: hidden"
+          },
+          "quit": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 23,
+              "visible": true,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 5,
+            "activeScreen": "normal",
+            "temporaryModes": [],
+            "bracketedPasteMode": false,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": ""
+          }
+        },
+        "requests": [
+          "first prompt",
+          "second prompt"
+        ],
+        "requestFacts": [
+          {
+            "model": "beta",
+            "thinking": "medium",
+            "users": [
+              "first prompt"
+            ],
+            "history": [
+              "developer:You are a terminal parity fixture.\n\n<cwd>\n/home/philip/Projects/pisharp/artifacts/parity/keys-model-display/final-80x24-dark-fullscreen-root/workspace\n</cwd>",
+              "user:first prompt"
+            ]
+          },
+          {
+            "model": "alpha",
+            "thinking": "medium",
+            "users": [
+              "second prompt"
+            ],
+            "history": [
+              "developer:You are a terminal parity fixture.\n\n<cwd>\n/home/philip/Projects/pisharp/artifacts/parity/keys-model-display/final-80x24-dark-fullscreen-root/workspace\n</cwd>",
+              "user:first prompt",
+              "assistant:fixture reply",
+              "user:second prompt"
+            ]
+          }
+        ]
+      },
+      "pisharp": {
+        "checkpoints": {
+          "startup": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "model-cycle-forward": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • medium",
+            "status": "Switched to Alpha Model (thinking: medium)"
+          },
+          "model-cycle-forward-second": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": "Switched to Beta Model (thinking: medium)"
+          },
+          "model-cycle-backward": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • medium",
+            "status": "Switched to Alpha Model (thinking: medium)"
+          },
+          "model-cycle-backward-wrap": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": "Switched to Fixture Model (thinking: medium)"
+          },
+          "selector-open": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              ">",
+              "→ ✓ fixture-model [fixture]",
+              "    alpha [fixture]",
+              "    beta [fixture]",
+              "  Model Name: Fixture Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 2,
+              "y": 10,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "selector-cancel": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "selector-select-beta": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              ">",
+              "→ ✓ fixture-model [fixture]",
+              "    alpha [fixture]",
+              "    beta [fixture]",
+              "  Model Name: Fixture Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 2,
+              "y": 10,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "selector-search-beta": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              "> beta",
+              "→   beta [fixture]",
+              "  Model Name: Beta Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 6,
+              "y": 12,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "selector-confirm-beta": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": ""
+          },
+          "first-prompt": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": ""
+          },
+          "selector-open-alpha": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              ">",
+              "→ ✓ beta [fixture]",
+              "    fixture-model [fixture]",
+              "    alpha [fixture]",
+              "  Model Name: Beta Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 2,
+              "y": 10,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": ""
+          },
+          "selector-search-alpha": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              "> alpha",
+              "→   alpha [fixture]",
+              "  Model Name: Alpha Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 7,
+              "y": 12,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": ""
+          },
+          "selector-confirm-alpha": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • medium",
+            "status": ""
+          },
+          "second-prompt": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • medium",
+            "status": ""
+          },
+          "thinking-cycle": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": "Thinking level: high"
+          },
+          "tool-expand": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": "Tool output: expanded"
+          },
+          "thinking-toggle": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": "Thinking blocks: hidden"
+          },
+          "copy-last-assistant": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": "Thinking blocks: hidden"
+          },
+          "quit": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 19,
+              "visible": true,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 6,
+            "activeScreen": "normal",
+            "temporaryModes": [],
+            "bracketedPasteMode": false,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": ""
+          }
+        },
+        "requests": [
+          "first prompt",
+          "second prompt"
+        ],
+        "requestFacts": [
+          {
+            "model": "beta",
+            "thinking": "medium",
+            "users": [
+              "first prompt"
+            ],
+            "history": [
+              "developer:You are a terminal parity fixture.\n\n<cwd>\n/home/philip/Projects/pisharp/artifacts/parity/keys-model-display/final-80x24-dark-fullscreen-root/workspace\n</cwd>",
+              "user:first prompt"
+            ]
+          },
+          {
+            "model": "alpha",
+            "thinking": "medium",
+            "users": [
+              "second prompt"
+            ],
+            "history": [
+              "developer:You are a terminal parity fixture.\n\n<cwd>\n/home/philip/Projects/pisharp/artifacts/parity/keys-model-display/final-80x24-dark-fullscreen-root/workspace\n</cwd>",
+              "user:first prompt",
+              "assistant:fixture reply",
+              "user:second prompt"
+            ]
+          }
+        ]
+      }
+    },
+    "80x24-dark-regular": {
+      "fixture": "terminal-keys-model-display",
+      "case": "80x24-dark-regular",
+      "paired": {
+        "scenarioErrors": {},
+        "httpMatch": true,
+        "rawHttpDifferenceCount": 0,
+        "renderDifferenceCount": null,
+        "comparedRenderFrameCount": 26,
+        "clipboardMatch": true
+      },
+      "calibration": {
+        "scenarioErrors": {},
+        "differences": 0,
+        "httpMatch": true,
+        "renderDifferenceCount": null
+      },
+      "pi": {
+        "checkpoints": {
+          "startup": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 2,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "model-cycle-forward": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 4,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • medium",
+            "status": "Switched to Alpha Model (thinking: medium)"
+          },
+          "model-cycle-forward-second": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 4,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": "Switched to Beta Model (thinking: medium)"
+          },
+          "model-cycle-backward": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 4,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • medium",
+            "status": "Switched to Alpha Model (thinking: medium)"
+          },
+          "model-cycle-backward-wrap": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 4,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": "Switched to Fixture Model (thinking: medium)"
+          },
+          "selector-open": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              ">",
+              "→ ✓ fixture-model [fixture]",
+              "    alpha [fixture]",
+              "    beta [fixture]",
+              "  Model Name: Fixture Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 2,
+              "y": 7,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "selector-cancel": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 4,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "selector-select-beta": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              ">",
+              "→ ✓ fixture-model [fixture]",
+              "    alpha [fixture]",
+              "    beta [fixture]",
+              "  Model Name: Fixture Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 2,
+              "y": 7,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "selector-search-beta": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              "> beta",
+              "→   beta [fixture]",
+              "  Model Name: Beta Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 6,
+              "y": 7,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "selector-confirm-beta": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 4,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": ""
+          },
+          "first-prompt": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 10,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": ""
+          },
+          "selector-open-alpha": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              ">",
+              "→ ✓ beta [fixture]",
+              "    fixture-model [fixture]",
+              "    alpha [fixture]",
+              "  Model Name: Beta Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 2,
+              "y": 10,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": ""
+          },
+          "selector-search-alpha": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              "> alpha",
+              "→   alpha [fixture]",
+              "  Model Name: Alpha Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 7,
+              "y": 10,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": ""
+          },
+          "selector-confirm-alpha": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 9,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • medium",
+            "status": ""
+          },
+          "second-prompt": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 9,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • medium",
+            "status": ""
+          },
+          "thinking-cycle": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 17,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": "Thinking level: high"
+          },
+          "tool-expand": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 17,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": "Tool output: expanded"
+          },
+          "thinking-toggle": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 17,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": "Thinking blocks: hidden"
+          },
+          "copy-last-assistant": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 17,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": "Copied last agent message to clipboard"
+          },
+          "quit": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 22,
+              "visible": true,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 6,
+            "activeScreen": "normal",
+            "temporaryModes": [],
+            "bracketedPasteMode": false,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": ""
+          }
+        },
+        "requests": [
+          "first prompt",
+          "second prompt"
+        ],
+        "requestFacts": [
+          {
+            "model": "beta",
+            "thinking": "medium",
+            "users": [
+              "first prompt"
+            ],
+            "history": [
+              "developer:You are a terminal parity fixture.\n\n<cwd>\n/home/philip/Projects/pisharp/artifacts/parity/keys-model-display/final-80x24-dark-regular-root/workspace\n</cwd>",
+              "user:first prompt"
+            ]
+          },
+          {
+            "model": "alpha",
+            "thinking": "medium",
+            "users": [
+              "second prompt"
+            ],
+            "history": [
+              "developer:You are a terminal parity fixture.\n\n<cwd>\n/home/philip/Projects/pisharp/artifacts/parity/keys-model-display/final-80x24-dark-regular-root/workspace\n</cwd>",
+              "user:first prompt",
+              "assistant:fixture reply",
+              "user:second prompt"
+            ]
+          }
+        ]
+      },
+      "pisharp": {
+        "checkpoints": {
+          "startup": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 2,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "model-cycle-forward": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 5,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • medium",
+            "status": "Switched to Alpha Model (thinking: medium)"
+          },
+          "model-cycle-forward-second": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 5,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": "Switched to Beta Model (thinking: medium)"
+          },
+          "model-cycle-backward": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 5,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • medium",
+            "status": "Switched to Alpha Model (thinking: medium)"
+          },
+          "model-cycle-backward-wrap": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 5,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": "Switched to Fixture Model (thinking: medium)"
+          },
+          "selector-open": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              ">",
+              "→ ✓ fixture-model [fixture]",
+              "    alpha [fixture]",
+              "    beta [fixture]",
+              "  Model Name: Fixture Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 2,
+              "y": 10,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "selector-cancel": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 5,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "selector-select-beta": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              ">",
+              "→ ✓ fixture-model [fixture]",
+              "    alpha [fixture]",
+              "    beta [fixture]",
+              "  Model Name: Fixture Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 2,
+              "y": 10,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "selector-search-beta": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              "> beta",
+              "→   beta [fixture]",
+              "  Model Name: Beta Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 6,
+              "y": 12,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "selector-confirm-beta": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 5,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": ""
+          },
+          "first-prompt": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 10,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": ""
+          },
+          "selector-open-alpha": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              ">",
+              "→ ✓ beta [fixture]",
+              "    fixture-model [fixture]",
+              "    alpha [fixture]",
+              "  Model Name: Beta Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 2,
+              "y": 10,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": ""
+          },
+          "selector-search-alpha": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              "> alpha",
+              "→   alpha [fixture]",
+              "  Model Name: Alpha Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 7,
+              "y": 12,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": ""
+          },
+          "selector-confirm-alpha": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 12,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • medium",
+            "status": ""
+          },
+          "second-prompt": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 12,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • medium",
+            "status": ""
+          },
+          "thinking-cycle": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 19,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": "Thinking level: high"
+          },
+          "tool-expand": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": "Tool output: expanded"
+          },
+          "thinking-toggle": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": "Thinking blocks: hidden"
+          },
+          "copy-last-assistant": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": "Copied last agent message to clipboard"
+          },
+          "quit": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 23,
+              "visible": true,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 5,
+            "activeScreen": "normal",
+            "temporaryModes": [],
+            "bracketedPasteMode": false,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": ""
+          }
+        },
+        "requests": [
+          "first prompt",
+          "second prompt"
+        ],
+        "requestFacts": [
+          {
+            "model": "beta",
+            "thinking": "medium",
+            "users": [
+              "first prompt"
+            ],
+            "history": [
+              "developer:You are a terminal parity fixture.\n\n<cwd>\n/home/philip/Projects/pisharp/artifacts/parity/keys-model-display/final-80x24-dark-regular-root/workspace\n</cwd>",
+              "user:first prompt"
+            ]
+          },
+          {
+            "model": "alpha",
+            "thinking": "medium",
+            "users": [
+              "second prompt"
+            ],
+            "history": [
+              "developer:You are a terminal parity fixture.\n\n<cwd>\n/home/philip/Projects/pisharp/artifacts/parity/keys-model-display/final-80x24-dark-regular-root/workspace\n</cwd>",
+              "user:first prompt",
+              "assistant:fixture reply",
+              "user:second prompt"
+            ]
+          }
+        ]
+      }
+    },
+    "120x40-dark-fullscreen": {
+      "fixture": "terminal-keys-model-display",
+      "case": "120x40-dark-fullscreen",
+      "paired": {
+        "scenarioErrors": {},
+        "httpMatch": true,
+        "rawHttpDifferenceCount": 0,
+        "renderDifferenceCount": null,
+        "comparedRenderFrameCount": 30,
+        "clipboardMatch": true
+      },
+      "calibration": {
+        "scenarioErrors": {},
+        "differences": 0,
+        "httpMatch": true,
+        "renderDifferenceCount": null
+      },
+      "pi": {
+        "checkpoints": {
+          "startup": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "model-cycle-forward": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • medium",
+            "status": "Switched to Alpha Model (thinking: medium)"
+          },
+          "model-cycle-forward-second": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": "Switched to Beta Model (thinking: medium)"
+          },
+          "model-cycle-backward": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • medium",
+            "status": "Switched to Alpha Model (thinking: medium)"
+          },
+          "model-cycle-backward-wrap": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": "Switched to Fixture Model (thinking: medium)"
+          },
+          "selector-open": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              ">",
+              "→ ✓ fixture-model [fixture]",
+              "    alpha [fixture]",
+              "    beta [fixture]",
+              "  Model Name: Fixture Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 2,
+              "y": 26,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "selector-cancel": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "selector-select-beta": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              ">",
+              "→ ✓ fixture-model [fixture]",
+              "    alpha [fixture]",
+              "    beta [fixture]",
+              "  Model Name: Fixture Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 2,
+              "y": 26,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "selector-search-beta": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              "> beta",
+              "→   beta [fixture]",
+              "  Model Name: Beta Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 6,
+              "y": 28,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "selector-confirm-beta": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": ""
+          },
+          "first-prompt": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": ""
+          },
+          "selector-open-alpha": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              ">",
+              "→ ✓ beta [fixture]",
+              "    fixture-model [fixture]",
+              "    alpha [fixture]",
+              "  Model Name: Beta Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 2,
+              "y": 26,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": ""
+          },
+          "selector-search-alpha": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              "> alpha",
+              "→   alpha [fixture]",
+              "  Model Name: Alpha Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 7,
+              "y": 28,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": ""
+          },
+          "selector-confirm-alpha": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • medium",
+            "status": ""
+          },
+          "second-prompt": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • medium",
+            "status": ""
+          },
+          "thinking-cycle": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": "Thinking level: high"
+          },
+          "tool-expand": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": "Tool output: expanded"
+          },
+          "thinking-toggle": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": "Thinking blocks: hidden"
+          },
+          "copy-last-assistant": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": "Thinking blocks: hidden"
+          },
+          "quit": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 25,
+              "visible": true,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 6,
+            "activeScreen": "normal",
+            "temporaryModes": [],
+            "bracketedPasteMode": false,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": ""
+          }
+        },
+        "requests": [
+          "first prompt",
+          "second prompt"
+        ],
+        "requestFacts": [
+          {
+            "model": "beta",
+            "thinking": "medium",
+            "users": [
+              "first prompt"
+            ],
+            "history": [
+              "developer:You are a terminal parity fixture.\n\n<cwd>\n/home/philip/Projects/pisharp/artifacts/parity/keys-model-display/final-120x40-dark-fullscreen-root/workspace\n</cwd>",
+              "user:first prompt"
+            ]
+          },
+          {
+            "model": "alpha",
+            "thinking": "medium",
+            "users": [
+              "second prompt"
+            ],
+            "history": [
+              "developer:You are a terminal parity fixture.\n\n<cwd>\n/home/philip/Projects/pisharp/artifacts/parity/keys-model-display/final-120x40-dark-fullscreen-root/workspace\n</cwd>",
+              "user:first prompt",
+              "assistant:fixture reply",
+              "user:second prompt"
+            ]
+          }
+        ]
+      },
+      "pisharp": {
+        "checkpoints": {
+          "startup": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "model-cycle-forward": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • medium",
+            "status": "Switched to Alpha Model (thinking: medium)"
+          },
+          "model-cycle-forward-second": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": "Switched to Beta Model (thinking: medium)"
+          },
+          "model-cycle-backward": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • medium",
+            "status": "Switched to Alpha Model (thinking: medium)"
+          },
+          "model-cycle-backward-wrap": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": "Switched to Fixture Model (thinking: medium)"
+          },
+          "selector-open": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              ">",
+              "→ ✓ fixture-model [fixture]",
+              "    alpha [fixture]",
+              "    beta [fixture]",
+              "  Model Name: Fixture Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 2,
+              "y": 26,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "selector-cancel": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "selector-select-beta": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              ">",
+              "→ ✓ fixture-model [fixture]",
+              "    alpha [fixture]",
+              "    beta [fixture]",
+              "  Model Name: Fixture Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 2,
+              "y": 26,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "selector-search-beta": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              "> beta",
+              "→   beta [fixture]",
+              "  Model Name: Beta Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 6,
+              "y": 28,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "selector-confirm-beta": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": ""
+          },
+          "first-prompt": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": ""
+          },
+          "selector-open-alpha": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              ">",
+              "→ ✓ beta [fixture]",
+              "    fixture-model [fixture]",
+              "    alpha [fixture]",
+              "  Model Name: Beta Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 2,
+              "y": 26,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": ""
+          },
+          "selector-search-alpha": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              "> alpha",
+              "→   alpha [fixture]",
+              "  Model Name: Alpha Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 7,
+              "y": 28,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": ""
+          },
+          "selector-confirm-alpha": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • medium",
+            "status": ""
+          },
+          "second-prompt": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • medium",
+            "status": ""
+          },
+          "thinking-cycle": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": "Thinking level: high"
+          },
+          "tool-expand": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": "Tool output: expanded"
+          },
+          "thinking-toggle": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": "Thinking blocks: hidden"
+          },
+          "copy-last-assistant": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": "Thinking blocks: hidden"
+          },
+          "quit": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 19,
+              "visible": true,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 6,
+            "activeScreen": "normal",
+            "temporaryModes": [],
+            "bracketedPasteMode": false,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": ""
+          }
+        },
+        "requests": [
+          "first prompt",
+          "second prompt"
+        ],
+        "requestFacts": [
+          {
+            "model": "beta",
+            "thinking": "medium",
+            "users": [
+              "first prompt"
+            ],
+            "history": [
+              "developer:You are a terminal parity fixture.\n\n<cwd>\n/home/philip/Projects/pisharp/artifacts/parity/keys-model-display/final-120x40-dark-fullscreen-root/workspace\n</cwd>",
+              "user:first prompt"
+            ]
+          },
+          {
+            "model": "alpha",
+            "thinking": "medium",
+            "users": [
+              "second prompt"
+            ],
+            "history": [
+              "developer:You are a terminal parity fixture.\n\n<cwd>\n/home/philip/Projects/pisharp/artifacts/parity/keys-model-display/final-120x40-dark-fullscreen-root/workspace\n</cwd>",
+              "user:first prompt",
+              "assistant:fixture reply",
+              "user:second prompt"
+            ]
+          }
+        ]
+      }
+    },
+    "120x40-dark-regular": {
+      "fixture": "terminal-keys-model-display",
+      "case": "120x40-dark-regular",
+      "paired": {
+        "scenarioErrors": {},
+        "httpMatch": true,
+        "rawHttpDifferenceCount": 0,
+        "renderDifferenceCount": null,
+        "comparedRenderFrameCount": 26,
+        "clipboardMatch": true
+      },
+      "calibration": {
+        "scenarioErrors": {},
+        "differences": 0,
+        "httpMatch": true,
+        "renderDifferenceCount": null
+      },
+      "pi": {
+        "checkpoints": {
+          "startup": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 2,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "model-cycle-forward": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 4,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • medium",
+            "status": "Switched to Alpha Model (thinking: medium)"
+          },
+          "model-cycle-forward-second": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 4,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": "Switched to Beta Model (thinking: medium)"
+          },
+          "model-cycle-backward": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 4,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • medium",
+            "status": "Switched to Alpha Model (thinking: medium)"
+          },
+          "model-cycle-backward-wrap": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 4,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": "Switched to Fixture Model (thinking: medium)"
+          },
+          "selector-open": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              ">",
+              "→ ✓ fixture-model [fixture]",
+              "    alpha [fixture]",
+              "    beta [fixture]",
+              "  Model Name: Fixture Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 2,
+              "y": 7,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "selector-cancel": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 4,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "selector-select-beta": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              ">",
+              "→ ✓ fixture-model [fixture]",
+              "    alpha [fixture]",
+              "    beta [fixture]",
+              "  Model Name: Fixture Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 2,
+              "y": 7,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "selector-search-beta": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              "> beta",
+              "→   beta [fixture]",
+              "  Model Name: Beta Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 6,
+              "y": 7,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "selector-confirm-beta": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 4,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": ""
+          },
+          "first-prompt": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 10,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": ""
+          },
+          "selector-open-alpha": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              ">",
+              "→ ✓ beta [fixture]",
+              "    fixture-model [fixture]",
+              "    alpha [fixture]",
+              "  Model Name: Beta Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 2,
+              "y": 13,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": ""
+          },
+          "selector-search-alpha": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              "> alpha",
+              "→   alpha [fixture]",
+              "  Model Name: Alpha Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 7,
+              "y": 13,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": ""
+          },
+          "selector-confirm-alpha": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 12,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • medium",
+            "status": ""
+          },
+          "second-prompt": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 12,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • medium",
+            "status": ""
+          },
+          "thinking-cycle": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": "Thinking level: high"
+          },
+          "tool-expand": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": "Tool output: expanded"
+          },
+          "thinking-toggle": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": "Thinking blocks: hidden"
+          },
+          "copy-last-assistant": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": "Copied last agent message to clipboard"
+          },
+          "quit": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 25,
+              "visible": true,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 6,
+            "activeScreen": "normal",
+            "temporaryModes": [],
+            "bracketedPasteMode": false,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": ""
+          }
+        },
+        "requests": [
+          "first prompt",
+          "second prompt"
+        ],
+        "requestFacts": [
+          {
+            "model": "beta",
+            "thinking": "medium",
+            "users": [
+              "first prompt"
+            ],
+            "history": [
+              "developer:You are a terminal parity fixture.\n\n<cwd>\n/home/philip/Projects/pisharp/artifacts/parity/keys-model-display/final-120x40-dark-regular-root/workspace\n</cwd>",
+              "user:first prompt"
+            ]
+          },
+          {
+            "model": "alpha",
+            "thinking": "medium",
+            "users": [
+              "second prompt"
+            ],
+            "history": [
+              "developer:You are a terminal parity fixture.\n\n<cwd>\n/home/philip/Projects/pisharp/artifacts/parity/keys-model-display/final-120x40-dark-regular-root/workspace\n</cwd>",
+              "user:first prompt",
+              "assistant:fixture reply",
+              "user:second prompt"
+            ]
+          }
+        ]
+      },
+      "pisharp": {
+        "checkpoints": {
+          "startup": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 2,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "model-cycle-forward": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 5,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • medium",
+            "status": "Switched to Alpha Model (thinking: medium)"
+          },
+          "model-cycle-forward-second": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 5,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": "Switched to Beta Model (thinking: medium)"
+          },
+          "model-cycle-backward": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 5,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • medium",
+            "status": "Switched to Alpha Model (thinking: medium)"
+          },
+          "model-cycle-backward-wrap": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 5,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": "Switched to Fixture Model (thinking: medium)"
+          },
+          "selector-open": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              ">",
+              "→ ✓ fixture-model [fixture]",
+              "    alpha [fixture]",
+              "    beta [fixture]",
+              "  Model Name: Fixture Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 2,
+              "y": 26,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "selector-cancel": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 5,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "selector-select-beta": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              ">",
+              "→ ✓ fixture-model [fixture]",
+              "    alpha [fixture]",
+              "    beta [fixture]",
+              "  Model Name: Fixture Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 2,
+              "y": 26,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "selector-search-beta": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              "> beta",
+              "→   beta [fixture]",
+              "  Model Name: Beta Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 6,
+              "y": 28,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) fixture-model • medium",
+            "status": ""
+          },
+          "selector-confirm-beta": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 5,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": ""
+          },
+          "first-prompt": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 10,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": ""
+          },
+          "selector-open-alpha": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              ">",
+              "→ ✓ beta [fixture]",
+              "    fixture-model [fixture]",
+              "    alpha [fixture]",
+              "  Model Name: Beta Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 2,
+              "y": 26,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": ""
+          },
+          "selector-search-alpha": {
+            "editor": [
+              "Only showing models from configured providers. Use /login to add providers.",
+              "> alpha",
+              "→   alpha [fixture]",
+              "  Model Name: Alpha Model",
+              "  Model catalogs refreshed.",
+              "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            ],
+            "cursor": {
+              "x": 7,
+              "y": 28,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 4,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) beta • medium",
+            "status": ""
+          },
+          "selector-confirm-alpha": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 12,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • medium",
+            "status": ""
+          },
+          "second-prompt": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 12,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • medium",
+            "status": ""
+          },
+          "thinking-cycle": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 19,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": "Thinking level: high"
+          },
+          "tool-expand": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 19,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": "Tool output: expanded"
+          },
+          "thinking-toggle": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 19,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": "Thinking blocks: hidden"
+          },
+          "copy-last-assistant": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 19,
+              "visible": false,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 1,
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": "Copied last agent message to clipboard"
+          },
+          "quit": {
+            "editor": [],
+            "cursor": {
+              "x": 0,
+              "y": 24,
+              "visible": true,
+              "style": "block",
+              "blink": false
+            },
+            "editorRow": 6,
+            "activeScreen": "normal",
+            "temporaryModes": [],
+            "bracketedPasteMode": false,
+            "footer": "0.0%/128k (auto) alpha • high",
+            "status": ""
+          }
+        },
+        "requests": [
+          "first prompt",
+          "second prompt"
+        ],
+        "requestFacts": [
+          {
+            "model": "beta",
+            "thinking": "medium",
+            "users": [
+              "first prompt"
+            ],
+            "history": [
+              "developer:You are a terminal parity fixture.\n\n<cwd>\n/home/philip/Projects/pisharp/artifacts/parity/keys-model-display/final-120x40-dark-regular-root/workspace\n</cwd>",
+              "user:first prompt"
+            ]
+          },
+          {
+            "model": "alpha",
+            "thinking": "medium",
+            "users": [
+              "second prompt"
+            ],
+            "history": [
+              "developer:You are a terminal parity fixture.\n\n<cwd>\n/home/philip/Projects/pisharp/artifacts/parity/keys-model-display/final-120x40-dark-regular-root/workspace\n</cwd>",
+              "user:first prompt",
+              "assistant:fixture reply",
+              "user:second prompt"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,409 @@
+{
+  "capability": "keys-model-display",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "sources": [
+    {
+      "path": "packages/coding-agent/src/modes/interactive/interactive-mode.ts",
+      "anchors": [
+        "this.defaultEditor.onAction(\"app.thinking.cycle\"",
+        "this.defaultEditor.onAction(\"app.model.cycleForward\"",
+        "this.defaultEditor.onAction(\"app.model.cycleBackward\"",
+        "this.defaultEditor.onAction(\"app.model.select\"",
+        "this.defaultEditor.onAction(\"app.tools.expand\"",
+        "this.defaultEditor.onAction(\"app.thinking.toggle\"",
+        "private cycleThinkingLevel(): void",
+        "private async cycleModel(direction: \"forward\" | \"backward\"): Promise<void>",
+        "Switched to ${result.model.name || result.model.id}${thinkingStr}",
+        "private toggleThinkingBlockVisibility(): void",
+        "private async handleCopyCommand(",
+        "!this.ui.getCopyOnSelect()"
+      ]
+    },
+    {
+      "path": "packages/coding-agent/src/core/agent-session.ts",
+      "anchors": [
+        "async cycleModel(",
+        "return this._cycleScopedModel(direction, options);",
+        "const availableModels = this._modelRuntime.getAvailableSnapshot();",
+        "if (availableModels.length <= 1) return undefined;",
+        "const scopedModels = this._scopedModels.filter((scoped) =>",
+        "if (scopedModels.length <= 1) return undefined;"
+      ]
+    },
+    {
+      "path": "packages/coding-agent/src/modes/interactive/components/model-selector.ts",
+      "anchors": [
+        "this.scope = scopedModels.length > 0 ? \"scoped\" : \"all\";",
+        "this.modelRuntime.getAvailableSnapshot()",
+        "if (kb.matches(keyData, \"tui.input.tab\"))",
+        "else if (kb.matches(keyData, \"app.models.save\")",
+        "keyDisplayText(\"app.models.save\")"
+      ]
+    },
+    {
+      "path": "packages/coding-agent/src/modes/interactive/components/custom-editor.ts",
+      "anchors": [
+        "for (const [action, handler] of this.actionHandlers)",
+        "if (action !== \"app.interrupt\" && action !== \"app.exit\" && this.keybindings.matches(data, action))"
+      ]
+    },
+    {
+      "path": "packages/coding-agent/src/core/keybindings.ts",
+      "anchors": [
+        "\"app.thinking.cycle\": {",
+        "\"app.thinking.save\": {",
+        "\"app.model.cycleForward\": {",
+        "\"app.model.cycleBackward\": {",
+        "\"app.model.select\": {",
+        "\"app.tools.expand\": {",
+        "\"app.thinking.toggle\": {",
+        "\"app.message.copy\": {",
+        "windowsKeybindings ? \"alt+p\" : \"shift+ctrl+p\"",
+        "\"app.models.save\": {",
+        "\"app.thinking.save\": {"
+      ]
+    },
+    {
+      "path": "packages/tui/src/keybindings.ts",
+      "anchors": [
+        "\"tui.input.tab\": { defaultKeys: \"tab\"",
+        "\"tui.select.up\": { defaultKeys: \"up\"",
+        "\"tui.select.down\": { defaultKeys: \"down\"",
+        "\"tui.select.pageUp\": { defaultKeys: \"pageUp\"",
+        "\"tui.select.pageDown\": {",
+        "\"tui.select.confirm\": { defaultKeys: \"enter\"",
+        "\"tui.select.cancel\": {"
+      ]
+    },
+    {
+      "path": "packages/coding-agent/docs/keybindings.md",
+      "anchors": [
+        "`app.model.select`",
+        "`app.model.cycleForward`",
+        "`app.model.cycleBackward`",
+        "`app.thinking.cycle`",
+        "`app.thinking.toggle`",
+        "`app.tools.expand`",
+        "`app.message.copy`"
+      ]
+    },
+    {
+      "path": "packages/coding-agent/docs/settings.md",
+      "anchors": [
+        "`fullscreenCopyOnSelect`",
+        "Copy selected text automatically in fullscreen mode."
+      ]
+    }
+  ],
+  "scenarios": {
+    "M01": {
+      "behavior": "Tab completes only on Tab; Shift+Tab is the thinking-cycle action.",
+      "source": [
+        "packages/tui/src/keybindings.ts#tui.input.tab",
+        "packages/coding-agent/src/core/keybindings.ts#app.thinking.cycle"
+      ],
+      "expected": {
+        "bindings": {
+          "tui.input.tab": [
+            "tab"
+          ],
+          "app.thinking.cycle": [
+            "shift+tab"
+          ]
+        }
+      }
+    },
+    "M02": {
+      "behavior": "Model forward/backward and selector bindings match pinned Pi on Unix.",
+      "source": [
+        "packages/coding-agent/src/core/keybindings.ts#app.model.cycleForward",
+        "#app.model.cycleBackward"
+      ],
+      "expected": {
+        "bindingsUnix": {
+          "app.model.cycleForward": [
+            "ctrl+p"
+          ],
+          "app.model.cycleBackward": [
+            "ctrl+shift+p"
+          ],
+          "app.model.select": [
+            "ctrl+l"
+          ]
+        }
+      }
+    },
+    "M03": {
+      "behavior": "Windows/WSL uses Alt+P for backward cycling instead of Shift+Ctrl+P.",
+      "source": [
+        "packages/coding-agent/src/core/keybindings.ts#app.model.cycleBackward"
+      ],
+      "expected": {
+        "bindingsWindows": {
+          "app.model.cycleBackward": [
+            "alt+p"
+          ]
+        }
+      }
+    },
+    "M04": {
+      "behavior": "Tool output, thinking visibility and copy keep their pinned bindings.",
+      "source": [
+        "packages/coding-agent/src/core/keybindings.ts#app.tools.expand",
+        "#app.thinking.toggle",
+        "#app.message.copy"
+      ],
+      "expected": {
+        "bindings": {
+          "app.tools.expand": [
+            "ctrl+o"
+          ],
+          "app.thinking.toggle": [
+            "ctrl+t"
+          ],
+          "app.message.copy": [
+            "ctrl+x"
+          ]
+        }
+      }
+    },
+    "M05": {
+      "behavior": "Selection overlays use configurable TUI selection bindings and Pi confirm/cancel defaults.",
+      "source": [
+        "packages/tui/src/keybindings.ts#tui.select.confirm",
+        "#tui.select.cancel"
+      ],
+      "expected": {
+        "bindings": {
+          "tui.select.up": [
+            "up"
+          ],
+          "tui.select.down": [
+            "down"
+          ],
+          "tui.select.pageUp": [
+            "pageup"
+          ],
+          "tui.select.pageDown": [
+            "pagedown"
+          ],
+          "tui.select.confirm": [
+            "enter"
+          ],
+          "tui.select.cancel": [
+            "escape",
+            "ctrl+c"
+          ]
+        }
+      }
+    },
+    "M06": {
+      "behavior": "Model and thinking save actions are separate configurable bindings.",
+      "source": [
+        "packages/coding-agent/src/core/keybindings.ts#app.models.save",
+        "#app.thinking.save"
+      ],
+      "expected": {
+        "bindings": {
+          "app.models.save": [
+            "ctrl+s"
+          ],
+          "app.thinking.save": [
+            "ctrl+s"
+          ]
+        }
+      }
+    },
+    "M07": {
+      "behavior": "Key display text renders the configured model, thinking, tool and copy bindings.",
+      "source": [
+        "packages/coding-agent/src/core/keybindings.ts",
+        "packages/coding-agent/src/modes/interactive/components/keybinding-hints.ts"
+      ],
+      "expected": {
+        "display": {
+          "app.model.cycleForward": "Ctrl+P",
+          "app.model.select": "Ctrl+L",
+          "app.thinking.cycle": "Shift+Tab",
+          "app.thinking.toggle": "Ctrl+T",
+          "app.tools.expand": "Ctrl+O",
+          "app.message.copy": "Ctrl+X"
+        },
+        "displayUnix": {
+          "app.model.cycleBackward": "Shift+Ctrl+P"
+        },
+        "displayWindows": {
+          "app.model.cycleBackward": "Alt+P"
+        }
+      }
+    },
+    "M08": {
+      "behavior": "Thinking cycles forward through model-supported levels and wraps.",
+      "source": [
+        "packages/coding-agent/src/core/agent-session.ts#cycleThinkingLevel"
+      ],
+      "expected": {
+        "thinking": [
+          {
+            "reasoning": true,
+            "current": "off",
+            "next": "minimal"
+          },
+          {
+            "reasoning": true,
+            "current": "high",
+            "next": "off"
+          }
+        ]
+      }
+    },
+    "M09": {
+      "behavior": "A non-reasoning model reports the pinned unsupported message without trailing punctuation.",
+      "source": [
+        "packages/coding-agent/src/modes/interactive/interactive-mode.ts#cycleThinkingLevel"
+      ],
+      "expected": {
+        "thinking": [
+          {
+            "reasoning": false,
+            "current": "medium",
+            "next": null,
+            "message": "Current model does not support thinking"
+          }
+        ]
+      }
+    },
+    "M10": {
+      "behavior": "Cycle status names the target model and discloses non-off thinking.",
+      "source": [
+        "packages/coding-agent/src/modes/interactive/interactive-mode.ts#Switched to"
+      ],
+      "expected": {
+        "status": [
+          {
+            "reasoning": true,
+            "thinking": "medium",
+            "suffix": " (thinking: medium)"
+          },
+          {
+            "reasoning": true,
+            "thinking": "off",
+            "suffix": ""
+          },
+          {
+            "reasoning": false,
+            "thinking": "medium",
+            "suffix": ""
+          }
+        ]
+      }
+    },
+    "M11": {
+      "behavior": "The model selector scopes to scoped models when a scope exists and toggles with Tab.",
+      "source": [
+        "packages/coding-agent/src/modes/interactive/components/model-selector.ts#this.scope"
+      ],
+      "expected": {
+        "bindings": {
+          "tui.input.tab": [
+            "tab"
+          ]
+        },
+        "selectorScopeDefault": "scoped"
+      }
+    },
+    "M12": {
+      "behavior": "The selector accepts Enter and cancels with its configured selection bindings.",
+      "source": [
+        "packages/coding-agent/src/modes/interactive/components/model-selector.ts#tui.select.confirm"
+      ],
+      "expected": {
+        "bindings": {
+          "tui.select.confirm": [
+            "enter"
+          ],
+          "tui.select.cancel": [
+            "escape",
+            "ctrl+c"
+          ]
+        }
+      }
+    },
+    "M13": {
+      "behavior": "Ctrl+X prefers the last assistant message unless fullscreen copy-on-select is disabled with an active selection.",
+      "source": [
+        "packages/coding-agent/src/modes/interactive/interactive-mode.ts#handleCopyCommand"
+      ],
+      "expected": {
+        "bindings": {
+          "app.message.copy": [
+            "ctrl+x"
+          ]
+        },
+        "copyOnSelectDefault": true
+      }
+    },
+    "M14": {
+      "behavior": "Model changes and thinking changes are dispatched while the agent is running.",
+      "source": [
+        "packages/coding-agent/src/modes/interactive/components/custom-editor.ts#actionHandlers"
+      ],
+      "expected": {
+        "activeActions": [
+          "app.model.cycleForward",
+          "app.model.cycleBackward",
+          "app.model.select",
+          "app.thinking.cycle",
+          "app.thinking.toggle",
+          "app.tools.expand",
+          "app.message.copy"
+        ]
+      }
+    },
+    "M15": {
+      "behavior": "The selected model and thinking level are written to the session so provider requests keep prior messages.",
+      "source": [
+        "packages/coding-agent/src/core/agent-session.ts#appendModelChange",
+        "#setThinkingLevel"
+      ],
+      "expected": {
+        "contextPreserved": true,
+        "thinkingPersisted": true,
+        "bindings": {
+          "app.model.cycleForward": [
+            "ctrl+p"
+          ],
+          "app.thinking.cycle": [
+            "shift+tab"
+          ]
+        }
+      }
+    },
+    "M16": {
+      "behavior": "Configured model, thinking, tool and copy bindings take precedence over editor text and widget keys.",
+      "source": [
+        "packages/coding-agent/src/modes/interactive/components/custom-editor.ts#Check all other app actions"
+      ],
+      "expected": {
+        "rebindable": [
+          "app.model.cycleForward",
+          "app.model.cycleBackward",
+          "app.model.select",
+          "app.thinking.cycle",
+          "app.tools.expand",
+          "app.message.copy"
+        ]
+      }
+    }
+  },
+  "ptyScenarios": {
+    "model-cycle-selector-context": [
+      "terminal-keys-model-display/80x24-dark-fullscreen/startup",
+      "terminal-keys-model-display/120x40-dark-regular/model-cycle-forward"
+    ],
+    "thinking-tool-copy": [
+      "terminal-keys-model-display/80x24-dark-fullscreen/thinking-cycle",
+      "terminal-keys-model-display/120x40-dark-regular/tool-expand"
+    ]
+  }
+}
