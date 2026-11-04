@@ -112,7 +112,12 @@ internal sealed class InteractivePromptExecution(TerminalEditor? editor, Termina
             if (images is not null) contents.AddRange(images);
             var message = new ChatMessage(ChatRole.User, contents);
             var accepted = followUp ? getRun().TryFollowUp(message, queued) : getRun().TrySteer(message, queued);
-            if (accepted) getError().WriteLine(followUp ? "Queued follow-up." : "Queued steering message.");
+            if (accepted)
+            {
+                if (screen is { IsActive: true }) screen.AppendThemedStatusLine(
+                    $"{(followUp ? "Follow-up" : "Steering")}: {queued}");
+                getError().WriteLine(followUp ? "Queued follow-up." : "Queued steering message.");
+            }
             return accepted;
         }
         catch (Exception queueError) when (queueError is ArgumentException or IOException)

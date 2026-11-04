@@ -523,6 +523,46 @@ public sealed class TerminalEditor
         CancelCompletionRequest(pendingRequest);
     }
 
+    /// <summary>Apply idle-run queue controls. Enter-submit behaviour is returned through
+    /// <paramref name="submitted"/>; handled non-submit keys return true with a null submission.</summary>
+    internal bool HandleIdleQueueKey(ConsoleKeyInfo key, Func<IReadOnlyList<string>>? drainQueuedMessages,
+        out string? submitted)
+    {
+        submitted = null;
+        if (_keymap.Matches("app.message.dequeue", key))
+        {
+            var pending = drainQueuedMessages?.Invoke() ?? [];
+            RestorePending(pending);
+            ShowQueueStatus(pending.Count);
+            return true;
+        }
+        if (!_keymap.Matches("app.message.followUp", key)) return false;
+        // Pinned Pi treats Alt+Enter as a normal submit while no run is active.
+        string? accepted = null;
+        WithEditorState(() =>
+        {
+            if (!_buffer.TrySubmit(out var value) || string.IsNullOrWhiteSpace(value)) return false;
+            accepted = value;
+            _buffer.Clear();
+            return true;
+        });
+        submitted = accepted;
+        return true;
+    }
+
+    internal void ShowQueueStatus(int restoredCount) => ShowStatusMessage(QueueRestoreStatus(restoredCount));
+
+    internal static string QueueRestoreStatus(int restoredCount) => restoredCount == 0
+        ? "No queued messages to restore"
+        : $"Restored {restoredCount} queued message{(restoredCount == 1 ? "" : "s")} to editor";
+
+    internal void ShowStatusMessage(string message)
+    {
+        if (_screen is { IsActive: true } screen) screen.AppendThemedStatusLine(message);
+        else Console.WriteLine(message);
+        Render();
+    }
+
     /// <summary>Read active-run controls while provider output streams. Enter steers, Alt+Enter
     /// follows up, Alt+Up restores queued input, and Escape aborts after restoring queued input.</summary>
     public async Task MonitorRunAsync(Func<string, bool, CancellationToken, Task<bool>> queue,
@@ -660,7 +700,9 @@ public sealed class TerminalEditor
         }
         if (next.Key is { } dequeueKey && _keymap.Matches("app.message.dequeue", dequeueKey))
         {
-            RestorePending(clearQueue());
+            var pending = clearQueue();
+            RestorePending(pending);
+            ShowQueueStatus(pending.Count);
             return true;
         }
         if (next.Key is { } screenKey && _screen is { IsActive: true } screen)
@@ -778,7 +820,8 @@ public sealed class TerminalEditor
     public async Task<string?> ReadLineAsync(Func<string, Task> dispatchApplicationAction,
         bool enableApplicationActions = true, bool allowEmptySubmit = false,
         CancellationToken cancellationToken = default,
-        Func<ExtensionShortcutInfo, CancellationToken, Task>? dispatchExtensionShortcut = null)
+        Func<ExtensionShortcutInfo, CancellationToken, Task>? dispatchExtensionShortcut = null,
+        Func<IReadOnlyList<string>>? drainQueuedMessages = null)
     {
         ArgumentNullException.ThrowIfNull(dispatchApplicationAction);
         if (Interlocked.Exchange(ref _pendingBashSubmission, null) is { } pendingBashSubmission)
@@ -843,6 +886,19 @@ public sealed class TerminalEditor
                     ExitInputLoop();
                     return null;
                 }
+            }
+            if (enableApplicationActions && next.Key is { } queueKey &&
+                HandleIdleQueueKey(queueKey, drainQueuedMessages, out var queuedSubmission))
+            {
+                if (queuedSubmission is { } submittedFollowUp)
+                {
+                    ClearLine();
+                    if (_screen is not { IsActive: true } && !submittedFollowUp.StartsWith("/", StringComparison.Ordinal))
+                        Console.WriteLine($"{Prompt}{submittedFollowUp}");
+                    return submittedFollowUp;
+                }
+                Render();
+                continue;
             }
             if (enableApplicationActions && next.Key is { } externalEditorKey &&
                 _keymap.MatchIdleApplicationAction(externalEditorKey) is { } externalAction && externalAction == "app.editor.external")

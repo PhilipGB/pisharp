@@ -879,7 +879,7 @@ public sealed class TerminalPtyTests
                         output.Append(buffer, 0, count);
                         var captured = output.ToString();
                         if (captured.Contains("\u001b[?2004h", StringComparison.Ordinal)) inputReady.TrySetResult();
-                        if (captured.Contains("Resume session", StringComparison.Ordinal)) pickerOpened.TrySetResult();
+                        if (captured.Contains("Resume Session", StringComparison.Ordinal)) pickerOpened.TrySetResult();
                         var changed = outputChanged;
                         outputChanged = new(TaskCreationOptions.RunContinuationsAsynchronously);
                         changed.TrySetResult();
@@ -939,12 +939,12 @@ public sealed class TerminalPtyTests
             await process.StandardInput.WriteAsync("/resume\r");
             await process.StandardInput.FlushAsync();
             await WaitForOutputAsync(captured => captured.Length > beforeReopen &&
-                captured[beforeReopen..].Contains("Resume session · Recent", StringComparison.Ordinal), limit.Token);
+                captured[beforeReopen..].Contains("Sort: Threaded", StringComparison.Ordinal), limit.Token);
             await process.StandardInput.WriteAsync("\u0015"); // Clear search before checking name sort.
             await process.StandardInput.FlushAsync();
             await process.StandardInput.WriteAsync("\u0013"); // Ctrl+S switches the picker to name order.
             await process.StandardInput.FlushAsync();
-            await WaitForOutputAsync(captured => captured.Contains("Resume session · Name", StringComparison.Ordinal), limit.Token);
+            await WaitForOutputAsync(captured => captured.Contains("Sort: Recent", StringComparison.Ordinal), limit.Token);
             await process.StandardInput.WriteAsync("\u001b[H\r"); // Home, then resume the first name-sorted session.
             await process.StandardInput.FlushAsync();
             await WaitForOutputAsync(captured => captured.Contains($"Resumed {firstId}", StringComparison.Ordinal), limit.Token);
@@ -960,7 +960,7 @@ public sealed class TerminalPtyTests
                 .Select(match => match.Groups[1].Value).ToArray();
             Assert.Equal(0, process.ExitCode);
             Assert.Contains("Resumed", capturedOutput);
-            Assert.Contains("Resume session · Name", capturedOutput);
+            Assert.Contains("Sort: Recent", capturedOutput);
             Assert.Contains("Search: " + secondIdPrefix, capturedOutput);
             Assert.Contains("renamed second · " + secondId, capturedOutput);
             Assert.Contains(firstId, resumedIds);

@@ -22,12 +22,26 @@ internal sealed class TerminalSessionNavigation(ActiveProjectRuntime projectBind
             return;
         }
 
-        await projectBinding.Store.ValidateListingUnchangedAsync(listing, CancellationToken.None);
+        var sourceStore = SourceStoreFor(listing);
+        await sourceStore.ValidateListingUnchangedAsync(listing, CancellationToken.None);
         await projectTransitions.BeforeSessionSwitchAsync(PiSharpExtensionSessionSwitchReason.Resume,
             listing.Path, CancellationToken.None);
         await projectTransitions.SwitchAsync(listing.Path, adoptProjectSession, CancellationToken.None, listing);
         Console.WriteLine($"Resumed {conversationBinding.Conversation.Id[..12]} · {conversationBinding.Conversation.Name ?? "(unnamed)"}");
     }
+
+    private ConversationStore SourceStoreFor(SessionListing listing)
+    {
+        if (listing.WorkingDirectory is null) return projectBinding.Store;
+        var currentDirectory = projectBinding.Store.WorkingDirectory;
+        if (ConversationStore.WorkingDirectoriesMatch(listing.WorkingDirectory, currentDirectory) &&
+            SameDirectory(listing.Path, projectBinding.Store.DirectoryPath)) return projectBinding.Store;
+        return new ConversationStore(listing.WorkingDirectory, Path.GetDirectoryName(listing.Path));
+    }
+
+    private static bool SameDirectory(string path, string? directory) => directory is not null &&
+        string.Equals(Path.GetDirectoryName(Path.GetFullPath(path)), Path.GetFullPath(directory),
+            OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
 
     public async Task SelectSessionAsync()
     {
