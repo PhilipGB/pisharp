@@ -5562,7 +5562,7 @@
         "evidence": [
           "16 pinned-Pi oracle scenarios replayed by KeysQueueSessionParityTests.MatchesPinnedPi.",
           "Four paired PTY cases (100x30/140x40, fullscreen/regular) with zero semantic paired/calibration differences and 220 named checkpoints.",
-          "Twenty-three focused facts plus PTY tests pass with zero skips; full suite and format/build gates are recorded on the milestone PR.",
+          "Twenty-six focused facts plus PTY tests pass with zero skips; full suite and format/build gates are recorded on the milestone PR.",
           "Executable verifier with 37 mutation-based negative controls covering all required rejection classes."
         ],
         "remaining": "No required keys-queue-session behaviour remains. Full render streams, fuzzy non-selected row order, selection reset policy after rename/delete, picker status auto-hide and Windows PTY execution remain non-required or separately tracked.",
