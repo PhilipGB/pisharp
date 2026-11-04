@@ -55,7 +55,9 @@
         "PiSharp.Tests.KeysQueueSessionTests.TrashFirstDeletionUsesTrashAndFallsBackToUnlinkWithFingerprintValidation",
         "PiSharp.Tests.KeysQueueSessionTests.RenamePrefillsExistingNamePersistsAndKeepsTheSessionIdentityAndHistory",
         "PiSharp.Tests.KeysQueueSessionTests.RenameFailureLeavesTheSessionFileAndCatalogIntact",
-        "PiSharp.Tests.KeysQueueSessionTests.ConcurrentCatalogChangeRejectsStaleMutationAndPreservesUnrelatedSessions"
+        "PiSharp.Tests.KeysQueueSessionTests.ConcurrentCatalogChangeRejectsStaleMutationAndPreservesUnrelatedSessions",
+        "PiSharp.Tests.SessionPickerFindingsParityTests.OracleInventoryNamesPinnedPiSourceAnchorsAndExactlyF01ToF03",
+        "PiSharp.Tests.KeysQueueSessionTests.AllScopeDiscoversSessionsFromOtherProjectDirectoriesAndKeepsTheirStores"
       ],
       "terminalCheckpoints": [
         "terminal-session-picker-findings/140x40-dark-fullscreen/picker-open",
