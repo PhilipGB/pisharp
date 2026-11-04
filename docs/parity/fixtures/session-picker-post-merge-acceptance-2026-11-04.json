@@ -3,7 +3,7 @@
   "capability": "session-picker-post-merge-findings",
   "date": "2026-11-04",
   "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-  "implementationSha": "f0f121a172f726e43c1b0f007e88ae6b02568400",
+  "implementationSha": "ba3c85a6006a1f0cd3e4960e62ab6638b2e3461f",
   "oracle": "docs/parity/fixtures/session-picker-post-merge-oracle-2026-11-04.json",
   "checkpoints": "docs/parity/fixtures/session-picker-post-merge-checkpoints-2026-11-04.json",
   "terminalFixtures": [
