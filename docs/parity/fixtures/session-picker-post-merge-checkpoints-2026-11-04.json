@@ -67,11 +67,11 @@
                   "prefix": ""
                 },
                 {
-                  "name": "tree parent",
+                  "name": "kin parent",
                   "prefix": ""
                 },
                 {
-                  "name": "tree child",
+                  "name": "kin child",
                   "prefix": "└─"
                 },
                 {
@@ -114,11 +114,93 @@
                   "prefix": ""
                 },
                 {
-                  "name": "tree parent",
+                  "name": "kin parent",
                   "prefix": ""
                 },
                 {
-                  "name": "tree child",
+                  "name": "kin child",
+                  "prefix": "└─"
+                },
+                {
+                  "name": "orphan child",
+                  "prefix": ""
+                },
+                {
+                  "name": "duplicate one",
+                  "prefix": ""
+                }
+              ],
+              "selected": "duplicate two",
+              "confirmation": false,
+              "confirmationKeys": null,
+              "statuses": []
+            }
+          },
+          "picker-search-tree": {
+            "action": "picker-search-tree",
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "cursorVisible": false,
+            "picker": {
+              "scope": "current",
+              "sort": "Threaded",
+              "nameFilter": "All",
+              "pathVisible": false,
+              "rows": [
+                {
+                  "name": "kin child",
+                  "prefix": ""
+                },
+                {
+                  "name": "kin parent",
+                  "prefix": ""
+                }
+              ],
+              "selected": "kin child",
+              "confirmation": false,
+              "confirmationKeys": null,
+              "statuses": []
+            }
+          },
+          "picker-search-clear": {
+            "action": "picker-search-clear",
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "cursorVisible": false,
+            "picker": {
+              "scope": "current",
+              "sort": "Threaded",
+              "nameFilter": "All",
+              "pathVisible": false,
+              "rows": [
+                {
+                  "name": "duplicate two",
+                  "prefix": ""
+                },
+                {
+                  "name": "kin parent",
+                  "prefix": ""
+                },
+                {
+                  "name": "kin child",
                   "prefix": "└─"
                 },
                 {
@@ -161,11 +243,11 @@
                   "prefix": ""
                 },
                 {
-                  "name": "tree parent",
+                  "name": "kin parent",
                   "prefix": ""
                 },
                 {
-                  "name": "tree child",
+                  "name": "kin child",
                   "prefix": "└─"
                 },
                 {
@@ -207,11 +289,11 @@
               "pathVisible": null,
               "rows": [
                 {
-                  "name": "tree parent",
+                  "name": "kin parent",
                   "prefix": ""
                 },
                 {
-                  "name": "tree child",
+                  "name": "kin child",
                   "prefix": "└─"
                 },
                 {
@@ -223,52 +305,7 @@
                   "prefix": ""
                 }
               ],
-              "selected": "tree parent",
-              "confirmation": false,
-              "confirmationKeys": null,
-              "statuses": [
-                "Session deleted"
-              ]
-            }
-          },
-          "picker-delete-settled": {
-            "action": "picker-delete-settled",
-            "activeScreen": "alternate",
-            "temporaryModes": [
-              "1000",
-              "1002",
-              "1003",
-              "1004",
-              "1006",
-              "1049",
-              "2004"
-            ],
-            "bracketedPasteMode": true,
-            "cursorVisible": false,
-            "picker": {
-              "scope": "current",
-              "sort": null,
-              "nameFilter": null,
-              "pathVisible": null,
-              "rows": [
-                {
-                  "name": "tree parent",
-                  "prefix": ""
-                },
-                {
-                  "name": "tree child",
-                  "prefix": "└─"
-                },
-                {
-                  "name": "orphan child",
-                  "prefix": ""
-                },
-                {
-                  "name": "duplicate one",
-                  "prefix": ""
-                }
-              ],
-              "selected": "tree parent",
+              "selected": "orphan child",
               "confirmation": false,
               "confirmationKeys": null,
               "statuses": [
@@ -335,11 +372,11 @@
                   "prefix": ""
                 },
                 {
-                  "name": "tree parent",
+                  "name": "kin parent",
                   "prefix": ""
                 },
                 {
-                  "name": "tree child",
+                  "name": "kin child",
                   "prefix": "└─"
                 },
                 {
@@ -382,11 +419,93 @@
                   "prefix": ""
                 },
                 {
-                  "name": "tree parent",
+                  "name": "kin parent",
                   "prefix": ""
                 },
                 {
-                  "name": "tree child",
+                  "name": "kin child",
+                  "prefix": "└─"
+                },
+                {
+                  "name": "orphan child",
+                  "prefix": ""
+                },
+                {
+                  "name": "duplicate one",
+                  "prefix": ""
+                }
+              ],
+              "selected": "duplicate two",
+              "confirmation": false,
+              "confirmationKeys": null,
+              "statuses": []
+            }
+          },
+          "picker-search-tree": {
+            "action": "picker-search-tree",
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "cursorVisible": false,
+            "picker": {
+              "scope": "current",
+              "sort": "Threaded",
+              "nameFilter": "All",
+              "pathVisible": false,
+              "rows": [
+                {
+                  "name": "kin child",
+                  "prefix": ""
+                },
+                {
+                  "name": "kin parent",
+                  "prefix": ""
+                }
+              ],
+              "selected": "kin child",
+              "confirmation": false,
+              "confirmationKeys": null,
+              "statuses": []
+            }
+          },
+          "picker-search-clear": {
+            "action": "picker-search-clear",
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "cursorVisible": false,
+            "picker": {
+              "scope": "current",
+              "sort": "Threaded",
+              "nameFilter": "All",
+              "pathVisible": false,
+              "rows": [
+                {
+                  "name": "duplicate two",
+                  "prefix": ""
+                },
+                {
+                  "name": "kin parent",
+                  "prefix": ""
+                },
+                {
+                  "name": "kin child",
                   "prefix": "└─"
                 },
                 {
@@ -429,11 +548,11 @@
                   "prefix": ""
                 },
                 {
-                  "name": "tree parent",
+                  "name": "kin parent",
                   "prefix": ""
                 },
                 {
-                  "name": "tree child",
+                  "name": "kin child",
                   "prefix": "└─"
                 },
                 {
@@ -475,11 +594,11 @@
               "pathVisible": null,
               "rows": [
                 {
-                  "name": "tree parent",
+                  "name": "kin parent",
                   "prefix": ""
                 },
                 {
-                  "name": "tree child",
+                  "name": "kin child",
                   "prefix": "└─"
                 },
                 {
@@ -491,52 +610,7 @@
                   "prefix": ""
                 }
               ],
-              "selected": "tree parent",
-              "confirmation": false,
-              "confirmationKeys": null,
-              "statuses": [
-                "Session deleted"
-              ]
-            }
-          },
-          "picker-delete-settled": {
-            "action": "picker-delete-settled",
-            "activeScreen": "alternate",
-            "temporaryModes": [
-              "1000",
-              "1002",
-              "1003",
-              "1004",
-              "1006",
-              "1049",
-              "2004"
-            ],
-            "bracketedPasteMode": true,
-            "cursorVisible": false,
-            "picker": {
-              "scope": "current",
-              "sort": null,
-              "nameFilter": null,
-              "pathVisible": null,
-              "rows": [
-                {
-                  "name": "tree parent",
-                  "prefix": ""
-                },
-                {
-                  "name": "tree child",
-                  "prefix": "└─"
-                },
-                {
-                  "name": "orphan child",
-                  "prefix": ""
-                },
-                {
-                  "name": "duplicate one",
-                  "prefix": ""
-                }
-              ],
-              "selected": "tree parent",
+              "selected": "kin parent",
               "confirmation": false,
               "confirmationKeys": null,
               "statuses": [

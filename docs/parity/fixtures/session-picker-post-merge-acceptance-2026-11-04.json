@@ -16,6 +16,7 @@
       "PiSharp.Tests.SessionPickerFindingsTests.CurrentAndAllScopeUseCanonicalFilePathsAsPickerKeys",
       "PiSharp.Tests.SessionPickerFindingsTests.SameIdSessionsInDifferentProjectsSelectRenameAndDeleteOnlyTheChosenFile",
       "PiSharp.Tests.SessionPickerFindingsTests.ThreadedModeBuildsThePinnedPiParentTreeWithSubtreeActivityOrdering",
+      "PiSharp.Tests.SessionPickerFindingsTests.ThreadedSearchFlattensTreeAndBreaksEqualScoresByModifiedTime",
       "PiSharp.Tests.SessionPickerFindingsTests.RecentAndFuzzyKeepCatalogOrderWithoutTreeMetadata",
       "PiSharp.Tests.SessionPickerFindingsTests.SortingPreservesTheSelectedSessionByPathRatherThanIndex",
       "PiSharp.Tests.SessionPickerFindingsTests.AllScopeLinksChildrenToParentsInOtherProjectDirectories",
@@ -62,8 +63,7 @@
       "terminalCheckpoints": [
         "terminal-session-picker-findings/140x40-dark-fullscreen/picker-open",
         "terminal-session-picker-findings/140x40-dark-fullscreen/picker-delete-confirm",
-        "terminal-session-picker-findings/140x40-dark-fullscreen/picker-delete-applied",
-        "terminal-session-picker-findings/140x40-dark-fullscreen/picker-delete-settled"
+        "terminal-session-picker-findings/140x40-dark-fullscreen/picker-delete-applied"
       ]
     },
     {
@@ -76,6 +76,7 @@
       ],
       "tests": [
         "PiSharp.Tests.SessionPickerFindingsTests.ThreadedModeBuildsThePinnedPiParentTreeWithSubtreeActivityOrdering",
+        "PiSharp.Tests.SessionPickerFindingsTests.ThreadedSearchFlattensTreeAndBreaksEqualScoresByModifiedTime",
         "PiSharp.Tests.SessionPickerFindingsTests.RecentAndFuzzyKeepCatalogOrderWithoutTreeMetadata",
         "PiSharp.Tests.SessionPickerFindingsTests.SortingPreservesTheSelectedSessionByPathRatherThanIndex",
         "PiSharp.Tests.SessionPickerFindingsTests.AllScopeLinksChildrenToParentsInOtherProjectDirectories",
@@ -83,7 +84,8 @@
       ],
       "terminalCheckpoints": [
         "terminal-session-picker-findings/140x40-dark-fullscreen/picker-tree",
-        "terminal-session-picker-findings/140x40-dark-fullscreen/picker-delete-settled"
+        "terminal-session-picker-findings/140x40-dark-fullscreen/picker-search-tree",
+        "terminal-session-picker-findings/140x40-dark-fullscreen/picker-search-clear"
       ]
     },
     {

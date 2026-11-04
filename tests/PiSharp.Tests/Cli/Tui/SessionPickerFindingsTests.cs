@@ -141,6 +141,33 @@ public sealed class SessionPickerFindingsTests
     }
 
     [Fact]
+    public async Task ThreadedSearchFlattensTreeAndBreaksEqualScoresByModifiedTime()
+    {
+        using var fixture = await SearchFixture.CreateAsync();
+        var state = await TerminalSessionPickerState.LoadAsync(fixture.Store, null, null);
+        var options = state.BuildEntries().Select(state.BuildOption).ToArray();
+        Assert.Equal([fixture.ParentPath, fixture.ChildPath],
+            options.Select(option => option.Value.Listing.Path));
+
+        var list = new TerminalSelectionList<SessionPickerEntry>("Resume Session (Current Folder)",
+            options, keymap: new EditorKeymap(agentDirectory: null));
+        list.HandleInput(new(null, "match"));
+
+        Assert.Equal([fixture.ChildPath, fixture.ParentPath],
+            list.VisibleOptions.Select(option => option.Value.Listing.Path));
+        Assert.Equal(fixture.ChildPath, list.Selected?.Option.Value.Listing.Path);
+        var searched = string.Join('\n', list.Render(140, 40));
+        Assert.Contains("same match", searched);
+        Assert.DoesNotContain("└─", searched);
+        Assert.DoesNotContain("├─", searched);
+
+        list.HandleInput(Event(Key(ConsoleKey.U, ConsoleModifiers.Control)));
+        Assert.Equal([fixture.ParentPath, fixture.ChildPath],
+            list.VisibleOptions.Select(option => option.Value.Listing.Path));
+        Assert.Contains("└─", string.Join('\n', list.Render(140, 40)));
+    }
+
+    [Fact]
     public async Task DisabledConfirmationBindingsRenderEmptyKeysAndCannotConfirmOrCancel()
     {
         using var fixture = await TreeFixture.CreateAsync();
@@ -309,6 +336,39 @@ public sealed class SessionPickerFindingsTests
                 "orphan child", "2026-01-04T00:00:00Z",
                 Path.Combine(sessions, "missing-parent.jsonl"));
             return new(root, store, parent);
+        }
+
+        public void Dispose() => Directory.Delete(Root, true);
+    }
+
+    private sealed class SearchFixture : IDisposable
+    {
+        private SearchFixture(string root, ConversationStore store, string parentPath, string childPath)
+        {
+            Root = root;
+            Store = store;
+            ParentPath = parentPath;
+            ChildPath = childPath;
+        }
+
+        public string Root { get; }
+        public ConversationStore Store { get; }
+        public string ParentPath { get; }
+        public string ChildPath { get; }
+
+        public static async Task<SearchFixture> CreateAsync()
+        {
+            var root = TempDirectory("search");
+            var sessions = Path.Combine(root, "sessions");
+            Directory.CreateDirectory(sessions);
+            var store = new ConversationStore(root, sessions);
+            var parent = Path.Combine(sessions, "parent.jsonl");
+            await WritePiSessionAsync(parent, "same-id", root, "same match",
+                "2026-01-01T00:00:00Z");
+            var child = Path.Combine(sessions, "child.jsonl");
+            await WritePiSessionAsync(child, "same-id", root, "same match",
+                "2026-01-02T00:00:00Z", parent);
+            return new(root, store, parent, child);
         }
 
         public void Dispose() => Directory.Delete(Root, true);

@@ -10,7 +10,7 @@
         "const parentPath = canonicalizePath(session.parentSessionPath);",
         "nodes.sort((a, b) => b.latestActivity - a.latestActivity);",
         "if (this.sortMode === \"threaded\" && !trimmed) {",
-        "const confirmHint = `Delete session? ${keyHint(\"tui.select.confirm\", \"confirm\")} · ${keyHint(\"tui.select.cancel\", \"cancel\")}`;",
+        "const confirmHint = `Delete session? ${keyHint(\"tui.select.confirm\", \"confirm\")} \u00b7 ${keyHint(\"tui.select.cancel\", \"cancel\")}`;",
         "this.setConfirmingDeletePath(selected.session.path);",
         "const pathToDelete = this.confirmingDeletePath;",
         "this.onDeleteSession?.(pathToDelete);",
@@ -49,7 +49,10 @@
         "sameIdKeys": "distinct",
         "sameIdDeletion": "only-selected-path",
         "sameIdRename": "only-selected-path",
-        "scopes": ["current", "all"],
+        "scopes": [
+          "current",
+          "all"
+        ],
         "currentSessionProtected": true,
         "persistedSessionId": "unchanged",
         "fingerprintValidation": true,
@@ -69,11 +72,17 @@
         "rootOrder": "subtree-latest-activity-desc",
         "childOrder": "subtree-latest-activity-desc",
         "flattenOrder": "preorder",
-        "childPrefixes": ["├─ ", "└─ ", "│  "],
+        "childPrefixes": [
+          "\u251c\u2500 ",
+          "\u2514\u2500 ",
+          "\u2502  "
+        ],
         "threadedWithQuery": "flat-score-order",
         "recentOrder": "catalog-order",
         "fuzzyOrder": "score-order",
-        "crossProjectLinks": true
+        "crossProjectLinks": true,
+        "threadedWithQueryPrefixes": "none",
+        "threadedWithQueryTieBreak": "modified-desc"
       }
     },
     "F03": {
@@ -85,7 +94,7 @@
       "expected": {
         "disabledConfirmKey": "",
         "disabledCancelKey": "",
-        "hintShape": "Delete session? {confirm} confirm · {cancel} cancel",
+        "hintShape": "Delete session? {confirm} confirm \u00b7 {cancel} cancel",
         "fallback": "only-without-keymap",
         "customBindings": "preserved",
         "disabledCannotConfirmOrCancel": true,

@@ -65,9 +65,11 @@ binding still advertised `Enter`.
 - Baseline reproduction: 3 failed / 0 passed at `a4b51240`.
 - Deterministic regressions: canonical path keys in current/all scope; same-ID
   rename/delete isolation; pinned tree order, prefixes and missing-parent handling;
-  Recent/Fuzzy flat order; path-based selection after sorting; cross-project parent
-  links; disabled/custom confirmation hints and dispatch.
-- Real Linux PTY: same-ID session deletion, Threaded parent/child rendering, and a
+  Threaded-with-search flattening and modified-time tie-breaks; Recent/Fuzzy flat
+  order; path-based selection after sorting; cross-project parent links;
+  disabled/custom confirmation hints and dispatch.
+- Real Linux PTY: same-ID session deletion, Threaded parent/child rendering, a
+  nonempty Threaded search that flattens to relevance order without prefixes, and a
   disabled confirm binding that ignores Enter while Escape still cancels.
 - Paired PTY differential:
   - `terminal-session-picker-findings` at 140x40 fullscreen. Five rows in the expected

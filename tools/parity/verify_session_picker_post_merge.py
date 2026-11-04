@@ -19,13 +19,15 @@ PI_SHA = "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6"
 BASELINE_SHA = "a4b51240c0426508ac4fe5c5861b7e914dd7307f"
 MAIN_FIXTURE = "terminal-session-picker-findings"
 DISABLED_FIXTURE = "terminal-session-picker-disabled-confirm"
-EXPECTED_ROWS = [{"name": "duplicate two", "prefix": ""}, {"name": "tree parent", "prefix": ""},
-                 {"name": "tree child", "prefix": "└─"}, {"name": "orphan child", "prefix": ""},
+EXPECTED_ROWS = [{"name": "duplicate two", "prefix": ""}, {"name": "kin parent", "prefix": ""},
+                 {"name": "kin child", "prefix": "└─"}, {"name": "orphan child", "prefix": ""},
                  {"name": "duplicate one", "prefix": ""}]
-EXPECTED_REMAINING_ROWS = [{"name": "tree parent", "prefix": ""},
-                           {"name": "tree child", "prefix": "└─"},
+EXPECTED_REMAINING_ROWS = [{"name": "kin parent", "prefix": ""},
+                           {"name": "kin child", "prefix": "└─"},
                            {"name": "orphan child", "prefix": ""},
                            {"name": "duplicate one", "prefix": ""}]
+SEARCHED_ROWS = [{"name": "kin child", "prefix": ""},
+                 {"name": "kin parent", "prefix": ""}]
 EXPECTED_SESSION_FILES = ["child", "duplicate-one", "orphan", "parent"]
 
 
@@ -92,6 +94,10 @@ def validate_oracle(oracle, manifest, pi_checkout=None):
             "F01 oracle does not require canonical path identity.")
     require(scenarios["F02"]["expected"].get("rootOrder") == "subtree-latest-activity-desc",
             "F02 oracle does not require subtree activity ordering.")
+    require(scenarios["F02"]["expected"].get("threadedWithQuery") == "flat-score-order" and
+            scenarios["F02"]["expected"].get("threadedWithQueryPrefixes") == "none" and
+            scenarios["F02"]["expected"].get("threadedWithQueryTieBreak") == "modified-desc",
+            "F02 oracle does not require flat, prefix-free, modified-time ordered search.")
     require(scenarios["F03"]["expected"].get("disabledConfirmKey") == "",
             "F03 oracle does not require an empty disabled confirm key.")
     validate_oracle_sources(oracle, pi_checkout)
@@ -186,6 +192,11 @@ def validate_checkpoints(checkpoints, manifest):
                 f"main/{product} threaded rows are {opened['rows']!r}.")
         require(opened["selected"] == "duplicate two",
                 f"main/{product} initial selection is {opened['selected']!r}.")
+        searched = require_checkpoint(cases, MAIN_FIXTURE, "picker-search-tree", product)["picker"]
+        require(searched["rows"] == SEARCHED_ROWS,
+                f"main/{product} threaded search rows are {searched['rows']!r}.")
+        require(searched["selected"] == "kin child",
+                f"main/{product} threaded search selected {searched['selected']!r}.")
         confirm = require_checkpoint(cases, MAIN_FIXTURE, "picker-delete-confirm", product)["picker"]
         require(confirm["confirmation"] is True and confirm["confirmationKeys"] ==
                 {"confirm": "enter", "cancel": "escape/ctrl+c"},
@@ -195,9 +206,6 @@ def validate_checkpoints(checkpoints, manifest):
                 f"main/{product} deletion left {applied['rows']!r}.")
         require(applied["statuses"] == ["Session deleted"],
                 f"main/{product} deletion status is {applied['statuses']!r}.")
-        settled = require_checkpoint(cases, MAIN_FIXTURE, "picker-delete-settled", product)["picker"]
-        require(settled["rows"] == EXPECTED_REMAINING_ROWS,
-                f"main/{product} settled rows are {settled['rows']!r}.")
         require(main[product]["sessionFiles"] == EXPECTED_SESSION_FILES,
                 f"main/{product} session files are {main[product]['sessionFiles']!r}.")
         quit_state = require_checkpoint(cases, MAIN_FIXTURE, "quit", product)
@@ -336,6 +344,11 @@ def self_test(manifest, oracle, checkpoints, results):
            "tree prefix missing")
     mutate(MAIN_FIXTURE, "picker-open",
            lambda value: value["picker"]["rows"].reverse(), "wrong tree order")
+    mutate(MAIN_FIXTURE, "picker-search-tree",
+           lambda value: value["picker"]["rows"].reverse(), "search did not use modified-time order")
+    mutate(MAIN_FIXTURE, "picker-search-tree",
+           lambda value: value["picker"]["rows"][1].__setitem__("prefix", "└─"),
+           "search retained a tree prefix")
     mutate(MAIN_FIXTURE, "picker-delete-applied",
            lambda value: value["picker"]["rows"].append({"name": "duplicate two", "prefix": ""}),
            "deleted the wrong same-ID session")

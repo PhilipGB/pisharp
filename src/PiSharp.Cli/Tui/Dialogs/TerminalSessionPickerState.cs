@@ -228,7 +228,8 @@ internal sealed class TerminalSessionPickerState
         var path = ShowPath ? $"{ShortenPath(session.Path)} · " : "";
         var description = $"{path}{(entry.IsCurrent ? CurrentSessionMarker + " " : "")}{branchDescription} · {session.Model} · {session.MessageCount} messages · {modified}";
         var searchText = $"{name} {session.Id} {session.Model} {session.Path} {entry.BranchHeads.HeadId}";
-        return new(entry.Key, entry, $"{entry.TreePrefix}{name} · {id}", description, searchText, entry.IsCurrent);
+        return new(entry.Key, entry, $"{name} · {id}", description, searchText, entry.IsCurrent,
+            TieBreakTimestamp: session.ModifiedAt, TreePrefix: entry.TreePrefix);
     }
 
     public string BaseTitle => Scope == SessionPickerScope.All

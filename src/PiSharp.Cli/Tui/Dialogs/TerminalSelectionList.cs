@@ -4,7 +4,8 @@ namespace PiSharp.Cli.Tui;
 
 internal sealed record TerminalSelectionOption<T>(string Key, T Value, string Label,
     string? Description = null, string? SearchText = null, bool IsCurrent = false,
-    Func<string, string>? SelectedLabelRenderer = null, bool IsDefault = false);
+    Func<string, string>? SelectedLabelRenderer = null, bool IsDefault = false,
+    DateTimeOffset? TieBreakTimestamp = null, string TreePrefix = "");
 
 internal sealed record TerminalSelection<T>(TerminalSelectionOption<T> Option, bool IsScoped,
     bool SetAsDefault = false);
@@ -204,10 +205,11 @@ internal sealed class TerminalSelectionList<T>
                 var selected = index == _selectedIndex;
                 var marker = selected ? "> " : "  ";
                 var current = option.IsCurrent ? "✓ " : "  ";
+                var label = DisplayLabel(option);
                 var description = string.IsNullOrWhiteSpace(option.Description) ? "" : $" · {option.Description}";
-                var line = TerminalSafeText.Normalize($"{marker}{current}{option.Label}{description}");
+                var line = TerminalSafeText.Normalize($"{marker}{current}{label}{description}");
                 if (selected && option.SelectedLabelRenderer is { } renderLabel)
-                    line = marker + current + renderLabel(TerminalSafeText.Normalize(option.Label)) +
+                    line = marker + current + renderLabel(TerminalSafeText.Normalize(label)) +
                         TerminalSafeText.Normalize(description);
                 lines.Add(TerminalTranscriptViewport.Clip(line, width));
             }
@@ -346,6 +348,9 @@ internal sealed class TerminalSelectionList<T>
 
     private int VisibleItemCount(int height) => Math.Max(1, height - 8 - (_scopedOptions is not null ? 1 : 0));
 
+    private string DisplayLabel(TerminalSelectionOption<T> option) =>
+        _query.Trim().Length == 0 ? option.TreePrefix + option.Label : option.Label;
+
     private void AppendQuery(string value)
     {
         value = Clean(value).Replace('\n', ' ').Replace('\r', ' ');
@@ -380,7 +385,10 @@ internal sealed class TerminalSelectionList<T>
         var matches = _activeOptions.Select((option, index) => (Option: option, Index: index,
                 Score: MatchScore(tokens, option.SearchText ?? $"{option.Label} {option.Description}")))
             .Where(match => match.Score is not null);
-        if (SortMatchesByScore) matches = matches.OrderBy(match => match.Score).ThenBy(match => match.Index);
+        if (SortMatchesByScore)
+            matches = matches.OrderBy(match => match.Score)
+                .ThenByDescending(match => match.Option.TieBreakTimestamp ?? DateTimeOffset.MinValue)
+                .ThenBy(match => match.Index);
         _filteredOptions = matches.Select(match => SanitizeOption(match.Option)).ToArray();
         _selectedIndex = 0;
     }

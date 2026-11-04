@@ -27,6 +27,12 @@ public sealed class SessionPickerFindingsParityTests
             scenarios[0].Value.GetProperty("expected").GetProperty("identity").GetString());
         Assert.Equal("subtree-latest-activity-desc",
             scenarios[1].Value.GetProperty("expected").GetProperty("rootOrder").GetString());
+        Assert.Equal("flat-score-order",
+            scenarios[1].Value.GetProperty("expected").GetProperty("threadedWithQuery").GetString());
+        Assert.Equal("none",
+            scenarios[1].Value.GetProperty("expected").GetProperty("threadedWithQueryPrefixes").GetString());
+        Assert.Equal("modified-desc",
+            scenarios[1].Value.GetProperty("expected").GetProperty("threadedWithQueryTieBreak").GetString());
         Assert.Equal("",
             scenarios[2].Value.GetProperty("expected").GetProperty("disabledConfirmKey").GetString());
         Assert.Equal("only-without-keymap",

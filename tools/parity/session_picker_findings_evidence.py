@@ -14,7 +14,7 @@ FIXTURES = {
     "terminal-session-picker-findings": {
         "case": "140x40-dark-fullscreen",
         "artifacts": "main",
-        "names": ("duplicate one", "duplicate two", "tree parent", "tree child", "orphan child"),
+        "names": ("duplicate one", "duplicate two", "kin parent", "kin child", "orphan child"),
     },
     "terminal-session-picker-disabled-confirm": {
         "case": "140x40-dark-regular",
