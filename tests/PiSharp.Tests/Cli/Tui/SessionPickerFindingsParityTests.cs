@@ -33,10 +33,14 @@ public sealed class SessionPickerFindingsParityTests
             scenarios[1].Value.GetProperty("expected").GetProperty("threadedWithQueryPrefixes").GetString());
         Assert.Equal("modified-desc",
             scenarios[1].Value.GetProperty("expected").GetProperty("threadedWithQueryTieBreak").GetString());
+        Assert.Equal("break-back-edges",
+            scenarios[1].Value.GetProperty("expected").GetProperty("cycleHandling").GetString());
         Assert.Equal("",
             scenarios[2].Value.GetProperty("expected").GetProperty("disabledConfirmKey").GetString());
         Assert.Equal("only-without-keymap",
             scenarios[2].Value.GetProperty("expected").GetProperty("fallback").GetString());
+        Assert.Equal("omitted",
+            scenarios[2].Value.GetProperty("expected").GetProperty("disabledFooterSlots").GetString());
     }
 
     private static string RepositoryRoot()

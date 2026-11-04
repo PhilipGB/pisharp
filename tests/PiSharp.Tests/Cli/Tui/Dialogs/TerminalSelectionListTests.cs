@@ -153,6 +153,38 @@ public sealed class TerminalSelectionListTests
     }
 
     [Fact]
+    public void DisabledSelectBindingsDoNotLeaveBlankFooterSlots()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "pisharp-selection-footer-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            File.WriteAllText(Path.Combine(directory, "keybindings.json"), """
+                {
+                  "tui.select.up": [],
+                  "tui.select.down": [],
+                  "tui.input.tab": [],
+                  "tui.select.confirm": [],
+                  "tui.select.cancel": []
+                }
+                """);
+            var keymap = new EditorKeymap(directory, windowsBindings: false);
+            var options = new[] { new TerminalSelectionOption<string>("a", "alpha", "alpha") };
+            var list = new TerminalSelectionList<string>("Choose", options, "a",
+                scopedOptions: options, keymap: keymap);
+
+            var footer = list.Render(80, 20)[^1];
+
+            Assert.Equal("type to filter", footer);
+            Assert.DoesNotContain(" move", footer);
+            Assert.DoesNotContain(" scope", footer);
+            Assert.DoesNotContain(" select", footer);
+            Assert.DoesNotContain(" close", footer);
+        }
+        finally { Directory.Delete(directory, true); }
+    }
+
+    [Fact]
     public void OverlayHostSelectsFromStreamAndSanitizesUntrustedLabels()
     {
         using var output = new StringWriter();

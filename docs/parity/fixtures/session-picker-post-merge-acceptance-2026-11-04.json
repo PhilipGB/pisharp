@@ -31,7 +31,9 @@
       "PiSharp.Tests.KeysQueueSessionTests.RenameFailureLeavesTheSessionFileAndCatalogIntact",
       "PiSharp.Tests.KeysQueueSessionTests.PickerHintsFollowReplacementAndDisabledBindingsWithoutLeakingModelActions",
       "PiSharp.Tests.KeysQueueSessionTests.AllScopeDiscoversSessionsFromOtherProjectDirectoriesAndKeepsTheirStores",
-      "PiSharp.Tests.KeysQueueSessionTests.ConcurrentCatalogChangeRejectsStaleMutationAndPreservesUnrelatedSessions"
+      "PiSharp.Tests.KeysQueueSessionTests.ConcurrentCatalogChangeRejectsStaleMutationAndPreservesUnrelatedSessions",
+      "PiSharp.Tests.SessionPickerFindingsTests.ParentCyclesAreBrokenInsteadOfHangingOrHidingRows",
+      "PiSharp.Tests.TerminalSelectionListTests.DisabledSelectBindingsDoNotLeaveBlankFooterSlots"
     ],
     "ptyEvidence": [
       "terminal-session-picker-findings/140x40-dark-fullscreen",
@@ -80,7 +82,8 @@
         "PiSharp.Tests.SessionPickerFindingsTests.RecentAndFuzzyKeepCatalogOrderWithoutTreeMetadata",
         "PiSharp.Tests.SessionPickerFindingsTests.SortingPreservesTheSelectedSessionByPathRatherThanIndex",
         "PiSharp.Tests.SessionPickerFindingsTests.AllScopeLinksChildrenToParentsInOtherProjectDirectories",
-        "PiSharp.Tests.KeysQueueSessionPtyTests.DuplicateSessionIdsAndThreadedParentLinksWorkThroughLinuxPty"
+        "PiSharp.Tests.KeysQueueSessionPtyTests.DuplicateSessionIdsAndThreadedParentLinksWorkThroughLinuxPty",
+        "PiSharp.Tests.SessionPickerFindingsTests.ParentCyclesAreBrokenInsteadOfHangingOrHidingRows"
       ],
       "terminalCheckpoints": [
         "terminal-session-picker-findings/140x40-dark-fullscreen/picker-tree",
@@ -100,7 +103,8 @@
         "PiSharp.Tests.SessionPickerFindingsTests.DisabledConfirmationBindingsRenderEmptyKeysAndCannotConfirmOrCancel",
         "PiSharp.Tests.SessionPickerFindingsTests.CustomConfirmationBindingsAreAdvertisedAndDispatched",
         "PiSharp.Tests.KeysQueueSessionPtyTests.DisabledConfirmationBindingDoesNotDeleteThroughLinuxPty",
-        "PiSharp.Tests.KeysQueueSessionTests.PickerHintsFollowReplacementAndDisabledBindingsWithoutLeakingModelActions"
+        "PiSharp.Tests.KeysQueueSessionTests.PickerHintsFollowReplacementAndDisabledBindingsWithoutLeakingModelActions",
+        "PiSharp.Tests.TerminalSelectionListTests.DisabledSelectBindingsDoNotLeaveBlankFooterSlots"
       ],
       "terminalCheckpoints": [
         "terminal-session-picker-disabled-confirm/140x40-dark-regular/picker-confirm-open",

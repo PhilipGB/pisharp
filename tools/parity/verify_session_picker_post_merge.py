@@ -98,8 +98,11 @@ def validate_oracle(oracle, manifest, pi_checkout=None):
             scenarios["F02"]["expected"].get("threadedWithQueryPrefixes") == "none" and
             scenarios["F02"]["expected"].get("threadedWithQueryTieBreak") == "modified-desc",
             "F02 oracle does not require flat, prefix-free, modified-time ordered search.")
-    require(scenarios["F03"]["expected"].get("disabledConfirmKey") == "",
-            "F03 oracle does not require an empty disabled confirm key.")
+    require(scenarios["F02"]["expected"].get("cycleHandling") == "break-back-edges",
+            "F02 oracle does not require parent-cycle back-edge breaking.")
+    require(scenarios["F03"]["expected"].get("disabledConfirmKey") == "" and
+            scenarios["F03"]["expected"].get("disabledFooterSlots") == "omitted",
+            "F03 oracle does not require empty disabled confirmation/footer keys.")
     validate_oracle_sources(oracle, pi_checkout)
 
 

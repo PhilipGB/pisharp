@@ -82,7 +82,8 @@
         "fuzzyOrder": "score-order",
         "crossProjectLinks": true,
         "threadedWithQueryPrefixes": "none",
-        "threadedWithQueryTieBreak": "modified-desc"
+        "threadedWithQueryTieBreak": "modified-desc",
+        "cycleHandling": "break-back-edges"
       }
     },
     "F03": {
@@ -98,7 +99,8 @@
         "fallback": "only-without-keymap",
         "customBindings": "preserved",
         "disabledCannotConfirmOrCancel": true,
-        "hintsNeverAdvertiseDisabledActions": true
+        "hintsNeverAdvertiseDisabledActions": true,
+        "disabledFooterSlots": "omitted"
       }
     }
   }

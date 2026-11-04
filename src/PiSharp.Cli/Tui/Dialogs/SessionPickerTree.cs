@@ -20,6 +20,7 @@ internal static class SessionPickerTree
     private sealed class Node(SessionCatalogEntry entry)
     {
         public SessionCatalogEntry Entry { get; } = entry;
+        public Node? Parent { get; set; }
         public List<Node> Children { get; } = [];
         public long LatestActivity { get; set; } = entry.Listing.ModifiedAt.UtcTicks;
     }
@@ -43,7 +44,11 @@ internal static class SessionPickerTree
             var parentPath = node.Entry.Listing.ParentSessionPath;
             var parent = string.IsNullOrWhiteSpace(parentPath) ? null : byPath.GetValueOrDefault(
                 SessionCatalog.CanonicalPath(parentPath));
-            if (parent is not null && !ReferenceEquals(parent, node)) parent.Children.Add(node);
+            if (parent is not null && !ReferenceEquals(parent, node) && !WouldCreateCycle(node, parent))
+            {
+                node.Parent = parent;
+                parent.Children.Add(node);
+            }
             else roots.Add(node);
         }
 
@@ -54,6 +59,18 @@ internal static class SessionPickerTree
         for (var index = 0; index < roots.Count; index++)
             Walk(roots[index], depth: 0, ancestorContinues: [], isLast: index == roots.Count - 1, rows);
         return rows;
+    }
+
+    /// <summary>Breaks parent/child back-edges from corrupt or hand-edited JSONL files.</summary>
+    private static bool WouldCreateCycle(Node node, Node parent)
+    {
+        var visited = new HashSet<Node>(ReferenceEqualityComparer.Instance);
+        for (var current = parent; current is not null; current = current.Parent)
+        {
+            if (ReferenceEquals(current, node)) return true;
+            if (!visited.Add(current)) return true;
+        }
+        return false;
     }
 
     private static long UpdateLatestActivity(Node node)

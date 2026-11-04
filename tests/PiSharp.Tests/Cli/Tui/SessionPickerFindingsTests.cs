@@ -168,6 +168,24 @@ public sealed class SessionPickerFindingsTests
     }
 
     [Fact]
+    public async Task ParentCyclesAreBrokenInsteadOfHangingOrHidingRows()
+    {
+        using var fixture = await CycleFixture.CreateAsync();
+        var state = await TerminalSessionPickerState.LoadAsync(fixture.Store, null, null);
+        var entries = state.BuildEntries();
+        Assert.Equal(4, entries.Count);
+        Assert.Equal([0, 0, 1, 0], entries.Select(entry => entry.Depth));
+        Assert.All(entries, entry => Assert.InRange(entry.Depth, 0, 1));
+
+        var list = new TerminalSelectionList<SessionPickerEntry>("Resume Session (Current Folder)",
+            entries.Select(state.BuildOption).ToArray(), scopedOptions: entries.Select(state.BuildOption).ToArray(),
+            keymap: new EditorKeymap(agentDirectory: null));
+        var rendered = string.Join('\n', list.Render(140, 40));
+        Assert.Contains("cycle a", rendered);
+        Assert.Contains("cycle b", rendered);
+    }
+
+    [Fact]
     public async Task DisabledConfirmationBindingsRenderEmptyKeysAndCannotConfirmOrCancel()
     {
         using var fixture = await TreeFixture.CreateAsync();
@@ -369,6 +387,37 @@ public sealed class SessionPickerFindingsTests
             await WritePiSessionAsync(child, "same-id", root, "same match",
                 "2026-01-02T00:00:00Z", parent);
             return new(root, store, parent, child);
+        }
+
+        public void Dispose() => Directory.Delete(Root, true);
+    }
+
+    private sealed class CycleFixture : IDisposable
+    {
+        private CycleFixture(string root, ConversationStore store)
+        {
+            Root = root;
+            Store = store;
+        }
+
+        public string Root { get; }
+        public ConversationStore Store { get; }
+
+        public static async Task<CycleFixture> CreateAsync()
+        {
+            var root = TempDirectory("cycle");
+            var sessions = Path.Combine(root, "sessions");
+            Directory.CreateDirectory(sessions);
+            var store = new ConversationStore(root, sessions);
+            await WritePiSessionAsync(Path.Combine(sessions, "root.jsonl"), "cycle-root", root,
+                "root session", "2026-01-04T00:00:00Z");
+            await WritePiSessionAsync(Path.Combine(sessions, "cycle-a.jsonl"), "cycle-a", root,
+                "cycle a", "2026-01-02T00:00:00Z", Path.Combine(sessions, "cycle-b.jsonl"));
+            await WritePiSessionAsync(Path.Combine(sessions, "cycle-b.jsonl"), "cycle-b", root,
+                "cycle b", "2026-01-03T00:00:00Z", Path.Combine(sessions, "cycle-a.jsonl"));
+            await WritePiSessionAsync(Path.Combine(sessions, "orphan.jsonl"), "cycle-orphan", root,
+                "orphan", "2026-01-01T00:00:00Z", Path.Combine(sessions, "missing.jsonl"));
+            return new(root, store);
         }
 
         public void Dispose() => Directory.Delete(Root, true);

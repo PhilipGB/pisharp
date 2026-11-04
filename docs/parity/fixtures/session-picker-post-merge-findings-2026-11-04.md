@@ -26,7 +26,8 @@ Exactly three findings are required. No other capability is marked verified here
 - **F03 — disabled confirmation keys.** A configured-but-disabled confirm/cancel
   binding renders as an empty key, exactly like pinned Pi's `keyHint`. Disabled keys
   cannot confirm or cancel. Custom bindings are still advertised and dispatched.
-  Enter/Escape fallback is used only when the caller has no keymap at all.
+  Enter/Escape fallback is used only when the caller has no keymap at all. Shared list
+  footers omit disabled key/action pairs instead of leaving blank slots.
 
 ## Pinned-Pi anchors
 
@@ -63,7 +64,8 @@ binding still advertised `Enter`.
 - Acceptance manifest:
   [session-picker-post-merge-acceptance-2026-11-04.json](session-picker-post-merge-acceptance-2026-11-04.json).
 - Baseline reproduction: 3 failed / 0 passed at `a4b51240`.
-- Deterministic regressions: canonical path keys in current/all scope; same-ID
+- Deterministic regressions: canonical path keys in current/all scope; parent-cycle
+  back-edge breaking; disabled footer slots omitted; same-ID
   rename/delete isolation; pinned tree order, prefixes and missing-parent handling;
   Threaded-with-search flattening and modified-time tie-breaks; Recent/Fuzzy flat
   order; path-based selection after sorting; cross-project parent links;
