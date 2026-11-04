@@ -111,8 +111,9 @@ def validate_terminal_fixtures(manifest):
             "Main fixture must use the 140x40 paired dimensions.")
     require(main.get("modes") == ["fullscreen"], "Main fixture must run fullscreen.")
     action_ids = [action.get("id") for action in main.get("actions") or []]
-    for expected in ("picker-open", "picker-tree", "picker-delete-confirm",
-                     "picker-delete-applied", "picker-delete-settled", "quit"):
+    for expected in ("picker-open", "picker-tree", "picker-search-tree",
+                     "picker-search-clear", "picker-delete-confirm",
+                     "picker-delete-applied", "quit"):
         require(expected in action_ids, f"Main fixture is missing {expected!r}.")
     require(set(main.get("assertionFrames") or []) <= set(action_ids),
             "Main fixture assertion frames reference unknown actions.")
