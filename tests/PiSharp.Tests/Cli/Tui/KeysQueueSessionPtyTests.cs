@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json;
 using PiSharp.Cli;
 using PiSharp.Runtime.Sessions;
 
@@ -142,6 +143,138 @@ public sealed class KeysQueueSessionPtyTests
     }
 
     [Fact]
+    public async Task DuplicateSessionIdsAndThreadedParentLinksWorkThroughLinuxPty()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-picker-findings-pty-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        var sessions = Path.Combine(root, "sessions");
+        Directory.CreateDirectory(agent);
+        Directory.CreateDirectory(sessions);
+        Process? process = null;
+        try
+        {
+            var currentPath = Path.Combine(sessions, "current.jsonl");
+            await WritePiJsonlSessionAsync(currentPath, "current-id", root, "current session",
+                "2026-04-01T00:00:00Z");
+            var parentPath = Path.Combine(sessions, "parent.jsonl");
+            await WritePiJsonlSessionAsync(parentPath, "parent-id", root, "tree parent",
+                "2026-04-02T00:00:00Z");
+            await WritePiJsonlSessionAsync(Path.Combine(sessions, "child.jsonl"), "child-id", root,
+                "tree child", "2026-04-04T00:00:00Z", parentPath);
+            var firstDuplicate = Path.Combine(sessions, "duplicate-one.jsonl");
+            await WritePiJsonlSessionAsync(firstDuplicate, "shared-id", root, "duplicate one",
+                "2026-04-03T00:00:00Z");
+            var secondDuplicate = Path.Combine(sessions, "duplicate-two.jsonl");
+            await WritePiJsonlSessionAsync(secondDuplicate, "shared-id", root, "duplicate two",
+                "2026-04-05T00:00:00Z");
+
+            process = Start(root, agent,
+                $"--local --offline --session {Quote(currentPath)} --session-dir {Quote(sessions)} --no-tools");
+            var capture = new OutputCapture(process);
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(120));
+            await capture.InputReady.Task.WaitAsync(timeout.Token);
+
+            await Write(process, "/resume\r");
+            await capture.WaitFor("Resume Session (Current Folder)", timeout.Token);
+            await capture.WaitFor("Sort: Threaded", timeout.Token);
+            await capture.WaitFor("tree parent", timeout.Token);
+            await capture.WaitFor("└─ tree child", timeout.Token);
+
+            await Write(process, "duplicate one");
+            await capture.WaitFor("Search: duplicate one", timeout.Token);
+            await Write(process, "\u0004"); // Ctrl+D starts confirmation for the selected duplicate.
+            await capture.WaitFor("Delete duplicate one?", timeout.Token);
+            Assert.True(File.Exists(firstDuplicate));
+            Assert.True(File.Exists(secondDuplicate));
+            await Write(process, "\r");
+            await capture.WaitForAny(["Session deleted", "Session moved to trash"], timeout.Token);
+            Assert.False(File.Exists(firstDuplicate));
+            Assert.True(File.Exists(secondDuplicate), "Deleting one same-ID session removed its sibling.");
+            Assert.True(File.Exists(currentPath));
+
+            await Write(process, "\u001b");
+            await Task.Delay(100, timeout.Token);
+            await Write(process, "/quit\r");
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+            Assert.Equal(0, process.ExitCode);
+            Assert.DoesNotContain("Unhandled exception", await capture.ErrorCompletion);
+        }
+        finally
+        {
+            if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
+            process?.Dispose();
+            Directory.Delete(root, true);
+        }
+    }
+
+    [Fact]
+    public async Task DisabledConfirmationBindingDoesNotDeleteThroughLinuxPty()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-picker-disabled-pty-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        var sessions = Path.Combine(root, "sessions");
+        Directory.CreateDirectory(agent);
+        Directory.CreateDirectory(sessions);
+        await File.WriteAllTextAsync(Path.Combine(agent, "keybindings.json"), """
+            {
+              "tui.select.confirm": []
+            }
+            """);
+        Process? process = null;
+        try
+        {
+            var currentPath = Path.Combine(sessions, "current.jsonl");
+            await WritePiJsonlSessionAsync(currentPath, "current-id", root, "current session",
+                "2026-04-01T00:00:00Z");
+            var victimPath = Path.Combine(sessions, "victim.jsonl");
+            await WritePiJsonlSessionAsync(victimPath, "victim-id", root, "victim session",
+                "2026-04-02T00:00:00Z");
+
+            process = Start(root, agent,
+                $"--local --offline --session {Quote(currentPath)} --session-dir {Quote(sessions)} --no-tools");
+            var capture = new OutputCapture(process);
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(120));
+            await capture.InputReady.Task.WaitAsync(timeout.Token);
+
+            await Write(process, "/resume\r");
+            await capture.WaitFor("Resume Session (Current Folder)", timeout.Token);
+            await Write(process, "victim session");
+            await capture.WaitFor("Search: victim session", timeout.Token);
+            await Write(process, "\u0004");
+            await capture.WaitFor("Delete victim session?", timeout.Token);
+            await capture.WaitFor("Escape/Ctrl+C", timeout.Token);
+            Assert.Contains("confirm", capture.Frame(), StringComparison.Ordinal);
+            Assert.DoesNotContain("Enter confirm", capture.Frame());
+
+            await Write(process, "\r"); // Disabled confirm binding must be ignored.
+            await Task.Delay(150, timeout.Token);
+            Assert.True(File.Exists(victimPath));
+            Assert.Contains("Delete victim session?", capture.Frame());
+
+            await Write(process, "\u001b"); // Default cancel still closes confirmation.
+            await Task.Delay(150, timeout.Token);
+            Assert.True(File.Exists(victimPath));
+
+            await Write(process, "\u001b");
+            await Task.Delay(100, timeout.Token);
+            await Write(process, "/quit\r");
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+            Assert.Equal(0, process.ExitCode);
+            Assert.DoesNotContain("Unhandled exception", await capture.ErrorCompletion);
+        }
+        finally
+        {
+            if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
+            process?.Dispose();
+            Directory.Delete(root, true);
+        }
+    }
+
+    [Fact]
     public async Task FollowUpDequeueRestoresSteeringFollowUpAndDraftWithoutPrematureExecutionThroughLinuxPty()
     {
         if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
@@ -237,6 +370,25 @@ public sealed class KeysQueueSessionPtyTests
             catch (HttpListenerException) { }
             Directory.Delete(root, true);
         }
+    }
+
+    private static async Task WritePiJsonlSessionAsync(string path, string id, string workingDirectory, string name,
+        string timestamp, string? parentSessionPath = null)
+    {
+        var parent = parentSessionPath is null ? "" :
+            $",\"parentSession\":{JsonSerializer.Serialize(parentSessionPath)}";
+        var messageId = id + "-message";
+        var infoId = id + "-info";
+        await File.WriteAllTextAsync(path,
+            $"{{\"type\":\"session\",\"version\":3,\"id\":{JsonSerializer.Serialize(id)}," +
+            $"\"timestamp\":{JsonSerializer.Serialize(timestamp)},\"cwd\":{JsonSerializer.Serialize(workingDirectory)}{parent}}}\n" +
+            $"{{\"type\":\"message\",\"id\":{JsonSerializer.Serialize(messageId)},\"parentId\":null," +
+            $"\"timestamp\":{JsonSerializer.Serialize(timestamp)},\"message\":{{\"role\":\"user\"," +
+            $"\"content\":[{{\"type\":\"text\",\"text\":{JsonSerializer.Serialize(name)}}}]," +
+            $"\"timestamp\":{DateTimeOffset.Parse(timestamp).ToUnixTimeMilliseconds()}}}}}\n" +
+            $"{{\"type\":\"session_info\",\"id\":{JsonSerializer.Serialize(infoId)}," +
+            $"\"parentId\":{JsonSerializer.Serialize(messageId)},\"timestamp\":{JsonSerializer.Serialize(timestamp)}," +
+            $"\"name\":{JsonSerializer.Serialize(name)}}}\n");
     }
 
     private static Process Start(string cwd, string agent, string arguments,

@@ -1,7 +1,12 @@
 namespace PiSharp.Runtime.Sessions;
 
 public sealed record SessionListing(string Path, string Id, string? Name, DateTimeOffset ModifiedAt,
-    int MessageCount, string Model, string Fingerprint, string? WorkingDirectory = null);
+    int MessageCount, string Model, string Fingerprint, string? WorkingDirectory = null,
+    string? ParentSessionPath = null)
+{
+    /// <summary>Absolute session-file identity used by picker selection and mutation lookups.</summary>
+    public string CanonicalPath => SessionCatalog.CanonicalPath(Path);
+}
 
 /// <summary>A catalog row together with the store that owns its directory.</summary>
 public sealed record SessionCatalogEntry(SessionListing Listing, ConversationStore Store);
@@ -55,7 +60,8 @@ public static class SessionCatalog
                     var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes));
                     var store = new ConversationStore(session.WorkingDirectory, directory);
                     entries.Add(new(new(path, session.Id, session.Name, ActivityTime(session, path),
-                        session.ActiveMessages().Count, session.Model, hash, session.WorkingDirectory), store));
+                        session.ActiveMessages().Count, session.Model, hash, session.WorkingDirectory,
+                        session.ParentSessionPath), store));
                 }
                 catch (Exception error) when (error is IOException or UnauthorizedAccessException or
                     InvalidDataException or System.Text.Json.JsonException or ArgumentException or FormatException)
@@ -96,7 +102,8 @@ public static class SessionCatalog
             catch (Exception error) when (error is IOException or InvalidDataException or System.Text.Json.JsonException)
             { throw new InvalidDataException($"Could not index session '{path}': {error.Message}", error); }
             listings.Add(new(path, session.Id, session.Name, ActivityTime(session, path),
-                session.ActiveMessages().Count, session.Model, hash, session.WorkingDirectory));
+                session.ActiveMessages().Count, session.Model, hash, session.WorkingDirectory,
+                session.ParentSessionPath));
         }
         return listings.OrderByDescending(item => item.ModifiedAt).ThenBy(item => item.Path, StringComparer.Ordinal).ToArray();
     }
@@ -112,6 +119,19 @@ public static class SessionCatalog
             DateTimeOffset.TryParse(timestamp.GetString(), out var created)) return created;
         return File.GetLastWriteTimeUtc(path);
     }
+
+    /// <summary>Absolute, normalized session path. Catalog entries reject symlinks, so this is the stable file identity.</summary>
+    public static string CanonicalPath(string path)
+    {
+        try { return Path.GetFullPath(path); }
+        catch (Exception error) when (error is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return path;
+        }
+    }
+
+    public static bool PathsEqual(string left, string right) => string.Equals(CanonicalPath(left), CanonicalPath(right),
+        OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
 
     public static IReadOnlyList<SessionListing> Search(IReadOnlyList<SessionListing> listings, string query) =>
         listings.Where(item => item.Id.Contains(query, StringComparison.OrdinalIgnoreCase) ||

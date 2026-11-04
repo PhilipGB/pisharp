@@ -222,7 +222,7 @@ public sealed class KeysQueueSessionTests
         Assert.Equal(selected, list.Selected?.Option.Key);
         Assert.Contains(Path.GetFileName(entry.Listing.Path), state.BuildOption(entry).Description!, StringComparison.Ordinal);
         list.HandleInput(new(null, entry.Listing.Id[..6]));
-        Assert.Equal(entry.Listing.Id, list.Selected?.Option.Key);
+        Assert.Equal(entry.Listing.CanonicalPath, list.Selected?.Option.Key);
     }
 
     [Fact]
@@ -239,7 +239,7 @@ public sealed class KeysQueueSessionTests
 
         var victim = state.BuildEntries().First(entry => !entry.IsCurrent);
         Assert.True(state.BeginDelete(victim.Key));
-        Assert.Equal(victim.Key, state.ConfirmingDeleteId);
+        Assert.Equal(victim.Key, state.ConfirmingDeleteKey);
         Assert.True(File.Exists(victim.Listing.Path));
         var unrelated = state.BuildEntries().Where(entry => entry.Key != victim.Key)
             .Select(entry => entry.Listing.Path).ToArray();
@@ -259,7 +259,7 @@ public sealed class KeysQueueSessionTests
         var victim = state.BuildEntries().First(entry => !entry.IsCurrent);
         Assert.True(state.BeginDelete(victim.Key));
         state.CancelDelete();
-        Assert.Null(state.ConfirmingDeleteId);
+        Assert.Null(state.ConfirmingDeleteKey);
         Assert.True(File.Exists(victim.Listing.Path));
         Assert.Equal(4, state.BuildEntries().Count);
     }
@@ -308,7 +308,7 @@ public sealed class KeysQueueSessionTests
         var id = target.Listing.Id;
         var messageCount = target.Listing.MessageCount;
 
-        Assert.True(await state.RenameAsync(id, "renamed session"));
+        Assert.True(await state.RenameAsync(target.Key, "renamed session"));
         var saved = await fixture.Store.LoadAsync(SessionCatalog.Resolve(
             await SessionCatalog.ListAsync(fixture.Store), "renamed session"));
         Assert.Equal(id, saved.Id);
@@ -493,7 +493,7 @@ public sealed class KeysQueueSessionTests
         list.HandleInput(Event(Key(ConsoleKey.Backspace)));
         list.HandleInput(Event(Key(ConsoleKey.Backspace)));
         Assert.Equal("", list.SearchQuery);
-        Assert.Null(state.ConfirmingDeleteId);
+        Assert.Null(state.ConfirmingDeleteKey);
         var selected = list.Selected!.Option.Value;
         Assert.True(TerminalSessionPicker.ShouldEnterDeleteConfirmation(""));
         Assert.False(TerminalSessionPicker.ShouldEnterDeleteConfirmation("abc"));

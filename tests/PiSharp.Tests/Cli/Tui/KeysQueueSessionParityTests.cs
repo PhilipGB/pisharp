@@ -261,7 +261,7 @@ public sealed class KeysQueueSessionParityTests
         var entry = state.BuildEntries().Single(item => item.Listing.Name == "named session");
         var id = entry.Listing.Id;
         var messages = entry.Listing.MessageCount;
-        Assert.True(await state.RenameAsync(id, "renamed session"));
+        Assert.True(await state.RenameAsync(entry.Key, "renamed session"));
         var reloaded = await fixture.Store.LoadAsync(SessionCatalog.Resolve(
             await SessionCatalog.ListAsync(fixture.Store), "renamed session"));
         Assert.Equal(id, reloaded.Id);
@@ -271,7 +271,7 @@ public sealed class KeysQueueSessionParityTests
         Assert.True(rename.GetProperty("persists").GetBoolean());
         Assert.True(rename.GetProperty("identityStable").GetBoolean());
         Assert.True(rename.GetProperty("historyStable").GetBoolean());
-        Assert.False(await state.RenameAsync(id, " "));
+        Assert.False(await state.RenameAsync(entry.Key, " "));
         Assert.Contains("cannot be empty", state.Status);
         return true;
     }

@@ -1,0 +1,135 @@
+{
+  "id": "terminal-session-picker-findings",
+  "settings": {
+    "quietStartup": true
+  },
+  "persistSessions": true,
+  "files": {
+    "pi": {
+      "sessions/parent.jsonl": "{\"type\":\"session\",\"version\":3,\"id\":\"parent-id\",\"timestamp\":\"2026-04-02T00:00:00.000Z\",\"cwd\":\"{workspace}\"}\n{\"type\":\"message\",\"id\":\"parent-id-message\",\"parentId\":null,\"timestamp\":\"2026-04-02T00:00:00.000Z\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"tree parent\"}],\"timestamp\":0}}\n{\"type\":\"session_info\",\"id\":\"parent-id-info\",\"parentId\":\"parent-id-message\",\"timestamp\":\"2026-04-02T00:00:00.000Z\",\"name\":\"tree parent\"}\n",
+      "sessions/child.jsonl": "{\"type\":\"session\",\"version\":3,\"id\":\"child-id\",\"timestamp\":\"2026-04-05T00:00:00.000Z\",\"cwd\":\"{workspace}\",\"parentSession\":\"{agent}/sessions/parent.jsonl\"}\n{\"type\":\"message\",\"id\":\"child-id-message\",\"parentId\":null,\"timestamp\":\"2026-04-05T00:00:00.000Z\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"tree child\"}],\"timestamp\":0}}\n{\"type\":\"session_info\",\"id\":\"child-id-info\",\"parentId\":\"child-id-message\",\"timestamp\":\"2026-04-05T00:00:00.000Z\",\"name\":\"tree child\"}\n",
+      "sessions/duplicate-one.jsonl": "{\"type\":\"session\",\"version\":3,\"id\":\"shared-id\",\"timestamp\":\"2026-04-03T00:00:00.000Z\",\"cwd\":\"{workspace}\"}\n{\"type\":\"message\",\"id\":\"shared-id-message\",\"parentId\":null,\"timestamp\":\"2026-04-03T00:00:00.000Z\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"duplicate one\"}],\"timestamp\":0}}\n{\"type\":\"session_info\",\"id\":\"shared-id-info\",\"parentId\":\"shared-id-message\",\"timestamp\":\"2026-04-03T00:00:00.000Z\",\"name\":\"duplicate one\"}\n",
+      "sessions/duplicate-two.jsonl": "{\"type\":\"session\",\"version\":3,\"id\":\"shared-id\",\"timestamp\":\"2026-04-06T00:00:00.000Z\",\"cwd\":\"{workspace}\"}\n{\"type\":\"message\",\"id\":\"shared-id-message\",\"parentId\":null,\"timestamp\":\"2026-04-06T00:00:00.000Z\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"duplicate two\"}],\"timestamp\":0}}\n{\"type\":\"session_info\",\"id\":\"shared-id-info\",\"parentId\":\"shared-id-message\",\"timestamp\":\"2026-04-06T00:00:00.000Z\",\"name\":\"duplicate two\"}\n",
+      "sessions/orphan.jsonl": "{\"type\":\"session\",\"version\":3,\"id\":\"orphan-id\",\"timestamp\":\"2026-04-04T00:00:00.000Z\",\"cwd\":\"{workspace}\",\"parentSession\":\"{agent}/sessions/missing-parent.jsonl\"}\n{\"type\":\"message\",\"id\":\"orphan-id-message\",\"parentId\":null,\"timestamp\":\"2026-04-04T00:00:00.000Z\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"orphan child\"}],\"timestamp\":0}}\n{\"type\":\"session_info\",\"id\":\"orphan-id-info\",\"parentId\":\"orphan-id-message\",\"timestamp\":\"2026-04-04T00:00:00.000Z\",\"name\":\"orphan child\"}\n",
+      "current/current.jsonl": "{\"type\":\"session\",\"version\":3,\"id\":\"current-id\",\"timestamp\":\"2026-04-01T00:00:00.000Z\",\"cwd\":\"{workspace}\"}\n{\"type\":\"message\",\"id\":\"current-id-message\",\"parentId\":null,\"timestamp\":\"2026-04-01T00:00:00.000Z\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"current session\"}],\"timestamp\":0}}\n{\"type\":\"session_info\",\"id\":\"current-id-info\",\"parentId\":\"current-id-message\",\"timestamp\":\"2026-04-01T00:00:00.000Z\",\"name\":\"current session\"}\n"
+    },
+    "pisharp": {
+      "sessions/parent.session.json": "{\"Version\":2,\"Id\":\"parent-id\",\"WorkingDirectory\":\"{workspace}\",\"Model\":\"fixture-model\",\"Endpoint\":null,\"Name\":\"tree parent\",\"HeadId\":\"parent-id-entry\",\"Entries\":[{\"Id\":\"parent-id-entry\",\"ParentId\":null,\"Type\":\"chat\",\"Payload\":{\"Message\":{\"role\":\"user\",\"contents\":[{\"$type\":\"text\",\"text\":\"tree parent\"}]},\"Errors\":[],\"PiEntry\":null},\"Timestamp\":\"2026-04-02T00:00:00+00:00\"}],\"Provider\":null,\"PiHeader\":null,\"ParentSessionPath\":null}\n",
+      "sessions/child.session.json": "{\"Version\":2,\"Id\":\"child-id\",\"WorkingDirectory\":\"{workspace}\",\"Model\":\"fixture-model\",\"Endpoint\":null,\"Name\":\"tree child\",\"HeadId\":\"child-id-entry\",\"Entries\":[{\"Id\":\"child-id-entry\",\"ParentId\":null,\"Type\":\"chat\",\"Payload\":{\"Message\":{\"role\":\"user\",\"contents\":[{\"$type\":\"text\",\"text\":\"tree child\"}]},\"Errors\":[],\"PiEntry\":null},\"Timestamp\":\"2026-04-05T00:00:00+00:00\"}],\"Provider\":null,\"PiHeader\":null,\"ParentSessionPath\":\"{agent}/sessions/parent.session.json\"}\n",
+      "sessions/duplicate-one.session.json": "{\"Version\":2,\"Id\":\"shared-id\",\"WorkingDirectory\":\"{workspace}\",\"Model\":\"fixture-model\",\"Endpoint\":null,\"Name\":\"duplicate one\",\"HeadId\":\"shared-id-entry\",\"Entries\":[{\"Id\":\"shared-id-entry\",\"ParentId\":null,\"Type\":\"chat\",\"Payload\":{\"Message\":{\"role\":\"user\",\"contents\":[{\"$type\":\"text\",\"text\":\"duplicate one\"}]},\"Errors\":[],\"PiEntry\":null},\"Timestamp\":\"2026-04-03T00:00:00+00:00\"}],\"Provider\":null,\"PiHeader\":null,\"ParentSessionPath\":null}\n",
+      "sessions/duplicate-two.session.json": "{\"Version\":2,\"Id\":\"shared-id\",\"WorkingDirectory\":\"{workspace}\",\"Model\":\"fixture-model\",\"Endpoint\":null,\"Name\":\"duplicate two\",\"HeadId\":\"shared-id-entry\",\"Entries\":[{\"Id\":\"shared-id-entry\",\"ParentId\":null,\"Type\":\"chat\",\"Payload\":{\"Message\":{\"role\":\"user\",\"contents\":[{\"$type\":\"text\",\"text\":\"duplicate two\"}]},\"Errors\":[],\"PiEntry\":null},\"Timestamp\":\"2026-04-06T00:00:00+00:00\"}],\"Provider\":null,\"PiHeader\":null,\"ParentSessionPath\":null}\n",
+      "sessions/orphan.session.json": "{\"Version\":2,\"Id\":\"orphan-id\",\"WorkingDirectory\":\"{workspace}\",\"Model\":\"fixture-model\",\"Endpoint\":null,\"Name\":\"orphan child\",\"HeadId\":\"orphan-id-entry\",\"Entries\":[{\"Id\":\"orphan-id-entry\",\"ParentId\":null,\"Type\":\"chat\",\"Payload\":{\"Message\":{\"role\":\"user\",\"contents\":[{\"$type\":\"text\",\"text\":\"orphan child\"}]},\"Errors\":[],\"PiEntry\":null},\"Timestamp\":\"2026-04-04T00:00:00+00:00\"}],\"Provider\":null,\"PiHeader\":null,\"ParentSessionPath\":\"{agent}/sessions/missing-parent.session.json\"}\n",
+      "current/current.session.json": "{\"Version\":2,\"Id\":\"current-id\",\"WorkingDirectory\":\"{workspace}\",\"Model\":\"fixture-model\",\"Endpoint\":null,\"Name\":\"current session\",\"HeadId\":\"current-id-entry\",\"Entries\":[{\"Id\":\"current-id-entry\",\"ParentId\":null,\"Type\":\"chat\",\"Payload\":{\"Message\":{\"role\":\"user\",\"contents\":[{\"$type\":\"text\",\"text\":\"current session\"}]},\"Errors\":[],\"PiEntry\":null},\"Timestamp\":\"2026-04-01T00:00:00+00:00\"}],\"Provider\":null,\"PiHeader\":null,\"ParentSessionPath\":null}\n"
+    }
+  },
+  "dimensions": [
+    {
+      "columns": 140,
+      "rows": 40
+    }
+  ],
+  "themes": [
+    "dark"
+  ],
+  "modes": [
+    "fullscreen"
+  ],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  },
+  "arguments": {
+    "pi": [
+      "--session",
+      "{agent}/current/current.jsonl",
+      "--session-dir",
+      "{agent}/sessions",
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-tools",
+      "--no-context-files"
+    ],
+    "pisharp": [
+      "--session",
+      "{agent}/current/current.session.json",
+      "--session-dir",
+      "{agent}/sessions",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-tools",
+      "--no-context-files",
+      "--no-approve"
+    ]
+  },
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "picker-open",
+      "send": "/resume\r",
+      "expect": "Resume Session (Current Folder)",
+      "timeout": 30
+    },
+    {
+      "id": "picker-tree",
+      "expect": [
+        "duplicate two",
+        "tree child",
+        "orphan child"
+      ],
+      "allowStaticFrame": true,
+      "timeout": 15
+    },
+    {
+      "id": "picker-delete-confirm",
+      "send": "\u0004",
+      "expect": {
+        "pi": "Delete session?",
+        "pisharp": "Delete duplicate two?"
+      }
+    },
+    {
+      "id": "picker-delete-applied",
+      "send": "\r",
+      "expect": "Session deleted"
+    },
+    {
+      "id": "picker-delete-settled",
+      "expect": [
+        "duplicate one",
+        "tree child"
+      ],
+      "allowStaticFrame": true,
+      "timeout": 15
+    },
+    {
+      "id": "picker-close",
+      "send": "\u001b",
+      "notExpect": "Resume Session (Current Folder)",
+      "timeout": 15
+    },
+    {
+      "id": "quit",
+      "send": "/quit\r",
+      "exit": true
+    }
+  ],
+  "assertionFrames": [
+    "startup",
+    "picker-open",
+    "picker-tree",
+    "picker-delete-confirm",
+    "picker-delete-applied",
+    "picker-delete-settled",
+    "quit"
+  ]
+}

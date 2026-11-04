@@ -1,0 +1,96 @@
+{
+  "capability": "session-picker-post-merge-findings",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "date": "2026-11-04",
+  "sources": [
+    {
+      "path": "packages/coding-agent/src/modes/interactive/components/session-selector.ts",
+      "anchors": [
+        "const sessionPath = canonicalizePath(session.path) ?? session.path;",
+        "const parentPath = canonicalizePath(session.parentSessionPath);",
+        "nodes.sort((a, b) => b.latestActivity - a.latestActivity);",
+        "if (this.sortMode === \"threaded\" && !trimmed) {",
+        "const confirmHint = `Delete session? ${keyHint(\"tui.select.confirm\", \"confirm\")} · ${keyHint(\"tui.select.cancel\", \"cancel\")}`;",
+        "this.setConfirmingDeletePath(selected.session.path);",
+        "const pathToDelete = this.confirmingDeletePath;",
+        "this.onDeleteSession?.(pathToDelete);",
+        "this.onRenameSession?.(selected.session.path);"
+      ]
+    },
+    {
+      "path": "packages/coding-agent/src/core/session-manager.ts",
+      "anchors": [
+        "const parentSessionPath = header.parentSession;",
+        "parentSessionPath,"
+      ]
+    },
+    {
+      "path": "packages/coding-agent/src/modes/interactive/components/keybinding-hints.ts",
+      "anchors": [
+        "return theme.fg(\"dim\", keyText(keybinding)) + theme.fg(\"muted\", ` ${description}`);"
+      ]
+    },
+    {
+      "path": "packages/coding-agent/src/modes/interactive/components/session-selector-search.ts",
+      "anchors": [
+        "if (!trimmed) return nameFiltered;",
+        "scored.sort((a, b) => {"
+      ]
+    }
+  ],
+  "scenarios": {
+    "F01": {
+      "behavior": "Picker identity, selection, deletion and rename use canonical session-file paths rather than persisted session IDs",
+      "source": [
+        "packages/coding-agent/src/modes/interactive/components/session-selector.ts"
+      ],
+      "expected": {
+        "identity": "canonical-session-path",
+        "sameIdKeys": "distinct",
+        "sameIdDeletion": "only-selected-path",
+        "sameIdRename": "only-selected-path",
+        "scopes": ["current", "all"],
+        "currentSessionProtected": true,
+        "persistedSessionId": "unchanged",
+        "fingerprintValidation": true,
+        "trashFirstDeletion": true
+      }
+    },
+    "F02": {
+      "behavior": "Threaded mode builds and flattens the pinned-Pi session tree while Recent and Fuzzy keep flat ordering",
+      "source": [
+        "packages/coding-agent/src/modes/interactive/components/session-selector.ts",
+        "packages/coding-agent/src/core/session-manager.ts"
+      ],
+      "expected": {
+        "parentLink": "canonical-parent-session-path",
+        "missingParent": "root",
+        "noParent": "root",
+        "rootOrder": "subtree-latest-activity-desc",
+        "childOrder": "subtree-latest-activity-desc",
+        "flattenOrder": "preorder",
+        "childPrefixes": ["├─ ", "└─ ", "│  "],
+        "threadedWithQuery": "flat-score-order",
+        "recentOrder": "catalog-order",
+        "fuzzyOrder": "score-order",
+        "crossProjectLinks": true
+      }
+    },
+    "F03": {
+      "behavior": "Disabled confirmation bindings render empty keys, cannot dispatch, and only a missing keymap falls back",
+      "source": [
+        "packages/coding-agent/src/modes/interactive/components/session-selector.ts",
+        "packages/coding-agent/src/modes/interactive/components/keybinding-hints.ts"
+      ],
+      "expected": {
+        "disabledConfirmKey": "",
+        "disabledCancelKey": "",
+        "hintShape": "Delete session? {confirm} confirm · {cancel} cancel",
+        "fallback": "only-without-keymap",
+        "customBindings": "preserved",
+        "disabledCannotConfirmOrCancel": true,
+        "hintsNeverAdvertiseDisabledActions": true
+      }
+    }
+  }
+}
