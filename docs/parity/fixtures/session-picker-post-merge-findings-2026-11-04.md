@@ -6,6 +6,8 @@ Baseline: `a4b51240c0426508ac4fe5c5861b7e914dd7307f` (PR #40 merge)
 
 Capability: `session-picker-post-merge-findings`
 
+Tracking: [PR #41](https://github.com/PhilipGB/pisharp/pull/41)
+
 ## Contract
 
 Exactly three findings are required. No other capability is marked verified here.
