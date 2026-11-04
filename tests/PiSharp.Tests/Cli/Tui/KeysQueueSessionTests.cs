@@ -393,6 +393,65 @@ public sealed class KeysQueueSessionTests
     }
 
     [Fact]
+    public async Task UnreadableSessionFailsVisiblyWithoutModifyingUnrelatedSessions()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        using var fixture = await PickerFixture.CreateAsync();
+        var listings = await SessionCatalog.ListAsync(fixture.Store);
+        var unreadable = listings.First(item => item.Path == fixture.CurrentPath);
+        var unrelated = listings.First(item => item.Path != fixture.CurrentPath);
+        File.SetUnixFileMode(unreadable.Path, UnixFileMode.None);
+        try
+        {
+            await Assert.ThrowsAnyAsync<Exception>(() => SessionCatalog.ListAsync(fixture.Store));
+            Assert.True(File.Exists(unrelated.Path));
+        }
+        finally { File.SetUnixFileMode(unreadable.Path, UnixFileMode.UserRead | UnixFileMode.UserWrite); }
+        Assert.Contains(await SessionCatalog.ListAsync(fixture.Store), item => item.Path == unrelated.Path);
+    }
+
+    [Fact]
+    public async Task ConcurrentCatalogChangeRejectsStaleMutationAndPreservesUnrelatedSessions()
+    {
+        using var fixture = await PickerFixture.CreateAsync();
+        var first = await TerminalSessionPickerState.LoadAsync(fixture.Store, fixture.CurrentPath, null,
+            (catalog, listing, token) => SessionFileDeletion.DeleteAsync(catalog, listing,
+                (_, _) => Task.FromResult(false), token));
+        var second = await TerminalSessionPickerState.LoadAsync(fixture.Store, fixture.CurrentPath, null,
+            (catalog, listing, token) => SessionFileDeletion.DeleteAsync(catalog, listing,
+                (_, _) => Task.FromResult(false), token));
+        var victim = first.BuildEntries().First(entry => !entry.IsCurrent);
+        var other = first.BuildEntries().First(entry => !entry.IsCurrent && entry.Key != victim.Key);
+        Assert.True(first.BeginDelete(victim.Key));
+        Assert.True(await first.ConfirmDeleteAsync());
+        Assert.False(File.Exists(victim.Listing.Path));
+        Assert.True(File.Exists(other.Listing.Path));
+
+        Assert.True(second.BeginDelete(victim.Key));
+        Assert.False(await second.ConfirmDeleteAsync());
+        Assert.Contains("Failed to delete", second.Status);
+        Assert.True(File.Exists(other.Listing.Path));
+    }
+
+    [Fact]
+    public async Task LongSessionPathsAreClippedSafelyAcrossTerminalWidths()
+    {
+        using var fixture = await PickerFixture.CreateAsync();
+        var state = await TerminalSessionPickerState.LoadAsync(fixture.Store, fixture.CurrentPath, null);
+        state.TogglePath();
+        var options = state.BuildEntries().Select(state.BuildOption).ToArray();
+        foreach (var width in new[] { 24, 40, 80, 140 })
+        {
+            var list = new TerminalSelectionList<SessionPickerEntry>("Resume Session (Current Folder)",
+                options, scopedOptions: options, allLabel: "All", scopedLabel: "Current Folder",
+                keymap: new EditorKeymap());
+            var rendered = list.Render(width, 20);
+            Assert.All(rendered, line => Assert.True(TerminalTextLayout.Width(line) <= Math.Max(12, width - 8)));
+            Assert.NotEmpty(rendered);
+        }
+    }
+
+    [Fact]
     public async Task CtrlBackspaceUsesTheQueryUnlessTheQueryIsEmpty()
     {
         using var fixture = await PickerFixture.CreateAsync();
