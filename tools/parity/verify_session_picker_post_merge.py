@@ -181,45 +181,45 @@ def validate_checkpoints(checkpoints, manifest):
 
     main = cases[MAIN_FIXTURE]
     for product in ("pi", "pisharp"):
-        opened = require_checkpoint(main, MAIN_FIXTURE, "picker-open", product)["picker"]
+        opened = require_checkpoint(cases, MAIN_FIXTURE, "picker-open", product)["picker"]
         require(opened["rows"] == EXPECTED_ROWS,
                 f"main/{product} threaded rows are {opened['rows']!r}.")
         require(opened["selected"] == "duplicate two",
                 f"main/{product} initial selection is {opened['selected']!r}.")
-        confirm = require_checkpoint(main, MAIN_FIXTURE, "picker-delete-confirm", product)["picker"]
+        confirm = require_checkpoint(cases, MAIN_FIXTURE, "picker-delete-confirm", product)["picker"]
         require(confirm["confirmation"] is True and confirm["confirmationKeys"] ==
                 {"confirm": "enter", "cancel": "escape/ctrl+c"},
                 f"main/{product} confirmation checkpoint is {confirm!r}.")
-        applied = require_checkpoint(main, MAIN_FIXTURE, "picker-delete-applied", product)["picker"]
+        applied = require_checkpoint(cases, MAIN_FIXTURE, "picker-delete-applied", product)["picker"]
         require(applied["rows"] == EXPECTED_REMAINING_ROWS,
                 f"main/{product} deletion left {applied['rows']!r}.")
         require(applied["statuses"] == ["Session deleted"],
                 f"main/{product} deletion status is {applied['statuses']!r}.")
-        settled = require_checkpoint(main, MAIN_FIXTURE, "picker-delete-settled", product)["picker"]
+        settled = require_checkpoint(cases, MAIN_FIXTURE, "picker-delete-settled", product)["picker"]
         require(settled["rows"] == EXPECTED_REMAINING_ROWS,
                 f"main/{product} settled rows are {settled['rows']!r}.")
         require(main[product]["sessionFiles"] == EXPECTED_SESSION_FILES,
                 f"main/{product} session files are {main[product]['sessionFiles']!r}.")
-        quit_state = require_checkpoint(main, MAIN_FIXTURE, "quit", product)
+        quit_state = require_checkpoint(cases, MAIN_FIXTURE, "quit", product)
         require(quit_state["activeScreen"] == "normal" and
                 quit_state["temporaryModes"] == [] and quit_state["cursorVisible"] is True,
                 f"main/{product} did not restore the terminal: {quit_state!r}.")
 
     disabled = cases[DISABLED_FIXTURE]
     for product in ("pi", "pisharp"):
-        opened = require_checkpoint(disabled, DISABLED_FIXTURE, "picker-confirm-open", product)["picker"]
+        opened = require_checkpoint(cases, DISABLED_FIXTURE, "picker-confirm-open", product)["picker"]
         require(opened["confirmation"] is True, f"disabled/{product} confirmation did not open.")
         require(opened["confirmationKeys"] == {"confirm": "", "cancel": "escape/ctrl+c"},
                 f"disabled/{product} confirmation keys are {opened['confirmationKeys']!r}.")
-        entered = require_checkpoint(disabled, DISABLED_FIXTURE, "picker-confirm-enter", product)["picker"]
+        entered = require_checkpoint(cases, DISABLED_FIXTURE, "picker-confirm-enter", product)["picker"]
         require(entered["confirmation"] is True and entered["confirmationKeys"]["confirm"] == "",
                 f"disabled/{product} Enter changed confirmation: {entered!r}.")
-        cancelled = require_checkpoint(disabled, DISABLED_FIXTURE, "picker-confirm-cancel", product)["picker"]
+        cancelled = require_checkpoint(cases, DISABLED_FIXTURE, "picker-confirm-cancel", product)["picker"]
         require(cancelled["confirmation"] is False,
                 f"disabled/{product} Escape did not cancel confirmation.")
         require(disabled[product]["sessionFiles"] == ["victim"],
                 f"disabled/{product} session files are {disabled[product]['sessionFiles']!r}.")
-        quit_state = require_checkpoint(disabled, DISABLED_FIXTURE, "quit", product)
+        quit_state = require_checkpoint(cases, DISABLED_FIXTURE, "quit", product)
         require(quit_state["activeScreen"] == "normal" and
                 quit_state["temporaryModes"] == [] and quit_state["cursorVisible"] is True,
                 f"disabled/{product} did not restore the terminal: {quit_state!r}.")
