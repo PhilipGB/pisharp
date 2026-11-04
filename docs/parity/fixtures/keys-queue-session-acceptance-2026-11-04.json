@@ -1,0 +1,430 @@
+{
+  "schema": 1,
+  "capability": "keys-queue-session",
+  "date": "2026-11-04",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "implementationSha": "d311dc222aa3394990ec739d5f62854441973e6d",
+  "oracle": "docs/parity/fixtures/keys-queue-session-pi-oracle-2026-11-04.json",
+  "checkpoints": "docs/parity/fixtures/keys-queue-session-checkpoints-2026-11-04.json",
+  "terminalFixtures": [
+    "tools/parity/terminal/fixtures/terminal-keys-queue-session.json"
+  ],
+  "requiredTests": {
+    "theories": [
+      "PiSharp.Tests.KeysQueueSessionParityTests.MatchesPinnedPi"
+    ],
+    "facts": [
+      "PiSharp.Tests.KeysQueueSessionParityTests.OracleInventoryNamesThePinnedPiSourcesAndAllScenarios",
+      "PiSharp.Tests.KeysQueueSessionTests.DefaultQueueAndSessionPickerBindingsMatchPinnedPi",
+      "PiSharp.Tests.KeysQueueSessionTests.ReplacementAndDisabledQueueAndPickerBindingsFollowTheKeymap",
+      "PiSharp.Tests.KeysQueueSessionTests.IdleFollowUpSubmitsOnceAndIdleDequeueRestoresQueuedTextBeforeTheDraft",
+      "PiSharp.Tests.KeysQueueSessionTests.ActiveRunRoutesEnterToSteeringAndAltEnterToFollowUpWithoutTouchingTheDraftEarly",
+      "PiSharp.Tests.KeysQueueSessionTests.ActiveRunDequeueRestoresSteeringBeforeFollowUpBeforeTheDraft",
+      "PiSharp.Tests.KeysQueueSessionTests.QueueFailureRestoresTheSubmittedText",
+      "PiSharp.Tests.KeysQueueSessionTests.NamedFilterComposesWithSearchAndTogglingRestoresEntries",
+      "PiSharp.Tests.KeysQueueSessionTests.SortCyclesThreadedRecentAndFuzzyAndPreservesTheSelectedIndex",
+      "PiSharp.Tests.KeysQueueSessionTests.PathDisplayTogglesDescriptionsWithoutChangingSelectionOrSearchText",
+      "PiSharp.Tests.KeysQueueSessionTests.DeleteRequiresConfirmationProtectsTheCurrentSessionAndRemovesOnlyTheSelection",
+      "PiSharp.Tests.KeysQueueSessionTests.DeleteConfirmationCanBeCancelledWithoutFilesystemMutation",
+      "PiSharp.Tests.KeysQueueSessionTests.TrashFirstDeletionUsesTrashAndFallsBackToUnlinkWithFingerprintValidation",
+      "PiSharp.Tests.KeysQueueSessionTests.RenamePrefillsExistingNamePersistsAndKeepsTheSessionIdentityAndHistory",
+      "PiSharp.Tests.KeysQueueSessionTests.RenameFailureLeavesTheSessionFileAndCatalogIntact",
+      "PiSharp.Tests.KeysQueueSessionTests.PickerHintsFollowReplacementAndDisabledBindingsWithoutLeakingModelActions",
+      "PiSharp.Tests.KeysQueueSessionTests.AllScopeDiscoversSessionsFromOtherProjectDirectoriesAndKeepsTheirStores",
+      "PiSharp.Tests.KeysQueueSessionTests.CtrlBackspaceUsesTheQueryUnlessTheQueryIsEmpty",
+      "PiSharp.Tests.KeysQueueSessionPtyTests.PickerPathSortNamedScopeRenameAndDeleteWorkThroughLinuxPty",
+      "PiSharp.Tests.KeysQueueSessionPtyTests.FollowUpDequeueRestoresSteeringFollowUpAndDraftWithoutPrematureExecutionThroughLinuxPty",
+      "PiSharp.Tests.InteractivePromptExecutionInputTests.ActiveInputInterceptionTransformsSteeringAndFollowUpAndConsumesHandledInput",
+      "PiSharp.Tests.InteractivePromptExecutionInputTests.ExtensionCommandsExecuteImmediatelyWhileOrdinaryFollowUpsRemainQueued",
+      "PiSharp.Tests.TerminalPtyTests.SessionDiscoverySortResumeAndCloneWorkThroughLinuxPty"
+    ],
+    "ptyEvidence": [
+      "terminal-keys-queue-session/100x30-dark-fullscreen",
+      "terminal-keys-queue-session/100x30-dark-regular",
+      "terminal-keys-queue-session/140x40-dark-fullscreen",
+      "terminal-keys-queue-session/140x40-dark-regular"
+    ]
+  },
+  "oracleScenarioCount": 16,
+  "cases": [
+    {
+      "id": "Q01",
+      "behavior": "Steering during an active run",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "Q01"
+      ],
+      "tests": [
+        "PiSharp.Tests.KeysQueueSessionTests.IdleFollowUpSubmitsOnceAndIdleDequeueRestoresQueuedTextBeforeTheDraft",
+        "PiSharp.Tests.InteractivePromptExecutionInputTests.ActiveInputInterceptionTransformsSteeringAndFollowUpAndConsumesHandledInput"
+      ],
+      "terminalCheckpoints": [
+        "terminal-keys-queue-session/100x30-dark-fullscreen/steer-enter",
+        "terminal-keys-queue-session/100x30-dark-fullscreen/dequeue-ready"
+      ]
+    },
+    {
+      "id": "Q02",
+      "behavior": "Follow-up submission during streaming",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "Q02"
+      ],
+      "tests": [
+        "PiSharp.Tests.KeysQueueSessionTests.IdleFollowUpSubmitsOnceAndIdleDequeueRestoresQueuedTextBeforeTheDraft",
+        "PiSharp.Tests.KeysQueueSessionPtyTests.FollowUpDequeueRestoresSteeringFollowUpAndDraftWithoutPrematureExecutionThroughLinuxPty"
+      ],
+      "terminalCheckpoints": [
+        "terminal-keys-queue-session/100x30-dark-fullscreen/follow-up-alt-enter",
+        "terminal-keys-queue-session/100x30-dark-fullscreen/dequeue-ready"
+      ]
+    },
+    {
+      "id": "Q03",
+      "behavior": "Follow-up while idle",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "Q03"
+      ],
+      "tests": [
+        "PiSharp.Tests.KeysQueueSessionTests.ReplacementAndDisabledQueueAndPickerBindingsFollowTheKeymap"
+      ],
+      "terminalCheckpoints": [
+        "terminal-keys-queue-session/100x30-dark-fullscreen/wait-idle-after-queue"
+      ]
+    },
+    {
+      "id": "Q04",
+      "behavior": "Queue restoration",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "Q04"
+      ],
+      "tests": [
+        "PiSharp.Tests.KeysQueueSessionTests.ActiveRunRoutesEnterToSteeringAndAltEnterToFollowUpWithoutTouchingTheDraftEarly",
+        "PiSharp.Tests.KeysQueueSessionTests.ActiveRunDequeueRestoresSteeringBeforeFollowUpBeforeTheDraft"
+      ],
+      "terminalCheckpoints": [
+        "terminal-keys-queue-session/100x30-dark-fullscreen/dequeue-ready",
+        "terminal-keys-queue-session/100x30-dark-regular/dequeue-ready"
+      ]
+    },
+    {
+      "id": "Q05",
+      "behavior": "Cancellation and queue handoff",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "Q05"
+      ],
+      "tests": [
+        "PiSharp.Tests.KeysQueueSessionTests.IdleFollowUpSubmitsOnceAndIdleDequeueRestoresQueuedTextBeforeTheDraft",
+        "PiSharp.Tests.KeysQueueSessionTests.QueueFailureRestoresTheSubmittedText"
+      ],
+      "terminalCheckpoints": [
+        "terminal-keys-queue-session/100x30-dark-fullscreen/submit-restored",
+        "terminal-keys-queue-session/100x30-dark-fullscreen/release-finish-2"
+      ]
+    },
+    {
+      "id": "Q06",
+      "behavior": "Compaction and extension-command precedence",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "Q06"
+      ],
+      "tests": [
+        "PiSharp.Tests.InteractivePromptExecutionInputTests.ExtensionCommandsExecuteImmediatelyWhileOrdinaryFollowUpsRemainQueued",
+        "PiSharp.Tests.TerminalPtyTests.SessionDiscoverySortResumeAndCloneWorkThroughLinuxPty"
+      ],
+      "terminalCheckpoints": [
+        "terminal-keys-queue-session/100x30-dark-fullscreen/steer-enter",
+        "terminal-keys-queue-session/100x30-dark-fullscreen/follow-up-alt-enter"
+      ]
+    },
+    {
+      "id": "Q07",
+      "behavior": "Session-picker opening and scope",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "Q07"
+      ],
+      "tests": [
+        "PiSharp.Tests.KeysQueueSessionTests.AllScopeDiscoversSessionsFromOtherProjectDirectoriesAndKeepsTheirStores",
+        "PiSharp.Tests.KeysQueueSessionPtyTests.PickerPathSortNamedScopeRenameAndDeleteWorkThroughLinuxPty",
+        "PiSharp.Tests.TerminalPtyTests.SessionDiscoverySortResumeAndCloneWorkThroughLinuxPty"
+      ],
+      "terminalCheckpoints": [
+        "terminal-keys-queue-session/100x30-dark-fullscreen/picker-open",
+        "terminal-keys-queue-session/100x30-dark-fullscreen/picker-scope-all",
+        "terminal-keys-queue-session/100x30-dark-fullscreen/picker-scope-current"
+      ]
+    },
+    {
+      "id": "Q08",
+      "behavior": "Session sorting",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "Q08"
+      ],
+      "tests": [
+        "PiSharp.Tests.KeysQueueSessionTests.SortCyclesThreadedRecentAndFuzzyAndPreservesTheSelectedIndex"
+      ],
+      "terminalCheckpoints": [
+        "terminal-keys-queue-session/100x30-dark-fullscreen/picker-sort-recent",
+        "terminal-keys-queue-session/100x30-dark-fullscreen/picker-sort-fuzzy",
+        "terminal-keys-queue-session/100x30-dark-fullscreen/picker-sort-threaded"
+      ]
+    },
+    {
+      "id": "Q09",
+      "behavior": "Named-session filtering",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "Q09"
+      ],
+      "tests": [
+        "PiSharp.Tests.KeysQueueSessionTests.NamedFilterComposesWithSearchAndTogglingRestoresEntries"
+      ],
+      "terminalCheckpoints": [
+        "terminal-keys-queue-session/100x30-dark-fullscreen/picker-named",
+        "terminal-keys-queue-session/100x30-dark-fullscreen/picker-named-search",
+        "terminal-keys-queue-session/100x30-dark-fullscreen/picker-named-search-clear"
+      ]
+    },
+    {
+      "id": "Q10",
+      "behavior": "Path-display toggle",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "Q10"
+      ],
+      "tests": [
+        "PiSharp.Tests.KeysQueueSessionTests.PathDisplayTogglesDescriptionsWithoutChangingSelectionOrSearchText"
+      ],
+      "terminalCheckpoints": [
+        "terminal-keys-queue-session/100x30-dark-fullscreen/picker-path-on",
+        "terminal-keys-queue-session/100x30-dark-regular/picker-path-on"
+      ]
+    },
+    {
+      "id": "Q11",
+      "behavior": "Session renaming",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "Q11"
+      ],
+      "tests": [
+        "PiSharp.Tests.KeysQueueSessionTests.RenamePrefillsExistingNamePersistsAndKeepsTheSessionIdentityAndHistory",
+        "PiSharp.Tests.KeysQueueSessionTests.RenameFailureLeavesTheSessionFileAndCatalogIntact",
+        "PiSharp.Tests.KeysQueueSessionPtyTests.PickerPathSortNamedScopeRenameAndDeleteWorkThroughLinuxPty",
+        "PiSharp.Tests.TerminalPtyTests.SessionDiscoverySortResumeAndCloneWorkThroughLinuxPty"
+      ],
+      "terminalCheckpoints": [
+        "terminal-keys-queue-session/100x30-dark-fullscreen/picker-rename",
+        "terminal-keys-queue-session/100x30-dark-fullscreen/picker-rename-save",
+        "terminal-keys-queue-session/100x30-dark-fullscreen/picker-reopen-renamed-search"
+      ]
+    },
+    {
+      "id": "Q12",
+      "behavior": "Session deletion",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "Q12"
+      ],
+      "tests": [
+        "PiSharp.Tests.KeysQueueSessionTests.DeleteRequiresConfirmationProtectsTheCurrentSessionAndRemovesOnlyTheSelection",
+        "PiSharp.Tests.KeysQueueSessionTests.DeleteConfirmationCanBeCancelledWithoutFilesystemMutation",
+        "PiSharp.Tests.KeysQueueSessionTests.TrashFirstDeletionUsesTrashAndFallsBackToUnlinkWithFingerprintValidation"
+      ],
+      "terminalCheckpoints": [
+        "terminal-keys-queue-session/100x30-dark-fullscreen/picker-delete-confirm",
+        "terminal-keys-queue-session/100x30-dark-fullscreen/picker-delete-clear",
+        "terminal-keys-queue-session/100x30-dark-fullscreen/picker-reopen-deleted-search"
+      ]
+    },
+    {
+      "id": "Q13",
+      "behavior": "Conditional deletion",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "Q13"
+      ],
+      "tests": [
+        "PiSharp.Tests.KeysQueueSessionTests.CtrlBackspaceUsesTheQueryUnlessTheQueryIsEmpty"
+      ],
+      "terminalCheckpoints": [
+        "terminal-keys-queue-session/100x30-dark-fullscreen/picker-noninvasive-query",
+        "terminal-keys-queue-session/100x30-dark-fullscreen/picker-noninvasive-query-edit",
+        "terminal-keys-queue-session/100x30-dark-fullscreen/picker-confirm-open",
+        "terminal-keys-queue-session/100x30-dark-fullscreen/picker-confirm-cancel"
+      ]
+    },
+    {
+      "id": "Q14",
+      "behavior": "Configurable bindings and precedence",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "Q14"
+      ],
+      "tests": [
+        "PiSharp.Tests.KeysQueueSessionTests.DefaultQueueAndSessionPickerBindingsMatchPinnedPi",
+        "PiSharp.Tests.KeysQueueSessionTests.ReplacementAndDisabledQueueAndPickerBindingsFollowTheKeymap",
+        "PiSharp.Tests.KeysQueueSessionTests.PickerHintsFollowReplacementAndDisabledBindingsWithoutLeakingModelActions"
+      ],
+      "terminalCheckpoints": [
+        "terminal-keys-queue-session/100x30-dark-fullscreen/picker-path-on",
+        "terminal-keys-queue-session/100x30-dark-fullscreen/picker-sort-recent",
+        "terminal-keys-queue-session/100x30-dark-fullscreen/picker-delete-confirm"
+      ]
+    },
+    {
+      "id": "Q15",
+      "behavior": "Session integrity and failure recovery",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "Q15"
+      ],
+      "tests": [
+        "PiSharp.Tests.KeysQueueSessionTests.DeleteConfirmationCanBeCancelledWithoutFilesystemMutation",
+        "PiSharp.Tests.KeysQueueSessionTests.RenameFailureLeavesTheSessionFileAndCatalogIntact",
+        "PiSharp.Tests.KeysQueueSessionTests.AllScopeDiscoversSessionsFromOtherProjectDirectoriesAndKeepsTheirStores",
+        "PiSharp.Tests.KeysQueueSessionPtyTests.PickerPathSortNamedScopeRenameAndDeleteWorkThroughLinuxPty",
+        "PiSharp.Tests.TerminalPtyTests.SessionDiscoverySortResumeAndCloneWorkThroughLinuxPty"
+      ],
+      "terminalCheckpoints": [
+        "terminal-keys-queue-session/100x30-dark-regular/picker-open",
+        "terminal-keys-queue-session/140x40-dark-fullscreen/picker-open",
+        "terminal-keys-queue-session/140x40-dark-regular/picker-open"
+      ]
+    },
+    {
+      "id": "Q16",
+      "behavior": "Paired real-PTY differential",
+      "status": "pass",
+      "required": true,
+      "oracle": [
+        "Q16"
+      ],
+      "tests": [
+        "PiSharp.Tests.KeysQueueSessionParityTests.OracleInventoryNamesThePinnedPiSourcesAndAllScenarios",
+        "PiSharp.Tests.KeysQueueSessionPtyTests.PickerPathSortNamedScopeRenameAndDeleteWorkThroughLinuxPty",
+        "PiSharp.Tests.KeysQueueSessionPtyTests.FollowUpDequeueRestoresSteeringFollowUpAndDraftWithoutPrematureExecutionThroughLinuxPty",
+        "PiSharp.Tests.InteractivePromptExecutionInputTests.ActiveInputInterceptionTransformsSteeringAndFollowUpAndConsumesHandledInput",
+        "PiSharp.Tests.InteractivePromptExecutionInputTests.ExtensionCommandsExecuteImmediatelyWhileOrdinaryFollowUpsRemainQueued",
+        "PiSharp.Tests.TerminalPtyTests.SessionDiscoverySortResumeAndCloneWorkThroughLinuxPty"
+      ],
+      "terminalCheckpoints": [
+        "terminal-keys-queue-session/100x30-dark-fullscreen/steer-enter",
+        "terminal-keys-queue-session/100x30-dark-fullscreen/dequeue-ready",
+        "terminal-keys-queue-session/100x30-dark-fullscreen/picker-open",
+        "terminal-keys-queue-session/100x30-dark-fullscreen/picker-scope-all",
+        "terminal-keys-queue-session/100x30-dark-fullscreen/picker-sort-recent",
+        "terminal-keys-queue-session/100x30-dark-fullscreen/picker-named",
+        "terminal-keys-queue-session/100x30-dark-fullscreen/picker-path-on",
+        "terminal-keys-queue-session/100x30-dark-fullscreen/picker-delete-clear",
+        "terminal-keys-queue-session/100x30-dark-fullscreen/quit",
+        "terminal-keys-queue-session/100x30-dark-regular/steer-enter",
+        "terminal-keys-queue-session/100x30-dark-regular/dequeue-ready",
+        "terminal-keys-queue-session/100x30-dark-regular/picker-open",
+        "terminal-keys-queue-session/100x30-dark-regular/picker-delete-clear",
+        "terminal-keys-queue-session/100x30-dark-regular/quit",
+        "terminal-keys-queue-session/140x40-dark-fullscreen/steer-enter",
+        "terminal-keys-queue-session/140x40-dark-fullscreen/dequeue-ready",
+        "terminal-keys-queue-session/140x40-dark-fullscreen/picker-open",
+        "terminal-keys-queue-session/140x40-dark-fullscreen/picker-select-home",
+        "terminal-keys-queue-session/140x40-dark-fullscreen/quit",
+        "terminal-keys-queue-session/140x40-dark-regular/steer-enter",
+        "terminal-keys-queue-session/140x40-dark-regular/dequeue-ready",
+        "terminal-keys-queue-session/140x40-dark-regular/picker-open",
+        "terminal-keys-queue-session/140x40-dark-regular/picker-delete-clear",
+        "terminal-keys-queue-session/140x40-dark-regular/quit"
+      ]
+    }
+  ],
+  "requiredComparisons": [
+    {
+      "id": "same-pi-calibration",
+      "required": true,
+      "status": "match"
+    },
+    {
+      "id": "semantic-checkpoints",
+      "required": true,
+      "status": "match"
+    },
+    {
+      "id": "provider-request-order",
+      "required": true,
+      "status": "match"
+    },
+    {
+      "id": "queue-order-and-restore",
+      "required": true,
+      "status": "match"
+    },
+    {
+      "id": "session-persistence",
+      "required": true,
+      "status": "match"
+    },
+    {
+      "id": "terminal-restoration",
+      "required": true,
+      "status": "match"
+    }
+  ],
+  "findings": [
+    {
+      "id": "full-render-differences",
+      "required": false,
+      "status": "documented",
+      "detail": "Paired full render streams differ in paint/repaint timing and transient Working spinner glyphs; named semantic checkpoints and provider requests match."
+    },
+    {
+      "id": "fuzzy-row-order",
+      "required": false,
+      "status": "documented",
+      "detail": "Search queries that fuzzily match the shared cwd can order non-selected rows differently; selected session validity and composition are covered by deterministic tests."
+    },
+    {
+      "id": "selection-after-mutation",
+      "required": false,
+      "status": "documented",
+      "detail": "Pinned Pi resets or clamps picker selection after rename/delete; PiSharp resets to the first row in the PTY path and preserves the selected key on sort/filter toggles."
+    },
+    {
+      "id": "status-auto-hide",
+      "required": false,
+      "status": "documented",
+      "detail": "Pinned Pi auto-hides picker status messages after a timeout while PiSharp keeps them until the next action; status text is covered by deterministic tests rather than semantic checkpoints."
+    },
+    {
+      "id": "windows-wsl-pty",
+      "required": false,
+      "status": "documented",
+      "detail": "Windows/WSL Ctrl+Q and Alt+Q defaults are covered by deterministic keymap replay; the PTY differential runs on Linux."
+    },
+    {
+      "id": "system-prompt-history",
+      "required": false,
+      "status": "documented",
+      "detail": "Provider request facts compare user/assistant/tool turns exactly; the generated system prompt remains pinned-Pi-owned text outside this capability."
+    }
+  ]
+}
