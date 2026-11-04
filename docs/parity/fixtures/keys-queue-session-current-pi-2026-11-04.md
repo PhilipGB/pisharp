@@ -10,7 +10,7 @@ Capability: `keys-queue-session`
 - `Enter` during a run steers; steering drains before follow-ups in FIFO order.
 - `Alt+Up` clears both queues and restores steering, then follow-ups, then the existing draft, separated by blank lines.
 - `Escape` restores pending input before aborting; completion boundaries never duplicate or drop input.
-- `Ctrl+S` cycles `Threaded → Recent → Fuzzy`; `Ctrl+N` filters non-empty names; `Ctrl+P` toggles paths; `Ctrl+R` renames; `Ctrl+D` confirms deletion; `Ctrl+Backspace` confirms only with an empty query.
+- `Ctrl+S` cycles `Threaded → Recent → Fuzzy`; `Ctrl+N` filters non-empty names; `Ctrl+P` toggles paths; `Ctrl+R` renames; `Ctrl+D` confirms deletion; `Ctrl+Backspace` confirms only with an empty query. Threaded ordering is a flat activity list in this capability; parent-session tree grouping remains in `keys-tree-scoped-picker`.
 - `Tab` switches current-project and all-project scopes; current-session rows are marked; cancellation leaves the session untouched.
 - Deletion validates the catalog snapshot, tries `trash` first and falls back to unlink; the active session is not deletable. Rename preserves session id, tree and history.
 - All queue and picker bindings are configurable, disableable, and owned by the picker while it is open; Windows/WSL uses Ctrl+Q / Alt+Q for follow-up / dequeue.
@@ -36,7 +36,7 @@ and 16 deterministic Q01–Q16 scenarios replayed by
 - `ConversationRun` / `PromptDeliveryQueue` continue to own steering and follow-up FIFO delivery, cancellation, compaction handoff and extension-command ordering under Microsoft Agent Framework cancellation.
 - `TerminalSessionPickerState` separates picker scope, sorting, named filtering, path visibility, selection, rename and validated deletion from rendering/input dispatch.
 - `SessionCatalog.ListAllAsync` discovers isolated current/all-project sessions with source stores; sorting uses last message activity like pinned Pi, so rename does not reorder sessions.
-- `SessionFileDeletion` validates the unchanged catalog entry, tries `trash`, then falls back to the existing fingerprint-checked unlink.
+- `SessionFileDeletion` validates the unchanged catalog entry, tries `trash`, then falls back to fingerprint-checked unlink for both native `.session.json` and Pi-native `.jsonl` sessions.
 - `TerminalSelectionList` adds recent-order matching, index preservation, action hints and empty messages without changing existing model-picker behavior.
 
 ## Evidence
@@ -54,6 +54,7 @@ and 16 deterministic Q01–Q16 scenarios replayed by
 - Full render streams differ in paint/repaint timing, spinner glyphs and transient frames; named semantic checkpoints and provider requests match.
 - Fuzzy queries that match the shared working-directory path can order non-selected rows differently; selection validity and filter composition are covered deterministically.
 - Pinned Pi resets/clamps picker selection after rename/delete; PiSharp resets to the first row in the PTY path and preserves the selected key on sort/filter toggles.
+- Threaded tree grouping by `parentSessionPath` and streamed all-project loading progress remain in `keys-tree-scoped-picker`/later picker work; the flat scope/sort/filter contract is verified here.
 - Pinned Pi auto-hides picker status messages after a timeout; PiSharp keeps them until the next action.
 - Windows/WSL Ctrl+Q / Alt+Q defaults are verified by deterministic keymap replay; the PTY differential runs on Linux.
 - Generated system/developer prompt text remains pinned-Pi-owned; request facts compare user/assistant/tool turns exactly.

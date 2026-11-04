@@ -23,6 +23,7 @@ internal sealed record SessionPickerEntry(SessionCatalogEntry Catalog, SessionPi
 internal sealed class TerminalSessionPickerState
 {
     internal const string CurrentSessionDeleteError = "Cannot delete the currently active session";
+    internal const string CurrentSessionMarker = "Current ·";
     private readonly ConversationStore _currentStore;
     private readonly string? _currentPath;
     private readonly ConversationSession? _currentConversation;
@@ -221,7 +222,7 @@ internal sealed class TerminalSessionPickerState
             ? $"head {(entry.BranchHeads.HeadId is null ? "(empty)" : entry.BranchHeads.HeadId[..Math.Min(12, entry.BranchHeads.HeadId.Length)])} · {entry.BranchHeads.Count} branch heads"
             : "branch details unavailable";
         var path = ShowPath ? $"{ShortenPath(session.Path)} · " : "";
-        var description = $"{path}{(entry.IsCurrent ? "Current · " : "")}{branchDescription} · {session.Model} · {session.MessageCount} messages · {modified}";
+        var description = $"{path}{(entry.IsCurrent ? CurrentSessionMarker + " " : "")}{branchDescription} · {session.Model} · {session.MessageCount} messages · {modified}";
         var searchText = $"{name} {session.Id} {session.Model} {session.Path} {entry.BranchHeads.HeadId}";
         return new(entry.Key, entry, $"{name} · {id}", description, searchText, entry.IsCurrent);
     }

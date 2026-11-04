@@ -894,7 +894,8 @@ public sealed class TerminalEditor
                 {
                     ClearLine();
                     if (_screen is not { IsActive: true } && !submittedFollowUp.StartsWith("/", StringComparison.Ordinal))
-                        Console.WriteLine($"{Prompt}{submittedFollowUp}");
+                        Console.WriteLine($"{Prompt}{new string(submittedFollowUp.Replace('\n', '↵')
+                            .Select(character => char.IsControl(character) ? ' ' : character).ToArray())}");
                     return submittedFollowUp;
                 }
                 Render();

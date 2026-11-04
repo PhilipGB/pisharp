@@ -201,7 +201,8 @@ public sealed class KeysQueueSessionParityTests
         await state.EnsureAllLoadedAsync();
         state.ToggleScope();
         Assert.Equal(picker.GetProperty("titles").GetProperty("all").GetString(), state.BaseTitle);
-        Assert.Equal("current", picker.GetProperty("currentMarker").GetString() == "Current ·" ? "current" : "current");
+        Assert.Equal(TerminalSessionPickerState.CurrentSessionMarker,
+            picker.GetProperty("currentMarker").GetString());
         Assert.Equal("toggle", picker.GetProperty("tab").GetString());
         return true;
     }

@@ -39,7 +39,8 @@
       "PiSharp.Tests.TerminalPtyTests.SessionDiscoverySortResumeAndCloneWorkThroughLinuxPty",
       "PiSharp.Tests.KeysQueueSessionTests.UnreadableSessionFailsVisiblyWithoutModifyingUnrelatedSessions",
       "PiSharp.Tests.KeysQueueSessionTests.ConcurrentCatalogChangeRejectsStaleMutationAndPreservesUnrelatedSessions",
-      "PiSharp.Tests.KeysQueueSessionTests.LongSessionPathsAreClippedSafelyAcrossTerminalWidths"
+      "PiSharp.Tests.KeysQueueSessionTests.LongSessionPathsAreClippedSafelyAcrossTerminalWidths",
+      "PiSharp.Tests.KeysQueueSessionTests.PiNativeJsonlSessionsCanBeDeletedWithoutTheTrashCli"
     ],
     "ptyEvidence": [
       "terminal-keys-queue-session/100x30-dark-fullscreen",
@@ -250,7 +251,8 @@
       "tests": [
         "PiSharp.Tests.KeysQueueSessionTests.DeleteRequiresConfirmationProtectsTheCurrentSessionAndRemovesOnlyTheSelection",
         "PiSharp.Tests.KeysQueueSessionTests.DeleteConfirmationCanBeCancelledWithoutFilesystemMutation",
-        "PiSharp.Tests.KeysQueueSessionTests.TrashFirstDeletionUsesTrashAndFallsBackToUnlinkWithFingerprintValidation"
+        "PiSharp.Tests.KeysQueueSessionTests.TrashFirstDeletionUsesTrashAndFallsBackToUnlinkWithFingerprintValidation",
+        "PiSharp.Tests.KeysQueueSessionTests.PiNativeJsonlSessionsCanBeDeletedWithoutTheTrashCli"
       ],
       "terminalCheckpoints": [
         "terminal-keys-queue-session/100x30-dark-fullscreen/picker-delete-confirm",
@@ -431,6 +433,18 @@
       "required": false,
       "status": "documented",
       "detail": "Provider request facts compare user/assistant/tool turns exactly; the generated system prompt remains pinned-Pi-owned text outside this capability."
+    },
+    {
+      "id": "threaded-tree-grouping",
+      "required": false,
+      "status": "documented",
+      "detail": "PiSharp Threaded mode is a flat activity-ordered list; pinned Pi also groups child sessions by parentSessionPath with tree prefixes. Parent lineage and tree grouping remain in keys-tree-scoped-picker. The queue/session fixture creates root sessions only."
+    },
+    {
+      "id": "all-scope-scan-progress",
+      "required": false,
+      "status": "documented",
+      "detail": "The first Tab loads all-project stores synchronously before the overlay repaints; pinned Pi streams Loading x/y progress and partial results. This is scale-dependent and deferred while current/all scope, sorting and filtering semantics are verified."
     }
   ]
 }

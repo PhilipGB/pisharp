@@ -434,6 +434,31 @@ public sealed class KeysQueueSessionTests
     }
 
     [Fact]
+    public async Task PiNativeJsonlSessionsCanBeDeletedWithoutTheTrashCli()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-jsonl-delete-" + Guid.NewGuid().ToString("N"));
+        var sessions = Path.Combine(root, "sessions");
+        Directory.CreateDirectory(sessions);
+        try
+        {
+            var store = new ConversationStore(root, sessions);
+            var path = Path.Combine(sessions, "pi-native.jsonl");
+            await File.WriteAllTextAsync(path,
+                $"{{\"type\":\"session\",\"version\":3,\"id\":\"pi-native\",\"timestamp\":\"2026-11-04T00:00:00Z\",\"cwd\":\"{root}\"}}\n");
+            var listing = Assert.Single(await SessionCatalog.ListAsync(store));
+            Assert.Equal(path, listing.Path);
+
+            var outcome = await SessionFileDeletion.DeleteAsync(store, listing,
+                (_, _) => Task.FromResult(false), CancellationToken.None);
+            Assert.True(outcome.Succeeded, outcome.Error);
+            Assert.Equal("unlink", outcome.Method);
+            Assert.False(File.Exists(path));
+            Assert.Empty(await SessionCatalog.ListAsync(store));
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
     public async Task LongSessionPathsAreClippedSafelyAcrossTerminalWidths()
     {
         using var fixture = await PickerFixture.CreateAsync();

@@ -5538,7 +5538,8 @@
         "src/PiSharp.Cli/Tui/Dialogs/TerminalSessionPicker.cs and TerminalSessionPickerState.cs: picker state separated from rendering/dispatch; current/all scope, Threaded/Recent/Fuzzy sort, named filter, path display, rename, validated confirmation and deletion.",
         "src/PiSharp.Cli/Tui/Dialogs/TerminalSelectionList.cs: recent-order filtering, index preservation, picker hint/empty-message updates and configurable tui.select.*/tui.input.tab handling.",
         "src/PiSharp.Runtime/Sessions/SessionCatalog.cs: all-project discovery with per-session stores and last-message activity ordering.",
-        "src/PiSharp.Runtime/Sessions/SessionFileDeletion.cs: unchanged-catalog validation, trash-first deletion with unlink fallback."
+        "src/PiSharp.Runtime/Sessions/SessionFileDeletion.cs: unchanged-catalog validation, trash-first deletion with unlink fallback.",
+        "src/PiSharp.Runtime/Sessions/ConversationStore.cs: deletion now accepts both .session.json and Pi-native .jsonl catalog entries with the same fingerprint/identity validation; SessionFileDeletion keeps trash-first/unlink fallback."
       ],
       "evidence": [
         "Pinned Pi b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6: docs/parity/fixtures/keys-queue-session-pi-oracle-2026-11-04.json records source anchors (interactive-mode.ts, session-selector.ts, session-selector-search.ts, agent-session.ts, core keybindings.ts, keybindings.md) and 16 deterministic Q01-Q16 scenarios replayed by KeysQueueSessionParityTests.MatchesPinnedPi.",
@@ -5546,7 +5547,8 @@
         "Real Linux PTY: KeysQueueSessionPtyTests covers path/sort/named/scope/rename/delete/conditional-delete and a gated follow-up/dequeue run proving only the original request is visible before completion and the restored draft is submitted exactly once afterwards.",
         "Paired PTY differential: terminal-keys-queue-session at 100x30 and 140x40, fullscreen and regular, with four paired cases and 220 named checkpoints. Paired scenario errors and semantic differences are zero; same-Pi semantic calibration differences are zero for all cases. Provider user requests match exactly: prompt one/two/three/four, first prompt, then steer one\\n\\nfollow one\\n\\ndraft text. Both products finish with three session files after deleting beta and reopen with alpha renamed present.",
         "Acceptance manifest docs/parity/fixtures/keys-queue-session-acceptance-2026-11-04.json, checkpoint evidence docs/parity/fixtures/keys-queue-session-checkpoints-2026-11-04.json and receipt docs/parity/fixtures/keys-queue-session-current-pi-2026-11-04.md.",
-        "tools/parity/verify_keys_queue_session.py independently validates the manifest, oracle sources/scenarios, terminal fixture, paired/calibration checkpoints, provider ordering, session file counts, quit restoration, required TRX results and full-suite cleanliness; mutation-based negative controls reject every required invalid-evidence class."
+        "tools/parity/verify_keys_queue_session.py independently validates the manifest, oracle sources/scenarios, terminal fixture, paired/calibration checkpoints, provider ordering, session file counts, quit restoration, required TRX results and full-suite cleanliness; mutation-based negative controls reject every required invalid-evidence class.",
+        "KeysQueueSessionTests.PiNativeJsonlSessionsCanBeDeletedWithoutTheTrashCli verifies Pi-native .jsonl deletion without a trash CLI. Threaded parent-session tree grouping and streamed all-project progress are documented as non-required findings."
       ],
       "dependencies": [],
       "handover_review": {
@@ -5565,7 +5567,7 @@
           "Twenty-six focused facts plus PTY tests pass with zero skips; full suite and format/build gates are recorded on the milestone PR.",
           "Executable verifier with 37 mutation-based negative controls covering all required rejection classes."
         ],
-        "remaining": "No required keys-queue-session behaviour remains. Full render streams, fuzzy non-selected row order, selection reset policy after rename/delete, picker status auto-hide and Windows PTY execution remain non-required or separately tracked.",
+        "remaining": "No required keys-queue-session behaviour remains. Full render streams, fuzzy non-selected row order, selection reset policy after rename/delete, picker status auto-hide, threaded parent-session tree grouping, streamed all-project loading progress and Windows PTY execution remain non-required or separately tracked.",
         "deferred_priority": "P4"
       }
     },

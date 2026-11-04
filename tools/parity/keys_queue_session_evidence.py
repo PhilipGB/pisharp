@@ -309,7 +309,7 @@ def main():
     parser.add_argument("--artifacts", type=Path,
                         default=ROOT / "artifacts/parity/keys-queue-session")
     parser.add_argument("--output", type=Path,
-                        default=ROOT / "docs/parity/fixtures/keys-queue-session-checkpoints-2026-11-03.json")
+                        default=ROOT / "docs/parity/fixtures/keys-queue-session-checkpoints-2026-11-04.json")
     args = parser.parse_args()
 
     cases = {}
