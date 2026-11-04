@@ -279,7 +279,8 @@ def run_focused_tests(implementation):
     environment["PISHARP_IMPLEMENTATION_SHA"] = implementation
     run(["dotnet", "test", "tests/PiSharp.Tests/PiSharp.Tests.csproj", "--filter",
          "FullyQualifiedName~SessionPickerFindingsTests|FullyQualifiedName~SessionPickerFindingsParityTests|"
-         "FullyQualifiedName~KeysQueueSessionTests|FullyQualifiedName~KeysQueueSessionPtyTests",
+         "FullyQualifiedName~KeysQueueSessionTests|FullyQualifiedName~KeysQueueSessionPtyTests|"
+         "FullyQualifiedName~TerminalSelectionListTests",
          "--logger", "trx;LogFileName=picker-findings.trx", "--results-directory", directory,
          "--nologo", "-v", "q"], env=environment)
     return trx
