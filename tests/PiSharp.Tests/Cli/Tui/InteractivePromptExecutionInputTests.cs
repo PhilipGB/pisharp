@@ -128,6 +128,50 @@ public sealed class InteractivePromptExecutionInputTests
     }
 
     [Fact]
+    public async Task ExtensionCommandsExecuteImmediatelyWhileOrdinaryFollowUpsRemainQueued()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-tui-extension-queue-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var resources = await ResourceCatalog.LoadAsync(root, root, trusted: false, discoverSkills: false);
+            var client = new BlockingClient();
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(root)),
+                new ConversationSession(root, "fixture", null));
+            using var runCancellation = new CancellationTokenSource();
+            var running = Task.Run(async () =>
+            {
+                await foreach (var _ in run.RunUserMessageEventsAsync(new ChatMessage(ChatRole.User, "active"),
+                                   "active", runCancellation.Token)) { }
+            });
+            await client.RequestStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            var executed = new List<string>();
+            using var execution = new InteractivePromptExecution(null, null, () => TextWriter.Null, () => resources,
+                () => run, (_, _) => "", () => CreateSelection(authenticated: true), () => new UserSettings(),
+                (_, _, _) => Task.CompletedTask, _ => Task.CompletedTask,
+                null,
+                (text, _) =>
+                {
+                    if (text != "/fixture-command") return Task.FromResult(false);
+                    executed.Add(text);
+                    return Task.FromResult(true);
+                });
+
+            Assert.True(await execution.QueueActiveInputAsync("/fixture-command", followUp: true,
+                CancellationToken.None));
+            Assert.Empty(run.GetPendingPrompts().FollowUp);
+            Assert.True(await execution.QueueActiveInputAsync("ordinary follow-up", followUp: true,
+                CancellationToken.None));
+            Assert.Equal(["ordinary follow-up"], run.GetPendingPrompts().FollowUp);
+            Assert.Equal(["/fixture-command"], executed);
+
+            runCancellation.Cancel();
+            await running.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public async Task HandledIdleInputReturnsBeforeAuthenticationResourceResolutionAndRun()
     {
         var registration = new ExtensionRegistration();

@@ -17,10 +17,10 @@ internal enum TerminalSelectionAction { Continue, Accept, AcceptAsDefault, Cance
 internal sealed class TerminalSelectionList<T>
 {
     private string _title;
-    private readonly string? _actionHint;
+    private string? _actionHint;
+    private string _emptyMessage;
     private IReadOnlyList<TerminalSelectionOption<T>> _allOptions;
     private IReadOnlyList<TerminalSelectionOption<T>>? _scopedOptions;
-    private readonly string _emptyMessage;
     private readonly string? _allLabel;
     private readonly string? _scopedLabel;
     private readonly EditorKeymap? _keymap;
@@ -59,8 +59,14 @@ internal sealed class TerminalSelectionList<T>
 
     public bool IsScoped { get; private set; }
     public string SearchQuery => _query;
+    public int SelectedIndex => _selectedIndex;
     public IReadOnlyList<TerminalSelectionOption<T>> VisibleOptions => _filteredOptions;
+    /// <summary>When false, matches keep their incoming order (Pi's recent sort mode).</summary>
+    public bool SortMatchesByScore { get; set; } = true;
     public void SetTitle(string title) => _title = Clean(title);
+    public void SelectIndex(int index) => _selectedIndex = Math.Clamp(index, 0, Math.Max(0, _filteredOptions.Count - 1));
+    public void SetActionHint(string? actionHint) => _actionHint = string.IsNullOrWhiteSpace(actionHint) ? null : Clean(actionHint);
+    public void SetEmptyMessage(string message) => _emptyMessage = Clean(message);
     public TerminalSelection<T>? Selected
     {
         get
@@ -72,15 +78,21 @@ internal sealed class TerminalSelectionList<T>
     }
 
     public void ReplaceOptions(IReadOnlyList<TerminalSelectionOption<T>> allOptions,
-        IReadOnlyList<TerminalSelectionOption<T>>? scopedOptions)
+        IReadOnlyList<TerminalSelectionOption<T>>? scopedOptions, bool preserveIndex = false)
     {
         ArgumentNullException.ThrowIfNull(allOptions);
         var selectedKey = Selected?.Option.Key;
+        var selectedIndexBefore = _selectedIndex;
         _allOptions = Sanitize(allOptions);
         _scopedOptions = scopedOptions is null ? null : Sanitize(scopedOptions);
         _activeOptions = IsScoped && _scopedOptions is not null ? _scopedOptions : _allOptions;
         if (_scopedOptions is null) IsScoped = false;
         FilterOptions();
+        if (preserveIndex)
+        {
+            _selectedIndex = Math.Clamp(selectedIndexBefore, 0, Math.Max(0, _filteredOptions.Count - 1));
+            return;
+        }
         var selectedIndex = IndexOf(selectedKey, _filteredOptions);
         _selectedIndex = selectedIndex >= 0
             ? selectedIndex
@@ -365,13 +377,11 @@ internal sealed class TerminalSelectionList<T>
             return;
         }
 
-        _filteredOptions = _activeOptions.Select((option, index) => (Option: option, Index: index,
+        var matches = _activeOptions.Select((option, index) => (Option: option, Index: index,
                 Score: MatchScore(tokens, option.SearchText ?? $"{option.Label} {option.Description}")))
-            .Where(match => match.Score is not null)
-            .OrderBy(match => match.Score)
-            .ThenBy(match => match.Index)
-            .Select(match => SanitizeOption(match.Option))
-            .ToArray();
+            .Where(match => match.Score is not null);
+        if (SortMatchesByScore) matches = matches.OrderBy(match => match.Score).ThenBy(match => match.Index);
+        _filteredOptions = matches.Select(match => SanitizeOption(match.Option)).ToArray();
         _selectedIndex = 0;
     }
 

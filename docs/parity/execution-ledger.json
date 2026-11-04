@@ -5524,38 +5524,51 @@
     {
       "id": "keys-queue-session",
       "title": "Terminal keys: Alt+Enter follow-up, Alt+Up dequeue, session Ctrl+P/S/N/R/D/Backspace picker controls",
-      "status": "in_progress",
+      "status": "verified",
       "source": "docs/parity/detailed-inventory.md:51",
       "acceptance": [
         "Steering vs follow-up ordering and queue restore",
-        "Test in PTY including configurable bindings and widget precedence",
-        "Remaining: Pi-equivalent picker navigation/path/sort/rename/trash controls, wider configurable action maps, context conflict handling and differential."
+        "Session picker path/sort/named/rename/delete/conditional-delete controls with configurable bindings and widget precedence",
+        "Paired PTY differential with provider ordering, session persistence and terminal restoration"
       ],
       "implementation": [
-        "src/PiSharp.Cli/Program.cs: Alt+Enter follow-up and Alt+Up dequeue",
-        "src/PiSharp.Cli/Tui/Editor/EditorKeymap.cs and Program.cs: configurable app.session.resume opens the project-scoped searchable picker; no default binding is assigned.",
-        "src/PiSharp.Cli/Tui/Dialogs/TerminalSessionPicker.cs and EditorKeymap.cs: configurable app.session.toggleSort defaults to Ctrl+S and switches recent/name order while preserving selection."
+        "src/PiSharp.Cli/Tui/Editor/EditorKeymap.cs: app.message.followUp/dequeue platform defaults and configurable app.session.togglePath/toggleSort/toggleNamedFilter/rename/delete/deleteNoninvasive actions; picker-local actions do not conflict with global extension shortcuts.",
+        "src/PiSharp.Cli/Tui/Editor/TerminalEditor.cs: idle Alt+Enter submits once, idle/active Alt+Up restores steering then follow-ups then the draft, Escape restores before abort, and pinned restored/empty status text is emitted.",
+        "src/PiSharp.Cli/Tui/Commands/InteractivePromptExecution.cs: queued steering/follow-up status display and immediate extension-command execution before queueing.",
+        "src/PiSharp.Cli/Tui/Dialogs/TerminalSessionPicker.cs and TerminalSessionPickerState.cs: picker state separated from rendering/dispatch; current/all scope, Threaded/Recent/Fuzzy sort, named filter, path display, rename, validated confirmation and deletion.",
+        "src/PiSharp.Cli/Tui/Dialogs/TerminalSelectionList.cs: recent-order filtering, index preservation, picker hint/empty-message updates and configurable tui.select.*/tui.input.tab handling.",
+        "src/PiSharp.Runtime/Sessions/SessionCatalog.cs: all-project discovery with per-session stores and last-message activity ordering.",
+        "src/PiSharp.Runtime/Sessions/SessionFileDeletion.cs: unchanged-catalog validation, trash-first deletion with unlink fallback.",
+        "src/PiSharp.Runtime/Sessions/ConversationStore.cs: deletion now accepts both .session.json and Pi-native .jsonl catalog entries with the same fingerprint/identity validation; SessionFileDeletion keeps trash-first/unlink fallback."
       ],
       "evidence": [
-        "tests/PiSharp.Tests/Cli/Tui/TerminalPtyTests.cs: interactive queue fixture; tests/PiSharp.Tests/Runtime/Agents/AgentLifecycleTests.cs: queue ordering",
-        "EditorKeymapTests.SessionSelectorShortcutCanBeConfiguredAndPreservesTheEditorDraft covers configurable action dispatch and draft retention; TerminalPtyTests covers no-argument /resume picker navigation via typed search and Enter. Linux CI run 36134474053 passed format, warnings-as-errors build and all 423 tests on exact commit 37eff5a9c7a15c5b12e8ff948fa53714046a2fda.",
-        "TerminalPtyTests.SessionDiscoverySortResumeAndCloneWorkThroughLinuxPty verifies Ctrl+S sort, selected-session resume, direct name resume and restored IXON through Linux PTY."
+        "Pinned Pi b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6: docs/parity/fixtures/keys-queue-session-pi-oracle-2026-11-04.json records source anchors (interactive-mode.ts, session-selector.ts, session-selector-search.ts, agent-session.ts, core keybindings.ts, keybindings.md) and 16 deterministic Q01-Q16 scenarios replayed by KeysQueueSessionParityTests.MatchesPinnedPi.",
+        "Deterministic tests: KeysQueueSessionTests covers default/Windows/rebound/disabled bindings, idle and active Enter/Alt+Enter/Alt+Up, FIFO steering-before-follow-up restoration, failed queue restore, named filter combos, sort cycle/index, path toggle, delete confirmation/current protection/trash-first/cancel, rename persistence/failure, all-project scope, Ctrl+Backspace and picker hint precedence. InteractivePromptExecutionInputTests covers steering interception and extension-command precedence.",
+        "Real Linux PTY: KeysQueueSessionPtyTests covers path/sort/named/scope/rename/delete/conditional-delete and a gated follow-up/dequeue run proving only the original request is visible before completion and the restored draft is submitted exactly once afterwards.",
+        "Paired PTY differential: terminal-keys-queue-session at 100x30 and 140x40, fullscreen and regular, with four paired cases and 220 named checkpoints. Paired scenario errors and semantic differences are zero; same-Pi semantic calibration differences are zero for all cases. Provider user requests match exactly: prompt one/two/three/four, first prompt, then steer one\\n\\nfollow one\\n\\ndraft text. Both products finish with three session files after deleting beta and reopen with alpha renamed present.",
+        "Acceptance manifest docs/parity/fixtures/keys-queue-session-acceptance-2026-11-04.json, checkpoint evidence docs/parity/fixtures/keys-queue-session-checkpoints-2026-11-04.json and receipt docs/parity/fixtures/keys-queue-session-current-pi-2026-11-04.md.",
+        "tools/parity/verify_keys_queue_session.py independently validates the manifest, oracle sources/scenarios, terminal fixture, paired/calibration checkpoints, provider ordering, session file counts, quit restoration, required TRX results and full-suite cleanliness; mutation-based negative controls reject every required invalid-evidence class.",
+        "KeysQueueSessionTests.PiNativeJsonlSessionsCanBeDeletedWithoutTheTrashCli verifies Pi-native .jsonl deletion without a trash CLI. Threaded parent-session tree grouping and streamed all-project progress are documented as non-required findings."
       ],
       "dependencies": [],
       "handover_review": {
-        "decision": "required-contract-incomplete-or-not-yet-proven",
-        "priority": "feature",
-        "observable_completion_criteria": [
-          "Steering vs follow-up ordering and queue restore",
-          "Test in PTY including configurable bindings and widget precedence"
+        "decision": "verified",
+        "remaining_required_criteria": [],
+        "evidence": "The queue/session key contract is covered by a pinned-Pi source/scenario oracle, deterministic queue and picker state tests, real Linux PTY tests, a four-case calibrated terminal differential at two dimensions and both screen modes, exact provider request/queue/session observations, and an executable verifier with mutation negative controls.",
+        "priority": "closed"
+      },
+      "closure": {
+        "date": "2026-11-04",
+        "contract": "Alt+Enter follow-up, Alt+Up dequeue, Enter steering, Windows/WSL Ctrl+Q/Alt+Q, picker Ctrl+P/S/N/R/D/Backspace, Tab scope, configurable bindings and widget precedence.",
+        "implemented": "Idle/active queue routing and statuses, ordered restoration before draft, picker state split from UI, all-project discovery, activity-based ordering, validated trash-first deletion, rename/filter/sort/path controls and context-owned bindings.",
+        "evidence": [
+          "16 pinned-Pi oracle scenarios replayed by KeysQueueSessionParityTests.MatchesPinnedPi.",
+          "Four paired PTY cases (100x30/140x40, fullscreen/regular) with zero semantic paired/calibration differences and 220 named checkpoints.",
+          "Twenty-six focused facts plus PTY tests pass with zero skips; full suite and format/build gates are recorded on the milestone PR.",
+          "Executable verifier with 37 mutation-based negative controls covering all required rejection classes."
         ],
-        "implemented_source": "implementation field on this task",
-        "existing_evidence": "evidence field on this task",
-        "remaining_proof": "For Terminal keys: Alt+Enter follow-up, Alt+Up dequeue, session Ctrl+P/S/N/R/D/Backspace picker controls, exercise each documented supported action in the real CLI/PTY and compare named rendered/editor state plus the resulting session/provider effect; preserve mode restoration and supported cancellation.",
-        "queue_orders": [
-          39
-        ],
-        "deferred_policy": "P2/P3/P4 findings are separate in sol_luna_handover.findings and the upstream audit. They do not expand these required criteria."
+        "remaining": "No required keys-queue-session behaviour remains. Full render streams, fuzzy non-selected row order, selection reset policy after rename/delete, picker status auto-hide, threaded parent-session tree grouping, streamed all-project loading progress and Windows PTY execution remain non-required or separately tracked.",
+        "deferred_priority": "P4"
       }
     },
     {

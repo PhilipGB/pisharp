@@ -262,7 +262,8 @@ internal static class InteractiveMode
         while (Volatile.Read(ref shutdownRequested) == 0)
         {
             var line = await editor!.ReadLineAsync(HandleEditorApplicationAction,
-                dispatchExtensionShortcut: HandleExtensionShortcutAsync);
+                dispatchExtensionShortcut: HandleExtensionShortcutAsync,
+                drainQueuedMessages: () => conversationBinding.Run.ClearPendingPrompts().InDeliveryOrder);
             if (line is null || line.Trim() is "/quit" or "/exit") break;
             if (string.IsNullOrWhiteSpace(line)) continue;
             if (InteractiveBashExecutor.TryParse(line, out var bashCommand, out var excludeFromContext))

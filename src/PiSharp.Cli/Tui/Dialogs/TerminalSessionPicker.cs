@@ -3,134 +3,198 @@ using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Cli.Tui;
 
-/// <summary>Adapts the reusable list overlay to project-scoped saved sessions.</summary>
+/// <summary>Adapts the reusable list overlay to project-scoped and all-project saved sessions.</summary>
 internal sealed class TerminalSessionPicker(ConversationStore store, TerminalEditor editor)
 {
     public async Task<SessionListing?> ShowAsync(string? currentPath = null,
         ConversationSession? currentConversation = null, CancellationToken cancellationToken = default)
     {
-        var sessions = await SessionCatalog.ListAsync(store, cancellationToken);
-        var sortByName = false;
-        var branchHeads = await GetBranchHeadsAsync(sessions, currentPath, currentConversation, cancellationToken);
-        var options = ToOptions(sessions, currentPath, sortByName, branchHeads);
-        var current = sessions.FirstOrDefault(session => PathsEqual(session.Path, currentPath));
-        var sortKey = editor.GetDisplayKeys("app.session.toggleSort");
-        var renameKey = editor.GetDisplayKeys("app.session.rename");
-        var actionHint = string.Join(" · ", new[]
-            {
-                sortKey is null ? null : $"{sortKey} sort",
-                renameKey is null ? null : $"{renameKey} rename"
-            }.Where(value => value is not null));
-        var chosen = await editor.ShowSelectionListAsync("Resume session · Recent", options,
-            current is null ? null : Key(current), emptyMessage: "No saved sessions in this project",
-            actionHint: actionHint.Length == 0 ? null : actionHint,
+        var state = await TerminalSessionPickerState.LoadAsync(store, currentPath, currentConversation,
+            cancellationToken);
+        var current = state.CurrentEntries.FirstOrDefault(entry => currentPath is not null &&
+            PathsEqual(entry.Listing.Path, currentPath));
+        var selectedKey = current?.Listing.Id;
+        var options = state.BuildEntries().Select(state.BuildOption).ToArray();
+        var chosen = await editor.ShowSelectionListAsync("Resume Session (Current Folder)", options,
+            selectedKey, scopedOptions: options, allLabel: "All", scopedLabel: "Current Folder",
+            emptyMessage: "No saved sessions in this project",
+            actionHint: ActionHint(state),
             handleInput: async (list, input) =>
-            {
-                if (input.Key is not { } key) return false;
-                if (editor.MatchesKeybinding("app.session.toggleSort", key))
-                {
-                    sortByName = !sortByName;
-                    list.SetTitle($"Resume session · {(sortByName ? "Name" : "Recent")}");
-                    list.ReplaceOptions(ToOptions(sessions, currentPath, sortByName, branchHeads), scopedOptions: null);
-                    return true;
-                }
-                if (!editor.MatchesKeybinding("app.session.rename", key)) return false;
-                var selected = list.Selected?.Option.Value;
-                if (selected is null) return true;
-                var refreshed = await RenameSessionAsync(selected, currentPath, currentConversation, cancellationToken);
-                if (refreshed is not null)
-                {
-                    sessions = refreshed;
-                    branchHeads = await GetBranchHeadsAsync(sessions, currentPath, currentConversation, cancellationToken);
-                    list.ReplaceOptions(ToOptions(sessions, currentPath, sortByName, branchHeads), scopedOptions: null);
-                }
-                return true;
-            }, cancellationToken: cancellationToken);
-        return chosen?.Option.Value;
+                await HandleInputAsync(state, list, input, currentPath, currentConversation, cancellationToken),
+            cancellationToken: cancellationToken);
+        return chosen?.Option.Value.Listing;
     }
 
-    private async Task<IReadOnlyList<SessionListing>?> RenameSessionAsync(SessionListing listing,
-        string? currentPath, ConversationSession? currentConversation, CancellationToken cancellationToken)
+    private async Task<bool> HandleInputAsync(TerminalSessionPickerState state, TerminalSelectionList<SessionPickerEntry> list,
+        TerminalInputEvent input, string? currentPath, ConversationSession? currentConversation,
+        CancellationToken cancellationToken)
+    {
+        if (input.Key is not { } key) return false;
+
+        if (state.ConfirmingDeleteId is not null)
+        {
+            if (editor.MatchesKeybinding("tui.select.confirm", key))
+            {
+                var deleted = await state.ConfirmDeleteAsync(cancellationToken);
+                ApplyState(state, list, resetIndex: deleted);
+                return true;
+            }
+            if (editor.MatchesKeybinding("tui.select.cancel", key))
+            {
+                state.CancelDelete();
+                ApplyState(state, list);
+                return true;
+            }
+            // Pinned Pi intercepts every other key while confirming deletion.
+            return true;
+        }
+
+        if (editor.MatchesKeybinding("app.session.deleteNoninvasive", key))
+        {
+            if (ShouldForwardNoninvasiveDelete(list.SearchQuery))
+            {
+                // Pinned Pi forwards the key to its search Input. Under the Kitty protocol a
+                // modified Backspace does not match any editor binding there, so it is ignored;
+                // an ordinary Backspace still edits the query.
+                if (!(key.Key == ConsoleKey.Backspace && key.Modifiers != 0)) list.HandleInput(input);
+                return true;
+            }
+            state.BeginDelete(list.Selected?.Option.Value.Key);
+            ApplyState(state, list);
+            return true;
+        }
+        if (editor.MatchesKeybinding("app.session.delete", key))
+        {
+            state.BeginDelete(list.Selected?.Option.Value.Key);
+            ApplyState(state, list);
+            return true;
+        }
+        if (editor.MatchesKeybinding("app.session.toggleSort", key))
+        {
+            state.ToggleSort();
+            ApplyState(state, list, preserveIndex: true);
+            return true;
+        }
+        if (editor.MatchesKeybinding("app.session.toggleNamedFilter", key))
+        {
+            state.ToggleNameFilter();
+            ApplyState(state, list, preserveIndex: true);
+            return true;
+        }
+        if (editor.MatchesKeybinding("app.session.togglePath", key))
+        {
+            state.TogglePath();
+            ApplyState(state, list);
+            return true;
+        }
+        if (editor.MatchesKeybinding("app.session.rename", key))
+        {
+            if (list.Selected?.Option.Value is { } selected)
+                await RenameAsync(state, list, selected, currentPath, currentConversation, cancellationToken);
+            return true;
+        }
+        if (editor.MatchesKeybinding("tui.input.tab", key))
+        {
+            await state.EnsureAllLoadedAsync(cancellationToken);
+            state.ToggleScope();
+            ApplyState(state, list);
+            // The list owns the scope toggle so its IsScoped state and labels stay authoritative.
+            list.HandleInput(input);
+            return true;
+        }
+        return false;
+    }
+
+    private async Task RenameAsync(TerminalSessionPickerState state, TerminalSelectionList<SessionPickerEntry> list,
+        SessionPickerEntry selected, string? currentPath, ConversationSession? currentConversation,
+        CancellationToken cancellationToken)
     {
         var entered = await editor.PromptSequenceAsync("Rename Session",
             [("Session name", "A short descriptive name")], cancellationToken: cancellationToken,
-            initialValues: [listing.Name ?? ""]);
-        if (entered is not { Count: 1 } || string.IsNullOrWhiteSpace(entered[0])) return null;
-
-        var conversation = PathsEqual(listing.Path, currentPath) && currentConversation?.Id == listing.Id
-            ? currentConversation
-            : await store.LoadAsync(listing, cancellationToken);
-        using (var nameChange = conversation.BeginSessionNameChange(entered[0]))
+            initialValues: [selected.Listing.Name ?? ""]);
+        if (entered is null) return;
+        if (entered.Count != 1)
         {
-            await store.SaveAsync(conversation, listing.Path, cancellationToken);
-            nameChange.Commit();
+            state.SetStatus("Failed to rename: a session name is required", error: true);
+            ApplyState(state, list);
+            return;
         }
-
-        return await SessionCatalog.ListAsync(store, cancellationToken);
+        var renamed = await state.RenameAsync(selected.Key, entered[0], cancellationToken);
+        ApplyState(state, list, resetIndex: renamed);
     }
 
-    private static IReadOnlyList<TerminalSelectionOption<SessionListing>> ToOptions(
-        IReadOnlyList<SessionListing> sessions, string? currentPath, bool sortByName,
-        IReadOnlyDictionary<string, SessionPickerBranchHeads> branchHeads)
+    private void ApplyState(TerminalSessionPickerState state, TerminalSelectionList<SessionPickerEntry> list,
+        bool preserveIndex = false, bool resetIndex = false)
     {
-        IEnumerable<SessionListing> ordered = sortByName
-            ? sessions.OrderBy(session => string.IsNullOrWhiteSpace(session.Name) ? 1 : 0)
-                .ThenBy(session => session.Name, StringComparer.OrdinalIgnoreCase)
-                .ThenBy(session => session.Id, StringComparer.Ordinal)
-            : sessions;
-        return ordered.Select(session => ToOption(session, currentPath, branchHeads[session.Path])).ToArray();
+        var currentOptions = state.BuildEntries().Select(state.BuildOption).ToArray();
+        var allOptions = state.HasLoadedAll
+            ? state.BuildEntriesForScope(SessionPickerScope.All).Select(state.BuildOption).ToArray()
+            : [];
+        list.SortMatchesByScore = state.Sort != SessionPickerSortMode.Recent;
+        list.ReplaceOptions(allOptions, currentOptions, preserveIndex);
+        if (resetIndex) list.SelectIndex(0);
+        list.SetTitle(state.BaseTitle);
+        list.SetActionHint(ActionHint(state));
+        list.SetEmptyMessage(state.NameFilter == SessionPickerNameFilter.Named
+            ? "No named sessions found" : state.Scope == SessionPickerScope.All
+                ? "No sessions found" : "No saved sessions in this project");
+    }
+
+    private string? ActionHint(TerminalSessionPickerState state) =>
+        BuildActionHint(state, editor.GetDisplayKeys);
+
+    internal static string? BuildActionHint(TerminalSessionPickerState state, Func<string, string?> displayKeys)
+    {
+        if (state.Status is { Length: > 0 } status) return status;
+        if (state.ConfirmingDeleteId is { } id)
+        {
+            var confirming = state.FindEntry(id);
+            var name = confirming is null ? id[..Math.Min(12, id.Length)] :
+                confirming.Listing.Name ?? confirming.Listing.Id[..Math.Min(12, confirming.Listing.Id.Length)];
+            var confirm = displayKeys("tui.select.confirm") ?? "Enter";
+            var cancel = displayKeys("tui.select.cancel") ?? "Escape";
+            return $"Delete {name}? {confirm} confirm · {cancel} cancel";
+        }
+        var parts = new List<string>
+        {
+            $"Sort: {state.SortLabel}",
+            $"Name: {state.NameFilterLabel}",
+            $"path {(state.ShowPath ? "(on)" : "(off)")}"
+        };
+        Add("app.session.toggleSort", "sort");
+        Add("app.session.toggleNamedFilter", "named");
+        Add("app.session.delete", "delete");
+        Add("app.session.rename", "rename");
+        Add("app.session.togglePath", "path");
+        return string.Join(" · ", parts);
+
+        void Add(string action, string label)
+        {
+            if (displayKeys(action) is { } key) parts.Add($"{key} {label}");
+        }
     }
 
     internal static TerminalSelectionOption<SessionListing> ToOption(SessionListing session, string? currentPath,
         SessionPickerBranchHeads branchHeads)
     {
+        var isCurrent = currentPath is not null && PathsEqual(session.Path, currentPath);
         var id = session.Id[..Math.Min(12, session.Id.Length)];
         var name = string.IsNullOrWhiteSpace(session.Name) ? "(unnamed)" : session.Name;
         var modified = session.ModifiedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
         var branchDescription = branchHeads.IsAvailable
             ? $"head {(branchHeads.HeadId is null ? "(empty)" : branchHeads.HeadId[..Math.Min(12, branchHeads.HeadId.Length)])} · {branchHeads.Count} branch heads"
             : "branch details unavailable";
-        var current = PathsEqual(session.Path, currentPath);
-        var description = $"{(current ? "Current · " : "")}{branchDescription} · {session.Model} · {session.MessageCount} messages · {modified}";
+        var description = $"{(isCurrent ? "Current · " : "")}{branchDescription} · {session.Model} · {session.MessageCount} messages · {modified}";
         var searchText = $"{name} {session.Id} {session.Model} {session.Path} {branchHeads.HeadId}";
-        return new(Key(session), session, $"{name} · {id}", description, searchText,
-            current);
+        return new(session.Id, session, $"{name} · {id}", description, searchText, isCurrent);
     }
 
-    private async Task<IReadOnlyDictionary<string, SessionPickerBranchHeads>> GetBranchHeadsAsync(
-        IReadOnlyList<SessionListing> sessions, string? currentPath, ConversationSession? currentConversation,
-        CancellationToken cancellationToken)
-    {
-        var result = new Dictionary<string, SessionPickerBranchHeads>(StringComparer.Ordinal);
-        foreach (var listing in sessions)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (PathsEqual(listing.Path, currentPath) && currentConversation?.Id == listing.Id)
-            {
-                result.Add(listing.Path, SessionPickerBranchHeads.From(currentConversation));
-                continue;
-            }
-            try
-            {
-                var conversation = await store.LoadAsync(listing, cancellationToken);
-                result.Add(listing.Path, SessionPickerBranchHeads.From(conversation));
-            }
-            catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or System.Text.Json.JsonException)
-            {
-                // A session can change between cataloguing and opening the picker. Keep its row visible
-                // so one stale file cannot prevent resuming another session.
-                result.Add(listing.Path, new(null, 0, IsAvailable: false));
-            }
-        }
-        return result;
-    }
+    internal static bool ShouldForwardNoninvasiveDelete(string query) => query.Length > 0;
 
-    private static string Key(SessionListing session) => session.Id;
+    internal static bool ShouldEnterDeleteConfirmation(string query) => query.Length == 0;
 
-    private static bool PathsEqual(string path, string? other) => other is not null &&
-        Path.GetFullPath(path).Equals(Path.GetFullPath(other), OperatingSystem.IsWindows()
-            ? StringComparison.OrdinalIgnoreCase
-            : StringComparison.Ordinal);
+    private static bool PathsEqual(string path, string other) => Path.GetFullPath(path).Equals(
+        Path.GetFullPath(other), OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
 }
 
 internal sealed record SessionPickerBranchHeads(string? HeadId, int Count, bool IsAvailable = true)

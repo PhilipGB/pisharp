@@ -75,16 +75,22 @@ def prepare_workspace(scenario, workspace=None):
 
 
 def commands(pi, pisharp, scenario, pisharp_extension=None):
-    common = ['--provider', 'fixture', '--model', 'fixture-model', '--no-session', '--offline',
-              '--no-extensions', '--no-skills', '--no-prompt-templates', '--no-tools', '--no-context-files']
+    persist_sessions = bool(scenario.get('persistSessions'))
+    common = ['--provider', 'fixture', '--model', 'fixture-model']
+    if not persist_sessions:
+        common.append('--no-session')
+    common.extend(['--offline', '--no-extensions', '--no-skills', '--no-prompt-templates', '--no-tools',
+                   '--no-context-files'])
     resolver = pi / 'packages/coding-agent/src/experimental/source-resolver.ts'
     pi_command = ['node', '--import', resolver.as_uri()]
     if scenario.get('mockHuggingFace'):
         pi_command.extend(['--import', (ROOT / 'tools/parity/terminal/huggingface-preload.mjs').as_uri()])
     pi_prefix = [*pi_command, str(pi / 'packages/coding-agent/src/cli.ts')]
     pisharp_prefix = ['dotnet', str(pisharp)]
-    result = dict(pi=[*pi_prefix, *common],
-                pisharp=[*pisharp_prefix, *common, '--no-approve'])
+    pisharp_arguments = [*pisharp_prefix, *common, '--no-approve']
+    if persist_sessions:
+        pisharp_arguments.extend(['--session-dir', '{agent}/sessions'])
+    result = dict(pi=[*pi_prefix, *common], pisharp=pisharp_arguments)
     for product, arguments in scenario.get('arguments', {}).items():
         if product not in result:
             raise ValueError(f'Unknown product in fixture arguments: {product}')
@@ -210,7 +216,8 @@ def write_assertion_evidence(path, products, dimensions, theme, mode, frame_ids=
     for name, product in products.items():
         frames = list(product.get('assertionFrames', []))
         evidence[name] = dict(frames=frames, http=product['http'], scenarioError=product['scenarioError'],
-                              capturedAgentFiles=product.get('capturedAgentFiles', {}))
+                              capturedAgentFiles=product.get('capturedAgentFiles', {}),
+                              capturedSessionFiles=product.get('capturedSessionFiles', []))
         if include_working_indicator:
             evidence[name]['workingIndicator'] = working_indicator_summary(product['renders'])
 
@@ -438,10 +445,17 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
                 raise ValueError(f'Captured fixture file leaves the agent directory: {relative}')
             if path.is_file():
                 captured_agent_files[relative] = path.read_text()
+        captured_session_files = []
+        sessions_root = agent / 'sessions'
+        if sessions_root.is_dir():
+            for path in sorted(sessions_root.rglob('*')):
+                if path.is_file() and not path.is_symlink():
+                    captured_session_files.append(path.relative_to(sessions_root).as_posix())
         return dict(frames=frames, assertionFrames=assertion_frames,
                     renders=RenderFrameSequence(*prior_render_frames, terminal.render_frames),
                     httpByFrame=http_by_frame, clipboardByFrame=clipboard_by_frame,
                     raw=base64.b64encode(prior_raw).decode(), capturedAgentFiles=captured_agent_files,
+                    capturedSessionFiles=captured_session_files,
                     http=server.requests[request_start:], command=command, scenarioError=None)
     except (TimeoutError, RuntimeError) as error:
         record_frame(dict(id=action['id'], state=terminal.snapshot(), controls=terminal.trace.events[control_mark:],
@@ -452,6 +466,10 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
                     renders=RenderFrameSequence(*prior_render_frames, terminal.render_frames),
                     httpByFrame=http_by_frame, clipboardByFrame=clipboard_by_frame,
                     raw=base64.b64encode(combined_raw).decode(),
+                    capturedSessionFiles=sorted(path.relative_to(agent / 'sessions').as_posix()
+                                               for path in (agent / 'sessions').rglob('*')
+                                               if path.is_file() and not path.is_symlink())
+                    if (agent / 'sessions').is_dir() else [],
                     http=server.requests[request_start:], command=command, scenarioError=str(error))
     finally:
         terminal.close()

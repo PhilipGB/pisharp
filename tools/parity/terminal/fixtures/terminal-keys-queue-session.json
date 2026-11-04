@@ -1,0 +1,542 @@
+{
+  "id": "terminal-keys-queue-session",
+  "settings": {
+    "quietStartup": true
+  },
+  "persistSessions": true,
+  "fixtureBehavior": {
+    "chatRequestGates": [
+      null,
+      null,
+      null,
+      null,
+      "queue-request-1",
+      "queue-request-2"
+    ],
+    "chatResponseContentGates": [
+      null,
+      null,
+      null,
+      null,
+      "queue-content-1",
+      "queue-content-2"
+    ],
+    "chatResponseFinishGates": [
+      null,
+      null,
+      null,
+      null,
+      "queue-finish-1",
+      "queue-finish-2"
+    ],
+    "chatResponseContentByRequest": [
+      "fixture reply",
+      "fixture reply",
+      "fixture reply",
+      "fixture reply",
+      "QUEUE_REPLY",
+      "RESTORED_REPLY"
+    ],
+    "chatResponseChunksByRequest": [
+      [
+        "fixture reply"
+      ],
+      [
+        "fixture reply"
+      ],
+      [
+        "fixture reply"
+      ],
+      [
+        "fixture reply"
+      ],
+      [
+        "QUEUE_REPLY"
+      ],
+      [
+        "RESTORED_REPLY"
+      ]
+    ]
+  },
+  "dimensions": [
+    {
+      "columns": 100,
+      "rows": 30
+    },
+    {
+      "columns": 140,
+      "rows": 40
+    }
+  ],
+  "themes": [
+    "dark"
+  ],
+  "modes": [
+    "fullscreen",
+    "regular"
+  ],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  },
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "create-main",
+      "send": "/name main\rprompt one\r",
+      "expect": "fixture reply"
+    },
+    {
+      "id": "wait-idle-after-queue",
+      "expect": "fixture-model",
+      "notExpect": "Working",
+      "allowStaticFrame": true,
+      "quietMs": 0,
+      "timeout": 10
+    },
+    {
+      "id": "new-first",
+      "send": "/new\r",
+      "expect": {
+        "pi": "New session started",
+        "pisharp": "new: "
+      }
+    },
+    {
+      "id": "create-first",
+      "send": "/name alpha\rprompt two\r",
+      "expect": "fixture reply"
+    },
+    {
+      "id": "new-second",
+      "send": "/new\r",
+      "expect": {
+        "pi": "New session started",
+        "pisharp": "new: "
+      }
+    },
+    {
+      "id": "create-second",
+      "send": "/name beta\rprompt three\r",
+      "expect": "fixture reply"
+    },
+    {
+      "id": "new-third",
+      "send": "/new\r",
+      "expect": {
+        "pi": "New session started",
+        "pisharp": "new: "
+      }
+    },
+    {
+      "id": "create-third",
+      "send": "/name gamma\rprompt four\r",
+      "expect": "fixture reply"
+    },
+    {
+      "id": "first-prompt",
+      "send": "first prompt\r",
+      "waitGatesAfter": [
+        "queue-request-1"
+      ],
+      "expect": "Working",
+      "quietMs": 0
+    },
+    {
+      "id": "steer-enter",
+      "send": "steer one\r",
+      "expect": "Steering: steer one",
+      "quietMs": 0
+    },
+    {
+      "id": "follow-up-text",
+      "send": "follow one",
+      "expect": "follow one",
+      "quietMs": 0
+    },
+    {
+      "id": "follow-up-ready",
+      "expect": "follow one",
+      "allowStaticFrame": true,
+      "quietMs": 0,
+      "timeout": 5
+    },
+    {
+      "id": "follow-up-alt-enter",
+      "send": "\u001b[13;3u",
+      "expect": "Follow-up: follow one",
+      "quietMs": 0
+    },
+    {
+      "id": "queue-draft",
+      "send": "draft text",
+      "expect": "draft text",
+      "quietMs": 0
+    },
+    {
+      "id": "queue-draft-ready",
+      "expect": "draft text",
+      "allowStaticFrame": true,
+      "quietMs": 0,
+      "timeout": 5
+    },
+    {
+      "id": "dequeue-alt-up",
+      "send": "\u001b[1;3A",
+      "expect": "Restored 2 queued messages to editor",
+      "quietMs": 0
+    },
+    {
+      "id": "dequeue-ready",
+      "expect": [
+        "steer one",
+        "follow one",
+        "draft text"
+      ],
+      "allowStaticFrame": true,
+      "quietMs": 0,
+      "timeout": 10
+    },
+    {
+      "id": "release-content-1",
+      "releaseGates": [
+        "queue-content-1"
+      ],
+      "expect": "QUEUE_REPLY",
+      "quietMs": 0
+    },
+    {
+      "id": "release-finish-1",
+      "releaseGates": [
+        "queue-finish-1"
+      ],
+      "expect": "QUEUE_REPLY",
+      "notExpect": "Working",
+      "quietMs": 0
+    },
+    {
+      "id": "submit-restored",
+      "send": "\r",
+      "expect": "Working",
+      "quietMs": 0
+    },
+    {
+      "id": "release-content-2",
+      "releaseGates": [
+        "queue-content-2"
+      ],
+      "expect": "RESTORED_REPLY",
+      "quietMs": 0
+    },
+    {
+      "id": "release-finish-2",
+      "releaseGates": [
+        "queue-finish-2"
+      ],
+      "expect": "RESTORED_REPLY",
+      "notExpect": "Working",
+      "quietMs": 300
+    },
+    {
+      "id": "picker-open",
+      "send": "/resume\r",
+      "expect": "Resume Session (Current Folder)"
+    },
+    {
+      "id": "picker-path-on",
+      "send": "\u0010",
+      "expect": "path (on)"
+    },
+    {
+      "id": "picker-sort-recent",
+      "send": "\u0013",
+      "expect": "Sort: Recent"
+    },
+    {
+      "id": "picker-sort-fuzzy",
+      "send": "\u0013",
+      "expect": "Sort: Fuzzy"
+    },
+    {
+      "id": "picker-sort-threaded",
+      "send": "\u0013",
+      "expect": "Sort: Threaded"
+    },
+    {
+      "id": "picker-named",
+      "send": "\u000e",
+      "expect": "Name: Named"
+    },
+    {
+      "id": "picker-named-search",
+      "send": "alpha",
+      "expect": {
+        "pi": "> alpha",
+        "pisharp": "Search: alpha"
+      }
+    },
+    {
+      "id": "picker-named-search-clear",
+      "send": "",
+      "expect": {
+        "pi": ">  ",
+        "pisharp": "Search:  "
+      }
+    },
+    {
+      "id": "picker-scope-all",
+      "send": "\t",
+      "expect": "Resume Session (All)"
+    },
+    {
+      "id": "picker-scope-current",
+      "send": "\t",
+      "expect": "Resume Session (Current Folder)"
+    },
+    {
+      "id": "picker-named-off",
+      "send": "\u000e",
+      "expect": "Name: All"
+    },
+    {
+      "id": "picker-select-home",
+      "send": "\u001b[1~\u001b[1~",
+      "expect": {
+        "pi": "› gamma",
+        "pisharp": "> ✓ gamma"
+      }
+    },
+    {
+      "id": "picker-select-down-1",
+      "send": "\u001b[B",
+      "expect": {
+        "pi": "› beta",
+        "pisharp": ">   beta"
+      }
+    },
+    {
+      "id": "picker-select-down-2",
+      "send": "\u001b[B",
+      "expect": {
+        "pi": "› alpha",
+        "pisharp": ">   alpha"
+      }
+    },
+    {
+      "id": "picker-rename",
+      "send": "\u0012",
+      "expect": "Rename Session"
+    },
+    {
+      "id": "picker-rename-save",
+      "send": "\u0005 renamed\r",
+      "expect": "alpha ren"
+    },
+    {
+      "id": "picker-rename-select",
+      "send": "renamed",
+      "expect": {
+        "pi": "> renamed",
+        "pisharp": "Search: renamed"
+      }
+    },
+    {
+      "id": "picker-rename-select-clear",
+      "send": "",
+      "expect": {
+        "pi": ">  ",
+        "pisharp": "Search:  "
+      }
+    },
+    {
+      "id": "picker-noninvasive-query",
+      "send": "beta",
+      "expect": {
+        "pi": "> beta",
+        "pisharp": "Search: beta"
+      }
+    },
+    {
+      "id": "picker-noninvasive-query-edit",
+      "send": "\u001b[127;5u",
+      "expect": "Resume Session (Current Folder)",
+      "quietMs": 0
+    },
+    {
+      "id": "picker-noninvasive-clear",
+      "send": "",
+      "expect": {
+        "pi": ">  ",
+        "pisharp": "Search:  "
+      }
+    },
+    {
+      "id": "picker-confirm-home",
+      "send": "\u001b[1~\u001b[1~",
+      "expect": {
+        "pi": "› gamma",
+        "pisharp": "> ✓ gamma"
+      }
+    },
+    {
+      "id": "picker-confirm-down",
+      "send": "\u001b[B",
+      "expect": {
+        "pi": "› beta",
+        "pisharp": ">   beta"
+      }
+    },
+    {
+      "id": "picker-confirm-open",
+      "send": "\u001b[127;5u",
+      "expect": "Delete",
+      "quietMs": 0
+    },
+    {
+      "id": "picker-confirm-cancel",
+      "send": "\u001b",
+      "expect": "Resume Session (Current Folder)",
+      "notExpect": "Delete "
+    },
+    {
+      "id": "picker-delete-search",
+      "expect": {
+        "pi": "› beta",
+        "pisharp": ">   beta"
+      },
+      "allowStaticFrame": true
+    },
+    {
+      "id": "picker-delete-confirm",
+      "send": "\u0004",
+      "expect": "Delete",
+      "quietMs": 0
+    },
+    {
+      "id": "picker-delete-confirm-enter",
+      "send": "\r",
+      "expect": "Resume Session (Current Folder)",
+      "notExpect": "beta",
+      "quietMs": 0
+    },
+    {
+      "id": "picker-delete-clear",
+      "expect": [
+        "gamma",
+        "alpha ren",
+        "main"
+      ],
+      "allowStaticFrame": true,
+      "quietMs": 0,
+      "timeout": 10
+    },
+    {
+      "id": "picker-close",
+      "send": "\u001b",
+      "expect": "fixture-model",
+      "allowStaticFrame": true,
+      "notExpect": "Resume Session"
+    },
+    {
+      "id": "picker-reopen",
+      "send": "/resume\r",
+      "expect": "Resume Session (Current Folder)"
+    },
+    {
+      "id": "picker-reopen-renamed-search",
+      "send": "renamed",
+      "expect": {
+        "pi": "> renamed",
+        "pisharp": "Search: renamed"
+      }
+    },
+    {
+      "id": "picker-reopen-clear",
+      "send": "",
+      "expect": {
+        "pi": ">  ",
+        "pisharp": "Search:  "
+      }
+    },
+    {
+      "id": "picker-reopen-deleted-search",
+      "send": "beta",
+      "expect": {
+        "pi": "> beta",
+        "pisharp": "Search: beta"
+      }
+    },
+    {
+      "id": "picker-reopen-close",
+      "send": "\u001b",
+      "expect": "fixture-model",
+      "allowStaticFrame": true,
+      "notExpect": "Resume Session"
+    },
+    {
+      "id": "quit",
+      "send": "\u0015/quit\r",
+      "exit": true
+    }
+  ],
+  "assertionFrames": [
+    "startup",
+    "create-main",
+    "wait-idle-after-queue",
+    "new-first",
+    "create-first",
+    "new-second",
+    "create-second",
+    "new-third",
+    "create-third",
+    "first-prompt",
+    "steer-enter",
+    "follow-up-text",
+    "follow-up-alt-enter",
+    "queue-draft",
+    "dequeue-ready",
+    "release-content-1",
+    "release-finish-1",
+    "submit-restored",
+    "release-content-2",
+    "release-finish-2",
+    "picker-open",
+    "picker-path-on",
+    "picker-sort-recent",
+    "picker-sort-fuzzy",
+    "picker-sort-threaded",
+    "picker-named",
+    "picker-named-search",
+    "picker-named-search-clear",
+    "picker-scope-all",
+    "picker-scope-current",
+    "picker-named-off",
+    "picker-select-home",
+    "picker-select-down-1",
+    "picker-select-down-2",
+    "picker-rename",
+    "picker-rename-save",
+    "picker-rename-select",
+    "picker-rename-select-clear",
+    "picker-noninvasive-query",
+    "picker-noninvasive-query-edit",
+    "picker-noninvasive-clear",
+    "picker-confirm-home",
+    "picker-confirm-down",
+    "picker-confirm-open",
+    "picker-confirm-cancel",
+    "picker-delete-search",
+    "picker-delete-confirm",
+    "picker-delete-clear",
+    "picker-close",
+    "picker-reopen",
+    "picker-reopen-renamed-search",
+    "picker-reopen-clear",
+    "picker-reopen-deleted-search",
+    "picker-reopen-close",
+    "quit"
+  ],
+  "captureAgentFiles": []
+}

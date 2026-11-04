@@ -1,0 +1,510 @@
+{
+  "capability": "keys-queue-session",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "sources": [
+    {
+      "path": "packages/coding-agent/src/modes/interactive/interactive-mode.ts",
+      "anchors": [
+        "this.defaultEditor.onAction(\"app.message.followUp\", () => this.handleFollowUp());",
+        "this.defaultEditor.onAction(\"app.message.dequeue\", () => this.handleDequeue());",
+        "// Alt+Enter queues a follow-up message (waits until agent finishes)",
+        "streamingBehavior: \"followUp\"",
+        "streamingBehavior: \"steer\"",
+        "this.queueCompactionMessage(text, \"steer\");",
+        "this.queueCompactionMessage(text, \"followUp\");",
+        "this.restoreQueuedMessagesToEditor({ abort: true });",
+        "const queuedText = allQueued.join(\"\\n\\n\");",
+        "const combinedText = [queuedText, currentText].filter((t) => t.trim()).join(\"\\n\\n\");",
+        "Restored ${restored} queued message${restored > 1 ? \"s\" : \"\"} to editor",
+        "this.showStatus(\"No queued messages to restore\");",
+        "private updatePendingMessagesDisplay(): void {"
+      ]
+    },
+    {
+      "path": "packages/coding-agent/src/modes/interactive/components/session-selector.ts",
+      "anchors": [
+        "// Handle delete confirmation state first - intercept all keys",
+        "kb.matches(keyData, \"tui.select.confirm\")",
+        "kb.matches(keyData, \"tui.select.cancel\")",
+        "kb.matches(keyData, \"app.session.toggleSort\")",
+        "app.session.toggleNamedFilter",
+        "kb.matches(keyData, \"app.session.togglePath\")",
+        "kb.matches(keyData, \"app.session.delete\")",
+        "kb.matches(keyData, \"app.session.rename\")",
+        "kb.matches(keyData, \"app.session.deleteNoninvasive\")",
+        "if (this.searchInput.getValue().length > 0) {",
+        "this.onError?.(\"Cannot delete the currently active session\");",
+        "this.sortMode = this.sortMode === \"threaded\" ? \"recent\" : this.sortMode === \"recent\" ? \"relevance\" : \"threaded\";",
+        "this.nameFilter = this.nameFilter === \"all\" ? \"named\" : \"all\";",
+        "const pathState = this.showPath ? \"(on)\" : \"(off)\";",
+        "if (this.showPath) {",
+        "rightPart = `${shortenPath(session.path)} ${rightPart}`;",
+        "this.renameInput.setValue(currentName ?? \"\");",
+        "spawnSync(\"trash\", trashArgs",
+        "await unlink(sessionPath);"
+      ]
+    },
+    {
+      "path": "packages/coding-agent/src/modes/interactive/components/session-selector-search.ts",
+      "anchors": [
+        "export function hasSessionName",
+        "if (trimmed.startsWith(\"re:\"))",
+        "if (sortMode === \"recent\") {"
+      ]
+    },
+    {
+      "path": "packages/coding-agent/src/core/agent-session.ts",
+      "anchors": [
+        "streamingBehavior?: \"steer\" | \"followUp\";",
+        "private async _queueFollowUp",
+        "private async _queueSteer",
+        "clearQueue(): { steering: string[]; followUp: string[] }",
+        "_steeringMessages.push(text);",
+        "_followUpMessages.push(text);",
+        "_steeringMessages.length + this._followUpMessages.length"
+      ]
+    },
+    {
+      "path": "packages/coding-agent/src/core/keybindings.ts",
+      "anchors": [
+        "\"app.session.toggleNamedFilter\"",
+        "\"app.message.followUp\"",
+        "\"app.message.dequeue\"",
+        "\"app.session.togglePath\"",
+        "\"app.session.toggleSort\"",
+        "\"app.session.rename\"",
+        "\"app.session.delete\"",
+        "\"app.session.deleteNoninvasive\"",
+        "defaultKeys: windowsKeybindings ? \"ctrl+q\" : \"alt+enter\"",
+        "defaultKeys: windowsKeybindings ? \"alt+q\" : \"alt+up\""
+      ]
+    },
+    {
+      "path": "packages/coding-agent/docs/keybindings.md",
+      "anchors": [
+        "| `app.session.togglePath` | `ctrl+p` | Toggle path display |",
+        "| `app.session.toggleSort` | `ctrl+s` | Toggle sort mode |",
+        "| `app.session.toggleNamedFilter` | `ctrl+n` | Toggle named-only filter |",
+        "| `app.session.rename` | `ctrl+r` | Rename session |",
+        "| `app.session.delete` | `ctrl+d` | Delete session |",
+        "| `app.session.deleteNoninvasive` | `ctrl+backspace` | Delete session when query is empty |",
+        "| `app.message.followUp` | `alt+enter` (`ctrl+q` on Windows and WSL) | Queue follow-up message |",
+        "| `app.message.dequeue` | `alt+up` (`alt+q` on Windows and WSL) | Restore queued messages to editor |"
+      ]
+    }
+  ],
+  "scenarios": {
+    "Q01": {
+      "description": "Enter during an active run classifies input as steering.",
+      "expected": {
+        "bindings": {
+          "tui.input.submit": [
+            "enter"
+          ]
+        },
+        "queue": {
+          "enqueue": [
+            {
+              "text": "steer one",
+              "steering": true
+            }
+          ],
+          "steering": [
+            "steer one"
+          ],
+          "followUp": []
+        },
+        "active": {
+          "enter": "steer",
+          "draftCleared": true
+        }
+      },
+      "source": "packages/coding-agent/src/modes/interactive/interactive-mode.ts + session-selector.ts/keybindings"
+    },
+    "Q02": {
+      "description": "Alt+Enter during a run queues a FIFO follow-up without interrupting the turn.",
+      "expected": {
+        "bindings": {
+          "app.message.followUp": [
+            "alt+enter"
+          ]
+        },
+        "queue": {
+          "enqueue": [
+            {
+              "text": "follow one",
+              "steering": false
+            },
+            {
+              "text": "follow two",
+              "steering": false
+            }
+          ],
+          "steering": [],
+          "followUp": [
+            "follow one",
+            "follow two"
+          ]
+        },
+        "active": {
+          "altEnter": "followUp"
+        }
+      },
+      "source": "packages/coding-agent/src/modes/interactive/interactive-mode.ts + session-selector.ts/keybindings"
+    },
+    "Q03": {
+      "description": "Alt+Enter while idle submits exactly one normal prompt.",
+      "expected": {
+        "bindings": {
+          "app.message.followUp": [
+            "alt+enter"
+          ]
+        },
+        "idle": {
+          "draft": "idle prompt",
+          "action": "app.message.followUp",
+          "submit": "idle prompt"
+        }
+      },
+      "source": "packages/coding-agent/src/modes/interactive/interactive-mode.ts + session-selector.ts/keybindings"
+    },
+    "Q04": {
+      "description": "Alt+Up restores steering then follow-up then the existing draft.",
+      "expected": {
+        "bindings": {
+          "app.message.dequeue": [
+            "alt+up"
+          ]
+        },
+        "restore": {
+          "steering": [
+            "s1",
+            "s2"
+          ],
+          "followUp": [
+            "f1"
+          ],
+          "draft": "draft",
+          "text": "s1\n\ns2\n\nf1\n\ndraft",
+          "status": "Restored 3 queued messages to editor",
+          "emptyStatus": "No queued messages to restore"
+        }
+      },
+      "source": "packages/coding-agent/src/modes/interactive/interactive-mode.ts + session-selector.ts/keybindings"
+    },
+    "Q05": {
+      "description": "Escape restores pending input before aborting without duplicates.",
+      "expected": {
+        "bindings": {
+          "app.message.dequeue": [
+            "alt+up"
+          ]
+        },
+        "cancellation": {
+          "steering": [
+            "restore steer"
+          ],
+          "followUp": [
+            "restore follow up"
+          ],
+          "text": "restore steer\n\nrestore follow up",
+          "restoredCount": 2,
+          "duplicates": 0
+        }
+      },
+      "source": "packages/coding-agent/src/modes/interactive/interactive-mode.ts + session-selector.ts/keybindings"
+    },
+    "Q06": {
+      "description": "Extension commands execute immediately while ordinary compaction input remains queued.",
+      "expected": {
+        "bindings": {
+          "app.message.followUp": [
+            "alt+enter"
+          ],
+          "app.message.dequeue": [
+            "alt+up"
+          ]
+        },
+        "compaction": {
+          "extensionCommand": "/fixture-command",
+          "extensionImmediate": true,
+          "ordinarySteering": "queued",
+          "ordinaryFollowUp": "queued"
+        }
+      },
+      "source": "packages/coding-agent/src/modes/interactive/interactive-mode.ts + session-selector.ts/keybindings"
+    },
+    "Q07": {
+      "description": "Resume opens the current-project picker; Tab switches to all sessions.",
+      "expected": {
+        "bindings": {
+          "app.session.resume": []
+        },
+        "picker": {
+          "defaultScope": "current",
+          "titles": {
+            "current": "Resume Session (Current Folder)",
+            "all": "Resume Session (All)"
+          },
+          "tab": "toggle",
+          "currentMarker": "Current ·"
+        }
+      },
+      "source": "packages/coding-agent/src/modes/interactive/interactive-mode.ts + session-selector.ts/keybindings"
+    },
+    "Q08": {
+      "description": "Ctrl+S cycles Threaded, Recent, Fuzzy and preserves the selected index.",
+      "expected": {
+        "bindings": {
+          "app.session.toggleSort": [
+            "ctrl+s"
+          ]
+        },
+        "sort": {
+          "initial": "Threaded",
+          "cycle": [
+            "Recent",
+            "Fuzzy",
+            "Threaded"
+          ],
+          "labels": {
+            "Threaded": "Sort: Threaded",
+            "Recent": "Sort: Recent",
+            "Fuzzy": "Sort: Fuzzy"
+          },
+          "selection": "index"
+        }
+      },
+      "source": "packages/coding-agent/src/modes/interactive/interactive-mode.ts + session-selector.ts/keybindings"
+    },
+    "Q09": {
+      "description": "Ctrl+N filters sessions with non-empty names and composes with search.",
+      "expected": {
+        "bindings": {
+          "app.session.toggleNamedFilter": [
+            "ctrl+n"
+          ]
+        },
+        "named": {
+          "labels": [
+            "All",
+            "Named"
+          ],
+          "filter": "nonempty-name",
+          "composesWithSearch": true,
+          "restores": true
+        }
+      },
+      "source": "packages/coding-agent/src/modes/interactive/interactive-mode.ts + session-selector.ts/keybindings"
+    },
+    "Q10": {
+      "description": "Ctrl+P toggles session paths without changing selection or cycling the model.",
+      "expected": {
+        "bindings": {
+          "app.session.togglePath": [
+            "ctrl+p"
+          ]
+        },
+        "path": {
+          "on": "path (on)",
+          "off": "path (off)",
+          "preservesSelection": true,
+          "doesNotCycleModel": true
+        }
+      },
+      "source": "packages/coding-agent/src/modes/interactive/interactive-mode.ts + session-selector.ts/keybindings"
+    },
+    "Q11": {
+      "description": "Ctrl+R renames with prefill, persistence and intact identity/history.",
+      "expected": {
+        "bindings": {
+          "app.session.rename": [
+            "ctrl+r"
+          ]
+        },
+        "rename": {
+          "prefill": "existing-name",
+          "persists": true,
+          "identityStable": true,
+          "historyStable": true,
+          "emptyRejected": true
+        }
+      },
+      "source": "packages/coding-agent/src/modes/interactive/interactive-mode.ts + session-selector.ts/keybindings"
+    },
+    "Q12": {
+      "description": "Ctrl+D requires confirmation, protects the current session, and prefers trash.",
+      "expected": {
+        "bindings": {
+          "app.session.delete": [
+            "ctrl+d"
+          ]
+        },
+        "delete": {
+          "confirmation": "Delete {name}? {confirm} confirm · {cancel} cancel",
+          "currentError": "Cannot delete the currently active session",
+          "trashFirst": true,
+          "fallback": "unlink",
+          "cancelNoMutation": true
+        }
+      },
+      "source": "packages/coding-agent/src/modes/interactive/interactive-mode.ts + session-selector.ts/keybindings"
+    },
+    "Q13": {
+      "description": "Ctrl+Backspace confirms deletion only when the search query is empty.",
+      "expected": {
+        "bindings": {
+          "app.session.deleteNoninvasive": [
+            "ctrl+backspace"
+          ]
+        },
+        "conditionalDelete": {
+          "nonempty": "search-input",
+          "empty": "confirm",
+          "ordinaryBackspace": "edit",
+          "disabled": "no-delete"
+        }
+      },
+      "source": "packages/coding-agent/src/modes/interactive/interactive-mode.ts + session-selector.ts/keybindings"
+    },
+    "Q14": {
+      "description": "Session and queue bindings are configurable, disableable and context-owned.",
+      "expected": {
+        "bindings": {
+          "app.message.followUp": [
+            "alt+enter"
+          ],
+          "app.message.dequeue": [
+            "alt+up"
+          ],
+          "app.session.togglePath": [
+            "ctrl+p"
+          ],
+          "app.session.toggleSort": [
+            "ctrl+s"
+          ],
+          "app.session.toggleNamedFilter": [
+            "ctrl+n"
+          ],
+          "app.session.rename": [
+            "ctrl+r"
+          ],
+          "app.session.delete": [
+            "ctrl+d"
+          ],
+          "app.session.deleteNoninvasive": [
+            "ctrl+backspace"
+          ],
+          "tui.input.tab": [
+            "tab"
+          ],
+          "tui.select.confirm": [
+            "enter"
+          ],
+          "tui.select.cancel": [
+            "escape",
+            "ctrl+c"
+          ]
+        },
+        "bindingsWindows": {
+          "app.message.followUp": [
+            "ctrl+q"
+          ],
+          "app.message.dequeue": [
+            "alt+q"
+          ]
+        },
+        "precedence": {
+          "ctrl+p": "app.session.togglePath",
+          "ctrl+s": "app.session.toggleSort",
+          "ctrl+d": "app.session.delete",
+          "ctrl+r": "app.session.rename"
+        }
+      },
+      "source": "packages/coding-agent/src/modes/interactive/interactive-mode.ts + session-selector.ts/keybindings"
+    },
+    "Q15": {
+      "description": "Picker operations preserve unrelated sessions and recover from stale or invalid storage.",
+      "expected": {
+        "bindings": {
+          "app.session.delete": [
+            "ctrl+d"
+          ],
+          "app.session.rename": [
+            "ctrl+r"
+          ]
+        },
+        "integrity": {
+          "stale": "rejected",
+          "invalid": "visible",
+          "unrelated": "unchanged",
+          "cancellation": "preserved",
+          "rapid": "idempotent"
+        }
+      },
+      "source": "packages/coding-agent/src/modes/interactive/interactive-mode.ts + session-selector.ts/keybindings"
+    },
+    "Q16": {
+      "description": "Paired real-PTY differential spans queue and picker actions in both modes.",
+      "expected": {
+        "bindings": {
+          "app.message.followUp": [
+            "alt+enter"
+          ],
+          "app.session.togglePath": [
+            "ctrl+p"
+          ]
+        },
+        "pty": {
+          "modes": [
+            "fullscreen",
+            "regular"
+          ],
+          "dimensions": 2,
+          "minimumCheckpoints": 24,
+          "paired": true,
+          "calibration": "semantic"
+        }
+      },
+      "source": "packages/coding-agent/src/modes/interactive/interactive-mode.ts + session-selector.ts/keybindings"
+    }
+  },
+  "ptyScenarios": {
+    "100x30-dark-fullscreen": [
+      "terminal-keys-queue-session/100x30-dark-fullscreen/steer-enter",
+      "terminal-keys-queue-session/100x30-dark-fullscreen/dequeue-ready",
+      "terminal-keys-queue-session/100x30-dark-fullscreen/picker-open",
+      "terminal-keys-queue-session/100x30-dark-fullscreen/picker-scope-all",
+      "terminal-keys-queue-session/100x30-dark-fullscreen/picker-sort-recent",
+      "terminal-keys-queue-session/100x30-dark-fullscreen/picker-named",
+      "terminal-keys-queue-session/100x30-dark-fullscreen/picker-path-on",
+      "terminal-keys-queue-session/100x30-dark-fullscreen/picker-delete-clear",
+      "terminal-keys-queue-session/100x30-dark-fullscreen/quit"
+    ],
+    "100x30-dark-regular": [
+      "terminal-keys-queue-session/100x30-dark-regular/steer-enter",
+      "terminal-keys-queue-session/100x30-dark-regular/dequeue-ready",
+      "terminal-keys-queue-session/100x30-dark-regular/picker-open",
+      "terminal-keys-queue-session/100x30-dark-regular/quit"
+    ],
+    "140x40-dark-fullscreen": [
+      "terminal-keys-queue-session/140x40-dark-fullscreen/steer-enter",
+      "terminal-keys-queue-session/140x40-dark-fullscreen/dequeue-ready",
+      "terminal-keys-queue-session/140x40-dark-fullscreen/picker-open",
+      "terminal-keys-queue-session/140x40-dark-fullscreen/picker-select-home",
+      "terminal-keys-queue-session/140x40-dark-fullscreen/quit"
+    ],
+    "140x40-dark-regular": [
+      "terminal-keys-queue-session/140x40-dark-regular/steer-enter",
+      "terminal-keys-queue-session/140x40-dark-regular/dequeue-ready",
+      "terminal-keys-queue-session/140x40-dark-regular/picker-open",
+      "terminal-keys-queue-session/140x40-dark-regular/picker-delete-clear",
+      "terminal-keys-queue-session/140x40-dark-regular/quit"
+    ]
+  },
+  "oracleNotes": {
+    "windows": "WSL uses ctrl+q/alt+q defaults; deterministic keymap replay covers both platforms.",
+    "search": "Fuzzy path matching can change non-selected row order; selection validity is asserted by deterministic tests.",
+    "selectionAfterMutation": "Pi resets or clamps selection after rename/delete; PiSharp matches the observed reset to the first row in PTY evidence."
+  }
+}

@@ -227,18 +227,17 @@ public sealed class ConversationStore
         ArgumentNullException.ThrowIfNull(listing);
         var target = Path.GetFullPath(listing.Path);
         if (Path.GetDirectoryName(target) != Path.GetFullPath(DirectoryPath) ||
-            !Path.GetFileName(target).EndsWith(".session.json", StringComparison.Ordinal) ||
-            listing.Fingerprint.Length != 64)
+            !IsSessionFilePath(target) || listing.Fingerprint.Length != 64)
             throw new InvalidDataException("Session deletion requires a catalog entry from this project directory.");
         await using var lease = await SessionFileLease.AcquireAsync(target, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
         if ((File.GetAttributes(target) & FileAttributes.ReparsePoint) != 0)
             throw new InvalidDataException("Refusing to delete a symbolic-link session.");
-        var bytes = await File.ReadAllBytesAsync(target, cancellationToken);
+        var bytes = await ReadSessionFileAsync(target, cancellationToken);
         var hash = Convert.ToHexString(SHA256.HashData(bytes));
         if (hash != listing.Fingerprint || _knownHashes.TryGetValue(target, out var known) && hash != known)
             throw new InvalidDataException("Session changed on disk; list sessions again before deletion.");
-        var session = ConversationSession.Parse(Encoding.UTF8.GetString(bytes));
+        var session = ParseSessionFile(target, bytes, WorkingDirectory);
         if (session.WorkingDirectory != WorkingDirectory || session.Id != listing.Id)
             throw new InvalidDataException("Session identity or working directory changed.");
         cancellationToken.ThrowIfCancellationRequested();
