@@ -10,7 +10,6 @@ internal sealed class TerminalSessionNavigation(ActiveProjectRuntime projectBind
     Func<ProjectSessionRuntime, Task> adoptProjectSession)
 {
     private TerminalSessionPicker? _picker = presentation.Editor is null ? null : new TerminalSessionPicker(projectBinding.Store, presentation.Editor);
-    private readonly TerminalTreePicker? _treePicker = presentation.Editor is null ? null : new TerminalTreePicker(presentation.Editor);
     private readonly TerminalForkPicker? _forkPicker = presentation.Editor is null ? null : new TerminalForkPicker(presentation.Editor);
     public void RefreshPicker() => _picker = presentation.Editor is null ? null : new TerminalSessionPicker(projectBinding.Store, presentation.Editor);
 
@@ -97,58 +96,113 @@ internal sealed class TerminalSessionNavigation(ActiveProjectRuntime projectBind
         var entries = conversation.Tree.Entries;
         if (entries.Count == 0)
         {
-            Console.WriteLine("No entries in session.");
+            Console.WriteLine("No entries in session");
             return;
         }
-        if (_treePicker is null)
+        if (presentation.Editor is null)
         {
             foreach (var entry in entries)
-                Console.WriteLine($"{entry.Id[..12]} · {entry.Type} · {entry.Timestamp:HH:mm:ss}");
+                Console.WriteLine($"{Short(entry.Id)} · {entry.Type} · {entry.Timestamp:HH:mm:ss}");
             return;
         }
 
-        var selected = _treePicker.Show(entries, conversation.Tree.HeadId);
-        if (selected is null) return;
-        if (selected.Id == conversation.Tree.HeadId)
+        string? reopenId = null;
+        while (true)
         {
-            Console.WriteLine("Already at this point.");
-            return;
-        }
-
-        var branchSummarySettings = projectBinding.Settings.BranchSummary ?? new BranchSummarySettings();
-        var summarize = false;
-        string? customInstructions = null;
-        if (branchSummarySettings.SkipPrompt != true)
-        {
-            while (true)
+            var selected = await presentation.Editor.ShowTreeSelectorAsync(
+                () => conversationBinding.Conversation.Tree.Entries,
+                SetEntryLabelAsync,
+                CopyTreeEntryAsync,
+                conversationBinding.Conversation.Tree.HeadId,
+                reopenId).ConfigureAwait(false);
+            if (selected is null) return;
+            if (selected.Id == conversationBinding.Conversation.Tree.HeadId)
             {
-                var choice = presentation.Editor?.ShowInlineSelectionList("Summarize branch?",
-                    [
-                        new TerminalSelectionOption<string>("no", "no", "No summary"),
-                        new TerminalSelectionOption<string>("summarize", "summarize", "Summarize"),
-                        new TerminalSelectionOption<string>("custom", "custom", "Summarize with custom prompt")
-                    ], [""], "enter select • escape/ctrl+c close", selectedKey: "no")?.Option.Value;
-                if (choice is null) return;
-                if (choice == "custom")
-                {
-                    var values = await presentation.Editor!.PromptSequenceAsync("Custom summarization instructions",
-                        [("Custom summarization instructions", null)]).ConfigureAwait(false);
-                    if (values is null) continue;
-                    customInstructions = values.FirstOrDefault();
-                    summarize = true;
-                    break;
-                }
-                summarize = choice == "summarize";
-                break;
+                Console.WriteLine("Already at this point");
+                return;
             }
-        }
-        var navigation = await conversationBinding.Run.NavigateTreeAsync(selected.Id,
-            new ConversationTreeSelectionOptions(Summarize: summarize, CustomInstructions: customInstructions,
-                ReserveTokens: branchSummarySettings.EffectiveReserveTokens));
 
-        presentation.LoadSessionTranscript();
-        if (navigation.EditorText is { } draft) presentation.Editor?.Prefill(draft);
-        Console.WriteLine($"Selected {selected.Id[..12]} · {selected.Type}");
+            var (resume, summarize, customInstructions) =
+                await ResolveBranchSummaryChoiceAsync().ConfigureAwait(false);
+            if (resume)
+            {
+                reopenId = selected.Id;
+                continue;
+            }
+
+            var branchSummarySettings = projectBinding.Settings.BranchSummary ?? new BranchSummarySettings();
+            var navigation = await conversationBinding.Run.NavigateTreeAsync(selected.Id,
+                new ConversationTreeSelectionOptions(Summarize: summarize, CustomInstructions: customInstructions,
+                    ReserveTokens: branchSummarySettings.EffectiveReserveTokens)).ConfigureAwait(false);
+
+            presentation.LoadSessionTranscript();
+            if (navigation.EditorText is { } draft) presentation.Editor.Prefill(draft);
+            Console.WriteLine($"Selected {Short(selected.Id)} · {selected.Type}");
+            return;
+        }
+    }
+
+    private static string Short(string id) => id[..Math.Min(12, id.Length)];
+
+    /// <summary>Asks about branch summarization; escape resumes the tree navigator at the same selection.</summary>
+    private async Task<(bool Resume, bool Summarize, string? CustomInstructions)> ResolveBranchSummaryChoiceAsync()
+    {
+        var branchSummarySettings = projectBinding.Settings.BranchSummary ?? new BranchSummarySettings();
+        if (branchSummarySettings.SkipPrompt == true) return (false, false, null);
+        var editor = presentation.Editor!;
+        while (true)
+        {
+            var choice = editor.ShowInlineSelectionList("Summarize branch?",
+                [
+                    new TerminalSelectionOption<string>("no", "no", "No summary"),
+                    new TerminalSelectionOption<string>("summarize", "summarize", "Summarize"),
+                    new TerminalSelectionOption<string>("custom", "custom", "Summarize with custom prompt")
+                ], [""], "enter select • escape/ctrl+c close", selectedKey: "no")?.Option.Value;
+            if (choice is null) return (true, false, null);
+            if (choice == "custom")
+            {
+                var values = await editor.PromptSequenceAsync("Custom summarization instructions",
+                    [("Custom summarization instructions", null)]).ConfigureAwait(false);
+                if (values is null) continue;
+                return (false, true, values.FirstOrDefault());
+            }
+            return (false, choice == "summarize", null);
+        }
+    }
+
+    private async Task<bool> SetEntryLabelAsync(string entryId, string? label)
+    {
+        try
+        {
+            await conversationBinding.Run.SetEntryLabelAsync(entryId, label).ConfigureAwait(false);
+            return true;
+        }
+        catch (Exception error) when (error is ArgumentException or KeyNotFoundException or IOException
+            or UnauthorizedAccessException or InvalidOperationException)
+        {
+            presentation.Screen?.AppendStatusMessage(error.Message, TerminalStatusNotificationKind.Error);
+            return false;
+        }
+    }
+
+    private async Task CopyTreeEntryAsync(string? text)
+    {
+        var screen = presentation.Screen;
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            screen?.AppendStatusMessage("Selected entry has no text to copy", TerminalStatusNotificationKind.Error);
+            return;
+        }
+        try
+        {
+            await presentation.Clipboard.CopyTextAsync(text).ConfigureAwait(false);
+            screen?.AppendStatusMessage("Copied selected message to clipboard");
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            screen?.AppendStatusMessage("Could not copy to clipboard: " + error.Message,
+                TerminalStatusNotificationKind.Error);
+        }
     }
 
     public async Task ResumeCommandAsync(string argument)

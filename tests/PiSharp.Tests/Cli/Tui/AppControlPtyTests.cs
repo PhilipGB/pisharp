@@ -107,7 +107,7 @@ public sealed class AppControlPtyTests
     }
 
     [Theory]
-    [InlineData("tree", "Conversation tree", "app.session.tree")]
+    [InlineData("tree", "Session Tree", "app.session.tree")]
     [InlineData("fork", "Fork from message", "app.session.fork")]
     [InlineData("none", null, null)]
     public async Task DoubleEscapeHonoursTheConfiguredActionAndReturnsToTheEditor(
@@ -179,7 +179,7 @@ public sealed class AppControlPtyTests
             {
                 await SendAsync("\u001b\u001b");
                 await Task.Delay(300);
-                await WaitForAsync(frame => !frame.Contains("Conversation tree", StringComparison.Ordinal) &&
+                await WaitForAsync(frame => !frame.Contains("Session Tree", StringComparison.Ordinal) &&
                     !frame.Contains("Fork from message", StringComparison.Ordinal),
                     "double Escape with none opens no selector");
             }
@@ -594,10 +594,10 @@ public sealed class AppControlPtyTests
             await WaitForAsync(frame => !frame.Contains("BASH_ENTRY_SHOULD_NOT_RUN", StringComparison.Ordinal),
                 "bash-entry clear");
             await SendAsync("\u001b[27u\u001b[27u");
-            await WaitForAsync(frame => frame.Contains("Conversation tree", StringComparison.Ordinal),
+            await WaitForAsync(frame => frame.Contains("Session Tree", StringComparison.Ordinal),
                 "regular-mode double Escape tree");
             await SendAsync("\u001b");
-            await WaitForAsync(frame => !frame.Contains("Conversation tree", StringComparison.Ordinal),
+            await WaitForAsync(frame => !frame.Contains("Session Tree", StringComparison.Ordinal),
                 "tree dismissal");
             await SendAsync("\u0003\u0003");
             await process.WaitForExitAsync(timeout.Token);

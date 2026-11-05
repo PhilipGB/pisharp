@@ -46,7 +46,7 @@ internal sealed class InteractiveSessionCommands(ConversationStore store, string
                 return true;
             case "/tree":
                 foreach (var node in conversation.Tree.Entries)
-                    output.WriteLine($"{(node.Id == conversation.Tree.HeadId ? '>' : ' ')} {node.Id[..12]} ← {node.ParentId?[..12] ?? "root"} {node.Type} {node.Timestamp:HH:mm:ss}");
+                    output.WriteLine($"{(node.Id == conversation.Tree.HeadId ? '>' : ' ')} {Short(node.Id)} ← {(node.ParentId is null ? "root" : Short(node.ParentId))} {node.Type} {node.Timestamp:HH:mm:ss}");
                 return true;
             case "/branch":
                 var summarizeBranch = argument.Equals("--summarize", StringComparison.Ordinal) ||
@@ -60,7 +60,7 @@ internal sealed class InteractiveSessionCommands(ConversationStore store, string
                         ReserveTokens: branchSummarySettings?.EffectiveReserveTokens ?? BranchSummarySettings.DefaultReserveTokens));
                 loadTranscript();
                 if (navigation.EditorText is { } draft) prefillPrompt?.Invoke(draft);
-                output.WriteLine($"Selected {matches[0].Id[..12]}{(summarizeBranch ? " with a branch summary" : "")}");
+                output.WriteLine($"Selected {Short(matches[0].Id)}{(summarizeBranch ? " with a branch summary" : "")}");
                 return true;
             case "/name":
                 await conversationRun.SetSessionNameAsync(argument);
@@ -77,4 +77,6 @@ internal sealed class InteractiveSessionCommands(ConversationStore store, string
                 return false;
         }
     }
+
+    private static string Short(string id) => id[..Math.Min(12, id.Length)];
 }

@@ -160,6 +160,24 @@ public sealed class BoundaryPiJsonlEntryCodecTests
         Assert.True(projected["fromHook"]!.GetValue<bool>());
     }
 
+    [Fact]
+    public void ImportedBashExecutionProducesADecodableNativePayload()
+    {
+        var session = PiJsonlSessionInterchange.Import(SessionJsonl("""
+            {"type":"message","id":"bash-1","parentId":null,"timestamp":"2026-10-01T00:00:00Z","message":{"role":"bashExecution","command":"echo hi","output":"hi","exitCode":0,"cancelled":false,"truncated":false,"fullOutputPath":null,"excludeFromContext":false,"timestamp":0}}
+            """));
+
+        var node = Assert.Single(session.Tree.Entries, entry => entry.Type == "bash_execution");
+        var execution = ConversationMessageCodec.RestoreBashExecution(node.Payload, node.Id);
+        Assert.Equal("echo hi", execution.Command);
+        Assert.Equal("hi", execution.Output);
+        Assert.Equal(0, execution.ExitCode);
+        Assert.False(execution.ExcludeFromContext);
+        Assert.Equal("echo hi", node.Payload.GetProperty("command").GetString());
+        Assert.True(node.Payload.TryGetProperty("fullOutputPath", out var fullOutputPath));
+        Assert.Equal(System.Text.Json.JsonValueKind.Null, fullOutputPath.ValueKind);
+    }
+
     private static string SessionJsonl(string entries) => $$"""
         {"type":"session","version":3,"id":"codec-fixture","timestamp":"2026-10-01T00:00:00Z","cwd":"{{Path.GetFullPath(Path.GetTempPath())}}"}
         {{entries}}

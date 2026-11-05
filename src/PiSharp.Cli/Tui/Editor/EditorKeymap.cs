@@ -90,6 +90,19 @@ public sealed class EditorKeymap
             ["app.models.toggleProvider"] = new("Toggle all models for this provider", ["ctrl+p"]),
             ["app.models.reorderUp"] = new("Move model earlier in the scope", ["alt+up"]),
             ["app.models.reorderDown"] = new("Move model later in the scope", ["alt+down"]),
+            ["app.tree.foldOrUp"] = new("Fold a tree branch or jump up",
+                OperatingSystem.IsMacOS() ? ["alt+left", "ctrl+left"] : ["ctrl+left", "alt+left"]),
+            ["app.tree.unfoldOrDown"] = new("Unfold a tree branch or jump down",
+                OperatingSystem.IsMacOS() ? ["alt+right", "ctrl+right"] : ["ctrl+right", "alt+right"]),
+            ["app.tree.editLabel"] = new("Edit the selected tree label", ["shift+l"]),
+            ["app.tree.toggleLabelTimestamp"] = new("Toggle tree label timestamps", ["shift+t"]),
+            ["app.tree.filter.default"] = new("Show the default tree view", ["ctrl+d"]),
+            ["app.tree.filter.noTools"] = new("Toggle the tree filter that hides tool results", ["ctrl+t"]),
+            ["app.tree.filter.userOnly"] = new("Toggle the tree filter that shows only user messages", ["ctrl+u"]),
+            ["app.tree.filter.labeledOnly"] = new("Toggle the tree filter that shows only labeled entries", ["ctrl+l"]),
+            ["app.tree.filter.all"] = new("Toggle the tree filter that shows all entries", ["ctrl+a"]),
+            ["app.tree.filter.cycleForward"] = new("Cycle the tree filter forward", ["ctrl+o"]),
+            ["app.tree.filter.cycleBackward"] = new("Cycle the tree filter backward", ["shift+ctrl+o"]),
             ["app.thinking.cycle"] = new("Cycle thinking level", ["shift+tab"]),
             ["app.thinking.save"] = new("Save thinking level", ["ctrl+s"]),
             ["app.thinking.toggle"] = new("Toggle thinking block visibility", ["ctrl+t"]),
@@ -269,8 +282,9 @@ public sealed class EditorKeymap
         var builtIns = new Dictionary<PiSharpShortcutKey, BuiltInBinding>();
         foreach (var (action, bindings) in _bindings)
         {
-            // Context-local picker actions do not compete with global editor shortcuts.
+            // Context-local picker and tree actions do not compete with global editor shortcuts.
             if (action.StartsWith("app.models.", StringComparison.Ordinal) ||
+                action.StartsWith("app.tree.", StringComparison.Ordinal) ||
                 action is "app.session.togglePath" or "app.session.toggleSort" or
                     "app.session.toggleNamedFilter" or "app.session.rename" or
                     "app.session.delete" or "app.session.deleteNoninvasive") continue;

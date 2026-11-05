@@ -1990,7 +1990,7 @@ public sealed class TerminalPtyTests
                         output.Append(buffer, 0, count);
                         var captured = output.ToString();
                         if (captured.Contains("\u001b[?2004h", StringComparison.Ordinal)) inputReady.TrySetResult();
-                        if (captured.Contains("Conversation tree", StringComparison.Ordinal)) pickerOpened.TrySetResult();
+                        if (captured.Contains("Session Tree", StringComparison.Ordinal)) pickerOpened.TrySetResult();
                         if (captured.Contains("Summarize branch?", StringComparison.Ordinal))
                             branchSummaryPromptOpened.TrySetResult();
                         if (captured.Contains("Summarize with custom prompt", StringComparison.Ordinal))
@@ -2021,7 +2021,7 @@ public sealed class TerminalPtyTests
             var capturedOutput = await stdout;
             var saved = await store.LoadAsync(sessionPath);
             Assert.Equal(0, process.ExitCode);
-            Assert.Contains("assistant: second answer", capturedOutput);
+            Assert.Contains("assistant: second answer", StripAnsi(capturedOutput));
             Assert.Contains("No summary", capturedOutput);
             Assert.Contains("Summarize", capturedOutput);
             Assert.Contains("Summarize with custom prompt", capturedOutput);
@@ -2879,21 +2879,22 @@ public sealed class TerminalPtyTests
         await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), """
             {"providers":{"fixture":{"baseUrl":"https://fixture.test/v1","apiKeyEnv":"PISHARP_SCOPED_KEY","models":[
               {"id":"model-a","name":"Model A","reasoning":true},
-              {"id":"model-b","name":"Model B","reasoning":true}
+              {"id":"model-b","name":"Model B","reasoning":true},
+              {"id":"model-c","name":"Model C","reasoning":true}
             ]}}}
             """);
         await File.WriteAllTextAsync(Path.Combine(agent, "settings.json"),
-            "{\"shellCommandPrefix\":\"preserved\",\"enabledModels\":[\"fixture/model-a\",\"fixture/model-b\"]}\n");
+            "{\"shellCommandPrefix\":\"preserved\",\"enabledModels\":[\"fixture/model-a\",\"fixture/model-b\",\"fixture/model-c\"]}\n");
 
         Process? process = null;
         Process? restoredProcess = null;
         try
         {
-            process = StartThinkingFixtureProcess(root, agent);
+            process = StartThinkingFixtureProcess(root, agent, scopedKey: "fixture-key");
             var screen = new PtyScreenCapture(process, rows: 24, columns: 100);
             var stdout = screen.ReadCompletion;
             var stderr = process.StandardError.ReadToEndAsync();
-            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(180));
             try { await screen.InputReady.WaitAsync(timeout.Token); }
             catch (OperationCanceledException)
             {
@@ -2919,8 +2920,9 @@ public sealed class TerminalPtyTests
                 EditorInputLine(frame).Length == 0).WaitAsync(timeout.Token);
 
             using (var unchanged = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(agent, "settings.json"))))
-                Assert.Equal(new[] { "fixture/model-a", "fixture/model-b" }, unchanged.RootElement.GetProperty("enabledModels")
-                    .EnumerateArray().Select(item => item.GetString()));
+                Assert.Equal(new[] { "fixture/model-a", "fixture/model-b", "fixture/model-c" },
+                    unchanged.RootElement.GetProperty("enabledModels")
+                        .EnumerateArray().Select(item => item.GetString()));
 
             await process.StandardInput.WriteAsync("/scoped-models\r");
             await process.StandardInput.FlushAsync();
@@ -2938,6 +2940,19 @@ public sealed class TerminalPtyTests
             await process.StandardInput.WriteAsync("\u0018");
             await process.StandardInput.FlushAsync();
             await process.StandardInput.WriteAsync("\u0001");
+            await process.StandardInput.FlushAsync();
+            // Ctrl+C clears the active search; disable model-c, then reorder model-b before model-a.
+            await process.StandardInput.WriteAsync("\u0003");
+            await process.StandardInput.FlushAsync();
+            await process.StandardInput.WriteAsync("fixture/model-c");
+            await process.StandardInput.FlushAsync();
+            await process.StandardInput.WriteAsync("\r");
+            await process.StandardInput.FlushAsync();
+            await process.StandardInput.WriteAsync("\u0003");
+            await process.StandardInput.FlushAsync();
+            await process.StandardInput.WriteAsync("\u001b[B");
+            await process.StandardInput.FlushAsync();
+            await process.StandardInput.WriteAsync("\u001b[1;3A");
             await process.StandardInput.FlushAsync();
             await process.StandardInput.WriteAsync("\u0013");
             await process.StandardInput.FlushAsync();
@@ -2966,7 +2981,10 @@ public sealed class TerminalPtyTests
                 var stdoutTail = screen.CapturedOutput;
                 if (!process.HasExited) process.Kill(entireProcessTree: true);
                 var errorText = await stderr;
-                throw new InvalidOperationException($"Scoped-model selection was not saved. Screen: {screen.LastFrame}. stdout: {stdoutTail[^Math.Min(2000, stdoutTail.Length)..]} stderr: {errorText}");
+                var settingsText = File.Exists(settingsPath)
+                    ? await File.ReadAllTextAsync(settingsPath)
+                    : "<missing>";
+                throw new InvalidOperationException($"Scoped-model selection was not saved. Settings: {settingsText} Screen: {screen.LastFrame}. stdout: {stdoutTail[^Math.Min(3000, stdoutTail.Length)..]} stderr: {errorText}");
             }
             var saved = await UserSettings.LoadAsync(agent, _ => null, timeout.Token);
             Assert.Equal("preserved", saved.ShellCommandPrefix);
@@ -2985,7 +3003,7 @@ public sealed class TerminalPtyTests
             Assert.Equal(0, process.ExitCode);
             Assert.DoesNotContain("Exception:", await stderr, StringComparison.Ordinal);
 
-            restoredProcess = StartThinkingFixtureProcess(root, agent);
+            restoredProcess = StartThinkingFixtureProcess(root, agent, scopedKey: "fixture-key");
             var restoredScreen = new PtyScreenCapture(restoredProcess, rows: 24, columns: 100);
             var restoredStdout = restoredScreen.ReadCompletion;
             var restoredStderr = restoredProcess.StandardError.ReadToEndAsync();
@@ -3778,6 +3796,9 @@ public sealed class TerminalPtyTests
     }
 
     private static string ShellQuote(string value) => "'" + value.Replace("'", "'\\''", StringComparison.Ordinal) + "'";
+
+    private static string StripAnsi(string text) =>
+        System.Text.RegularExpressions.Regex.Replace(text, "\u001b\\[[0-9;?]*[A-Za-z]", "");
 
     private static int CountOccurrences(string text, string value)
     {

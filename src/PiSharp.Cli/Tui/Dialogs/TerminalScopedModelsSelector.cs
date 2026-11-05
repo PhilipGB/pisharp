@@ -4,15 +4,20 @@ using PiSharp.Runtime.Providers;
 namespace PiSharp.Cli.Tui;
 
 /// <summary>Edits the session model scope through the shared searchable selector list.</summary>
+/// <remarks>Mirrors pinned Pi's ScopedModelsSelectorComponent: null enabled ids mean "all enabled";
+/// changes apply to the session only until Ctrl+S persists them.</remarks>
 internal sealed class TerminalScopedModelsSelector(ProviderModelRuntime modelRuntime, TerminalEditor editor,
-    Func<string?, Task> persist)
+    Func<string?, Task> persist, Func<IReadOnlyList<string>?>? configuredEnabledModels = null)
 {
     public async Task ShowAsync(IReadOnlyList<ModelDescriptor> catalog, CancellationToken cancellationToken = default)
     {
-        var models = NormalizeCatalog(catalog);
+        var knownModels = new Dictionary<string, ModelDescriptor>(StringComparer.Ordinal);
+        var models = RebuildCatalog(catalog);
         var allIds = models.Select(model => Key(model.Provider!, model.Id)).ToList();
         var enabledIds = InitialEnabledIds(models);
         var selectedKey = modelRuntime.HasScope ? enabledIds?.FirstOrDefault() : null;
+        var selectionChanged = false;
+        var isDirty = false;
         var options = BuildOptions();
 
         using var refreshCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -23,9 +28,9 @@ internal sealed class TerminalScopedModelsSelector(ProviderModelRuntime modelRun
         try
         {
             await editor.ShowSelectionListAsync("Scoped Models", options, selectedKey,
-                actionHint: "Enter toggle · Ctrl+A enable all · Ctrl+X clear · Ctrl+P provider · Alt+↑/↓ reorder · Ctrl+S save · Esc cancel",
+                actionHint: InitialActionHint(),
                 handleInput: HandleInput, cancellationToken: cancellationToken,
-                onIdle: RefreshCatalogAsync).ConfigureAwait(false);
+                onIdle: OnIdleAsync).ConfigureAwait(false);
         }
         finally
         {
@@ -35,15 +40,20 @@ internal sealed class TerminalScopedModelsSelector(ProviderModelRuntime modelRun
             catch (Exception) { }
         }
 
-        async Task RefreshCatalogAsync(TerminalSelectionList<ModelDescriptor> list)
+        async Task OnIdleAsync(TerminalSelectionList<ModelDescriptor> list)
         {
+            // The search query is edited by the shared list, so rebuild the hint on every idle turn.
+            SetActionHint(list);
             if (refreshApplied || !refreshTask.IsCompleted) return;
             refreshApplied = true;
             try
             {
-                var refreshed = await refreshTask.ConfigureAwait(false);
-                models = NormalizeCatalog(refreshed.Concat(models));
-                allIds = models.Select(model => Key(model.Provider!, model.Id)).ToList();
+                await refreshTask.ConfigureAwait(false);
+                models = RebuildCatalog(modelRuntime.GetAvailableModelSnapshot());
+                allIds.Clear();
+                allIds.AddRange(models.Select(model => Key(model.Provider!, model.Id)));
+                // Pi re-derives the configured selection when the user has not edited it yet.
+                if (!selectionChanged && !modelRuntime.HasScope) enabledIds = InitialEnabledIds(models);
                 list.ReplaceOptions(BuildOptions(), null);
                 ApplySessionScope();
             }
@@ -59,72 +69,140 @@ internal sealed class TerminalScopedModelsSelector(ProviderModelRuntime modelRun
 
         async Task<bool> HandleInput(TerminalSelectionList<ModelDescriptor> list, TerminalInputEvent input)
         {
+            // Ctrl+C clears an active search before it closes the navigator.
+            if (input.Key is { } cancelKey && editor.MatchesKeybinding("tui.select.cancel", cancelKey) &&
+                cancelKey.Key == ConsoleKey.C && cancelKey.Modifiers.HasFlag(ConsoleModifiers.Control) &&
+                list.SearchQuery.Length > 0)
+            {
+                list.ClearSearch();
+                SetActionHint(list);
+                return true;
+            }
             if (input.Key is not { } key) return false;
             if (key.Key == ConsoleKey.Enter || editor.MatchesKeybinding("tui.select.confirm", key))
             {
-                if (list.Selected is { } current) Toggle(current.Option.Key);
-                list.ReplaceOptions(BuildOptions(), null);
+                if (list.Selected is { } current)
+                    enabledIds = Toggle(enabledIds, allIds, current.Option.Key);
+                selectionChanged = true;
+                isDirty = true;
+                // Pi keeps the row index across toggles even when the sort order changes.
+                list.ReplaceOptions(BuildOptions(), null, preserveIndex: true);
+                ApplySessionScope();
+                SetActionHint(list);
                 return true;
             }
             if (editor.MatchesKeybinding("app.models.enableAll", key))
             {
-                IEnumerable<string> targets = list.SearchQuery.Length == 0
-                    ? allIds : list.VisibleOptions.Select(option => option.Key).ToArray();
-                Enable(targets);
-                list.ReplaceOptions(BuildOptions(), null);
+                enabledIds = EnableAll(enabledIds, allIds, SearchTargets(list));
+                selectionChanged = true;
+                isDirty = true;
+                list.ReplaceOptions(BuildOptions(), null, preserveIndex: true);
+                ApplySessionScope();
+                SetActionHint(list);
                 return true;
             }
             if (editor.MatchesKeybinding("app.models.clearAll", key))
             {
-                IEnumerable<string> targets = list.SearchQuery.Length == 0
-                    ? allIds : list.VisibleOptions.Select(option => option.Key).ToArray();
-                Clear(targets);
-                list.ReplaceOptions(BuildOptions(), null);
+                enabledIds = ClearAll(enabledIds, allIds, SearchTargets(list));
+                selectionChanged = true;
+                isDirty = true;
+                list.ReplaceOptions(BuildOptions(), null, preserveIndex: true);
+                ApplySessionScope();
+                SetActionHint(list);
                 return true;
             }
             if (editor.MatchesKeybinding("app.models.toggleProvider", key))
             {
-                if (list.Selected is { } current)
+                if (list.Selected is { } current && current.Option.Value.Available)
                 {
                     var provider = current.Option.Value.Provider;
-                    var targets = models.Where(model => model.Provider!.Equals(provider, StringComparison.OrdinalIgnoreCase))
-                        .Select(model => Key(provider!, model.Id)).ToArray();
-                    if (targets.All(IsEnabled)) Clear(targets);
-                    else Enable(targets);
-                    list.ReplaceOptions(BuildOptions(), null);
+                    var providerIds = models.Where(model => model.Available &&
+                            provider!.Equals(model.Provider, StringComparison.Ordinal))
+                        .Select(model => Key(model.Provider!, model.Id)).ToArray();
+                    enabledIds = providerIds.All(id => IsEnabled(enabledIds, id))
+                        ? ClearAll(enabledIds, allIds, providerIds)
+                        : EnableAll(enabledIds, allIds, providerIds);
+                    selectionChanged = true;
+                    isDirty = true;
+                    list.ReplaceOptions(BuildOptions(), null, preserveIndex: true);
+                    ApplySessionScope();
                 }
+                SetActionHint(list);
                 return true;
             }
-            if (editor.MatchesKeybinding("app.models.reorderUp", key))
+            if (editor.MatchesKeybinding("app.models.reorderUp", key) ||
+                editor.MatchesKeybinding("app.models.reorderDown", key))
             {
-                Reorder(list.Selected?.Option.Key, -1);
-                list.ReplaceOptions(BuildOptions(), null);
-                return true;
-            }
-            if (editor.MatchesKeybinding("app.models.reorderDown", key))
-            {
-                Reorder(list.Selected?.Option.Key, 1);
-                list.ReplaceOptions(BuildOptions(), null);
+                var reorderUp = editor.MatchesKeybinding("app.models.reorderUp", key);
+                var selectedId = list.Selected?.Option.Key;
+                if (enabledIds is not null && selectedId is not null && IsEnabled(enabledIds, selectedId))
+                {
+                    var delta = reorderUp ? -1 : 1;
+                    var currentIndex = enabledIds.IndexOf(selectedId);
+                    var newIndex = currentIndex + delta;
+                    if (newIndex >= 0 && newIndex < enabledIds.Count)
+                    {
+                        enabledIds = Move(enabledIds, selectedId, delta);
+                        selectionChanged = true;
+                        isDirty = true;
+                        var index = list.SelectedIndex;
+                        list.ReplaceOptions(BuildOptions(), null);
+                        list.SelectIndex(index + delta);
+                        ApplySessionScope();
+                    }
+                }
+                SetActionHint(list);
                 return true;
             }
             if (editor.MatchesKeybinding("app.models.save", key) || IsDefaultSaveKey(key))
             {
-                var value = enabledIds is null ? null : JsonSerializer.Serialize(enabledIds);
+                // A selection covering every available model persists as "all models enabled" (key removed).
+                var availableIds = AvailableIds();
+                var allAvailableEnabled = enabledIds is not null &&
+                    enabledIds.Count == availableIds.Count && enabledIds.All(availableIds.Contains);
+                var value = enabledIds is null || allAvailableEnabled
+                    ? null : JsonSerializer.Serialize(enabledIds);
                 await persist(value).ConfigureAwait(false);
+                selectionChanged = true;
+                isDirty = false;
                 ApplySessionScope();
+                SetActionHint(list);
                 return true;
             }
             return false;
         }
 
+        IReadOnlyList<string>? SearchTargets(TerminalSelectionList<ModelDescriptor> list) =>
+            list.SearchQuery.Length == 0 ? null : list.VisibleOptions.Select(option => option.Key).ToArray();
+
+        /// <summary>Rebuilds the available catalog and keeps prior descriptors for labels and enabled ids.</summary>
+        List<ModelDescriptor> RebuildCatalog(IEnumerable<ModelDescriptor> catalog)
+        {
+            var available = NormalizeCatalog(catalog.Where(model => model.Available));
+            foreach (var model in available)
+                knownModels[Key(model.Provider!, model.Id)] = model;
+            return available;
+        }
+
+        ModelDescriptor ResolveModel(string id)
+        {
+            if (knownModels.TryGetValue(id, out var known)) return known;
+            var slash = id.IndexOf('/');
+            var provider = slash > 0 ? id[..slash] : "unknown";
+            var modelId = slash > 0 ? id[(slash + 1)..] : id;
+            var synthesized = new ModelDescriptor(modelId, null, null, "unavailable", Provider: provider,
+                Available: false, UnavailableReason: "not present in the current catalogue");
+            knownModels[id] = synthesized;
+            return synthesized;
+        }
+
         IReadOnlyList<TerminalSelectionOption<ModelDescriptor>> BuildOptions()
         {
-            var orderedIds = enabledIds is null ? allIds.ToList() :
-                enabledIds.Concat(allIds.Where(id => !enabledIds.Contains(id, StringComparer.OrdinalIgnoreCase))).ToList();
+            var orderedIds = GetSortedIds(enabledIds, allIds);
             return orderedIds.Select(id =>
             {
-                var model = models.First(item => Key(item.Provider!, item.Id).Equals(id, StringComparison.OrdinalIgnoreCase));
-                var enabled = IsEnabled(id);
+                var model = ResolveModel(id);
+                var enabled = IsEnabled(enabledIds, id);
                 var provider = model.Provider!;
                 var label = $"{(enabled ? "✓ " : "  ")}{model.Id} [{provider}]";
                 var availability = model.Available ? model.Status ?? "available" : model.UnavailableReason ?? "unavailable";
@@ -133,80 +211,158 @@ internal sealed class TerminalScopedModelsSelector(ProviderModelRuntime modelRun
             }).ToArray();
         }
 
-        List<string>? InitialEnabledIds(List<ModelDescriptor> available)
+        string BuildActionHint()
         {
-            if (!modelRuntime.HasScope) return null;
-            var result = ModelScopeResolver.Resolve(modelRuntime.Scope, available).Models
-                .Where(item => item.Model.Provider is not null)
-                .Select(item => Key(item.Model.Provider!, item.Model.Id))
-                .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-            foreach (var pattern in modelRuntime.Scope)
+            var count = EnabledCount(out var unavailableCount, out var allEnabled);
+            var countText = allEnabled
+                ? "all enabled"
+                : $"{count}/{allIds.Count} enabled{(unavailableCount > 0 ? $" · {unavailableCount} unavailable" : "")}";
+            var parts = new[]
             {
-                if (pattern.Contains('/') && !pattern.Any(character => character is '*' or '?' or '[' or '{') &&
-                    !result.Any(id => id.Equals(pattern, StringComparison.OrdinalIgnoreCase)))
-                {
-                    var slash = pattern.IndexOf('/');
-                    var provider = pattern[..slash];
-                    var id = pattern[(slash + 1)..];
-                    if (provider.Length > 0 && id.Length > 0)
-                    {
-                        var unavailable = new ModelDescriptor(id, null, null, "unavailable", Provider: provider,
-                            Available: false, UnavailableReason: "not present in the current catalogue");
-                        available.Add(unavailable);
-                        var key = Key(provider, id);
-                        if (!allIds.Contains(key, StringComparer.OrdinalIgnoreCase)) allIds.Add(key);
-                        result.Add(key);
-                    }
-                }
+                // Keep the count and unsaved marker first so narrow terminals retain them before the hint clips.
+                countText + (isDirty ? " (unsaved)" : ""),
+                editor.GetDisplayKeys("tui.select.confirm") + " toggle",
+                editor.GetDisplayKeys("app.models.enableAll") + " all",
+                editor.GetDisplayKeys("app.models.clearAll") + " clear",
+                editor.GetDisplayKeys("app.models.toggleProvider") + " provider",
+                CombinedReorderHint(),
+                editor.GetDisplayKeys("app.models.save") + " save"
+            };
+            return string.Join(" · ", parts.Where(part => !string.IsNullOrWhiteSpace(part)));
+        }
+
+        int EnabledCount(out int unavailableCount, out bool allEnabled)
+        {
+            var availableIds = AvailableIds();
+            if (enabledIds is null)
+            {
+                (unavailableCount, allEnabled) = (0, true);
+                return availableIds.Count;
             }
-            return result;
+            unavailableCount = enabledIds.Count(id => !availableIds.Contains(id));
+            allEnabled = false;
+            return enabledIds.Count - unavailableCount;
         }
 
-        bool IsEnabled(string id) => enabledIds is null || enabledIds.Contains(id, StringComparer.OrdinalIgnoreCase);
-
-        void Toggle(string id)
+        string? CombinedReorderHint()
         {
-            enabledIds ??= [.. allIds];
-            var index = enabledIds.FindIndex(item => item.Equals(id, StringComparison.OrdinalIgnoreCase));
-            if (index >= 0) enabledIds.RemoveAt(index);
-            else enabledIds.Add(id);
-            if (enabledIds.Count == allIds.Count && allIds.All(item => enabledIds.Contains(item, StringComparer.OrdinalIgnoreCase)))
-                enabledIds = null;
-            ApplySessionScope();
+            var up = editor.GetDisplayKeys("app.models.reorderUp");
+            var down = editor.GetDisplayKeys("app.models.reorderDown");
+            if (up is null && down is null) return null;
+            if (up is { Length: > 0 } upKeys && down is { Length: > 0 } downKeys && upKeys[^1] == downKeys[^1])
+                return $"{upKeys[..^1]}{upKeys[^1]}/{downKeys[^1]} reorder";
+            return $"{up}/{down} reorder".TrimStart('/').Trim();
         }
 
-        void Enable(IEnumerable<string> targets)
+        void SetActionHint(TerminalSelectionList<ModelDescriptor> list)
         {
-            if (enabledIds is null) return;
-            foreach (var target in targets)
-                if (!enabledIds.Contains(target, StringComparer.OrdinalIgnoreCase)) enabledIds.Add(target);
-            if (allIds.All(item => enabledIds.Contains(item, StringComparer.OrdinalIgnoreCase))) enabledIds = null;
-            ApplySessionScope();
+            var hint = BuildActionHint();
+            if (hint.Length > 0) list.SetActionHint(hint);
         }
 
-        void Clear(IEnumerable<string> targets)
+        string InitialActionHint()
         {
-            enabledIds ??= [.. allIds];
-            var remove = targets.ToHashSet(StringComparer.OrdinalIgnoreCase);
-            enabledIds.RemoveAll(remove.Contains);
-            ApplySessionScope();
+            var hint = BuildActionHint();
+            return hint.Length > 0 ? hint : "Entering toggle · Ctrl+S save";
         }
 
-        void Reorder(string? id, int delta)
-        {
-            if (enabledIds is null || id is null) return;
-            var index = enabledIds.FindIndex(item => item.Equals(id, StringComparison.OrdinalIgnoreCase));
-            var next = index + delta;
-            if (index < 0 || next < 0 || next >= enabledIds.Count) return;
-            (enabledIds[index], enabledIds[next]) = (enabledIds[next], enabledIds[index]);
-            ApplySessionScope();
-        }
+        HashSet<string> AvailableIds() => models.Select(model => Key(model.Provider!, model.Id))
+            .ToHashSet(StringComparer.Ordinal);
 
         void ApplySessionScope()
         {
-            if (enabledIds is null || enabledIds.Count == 0) modelRuntime.ClearScope();
-            else modelRuntime.SetScope(enabledIds);
+            // Session scope binds only when at least one enabled model is available and not every
+            // available model is enabled; otherwise the session runs on the full catalog.
+            if (enabledIds is not null)
+            {
+                var availableIds = AvailableIds();
+                var hasEnabledAvailableModel = enabledIds.Any(availableIds.Contains);
+                var allAvailableModelsEnabled = availableIds.All(enabledIds.Contains);
+                if (hasEnabledAvailableModel && !allAvailableModelsEnabled)
+                {
+                    modelRuntime.SetScope(enabledIds);
+                    return;
+                }
+            }
+            modelRuntime.ClearScope();
         }
+    }
+
+    List<string>? InitialEnabledIds(List<ModelDescriptor> available)
+    {
+        var configured = configuredEnabledModels?.Invoke();
+        var patterns = modelRuntime.HasScope ? modelRuntime.Scope : configured;
+        if (patterns is not { Count: > 0 }) return null;
+        var result = ModelScopeResolver.Resolve(patterns, available).Models
+            .Where(item => item.Model.Provider is not null)
+            .Select(item => Key(item.Model.Provider!, item.Model.Id))
+            .Distinct(StringComparer.Ordinal).ToList();
+        foreach (var pattern in patterns)
+        {
+            if (pattern.Contains('/') && !pattern.Any(character => character is '*' or '?' or '[' or '{') &&
+                !result.Contains(pattern, StringComparer.Ordinal))
+            {
+                var slash = pattern.IndexOf('/');
+                var provider = pattern[..slash];
+                var id = pattern[(slash + 1)..];
+                if (provider.Length > 0 && id.Length > 0) result.Add(Key(provider, id));
+            }
+        }
+        return result;
+    }
+
+    internal static bool IsEnabled(IReadOnlyList<string>? enabledIds, string id) =>
+        enabledIds is null || enabledIds.Contains(id);
+
+    /// <summary>Collapses an explicit list back to null (= all enabled) when it covers every model.</summary>
+    internal static List<string>? NormalizeEnabled(List<string> result, List<string> allIds) =>
+        result.Count == allIds.Count && result.All(id => allIds.Contains(id)) ? null : result;
+
+    internal static List<string>? Toggle(List<string>? enabledIds, List<string> allIds, string id)
+    {
+        if (enabledIds is null) return allIds.Where(modelId => !modelId.Equals(id, StringComparison.Ordinal)).ToList();
+        var index = enabledIds.FindIndex(item => item.Equals(id, StringComparison.Ordinal));
+        if (index >= 0) return [.. enabledIds.Take(index), .. enabledIds.Skip(index + 1)];
+        return NormalizeEnabled([.. enabledIds, id], allIds);
+    }
+
+    internal static List<string>? EnableAll(List<string>? enabledIds, List<string> allIds,
+        IReadOnlyList<string>? targetIds = null)
+    {
+        if (enabledIds is null) return null;
+        var targets = targetIds ?? allIds;
+        var result = new List<string>(enabledIds);
+        foreach (var id in targets)
+            if (!result.Contains(id)) result.Add(id);
+        return NormalizeEnabled(result, allIds);
+    }
+
+    internal static List<string>? ClearAll(List<string>? enabledIds, List<string> allIds,
+        IReadOnlyList<string>? targetIds = null)
+    {
+        if (enabledIds is null)
+            return targetIds is null ? [] : allIds.Where(id => !targetIds.Contains(id)).ToList();
+        var targets = targetIds ?? enabledIds;
+        return enabledIds.Where(id => !targets.Contains(id)).ToList();
+    }
+
+    internal static List<string>? Move(List<string>? enabledIds, string id, int delta)
+    {
+        if (enabledIds is null) return null;
+        var list = new List<string>(enabledIds);
+        var index = list.IndexOf(id);
+        if (index < 0) return list;
+        var newIndex = index + delta;
+        if (newIndex < 0 || newIndex >= list.Count) return list;
+        (list[index], list[newIndex]) = (list[newIndex], list[index]);
+        return list;
+    }
+
+    internal static List<string> GetSortedIds(List<string>? enabledIds, List<string> allIds)
+    {
+        if (enabledIds is null) return allIds;
+        var enabledSet = new HashSet<string>(enabledIds, StringComparer.Ordinal);
+        return [.. enabledIds, .. allIds.Where(id => !enabledSet.Contains(id))];
     }
 
     private static List<ModelDescriptor> NormalizeCatalog(IEnumerable<ModelDescriptor> catalog) => catalog

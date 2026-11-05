@@ -4,10 +4,11 @@ namespace PiSharp.Cli.Tui;
 
 internal sealed class TerminalProviderCommands(ProviderModelRuntime providers, ModelRuntimeController controller,
     ActiveModelRuntime model, Func<TextWriter> output, TerminalThinkingSelector? thinkingSelector = null,
-    TerminalEditor? editor = null, Func<string?, Task>? saveEnabledModels = null)
+    TerminalEditor? editor = null, Func<string?, Task>? saveEnabledModels = null,
+    Func<IReadOnlyList<string>?>? configuredEnabledModels = null)
 {
     private readonly TerminalScopedModelsSelector? _scopedModelsSelector = editor is not null && saveEnabledModels is not null
-        ? new(providers, editor, saveEnabledModels) : null;
+        ? new(providers, editor, saveEnabledModels, configuredEnabledModels) : null;
 
     public async Task ListModelsAsync(string filter, string? providerFilter)
     {
@@ -26,8 +27,9 @@ internal sealed class TerminalProviderCommands(ProviderModelRuntime providers, M
         else if (_scopedModelsSelector is { } selector)
         {
             interactive = true;
-            var catalog = await providers.ListModelsAsync(includeOutOfScope: true);
-            await selector.ShowAsync(catalog);
+            // Refresh the interactive catalog, then hand the selector Pi's available snapshot.
+            await providers.ListModelsAsync(includeOutOfScope: true);
+            await selector.ShowAsync(providers.GetAvailableModelSnapshot());
         }
         if (interactive)
             output().WriteLine(!providers.HasScope ? "Scoped models: all" : $"Scoped models: {providers.Scope.Count} model references");

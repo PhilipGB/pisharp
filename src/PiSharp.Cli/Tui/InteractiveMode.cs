@@ -47,7 +47,8 @@ internal static class InteractiveMode
             modelTransitions, modelRuntimeController, modelRuntime, presentation, execution);
         var terminalProviderCommands = new TerminalProviderCommands(modelRuntime, modelRuntimeController, modelBinding,
             () => Console.Out, terminalThinkingSelector, editor,
-            value => settingsCommands.SaveSettingAsync(projectScope: false, "enabledModels", value));
+            value => settingsCommands.SaveSettingAsync(projectScope: false, "enabledModels", value),
+            () => projectBinding.Settings.EnabledModels);
         var sessionNavigation = new TerminalSessionNavigation(projectBinding, conversationBinding, projectTransitions,
             presentation, AdoptProjectSession);
         sessionNavigationReference = sessionNavigation;
