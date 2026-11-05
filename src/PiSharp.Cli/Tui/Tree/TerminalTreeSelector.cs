@@ -17,6 +17,8 @@ internal sealed class TerminalTreeSelector(Func<IReadOnlyList<ConversationNode>>
         var state = new TerminalTreeState(freshEntries().ToArray(), currentLeafId);
         if (initialSelectedId is not null) state.SelectById(initialSelectedId);
         var needsRender = true;
+        var lastWidth = -1;
+        var lastHeight = -1;
         LabelEdit? labelEdit = null;
 
         using var mode = TerminalMode.Enter(screen);
@@ -26,6 +28,13 @@ internal sealed class TerminalTreeSelector(Func<IReadOnlyList<ConversationNode>>
             {
                 screen.RefreshIfResized();
                 var height = screen.TerminalHeight;
+                var width = screen.TerminalWidth;
+                if (width != lastWidth || height != lastHeight)
+                {
+                    lastWidth = width;
+                    lastHeight = height;
+                    needsRender = true;
+                }
                 state.MaxVisibleLines = Math.Max(5, height / 2);
                 if (needsRender)
                 {
@@ -127,9 +136,9 @@ internal sealed class TerminalTreeSelector(Func<IReadOnlyList<ConversationNode>>
     private static IReadOnlyList<string> RenderLabelEdit(LabelEdit edit, TerminalTheme theme, int width)
     {
         width = Math.Max(12, width);
-        var cursor = edit.Cursor;
-        var buffer = edit.Buffer;
-        var before = cursor <= buffer.Length ? buffer[..cursor] : buffer;
+        var buffer = TerminalTreeText.Display(edit.Buffer);
+        var cursor = Math.Clamp(edit.Cursor, 0, buffer.Length);
+        var before = buffer[..cursor];
         var at = cursor < buffer.Length ? buffer[cursor].ToString() : " ";
         var after = cursor < buffer.Length ? buffer[(cursor + 1)..] : "";
         var lines = new List<string>

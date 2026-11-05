@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.Extensions.AI;
 using PiSharp.Cli.Tui;
 using PiSharp.Core;
+using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Tests;
@@ -214,6 +215,66 @@ public sealed class KeysTreeScopedPickerTests
         Assert.Equal(foldOperatingSystemBindings.Contains("alt"), foldDisplayKeys?.StartsWith("Alt", StringComparison.OrdinalIgnoreCase) == true);
         Assert.True(keymap.Matches("app.message.copy", Key(ConsoleKey.X, ConsoleModifiers.Control)));
         Assert.False(keymap.Matches("app.message.copy", Key(ConsoleKey.C, ConsoleModifiers.Control)));
+    }
+
+    [Fact]
+    public void TreeRendersSessionControlSequencesAsVisibleText()
+    {
+        var tree = new ConversationTree();
+        var user = tree.Append("chat", CodecChat(ChatRole.User,
+            "safe \u001b[2J\u001b]0;pwned\u0007 text"), at: Stamp(0));
+        tree.Append("label", ToElement(new { targetId = user.Id, label = "bad \u001b]52;c;cHduZWQ=\u0007" }),
+            at: Stamp(1));
+
+        var state = new TerminalTreeState(tree.Entries, tree.HeadId);
+        var rendered = string.Join("\n",
+            TerminalTreeView.Render(state, TerminalTheme.Default, 120, 40, _ => "key"));
+
+        Assert.True(rendered.IndexOf("\u001b[2J", StringComparison.Ordinal) < 0,
+            "tree row retained a screen-clear sequence");
+        Assert.True(rendered.IndexOf("\u001b]0;pwned", StringComparison.Ordinal) < 0,
+            "tree row retained an OSC title sequence");
+        Assert.True(rendered.IndexOf("\u001b]52;c;cHduZWQ=", StringComparison.Ordinal) < 0,
+            "tree row retained an OSC clipboard sequence");
+        Assert.Contains("[2J", rendered);
+        Assert.Contains("bad", rendered);
+    }
+
+    [Fact]
+    public void ScopedRefreshMarksModelsMissingFromTheSnapshotUnavailable()
+    {
+        var known = new Dictionary<string, ModelDescriptor>(StringComparer.Ordinal)
+        {
+            ["fixture/one"] = new("one", "One", null, "available", Provider: "fixture", Available: true)
+        };
+
+        TerminalScopedModelsSelector.UpdateKnownModels(known, []);
+        Assert.False(known["fixture/one"].Available);
+        Assert.Equal("not present in the current catalogue", known["fixture/one"].UnavailableReason);
+
+        TerminalScopedModelsSelector.UpdateKnownModels(known,
+            [new("one", "One", null, "available", Provider: "fixture", Available: true)]);
+        Assert.True(known["fixture/one"].Available);
+    }
+
+    [Fact]
+    public void ScopedSaveHonoursTheConfiguredBinding()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "pisharp-scoped-save-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            File.WriteAllText(Path.Combine(directory, "keybindings.json"),
+                "{ \"app.models.save\": \"ctrl+g\" }");
+            var keymap = new EditorKeymap(directory);
+            bool Matches(string action, ConsoleKeyInfo key) => keymap.Matches(action, key);
+
+            Assert.False(TerminalScopedModelsSelector.IsSaveKey(Matches,
+                Key(ConsoleKey.S, ConsoleModifiers.Control)));
+            Assert.True(TerminalScopedModelsSelector.IsSaveKey(Matches,
+                Key(ConsoleKey.G, ConsoleModifiers.Control)));
+        }
+        finally { Directory.Delete(directory, recursive: true); }
     }
 
     [Fact]

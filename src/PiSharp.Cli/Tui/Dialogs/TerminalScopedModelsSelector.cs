@@ -15,8 +15,10 @@ internal sealed class TerminalScopedModelsSelector(ProviderModelRuntime modelRun
         var models = RebuildCatalog(catalog);
         var allIds = models.Select(model => Key(model.Provider!, model.Id)).ToList();
         var enabledIds = InitialEnabledIds(models);
-        var selectedKey = modelRuntime.HasScope ? enabledIds?.FirstOrDefault() : null;
+        // Pi starts on the first row; the enabled order already places the scoped model first.
+        string? selectedKey = null;
         var selectionChanged = false;
+        var selectionMoved = false;
         var isDirty = false;
         var options = BuildOptions();
 
@@ -52,9 +54,12 @@ internal sealed class TerminalScopedModelsSelector(ProviderModelRuntime modelRun
                 models = RebuildCatalog(modelRuntime.GetAvailableModelSnapshot());
                 allIds.Clear();
                 allIds.AddRange(models.Select(model => Key(model.Provider!, model.Id)));
-                // Pi re-derives the configured selection when the user has not edited it yet.
-                if (!selectionChanged && !modelRuntime.HasScope) enabledIds = InitialEnabledIds(models);
+                // Pi re-derives the configured/session selection from the refreshed catalogue
+                // until the user edits it, so a partial startup snapshot cannot freeze the order.
+                if (!selectionChanged) enabledIds = InitialEnabledIds(models);
                 list.ReplaceOptions(BuildOptions(), null);
+                // Pi starts on the first row; a partial opening snapshot must not pin a later refetch.
+                if (!selectionChanged && !selectionMoved) list.SelectIndex(0);
                 ApplySessionScope();
             }
             catch (OperationCanceledException) when (refreshCancellation.IsCancellationRequested)
@@ -69,6 +74,7 @@ internal sealed class TerminalScopedModelsSelector(ProviderModelRuntime modelRun
 
         async Task<bool> HandleInput(TerminalSelectionList<ModelDescriptor> list, TerminalInputEvent input)
         {
+            if (input.Key is not null || input.Text is { Length: > 0 }) selectionMoved = true;
             // Ctrl+C clears an active search before it closes the navigator.
             if (input.Key is { } cancelKey && editor.MatchesKeybinding("tui.select.cancel", cancelKey) &&
                 cancelKey.Key == ConsoleKey.C && cancelKey.Modifiers.HasFlag(ConsoleModifiers.Control) &&
@@ -154,7 +160,7 @@ internal sealed class TerminalScopedModelsSelector(ProviderModelRuntime modelRun
                 SetActionHint(list);
                 return true;
             }
-            if (editor.MatchesKeybinding("app.models.save", key) || IsDefaultSaveKey(key))
+            if (IsSaveKey(editor.MatchesKeybinding, key))
             {
                 // A selection covering every available model persists as "all models enabled" (key removed).
                 var availableIds = AvailableIds();
@@ -179,8 +185,7 @@ internal sealed class TerminalScopedModelsSelector(ProviderModelRuntime modelRun
         List<ModelDescriptor> RebuildCatalog(IEnumerable<ModelDescriptor> catalog)
         {
             var available = NormalizeCatalog(catalog.Where(model => model.Available));
-            foreach (var model in available)
-                knownModels[Key(model.Provider!, model.Id)] = model;
+            UpdateKnownModels(knownModels, available);
             return available;
         }
 
@@ -311,6 +316,25 @@ internal sealed class TerminalScopedModelsSelector(ProviderModelRuntime modelRun
         return result;
     }
 
+    /// <summary>Merges a refreshed snapshot and marks disappeared models unavailable.</summary>
+    internal static void UpdateKnownModels(Dictionary<string, ModelDescriptor> known,
+        IReadOnlyList<ModelDescriptor> available)
+    {
+        var current = available.Select(model => Key(model.Provider!, model.Id)).ToHashSet(StringComparer.Ordinal);
+        foreach (var key in known.Keys.Where(key => !current.Contains(key)).ToArray())
+            known[key] = known[key] with
+            {
+                Available = false,
+                Status = null,
+                UnavailableReason = "not present in the current catalogue"
+            };
+        foreach (var model in available)
+            known[Key(model.Provider!, model.Id)] = model;
+    }
+
+    internal static bool IsSaveKey(Func<string, ConsoleKeyInfo, bool> matches, ConsoleKeyInfo key) =>
+        matches("app.models.save", key);
+
     internal static bool IsEnabled(IReadOnlyList<string>? enabledIds, string id) =>
         enabledIds is null || enabledIds.Contains(id);
 
@@ -369,9 +393,6 @@ internal sealed class TerminalScopedModelsSelector(ProviderModelRuntime modelRun
         .Select(model => model.Provider is null ? model with { Provider = "unknown" } : model)
         .GroupBy(model => Key(model.Provider!, model.Id), StringComparer.OrdinalIgnoreCase)
         .Select(group => group.First()).ToList();
-
-    private static bool IsDefaultSaveKey(ConsoleKeyInfo key) =>
-        key.Key == ConsoleKey.S && key.Modifiers.HasFlag(ConsoleModifiers.Control);
 
     private static string Key(string provider, string id) => $"{provider}/{id}";
 }

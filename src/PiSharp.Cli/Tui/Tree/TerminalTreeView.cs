@@ -121,10 +121,13 @@ internal static class TerminalTreeView
         return string.Join("/", keys);
     }
 
-    private static string SearchLine(TerminalTheme theme, string query, int width) =>
-        TerminalTranscriptViewport.Clip(
+    private static string SearchLine(TerminalTheme theme, string query, int width)
+    {
+        var safeQuery = TerminalTreeText.Line(query);
+        return TerminalTranscriptViewport.Clip(
             "  " + Style(theme, "muted", "Type to search:") +
-            (query.Length > 0 ? " " + Style(theme, "accent", query) : ""), width);
+            (safeQuery.Length > 0 ? " " + Style(theme, "accent", safeQuery) : ""), width);
+    }
 
     private static string Row(TerminalTheme theme, TerminalTreeState state, TerminalTreeFlatNode flatNode,
         int index, bool isSelected, int width)
@@ -165,8 +168,9 @@ internal static class TerminalTreeView
         var foldMarker = isFolded && !showsFoldInConnector ? Style(theme, "accent", "⊞ ") : "";
         var pathMarker = state.IsOnActivePath(entry.Id) ? Style(theme, "accent", "• ") : "";
 
-        var label = flatNode.Node.Label is { } entryLabel
-            ? Style(theme, "warning", $"[{entryLabel}] ")
+        var safeLabel = flatNode.Node.Label is { } entryLabel ? TerminalTreeText.Line(entryLabel) : "";
+        var label = safeLabel.Length > 0
+            ? Style(theme, "warning", $"[{safeLabel}] ")
             : "";
         var labelTimestamp = state.ShowLabelTimestamps && flatNode.Node.Label is not null &&
             flatNode.Node.LabelTimestamp is { } timestamp

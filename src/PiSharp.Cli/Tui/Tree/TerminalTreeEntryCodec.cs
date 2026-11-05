@@ -36,7 +36,7 @@ internal sealed class TerminalTreeEntryCodec
             {
                 DisplayKind = "unknown",
                 Prefix = "",
-                Text = $"[{node.Type}]",
+                Text = $"[{TerminalTreeText.Line(node.Type)}]",
                 SearchableText = $"{node.Type}",
                 IsBookkeeping = IsBookkeepingType(node.Type)
             };
@@ -83,7 +83,7 @@ internal sealed class TerminalTreeEntryCodec
         {
             DisplayKind = "unknown",
             Prefix = "",
-            Text = $"[{node.Type}]",
+            Text = $"[{TerminalTreeText.Line(node.Type)}]",
             SearchableText = node.Type,
             IsBookkeeping = IsBookkeepingType(node.Type)
         }
@@ -183,7 +183,7 @@ internal sealed class TerminalTreeEntryCodec
     private TerminalTreeEntryInfo DecodeCustomMessage(ConversationNode node)
     {
         var text = ExtractCustomMessageContent(node.Payload, out var customType);
-        var display = $"[{customType ?? "custom"}]: ";
+        var display = $"[{TerminalTreeText.Line(customType ?? "custom")}]: ";
         var copyText = text?.Length > 0 ? text : null;
         return new TerminalTreeEntryInfo
         {
@@ -235,7 +235,7 @@ internal sealed class TerminalTreeEntryCodec
         {
             DisplayKind = displayKind,
             Prefix = prefix,
-            Text = value ?? "",
+            Text = Normalize(value ?? ""),
             SearchableText = Searchable(searchable),
             IsSettingsEntry = isSettingsEntry,
             IsBookkeeping = false
@@ -253,7 +253,7 @@ internal sealed class TerminalTreeEntryCodec
 
     private static string Searchable(string value) => value.ToLowerInvariant();
 
-    private static string Normalize(string value) => value.Replace('\n', ' ').Replace('\t', ' ').Trim();
+    private static string Normalize(string value) => TerminalTreeText.Line(value);
 
     private static string Clip(string value, int length) => value.Length <= length ? value : value[..length];
 
@@ -316,7 +316,7 @@ internal sealed class TerminalTreeEntryCodec
         static string? StringArgument(IDictionary<string, object?> arguments, string name)
         {
             if (!arguments.TryGetValue(name, out var value) || value is null) return null;
-            return value as string ?? value.ToString();
+            return TerminalTreeText.Line(value as string ?? value.ToString() ?? "");
         }
 
         static string ShortenPath(string path)
@@ -351,9 +351,10 @@ internal sealed class TerminalTreeEntryCodec
                 return $"[ls: {ShortenPath(StringArgument(arguments, "path") ?? ".")}]";
             default:
                 {
-                    var argsText = JsonSerializer.Serialize(arguments);
+                    var argsText = TerminalTreeText.Line(JsonSerializer.Serialize(arguments));
+                    var safeName = TerminalTreeText.Line(name);
                     const int maximum = 40;
-                    return $"[{name}: {(argsText.Length <= maximum ? argsText : argsText[..maximum])}{(argsText.Length > maximum ? "..." : "")}]";
+                    return $"[{safeName}: {(argsText.Length <= maximum ? argsText : argsText[..maximum])}{(argsText.Length > maximum ? "..." : "")}]";
                 }
         }
     }

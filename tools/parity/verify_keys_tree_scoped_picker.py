@@ -506,6 +506,7 @@ def run_focused_tests(implementation):
     filter_value = "|".join([
         "FullyQualifiedName~KeysTreeScopedPickerTests",
         "FullyQualifiedName~TerminalPtyTests.ConversationTreeSearchSelectsAndPersistsABranchThroughLinuxPty",
+        "FullyQualifiedName~TerminalPtyTests.SessionTreeNeutralizesControlSequencesThroughLinuxPty",
         "FullyQualifiedName~TerminalPtyTests.ScopedModelsSelectorAppliesSessionEditsAndPersistsReorderedScopeThroughLinuxPty",
         "FullyQualifiedName~TerminalPtyTests.ScopedModelsSelectorAddsModelsDiscoveredWhileOpenThroughLinuxPty",
         "FullyQualifiedName~AppControlPtyTests.DoubleEscapeHonoursTheConfiguredActionAndReturnsToTheEditor",

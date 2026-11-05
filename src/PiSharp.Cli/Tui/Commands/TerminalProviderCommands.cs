@@ -27,8 +27,7 @@ internal sealed class TerminalProviderCommands(ProviderModelRuntime providers, M
         else if (_scopedModelsSelector is { } selector)
         {
             interactive = true;
-            // Refresh the interactive catalog, then hand the selector Pi's available snapshot.
-            await providers.ListModelsAsync(includeOutOfScope: true);
+            // Pi opens from the current available snapshot; the selector owns one bounded refresh.
             await selector.ShowAsync(providers.GetAvailableModelSnapshot());
         }
         if (interactive)
