@@ -1,0 +1,921 @@
+{
+  "capability": "session-picker-post-merge-findings",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "source": [
+    "tools/parity/terminal/fixtures/terminal-session-picker-findings.json",
+    "tools/parity/terminal/fixtures/terminal-session-picker-disabled-confirm.json"
+  ],
+  "caseCount": 2,
+  "cases": {
+    "terminal-session-picker-findings": {
+      "fixture": "terminal-session-picker-findings",
+      "case": "140x40-dark-fullscreen",
+      "paired": {
+        "scenarioErrors": {},
+        "httpMatch": true,
+        "rawHttpDifferenceCount": 0,
+        "renderDifferenceCount": null,
+        "semanticDifferences": 0,
+        "semanticFirstDifferences": []
+      },
+      "calibration": {
+        "scenarioErrors": {},
+        "httpMatch": true,
+        "renderDifferenceCount": null,
+        "semanticDifferences": 0,
+        "semanticFirstDifferences": []
+      },
+      "pi": {
+        "checkpoints": {
+          "startup": {
+            "action": "startup",
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "cursorVisible": false
+          },
+          "picker-open": {
+            "action": "picker-open",
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "cursorVisible": false,
+            "picker": {
+              "scope": "current",
+              "sort": "Threaded",
+              "nameFilter": "All",
+              "pathVisible": false,
+              "rows": [
+                {
+                  "name": "duplicate two",
+                  "prefix": ""
+                },
+                {
+                  "name": "kin parent",
+                  "prefix": ""
+                },
+                {
+                  "name": "kin child",
+                  "prefix": "└─"
+                },
+                {
+                  "name": "orphan child",
+                  "prefix": ""
+                },
+                {
+                  "name": "duplicate one",
+                  "prefix": ""
+                }
+              ],
+              "selected": "duplicate two",
+              "confirmation": false,
+              "confirmationKeys": null,
+              "statuses": []
+            }
+          },
+          "picker-tree": {
+            "action": "picker-tree",
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "cursorVisible": false,
+            "picker": {
+              "scope": "current",
+              "sort": "Threaded",
+              "nameFilter": "All",
+              "pathVisible": false,
+              "rows": [
+                {
+                  "name": "duplicate two",
+                  "prefix": ""
+                },
+                {
+                  "name": "kin parent",
+                  "prefix": ""
+                },
+                {
+                  "name": "kin child",
+                  "prefix": "└─"
+                },
+                {
+                  "name": "orphan child",
+                  "prefix": ""
+                },
+                {
+                  "name": "duplicate one",
+                  "prefix": ""
+                }
+              ],
+              "selected": "duplicate two",
+              "confirmation": false,
+              "confirmationKeys": null,
+              "statuses": []
+            }
+          },
+          "picker-search-tree": {
+            "action": "picker-search-tree",
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "cursorVisible": false,
+            "picker": {
+              "scope": "current",
+              "sort": "Threaded",
+              "nameFilter": "All",
+              "pathVisible": false,
+              "rows": [
+                {
+                  "name": "kin child",
+                  "prefix": ""
+                },
+                {
+                  "name": "kin parent",
+                  "prefix": ""
+                }
+              ],
+              "selected": "kin child",
+              "confirmation": false,
+              "confirmationKeys": null,
+              "statuses": []
+            }
+          },
+          "picker-search-clear": {
+            "action": "picker-search-clear",
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "cursorVisible": false,
+            "picker": {
+              "scope": "current",
+              "sort": "Threaded",
+              "nameFilter": "All",
+              "pathVisible": false,
+              "rows": [
+                {
+                  "name": "duplicate two",
+                  "prefix": ""
+                },
+                {
+                  "name": "kin parent",
+                  "prefix": ""
+                },
+                {
+                  "name": "kin child",
+                  "prefix": "└─"
+                },
+                {
+                  "name": "orphan child",
+                  "prefix": ""
+                },
+                {
+                  "name": "duplicate one",
+                  "prefix": ""
+                }
+              ],
+              "selected": "duplicate two",
+              "confirmation": false,
+              "confirmationKeys": null,
+              "statuses": []
+            }
+          },
+          "picker-delete-confirm": {
+            "action": "picker-delete-confirm",
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "cursorVisible": false,
+            "picker": {
+              "scope": "current",
+              "sort": null,
+              "nameFilter": null,
+              "pathVisible": null,
+              "rows": [
+                {
+                  "name": "duplicate two",
+                  "prefix": ""
+                },
+                {
+                  "name": "kin parent",
+                  "prefix": ""
+                },
+                {
+                  "name": "kin child",
+                  "prefix": "└─"
+                },
+                {
+                  "name": "orphan child",
+                  "prefix": ""
+                },
+                {
+                  "name": "duplicate one",
+                  "prefix": ""
+                }
+              ],
+              "selected": "duplicate two",
+              "confirmation": true,
+              "confirmationKeys": {
+                "confirm": "enter",
+                "cancel": "escape/ctrl+c"
+              },
+              "statuses": []
+            }
+          },
+          "picker-delete-applied": {
+            "action": "picker-delete-applied",
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "cursorVisible": false,
+            "picker": {
+              "scope": "current",
+              "sort": null,
+              "nameFilter": null,
+              "pathVisible": null,
+              "rows": [
+                {
+                  "name": "kin parent",
+                  "prefix": ""
+                },
+                {
+                  "name": "kin child",
+                  "prefix": "└─"
+                },
+                {
+                  "name": "orphan child",
+                  "prefix": ""
+                },
+                {
+                  "name": "duplicate one",
+                  "prefix": ""
+                }
+              ],
+              "selected": "orphan child",
+              "confirmation": false,
+              "confirmationKeys": null,
+              "statuses": [
+                "Session deleted"
+              ]
+            }
+          },
+          "quit": {
+            "action": "quit",
+            "activeScreen": "normal",
+            "temporaryModes": [],
+            "bracketedPasteMode": false,
+            "cursorVisible": true
+          }
+        },
+        "requests": [],
+        "requestFacts": [],
+        "sessionFiles": [
+          "child",
+          "duplicate-one",
+          "orphan",
+          "parent"
+        ]
+      },
+      "pisharp": {
+        "checkpoints": {
+          "startup": {
+            "action": "startup",
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "cursorVisible": false
+          },
+          "picker-open": {
+            "action": "picker-open",
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "cursorVisible": false,
+            "picker": {
+              "scope": "current",
+              "sort": "Threaded",
+              "nameFilter": "All",
+              "pathVisible": false,
+              "rows": [
+                {
+                  "name": "duplicate two",
+                  "prefix": ""
+                },
+                {
+                  "name": "kin parent",
+                  "prefix": ""
+                },
+                {
+                  "name": "kin child",
+                  "prefix": "└─"
+                },
+                {
+                  "name": "orphan child",
+                  "prefix": ""
+                },
+                {
+                  "name": "duplicate one",
+                  "prefix": ""
+                }
+              ],
+              "selected": "duplicate two",
+              "confirmation": false,
+              "confirmationKeys": null,
+              "statuses": []
+            }
+          },
+          "picker-tree": {
+            "action": "picker-tree",
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "cursorVisible": false,
+            "picker": {
+              "scope": "current",
+              "sort": "Threaded",
+              "nameFilter": "All",
+              "pathVisible": false,
+              "rows": [
+                {
+                  "name": "duplicate two",
+                  "prefix": ""
+                },
+                {
+                  "name": "kin parent",
+                  "prefix": ""
+                },
+                {
+                  "name": "kin child",
+                  "prefix": "└─"
+                },
+                {
+                  "name": "orphan child",
+                  "prefix": ""
+                },
+                {
+                  "name": "duplicate one",
+                  "prefix": ""
+                }
+              ],
+              "selected": "duplicate two",
+              "confirmation": false,
+              "confirmationKeys": null,
+              "statuses": []
+            }
+          },
+          "picker-search-tree": {
+            "action": "picker-search-tree",
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "cursorVisible": false,
+            "picker": {
+              "scope": "current",
+              "sort": "Threaded",
+              "nameFilter": "All",
+              "pathVisible": false,
+              "rows": [
+                {
+                  "name": "kin child",
+                  "prefix": ""
+                },
+                {
+                  "name": "kin parent",
+                  "prefix": ""
+                }
+              ],
+              "selected": "kin child",
+              "confirmation": false,
+              "confirmationKeys": null,
+              "statuses": []
+            }
+          },
+          "picker-search-clear": {
+            "action": "picker-search-clear",
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "cursorVisible": false,
+            "picker": {
+              "scope": "current",
+              "sort": "Threaded",
+              "nameFilter": "All",
+              "pathVisible": false,
+              "rows": [
+                {
+                  "name": "duplicate two",
+                  "prefix": ""
+                },
+                {
+                  "name": "kin parent",
+                  "prefix": ""
+                },
+                {
+                  "name": "kin child",
+                  "prefix": "└─"
+                },
+                {
+                  "name": "orphan child",
+                  "prefix": ""
+                },
+                {
+                  "name": "duplicate one",
+                  "prefix": ""
+                }
+              ],
+              "selected": "duplicate two",
+              "confirmation": false,
+              "confirmationKeys": null,
+              "statuses": []
+            }
+          },
+          "picker-delete-confirm": {
+            "action": "picker-delete-confirm",
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "cursorVisible": false,
+            "picker": {
+              "scope": "current",
+              "sort": null,
+              "nameFilter": null,
+              "pathVisible": null,
+              "rows": [
+                {
+                  "name": "duplicate two",
+                  "prefix": ""
+                },
+                {
+                  "name": "kin parent",
+                  "prefix": ""
+                },
+                {
+                  "name": "kin child",
+                  "prefix": "└─"
+                },
+                {
+                  "name": "orphan child",
+                  "prefix": ""
+                },
+                {
+                  "name": "duplicate one",
+                  "prefix": ""
+                }
+              ],
+              "selected": "duplicate two",
+              "confirmation": true,
+              "confirmationKeys": {
+                "confirm": "enter",
+                "cancel": "escape/ctrl+c"
+              },
+              "statuses": []
+            }
+          },
+          "picker-delete-applied": {
+            "action": "picker-delete-applied",
+            "activeScreen": "alternate",
+            "temporaryModes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "cursorVisible": false,
+            "picker": {
+              "scope": "current",
+              "sort": null,
+              "nameFilter": null,
+              "pathVisible": null,
+              "rows": [
+                {
+                  "name": "kin parent",
+                  "prefix": ""
+                },
+                {
+                  "name": "kin child",
+                  "prefix": "└─"
+                },
+                {
+                  "name": "orphan child",
+                  "prefix": ""
+                },
+                {
+                  "name": "duplicate one",
+                  "prefix": ""
+                }
+              ],
+              "selected": "kin parent",
+              "confirmation": false,
+              "confirmationKeys": null,
+              "statuses": [
+                "Session deleted"
+              ]
+            }
+          },
+          "quit": {
+            "action": "quit",
+            "activeScreen": "normal",
+            "temporaryModes": [],
+            "bracketedPasteMode": false,
+            "cursorVisible": true
+          }
+        },
+        "requests": [],
+        "requestFacts": [],
+        "sessionFiles": [
+          "child",
+          "duplicate-one",
+          "orphan",
+          "parent"
+        ]
+      }
+    },
+    "terminal-session-picker-disabled-confirm": {
+      "fixture": "terminal-session-picker-disabled-confirm",
+      "case": "140x40-dark-regular",
+      "paired": {
+        "scenarioErrors": {},
+        "httpMatch": true,
+        "rawHttpDifferenceCount": 0,
+        "renderDifferenceCount": null,
+        "semanticDifferences": 0,
+        "semanticFirstDifferences": []
+      },
+      "calibration": {
+        "scenarioErrors": {},
+        "httpMatch": true,
+        "renderDifferenceCount": null,
+        "semanticDifferences": 0,
+        "semanticFirstDifferences": []
+      },
+      "pi": {
+        "checkpoints": {
+          "startup": {
+            "action": "startup",
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "cursorVisible": false
+          },
+          "picker-open": {
+            "action": "picker-open",
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "cursorVisible": false,
+            "picker": {
+              "scope": "current",
+              "sort": "Threaded",
+              "nameFilter": "All",
+              "pathVisible": false,
+              "rows": [
+                {
+                  "name": "victim session",
+                  "prefix": ""
+                }
+              ],
+              "selected": "victim session",
+              "confirmation": false,
+              "confirmationKeys": null,
+              "statuses": []
+            }
+          },
+          "picker-confirm-open": {
+            "action": "picker-confirm-open",
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "cursorVisible": false,
+            "picker": {
+              "scope": "current",
+              "sort": null,
+              "nameFilter": null,
+              "pathVisible": null,
+              "rows": [
+                {
+                  "name": "victim session",
+                  "prefix": ""
+                }
+              ],
+              "selected": "victim session",
+              "confirmation": true,
+              "confirmationKeys": {
+                "confirm": "",
+                "cancel": "escape/ctrl+c"
+              },
+              "statuses": []
+            }
+          },
+          "picker-confirm-enter": {
+            "action": "picker-confirm-enter",
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "cursorVisible": false,
+            "picker": {
+              "scope": "current",
+              "sort": null,
+              "nameFilter": null,
+              "pathVisible": null,
+              "rows": [
+                {
+                  "name": "victim session",
+                  "prefix": ""
+                }
+              ],
+              "selected": "victim session",
+              "confirmation": true,
+              "confirmationKeys": {
+                "confirm": "",
+                "cancel": "escape/ctrl+c"
+              },
+              "statuses": []
+            }
+          },
+          "picker-confirm-cancel": {
+            "action": "picker-confirm-cancel",
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "cursorVisible": false,
+            "picker": {
+              "scope": "current",
+              "sort": "Threaded",
+              "nameFilter": "All",
+              "pathVisible": false,
+              "rows": [
+                {
+                  "name": "victim session",
+                  "prefix": ""
+                }
+              ],
+              "selected": "victim session",
+              "confirmation": false,
+              "confirmationKeys": null,
+              "statuses": []
+            }
+          },
+          "quit": {
+            "action": "quit",
+            "activeScreen": "normal",
+            "temporaryModes": [],
+            "bracketedPasteMode": false,
+            "cursorVisible": true
+          }
+        },
+        "requests": [],
+        "requestFacts": [],
+        "sessionFiles": [
+          "victim"
+        ]
+      },
+      "pisharp": {
+        "checkpoints": {
+          "startup": {
+            "action": "startup",
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "cursorVisible": false
+          },
+          "picker-open": {
+            "action": "picker-open",
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "cursorVisible": false,
+            "picker": {
+              "scope": "current",
+              "sort": "Threaded",
+              "nameFilter": "All",
+              "pathVisible": false,
+              "rows": [
+                {
+                  "name": "victim session",
+                  "prefix": ""
+                }
+              ],
+              "selected": "victim session",
+              "confirmation": false,
+              "confirmationKeys": null,
+              "statuses": []
+            }
+          },
+          "picker-confirm-open": {
+            "action": "picker-confirm-open",
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "cursorVisible": false,
+            "picker": {
+              "scope": "current",
+              "sort": null,
+              "nameFilter": null,
+              "pathVisible": null,
+              "rows": [
+                {
+                  "name": "victim session",
+                  "prefix": ""
+                }
+              ],
+              "selected": "victim session",
+              "confirmation": true,
+              "confirmationKeys": {
+                "confirm": "",
+                "cancel": "escape/ctrl+c"
+              },
+              "statuses": []
+            }
+          },
+          "picker-confirm-enter": {
+            "action": "picker-confirm-enter",
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "cursorVisible": false,
+            "picker": {
+              "scope": "current",
+              "sort": null,
+              "nameFilter": null,
+              "pathVisible": null,
+              "rows": [
+                {
+                  "name": "victim session",
+                  "prefix": ""
+                }
+              ],
+              "selected": "victim session",
+              "confirmation": true,
+              "confirmationKeys": {
+                "confirm": "",
+                "cancel": "escape/ctrl+c"
+              },
+              "statuses": []
+            }
+          },
+          "picker-confirm-cancel": {
+            "action": "picker-confirm-cancel",
+            "activeScreen": "normal",
+            "temporaryModes": [
+              "2004"
+            ],
+            "bracketedPasteMode": true,
+            "cursorVisible": false,
+            "picker": {
+              "scope": "current",
+              "sort": "Threaded",
+              "nameFilter": "All",
+              "pathVisible": false,
+              "rows": [
+                {
+                  "name": "victim session",
+                  "prefix": ""
+                }
+              ],
+              "selected": "victim session",
+              "confirmation": false,
+              "confirmationKeys": null,
+              "statuses": []
+            }
+          },
+          "quit": {
+            "action": "quit",
+            "activeScreen": "normal",
+            "temporaryModes": [],
+            "bracketedPasteMode": false,
+            "cursorVisible": true
+          }
+        },
+        "requests": [],
+        "requestFacts": [],
+        "sessionFiles": [
+          "victim"
+        ]
+      }
+    }
+  }
+}

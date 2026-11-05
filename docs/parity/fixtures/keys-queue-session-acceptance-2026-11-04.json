@@ -438,7 +438,7 @@
       "id": "threaded-tree-grouping",
       "required": false,
       "status": "documented",
-      "detail": "PiSharp Threaded mode is a flat activity-ordered list; pinned Pi also groups child sessions by parentSessionPath with tree prefixes. Parent lineage and tree grouping remain in keys-tree-scoped-picker. The queue/session fixture creates root sessions only."
+      "detail": "Superseded after PR #40: review found that pinned Pi groups child sessions by parentSessionPath in Threaded mode. The corrected tree behavior is verified by the separate session-picker-post-merge-findings acceptance manifest and receipt; this historical Q01-Q16 manifest does not claim tree parity."
     },
     {
       "id": "all-scope-scan-progress",

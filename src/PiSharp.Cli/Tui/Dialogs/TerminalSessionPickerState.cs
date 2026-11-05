@@ -8,11 +8,11 @@ internal enum SessionPickerSortMode { Threaded, Recent, Relevance }
 internal enum SessionPickerNameFilter { All, Named }
 
 internal sealed record SessionPickerEntry(SessionCatalogEntry Catalog, SessionPickerBranchHeads BranchHeads,
-    bool IsCurrent)
+    bool IsCurrent, int Depth = 0, string TreePrefix = "")
 {
     public SessionListing Listing => Catalog.Listing;
     public ConversationStore Store => Catalog.Store;
-    public string Key => Listing.Id;
+    public string Key => Listing.CanonicalPath;
 }
 
 /// <summary>
@@ -47,7 +47,7 @@ internal sealed class TerminalSessionPickerState
     public SessionPickerSortMode Sort { get; private set; } = SessionPickerSortMode.Threaded;
     public SessionPickerNameFilter NameFilter { get; private set; } = SessionPickerNameFilter.All;
     public bool ShowPath { get; private set; }
-    public string? ConfirmingDeleteId { get; private set; }
+    public string? ConfirmingDeleteKey { get; private set; }
     public string? Status { get; private set; }
     public bool StatusIsError { get; private set; }
     public bool HasLoadedAll => _all is not null;
@@ -96,7 +96,7 @@ internal sealed class TerminalSessionPickerState
         Scope = Scope == SessionPickerScope.Current ? SessionPickerScope.All : SessionPickerScope.Current;
         Status = null;
         StatusIsError = false;
-        ConfirmingDeleteId = null;
+        ConfirmingDeleteKey = null;
     }
 
     public void ToggleSort()
@@ -126,17 +126,17 @@ internal sealed class TerminalSessionPickerState
         StatusIsError = false;
     }
 
-    public bool BeginDelete(string? selectedId)
+    public bool BeginDelete(string? selectedKey)
     {
-        if (string.IsNullOrWhiteSpace(selectedId)) return false;
-        var entry = FindEntry(selectedId);
+        if (string.IsNullOrWhiteSpace(selectedKey)) return false;
+        var entry = FindEntry(selectedKey);
         if (entry is null) return false;
         if (IsCurrent(entry.Listing))
         {
             SetStatus(CurrentSessionDeleteError, error: true);
             return false;
         }
-        ConfirmingDeleteId = entry.Key;
+        ConfirmingDeleteKey = entry.Key;
         Status = null;
         StatusIsError = false;
         return true;
@@ -144,16 +144,16 @@ internal sealed class TerminalSessionPickerState
 
     public void CancelDelete()
     {
-        ConfirmingDeleteId = null;
+        ConfirmingDeleteKey = null;
         Status = null;
         StatusIsError = false;
     }
 
     public async Task<bool> ConfirmDeleteAsync(CancellationToken cancellationToken = default)
     {
-        if (ConfirmingDeleteId is not { } id) return false;
-        ConfirmingDeleteId = null;
-        var entry = FindEntry(id);
+        if (ConfirmingDeleteKey is not { } key) return false;
+        ConfirmingDeleteKey = null;
+        var entry = FindEntry(key);
         if (entry is null) return false;
         var outcome = await _delete(entry.Store, entry.Listing, cancellationToken);
         if (!outcome.Succeeded)
@@ -161,12 +161,12 @@ internal sealed class TerminalSessionPickerState
             SetStatus($"Failed to delete: {outcome.Error}", error: true);
             return false;
         }
-        Remove(id);
+        Remove(key);
         SetStatus(outcome.Method == "trash" ? "Session moved to trash" : "Session deleted", error: false);
         return true;
     }
 
-    public async Task<bool> RenameAsync(string id, string name, CancellationToken cancellationToken = default)
+    public async Task<bool> RenameAsync(string key, string name, CancellationToken cancellationToken = default)
     {
         var trimmed = name.Trim();
         if (trimmed.Length == 0)
@@ -174,7 +174,7 @@ internal sealed class TerminalSessionPickerState
             SetStatus("Session name cannot be empty", error: true);
             return false;
         }
-        var entry = FindEntry(id);
+        var entry = FindEntry(key);
         if (entry is null) return false;
         try
         {
@@ -202,11 +202,15 @@ internal sealed class TerminalSessionPickerState
     public IReadOnlyList<SessionPickerEntry> BuildEntriesForScope(SessionPickerScope scope)
     {
         var source = scope == SessionPickerScope.All ? AllEntries : _current;
-        IEnumerable<SessionCatalogEntry> filtered = NameFilter == SessionPickerNameFilter.Named
+        var filtered = (NameFilter == SessionPickerNameFilter.Named
             ? source.Where(entry => !string.IsNullOrWhiteSpace(entry.Listing.Name))
-            : source;
-        // Threaded and Recent keep catalog order (newest activity first); Relevance delegates
-        // ordering to the list's fuzzy score while preserving this order as the stable tie-break.
+            : source).ToArray();
+        if (Sort == SessionPickerSortMode.Threaded)
+            return SessionPickerTree.Build(filtered).Select(row => new SessionPickerEntry(row.Entry,
+                _branchHeads.GetValueOrDefault(row.Entry.Listing.Path) ?? new(null, 0, IsAvailable: false),
+                IsCurrent(row.Entry.Listing), row.Depth, row.Prefix)).ToArray();
+        // Recent keeps catalog order (newest activity first); Fuzzy delegates ordering to the list's
+        // score while preserving this order as the stable tie-break.
         return filtered.Select(entry => new SessionPickerEntry(entry,
             _branchHeads.GetValueOrDefault(entry.Listing.Path) ?? new(null, 0, IsAvailable: false),
             IsCurrent(entry.Listing))).ToArray();
@@ -224,7 +228,8 @@ internal sealed class TerminalSessionPickerState
         var path = ShowPath ? $"{ShortenPath(session.Path)} · " : "";
         var description = $"{path}{(entry.IsCurrent ? CurrentSessionMarker + " " : "")}{branchDescription} · {session.Model} · {session.MessageCount} messages · {modified}";
         var searchText = $"{name} {session.Id} {session.Model} {session.Path} {entry.BranchHeads.HeadId}";
-        return new(entry.Key, entry, $"{name} · {id}", description, searchText, entry.IsCurrent);
+        return new(entry.Key, entry, $"{name} · {id}", description, searchText, entry.IsCurrent,
+            TieBreakTimestamp: session.ModifiedAt, TreePrefix: entry.TreePrefix);
     }
 
     public string BaseTitle => Scope == SessionPickerScope.All
@@ -247,16 +252,17 @@ internal sealed class TerminalSessionPickerState
         StatusIsError = error;
     }
 
-    public SessionPickerEntry? FindEntry(string id) =>
-        BuildEntries().FirstOrDefault(entry => entry.Key == id);
+    public SessionPickerEntry? FindEntry(string key) =>
+        BuildEntries().FirstOrDefault(entry => SessionCatalog.PathsEqual(entry.Key, key));
 
-    private void Remove(string id)
+    private void Remove(string key)
     {
-        _current.RemoveAll(entry => entry.Listing.Id == id);
-        _all?.RemoveAll(entry => entry.Listing.Id == id);
+        _current.RemoveAll(entry => SessionCatalog.PathsEqual(entry.Listing.Path, key));
+        _all?.RemoveAll(entry => SessionCatalog.PathsEqual(entry.Listing.Path, key));
     }
 
-    private bool IsCurrent(SessionListing listing) => _currentPath is not null && PathsEqual(listing.Path, _currentPath);
+    private bool IsCurrent(SessionListing listing) => _currentPath is not null &&
+        SessionCatalog.PathsEqual(listing.Path, _currentPath);
 
     private async Task LoadBranchHeadsAsync(IReadOnlyList<SessionCatalogEntry> entries, CancellationToken cancellationToken)
     {
@@ -288,7 +294,4 @@ internal sealed class TerminalSessionPickerState
         return !string.IsNullOrEmpty(home) && path.StartsWith(home, StringComparison.Ordinal)
             ? "~" + path[home.Length..] : path;
     }
-
-    private static bool PathsEqual(string path, string other) => Path.GetFullPath(path).Equals(
-        Path.GetFullPath(other), OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
 }

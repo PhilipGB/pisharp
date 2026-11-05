@@ -117,6 +117,23 @@ public sealed class KeysModelDisplayTests
     }
 
     [Fact]
+    public void AvailableSnapshotKeepsOneDescriptorPerProviderModelKey()
+    {
+        var earlier = new ModelDescriptor("same", null, null, null,
+            Provider: "fixture", Name: "Earlier");
+        var later = new ModelDescriptor("same", null, null, null,
+            Provider: "fixture", Name: "Later");
+        var profile = new ProviderProfile("fixture", "Fixture", new Uri("https://fixture.test/v1"),
+            AuthRequired: false, OAuthSupported: false, ApiKeyEnvironment: null, ConfiguredApiKey: null,
+            Models: [earlier, later]);
+
+        var snapshot = new AvailableModelSnapshot([profile]);
+
+        var model = Assert.Single(snapshot.Models);
+        Assert.Equal("Later", model.Name);
+    }
+
+    [Fact]
     public async Task ModelCycleMergesConfiguredModelsMissingFromAPartialSnapshot()
     {
         using var fixture = await ModelFixture.CreateAsync("""
@@ -265,6 +282,24 @@ public sealed class KeysModelDisplayTests
         await TerminalClipboardActions.CopyLastAssistantAsync(clipboard, conversation, screen, output);
 
         Assert.Equal(selected, runner.CopiedText);
+    }
+
+    [Fact]
+    public async Task CopyInRegularModeAlwaysUsesTheLastAssistantMessage()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        using var screen = new TerminalScreen(output, error, false);
+        var runner = new RecordingClipboard();
+        var clipboard = new TerminalClipboard(runner, _ => null, platform: ClipboardPlatform.MacOS);
+        screen.SetSelectionClipboard(clipboard);
+        var conversation = Conversation("assistant text");
+        SelectTestText(screen);
+
+        Assert.False(string.IsNullOrEmpty(screen.SelectedText));
+        await TerminalClipboardActions.CopyLastAssistantAsync(clipboard, conversation, screen, output);
+
+        Assert.Equal("assistant text", runner.CopiedText);
     }
 
     [Fact]

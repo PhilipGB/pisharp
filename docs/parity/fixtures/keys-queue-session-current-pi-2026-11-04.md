@@ -4,13 +4,20 @@ Pinned Pi: `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`
 
 Capability: `keys-queue-session`
 
+> **Post-merge correction (2026-11-04):** PR #40's review found three defects that
+> this receipt's original flat-Threaded description did not cover. They are fixed and
+> independently verified in the
+> [post-merge findings receipt](session-picker-post-merge-findings-2026-11-04.md):
+> canonical path identities for same-ID sessions, the pinned-Pi Threaded tree, and
+> empty hints for disabled confirmation bindings.
+
 ## Contract
 
 - `Alt+Enter` queues a follow-up while a run streams; while idle it submits once like Enter.
 - `Enter` during a run steers; steering drains before follow-ups in FIFO order.
 - `Alt+Up` clears both queues and restores steering, then follow-ups, then the existing draft, separated by blank lines.
 - `Escape` restores pending input before aborting; completion boundaries never duplicate or drop input.
-- `Ctrl+S` cycles `Threaded → Recent → Fuzzy`; `Ctrl+N` filters non-empty names; `Ctrl+P` toggles paths; `Ctrl+R` renames; `Ctrl+D` confirms deletion; `Ctrl+Backspace` confirms only with an empty query. Threaded ordering is a flat activity list in this capability; parent-session tree grouping remains in `keys-tree-scoped-picker`.
+- `Ctrl+S` cycles `Threaded → Recent → Fuzzy`; `Ctrl+N` filters non-empty names; `Ctrl+P` toggles paths; `Ctrl+R` renames; `Ctrl+D` confirms deletion; `Ctrl+Backspace` confirms only with an empty query. Recent and Fuzzy keep flat catalogue order; Threaded builds the pinned-Pi parent/child tree as corrected by the post-merge receipt below.
 - `Tab` switches current-project and all-project scopes; current-session rows are marked; cancellation leaves the session untouched.
 - Deletion validates the catalog snapshot, tries `trash` first and falls back to unlink; the active session is not deletable. Rename preserves session id, tree and history.
 - All queue and picker bindings are configurable, disableable, and owned by the picker while it is open; Windows/WSL uses Ctrl+Q / Alt+Q for follow-up / dequeue.
@@ -54,7 +61,7 @@ and 16 deterministic Q01–Q16 scenarios replayed by
 - Full render streams differ in paint/repaint timing, spinner glyphs and transient frames; named semantic checkpoints and provider requests match.
 - Fuzzy queries that match the shared working-directory path can order non-selected rows differently; selection validity and filter composition are covered deterministically.
 - Pinned Pi resets/clamps picker selection after rename/delete; PiSharp resets to the first row in the PTY path and preserves the selected key on sort/filter toggles.
-- Threaded tree grouping by `parentSessionPath` and streamed all-project loading progress remain in `keys-tree-scoped-picker`/later picker work; the flat scope/sort/filter contract is verified here.
+- Streamed all-project loading progress remains later picker work. Threaded `parentSessionPath` grouping is now verified by the [post-merge findings receipt](session-picker-post-merge-findings-2026-11-04.md).
 - Pinned Pi auto-hides picker status messages after a timeout; PiSharp keeps them until the next action.
 - Windows/WSL Ctrl+Q / Alt+Q defaults are verified by deterministic keymap replay; the PTY differential runs on Linux.
 - Generated system/developer prompt text remains pinned-Pi-owned; request facts compare user/assistant/tool turns exactly.

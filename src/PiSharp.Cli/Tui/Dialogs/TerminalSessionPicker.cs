@@ -12,8 +12,8 @@ internal sealed class TerminalSessionPicker(ConversationStore store, TerminalEdi
         var state = await TerminalSessionPickerState.LoadAsync(store, currentPath, currentConversation,
             cancellationToken);
         var current = state.CurrentEntries.FirstOrDefault(entry => currentPath is not null &&
-            PathsEqual(entry.Listing.Path, currentPath));
-        var selectedKey = current?.Listing.Id;
+            SessionCatalog.PathsEqual(entry.Listing.Path, currentPath));
+        var selectedKey = current?.Listing.CanonicalPath;
         var options = state.BuildEntries().Select(state.BuildOption).ToArray();
         var chosen = await editor.ShowSelectionListAsync("Resume Session (Current Folder)", options,
             selectedKey, scopedOptions: options, allLabel: "All", scopedLabel: "Current Folder",
@@ -25,13 +25,13 @@ internal sealed class TerminalSessionPicker(ConversationStore store, TerminalEdi
         return chosen?.Option.Value.Listing;
     }
 
-    private async Task<bool> HandleInputAsync(TerminalSessionPickerState state, TerminalSelectionList<SessionPickerEntry> list,
+    internal async Task<bool> HandleInputAsync(TerminalSessionPickerState state, TerminalSelectionList<SessionPickerEntry> list,
         TerminalInputEvent input, string? currentPath, ConversationSession? currentConversation,
         CancellationToken cancellationToken)
     {
         if (input.Key is not { } key) return false;
 
-        if (state.ConfirmingDeleteId is not null)
+        if (state.ConfirmingDeleteKey is not null)
         {
             if (editor.MatchesKeybinding("tui.select.confirm", key))
             {
@@ -143,16 +143,18 @@ internal sealed class TerminalSessionPicker(ConversationStore store, TerminalEdi
     private string? ActionHint(TerminalSessionPickerState state) =>
         BuildActionHint(state, editor.GetDisplayKeys);
 
-    internal static string? BuildActionHint(TerminalSessionPickerState state, Func<string, string?> displayKeys)
+    internal static string? BuildActionHint(TerminalSessionPickerState state, Func<string, string?>? displayKeys)
     {
         if (state.Status is { Length: > 0 } status) return status;
-        if (state.ConfirmingDeleteId is { } id)
+        if (state.ConfirmingDeleteKey is { } key)
         {
-            var confirming = state.FindEntry(id);
-            var name = confirming is null ? id[..Math.Min(12, id.Length)] :
+            var confirming = state.FindEntry(key);
+            var name = confirming is null ? key[..Math.Min(12, key.Length)] :
                 confirming.Listing.Name ?? confirming.Listing.Id[..Math.Min(12, confirming.Listing.Id.Length)];
-            var confirm = displayKeys("tui.select.confirm") ?? "Enter";
-            var cancel = displayKeys("tui.select.cancel") ?? "Escape";
+            // A configured-but-disabled binding renders an empty key, exactly like pinned Pi's
+            // keyHint(). Only callers without a keymap at all use the default labels.
+            var confirm = displayKeys is null ? "Enter" : displayKeys("tui.select.confirm") ?? "";
+            var cancel = displayKeys is null ? "Escape" : displayKeys("tui.select.cancel") ?? "";
             return $"Delete {name}? {confirm} confirm · {cancel} cancel";
         }
         var parts = new List<string>
@@ -170,14 +172,14 @@ internal sealed class TerminalSessionPicker(ConversationStore store, TerminalEdi
 
         void Add(string action, string label)
         {
-            if (displayKeys(action) is { } key) parts.Add($"{key} {label}");
+            if (displayKeys?.Invoke(action) is { Length: > 0 } key) parts.Add($"{key} {label}");
         }
     }
 
     internal static TerminalSelectionOption<SessionListing> ToOption(SessionListing session, string? currentPath,
         SessionPickerBranchHeads branchHeads)
     {
-        var isCurrent = currentPath is not null && PathsEqual(session.Path, currentPath);
+        var isCurrent = currentPath is not null && SessionCatalog.PathsEqual(session.Path, currentPath);
         var id = session.Id[..Math.Min(12, session.Id.Length)];
         var name = string.IsNullOrWhiteSpace(session.Name) ? "(unnamed)" : session.Name;
         var modified = session.ModifiedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
@@ -186,15 +188,12 @@ internal sealed class TerminalSessionPicker(ConversationStore store, TerminalEdi
             : "branch details unavailable";
         var description = $"{(isCurrent ? "Current · " : "")}{branchDescription} · {session.Model} · {session.MessageCount} messages · {modified}";
         var searchText = $"{name} {session.Id} {session.Model} {session.Path} {branchHeads.HeadId}";
-        return new(session.Id, session, $"{name} · {id}", description, searchText, isCurrent);
+        return new(session.CanonicalPath, session, $"{name} · {id}", description, searchText, isCurrent);
     }
 
     internal static bool ShouldForwardNoninvasiveDelete(string query) => query.Length > 0;
 
     internal static bool ShouldEnterDeleteConfirmation(string query) => query.Length == 0;
-
-    private static bool PathsEqual(string path, string other) => Path.GetFullPath(path).Equals(
-        Path.GetFullPath(other), OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
 }
 
 internal sealed record SessionPickerBranchHeads(string? HeadId, int Count, bool IsAvailable = true)

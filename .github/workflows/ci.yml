@@ -4,7 +4,7 @@ on:
   pull_request:
 jobs:
   macos-session-locks:
-    runs-on: macos-latest
+    runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -16,7 +16,7 @@ jobs:
           dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --no-restore
           --filter 'FullyQualifiedName~ConcurrentSessionLeasesInOneProcessWaitForTheCurrentWriter|FullyQualifiedName~ConcurrentSessionLeaseAliasesWaitForTheCurrentWriter|FullyQualifiedName~CancelledStoreSaveWaitingForLeaseKeepsPersistedSnapshotAndCleansNoTempFiles|FullyQualifiedName~ConcurrentProcessSaveWaitsForTheSessionLeaseAndPersistsTheToolOutcome'
   macos-clipboard-contracts:
-    runs-on: macos-latest
+    runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4

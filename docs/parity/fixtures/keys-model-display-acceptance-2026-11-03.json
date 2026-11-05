@@ -3,7 +3,7 @@
   "capability": "keys-model-display",
   "date": "2026-11-03",
   "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-  "implementationSha": "80abc9a194c310ed6de9dd1e458d22042b5fc227",
+  "implementationSha": "dc3bb5e79d8741854e76938cce52f882f90695da",
   "oracle": "docs/parity/fixtures/keys-model-display-pi-oracle-2026-11-03.json",
   "checkpoints": "docs/parity/fixtures/keys-model-display-checkpoints-2026-11-03.json",
   "terminalFixtures": [
@@ -19,11 +19,13 @@
       "PiSharp.Tests.KeysModelDisplayTests.CycleStatusMatchesPinnedPiNamingAndThinkingDisclosure",
       "PiSharp.Tests.KeysModelDisplayTests.ThinkingCycleUsesPinnedPiMessagesWithoutExtraPeriods",
       "PiSharp.Tests.KeysModelDisplayTests.ModelCycleUsesTheCachedAvailableSnapshotAndScopeOrder",
+      "PiSharp.Tests.KeysModelDisplayTests.AvailableSnapshotKeepsOneDescriptorPerProviderModelKey",
       "PiSharp.Tests.KeysModelDisplayTests.ModelCycleMergesConfiguredModelsMissingFromAPartialSnapshot",
       "PiSharp.Tests.KeysModelDisplayTests.ModelCycleReportsSingleModelWithoutExtraPunctuation",
       "PiSharp.Tests.KeysModelDisplayTests.ActiveRunDispatchesModelThinkingToolAndCopyActionsWhilePreservingDraft",
       "PiSharp.Tests.KeysModelDisplayTests.ShiftTabCyclesThinkingEvenWhenACompletionCycleIsActive",
       "PiSharp.Tests.KeysModelDisplayTests.CopyPrefersTheLastAssistantMessageWhenCopyOnSelectIsEnabled",
+      "PiSharp.Tests.KeysModelDisplayTests.CopyInRegularModeAlwaysUsesTheLastAssistantMessage",
       "PiSharp.Tests.KeysModelDisplayTests.CopyPrefersTheActiveSelectionWhenFullscreenCopyOnSelectIsDisabled",
       "PiSharp.Tests.KeysModelDisplayTests.CopyWithoutAgentMessagesUsesPinnedPiError",
       "PiSharp.Tests.KeysModelDisplayTests.SelectionOverlayUsesConfigurableModelKeysAndRenderedHints",
@@ -31,6 +33,7 @@
       "PiSharp.Tests.KeysModelDisplayTests.ThinkingSelectorUsesTheAppThinkingSaveBindingInsteadOfTheModelSaveBinding",
       "PiSharp.Tests.KeysModelDisplayTests.FullscreenCopyOnSelectParsesAndMergesWithTrustedProjectPrecedence",
       "PiSharp.Tests.KeysModelDisplayTests.RegularModeEditorPanelRendersInsteadOfBeingTreatedAsHiddenDocument",
+      "PiSharp.Tests.TerminalScreenCompositorTests.RegularScreenPanelSelectsComposedRowsWithoutAModalOverlay",
       "PiSharp.Tests.KeysModelDisplayPtyTests.ModelCycleSelectorAndContextPreservationMatchPinnedPiThroughLinuxPty",
       "PiSharp.Tests.KeysModelDisplayPtyTests.ThinkingVisibilityToolExpansionAndCopyFollowPinnedKeysThroughLinuxPty",
       "PiSharp.Tests.KeysModelDisplayPtyTests.ConfigurableModelThinkingToolAndCopyBindingsAndWidgetPrecedenceThroughLinuxPty",
@@ -93,7 +96,8 @@
       "tests": [
         "PiSharp.Tests.KeysModelDisplayTests.ModelCycleUsesTheCachedAvailableSnapshotAndScopeOrder",
         "PiSharp.Tests.KeysModelDisplayPtyTests.ModelCycleSelectorAndContextPreservationMatchPinnedPiThroughLinuxPty",
-        "PiSharp.Tests.KeysModelDisplayTests.ModelCycleMergesConfiguredModelsMissingFromAPartialSnapshot"
+        "PiSharp.Tests.KeysModelDisplayTests.ModelCycleMergesConfiguredModelsMissingFromAPartialSnapshot",
+        "PiSharp.Tests.KeysModelDisplayTests.AvailableSnapshotKeepsOneDescriptorPerProviderModelKey"
       ],
       "terminalCheckpoints": [
         "terminal-keys-model-display/80x24-dark-fullscreen/model-cycle-forward-second",
@@ -205,7 +209,8 @@
       ],
       "tests": [
         "PiSharp.Tests.KeysModelDisplayTests.CopyPrefersTheLastAssistantMessageWhenCopyOnSelectIsEnabled",
-        "PiSharp.Tests.TerminalPtyTests.ClipboardShortcutsPasteTextAndCopyLastAssistantThroughLinuxPty"
+        "PiSharp.Tests.TerminalPtyTests.ClipboardShortcutsPasteTextAndCopyLastAssistantThroughLinuxPty",
+        "PiSharp.Tests.KeysModelDisplayTests.CopyInRegularModeAlwaysUsesTheLastAssistantMessage"
       ],
       "terminalCheckpoints": [
         "terminal-keys-model-display/80x24-dark-fullscreen/copy-last-assistant"
@@ -249,7 +254,8 @@
         "PiSharp.Tests.KeysModelDisplayTests.SelectionOverlayUsesConfigurableModelKeysAndRenderedHints",
         "PiSharp.Tests.KeysModelDisplayTests.RegularModeEditorPanelRendersInsteadOfBeingTreatedAsHiddenDocument",
         "PiSharp.Tests.KeysModelDisplayPtyTests.ModelCycleSelectorAndContextPreservationMatchPinnedPiThroughLinuxPty",
-        "PiSharp.Tests.KeysModelDisplayTests.SelectionOverlayDoesNotAdvertiseDisabledBindings"
+        "PiSharp.Tests.KeysModelDisplayTests.SelectionOverlayDoesNotAdvertiseDisabledBindings",
+        "PiSharp.Tests.TerminalScreenCompositorTests.RegularScreenPanelSelectsComposedRowsWithoutAModalOverlay"
       ],
       "terminalCheckpoints": [
         "terminal-keys-model-display/80x24-dark-fullscreen/selector-open",

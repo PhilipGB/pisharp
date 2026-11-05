@@ -67,6 +67,8 @@ internal sealed class TerminalModelNavigation(ProviderModelRuntime models, Func<
         }
         if (models.HasScope)
         {
+            // AvailableModelSnapshot publishes at most one descriptor per provider/model key;
+            // configured models are only appended when their key is new.
             var availableByKey = snapshot.GroupBy(Key, StringComparer.Ordinal)
                 .ToDictionary(group => group.Key, group => group.Last(), StringComparer.Ordinal);
             return ModelScopeResolver.Resolve(models.Scope, snapshot).Models

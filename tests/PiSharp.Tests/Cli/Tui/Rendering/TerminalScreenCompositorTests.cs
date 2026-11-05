@@ -59,6 +59,26 @@ public sealed class TerminalScreenCompositorTests
     }
 
     [Fact]
+    public void RegularScreenPanelSelectsComposedRowsWithoutAModalOverlay()
+    {
+        using var output = new StringWriter();
+        var compositor = new TerminalScreenCompositor(output, new TerminalImageRenderer(), useAlternateScreen: false);
+        var panel = compositor.Compose("", 0, null, null, "", "fixture-model", overlay: null,
+            scrollOffset: 0, columns: 48, height: 18,
+            new TranscriptSearchController(), new TerminalMouseRouter(), TerminalTheme.Default,
+            editorPanel: ["panel row"]);
+
+        Assert.True(panel.UseComposedRows);
+        Assert.Contains("panel row", panel.Rows);
+        Assert.DoesNotContain("panel row", panel.DocumentRows!);
+
+        var document = compositor.Compose("", 0, null, null, "", "fixture-model", overlay: null,
+            scrollOffset: 0, columns: 48, height: 18,
+            new TranscriptSearchController(), new TerminalMouseRouter(), TerminalTheme.Default);
+        Assert.False(document.UseComposedRows);
+    }
+
+    [Fact]
     public void RegularScreenWidthChangeRedrawsTheDocumentAndClearsObsoleteScrollback()
     {
         using var output = new StringWriter();

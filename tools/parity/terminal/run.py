@@ -42,7 +42,7 @@ def write_scenario_files(files, base, replacements=None):
             path.write_bytes(base64.b64decode(content['$base64'], validate=True))
         else:
             text = content if isinstance(content, str) else json.dumps(content)
-            text = text.replace('{workspace}', str(WORKSPACE))
+            text = text.replace('{workspace}', str(WORKSPACE)).replace('{agent}', str(AGENT_DIRECTORY))
             for source, target in (replacements or {}).items():
                 text = text.replace(source, target)
             path.write_text(text)
@@ -108,7 +108,8 @@ def commands(pi, pisharp, scenario, pisharp_extension=None):
         for product, command in result.items():
             result[product] = ['sh', '-c', 'printf %s "$1"; shift; exec "$@"',
                                'pisharp-terminal-fixture', terminal_prelude, *command]
-    return result
+    return {product: [argument.replace('{workspace}', str(WORKSPACE)) for argument in command]
+            for product, command in result.items()}
 
 
 def environment(agent, *, persist_sessions=False):
@@ -417,9 +418,12 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
                 expect = action.get('expect')
                 if isinstance(expect, dict):
                     expect = expect[label]
+                absent = action.get('notExpect')
+                if isinstance(absent, dict):
+                    absent = absent[label]
                 frame = terminal.settle(expect, timeout=action.get('timeout', 20),
                                         quiet_ms=action.get('quietMs', 200),
-                                        absent=action.get('notExpect'),
+                                        absent=absent,
                                         after=0 if 'resize' in action or action.get('allowStaticFrame') else mark,
                                         render_match=action.get('renderMatch', False),
                                         allow_static_frame=action.get('allowStaticFrame', False),

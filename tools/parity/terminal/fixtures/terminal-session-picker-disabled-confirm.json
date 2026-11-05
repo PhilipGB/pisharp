@@ -1,0 +1,123 @@
+{
+  "id": "terminal-session-picker-disabled-confirm",
+  "settings": {
+    "quietStartup": true
+  },
+  "persistSessions": true,
+  "files": {
+    "pi": {
+      "keybindings.json": "{\"tui.select.confirm\": []}",
+      "current/current.jsonl": "{\"type\":\"session\",\"version\":3,\"id\":\"current-id\",\"timestamp\":\"2026-04-01T00:00:00.000Z\",\"cwd\":\"{workspace}\"}\n{\"type\":\"message\",\"id\":\"current-id-message\",\"parentId\":null,\"timestamp\":\"2026-04-01T00:00:00.000Z\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"current session\"}],\"timestamp\":0}}\n{\"type\":\"session_info\",\"id\":\"current-id-info\",\"parentId\":\"current-id-message\",\"timestamp\":\"2026-04-01T00:00:00.000Z\",\"name\":\"current session\"}\n",
+      "sessions/victim.jsonl": "{\"type\":\"session\",\"version\":3,\"id\":\"shared-id\",\"timestamp\":\"2026-04-03T00:00:00.000Z\",\"cwd\":\"{workspace}\"}\n{\"type\":\"message\",\"id\":\"shared-id-message\",\"parentId\":null,\"timestamp\":\"2026-04-03T00:00:00.000Z\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"victim session\"}],\"timestamp\":0}}\n{\"type\":\"session_info\",\"id\":\"shared-id-info\",\"parentId\":\"shared-id-message\",\"timestamp\":\"2026-04-03T00:00:00.000Z\",\"name\":\"victim session\"}\n"
+    },
+    "pisharp": {
+      "keybindings.json": "{\"tui.select.confirm\": []}",
+      "current/current.session.json": "{\"Version\":2,\"Id\":\"current-id\",\"WorkingDirectory\":\"{workspace}\",\"Model\":\"fixture-model\",\"Endpoint\":null,\"Name\":\"current session\",\"HeadId\":\"current-id-entry\",\"Entries\":[{\"Id\":\"current-id-entry\",\"ParentId\":null,\"Type\":\"chat\",\"Payload\":{\"Message\":{\"role\":\"user\",\"contents\":[{\"$type\":\"text\",\"text\":\"current session\"}]},\"Errors\":[],\"PiEntry\":null},\"Timestamp\":\"2026-04-01T00:00:00+00:00\"}],\"Provider\":null,\"PiHeader\":null,\"ParentSessionPath\":null}\n",
+      "sessions/victim.session.json": "{\"Version\":2,\"Id\":\"shared-id\",\"WorkingDirectory\":\"{workspace}\",\"Model\":\"fixture-model\",\"Endpoint\":null,\"Name\":\"victim session\",\"HeadId\":\"shared-id-entry\",\"Entries\":[{\"Id\":\"shared-id-entry\",\"ParentId\":null,\"Type\":\"chat\",\"Payload\":{\"Message\":{\"role\":\"user\",\"contents\":[{\"$type\":\"text\",\"text\":\"victim session\"}]},\"Errors\":[],\"PiEntry\":null},\"Timestamp\":\"2026-04-03T00:00:00+00:00\"}],\"Provider\":null,\"PiHeader\":null,\"ParentSessionPath\":null}\n"
+    }
+  },
+  "dimensions": [
+    {
+      "columns": 140,
+      "rows": 40
+    }
+  ],
+  "themes": [
+    "dark"
+  ],
+  "modes": [
+    "regular"
+  ],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  },
+  "arguments": {
+    "pi": [
+      "--session",
+      "{agent}/current/current.jsonl",
+      "--session-dir",
+      "{agent}/sessions",
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-tools",
+      "--no-context-files"
+    ],
+    "pisharp": [
+      "--session",
+      "{agent}/current/current.session.json",
+      "--session-dir",
+      "{agent}/sessions",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-tools",
+      "--no-context-files",
+      "--no-approve"
+    ]
+  },
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "picker-open",
+      "send": "/resume\r",
+      "expect": "Resume Session (Current Folder)",
+      "timeout": 30
+    },
+    {
+      "id": "picker-confirm-open",
+      "send": "\u0004",
+      "expect": {
+        "pi": "Delete session?",
+        "pisharp": "Delete victim session?"
+      }
+    },
+    {
+      "id": "picker-confirm-enter",
+      "send": "\r",
+      "expect": {
+        "pi": "Delete session?",
+        "pisharp": "Delete victim session?"
+      },
+      "allowStaticFrame": true,
+      "timeout": 15
+    },
+    {
+      "id": "picker-confirm-cancel",
+      "send": "\u001b",
+      "notExpect": {
+        "pi": "Delete session?",
+        "pisharp": "Delete victim session?"
+      },
+      "timeout": 15
+    },
+    {
+      "id": "picker-close",
+      "send": "\u001b",
+      "notExpect": "Resume Session (Current Folder)",
+      "timeout": 15
+    },
+    {
+      "id": "quit",
+      "send": "/quit\r",
+      "exit": true
+    }
+  ],
+  "assertionFrames": [
+    "startup",
+    "picker-open",
+    "picker-confirm-open",
+    "picker-confirm-enter",
+    "picker-confirm-cancel",
+    "quit"
+  ]
+}

@@ -321,6 +321,7 @@ def run_focused_tests(implementation):
         "FullyQualifiedName~KeysModelDisplayTests",
         "FullyQualifiedName~KeysModelDisplayParityTests",
         "FullyQualifiedName~KeysModelDisplayPtyTests",
+        "FullyQualifiedName~TerminalScreenCompositorTests.RegularScreenPanelSelectsComposedRowsWithoutAModalOverlay",
         "FullyQualifiedName~TerminalPtyTests.ShiftTabCyclesThinking",
         "FullyQualifiedName~TerminalPtyTests.ThinkingSelectorSelectsCancels",
         "FullyQualifiedName~TerminalPtyTests.ClipboardShortcutsPasteText",

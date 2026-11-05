@@ -55,7 +55,7 @@ internal sealed class TerminalScreenCompositor
         int TranscriptStartRow = 0, int TranscriptHeight = 0,
         int RestorationCursorRow = -1, IReadOnlyList<string>? DocumentRows = null,
         int DocumentCursorRow = -1, int DocumentCursorColumn = -1, IReadOnlyList<string>? SuspensionRows = null,
-        int EditorScrollOffset = 0, bool OverlayVisible = false);
+        int EditorScrollOffset = 0, bool UseComposedRows = false);
 
     public Frame Compose(string editorText, int editorCursor, int? editorSelectionStart, int? editorSelectionEnd,
         string transcriptText, string footer,
@@ -417,6 +417,8 @@ internal sealed class TerminalScreenCompositor
                 ? panelStart + requestedRow - sourceStart
                 : panelStart + visibleCount - 1;
             var cursorColumn = panelCursorColumn ?? 1;
+            // Editor panels replace document rows, so the composed rows must be rendered even
+            // when there is no modal overlay.
             var panelFrame = new Frame(rows, Math.Clamp(cursorRow, 0, Math.Max(0, height - 1)),
                 Math.Clamp(cursorColumn, 1, columns + 1), scrollOffset, columns, height, panelCursorVisible,
                 RestoreStartRow: panelStart, ContentHeight: startupHeight + transcriptRows.Count,
@@ -425,7 +427,7 @@ internal sealed class TerminalScreenCompositor
                 RestorationCursorRow: editorStart + borderHeight / 2 + editor.CursorRow,
                 DocumentRows: documentRows, DocumentCursorRow: documentCursorRow,
                 DocumentCursorColumn: editor.CursorColumn + boundedEditorPadding + 1,
-                SuspensionRows: suspensionRows, OverlayVisible: true);
+                SuspensionRows: suspensionRows, UseComposedRows: true);
             return ApplyTransientFlash(
                 ApplyExtensionOverlay(panelFrame, extensionCustomOverlay, extensionCustomOverlayOptions, activeTheme),
                 transientFlashes ?? (transientFlash is null ? [] : [transientFlash]));
@@ -441,7 +443,7 @@ internal sealed class TerminalScreenCompositor
             DocumentRows: documentRows, DocumentCursorRow: documentCursorRow,
             DocumentCursorColumn: editor.CursorColumn + boundedEditorPadding + 1,
             SuspensionRows: suspensionRows, EditorScrollOffset: editor.ScrollOffset,
-            OverlayVisible: overlay is not null);
+            UseComposedRows: overlay is not null);
         var presented = ApplyExtensionOverlay(frame, extensionCustomOverlay, extensionCustomOverlayOptions, activeTheme);
         if (focusedComponentRows is not null) presented = presented with { CursorVisible = false };
         return ApplyTransientFlash(presented, transientFlashes ?? (transientFlash is null ? [] : [transientFlash]));
@@ -684,16 +686,17 @@ internal sealed class TerminalScreenCompositor
 
     private void RenderMainScreen(Frame frame)
     {
-        // Overlays are positioned against the visible viewport, while DocumentRows excludes them.
-        var sourceRows = frame.OverlayVisible
+        // Panels and overlays are positioned against the visible viewport, while DocumentRows
+        // excludes both.
+        var sourceRows = frame.UseComposedRows
             ? frame.Rows
             : frame.DocumentRows ?? frame.RestorationRows ?? frame.Rows;
-        var cursorRow = frame.OverlayVisible
+        var cursorRow = frame.UseComposedRows
             ? frame.CursorRow
             : frame.DocumentCursorRow >= 0
                 ? frame.DocumentCursorRow
                 : frame.RestorationCursorRow >= 0 ? frame.RestorationCursorRow : frame.CursorRow;
-        var cursorColumn = frame.OverlayVisible
+        var cursorColumn = frame.UseComposedRows
             ? frame.CursorColumn
             : frame.DocumentCursorColumn >= 0 ? frame.DocumentCursorColumn : frame.CursorColumn;
         var widthChanged = _previousColumns != 0 && _previousColumns != frame.Columns;

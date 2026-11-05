@@ -4,7 +4,8 @@ namespace PiSharp.Cli.Tui;
 
 internal sealed record TerminalSelectionOption<T>(string Key, T Value, string Label,
     string? Description = null, string? SearchText = null, bool IsCurrent = false,
-    Func<string, string>? SelectedLabelRenderer = null, bool IsDefault = false);
+    Func<string, string>? SelectedLabelRenderer = null, bool IsDefault = false,
+    DateTimeOffset? TieBreakTimestamp = null, string TreePrefix = "");
 
 internal sealed record TerminalSelection<T>(TerminalSelectionOption<T> Option, bool IsScoped,
     bool SetAsDefault = false);
@@ -180,7 +181,11 @@ internal sealed class TerminalSelectionList<T>
         _lastHeight = height;
         var lines = new List<string> { _title };
         if (_scopedOptions is not null)
-            lines.Add($"Scope: {(IsScoped ? _scopedLabel : _allLabel)} · {KeyLabel("tui.input.tab", "Tab")} to switch");
+        {
+            var switchHint = KeyedHint("tui.input.tab", "Tab", "to switch");
+            lines.Add($"Scope: {(IsScoped ? _scopedLabel : _allLabel)}" +
+                (switchHint is null ? "" : $" · {switchHint}"));
+        }
         lines.Add($"Search: {_query}");
         lines.Add(new string('-', Math.Min(width, Math.Max(1, TerminalTextLayout.Width(_title)))));
 
@@ -204,10 +209,11 @@ internal sealed class TerminalSelectionList<T>
                 var selected = index == _selectedIndex;
                 var marker = selected ? "> " : "  ";
                 var current = option.IsCurrent ? "✓ " : "  ";
+                var label = DisplayLabel(option);
                 var description = string.IsNullOrWhiteSpace(option.Description) ? "" : $" · {option.Description}";
-                var line = TerminalSafeText.Normalize($"{marker}{current}{option.Label}{description}");
+                var line = TerminalSafeText.Normalize($"{marker}{current}{label}{description}");
                 if (selected && option.SelectedLabelRenderer is { } renderLabel)
-                    line = marker + current + renderLabel(TerminalSafeText.Normalize(option.Label)) +
+                    line = marker + current + renderLabel(TerminalSafeText.Normalize(label)) +
                         TerminalSafeText.Normalize(description);
                 lines.Add(TerminalTranscriptViewport.Clip(line, width));
             }
@@ -215,13 +221,17 @@ internal sealed class TerminalSelectionList<T>
                 lines.Add($"({_selectedIndex + 1}/{_filteredOptions.Count})");
         }
 
-        var actionHint = _actionHint is null ? "" : $" · {_actionHint}";
-        lines.Add(_scopedOptions is not null
-            ? $"{KeyLabel("tui.select.up", "↑")}/{KeyLabel("tui.select.down", "↓")} move · type to filter · " +
-              $"{KeyLabel("tui.input.tab", "Tab")} scope{actionHint} · {KeyLabel("tui.select.confirm", "Enter")} select · " +
-              $"{KeyLabel("tui.select.cancel", "Esc")} close"
-            : $"{KeyLabel("tui.select.up", "↑")}/{KeyLabel("tui.select.down", "↓")} move · type to filter{actionHint} · " +
-              $"{KeyLabel("tui.select.confirm", "Enter")} select · {KeyLabel("tui.select.cancel", "Esc")} close");
+        var footerParts = new List<string?>
+        {
+            MoveHint(),
+            "type to filter"
+        };
+        if (_scopedOptions is not null)
+            footerParts.Add(KeyedHint("tui.input.tab", "Tab", "scope"));
+        footerParts.Add(_actionHint);
+        footerParts.Add(KeyedHint("tui.select.confirm", "Enter", "select"));
+        footerParts.Add(KeyedHint("tui.select.cancel", "Esc", "close"));
+        lines.Add(JoinHints(footerParts));
         var maximumContentLines = Math.Max(1, height - 2);
         return lines.Take(maximumContentLines).Select(line => TerminalTranscriptViewport.Clip(line, width)).ToArray();
     }
@@ -248,10 +258,13 @@ internal sealed class TerminalSelectionList<T>
             }));
         }
         else
+        {
+            var switchHint = KeyedHint("tui.input.tab", "Tab", "to switch");
             lines.Add("Scope: " + (IsScoped ? theme.Style("muted", _allLabel ?? "all") :
                 theme.Style("accent", _allLabel ?? "all")) + " | " +
               (IsScoped ? theme.Style("accent", _scopedLabel ?? "scoped") : theme.Style("muted", _scopedLabel ?? "scoped")) +
-              theme.Style("muted", " · " + KeyLabel("tui.input.tab", "Tab") + " to switch"));
+              (switchHint is null ? "" : theme.Style("muted", " · " + switchHint)));
+        }
         lines.AddRange(["", "> " + _query + "\u001b[7m \u001b[27m", ""]);
         cursorRow = lines.Count - 2;
         cursorColumn = 3 + TerminalTextLayout.Width(_query);
@@ -292,12 +305,22 @@ internal sealed class TerminalSelectionList<T>
             lines.Add(theme.Style(refreshSuccess ? "success" : "muted", "  " + refreshStatus));
         }
         lines.Add("");
-        lines.Add(theme.Style("dim", _scopedOptions is null
-            ? $"  {KeyLabel("tui.select.confirm", "Enter")} to select · {KeyLabel(_saveAction, "Ctrl+S")} to set as default · " +
-              $"{KeyLabel("tui.select.cancel", "Escape/Ctrl+C")} to cancel"
-            : $"  {KeyLabel("tui.select.up", "↑")}/{KeyLabel("tui.select.down", "↓")} move · type to filter · " +
-              $"{KeyLabel("tui.input.tab", "Tab")} scope · {KeyLabel("tui.select.confirm", "Enter")} select · " +
-              $"{KeyLabel("tui.select.cancel", "Esc")} close"));
+        var modelFooter = new List<string?>();
+        if (_scopedOptions is null)
+        {
+            modelFooter.Add(KeyedHint("tui.select.confirm", "Enter", "to select"));
+            modelFooter.Add(KeyedHint(_saveAction, "Ctrl+S", "to set as default"));
+            modelFooter.Add(KeyedHint("tui.select.cancel", "Escape/Ctrl+C", "to cancel"));
+        }
+        else
+        {
+            modelFooter.Add(MoveHint());
+            modelFooter.Add("type to filter");
+            modelFooter.Add(KeyedHint("tui.input.tab", "Tab", "scope"));
+            modelFooter.Add(KeyedHint("tui.select.confirm", "Enter", "select"));
+            modelFooter.Add(KeyedHint("tui.select.cancel", "Esc", "close"));
+        }
+        lines.Add(theme.Style("dim", "  " + JoinHints(modelFooter)));
         lines.Add(Border());
         return lines.Select(line => line.Length == 0
             ? "" : Pad(TerminalTranscriptViewport.Clip(line, width))).ToArray();
@@ -333,6 +356,23 @@ internal sealed class TerminalSelectionList<T>
     private string KeyLabel(string action, string fallback) =>
         _keymap is null ? fallback : _keymap.GetDisplayKeys(action) ?? "";
 
+    private string? KeyedHint(string action, string fallback, string label)
+    {
+        var key = KeyLabel(action, fallback);
+        return key.Length == 0 ? null : $"{key} {label}";
+    }
+
+    private string? MoveHint()
+    {
+        var up = KeyLabel("tui.select.up", "↑");
+        var down = KeyLabel("tui.select.down", "↓");
+        var keys = string.Join("/", new[] { up, down }.Where(key => key.Length > 0));
+        return keys.Length == 0 ? null : $"{keys} move";
+    }
+
+    private static string JoinHints(IEnumerable<string?> hints) =>
+        string.Join(" · ", hints.Where(hint => !string.IsNullOrEmpty(hint)));
+
     private bool MatchesSelect(string action, ConsoleKeyInfo key, ConsoleKey fallbackKey) =>
         _keymap is null
             ? key.Key == fallbackKey && key.Modifiers == ConsoleModifiers.None
@@ -345,6 +385,9 @@ internal sealed class TerminalSelectionList<T>
     }
 
     private int VisibleItemCount(int height) => Math.Max(1, height - 8 - (_scopedOptions is not null ? 1 : 0));
+
+    private string DisplayLabel(TerminalSelectionOption<T> option) =>
+        _query.Trim().Length == 0 ? option.TreePrefix + option.Label : option.Label;
 
     private void AppendQuery(string value)
     {
@@ -380,7 +423,10 @@ internal sealed class TerminalSelectionList<T>
         var matches = _activeOptions.Select((option, index) => (Option: option, Index: index,
                 Score: MatchScore(tokens, option.SearchText ?? $"{option.Label} {option.Description}")))
             .Where(match => match.Score is not null);
-        if (SortMatchesByScore) matches = matches.OrderBy(match => match.Score).ThenBy(match => match.Index);
+        if (SortMatchesByScore)
+            matches = matches.OrderBy(match => match.Score)
+                .ThenByDescending(match => match.Option.TieBreakTimestamp ?? DateTimeOffset.MinValue)
+                .ThenBy(match => match.Index);
         _filteredOptions = matches.Select(match => SanitizeOption(match.Option)).ToArray();
         _selectedIndex = 0;
     }
