@@ -8,6 +8,8 @@ internal static class TerminalClipboardActions
     public static async Task CopyLastAssistantAsync(TerminalClipboard clipboard, ConversationSession conversation,
         TerminalScreen? screen, TextWriter output)
     {
+        // Pinned Pi prefers a transcript selection only in fullscreen mode when copy-on-select
+        // is disabled; regular mode always copies the last assistant message.
         if (screen is { IsAlternateScreen: true, CopyOnSelect: false } &&
             !string.IsNullOrEmpty(screen.SelectedText) &&
             await screen.CopySelectionToClipboardAsync())

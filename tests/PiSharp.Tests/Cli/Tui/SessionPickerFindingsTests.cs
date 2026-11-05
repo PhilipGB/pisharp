@@ -141,6 +141,21 @@ public sealed class SessionPickerFindingsTests
     }
 
     [Fact]
+    public async Task NamedThreadedFilterRootsChildrenWhoseParentsAreFilteredOut()
+    {
+        using var fixture = await NamedFilterFixture.CreateAsync();
+        var state = await TerminalSessionPickerState.LoadAsync(fixture.Store, null, null);
+        state.ToggleNameFilter();
+
+        var entries = state.BuildEntries();
+
+        Assert.Equal(SessionPickerNameFilter.Named, state.NameFilter);
+        Assert.Equal(["named child", "named parent"], entries.Select(entry => entry.Listing.Name));
+        Assert.Equal([0, 0], entries.Select(entry => entry.Depth));
+        Assert.All(entries, entry => Assert.Equal("", entry.TreePrefix));
+    }
+
+    [Fact]
     public async Task ThreadedSearchFlattensTreeAndBreaksEqualScoresByModifiedTime()
     {
         using var fixture = await SearchFixture.CreateAsync();
@@ -297,24 +312,26 @@ public sealed class SessionPickerFindingsTests
         return directory;
     }
 
-    private static async Task WritePiSessionAsync(string path, string id, string workingDirectory, string name,
-        string timestamp, string? parentSessionPath = null)
+    private static async Task WritePiSessionAsync(string path, string id, string workingDirectory, string? name,
+        string timestamp, string? parentSessionPath = null, string? content = null)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         var parent = parentSessionPath is null ? "" :
             $",\"parentSession\":{JsonSerializer.Serialize(parentSessionPath)}";
         var messageId = id + "-message";
         var infoId = id + "-info";
+        var info = name is null ? "" :
+            $"{{\"type\":\"session_info\",\"id\":{JsonSerializer.Serialize(infoId)}," +
+            $"\"parentId\":{JsonSerializer.Serialize(messageId)},\"timestamp\":{JsonSerializer.Serialize(timestamp)}," +
+            $"\"name\":{JsonSerializer.Serialize(name)}}}\n";
         await File.WriteAllTextAsync(path,
             $"{{\"type\":\"session\",\"version\":3,\"id\":{JsonSerializer.Serialize(id)}," +
             $"\"timestamp\":{JsonSerializer.Serialize(timestamp)},\"cwd\":{JsonSerializer.Serialize(workingDirectory)}{parent}}}\n" +
             $"{{\"type\":\"message\",\"id\":{JsonSerializer.Serialize(messageId)},\"parentId\":null," +
             $"\"timestamp\":{JsonSerializer.Serialize(timestamp)},\"message\":{{\"role\":\"user\"," +
-            $"\"content\":[{{\"type\":\"text\",\"text\":{JsonSerializer.Serialize(name)}}}]," +
+            $"\"content\":[{{\"type\":\"text\",\"text\":{JsonSerializer.Serialize(content ?? name ?? id)}}}]," +
             $"\"timestamp\":{DateTimeOffset.Parse(timestamp).ToUnixTimeMilliseconds()}}}}}\n" +
-            $"{{\"type\":\"session_info\",\"id\":{JsonSerializer.Serialize(infoId)}," +
-            $"\"parentId\":{JsonSerializer.Serialize(messageId)},\"timestamp\":{JsonSerializer.Serialize(timestamp)}," +
-            $"\"name\":{JsonSerializer.Serialize(name)}}}\n");
+            info);
     }
 
     private sealed class TreeFixture : IDisposable
@@ -354,6 +371,40 @@ public sealed class SessionPickerFindingsTests
                 "orphan child", "2026-01-04T00:00:00Z",
                 Path.Combine(sessions, "missing-parent.jsonl"));
             return new(root, store, parent);
+        }
+
+        public void Dispose() => Directory.Delete(Root, true);
+    }
+
+    private sealed class NamedFilterFixture : IDisposable
+    {
+        private NamedFilterFixture(string root, ConversationStore store)
+        {
+            Root = root;
+            Store = store;
+        }
+
+        public string Root { get; }
+        public ConversationStore Store { get; }
+
+        public static async Task<NamedFilterFixture> CreateAsync()
+        {
+            var root = TempDirectory("named-filter");
+            var sessions = Path.Combine(root, "sessions");
+            Directory.CreateDirectory(sessions);
+            var store = new ConversationStore(root, sessions);
+            var unnamedParent = Path.Combine(sessions, "unnamed-parent.jsonl");
+            await WritePiSessionAsync(unnamedParent, "named-filter-parent", root, null,
+                "2026-04-01T00:00:00Z", content: "unnamed parent");
+            await WritePiSessionAsync(Path.Combine(sessions, "named-child.jsonl"), "named-filter-child",
+                root, "named child", "2026-04-04T00:00:00Z", unnamedParent);
+            var namedParent = Path.Combine(sessions, "named-parent.jsonl");
+            await WritePiSessionAsync(namedParent, "named-filter-named-parent", root,
+                "named parent", "2026-04-02T00:00:00Z");
+            await WritePiSessionAsync(Path.Combine(sessions, "unnamed-child.jsonl"),
+                "named-filter-unnamed-child", root, null, "2026-04-03T00:00:00Z", namedParent,
+                content: "unnamed child");
+            return new(root, store);
         }
 
         public void Dispose() => Directory.Delete(Root, true);

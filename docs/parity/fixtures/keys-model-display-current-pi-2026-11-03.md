@@ -40,7 +40,10 @@ Implementation: `b8d50e6631c543551372152fa83d441aebf957de`.
   request retains `first prompt`, `fixture reply` and `second prompt` in order.
 - Ctrl+T writes `hideThinkingBlock`; restart starts hidden and the first toggle
   reports visible.
-- Ctrl+O reports expanded/collapsed; Ctrl+X writes the last assistant message.
+- Ctrl+O reports expanded/collapsed; Ctrl+X writes the last assistant message. In
+  regular mode Ctrl+X always copies the last assistant message; a transcript
+  selection is preferred only in fullscreen when `fullscreenCopyOnSelect` is false,
+  matching pinned Pi's `handleCopyCommand`.
 - Disabled selector bindings render no stale default shortcuts; the fallback labels are used only without a configured keymap.
 - Deterministic keymap/channel tests, focused PTY tests and rebinding/widget
   precedence tests pass.

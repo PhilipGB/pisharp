@@ -100,6 +100,8 @@ def validate_oracle(oracle, manifest, pi_checkout=None):
             "F02 oracle does not require flat, prefix-free, modified-time ordered search.")
     require(scenarios["F02"]["expected"].get("cycleHandling") == "break-back-edges",
             "F02 oracle does not require parent-cycle back-edge breaking.")
+    require(scenarios["F02"]["expected"].get("namedThreadedScope") == "filtered-set-roots",
+            "F02 oracle does not require filtered-set roots in named Threaded mode.")
     require(scenarios["F03"]["expected"].get("disabledConfirmKey") == "" and
             scenarios["F03"]["expected"].get("disabledFooterSlots") == "omitted",
             "F03 oracle does not require empty disabled confirmation/footer keys.")

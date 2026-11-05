@@ -83,7 +83,8 @@
         "crossProjectLinks": true,
         "threadedWithQueryPrefixes": "none",
         "threadedWithQueryTieBreak": "modified-desc",
-        "cycleHandling": "break-back-edges"
+        "cycleHandling": "break-back-edges",
+        "namedThreadedScope": "filtered-set-roots"
       }
     },
     "F03": {

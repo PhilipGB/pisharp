@@ -35,6 +35,8 @@ public sealed class SessionPickerFindingsParityTests
             scenarios[1].Value.GetProperty("expected").GetProperty("threadedWithQueryTieBreak").GetString());
         Assert.Equal("break-back-edges",
             scenarios[1].Value.GetProperty("expected").GetProperty("cycleHandling").GetString());
+        Assert.Equal("filtered-set-roots",
+            scenarios[1].Value.GetProperty("expected").GetProperty("namedThreadedScope").GetString());
         Assert.Equal("",
             scenarios[2].Value.GetProperty("expected").GetProperty("disabledConfirmKey").GetString());
         Assert.Equal("only-without-keymap",

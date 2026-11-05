@@ -22,7 +22,9 @@ Exactly three findings are required. No other capability is marked verified here
   sorted by latest subtree activity (stable ties), missing parents treated as roots,
   and pre-order flattening with `│  `, `├─ ` and `└─ ` prefixes. Recent and Fuzzy stay
   flat; Threaded with a query falls back to score ordering. Cross-project parents link
-  in all scope. Selection is preserved by path when ordering changes.
+  in all scope. With the Named filter, the tree is built from the filtered set, so a
+  named child whose unnamed parent is filtered out becomes a root rather than being
+  dropped. Selection is preserved by path when ordering changes.
 - **F03 — disabled confirmation keys.** A configured-but-disabled confirm/cancel
   binding renders as an empty key, exactly like pinned Pi's `keyHint`. Disabled keys
   cannot confirm or cancel. Custom bindings are still advertised and dispatched.
@@ -52,9 +54,10 @@ binding still advertised `Enter`.
   initial selection, `FindEntry`, deletion confirmation, `Remove` and rename all use
   that key; `SessionListing.Id` remains the persisted identity.
 - `SessionCatalog` exposes `ParentSessionPath`; `SessionPickerTree` is the pinned-Pi
-  tree builder/flattener used only by Threaded mode. `SessionPickerEntry` carries
-  depth and prefix for rendering while the existing list owns filtering, search and
-  selection restoration.
+  tree builder/flattener used only by Threaded mode. It receives the already filtered
+  entry set, matching Pi's `nameFiltered` input, so Named mode cannot orphan or drop a
+  named child. `SessionPickerEntry` carries depth and prefix for rendering while the
+  existing list owns filtering, search and selection restoration.
 - `TerminalSessionPicker.BuildActionHint` distinguishes a null display-key delegate
   (no keymap; defaults allowed) from a configured delegate returning null (disabled;
   render empty). Confirmation dispatch still uses the live keymap.
@@ -67,16 +70,18 @@ binding still advertised `Enter`.
 - Deterministic regressions: canonical path keys in current/all scope; parent-cycle
   back-edge breaking; disabled footer slots omitted; same-ID
   rename/delete isolation; pinned tree order, prefixes and missing-parent handling;
-  Threaded-with-search flattening and modified-time tie-breaks; Recent/Fuzzy flat
-  order; path-based selection after sorting; cross-project parent links;
-  disabled/custom confirmation hints and dispatch.
+  Named-filtered Threaded roots; Threaded-with-search flattening and modified-time
+  tie-breaks; Recent/Fuzzy flat order; path-based selection after sorting;
+  cross-project parent links; disabled/custom confirmation hints and dispatch.
 - Real Linux PTY: same-ID session deletion, Threaded parent/child rendering, a
   nonempty Threaded search that flattens to relevance order without prefixes, and a
   disabled confirm binding that ignores Enter while Escape still cancels.
 - Paired PTY differential:
   - `terminal-session-picker-findings` at 140x40 fullscreen. Five rows in the expected
-    tree order with `tree child` prefixed `└─`; deleting `duplicate two` leaves
-    `duplicate one` and the tree intact; final session files match on both products.
+    tree order with `kin child` prefixed `└─`; searching `kin` flattens the list to
+    `kin child` then `kin parent` with no prefixes and selects the newer child;
+    clearing restores the tree; deleting `duplicate two` leaves `duplicate one` and
+    the tree intact; final session files match on both products.
   - `terminal-session-picker-disabled-confirm` at 140x40 regular. Both products render
     `Delete ...?  confirm · Escape/Ctrl+C cancel`; Enter leaves confirmation open;
     Escape cancels without deleting.
@@ -86,8 +91,9 @@ binding still advertised `Enter`.
   private modes and a visible cursor for both products.
 - Negative controls: the verifier mutates captured evidence and rejects missing,
   duplicate, failed or skipped findings; wrong Pi/baseline SHA; unresolved
-  comparisons; missing oracle/source/test/checkpoint evidence; missing tree prefix or
-  wrong tree order; wrong same-ID deletion; disabled-key advertising or dispatch;
+  comparisons; missing oracle/source/test/checkpoint evidence; missing tree prefix,
+  wrong tree order or search order/prefix retention; wrong same-ID deletion;
+  disabled-key advertising or dispatch;
   failed calibration; session-file identity drift; missing paired PTY evidence; and
   failed/skipped full-suite results.
 

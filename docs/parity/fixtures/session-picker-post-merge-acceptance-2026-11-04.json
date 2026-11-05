@@ -17,6 +17,7 @@
       "PiSharp.Tests.SessionPickerFindingsTests.SameIdSessionsInDifferentProjectsSelectRenameAndDeleteOnlyTheChosenFile",
       "PiSharp.Tests.SessionPickerFindingsTests.ThreadedModeBuildsThePinnedPiParentTreeWithSubtreeActivityOrdering",
       "PiSharp.Tests.SessionPickerFindingsTests.ThreadedSearchFlattensTreeAndBreaksEqualScoresByModifiedTime",
+      "PiSharp.Tests.SessionPickerFindingsTests.NamedThreadedFilterRootsChildrenWhoseParentsAreFilteredOut",
       "PiSharp.Tests.SessionPickerFindingsTests.RecentAndFuzzyKeepCatalogOrderWithoutTreeMetadata",
       "PiSharp.Tests.SessionPickerFindingsTests.SortingPreservesTheSelectedSessionByPathRatherThanIndex",
       "PiSharp.Tests.SessionPickerFindingsTests.AllScopeLinksChildrenToParentsInOtherProjectDirectories",
@@ -79,6 +80,7 @@
       "tests": [
         "PiSharp.Tests.SessionPickerFindingsTests.ThreadedModeBuildsThePinnedPiParentTreeWithSubtreeActivityOrdering",
         "PiSharp.Tests.SessionPickerFindingsTests.ThreadedSearchFlattensTreeAndBreaksEqualScoresByModifiedTime",
+        "PiSharp.Tests.SessionPickerFindingsTests.NamedThreadedFilterRootsChildrenWhoseParentsAreFilteredOut",
         "PiSharp.Tests.SessionPickerFindingsTests.RecentAndFuzzyKeepCatalogOrderWithoutTreeMetadata",
         "PiSharp.Tests.SessionPickerFindingsTests.SortingPreservesTheSelectedSessionByPathRatherThanIndex",
         "PiSharp.Tests.SessionPickerFindingsTests.AllScopeLinksChildrenToParentsInOtherProjectDirectories",
