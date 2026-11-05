@@ -2,6 +2,21 @@
 
 Current status and project goal are maintained in [the continuation](../continuation.md); open architecture risks are tracked in the [architecture document](../architecture.md#open-architecture-risks). The milestone summaries below are historical and may retain the wording used when they were written; later merges supersede their status claims.
 
+## Completed milestone — Session Tree and Scoped Model Picker — 2026-11-05
+
+The `keys-tree-scoped-picker` capability is verified at implementation source
+`12cd366111f1d9eb126102bb0ba372f461545bad` against pinned Pi
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The
+[acceptance manifest](fixtures/keys-tree-scoped-picker-acceptance-2026-11-05.json)
+maps T01-T08 (`/tree`) and S01-S07 (`/scoped-models`) to 12 deterministic facts,
+five Linux PTY journeys and 71 named checkpoints in each of four paired cases
+(100x30/140x40, dark, fullscreen and regular). Paired and same-Pi calibration
+semantic differences are zero; tree rows, selection, fold/filter/search state,
+labels, clipboard writes, scoped enabled order/counts, saved `enabledModels` and
+restart scope all match. See the
+[receipt](fixtures/keys-tree-scoped-picker-2026-11-05.md). `settings.treeFilterMode`
+remains separately tracked.
+
 ## Completed milestone — Compaction, Context Budget, Overflow and Usage Parity — 2026-10-28
 
 PR #27 is merged at `12064420179f4119bdaf37479c7cba0f5ca40717`. Pinned Pi is `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; the frozen acceptance contract defines 22 checkpoints and 211 required cases.

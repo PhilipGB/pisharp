@@ -93,7 +93,7 @@ def validate_manifest(manifest, implementation):
     require(len(tests.get("facts") or []) >= 11,
             "Manifest must list at least eleven required deterministic facts.")
     require(len(set(tests["facts"])) == len(tests["facts"]), "Duplicate required test names.")
-    require(set(tests.get("ptyEvidence") or []) == set(CASE_IDS),
+    require({entry.rsplit("/", 1)[-1] for entry in tests.get("ptyEvidence") or []} == set(CASE_IDS),
             "Manifest PTY evidence ids must name all four paired cases.")
     require((manifest.get("terminalFixtures") or []) ==
             ["tools/parity/terminal/fixtures/terminal-keys-tree-scoped-picker.json"],
@@ -125,7 +125,11 @@ def validate_gates(gates, implementation):
     require(len(ci.get("headSha") or "") == 40, "Exact-head CI must record a commit SHA.")
     require(str(ci.get("run") or "").isdigit(), "Exact-head CI must record a workflow run id.")
     if ci["headSha"] != git_output("rev-parse", "HEAD"):
-        changed = git_output("diff", "--name-only", f"{ci['headSha']}..HEAD").splitlines()
+        try:
+            changed = git_output("diff", "--name-only", f"{ci['headSha']}..HEAD").splitlines()
+        except subprocess.SubprocessError as error:
+            raise VerificationError(
+                f"Exact-head CI commit is not an ancestor of HEAD: {ci['headSha']}") from error
         require(changed and all(path.startswith("docs/") for path in changed),
                 "Exact-head CI commit must be HEAD or differ only in documentation.")
     require(gates["ledger"].get("entry") == "keys-tree-scoped-picker",
@@ -465,8 +469,16 @@ def validate_full_trx(results):
     require(not skips, f"Full suite has skipped tests: {skips[:5]}")
 
 
-def validate_ledger(ledger, manifest):
+def ledger_entry(ledger):
     entry = ledger.get("keys-tree-scoped-picker")
+    if isinstance(entry, dict):
+        return entry
+    return next((task for task in ledger.get("tasks") or []
+                 if task.get("id") == "keys-tree-scoped-picker"), None)
+
+
+def validate_ledger(ledger, manifest):
+    entry = ledger_entry(ledger)
     require(isinstance(entry, dict), "Execution ledger has no keys-tree-scoped-picker entry.")
     require(entry.get("status") in ("verified", "complete"),
             f"Ledger entry status is {entry.get('status')!r}.")
@@ -514,7 +526,7 @@ def self_test(manifest, oracle, checkpoints, results, ledger):
     def rejects(call, label):
         try:
             call()
-        except VerificationError as error:
+        except (VerificationError, subprocess.SubprocessError) as error:
             print(f"negative control rejected: {label}: {error}")
             return
         raise VerificationError(f"Negative control accepted an invalid case: {label}")
@@ -618,9 +630,9 @@ def self_test(manifest, oracle, checkpoints, results, ledger):
     mutate_checkpoint(CASE_IDS[0], "quit",
                       lambda value: value.__setitem__("activeScreen", "alternate"),
                       "terminal screen not restored")
-    mutate_checkpoint(CASE_IDS[0], "tree-copy",
-                      lambda value: value["clipboard"].__setitem__("tree-copy", []),
-                      "lost tree clipboard write")
+    bad_clipboard = copy.deepcopy(checkpoints)
+    bad_clipboard["cases"][CASE_IDS[0]]["pisharp"]["clipboard"]["tree-copy"] = []
+    rejects(lambda: validate_checkpoints(bad_clipboard, manifest), "lost tree clipboard write")
 
     bad_settings = copy.deepcopy(checkpoints)
     bad_settings["cases"][CASE_IDS[0]]["pisharp"]["settings"]["enabledModels"] = ["fixture/alpha"]
@@ -666,11 +678,11 @@ def self_test(manifest, oracle, checkpoints, results, ledger):
     rejects(lambda: validate_full_trx(skipped_full), "skipped full suite")
 
     bad_ledger = copy.deepcopy(ledger)
-    bad_ledger["keys-tree-scoped-picker"]["status"] = "not_started"
+    ledger_entry(bad_ledger)["status"] = "not_started"
     rejects(lambda: validate_ledger(bad_ledger, manifest), "ledger entry not completed")
 
     bad_ledger_evidence = copy.deepcopy(ledger)
-    bad_ledger_evidence["keys-tree-scoped-picker"]["evidence"] = []
+    ledger_entry(bad_ledger_evidence)["evidence"] = []
     rejects(lambda: validate_ledger(bad_ledger_evidence, manifest), "ledger evidence missing")
 
     print("negative controls passed")

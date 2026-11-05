@@ -1,0 +1,377 @@
+{
+  "schema": 1,
+  "capability": "keys-tree-scoped-picker",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "implementationSha": "12cd366111f1d9eb126102bb0ba372f461545bad",
+  "oracleFile": "docs/parity/fixtures/keys-tree-scoped-picker-pi-oracle-2026-11-05.json",
+  "checkpointFile": "docs/parity/fixtures/keys-tree-scoped-picker-checkpoints-2026-11-05.json",
+  "oracleScenarioCount": 15,
+  "terminalFixtures": [
+    "tools/parity/terminal/fixtures/terminal-keys-tree-scoped-picker.json"
+  ],
+  "requiredTests": {
+    "facts": [
+      "PiSharp.Tests.KeysTreeScopedPickerTests.TreeSelectionStartsAtCurrentLeafAndWraps",
+      "PiSharp.Tests.KeysTreeScopedPickerTests.TreeFoldsBranchAndUnfoldRestoresIt",
+      "PiSharp.Tests.KeysTreeScopedPickerTests.TreeHidesBookkeepingAlwaysAndToolCallOnlyAssistantUnlessCurrentLeaf",
+      "PiSharp.Tests.KeysTreeScopedPickerTests.TreeFilterCycleFollowsPinnedPiOrderInBothDirections",
+      "PiSharp.Tests.KeysTreeScopedPickerTests.TreeEscapeWithActiveSearchClearsSearchBeforeClosing",
+      "PiSharp.Tests.KeysTreeScopedPickerTests.TreeProjectsLatestLabelPerTargetAndCopyTextSkipsSettingsEntries",
+      "PiSharp.Tests.KeysTreeScopedPickerTests.ScopedToggleCollapsesExplicitListToAllEnabled",
+      "PiSharp.Tests.KeysTreeScopedPickerTests.ScopedEnableAllClearAllAndMoveMirrorPinnedPiSemantics",
+      "PiSharp.Tests.KeysTreeScopedPickerTests.ScopedSortedIdsListEnabledModelsFirstThenRemainingCatalog",
+      "PiSharp.Tests.KeysTreeScopedPickerTests.TreeKeybindingsMatchPinnedPiDefaults",
+      "PiSharp.Tests.KeysTreeScopedPickerTests.TreeSelectionListClearSearchRestoresFullList",
+      "PiSharp.Tests.KeysTreeScopedPickerTests.ScopedRefreshKeepsTheRowIndexWhenSortOrderChanges",
+      "PiSharp.Tests.TerminalPtyTests.ConversationTreeSearchSelectsAndPersistsABranchThroughLinuxPty",
+      "PiSharp.Tests.TerminalPtyTests.ScopedModelsSelectorAppliesSessionEditsAndPersistsReorderedScopeThroughLinuxPty",
+      "PiSharp.Tests.TerminalPtyTests.ScopedModelsSelectorAddsModelsDiscoveredWhileOpenThroughLinuxPty",
+      "PiSharp.Tests.AppControlPtyTests.DoubleEscapeHonoursTheConfiguredActionAndReturnsToTheEditor",
+      "PiSharp.Tests.AppControlPtyTests.RegularModeDoubleEscapeAfterBashEntryOpensTheTreeSelectorThroughLinuxPty"
+    ],
+    "theories": [],
+    "ptyEvidence": [
+      "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen",
+      "terminal-keys-tree-scoped-picker/100x30-dark-regular",
+      "terminal-keys-tree-scoped-picker/140x40-dark-fullscreen",
+      "terminal-keys-tree-scoped-picker/140x40-dark-regular"
+    ]
+  },
+  "requiredComparisons": [
+    {
+      "id": "paired-pty",
+      "required": true,
+      "status": "match",
+      "evidence": "Four paired PTY cases at 100x30/140x40 dark fullscreen/regular; every named checkpoint and clipboard/settings/label observation matches pinned Pi."
+    },
+    {
+      "id": "same-pi-calibration",
+      "required": true,
+      "status": "match",
+      "evidence": "Two independent pinned-Pi runs per case produce zero semantic differences."
+    }
+  ],
+  "cases": [
+    {
+      "id": "T01",
+      "required": true,
+      "status": "pass",
+      "oracle": [
+        "T01"
+      ],
+      "tests": [
+        "PiSharp.Tests.KeysTreeScopedPickerTests.TreeSelectionStartsAtCurrentLeafAndWraps",
+        "PiSharp.Tests.TerminalPtyTests.ConversationTreeSearchSelectsAndPersistsABranchThroughLinuxPty"
+      ],
+      "ptyCheckpoints": [
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-open",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-default",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-page-up",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-page-down",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-move-a3",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-search-escape"
+      ]
+    },
+    {
+      "id": "T02",
+      "required": true,
+      "status": "pass",
+      "oracle": [
+        "T02"
+      ],
+      "tests": [
+        "PiSharp.Tests.KeysTreeScopedPickerTests.TreeFoldsBranchAndUnfoldRestoresIt"
+      ],
+      "ptyCheckpoints": [
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-fold",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-unfold",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-filter-default"
+      ]
+    },
+    {
+      "id": "T03",
+      "required": true,
+      "status": "pass",
+      "oracle": [
+        "T03"
+      ],
+      "tests": [
+        "PiSharp.Tests.KeysTreeScopedPickerTests.TreeHidesBookkeepingAlwaysAndToolCallOnlyAssistantUnlessCurrentLeaf"
+      ],
+      "ptyCheckpoints": [
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-filter-no-tools",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-filter-user-only",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-filter-labeled",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-filter-all"
+      ]
+    },
+    {
+      "id": "T04",
+      "required": true,
+      "status": "pass",
+      "oracle": [
+        "T04"
+      ],
+      "tests": [
+        "PiSharp.Tests.KeysTreeScopedPickerTests.TreeFilterCycleFollowsPinnedPiOrderInBothDirections"
+      ],
+      "ptyCheckpoints": [
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-filter-backward",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-filter-cycle",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-filter-default"
+      ]
+    },
+    {
+      "id": "T05",
+      "required": true,
+      "status": "pass",
+      "oracle": [
+        "T05"
+      ],
+      "tests": [
+        "PiSharp.Tests.KeysTreeScopedPickerTests.TreeEscapeWithActiveSearchClearsSearchBeforeClosing",
+        "PiSharp.Tests.KeysTreeScopedPickerTests.TreeSelectionListClearSearchRestoresFullList"
+      ],
+      "ptyCheckpoints": [
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-search",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-search-backspace",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-search-escape"
+      ]
+    },
+    {
+      "id": "T06",
+      "required": true,
+      "status": "pass",
+      "oracle": [
+        "T06"
+      ],
+      "tests": [
+        "PiSharp.Tests.KeysTreeScopedPickerTests.TreeProjectsLatestLabelPerTargetAndCopyTextSkipsSettingsEntries",
+        "PiSharp.Tests.TerminalPtyTests.ConversationTreeSearchSelectsAndPersistsABranchThroughLinuxPty"
+      ],
+      "ptyCheckpoints": [
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-label-open",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-label-prefilled",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-label-save",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-label-timestamp",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-label-timestamp-off",
+        "terminal-keys-tree-scoped-picker/140x40-dark-regular/tree-label-save"
+      ]
+    },
+    {
+      "id": "T07",
+      "required": true,
+      "status": "pass",
+      "oracle": [
+        "T07"
+      ],
+      "tests": [
+        "PiSharp.Tests.KeysTreeScopedPickerTests.TreeProjectsLatestLabelPerTargetAndCopyTextSkipsSettingsEntries"
+      ],
+      "ptyCheckpoints": [
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-copy-empty",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-copy"
+      ]
+    },
+    {
+      "id": "T08",
+      "required": true,
+      "status": "pass",
+      "oracle": [
+        "T08"
+      ],
+      "tests": [
+        "PiSharp.Tests.TerminalPtyTests.ConversationTreeSearchSelectsAndPersistsABranchThroughLinuxPty",
+        "PiSharp.Tests.AppControlPtyTests.DoubleEscapeHonoursTheConfiguredActionAndReturnsToTheEditor",
+        "PiSharp.Tests.AppControlPtyTests.RegularModeDoubleEscapeAfterBashEntryOpensTheTreeSelectorThroughLinuxPty"
+      ],
+      "ptyCheckpoints": [
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-goto-branch",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-navigate-prompt",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-navigate-resume",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-navigate-prompt-again",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-navigate-no-summary",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-already",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-user-open",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-user-goto",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-user-prompt",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-user-navigate",
+        "terminal-keys-tree-scoped-picker/100x30-dark-regular/tree-navigate-no-summary"
+      ]
+    },
+    {
+      "id": "S01",
+      "required": true,
+      "status": "pass",
+      "oracle": [
+        "S01"
+      ],
+      "tests": [
+        "PiSharp.Tests.KeysTreeScopedPickerTests.ScopedSortedIdsListEnabledModelsFirstThenRemainingCatalog",
+        "PiSharp.Tests.TerminalPtyTests.ScopedModelsSelectorAppliesSessionEditsAndPersistsReorderedScopeThroughLinuxPty"
+      ],
+      "ptyCheckpoints": [
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/scoped-open",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/scoped-initial",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/scoped-close"
+      ]
+    },
+    {
+      "id": "S02",
+      "required": true,
+      "status": "pass",
+      "oracle": [
+        "S02"
+      ],
+      "tests": [
+        "PiSharp.Tests.KeysTreeScopedPickerTests.ScopedToggleCollapsesExplicitListToAllEnabled"
+      ],
+      "ptyCheckpoints": [
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/scoped-search-gamma",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/scoped-toggle-gamma",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/scoped-search-alpha",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/scoped-toggle-alpha-off"
+      ]
+    },
+    {
+      "id": "S03",
+      "required": true,
+      "status": "pass",
+      "oracle": [
+        "S03"
+      ],
+      "tests": [
+        "PiSharp.Tests.KeysTreeScopedPickerTests.ScopedEnableAllClearAllAndMoveMirrorPinnedPiSemantics"
+      ],
+      "ptyCheckpoints": [
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/scoped-clear-all",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/scoped-enable-all",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/scoped-save-search-gamma"
+      ]
+    },
+    {
+      "id": "S04",
+      "required": true,
+      "status": "pass",
+      "oracle": [
+        "S04"
+      ],
+      "tests": [
+        "PiSharp.Tests.TerminalPtyTests.ScopedModelsSelectorAppliesSessionEditsAndPersistsReorderedScopeThroughLinuxPty"
+      ],
+      "ptyCheckpoints": [
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/scoped-provider-toggle"
+      ]
+    },
+    {
+      "id": "S05",
+      "required": true,
+      "status": "pass",
+      "oracle": [
+        "S05"
+      ],
+      "tests": [
+        "PiSharp.Tests.KeysTreeScopedPickerTests.ScopedEnableAllClearAllAndMoveMirrorPinnedPiSemantics",
+        "PiSharp.Tests.KeysTreeScopedPickerTests.ScopedRefreshKeepsTheRowIndexWhenSortOrderChanges"
+      ],
+      "ptyCheckpoints": [
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/scoped-reorder",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/scoped-reorder-top",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/scoped-save-reorder"
+      ]
+    },
+    {
+      "id": "S06",
+      "required": true,
+      "status": "pass",
+      "oracle": [
+        "S06"
+      ],
+      "tests": [
+        "PiSharp.Tests.TerminalPtyTests.ScopedModelsSelectorAppliesSessionEditsAndPersistsReorderedScopeThroughLinuxPty",
+        "PiSharp.Tests.TerminalPtyTests.ScopedModelsSelectorAddsModelsDiscoveredWhileOpenThroughLinuxPty"
+      ],
+      "ptyCheckpoints": [
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/scoped-save-toggle-gamma",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/scoped-save-clear",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/scoped-save",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/scoped-restart-open",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/scoped-restart-order",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/scoped-restart-search",
+        "terminal-keys-tree-scoped-picker/140x40-dark-fullscreen/scoped-restart-order",
+        "terminal-keys-tree-scoped-picker/140x40-dark-regular/scoped-save"
+      ]
+    },
+    {
+      "id": "S07",
+      "required": true,
+      "status": "pass",
+      "oracle": [
+        "S07"
+      ],
+      "tests": [
+        "PiSharp.Tests.KeysTreeScopedPickerTests.TreeKeybindingsMatchPinnedPiDefaults",
+        "PiSharp.Tests.AppControlPtyTests.DoubleEscapeHonoursTheConfiguredActionAndReturnsToTheEditor",
+        "PiSharp.Tests.AppControlPtyTests.RegularModeDoubleEscapeAfterBashEntryOpensTheTreeSelectorThroughLinuxPty"
+      ],
+      "ptyCheckpoints": [
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-filter-no-tools",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-filter-user-only",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-filter-labeled",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-filter-all",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-copy",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/scoped-provider-toggle",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/scoped-save",
+        "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/scoped-reorder"
+      ]
+    }
+  ],
+  "gates": {
+    "format": {
+      "status": "pass",
+      "evidence": "dotnet format PiSharp.slnx --verify-no-changes --no-restore (exit 0)"
+    },
+    "build": {
+      "status": "pass",
+      "evidence": "dotnet build PiSharp.slnx --warnaserror --nologo (0 warnings, 0 errors)"
+    },
+    "fullSuite": {
+      "status": "pass",
+      "evidence": "dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --no-build --no-restore (4461 passed, 0 failed, 0 skipped)",
+      "passed": 4461,
+      "failed": 0,
+      "skipped": 0
+    },
+    "exactHeadCi": {
+      "status": "pending",
+      "headSha": "3eb631ed80983c6fef1e915d6815c115493993dc",
+      "run": "0"
+    },
+    "ledger": {
+      "status": "pending",
+      "entry": "keys-tree-scoped-picker"
+    }
+  },
+  "findings": [
+    {
+      "id": "treefiltermode-separate",
+      "required": false,
+      "description": "settings.treeFilterMode remains a separately tracked capability; /tree here always opens with the default filter."
+    },
+    {
+      "id": "internal-bookkeeping-hidden",
+      "required": false,
+      "description": "PiSharp internal bookkeeping entry types are hidden in every tree filter; pinned Pi has no equivalent entry types."
+    },
+    {
+      "id": "native-session-storage",
+      "required": false,
+      "description": "Pinned Pi appends labels to the imported JSONL file; PiSharp commits the same label append trail to its native session document."
+    },
+    {
+      "id": "faithful-render-port",
+      "required": false,
+      "description": "Rows prioritize permissions, wrapping and row priority; the renderer is a faithful port rather than a cell-for-cell match of Pi's TUI."
+    }
+  ]
+}

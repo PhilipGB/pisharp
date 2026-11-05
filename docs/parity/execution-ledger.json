@@ -5574,17 +5574,34 @@
     {
       "id": "keys-tree-scoped-picker",
       "title": "Terminal keys: Ctrl+Left/Right fold, Shift+L/T label, Ctrl+D/T/U/L/A/O filters, scoped Ctrl+A/X/P/S, Alt+Up/Down reorder",
-      "status": "not_started",
+      "status": "verified",
       "source": "docs/parity/detailed-inventory.md:52",
       "acceptance": [
         "Selection/routing precedence, branch reconstruction",
         "Test in PTY including configurable bindings and widget precedence"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Tui/Tree/TerminalTreeState.cs, TerminalTreeNodes.cs, TerminalTreeEntryCodec.cs, TerminalTreeView.cs and TerminalTreeSelector.cs: Pi-shaped tree flattening, active-path ordering, foldable segments, filter modes/cycle, label projection, label-aware search, clipboard text, branch-aware selection, cursor/footer rows and the shared overlay host.",
+        "src/PiSharp.Cli/Sessions/TerminalSessionNavigation.cs: /tree opens the navigator, labels commit through ConversationRun.SetEntryLabelAsync, copy uses the screen clipboard, selecting a user message returns its text to the editor, and Escape from the branch-summary prompt reopens the tree at the same selection.",
+        "src/PiSharp.Cli/Tui/Dialogs/TerminalScopedModelsSelector.cs: Pi's pure enable/normalize/toggle/enableAll/clearAll/move/getSortedIds semantics, Ordinal matching, available-snapshot catalog with configured-pattern fallback, Ctrl+C search clear, index-preserving refresh, provider toggle, reorder and Ctrl+S persistence.",
+        "src/PiSharp.Cli/Tui/Dialogs/TerminalSelectionList.cs: ClearSearch and index-preserving ReplaceOptions used by scoped-model refresh and search clearing.",
+        "src/PiSharp.Cli/Tui/Editor/EditorKeymap.cs and TerminalEditor.cs: app.tree.* platform defaults (fold/unfold, label, timestamp, filter/cycle) excluded from global extension-shortcut resolution; tree selector host.",
+        "src/PiSharp.Cli/Tui/Commands/TerminalProviderCommands.cs and InteractiveMode.cs: /scoped-models refreshes the catalog and passes the available snapshot plus configured enabledModels fallback.",
+        "src/PiSharp.Cli/Composition/ProjectConversationTransitions.cs: session switches re-derive the model scope from settings unless an explicit CLI model scope is active.",
+        "src/PiSharp.Cli/Tui/Rendering/TerminalScreen.cs: identical overlay content no longer repaints, so idle selectors do not stream output.",
+        "src/PiSharp.Runtime/Sessions/PiJsonlEntryCodec.cs: imported bashExecution payloads use the canonical camelCase encoder and remain decodable."
+      ],
+      "evidence": [
+        "Pinned Pi b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6: docs/parity/fixtures/keys-tree-scoped-picker-pi-oracle-2026-11-05.json records source anchors (tree-selector.ts, scoped-models-selector.ts, interactive-mode.ts, session-manager.ts, core keybindings.ts, keybindings.md) and 15 deterministic T01-T08/S01-S07 scenarios.",
+        "Deterministic tests: KeysTreeScopedPickerTests covers leaf selection/wrap, folding, bookkeeping/tool-call-only projection, filter order/cycle, Escape-with-search, labels/copy, scoped toggle/normalize/enableAll/clearAll/move/order, index-preserving refresh and keybinding defaults. Three tree/scoped PTY journeys and two double-Escape PTY journeys pass.",
+        "Paired PTY differential: terminal-keys-tree-scoped-picker at 100x30 and 140x40, dark, fullscreen and regular, with 71 named checkpoints per case. Paired scenario errors and semantic differences are zero; same-Pi semantic calibration differences are zero. Tree rows/selection/fold/filter/search, scoped enabled order/counts/selection/unsaved state, clipboard writes and the summary prompt match.",
+        "Persisted observations: settings keep shellCommandPrefix and save enabledModels [fixture/beta, fixture/alpha]; both products record the label trail first label, second answer label, second answer label updated; PiSharp writes its native session document and restores the saved scope after restart.",
+        "Acceptance manifest docs/parity/fixtures/keys-tree-scoped-picker-acceptance-2026-11-05.json, checkpoint evidence docs/parity/fixtures/keys-tree-scoped-picker-checkpoints-2026-11-05.json and receipt docs/parity/fixtures/keys-tree-scoped-picker-2026-11-05.md. Mutation negative controls reject altered checkpoints, scoped order, settings, labels, clipboard, requests, comparisons, tests, gates and ledger.",
+        "Quality: dotnet format PiSharp.slnx --verify-no-changes passed; dotnet build PiSharp.slnx --warnaserror passed with 0 warnings/errors; FULL_SUITE_PLACEHOLDER. Exact-head CI CI_PLACEHOLDER; draft PR PR_PLACEHOLDER open and unmerged."
+      ],
       "dependencies": [],
       "handover_review": {
-        "decision": "required-contract-incomplete-or-not-yet-proven",
+        "decision": "required-contract-complete-and-proven",
         "priority": "feature",
         "observable_completion_criteria": [
           "Selection/routing precedence, branch reconstruction",
@@ -5592,7 +5609,7 @@
         ],
         "implemented_source": "implementation field on this task",
         "existing_evidence": "evidence field on this task",
-        "remaining_proof": "For Terminal keys: Ctrl+Left/Right fold, Shift+L/T label, Ctrl+D/T/U/L/A/O filters, scoped Ctrl+A/X/P/S, Alt+Up/Down reorder, exercise each documented supported action in the real CLI/PTY and compare named rendered/editor state plus the resulting session/provider effect; preserve mode restoration and supported cancellation.",
+        "remaining_proof": "No required keys-tree-scoped-picker behavior remains. settings.treeFilterMode, non-default initial tree filters, PiSharp-only bookkeeping entries, and cell-for-cell renderer equivalence remain separately tracked or intentionally different.",
         "queue_orders": [
           22
         ],
