@@ -45,9 +45,9 @@ commits the same trail to its native session document).
 | Full .NET suite | 4,461/4,461 tests, zero skipped |
 | Paired PTY (4 cases) | 0 semantic differences |
 | Same-Pi calibration (4 cases) | 0 semantic differences |
-| Acceptance verifier + mutation controls | VERIFIER_PLACEHOLDER |
-| Exact-head CI | CI_PLACEHOLDER |
-| Draft PR | PR_PLACEHOLDER |
+| Acceptance verifier + mutation controls | pass (284 captured checkpoints; all mutation negative controls rejected) |
+| Exact-head CI | Linux CI run `42059766439` on `601cbc12` (success) |
+| Draft PR | #42 (draft, open, unmerged) |
 
 ## Scope notes
 

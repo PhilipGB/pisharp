@@ -5597,7 +5597,7 @@
         "Paired PTY differential: terminal-keys-tree-scoped-picker at 100x30 and 140x40, dark, fullscreen and regular, with 71 named checkpoints per case. Paired scenario errors and semantic differences are zero; same-Pi semantic calibration differences are zero. Tree rows/selection/fold/filter/search, scoped enabled order/counts/selection/unsaved state, clipboard writes and the summary prompt match.",
         "Persisted observations: settings keep shellCommandPrefix and save enabledModels [fixture/beta, fixture/alpha]; both products record the label trail first label, second answer label, second answer label updated; PiSharp writes its native session document and restores the saved scope after restart.",
         "Acceptance manifest docs/parity/fixtures/keys-tree-scoped-picker-acceptance-2026-11-05.json, checkpoint evidence docs/parity/fixtures/keys-tree-scoped-picker-checkpoints-2026-11-05.json and receipt docs/parity/fixtures/keys-tree-scoped-picker-2026-11-05.md. Mutation negative controls reject altered checkpoints, scoped order, settings, labels, clipboard, requests, comparisons, tests, gates and ledger.",
-        "Quality: dotnet format PiSharp.slnx --verify-no-changes passed; dotnet build PiSharp.slnx --warnaserror passed with 0 warnings/errors; FULL_SUITE_PLACEHOLDER. Exact-head CI CI_PLACEHOLDER; draft PR PR_PLACEHOLDER open and unmerged."
+        "Quality: dotnet format PiSharp.slnx --verify-no-changes passed; dotnet build PiSharp.slnx --warnaserror passed with 0 warnings/errors; the full .NET suite passes 4461/4461 with zero skipped. Exact-head CI Linux CI run 42059766439 on 601cbc12 completed successfully; draft PR #42 open and unmerged."
       ],
       "dependencies": [],
       "handover_review": {

@@ -24,7 +24,7 @@ checkpoints in each of four paired cases (100x30/140x40, dark, fullscreen and
 regular). Paired and same-Pi calibration semantic differences are zero;
 clipboard writes, persisted `enabledModels`, tree label trails and terminal
 restoration match. The full .NET suite passes 4,461/4,461 with zero skips. Format and warnings-as-errors build
-pass; exact-head CI CI_PLACEHOLDER; draft PR PR_PLACEHOLDER open and unmerged.
+pass; exact-head CI Linux CI run `42059766439` on `601cbc12`; draft PR #42 open and unmerged.
 `settings.treeFilterMode` remains separately tracked. See the
 [receipt](parity/fixtures/keys-tree-scoped-picker-2026-11-05.md).
 

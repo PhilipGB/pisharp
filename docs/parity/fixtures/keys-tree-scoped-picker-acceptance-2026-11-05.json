@@ -343,13 +343,15 @@
       "skipped": 0
     },
     "exactHeadCi": {
-      "status": "pending",
-      "headSha": "3eb631ed80983c6fef1e915d6815c115493993dc",
-      "run": "0"
+      "status": "pass",
+      "headSha": "601cbc1246df6602dc32136d7aedae17445363c4",
+      "run": "42059766439",
+      "evidence": "Linux CI run 42059766439 on 601cbc12 completed successfully (format, warnings-as-errors build, full suite, macOS/Windows/MCP jobs)."
     },
     "ledger": {
-      "status": "pending",
-      "entry": "keys-tree-scoped-picker"
+      "status": "pass",
+      "entry": "keys-tree-scoped-picker",
+      "evidence": "docs/parity/execution-ledger.json keys-tree-scoped-picker entry is verified and references the oracle, acceptance manifest and checkpoint evidence."
     }
   },
   "findings": [
