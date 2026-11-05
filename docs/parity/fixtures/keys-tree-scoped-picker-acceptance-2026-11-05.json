@@ -351,10 +351,10 @@
       "skipped": 0
     },
     "exactHeadCi": {
-      "status": "pending",
-      "headSha": "601cbc1246df6602dc32136d7aedae17445363c4",
-      "run": "0",
-      "evidence": "pending exact-head CI for the review-correction commit"
+      "status": "pass",
+      "headSha": "6db375439d08a19f61033c55ee44b7b88372fb20",
+      "run": "42090111711",
+      "evidence": "Linux CI run 42090111711 on 6db37543 completed successfully (format, warnings-as-errors build, 4465 tests, macOS/Windows/MCP jobs)."
     },
     "ledger": {
       "status": "pass",

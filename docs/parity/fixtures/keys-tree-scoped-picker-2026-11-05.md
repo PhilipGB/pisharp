@@ -46,7 +46,7 @@ commits the same trail to its native session document).
 | Paired PTY (4 cases) | 0 semantic differences |
 | Same-Pi calibration (4 cases) | 0 semantic differences |
 | Acceptance verifier + mutation controls | pass (284 captured checkpoints; all mutation negative controls rejected) |
-| Exact-head CI | pending review-correction CI |
+| Exact-head CI | Linux CI run `42090111711` on `6db37543` (success) |
 | Draft PR | #42 (draft, open, unmerged) |
 
 
