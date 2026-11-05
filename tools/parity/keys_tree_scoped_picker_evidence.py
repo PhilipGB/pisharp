@@ -326,6 +326,7 @@ def main():
                         help="Same-Pi calibration output directory")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--label", default="paired", help="Evidence label written into the document")
+    parser.add_argument("--pisharp-sha", help="Override the recorded implementation SHA")
     parser.add_argument("--case", action="append", choices=CASES,
                         help="Only extract the named case (repeatable); defaults to every case")
     args = parser.parse_args()
@@ -341,7 +342,7 @@ def main():
 
     document = {"capability": "keys-tree-scoped-picker",
                 "piSha": report.get("piSha"),
-                "pisharpSha": report.get("pisharpSha"),
+                "pisharpSha": args.pisharp_sha or report.get("pisharpSha"),
                 "label": args.label,
                 "cases": {}}
     for case_id in cases:

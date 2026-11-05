@@ -1,7 +1,7 @@
 # Keys: session tree and scoped model picker
 
 Verified capability `keys-tree-scoped-picker` at implementation source
-`12cd366111f1d9eb126102bb0ba372f461545bad` against pinned Pi
+`bdcb95f3f77b2eac410c66169372cd6b75765bfe` against pinned Pi
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 
 ## Contract
@@ -42,12 +42,29 @@ commits the same trail to its native session document).
 | --- | --- |
 | `dotnet format PiSharp.slnx --verify-no-changes` | pass |
 | `dotnet build PiSharp.slnx --warnaserror` | 0 warnings, 0 errors |
-| Full .NET suite | 4,461/4,461 tests, zero skipped |
+| Full .NET suite | 4,465/4,465 tests, zero skipped |
 | Paired PTY (4 cases) | 0 semantic differences |
 | Same-Pi calibration (4 cases) | 0 semantic differences |
 | Acceptance verifier + mutation controls | pass (284 captured checkpoints; all mutation negative controls rejected) |
-| Exact-head CI | Linux CI run `42059766439` on `601cbc12` (success) |
+| Exact-head CI | pending review-correction CI |
 | Draft PR | #42 (draft, open, unmerged) |
+
+
+## Review corrections (2026-11-05)
+
+- Session-controlled tree text, labels, tool summaries, search and label-edit
+  buffers now pass through `TerminalSafeText` before styling. A seeded PTY case
+  with embedded `ESC[2J` and OSC title/clipboard sequences verifies only visible
+  text reaches the terminal.
+- `/scoped-models` opens immediately from `GetAvailableModelSnapshot()` and
+  performs one bounded background refresh instead of awaiting discovery twice.
+  The selector re-derives order and selection once the snapshot lands, unless the
+  user has already edited or navigated it.
+- Refreshed snapshots mark models that disappeared as unavailable while keeping
+  them addressable as placeholder rows.
+- The tree selector requests a render when terminal dimensions change.
+- Ctrl+S saves only when the configured `app.models.save` binding matches; the
+  unconditional fallback is removed.
 
 ## Scope notes
 

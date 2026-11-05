@@ -13,7 +13,9 @@ five Linux PTY journeys and 71 named checkpoints in each of four paired cases
 (100x30/140x40, dark, fullscreen and regular). Paired and same-Pi calibration
 semantic differences are zero; tree rows, selection, fold/filter/search state,
 labels, clipboard writes, scoped enabled order/counts, saved `enabledModels` and
-restart scope all match. See the
+restart scope all match. Review corrections add control-sequence sanitization,
+snapshot-first scoped opening, removed-model availability, resize rerendering
+and configured save bindings. See the
 [receipt](fixtures/keys-tree-scoped-picker-2026-11-05.md). `settings.treeFilterMode`
 remains separately tracked.
 

@@ -2,7 +2,7 @@
   "schema": 1,
   "capability": "keys-tree-scoped-picker",
   "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-  "implementationSha": "12cd366111f1d9eb126102bb0ba372f461545bad",
+  "implementationSha": "bdcb95f3f77b2eac410c66169372cd6b75765bfe",
   "oracleFile": "docs/parity/fixtures/keys-tree-scoped-picker-pi-oracle-2026-11-05.json",
   "checkpointFile": "docs/parity/fixtures/keys-tree-scoped-picker-checkpoints-2026-11-05.json",
   "oracleScenarioCount": 15,
@@ -27,7 +27,11 @@
       "PiSharp.Tests.TerminalPtyTests.ScopedModelsSelectorAppliesSessionEditsAndPersistsReorderedScopeThroughLinuxPty",
       "PiSharp.Tests.TerminalPtyTests.ScopedModelsSelectorAddsModelsDiscoveredWhileOpenThroughLinuxPty",
       "PiSharp.Tests.AppControlPtyTests.DoubleEscapeHonoursTheConfiguredActionAndReturnsToTheEditor",
-      "PiSharp.Tests.AppControlPtyTests.RegularModeDoubleEscapeAfterBashEntryOpensTheTreeSelectorThroughLinuxPty"
+      "PiSharp.Tests.AppControlPtyTests.RegularModeDoubleEscapeAfterBashEntryOpensTheTreeSelectorThroughLinuxPty",
+      "PiSharp.Tests.KeysTreeScopedPickerTests.TreeRendersSessionControlSequencesAsVisibleText",
+      "PiSharp.Tests.KeysTreeScopedPickerTests.ScopedRefreshMarksModelsMissingFromTheSnapshotUnavailable",
+      "PiSharp.Tests.KeysTreeScopedPickerTests.ScopedSaveHonoursTheConfiguredBinding",
+      "PiSharp.Tests.TerminalPtyTests.SessionTreeNeutralizesControlSequencesThroughLinuxPty"
     ],
     "theories": [],
     "ptyEvidence": [
@@ -61,7 +65,9 @@
       ],
       "tests": [
         "PiSharp.Tests.KeysTreeScopedPickerTests.TreeSelectionStartsAtCurrentLeafAndWraps",
-        "PiSharp.Tests.TerminalPtyTests.ConversationTreeSearchSelectsAndPersistsABranchThroughLinuxPty"
+        "PiSharp.Tests.TerminalPtyTests.ConversationTreeSearchSelectsAndPersistsABranchThroughLinuxPty",
+        "PiSharp.Tests.KeysTreeScopedPickerTests.TreeRendersSessionControlSequencesAsVisibleText",
+        "PiSharp.Tests.TerminalPtyTests.SessionTreeNeutralizesControlSequencesThroughLinuxPty"
       ],
       "ptyCheckpoints": [
         "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-open",
@@ -208,7 +214,8 @@
       ],
       "tests": [
         "PiSharp.Tests.KeysTreeScopedPickerTests.ScopedSortedIdsListEnabledModelsFirstThenRemainingCatalog",
-        "PiSharp.Tests.TerminalPtyTests.ScopedModelsSelectorAppliesSessionEditsAndPersistsReorderedScopeThroughLinuxPty"
+        "PiSharp.Tests.TerminalPtyTests.ScopedModelsSelectorAppliesSessionEditsAndPersistsReorderedScopeThroughLinuxPty",
+        "PiSharp.Tests.KeysTreeScopedPickerTests.ScopedRefreshMarksModelsMissingFromTheSnapshotUnavailable"
       ],
       "ptyCheckpoints": [
         "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/scoped-open",
@@ -312,7 +319,8 @@
       "tests": [
         "PiSharp.Tests.KeysTreeScopedPickerTests.TreeKeybindingsMatchPinnedPiDefaults",
         "PiSharp.Tests.AppControlPtyTests.DoubleEscapeHonoursTheConfiguredActionAndReturnsToTheEditor",
-        "PiSharp.Tests.AppControlPtyTests.RegularModeDoubleEscapeAfterBashEntryOpensTheTreeSelectorThroughLinuxPty"
+        "PiSharp.Tests.AppControlPtyTests.RegularModeDoubleEscapeAfterBashEntryOpensTheTreeSelectorThroughLinuxPty",
+        "PiSharp.Tests.KeysTreeScopedPickerTests.ScopedSaveHonoursTheConfiguredBinding"
       ],
       "ptyCheckpoints": [
         "terminal-keys-tree-scoped-picker/100x30-dark-fullscreen/tree-filter-no-tools",
@@ -337,16 +345,16 @@
     },
     "fullSuite": {
       "status": "pass",
-      "evidence": "dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --no-build --no-restore (4461 passed, 0 failed, 0 skipped)",
-      "passed": 4461,
+      "evidence": "dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --no-build --no-restore (4465 passed, 0 failed, 0 skipped)",
+      "passed": 4465,
       "failed": 0,
       "skipped": 0
     },
     "exactHeadCi": {
-      "status": "pass",
+      "status": "pending",
       "headSha": "601cbc1246df6602dc32136d7aedae17445363c4",
-      "run": "42059766439",
-      "evidence": "Linux CI run 42059766439 on 601cbc12 completed successfully (format, warnings-as-errors build, full suite, macOS/Windows/MCP jobs)."
+      "run": "0",
+      "evidence": "pending exact-head CI for the review-correction commit"
     },
     "ledger": {
       "status": "pass",
