@@ -28,11 +28,11 @@ internal static class TerminalStyledFrameReader
         public static CellStyle Default => new(null, null, false, false, false, false, false, false);
     }
 
-    internal sealed record Cell(char Char, CellStyle Style);
+    internal sealed record Cell(string Text, int Width, CellStyle Style);
 
     internal sealed record Row(IReadOnlyList<Cell> Cells)
     {
-        public string Text => new(Cells.Select(cell => cell.Char).ToArray());
+        public string Text => string.Concat(Cells.Select(cell => cell.Text));
     }
 
     internal sealed record Frame(IReadOnlyList<Row> Rows, int CursorRow, int CursorColumn);
@@ -44,7 +44,7 @@ internal static class TerminalStyledFrameReader
         var screen = new Cell[rows, columns];
         for (var row = 0; row < rows; row++)
             for (var column = 0; column < columns; column++)
-                screen[row, column] = new Cell(' ', CellStyle.Default);
+                screen[row, column] = new Cell(" ", 1, CellStyle.Default);
 
         var style = new StyleState();
         var cursorRow = 0;
@@ -101,12 +101,39 @@ internal static class TerminalStyledFrameReader
                     offset++;
                     continue;
             }
-            if (output[offset] >= ' ' && cursorRow < rows && cursorColumn < columns)
+            if (output[offset] < ' ')
             {
-                screen[cursorRow, cursorColumn] = new Cell(output[offset], style.Snapshot());
-                cursorColumn++;
+                offset++;
+                continue;
             }
-            offset++;
+
+            var element = StringInfo.GetNextTextElement(output, offset);
+            var width = TerminalCells.Width(element);
+            if (cursorRow >= rows || cursorColumn >= columns)
+            {
+                offset += element.Length;
+                continue;
+            }
+            var cellStyle = style.Snapshot();
+            if (width <= 0)
+            {
+                if (cursorColumn > 0)
+                {
+                    var previous = screen[cursorRow, cursorColumn - 1];
+                    screen[cursorRow, cursorColumn - 1] = previous with { Text = previous.Text + element };
+                }
+                else
+                {
+                    screen[cursorRow, cursorColumn] = new Cell(element, 0, cellStyle);
+                }
+                offset += element.Length;
+                continue;
+            }
+            screen[cursorRow, cursorColumn] = new Cell(element, width, cellStyle);
+            for (var index = 1; index < width && cursorColumn + index < columns; index++)
+                screen[cursorRow, cursorColumn + index] = new Cell("", 0, cellStyle);
+            cursorColumn = Math.Min(columns, cursorColumn + width);
+            offset += element.Length;
         }
         return frames;
 
@@ -205,7 +232,7 @@ internal static class TerminalStyledFrameReader
             start = Math.Clamp(start, 0, screen.GetLength(1));
             end = Math.Clamp(end, start, screen.GetLength(1));
             for (var column = start; column < end; column++)
-                screen[row, column] = new Cell(' ', style.Snapshot());
+                screen[row, column] = new Cell(" ", 1, style.Snapshot());
         }
     }
 

@@ -1,15 +1,19 @@
 # Wrapped Bash command style parity — 2026-11-06
 
-This milestone closes the `ui-trailing-wrapped-command-style` P2 recorded by
-the ENV-PARSER-001 evaluation. It also corrects the exact-boundary variant found
-while establishing the Pi contract: a command that exactly fills the transcript
-width must not carry the command foreground into the right output-padding cell.
+This milestone addresses the `ui-trailing-wrapped-command-style` P2 recorded by
+the ENV-PARSER-001 evaluation in draft PR #46. It also corrects the
+exact-boundary variant found while establishing the Pi contract: a command that
+exactly fills the transcript width must not carry the command foreground into
+the right output-padding cell.
 
 ## Prerequisite
 
 - PR #45 reviewed and merged at
   `0984bfc922714862e2af244133313828617ca730`.
-- Branch: `milestone/wrapped-bash-command-style-parity`, based on that merge.
+- Branch: `milestone/wrapped-bash-command-style-parity`, based on that merge;
+  draft PR #46 remains open and unmerged.
+- Implementation revision: `95704af040c2e8043457383ea31f88204eba7a72`.
+- Initial review head: `26ee415c9141ba6c01a3ebc8bad19bf06048b330`.
 - Pi reference: `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` (unchanged).
 
 ## Reference behaviour
@@ -62,7 +66,10 @@ Two distinct paths were involved.
   expanded/re-collapsed results. The assertions decode foreground, background
   and bold attributes at named cells.
 - `tests/PiSharp.Tests/TestInfrastructure/TerminalStyledFrameReader.cs`: a test
-  frame decoder that retains SGR cell styles.
+  frame decoder that retains SGR cell styles and uses terminal cell widths for
+  wide CJK, emoji and combining graphemes.
+- `tests/PiSharp.Tests/Cli/Tui/Rendering/TerminalStyledFrameReaderTests.cs`:
+  focused decoder tests for wide, emoji and combining characters.
 - `tests/PiSharp.Tests/Cli/Tui/Rendering/ToolCallRenderingTests.cs`: a focused
   compositor regression for the exact-width output-padding cell.
 
@@ -112,17 +119,18 @@ See [terminal-comparison.json](terminal-comparison.json) and
 ## Verification
 
 - `dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --no-restore
-  --filter 'FullyQualifiedName~BashToolCollapseTests|FullyQualifiedName~ToolCallRenderingTests'`
-  — 34 passed.
-- Full .NET suite — 4,493 passed, 1 failed on the pre-existing
-  `KeysQueueSessionPtyTests.FollowUpDequeue...` `TaskCanceledException` flake;
-  the isolated rerun passed. The PTY/process timing flakes are recorded as
-  flakes, not as resolved.
+  --filter 'FullyQualifiedName~BashToolCollapseTests|FullyQualifiedName~ToolCallRenderingTests|FullyQualifiedName~TerminalStyledFrameReaderTests'`
+  — 36 passed.
+- Full .NET suite — 4,494 passed, 2 failed on pre-existing process/PTY timing
+  flakes (`SessionShareTests.GistCancellationKillsTheChildAndCleansTheExport`
+  timeout and `KeysQueueSessionPtyTests.FollowUpDequeue...`
+  `TaskCanceledException`); both isolated reruns passed. The flakes are recorded
+  as flakes, not as resolved.
 - Terminal Python suite — 66 passed.
 - Objective-agent Python suite — 8 passed.
 - `dotnet build PiSharp.slnx --no-restore --warnaserror` — clean.
 - `dotnet format PiSharp.slnx --verify-no-changes --no-restore` — clean.
-- `python3 tools/validate_doc_paths.py` — 172 documents, 774 references.
+- `python3 tools/validate_doc_paths.py` — 173 documents, 784 references.
 - Exact-head CI is recorded on the draft PR.
 
 ## Remaining differences

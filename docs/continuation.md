@@ -8,33 +8,35 @@
 
 ## Current state — 2026-11-06
 
-Current status is based on `main` at `0984bfc922714862e2af244133313828617ca730`. The latest merged milestones are [Wrapped Bash command style parity](parity/fixtures/wrapped-bash-command-style-parity-2026-11-06/README.md) (PR #45, `0984bfc9`), [Bash tool output collapse and expansion parity](parity/fixtures/collapsed-tool-output-parity-2026-11-06/README.md) (PR #45, `0984bfc9`) and [multi-step agent execution and recovery parity](parity/fixtures/objective-agent-parity-002-2026-11-06/README.md) (PR #44, `7748479c`). Global parity remains `in_progress` at **15 verified, 147 in progress and 32 not started** across the 194 required capabilities. The next step is a broader evaluation of PiSharp's interactive terminal UI, particularly editing, navigation, session interaction and streaming behavior, then selecting the next capability from the feature matrix and execution ledger. Open architecture risks are tracked in the [architecture document](architecture.md#open-architecture-risks).
+Current status is based on `main` at `0984bfc922714862e2af244133313828617ca730`. The latest merged milestones are [Bash tool output collapse and expansion parity](parity/fixtures/collapsed-tool-output-parity-2026-11-06/README.md) (PR #45, `0984bfc9`) and [multi-step agent execution and recovery parity](parity/fixtures/objective-agent-parity-002-2026-11-06/README.md) (PR #44, `7748479c`). [Wrapped Bash command style parity](parity/fixtures/wrapped-bash-command-style-parity-2026-11-06/README.md) is implemented in draft PR #46 and remains unmerged. Global parity is `in_progress` at **21 verified, 142 in progress and 31 not started** across the 194 required capabilities, derived from the committed execution ledger. The next step is a broader evaluation of PiSharp's interactive terminal UI, particularly editing, navigation, session interaction and streaming behavior, then selecting the next capability from the feature matrix and execution ledger. Open architecture risks are tracked in the [architecture document](architecture.md#open-architecture-risks).
 
 The milestone entries below retain their historical wording and are superseded by this section wherever they describe a milestone as active or a merged PR as open.
 
-## Completed milestone — Wrapped Bash Command Style Parity — 2026-11-06
+## Milestone in review — Wrapped Bash Command Style Parity — 2026-11-06
 
-PR #45 was reviewed and merged at
-`0984bfc922714862e2af244133313828617ca730`; this milestone branches from that
-merge. The ENV-PARSER-001 P2 `ui-trailing-wrapped-command-style` is closed.
-Pi's wrapped Bash command header keeps its title foreground, bold attribute and
-tool background across every soft-wrapped row's trailing padding, including the
-right output-padding cell; the final command row and a command that exactly fills
-the transcript width leave the output padding at the default foreground. PR #45
-had already removed the pre-wrap that caused the original 17 unstyled cells;
-this milestone fixes the remaining exact-boundary output-padding cell in
-`TerminalScreenCompositor` and adds decoded-cell regressions for one-row,
-two-row, multi-row, exact-boundary, output-following, failed/recovered, resize
-and expanded/re-collapsed commands.
+The ENV-PARSER-001 P2 `ui-trailing-wrapped-command-style` is addressed by draft
+PR #46, which remains open and unmerged. The implementation branches from merged
+PR #45 at `0984bfc922714862e2af244133313828617ca730` and is at revision
+`95704af040c2e8043457383ea31f88204eba7a72`. Pi's wrapped Bash command header
+keeps its title foreground, bold attribute and tool background across every
+soft-wrapped row's trailing padding, including the right output-padding cell;
+the final command row and a command that exactly fills the transcript width
+leave the output padding at the default foreground. PR #45 had already removed
+the pre-wrap that caused the original 17 unstyled cells; draft PR #46 fixes the
+remaining exact-boundary output-padding cell in `TerminalScreenCompositor` and
+adds decoded-cell regressions for one-row, two-row, multi-row, exact-boundary,
+output-following, failed/recovered, resize and expanded/re-collapsed commands.
+The decoded-frame test utility handles wide, emoji and combining graphemes.
 
-The 17-cell regression fails on the pre-milestone binary at row 5 column 63
-with the default foreground and passes after the correction. Deterministic
-`objective-agent-progress` parity improved from **19/20** (visual 9/10) to
-**20/20** (visual 10/10) at 80x24; 120x40 remains 20/20. The ENV-PARSER-002
-`objective-agent-recovery` fixture remains 20/20 at both sizes, including
-collapse, expand, re-collapse and recovery checkpoints. The rubric, weights and
-permitted normalisation are unchanged. No live Luna run was repeated; the
-historical 80/80 agent-functional evidence is unchanged. See the
+The 17-cell regression fails on the pre-#45 binary at row 5 column 63 with the
+default foreground and passes on the PR #45 merge. The exact-boundary regression
+fails on the PR #45 merge and passes on this branch. Deterministic
+`objective-agent-progress` parity improved from **19/20** (visual 9/10) before
+PR #45 to **20/20** (visual 10/10) at 80x24; 120x40 remains 20/20. The
+ENV-PARSER-002 `objective-agent-recovery` fixture remains 20/20 at both sizes,
+including collapse, expand, re-collapse and recovery checkpoints. The rubric,
+weights and permitted normalisation are unchanged. No live Luna run was
+repeated; the historical 80/80 agent-functional evidence is unchanged. See the
 [receipt](parity/fixtures/wrapped-bash-command-style-parity-2026-11-06/README.md),
 [UI report](parity/fixtures/wrapped-bash-command-style-parity-2026-11-06/ui-report.json)
 and [comparison](parity/fixtures/wrapped-bash-command-style-parity-2026-11-06/terminal-comparison.json).
@@ -65,8 +67,8 @@ normalisation; the ENV-PARSER-002 80/80 agent-functional results remain
 historical evidence and were not rerun. Twelve focused Bash collapse regressions
 were added; six failed before the fix and all pass after it. The ENV-PARSER-001
 P2 trailing wrapped-command style remained tracked at the time of this
-milestone and is resolved by the following Wrapped Bash Command Style Parity
-milestone. See the
+milestone and is addressed by the following Wrapped Bash Command Style Parity
+draft PR #46 (unmerged). See the
 [receipt](parity/fixtures/collapsed-tool-output-parity-2026-11-06/README.md),
 [UI report](parity/fixtures/collapsed-tool-output-parity-2026-11-06/ui-report.json)
 and [comparison summary](parity/fixtures/collapsed-tool-output-parity-2026-11-06/terminal-comparison.json).

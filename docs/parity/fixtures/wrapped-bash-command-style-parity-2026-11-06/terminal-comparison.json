@@ -3,7 +3,8 @@
   "fixture_checksum": "39d16ca1bcb7951b5c2752e300c8b6afda66749e3ae930b1fed0d47abaa29534",
   "pi_revision": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
   "pre_milestone_pisharp": "7748479cc0d7794464fda43902e5db03a76af642",
-  "after_pisharp": "0984bfc922714862e2af244133313828617ca730",
+  "pr45_merge_pisharp": "0984bfc922714862e2af244133313828617ca730",
+  "after_pisharp": "95704af040c2e8043457383ea31f88204eba7a72",
   "before": {
     "80x24-dark-fullscreen": {
       "total": 19,
@@ -81,6 +82,26 @@
       "differences": 0
     }
   },
+  "stages": {
+    "pre_pr45": {
+      "revision": "7748479cc0d7794464fda43902e5db03a76af642",
+      "progress_80x24": 19,
+      "original_17_cell_issue": "present",
+      "exact_boundary": "fails"
+    },
+    "pr45_merge": {
+      "revision": "0984bfc922714862e2af244133313828617ca730",
+      "progress_80x24": 20,
+      "original_17_cell_issue": "resolved",
+      "exact_boundary": "fails"
+    },
+    "implementation": {
+      "revision": "95704af040c2e8043457383ea31f88204eba7a72",
+      "progress_80x24": 20,
+      "original_17_cell_issue": "resolved",
+      "exact_boundary": "matches"
+    }
+  },
   "exact_boundary_probe": {
     "dimensions": "80x24",
     "commandCellsIncludingPrompt": 78,
@@ -112,5 +133,6 @@
         "bold": false
       }
     }
-  }
+  },
+  "initial_review_head": "26ee415c9141ba6c01a3ebc8bad19bf06048b330"
 }

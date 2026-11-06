@@ -333,7 +333,7 @@ public sealed class BashToolCollapseTests
             for (var column = start; column < end; column++)
             {
                 var cell = row.Cells[column];
-                Assert.Equal(expectedText[column - start], cell.Char);
+                Assert.Equal(expectedText[column - start].ToString(), cell.Text);
                 Assert.True(cell.Style.Foreground == title,
                     $"Command cell {column} of \"{expectedText}\" has foreground {cell.Style.Foreground}, expected {title}.");
                 Assert.True(cell.Style.Background == background,
