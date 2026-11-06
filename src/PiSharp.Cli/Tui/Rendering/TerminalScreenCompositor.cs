@@ -568,7 +568,7 @@ internal sealed class TerminalScreenCompositor
         if (hasPanelBackground)
         {
             if (hasTrailingReset) row = row[..^reset.Length];
-            if (preserveActiveStyleOnPadding || rowWidth >= transcriptWidth)
+            if (preserveActiveStyleOnPadding)
             {
                 var cellStyle = TerminalTextLayout.SgrStateAtLastCell(row);
                 row += (cellStyle.Length > 0 ? cellStyle : row[..leadingBackgroundLength]) +

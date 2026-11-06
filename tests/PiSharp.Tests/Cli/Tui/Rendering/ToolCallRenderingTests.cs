@@ -146,6 +146,20 @@ public sealed class ToolCallRenderingTests
     }
 
     [Fact]
+    public void PanelRowFillingTheTranscriptWidthLeavesOutputPaddingUnstyled()
+    {
+        var theme = TerminalThemeCatalog.LoadBuiltIn("dark", TerminalColorMode.TrueColor);
+        var background = theme.Bg("toolSuccessBg");
+        var styledCommand = theme.Style("toolTitle", new string('x', 78), bold: true);
+        var row = TerminalTextLayout.Create(background + styledCommand, width: 78).Rows[0];
+
+        var padded = TerminalScreenCompositor.PadTranscriptRow(row, transcriptWidth: 78, outputPadding: 1);
+
+        Assert.EndsWith("\u001b[0m" + background + " \u001b[0m", padded, StringComparison.Ordinal);
+        Assert.Equal(80, TerminalTextLayout.Width(padded));
+    }
+
+    [Fact]
     public void TranscriptCompositorKeepsBlankRowsWithAVisiblePanelBackground()
     {
         var theme = TerminalThemeCatalog.LoadBuiltIn("dark", TerminalColorMode.TrueColor);
