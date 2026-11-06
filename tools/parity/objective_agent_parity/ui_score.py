@@ -20,6 +20,14 @@ PROGRESS_CHECKPOINTS = ["tool-start", "tool-progress", "tool-complete",
                         "assistant-resume", "final-idle"]
 VISUAL_CHECKPOINTS = ["startup", "paste-tool-prompt", *PROGRESS_CHECKPOINTS]
 SIZE_CASES = ["80x24-dark-fullscreen", "120x40-dark-fullscreen"]
+RECOVERY_CHECKPOINTS = [
+    ("tool-start", "working"),
+    ("final-idle", "failure_output"),
+    ("final-idle", "failure_status"),
+    ("final-idle", "success_output"),
+    ("final-idle", "final_idle"),
+]
+RECOVERY_VISUAL_CHECKPOINTS = ["startup", "paste-tool-prompt", "run-recovery", "final-idle", "exit"]
 
 
 def _text(line: dict[str, Any]) -> str:
@@ -184,6 +192,194 @@ def score_case(assertion_path: Path) -> dict[str, Any]:
     details["caseTotal"] = progress + text_positions + spacing + colours + footer
     details["caseMax"] = 20
     return details
+
+
+RECOVERY_CALIBRATION_CHECKPOINTS = ["startup", "paste-tool-prompt", "run-recovery",
+                                    "final-idle", "exit"]
+
+
+def recovery_viewport_calibration(directory: Path) -> dict[str, Any]:
+    cases = []
+    ok = True
+    for case_id in SIZE_CASES:
+        path = directory / f"{case_id}.assertions.json.gz"
+        if not path.is_file():
+            cases.append(dict(id=case_id, match=False, reason="missing assertion evidence"))
+            ok = False
+            continue
+        frames = load_frames(path)
+        mismatches = []
+        for checkpoint in RECOVERY_CALIBRATION_CHECKPOINTS:
+            pi_frame = frames["pi"].get(checkpoint)
+            pisharp_frame = frames["pisharp"].get(checkpoint)
+            if pi_frame is None or pisharp_frame is None:
+                mismatches.append(dict(checkpoint=checkpoint, kind="missing"))
+                continue
+            if normalised_lines(pi_frame) != normalised_lines(pisharp_frame):
+                mismatches.append(dict(checkpoint=checkpoint, kind="text"))
+            if layout_signature(pi_frame) != layout_signature(pisharp_frame):
+                mismatches.append(dict(checkpoint=checkpoint, kind="layout"))
+            if style_grid(pi_frame) != style_grid(pisharp_frame):
+                mismatches.append(dict(checkpoint=checkpoint, kind="styles"))
+        cases.append(dict(id=case_id, match=not mismatches, differences=mismatches))
+        ok = ok and not mismatches
+    return dict(match=ok, checkpoints=RECOVERY_CALIBRATION_CHECKPOINTS, cases=cases)
+
+    text = "\n".join(normalised_lines(frame))
+    return dict(
+        working="Working" in text,
+        failureOutput="Failed: 1" in text,
+        failureStatus="Command exited with code 1" in text,
+        successOutput="Passed: 1" in text,
+        finalResponse="Recovery complete." in text,
+        idle="Working" not in text,
+    )
+
+
+def recovery_semantics(frame: dict[str, Any]) -> dict[str, bool]:
+    text = "\n".join(normalised_lines(frame))
+    return dict(
+        working="Working" in text,
+        failureOutput="Failed: 1" in text,
+        failureStatus="Command exited with code 1" in text,
+        successOutput="Passed: 1" in text,
+        finalResponse="Recovery complete." in text,
+        idle="Working" not in text,
+    )
+
+
+def score_recovery_case(assertion_path: Path) -> dict[str, Any]:
+    frames = load_frames(assertion_path)
+    pi_frames, pisharp_frames = frames["pi"], frames["pisharp"]
+    details: dict[str, Any] = {"checkpoints": {}, "visual": {}, "differences": []}
+    progress = 0
+    for checkpoint, semantic in RECOVERY_CHECKPOINTS:
+        pi_frame = pi_frames.get(checkpoint)
+        pisharp_frame = pisharp_frames.get(checkpoint)
+        if pi_frame is None or pisharp_frame is None:
+            details["checkpoints"][f"{checkpoint}:{semantic}"] = dict(points=0, reason="missing frame")
+            continue
+        pi_state = recovery_semantics(pi_frame)
+        pisharp_state = recovery_semantics(pisharp_frame)
+        key = {"failure_output": "failureOutput", "failure_status": "failureStatus",
+               "success_output": "successOutput", "final_idle": "finalResponse"}.get(semantic, semantic)
+        represented = bool(pi_state[key] and pisharp_state[key])
+        if semantic == "final_idle":
+            represented = represented and pi_state["idle"] == pisharp_state["idle"] and pisharp_state["idle"]
+        points = 2 if represented else 0
+        progress += points
+        details["checkpoints"][f"{checkpoint}:{semantic}"] = dict(
+            points=points, pi=pi_state, pisharp=pisharp_state,
+            reason="represented" if represented else "state mismatch")
+    details["progressPoints"] = progress
+    details["progressMax"] = 10
+
+    text_ok = True
+    layout_ok = True
+    styles_ok = True
+    for checkpoint in RECOVERY_VISUAL_CHECKPOINTS:
+        pi_frame = pi_frames.get(checkpoint)
+        pisharp_frame = pisharp_frames.get(checkpoint)
+        if pi_frame is None or pisharp_frame is None:
+            text_ok = layout_ok = styles_ok = False
+            continue
+        if normalised_lines(pi_frame) != normalised_lines(pisharp_frame):
+            text_ok = False
+            details["differences"].append(dict(checkpoint=checkpoint, kind="text"))
+        if layout_signature(pi_frame) != layout_signature(pisharp_frame):
+            layout_ok = False
+            details["differences"].append(dict(checkpoint=checkpoint, kind="layout"))
+        pi_styles = style_grid(pi_frame)
+        pisharp_styles = style_grid(pisharp_frame)
+        mismatched = sum(1 for row, cells in enumerate(pi_styles)
+                         for column, key in enumerate(cells)
+                         if key != pisharp_styles[row][column])
+        if mismatched:
+            styles_ok = False
+            details["differences"].append(dict(checkpoint=checkpoint, kind="styles", cells=mismatched,
+                                               totalCells=sum(len(row) for row in pi_styles)))
+    footer_ok = True
+    for checkpoint in ("final-idle", "exit"):
+        pi_frame = pi_frames.get(checkpoint)
+        pisharp_frame = pisharp_frames.get(checkpoint)
+        if pi_frame is None or pisharp_frame is None:
+            footer_ok = False
+            continue
+        if normalised_lines(pi_frame)[-4:] != normalised_lines(pisharp_frame)[-4:]:
+            footer_ok = False
+        if pi_frame["state"].get("cursor") != pisharp_frame["state"].get("cursor"):
+            footer_ok = False
+        if pi_frame["state"].get("activeScreen") != pisharp_frame["state"].get("activeScreen"):
+            footer_ok = False
+        if pi_frame["state"].get("modes") != pisharp_frame["state"].get("modes"):
+            footer_ok = False
+    text_points = 2 if text_ok else 0
+    layout_points = 1 if layout_ok else 0
+    style_points = 1 if styles_ok else 0
+    footer_points = 1 if footer_ok else 0
+    details["visual"] = dict(
+        labelsIndicatorsPositions=dict(points=text_points, max=2, match=text_ok),
+        spacingIndentationWrappingLayout=dict(points=layout_points, max=1, match=layout_ok),
+        coloursAndStyles=dict(points=style_points, max=1, match=styles_ok),
+        footerCursorFinalState=dict(points=footer_points, max=1, match=footer_ok),
+        total=text_points + layout_points + style_points + footer_points,
+        max=5,
+    )
+    details["caseTotal"] = progress + text_points + layout_points + style_points + footer_points
+    details["caseMax"] = 20
+    return details
+
+
+def score_recovery_ui(calibration_directory: Path, comparison_directory: Path) -> dict[str, Any]:
+    calibration_report = json.loads((calibration_directory / "report.json").read_text())
+    comparison_report = json.loads((comparison_directory / "report.json").read_text())
+    viewport = recovery_viewport_calibration(calibration_directory)
+    calibration_ok = bool(viewport["match"])
+    result: dict[str, Any] = {
+        "fixture": "objective-agent-recovery",
+        "calibration": {
+            "directory": str(calibration_directory),
+            "harnessMatch": bool(calibration_report.get("match")),
+            "viewportMatch": calibration_ok,
+            "match": calibration_ok,
+            "checkpoints": viewport["checkpoints"],
+            "cases": viewport["cases"],
+            "note": "Same-Pi calibration compares the stable named viewport checkpoints; "
+                    "full alternate-buffer scrollback scheduling is retained raw but not scored.",
+        },
+        "comparison": {
+            "directory": str(comparison_directory),
+            "match": bool(comparison_report.get("match")),
+        },
+        "cases": [],
+        "progressPoints": 0,
+        "visualPoints": 0,
+        "total": 0,
+        "max": 20,
+    }
+    if not calibration_ok:
+        result["status"] = "inconclusive"
+        result["reason"] = "Same-Pi calibration failed; cross-product visual comparison is not valid."
+        return result
+    progress = 0
+    visual = 0
+    for case_id in SIZE_CASES:
+        assertion_path = comparison_directory / f"{case_id}.assertions.json.gz"
+        if not assertion_path.is_file():
+            result["cases"].append(dict(id=case_id, error="missing assertion evidence"))
+            continue
+        scored = score_recovery_case(assertion_path)
+        result["cases"].append(dict(id=case_id, **scored))
+        progress += scored["progressPoints"]
+        visual += scored["visual"]["total"]
+    result["progressPoints"] = progress // len(SIZE_CASES)
+    result["visualPoints"] = visual
+    result["total"] = result["progressPoints"] + visual
+    result["piScore"] = 20
+    result["pisharpScore"] = result["total"]
+    result["parityScore"] = result["total"]
+    result["status"] = "scored"
+    return result
 
 
 def score_ui(calibration_directory: Path, comparison_directory: Path) -> dict[str, Any]:

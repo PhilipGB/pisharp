@@ -1,0 +1,68 @@
+{
+  "fixtureId": "ENV-PARSER-002",
+  "fixtureChecksum": "173f5b1318d650cee247138f44117821b3e2556c4b9ca2c0121226ac7a92cd8b",
+  "files": {
+    "Fixture.slnx": "75d384af0bfe6f0b560655974e4f30db3d499f7ed7e0cfb6759a07bcd49fa2e8",
+    "README.md": "fdd48e82c4c368e296186c66bb3fe2f329c0943793810ebf834ac8ac6b31faa9",
+    "src/Fixture.Core/EnvFile.cs": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+    "src/Fixture.Core/EnvInterpolator.cs": "9011b9644d6def6a1a7b06523692011882a835f382b974962e0a8ceaafdb18ee",
+    "src/Fixture.Core/Fixture.Core.csproj": "2c82dae7a6492e5dc0d99b6b5a5d1c89a4702b892f71757981e46302949d6115",
+    "tests/Fixture.Tests/EnvIntegrationTests.cs": "2a3fcd98b6ed1b7409e8659a8304a8a3c499136aed74b159e6a3c5c0e5858328",
+    "tests/Fixture.Tests/Fixture.Tests.csproj": "a60e112e1e0a401e6b86ad686e8171cd07aec04da180ca61e776e9064409f527"
+  },
+  "restore": {
+    "exitCode": 0,
+    "timedOut": false
+  },
+  "build": {
+    "exitCode": 0,
+    "timedOut": false,
+    "stdoutTail": "  Fixture.Core -> /home/philip/.cache/tmp/opencode/objective-agent-parity/baseline-validation-ENV-PARSER-002/src/Fixture.Core/bin/Debug/net10.0/Fixture.Core.dll\n  Fixture.Tests -> /home/philip/.cache/tmp/opencode/objective-agent-parity/baseline-validation-ENV-PARSER-002/tests/Fixture.Tests/bin/Debug/net10.0/Fixture.Tests.dll\n\nBuild succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:00.86\n"
+  },
+  "initial": {
+    "exitCode": 1,
+    "timedOut": false,
+    "tests": {
+      "Fixture.Tests.EnvIntegrationTests.ParsesEmbeddedEqualsAndPreservesUnknownPlaceholders": "failed"
+    },
+    "failureExcerpt": "/objective-agent-parity/baseline-validation-ENV-PARSER-002/tests/Fixture.Tests/bin/Debug/net10.0/Fixture.Tests.dll (.NETCoreApp,Version=v10.0)\nA total of 1 test files matched the specified pattern.\n  Failed Fixture.Tests.EnvIntegrationTests.ParsesEmbeddedEqualsAndPreservesUnknownPlaceholders [7 ms]\n  Error Message:\n   System.Collections.Generic.KeyNotFoundException : The given key 'URL' was not present in the dictionary.\n  Stack Trace:\n     at System.Collections.Generic.Dictionary`2.get_Item(TKey key)\n   at Fixture.Tests.EnvIntegrationTests.ParsesEmbeddedEqualsAndPreservesUnknownPlaceholders() in /home/philip/.cache/tmp/opencode/objective-agent-parity/baseline-validation-ENV-PARSER-002/tests/Fixture.Tests/EnvIntegrationTests.cs:line 12\n   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)\n   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)\nResults File: /home/philip/.cache/tmp/opencode/objective-agent-parity/baseline-validation-ENV-PARSER-002/tests/Fixture.Tests/TestResults/baseline.trx\n\nFailed!  - Failed:     1, Passed:     0, Skipped:     0, Total:     1, Duration: 15 ms - Fixture.Tests.dll (net10.0)\n[xUnit.net 00:00:00.13]     Fixture.Tests.EnvIntegrationTests.ParsesEmbeddedEqualsAndPreservesUnknownPlaceholders [FAIL]\n",
+    "passed": 0,
+    "failed": 1
+  },
+  "afterDefectA": {
+    "exitCode": 1,
+    "timedOut": false,
+    "tests": {
+      "Fixture.Tests.EnvIntegrationTests.ParsesEmbeddedEqualsAndPreservesUnknownPlaceholders": "failed"
+    },
+    "failureExcerpt": "oreApp,Version=v10.0)\nA total of 1 test files matched the specified pattern.\n  Failed Fixture.Tests.EnvIntegrationTests.ParsesEmbeddedEqualsAndPreservesUnknownPlaceholders [13 ms]\n  Error Message:\n   Assert.Equal() Failure: Strings differ\n                                \u2193 (pos 21)\nExpected: \"known=value; unknown=${MISSING}\"\nActual:   \"known=value; unknown=\"\n  Stack Trace:\n     at Fixture.Tests.EnvIntegrationTests.ParsesEmbeddedEqualsAndPreservesUnknownPlaceholders() in /home/philip/.cache/tmp/opencode/objective-agent-parity/baseline-validation-ENV-PARSER-002/tests/Fixture.Tests/EnvIntegrationTests.cs:line 16\n   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)\n   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)\nWARNING: Overwriting results file: /home/philip/.cache/tmp/opencode/objective-agent-parity/baseline-validation-ENV-PARSER-002/tests/Fixture.Tests/TestResults/baseline.trx\nResults File: /home/philip/.cache/tmp/opencode/objective-agent-parity/baseline-validation-ENV-PARSER-002/tests/Fixture.Tests/TestResults/baseline.trx\n\nFailed!  - Failed:     1, Passed:     0, Skipped:     0, Total:     1, Duration: 26 ms - Fixture.Tests.dll (net10.0)\n[xUnit.net 00:00:00.18]     Fixture.Tests.EnvIntegrationTests.ParsesEmbeddedEqualsAndPreservesUnknownPlaceholders [FAIL]\n",
+    "passed": 0,
+    "failed": 1
+  },
+  "afterBothDefects": {
+    "exitCode": 0,
+    "timedOut": false,
+    "tests": {
+      "Fixture.Tests.EnvIntegrationTests.ParsesEmbeddedEqualsAndPreservesUnknownPlaceholders": "passed"
+    },
+    "failureExcerpt": "  Fixture.Core -> /home/philip/.cache/tmp/opencode/objective-agent-parity/baseline-validation-ENV-PARSER-002/src/Fixture.Core/bin/Debug/net10.0/Fixture.Core.dll\n  Fixture.Tests -> /home/philip/.cache/tmp/opencode/objective-agent-parity/baseline-validation-ENV-PARSER-002/tests/Fixture.Tests/bin/Debug/net10.0/Fixture.Tests.dll\nTest run for /home/philip/.cache/tmp/opencode/objective-agent-parity/baseline-validation-ENV-PARSER-002/tests/Fixture.Tests/bin/Debug/net10.0/Fixture.Tests.dll (.NETCoreApp,Version=v10.0)\nA total of 1 test files matched the specified pattern.\nWARNING: Overwriting results file: /home/philip/.cache/tmp/opencode/objective-agent-parity/baseline-validation-ENV-PARSER-002/tests/Fixture.Tests/TestResults/baseline.trx\nResults File: /home/philip/.cache/tmp/opencode/objective-agent-parity/baseline-validation-ENV-PARSER-002/tests/Fixture.Tests/TestResults/baseline.trx\n\nPassed!  - Failed:     0, Passed:     1, Skipped:     0, Total:     1, Duration: 25 ms - Fixture.Tests.dll (net10.0)\n",
+    "passed": 1,
+    "failed": 0
+  },
+  "transformChecksums": {
+    "defectA": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+    "defectB": "39d995766be66d733b3d2f5702c816753e66ff47798a28e2045942f48a557f55",
+    "baselineDefectA": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+    "baselineDefectB": "9011b9644d6def6a1a7b06523692011882a835f382b974962e0a8ceaafdb18ee"
+  },
+  "intentionalDefects": [
+    "EnvFile.Parse splits at every equals sign and discards assignments without exactly two parts.",
+    "EnvInterpolator.Expand replaces unresolved placeholders with an empty string."
+  ],
+  "expectedInitialFailure": "Fixture.Tests.EnvIntegrationTests.ParsesEmbeddedEqualsAndPreservesUnknownPlaceholders",
+  "sequentialExpectation": {
+    "initial": "fails in the parsing assertion",
+    "afterDefectA": "fails in the interpolation assertion",
+    "afterBothDefects": "passes"
+  }
+}

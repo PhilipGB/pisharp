@@ -11,8 +11,10 @@ import json
 import os
 import re
 import shutil
+import signal
 import subprocess
 import tempfile
+import threading
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -35,6 +37,14 @@ EXPECTED_BASELINE_FAILURE = "Fixture.Tests.EnvFileTests.ValuesContainingAddition
 PRIVATE_IDS = [f"H{i:02d}" for i in range(1, 9)]
 EXCLUDED_PARTS = {"bin", "obj", "TestResults", ".git", ".vs", "node_modules"}
 EXCLUDED_SUFFIXES = {".user", ".suo"}
+
+
+def _spec(spec=None):
+    if spec is not None:
+        return spec
+    from fixtures import get_fixture
+    return get_fixture(FIXTURE_ID)
+
 
 
 def sha256_bytes(value: bytes) -> str:
@@ -74,21 +84,22 @@ def aggregate_manifest(manifest: dict[str, str]) -> str:
     return digest.hexdigest()
 
 
-def baseline_manifest() -> dict[str, str]:
-    return file_manifest(FIXTURE_ROOT)
+def baseline_manifest(spec=None) -> dict[str, str]:
+    return file_manifest(_spec(spec).root)
 
 
-def baseline_checksum() -> str:
-    return aggregate_manifest(baseline_manifest())
+def baseline_checksum(spec=None) -> str:
+    return aggregate_manifest(baseline_manifest(spec))
 
 
-def load_baseline() -> dict[str, Any]:
-    return json.loads(BASELINE_PATH.read_text())
+def load_baseline(spec=None) -> dict[str, Any]:
+    return json.loads(_spec(spec).baseline_path.read_text())
 
 
-def verify_baseline() -> dict[str, Any]:
-    expected = load_baseline()
-    actual = baseline_manifest()
+def verify_baseline(spec=None) -> dict[str, Any]:
+    spec = _spec(spec)
+    expected = load_baseline(spec)
+    actual = baseline_manifest(spec)
     actual_checksum = aggregate_manifest(actual)
     if actual_checksum != expected["fixtureChecksum"]:
         raise RuntimeError(
@@ -101,22 +112,24 @@ def verify_baseline() -> dict[str, Any]:
     return expected
 
 
-def reset_workspace() -> dict[str, Any]:
+def reset_workspace(spec=None) -> dict[str, Any]:
     """Replace the agent workspace with a verified baseline copy."""
+    spec = _spec(spec)
     STATE_ROOT.mkdir(parents=True, exist_ok=True)
+    workspace = spec.workspace
     marker = STATE_ROOT / ".objective-agent-parity"
-    if WORKSPACE.exists():
-        if not marker.exists() and not (WORKSPACE.parent == STATE_ROOT):
-            raise RuntimeError(f"Refusing to remove unowned workspace: {WORKSPACE}")
-        shutil.rmtree(WORKSPACE)
+    if workspace.exists():
+        if not marker.exists() and not (workspace.parent == STATE_ROOT):
+            raise RuntimeError(f"Refusing to remove unowned workspace: {workspace}")
+        shutil.rmtree(workspace)
     marker.touch()
-    shutil.copytree(FIXTURE_ROOT, WORKSPACE, symlinks=False)
+    shutil.copytree(spec.root, workspace, symlinks=False)
     for transient in ("bin", "obj", "TestResults"):
-        for path in list(WORKSPACE.rglob(transient)):
+        for path in list(workspace.rglob(transient)):
             if path.is_dir():
                 shutil.rmtree(path, ignore_errors=True)
-    expected = verify_baseline()
-    copied = file_manifest(WORKSPACE)
+    expected = verify_baseline(spec)
+    copied = file_manifest(workspace)
     if aggregate_manifest(copied) != expected["fixtureChecksum"]:
         raise RuntimeError("Workspace copy does not match the verified fixture checksum")
     return expected
@@ -160,8 +173,8 @@ def run_command(
                     durationSeconds=time.monotonic() - started, timedOut=True)
 
 
-def restricted_preexec(cpu_seconds: int = 600) -> Any:
-    """Identical process limits for both products; ignored on unsupported hosts."""
+def restricted_preexec(cpu_seconds: int = 600, address_space_bytes: int = 8 * 1024 * 1024 * 1024) -> Any:
+    """Identical process limits for both products; address space is optional."""
     try:
         import resource
     except ImportError:
@@ -169,7 +182,10 @@ def restricted_preexec(cpu_seconds: int = 600) -> Any:
 
     def apply() -> None:
         resource.setrlimit(resource.RLIMIT_CPU, (cpu_seconds, cpu_seconds))
-        for name, value in (("RLIMIT_AS", 8 * 1024 * 1024 * 1024), ("RLIMIT_NOFILE", 4096)):
+        limits = [("RLIMIT_NOFILE", 4096)]
+        if address_space_bytes:
+            limits.append(("RLIMIT_AS", address_space_bytes))
+        for name, value in limits:
             limit = getattr(resource, name, None)
             if limit is not None:
                 try:
@@ -179,38 +195,76 @@ def restricted_preexec(cpu_seconds: int = 600) -> Any:
     return apply
 
 
+def _tree_memory(pid: int) -> tuple[int, int]:
+    try:
+        import psutil
+        process = psutil.Process(pid)
+        processes = [process, *process.children(recursive=True)]
+    except Exception:
+        return 0, 0
+    total = 0
+    count = 0
+    for item in processes:
+        try:
+            total += item.memory_info().rss
+            count += 1
+        except Exception:
+            continue
+    return total, count
+
+
 def run_agent_process(
     command: list[str],
     *,
     cwd: Path,
     env: dict[str, str],
     timeout: float,
+    address_space_bytes: int = 8 * 1024 * 1024 * 1024,
 ) -> dict[str, Any]:
-    """Run one agent with a monotonic deadline and identical resource limits."""
+    """Run one agent with a monotonic deadline, identical limits and peak-memory sampling."""
     started = time.monotonic()
+    peak = {"bytes": 0, "processes": 0}
+    stop = threading.Event()
+
+    def sample() -> None:
+        while not stop.is_set():
+            total, count = _tree_memory(process.pid)
+            if total > peak["bytes"]:
+                peak["bytes"] = total
+                peak["processes"] = count
+            stop.wait(0.1)
+
+    process = subprocess.Popen(
+        command,
+        cwd=str(cwd),
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        errors="replace",
+        start_new_session=True,
+        preexec_fn=restricted_preexec(int(timeout) + 5, address_space_bytes),
+    )
+    monitor = threading.Thread(target=sample, daemon=True)
+    monitor.start()
+    timed_out = False
     try:
-        completed = subprocess.run(
-            command,
-            cwd=str(cwd),
-            env=env,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            errors="replace",
-            timeout=timeout,
-            check=False,
-            preexec_fn=restricted_preexec(int(timeout) + 5),
-        )
-        elapsed = time.monotonic() - started
-        return dict(command=command, exitCode=completed.returncode,
-                    stdout=completed.stdout, stderr=completed.stderr,
-                    durationSeconds=elapsed, timedOut=False)
-    except subprocess.TimeoutExpired as error:
-        elapsed = time.monotonic() - started
-        stdout = error.stdout if isinstance(error.stdout, str) else (error.stdout or b"").decode("utf-8", "replace")
-        stderr = error.stderr if isinstance(error.stderr, str) else (error.stderr or b"").decode("utf-8", "replace")
-        return dict(command=command, exitCode=None, stdout=stdout, stderr=stderr,
-                    durationSeconds=elapsed, timedOut=True)
+        stdout, stderr = process.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        timed_out = True
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except (ProcessLookupError, PermissionError):
+            process.kill()
+        stdout, stderr = process.communicate()
+    finally:
+        stop.set()
+        monitor.join(timeout=2.0)
+    elapsed = time.monotonic() - started
+    return dict(command=command, exitCode=process.returncode,
+                stdout=stdout or "", stderr=stderr or "",
+                durationSeconds=elapsed, timedOut=timed_out,
+                peakMemoryBytes=peak["bytes"], peakProcessCount=peak["processes"])
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:

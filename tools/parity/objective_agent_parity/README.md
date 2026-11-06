@@ -1,9 +1,14 @@
-# Objective agent parity — ENV-PARSER-001
+# Objective agent parity — ENV-PARSER-001 / ENV-PARSER-002
 
-This milestone measures whether Pi and PiSharp can independently complete the
-same small coding task, whether their agent loops handle tools and continuation
-correctly, and whether their terminals present the same meaningful progress
-states. It is deliberately independent of the normal PiSharp test suite.
+This harness measures whether Pi and PiSharp can independently complete the same
+coding task, whether their agent loops handle tools and continuation correctly,
+and whether their terminals present the same meaningful progress states. It is
+deliberately independent of the normal PiSharp test suite.
+
+`ENV-PARSER-001` is the single-defect prerequisite. `ENV-PARSER-002` adds two
+sequential production defects and a multi-step repair/recovery scenario. Both
+fixtures use the same runner, evaluator, verifier and terminal harness; select
+the fixture with `--fixture`.
 
 ## Evidence layers
 
@@ -52,6 +57,10 @@ python3 tools/parity/objective_agent_parity/contract_eval.py \
 python3 tools/parity/objective_agent_parity/run_real.py --runs 5 \
   --output artifacts/parity/objective-agent-parity-20261106
 
+# ENV-PARSER-002 multi-step evaluation; no artificial address-space ceiling
+python3 tools/parity/objective_agent_parity/run_real.py --fixture ENV-PARSER-002 \
+  --runs 5 --memory-limit-mb 0 --output artifacts/parity/objective-agent-parity-002-20261106
+
 # Deterministic terminal calibration, comparison and scoring
 python3 tools/parity/objective_agent_parity/ui_capture.py \
   --output artifacts/parity/objective-agent-ui-20261106
@@ -74,11 +83,12 @@ python3 tools/parity/objective_agent_parity/publish_evidence.py \
   --output docs/parity/fixtures/objective-agent-parity-2026-11-06
 ```
 
-Each real run applies the same 600 s monotonic deadline, 605 s CPU limit,
-8 GiB virtual-address limit and 4096-file descriptor limit. The recorded
-2026-11-06 evaluation exercised compiler memory pressure from that address-space
-limit in both products; both recovered, reported the workaround and completed
-the task, so no run was excluded.
+Each real run applies the same 600 s monotonic deadline, 605 s CPU limit and
+4096-file descriptor limit. ENV-PARSER-001 recorded an 8 GiB virtual-address
+limit for historical evidence. ENV-PARSER-002 disables that artificial ceiling
+(`--memory-limit-mb 0`) and records observed peak process-tree RSS; the fixed
+fixture and both products must build and test without infrastructure-induced
+out-of-memory errors before model evaluation.
 
 ## Scoring
 

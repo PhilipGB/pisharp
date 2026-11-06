@@ -9,17 +9,12 @@ from pathlib import Path
 from typing import Any
 
 from common import (
-    BASELINE_TESTS,
-    FIXTURE_ROOT,
-    PRIVATE_IDS,
-    PRIVATE_ROOT,
-    PRODUCTION_RELATIVE,
     STATE_ROOT,
+    _result_text,
     aggregate_manifest,
     baseline_manifest,
     clean_build_outputs,
     file_manifest,
-    load_baseline,
     load_session_messages,
     parse_agent_trace,
     parse_trx,
@@ -31,9 +26,10 @@ from common import (
     text_mentions,
     write_json,
 )
+from fixtures import get_fixture
 
 CACHE_ROOT = STATE_ROOT / "evaluation-cache"
-EVALUATOR_VERSION = 5
+EVALUATOR_VERSION = 6
 
 
 def _dotnet_env() -> dict[str, str]:
@@ -73,58 +69,70 @@ def _run_project(project: Path, *, timeout: float = 300.0) -> dict[str, Any]:
     return result
 
 
-def evaluate_private(source: Path) -> dict[str, Any]:
-    source_hash = sha256_file(source)
+def _source_hash(spec, snapshot: Path) -> str:
+    digest = [spec.id]
+    for relative in spec.production_files:
+        path = snapshot / relative
+        digest.append(f"{relative}:{sha256_file(path)}")
+    import hashlib
+    return hashlib.sha256("\n".join(digest).encode()).hexdigest()
+
+
+def evaluate_private(spec, snapshot: Path) -> dict[str, Any]:
+    source_hash = _source_hash(spec, snapshot)
 
     def compute() -> dict[str, Any]:
-        directory = STATE_ROOT / "private-eval" / source_hash
+        directory = STATE_ROOT / "private-eval" / f"{spec.id}-{source_hash}"
         if directory.exists():
             shutil.rmtree(directory)
         directory.mkdir(parents=True)
-        shutil.copy2(source, directory / "EnvFile.cs")
-        shutil.copy2(PRIVATE_ROOT / "EnvFilePrivateTests.cs", directory / "EnvFilePrivateTests.cs")
-        shutil.copy2(PRIVATE_ROOT / "EnvFilePrivateTests.csproj", directory / "EnvFilePrivateTests.csproj")
+        for relative in spec.production_files:
+            shutil.copy2(snapshot / relative, directory / Path(relative).name)
+        shutil.copy2(spec.private_dir / "EnvFilePrivateTests.cs", directory / "EnvFilePrivateTests.cs")
+        shutil.copy2(spec.private_dir / "EnvFilePrivateTests.csproj", directory / "EnvFilePrivateTests.csproj")
         result = _run_project(directory / "EnvFilePrivateTests.csproj")
         outcomes = {
             test_id: next((outcome for name, outcome in result["tests"].items()
                            if f".{test_id}_" in name), "missing")
-            for test_id in PRIVATE_IDS
+            for test_id in spec.private_ids
         }
-        return dict(sourceHash=source_hash, command=result["command"],
+        return dict(fixtureId=spec.id, sourceHash=source_hash, command=result["command"],
                     exitCode=result["exitCode"], durationSeconds=result["durationSeconds"],
                     timedOut=result["timedOut"], buildOutput=result["stdout"] + result["stderr"],
                     tests=result["tests"], outcomes=outcomes,
                     passed=sum(1 for value in outcomes.values() if value == "passed"))
-    return _cached(f"private-{EVALUATOR_VERSION}-{source_hash}", compute)
+    return _cached(f"private-{EVALUATOR_VERSION}-{spec.id}-{source_hash}", compute)
 
 
-def evaluate_visible(source: Path) -> dict[str, Any]:
-    source_hash = sha256_file(source)
+def evaluate_visible(spec, snapshot: Path) -> dict[str, Any]:
+    source_hash = _source_hash(spec, snapshot)
 
     def compute() -> dict[str, Any]:
-        directory = STATE_ROOT / "visible-eval" / source_hash
+        directory = STATE_ROOT / "visible-eval" / f"{spec.id}-{source_hash}"
         if directory.exists():
             shutil.rmtree(directory)
-        shutil.copytree(FIXTURE_ROOT, directory, symlinks=False)
+        shutil.copytree(spec.root, directory, symlinks=False)
         clean_build_outputs(directory)
-        shutil.copy2(source, directory / PRODUCTION_RELATIVE)
+        for relative in spec.production_files:
+            shutil.copy2(snapshot / relative, directory / relative)
         result = _run_project(directory, timeout=300.0)
-        outcomes = {name: test_outcome_for(result["tests"], name) for name in sorted(BASELINE_TESTS)}
-        return dict(sourceHash=source_hash, command=result["command"],
+        outcomes = {name: test_outcome_for(result["tests"], name) for name in sorted(spec.visible_tests)}
+        return dict(fixtureId=spec.id, sourceHash=source_hash, command=result["command"],
                     exitCode=result["exitCode"], durationSeconds=result["durationSeconds"],
                     timedOut=result["timedOut"], buildOutput=result["stdout"] + result["stderr"],
                     tests=result["tests"], outcomes=outcomes,
                     allPassed=bool(outcomes) and all(value == "passed" for value in outcomes.values()))
-    return _cached(f"visible-{EVALUATOR_VERSION}-{source_hash}", compute)
+    return _cached(f"visible-{EVALUATOR_VERSION}-{spec.id}-{source_hash}", compute)
 
 
-def change_integrity(snapshot: Path) -> dict[str, Any]:
-    baseline = baseline_manifest()
+def change_integrity(spec, snapshot: Path) -> dict[str, Any]:
+    baseline = baseline_manifest(spec)
     actual = file_manifest(snapshot)
     changed = sorted(path for path in set(baseline) | set(actual)
                      if baseline.get(path) != actual.get(path))
-    permitted = set(changed) <= {PRODUCTION_RELATIVE}
-    production_changed = PRODUCTION_RELATIVE in changed
+    permitted_files = set(spec.production_files)
+    permitted = set(changed) <= permitted_files
+    production_changed = any(path in changed for path in permitted_files)
     return dict(
         changedFiles=changed,
         changedFileChecksums={path: dict(
@@ -135,7 +143,8 @@ def change_integrity(snapshot: Path) -> dict[str, Any]:
         removedFiles=sorted(set(baseline) - set(actual)),
         modifiedFiles=sorted(path for path in set(baseline) & set(actual)
                              if baseline[path] != actual[path]),
-        permittedProductionFile=PRODUCTION_RELATIVE,
+        permittedProductionFiles=sorted(permitted_files),
+        productionFilesChanged=sorted(path for path in permitted_files if path in changed),
         productionFileChanged=production_changed,
         onlyPermittedProductionFileChanged=permitted,
         snapshotChecksum=aggregate_manifest(actual),
@@ -148,11 +157,72 @@ def _messages(trace) -> list[dict[str, Any]]:
     return trace.assistant_messages + trace.tool_results
 
 
-def score_agent_loop(app: str, trace, session_messages: list[dict[str, Any]],
+def _content_text(content: Any) -> str:
+    if isinstance(content, list):
+        return "\n".join(str(item.get("text", "")) for item in content if isinstance(item, dict))
+    if isinstance(content, str):
+        return content
+    return _result_text(content)
+
+
+def recovery_metrics(trace, session_messages: list[dict[str, Any]]) -> dict[str, Any]:
+    executions = trace.tool_executions
+    errors = [execution for execution in executions if execution.is_error]
+    recovered = 0
+    for index, execution in enumerate(executions):
+        if execution.is_error is not True:
+            continue
+        if any(later.is_error is False for later in executions[index + 1:]):
+            recovered += 1
+    test_executions = [
+        execution for execution in executions
+        if "dotnet test" in json.dumps(execution.arguments or {}, ensure_ascii=False).lower()
+        or (execution.name == "bash" and "dotnet test" in execution.result_text.lower())
+    ]
+    session_results = [message for message in session_messages if message.get("role") == "toolResult"]
+    conveyed = 0
+    for index, execution in enumerate(executions):
+        if execution.is_error is not True:
+            continue
+        match = next((message for message in session_results
+                      if message.get("toolCallId") == execution.call_id), None)
+        if match is None and index < len(session_results):
+            match = session_results[index]
+        if match is not None and (match.get("isError") is True
+                                  or execution.result_text.strip()[:200] in
+                                  _content_text(match.get("content"))):
+            conveyed += 1
+    first_mutation = next((index for index, execution in enumerate(executions)
+                           if execution.is_error is False and execution.name in
+                           ("edit", "write", "replace", "insert")), None)
+    mutation_followed_by_test = bool(
+        first_mutation is not None and any(
+            "dotnet test" in json.dumps(execution.arguments or {}, ensure_ascii=False).lower()
+            for execution in executions[first_mutation + 1:]))
+    failed_test_positions = [execution.end_index for execution in test_executions
+                             if execution.is_error is True and execution.end_index is not None]
+    failed_test_followed_by_change = bool(
+        failed_test_positions and any(
+            execution.start_index is not None and execution.start_index > failed_test_positions[-1]
+            and execution.name in ("edit", "write", "replace", "insert")
+            for execution in executions))
+    return dict(
+        toolErrors=len(errors),
+        recoveredToolErrors=recovered,
+        testExecutions=len(test_executions),
+        errorsConveyedToModel=conveyed,
+        mutationFollowedByTest=mutation_followed_by_test,
+        failedTestFollowedByChange=failed_test_followed_by_change,
+        duplicateToolExecutionIds=sorted(set(trace.duplicate_ids)),
+        duplicateSideEffects=bool(trace.duplicate_ids),
+    )
+
+
+def score_agent_loop(app: str, spec, trace, session_messages: list[dict[str, Any]],
                      *, actual_visible_passed: bool, integrity: dict[str, Any]) -> dict[str, Any]:
     text = trace.tool_text()
-    source_seen = text_mentions(text, ["EnvFile.cs", "src/Fixture.Core/EnvFile"])
-    test_seen = text_mentions(text, ["EnvFileTests.cs", "tests/Fixture.Tests"])
+    source_seen = text_mentions(text, spec.source_markers)
+    test_seen = text_mentions(text, spec.test_markers)
     if source_seen and test_seen:
         investigation = 5
     elif source_seen or test_seen:
@@ -160,16 +230,21 @@ def score_agent_loop(app: str, trace, session_messages: list[dict[str, Any]],
     else:
         investigation = 0
 
-    successful_mutation = any(
-        execution.is_error is False
-        and execution.name in ("edit", "write", "replace", "insert")
-        and text_mentions(json.dumps(execution.arguments or {}, ensure_ascii=False), ["EnvFile.cs"])
-        for execution in trace.tool_executions)
-    if successful_mutation and integrity.get("productionFileChanged"):
+    modified_files = set(integrity.get("productionFilesChanged") or [])
+    successful_mutations = set()
+    for execution in trace.tool_executions:
+        if execution.is_error is not False or execution.name not in ("edit", "write", "replace", "insert"):
+            continue
+        arguments = json.dumps(execution.arguments or {}, ensure_ascii=False)
+        for relative in spec.production_files:
+            if relative in arguments or Path(relative).name in arguments:
+                successful_mutations.add(relative)
+    covered = modified_files & successful_mutations
+    if len(covered) == len(spec.production_files):
         modification = 5
-    elif successful_mutation:
+    elif covered or successful_mutations:
         modification = 3
-    elif integrity.get("productionFileChanged"):
+    elif modified_files:
         modification = 2
     else:
         modification = 0
@@ -255,8 +330,9 @@ def score_agent_loop(app: str, trace, session_messages: list[dict[str, Any]],
     total = investigation + modification + test_execution + lifecycle + model_continuation + completion
     return dict(
         sourceInvestigation=dict(score=investigation, sourceSeen=source_seen, testSeen=test_seen),
-        fileModification=dict(score=modification, successfulMutation=successful_mutation,
-                              productionFileChanged=bool(integrity.get("productionFileChanged"))),
+        fileModification=dict(score=modification, successfulMutation=bool(successful_mutations),
+                              successfulMutationFiles=sorted(successful_mutations),
+                              productionFilesChanged=sorted(modified_files)),
         testExecution=dict(score=test_execution, ran=test_ran, executions=len(test_executions),
                            observedPass=observed_pass, actualVisiblePass=actual_visible_passed),
         toolLifecycle=dict(score=lifecycle, errors=trace.lifecycle_errors,
@@ -266,31 +342,33 @@ def score_agent_loop(app: str, trace, session_messages: list[dict[str, Any]],
                         actualVisiblePass=actual_visible_passed,
                         duplicateSideEffects=duplicate_side_effects,
                         finalResponse=final),
+        recoveryMetrics=recovery_metrics(trace, session_messages),
         total=total,
         max=30,
     )
 
 
-def evaluate_snapshot(run_directory: Path, app: str) -> dict[str, Any]:
+def evaluate_snapshot(spec, run_directory: Path, app: str) -> dict[str, Any]:
     snapshot = run_directory / "workspace"
-    source = snapshot / PRODUCTION_RELATIVE
-    if not source.is_file():
-        raise RuntimeError(f"Run snapshot lacks {PRODUCTION_RELATIVE}: {run_directory}")
-    private = evaluate_private(source)
-    visible = evaluate_visible(source)
-    integrity = change_integrity(snapshot)
+    for relative in spec.production_files:
+        if not (snapshot / relative).is_file():
+            raise RuntimeError(f"Run snapshot lacks {relative}: {run_directory}")
+    private = evaluate_private(spec, snapshot)
+    visible = evaluate_visible(spec, snapshot)
+    integrity = change_integrity(spec, snapshot)
     events = read_jsonl(run_directory / "events.jsonl")
     trace = parse_agent_trace(app, events)
     sessions = load_session_messages(app, run_directory / "sessions")
     from common import enrich_trace_from_session
     enrich_trace_from_session(trace, sessions)
-    agent = score_agent_loop(app, trace, sessions,
+    agent = score_agent_loop(app, spec, trace, sessions,
                              actual_visible_passed=visible["allPassed"], integrity=integrity)
     private_points = private["passed"] * 5
     visible_points = 5 if visible["allPassed"] else 0
     integrity_points = 5 if integrity["passed"] else 0
     functional = private_points + visible_points + integrity_points
     return dict(
+        fixtureId=spec.id,
         privateTests=private,
         visibleTests=visible,
         changeIntegrity=integrity,

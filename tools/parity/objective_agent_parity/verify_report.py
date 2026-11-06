@@ -9,7 +9,8 @@ from pathlib import Path
 from statistics import mean
 from typing import Any
 
-from common import BASELINE_TESTS, PRIVATE_IDS, load_baseline, write_json
+from common import load_baseline, write_json
+from fixtures import get_fixture
 
 ROOT = Path(__file__).resolve().parents[3]
 SEVERITIES = {"P0", "P1", "P2", "Inconclusive"}
@@ -20,11 +21,12 @@ def _error(errors: list[str], condition: bool, message: str) -> None:
         errors.append(message)
 
 
-def validate(report: dict[str, Any], *, require_complete: bool = True) -> list[str]:
+def validate(report: dict[str, Any], *, require_complete: bool = True, spec=None) -> list[str]:
+    spec = get_fixture(spec.id if spec is not None else report.get("fixture", {}).get("id"))
     errors: list[str] = []
-    baseline = load_baseline()
-    _error(errors, report.get("fixture", {}).get("id") == "ENV-PARSER-001",
-           "fixture id is not ENV-PARSER-001")
+    baseline = load_baseline(spec)
+    _error(errors, report.get("fixture", {}).get("id") == spec.id,
+           f"fixture id is not {spec.id}")
     _error(errors, report.get("fixture", {}).get("checksum") == baseline["fixtureChecksum"],
            "fixture checksum does not match baseline.json")
     runs = report.get("runs") or []
@@ -48,7 +50,7 @@ def validate(report: dict[str, Any], *, require_complete: bool = True) -> list[s
             continue
         private = evaluation.get("privateTests", {})
         outcomes = private.get("outcomes", {})
-        _error(errors, sorted(outcomes) == PRIVATE_IDS,
+        _error(errors, sorted(outcomes) == list(spec.private_ids),
                f"{run.get('runId')} private outcomes do not cover H01-H08")
         private_points = sum(1 for value in outcomes.values() if value == "passed") * 5
         _error(errors, private.get("passed") == sum(1 for value in outcomes.values() if value == "passed"),
@@ -56,20 +58,26 @@ def validate(report: dict[str, Any], *, require_complete: bool = True) -> list[s
         _error(errors, evaluation.get("functional", {}).get("privateTests") == private_points,
                f"{run.get('runId')} private points are inconsistent")
         visible = evaluation.get("visibleTests", {})
-        _error(errors, sorted(visible.get("outcomes") or {}) == sorted(BASELINE_TESTS),
-               f"{run.get('runId')} visible outcomes do not cover the three visible tests")
+        _error(errors, sorted(visible.get("outcomes") or {}) == sorted(spec.visible_tests),
+               f"{run.get('runId')} visible outcomes do not cover the fixture tests")
         visible_points = 5 if visible.get("allPassed") else 0
         _error(errors, evaluation.get("functional", {}).get("visibleTests") == visible_points,
                f"{run.get('runId')} visible points are inconsistent")
         integrity = evaluation.get("changeIntegrity", {})
-        permitted = set(integrity.get("changedFiles") or []) <= {integrity.get("permittedProductionFile")}
+        permitted_set = set(integrity.get("permittedProductionFiles") or [])
+        if not permitted_set and integrity.get("permittedProductionFile"):
+            permitted_set = {integrity["permittedProductionFile"]}
+        permitted = set(integrity.get("changedFiles") or []) <= permitted_set
         _error(errors, integrity.get("onlyPermittedProductionFileChanged") == permitted,
                f"{run.get('runId')} change-integrity permission flag is inconsistent")
         _error(errors, integrity.get("passed") == integrity.get("onlyPermittedProductionFileChanged"),
                f"{run.get('runId')} change-integrity flag is inconsistent")
-        _error(errors, integrity.get("productionFileChanged")
-               == (integrity.get("permittedProductionFile") in (integrity.get("changedFiles") or [])),
+        changed_set = set(integrity.get("changedFiles") or [])
+        _error(errors, integrity.get("productionFileChanged") == bool(permitted_set & changed_set),
                f"{run.get('runId')} production-file change flag is inconsistent")
+        if "productionFilesChanged" in integrity:
+            _error(errors, set(integrity.get("productionFilesChanged") or []) == (permitted_set & changed_set),
+                   f"{run.get('runId')} production-file change list is inconsistent")
         integrity_points = 5 if integrity.get("passed") else 0
         _error(errors, evaluation.get("functional", {}).get("changeIntegrity") == integrity_points,
                f"{run.get('runId')} integrity points are inconsistent")
@@ -198,13 +206,13 @@ def validate(report: dict[str, Any], *, require_complete: bool = True) -> list[s
     return errors
 
 
-def negative_controls(report: dict[str, Any]) -> list[dict[str, Any]]:
+def negative_controls(report: dict[str, Any], spec=None) -> list[dict[str, Any]]:
     controls: list[dict[str, Any]] = []
 
     def check(name: str, mutate) -> None:
         candidate = copy.deepcopy(report)
         mutate(candidate)
-        errors = validate(candidate, require_complete=True)
+        errors = validate(candidate, require_complete=True, spec=spec)
         controls.append(dict(name=name, rejected=bool(errors), errors=errors[:5]))
 
     def inflate(candidate: dict[str, Any]) -> None:
@@ -224,7 +232,7 @@ def negative_controls(report: dict[str, Any]) -> list[dict[str, Any]]:
 
     def forged_integrity(candidate: dict[str, Any]) -> None:
         run = next(item for item in candidate["runs"] if item.get("scored"))
-        run["evaluation"]["changeIntegrity"]["changedFiles"] = ["tests/Fixture.Tests/EnvFileTests.cs"]
+        run["evaluation"]["changeIntegrity"]["changedFiles"] = ["tests/Fixture.Tests/EnvIntegrationTests.cs"]
         run["evaluation"]["changeIntegrity"]["onlyPermittedProductionFileChanged"] = True
         run["evaluation"]["changeIntegrity"]["passed"] = True
 
@@ -262,12 +270,15 @@ def negative_controls(report: dict[str, Any]) -> list[dict[str, Any]]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("report", type=Path)
+    parser.add_argument("--fixture", default=None,
+                        choices=["ENV-PARSER-001", "ENV-PARSER-002"])
     parser.add_argument("--output", type=Path, default=None)
     parser.add_argument("--allow-incomplete", action="store_true")
     arguments = parser.parse_args()
     report = json.loads(arguments.report.read_text())
-    errors = validate(report, require_complete=not arguments.allow_incomplete)
-    controls = negative_controls(report)
+    spec = get_fixture(arguments.fixture or report.get("fixture", {}).get("id"))
+    errors = validate(report, require_complete=not arguments.allow_incomplete, spec=spec)
+    controls = negative_controls(report, spec)
     control_ok = all(control["rejected"] for control in controls)
     result = {
         "valid": not errors,

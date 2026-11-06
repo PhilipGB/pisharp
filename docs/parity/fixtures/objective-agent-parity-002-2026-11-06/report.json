@@ -1,0 +1,3598 @@
+{
+  "schema": 1,
+  "fixture": {
+    "id": "ENV-PARSER-002",
+    "checksum": "173f5b1318d650cee247138f44117821b3e2556c4b9ca2c0121226ac7a92cd8b",
+    "baselinePath": "tools/parity/objective_agent_parity/baseline-002.json",
+    "baselineFailure": "Fixture.Tests.EnvIntegrationTests.ParsesEmbeddedEqualsAndPreservesUnknownPlaceholders",
+    "prompt": "This .NET project contains a failing integration test. Investigate the implementation, identify the underlying defects and make the smallest appropriate corrections to production code. Preserve the documented behaviour, do not modify the tests, and run `dotnet test` to verify the result. Report what you changed and whether the tests passed."
+  },
+  "sourceRevisions": {
+    "pi": {
+      "path": "/home/philip/Projects/pi-pinned",
+      "revision": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "dirty": false
+    },
+    "pisharp": {
+      "path": "/home/philip/Projects/pisharp",
+      "revision": "39abb9accc143312f60333b7b0df19c7977bc108",
+      "dirty": true
+    }
+  },
+  "effectiveConfiguration": {
+    "pi": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "thinking": "xhigh",
+      "tools": [
+        "read",
+        "bash",
+        "edit",
+        "write",
+        "grep",
+        "find",
+        "ls"
+      ],
+      "subscriptionAuth": true
+    },
+    "pisharp": {
+      "provider": "openai-codex",
+      "model": "gpt-6-luna",
+      "thinking": "xhigh",
+      "tools": [
+        "read",
+        "bash",
+        "edit",
+        "write",
+        "grep",
+        "find",
+        "ls"
+      ],
+      "subscriptionAuth": true
+    }
+  },
+  "runEnvironment": {
+    "workspace": "/home/philip/.cache/tmp/opencode/objective-agent-parity/ENV-PARSER-002",
+    "timeoutSeconds": 600.0,
+    "resourceLimits": {
+      "timeoutSeconds": 600.0,
+      "cpuSeconds": 605,
+      "addressSpaceBytes": null,
+      "openFiles": 4096
+    },
+    "environmentObservations": [],
+    "build": {
+      "exitCode": 0,
+      "durationSeconds": 3.340222505008569,
+      "dll": "/home/philip/Projects/pisharp/src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll",
+      "dllChecksum": "db6f23dc3e4295e5bac65fd35427c92d19ed4fde194d791f2143ad54d081f210"
+    },
+    "startedAt": "20261106T154848Z"
+  },
+  "runs": [
+    {
+      "runId": "pi-01",
+      "app": "pi",
+      "index": 1,
+      "fixtureId": "ENV-PARSER-002",
+      "model": {
+        "provider": "openai",
+        "id": "gpt-6-luna",
+        "thinking": "xhigh"
+      },
+      "timeoutSeconds": 600.0,
+      "addressSpaceBytes": null,
+      "startChecksum": "173f5b1318d650cee247138f44117821b3e2556c4b9ca2c0121226ac7a92cd8b",
+      "dependencyRestore": {
+        "exitCode": 0,
+        "durationSeconds": 1.6776582180173136,
+        "timedOut": false
+      },
+      "command": [
+        "node",
+        "--import",
+        "file:///home/philip/Projects/pi-pinned/packages/coding-agent/src/experimental/source-resolver.ts",
+        "/home/philip/Projects/pi-pinned/packages/coding-agent/src/cli.ts",
+        "--provider",
+        "openai",
+        "--model",
+        "gpt-6-luna",
+        "--thinking",
+        "xhigh",
+        "--mode",
+        "json",
+        "--session-dir",
+        "/home/philip/.cache/tmp/opencode/objective-agent-parity/sessions/pi-01",
+        "--no-extensions",
+        "--no-skills",
+        "--no-prompt-templates",
+        "--no-context-files",
+        "--no-mcp",
+        "--tools",
+        "read,bash,edit,write,grep,find,ls",
+        "--approve",
+        "--offline",
+        "This .NET project contains a failing integration test. Investigate the implementation, identify the underlying defects and make the smallest appropriate corrections to production code. Preserve the documented behaviour, do not modify the tests, and run `dotnet test` to verify the result. Report what you changed and whether the tests passed."
+      ],
+      "exitCode": 0,
+      "durationSeconds": 45.71162338301656,
+      "timedOut": false,
+      "peakMemoryBytes": 669253632,
+      "peakProcessCount": 5,
+      "sessionFiles": [
+        "sessions/2026-11-06T15-48-54-685Z_01a1b18c-751c-720b-a8f6-c6600db87d94.jsonl"
+      ],
+      "workspace": {
+        "files": {
+          "Fixture.slnx": "75d384af0bfe6f0b560655974e4f30db3d499f7ed7e0cfb6759a07bcd49fa2e8",
+          "README.md": "fdd48e82c4c368e296186c66bb3fe2f329c0943793810ebf834ac8ac6b31faa9",
+          "src/Fixture.Core/EnvFile.cs": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+          "src/Fixture.Core/EnvInterpolator.cs": "39d995766be66d733b3d2f5702c816753e66ff47798a28e2045942f48a557f55",
+          "src/Fixture.Core/Fixture.Core.csproj": "2c82dae7a6492e5dc0d99b6b5a5d1c89a4702b892f71757981e46302949d6115",
+          "tests/Fixture.Tests/EnvIntegrationTests.cs": "2a3fcd98b6ed1b7409e8659a8304a8a3c499136aed74b159e6a3c5c0e5858328",
+          "tests/Fixture.Tests/Fixture.Tests.csproj": "a60e112e1e0a401e6b86ad686e8171cd07aec04da180ca61e776e9064409f527"
+        },
+        "checksum": "3c7331bd93248cb11305b7df39856ee027e199f68432ceee9dcceea4ef89ab63",
+        "fileCount": 7
+      },
+      "productionSourceChecksums": {
+        "src/Fixture.Core/EnvFile.cs": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+        "src/Fixture.Core/EnvInterpolator.cs": "39d995766be66d733b3d2f5702c816753e66ff47798a28e2045942f48a557f55"
+      },
+      "baselineProductionSourceChecksums": {
+        "src/Fixture.Core/EnvFile.cs": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+        "src/Fixture.Core/EnvInterpolator.cs": "9011b9644d6def6a1a7b06523692011882a835f382b974962e0a8ceaafdb18ee"
+      },
+      "status": "completed",
+      "wallDurationSeconds": 47.45264509599656,
+      "scored": true,
+      "evaluation": {
+        "fixtureId": "ENV-PARSER-002",
+        "privateTests": {
+          "fixtureId": "ENV-PARSER-002",
+          "sourceHash": "8a67401308b21e1acd02fc0557a5254dcb3488d9d2da40ce109e795ba84e7c2f",
+          "command": [
+            "dotnet",
+            "test",
+            "EnvFilePrivateTests.csproj",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 2.723972481006058,
+          "timedOut": false,
+          "outcomes": {
+            "H01": "passed",
+            "H02": "passed",
+            "H03": "passed",
+            "H04": "passed",
+            "H05": "passed",
+            "H06": "passed",
+            "H07": "passed",
+            "H08": "passed"
+          },
+          "passed": 8
+        },
+        "visibleTests": {
+          "fixtureId": "ENV-PARSER-002",
+          "sourceHash": "8a67401308b21e1acd02fc0557a5254dcb3488d9d2da40ce109e795ba84e7c2f",
+          "command": [
+            "dotnet",
+            "test",
+            "/home/philip/.cache/tmp/opencode/objective-agent-parity/visible-eval/ENV-PARSER-002-8a67401308b21e1acd02fc0557a5254dcb3488d9d2da40ce109e795ba84e7c2f",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 3.010562242998276,
+          "timedOut": false,
+          "outcomes": {
+            "Fixture.Tests.EnvIntegrationTests.ParsesEmbeddedEqualsAndPreservesUnknownPlaceholders": "passed"
+          },
+          "allPassed": true
+        },
+        "changeIntegrity": {
+          "changedFiles": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "changedFileChecksums": {
+            "src/Fixture.Core/EnvFile.cs": {
+              "baseline": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+              "run": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5"
+            },
+            "src/Fixture.Core/EnvInterpolator.cs": {
+              "baseline": "9011b9644d6def6a1a7b06523692011882a835f382b974962e0a8ceaafdb18ee",
+              "run": "39d995766be66d733b3d2f5702c816753e66ff47798a28e2045942f48a557f55"
+            }
+          },
+          "addedFiles": [],
+          "removedFiles": [],
+          "modifiedFiles": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "permittedProductionFiles": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "productionFilesChanged": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "productionFileChanged": true,
+          "onlyPermittedProductionFileChanged": true,
+          "snapshotChecksum": "3c7331bd93248cb11305b7df39856ee027e199f68432ceee9dcceea4ef89ab63",
+          "baselineChecksum": "173f5b1318d650cee247138f44117821b3e2556c4b9ca2c0121226ac7a92cd8b",
+          "passed": true
+        },
+        "agentLoop": {
+          "sourceInvestigation": {
+            "score": 5,
+            "sourceSeen": true,
+            "testSeen": true
+          },
+          "fileModification": {
+            "score": 5,
+            "successfulMutation": true,
+            "successfulMutationFiles": [
+              "src/Fixture.Core/EnvFile.cs",
+              "src/Fixture.Core/EnvInterpolator.cs"
+            ],
+            "productionFilesChanged": [
+              "src/Fixture.Core/EnvFile.cs",
+              "src/Fixture.Core/EnvInterpolator.cs"
+            ]
+          },
+          "testExecution": {
+            "score": 5,
+            "ran": true,
+            "executions": 2,
+            "observedPass": true,
+            "actualVisiblePass": true
+          },
+          "toolLifecycle": {
+            "score": 5,
+            "errors": [],
+            "duplicateIds": []
+          },
+          "modelContinuation": {
+            "score": 5,
+            "assistantToolCalls": 11,
+            "toolResults": 11,
+            "followedByAssistant": 11,
+            "missingResults": [],
+            "orphanResults": [],
+            "duplicateResults": []
+          },
+          "completion": {
+            "score": 5,
+            "reportedPass": true,
+            "actualVisiblePass": true,
+            "duplicateSideEffects": false
+          },
+          "recoveryMetrics": {
+            "toolErrors": 1,
+            "recoveredToolErrors": 1,
+            "testExecutions": 2,
+            "errorsConveyedToModel": 1,
+            "mutationFollowedByTest": true,
+            "failedTestFollowedByChange": true,
+            "duplicateToolExecutionIds": [],
+            "duplicateSideEffects": false
+          },
+          "total": 30,
+          "max": 30
+        },
+        "functional": {
+          "privateTests": 40,
+          "visibleTests": 5,
+          "changeIntegrity": 5,
+          "total": 50,
+          "max": 50
+        },
+        "agentTool": {
+          "total": 30,
+          "max": 30
+        },
+        "runScore": 80,
+        "runMax": 80,
+        "completeTaskSuccess": true
+      }
+    },
+    {
+      "runId": "pi-02",
+      "app": "pi",
+      "index": 2,
+      "fixtureId": "ENV-PARSER-002",
+      "model": {
+        "provider": "openai",
+        "id": "gpt-6-luna",
+        "thinking": "xhigh"
+      },
+      "timeoutSeconds": 600.0,
+      "addressSpaceBytes": null,
+      "startChecksum": "173f5b1318d650cee247138f44117821b3e2556c4b9ca2c0121226ac7a92cd8b",
+      "dependencyRestore": {
+        "exitCode": 0,
+        "durationSeconds": 1.2568603830004577,
+        "timedOut": false
+      },
+      "command": [
+        "node",
+        "--import",
+        "file:///home/philip/Projects/pi-pinned/packages/coding-agent/src/experimental/source-resolver.ts",
+        "/home/philip/Projects/pi-pinned/packages/coding-agent/src/cli.ts",
+        "--provider",
+        "openai",
+        "--model",
+        "gpt-6-luna",
+        "--thinking",
+        "xhigh",
+        "--mode",
+        "json",
+        "--session-dir",
+        "/home/philip/.cache/tmp/opencode/objective-agent-parity/sessions/pi-02",
+        "--no-extensions",
+        "--no-skills",
+        "--no-prompt-templates",
+        "--no-context-files",
+        "--no-mcp",
+        "--tools",
+        "read,bash,edit,write,grep,find,ls",
+        "--approve",
+        "--offline",
+        "This .NET project contains a failing integration test. Investigate the implementation, identify the underlying defects and make the smallest appropriate corrections to production code. Preserve the documented behaviour, do not modify the tests, and run `dotnet test` to verify the result. Report what you changed and whether the tests passed."
+      ],
+      "exitCode": 0,
+      "durationSeconds": 36.04912998600048,
+      "timedOut": false,
+      "peakMemoryBytes": 663236608,
+      "peakProcessCount": 5,
+      "sessionFiles": [
+        "sessions/2026-11-06T15-49-41-110Z_01a1b18d-2a75-753f-8741-7291cc01c66d.jsonl"
+      ],
+      "workspace": {
+        "files": {
+          "Fixture.slnx": "75d384af0bfe6f0b560655974e4f30db3d499f7ed7e0cfb6759a07bcd49fa2e8",
+          "README.md": "fdd48e82c4c368e296186c66bb3fe2f329c0943793810ebf834ac8ac6b31faa9",
+          "src/Fixture.Core/EnvFile.cs": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+          "src/Fixture.Core/EnvInterpolator.cs": "39d995766be66d733b3d2f5702c816753e66ff47798a28e2045942f48a557f55",
+          "src/Fixture.Core/Fixture.Core.csproj": "2c82dae7a6492e5dc0d99b6b5a5d1c89a4702b892f71757981e46302949d6115",
+          "tests/Fixture.Tests/EnvIntegrationTests.cs": "2a3fcd98b6ed1b7409e8659a8304a8a3c499136aed74b159e6a3c5c0e5858328",
+          "tests/Fixture.Tests/Fixture.Tests.csproj": "a60e112e1e0a401e6b86ad686e8171cd07aec04da180ca61e776e9064409f527"
+        },
+        "checksum": "3c7331bd93248cb11305b7df39856ee027e199f68432ceee9dcceea4ef89ab63",
+        "fileCount": 7
+      },
+      "productionSourceChecksums": {
+        "src/Fixture.Core/EnvFile.cs": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+        "src/Fixture.Core/EnvInterpolator.cs": "39d995766be66d733b3d2f5702c816753e66ff47798a28e2045942f48a557f55"
+      },
+      "baselineProductionSourceChecksums": {
+        "src/Fixture.Core/EnvFile.cs": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+        "src/Fixture.Core/EnvInterpolator.cs": "9011b9644d6def6a1a7b06523692011882a835f382b974962e0a8ceaafdb18ee"
+      },
+      "status": "completed",
+      "wallDurationSeconds": 37.33258101798128,
+      "scored": true,
+      "evaluation": {
+        "fixtureId": "ENV-PARSER-002",
+        "privateTests": {
+          "fixtureId": "ENV-PARSER-002",
+          "sourceHash": "8a67401308b21e1acd02fc0557a5254dcb3488d9d2da40ce109e795ba84e7c2f",
+          "command": [
+            "dotnet",
+            "test",
+            "EnvFilePrivateTests.csproj",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 2.723972481006058,
+          "timedOut": false,
+          "outcomes": {
+            "H01": "passed",
+            "H02": "passed",
+            "H03": "passed",
+            "H04": "passed",
+            "H05": "passed",
+            "H06": "passed",
+            "H07": "passed",
+            "H08": "passed"
+          },
+          "passed": 8
+        },
+        "visibleTests": {
+          "fixtureId": "ENV-PARSER-002",
+          "sourceHash": "8a67401308b21e1acd02fc0557a5254dcb3488d9d2da40ce109e795ba84e7c2f",
+          "command": [
+            "dotnet",
+            "test",
+            "/home/philip/.cache/tmp/opencode/objective-agent-parity/visible-eval/ENV-PARSER-002-8a67401308b21e1acd02fc0557a5254dcb3488d9d2da40ce109e795ba84e7c2f",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 3.010562242998276,
+          "timedOut": false,
+          "outcomes": {
+            "Fixture.Tests.EnvIntegrationTests.ParsesEmbeddedEqualsAndPreservesUnknownPlaceholders": "passed"
+          },
+          "allPassed": true
+        },
+        "changeIntegrity": {
+          "changedFiles": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "changedFileChecksums": {
+            "src/Fixture.Core/EnvFile.cs": {
+              "baseline": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+              "run": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5"
+            },
+            "src/Fixture.Core/EnvInterpolator.cs": {
+              "baseline": "9011b9644d6def6a1a7b06523692011882a835f382b974962e0a8ceaafdb18ee",
+              "run": "39d995766be66d733b3d2f5702c816753e66ff47798a28e2045942f48a557f55"
+            }
+          },
+          "addedFiles": [],
+          "removedFiles": [],
+          "modifiedFiles": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "permittedProductionFiles": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "productionFilesChanged": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "productionFileChanged": true,
+          "onlyPermittedProductionFileChanged": true,
+          "snapshotChecksum": "3c7331bd93248cb11305b7df39856ee027e199f68432ceee9dcceea4ef89ab63",
+          "baselineChecksum": "173f5b1318d650cee247138f44117821b3e2556c4b9ca2c0121226ac7a92cd8b",
+          "passed": true
+        },
+        "agentLoop": {
+          "sourceInvestigation": {
+            "score": 5,
+            "sourceSeen": true,
+            "testSeen": true
+          },
+          "fileModification": {
+            "score": 5,
+            "successfulMutation": true,
+            "successfulMutationFiles": [
+              "src/Fixture.Core/EnvFile.cs",
+              "src/Fixture.Core/EnvInterpolator.cs"
+            ],
+            "productionFilesChanged": [
+              "src/Fixture.Core/EnvFile.cs",
+              "src/Fixture.Core/EnvInterpolator.cs"
+            ]
+          },
+          "testExecution": {
+            "score": 5,
+            "ran": true,
+            "executions": 1,
+            "observedPass": true,
+            "actualVisiblePass": true
+          },
+          "toolLifecycle": {
+            "score": 5,
+            "errors": [],
+            "duplicateIds": []
+          },
+          "modelContinuation": {
+            "score": 5,
+            "assistantToolCalls": 12,
+            "toolResults": 12,
+            "followedByAssistant": 12,
+            "missingResults": [],
+            "orphanResults": [],
+            "duplicateResults": []
+          },
+          "completion": {
+            "score": 5,
+            "reportedPass": true,
+            "actualVisiblePass": true,
+            "duplicateSideEffects": false
+          },
+          "recoveryMetrics": {
+            "toolErrors": 0,
+            "recoveredToolErrors": 0,
+            "testExecutions": 1,
+            "errorsConveyedToModel": 0,
+            "mutationFollowedByTest": true,
+            "failedTestFollowedByChange": false,
+            "duplicateToolExecutionIds": [],
+            "duplicateSideEffects": false
+          },
+          "total": 30,
+          "max": 30
+        },
+        "functional": {
+          "privateTests": 40,
+          "visibleTests": 5,
+          "changeIntegrity": 5,
+          "total": 50,
+          "max": 50
+        },
+        "agentTool": {
+          "total": 30,
+          "max": 30
+        },
+        "runScore": 80,
+        "runMax": 80,
+        "completeTaskSuccess": true
+      }
+    },
+    {
+      "runId": "pi-03",
+      "app": "pi",
+      "index": 3,
+      "fixtureId": "ENV-PARSER-002",
+      "model": {
+        "provider": "openai",
+        "id": "gpt-6-luna",
+        "thinking": "xhigh"
+      },
+      "timeoutSeconds": 600.0,
+      "addressSpaceBytes": null,
+      "startChecksum": "173f5b1318d650cee247138f44117821b3e2556c4b9ca2c0121226ac7a92cd8b",
+      "dependencyRestore": {
+        "exitCode": 0,
+        "durationSeconds": 0.912661432987079,
+        "timedOut": false
+      },
+      "command": [
+        "node",
+        "--import",
+        "file:///home/philip/Projects/pi-pinned/packages/coding-agent/src/experimental/source-resolver.ts",
+        "/home/philip/Projects/pi-pinned/packages/coding-agent/src/cli.ts",
+        "--provider",
+        "openai",
+        "--model",
+        "gpt-6-luna",
+        "--thinking",
+        "xhigh",
+        "--mode",
+        "json",
+        "--session-dir",
+        "/home/philip/.cache/tmp/opencode/objective-agent-parity/sessions/pi-03",
+        "--no-extensions",
+        "--no-skills",
+        "--no-prompt-templates",
+        "--no-context-files",
+        "--no-mcp",
+        "--tools",
+        "read,bash,edit,write,grep,find,ls",
+        "--approve",
+        "--offline",
+        "This .NET project contains a failing integration test. Investigate the implementation, identify the underlying defects and make the smallest appropriate corrections to production code. Preserve the documented behaviour, do not modify the tests, and run `dotnet test` to verify the result. Report what you changed and whether the tests passed."
+      ],
+      "exitCode": 0,
+      "durationSeconds": 37.97458603300038,
+      "timedOut": false,
+      "peakMemoryBytes": 661491712,
+      "peakProcessCount": 5,
+      "sessionFiles": [
+        "sessions/2026-11-06T15-50-17-887Z_01a1b18d-ba1f-7223-b6df-a5f5a228e9b2.jsonl"
+      ],
+      "workspace": {
+        "files": {
+          "Fixture.slnx": "75d384af0bfe6f0b560655974e4f30db3d499f7ed7e0cfb6759a07bcd49fa2e8",
+          "README.md": "fdd48e82c4c368e296186c66bb3fe2f329c0943793810ebf834ac8ac6b31faa9",
+          "src/Fixture.Core/EnvFile.cs": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+          "src/Fixture.Core/EnvInterpolator.cs": "39d995766be66d733b3d2f5702c816753e66ff47798a28e2045942f48a557f55",
+          "src/Fixture.Core/Fixture.Core.csproj": "2c82dae7a6492e5dc0d99b6b5a5d1c89a4702b892f71757981e46302949d6115",
+          "tests/Fixture.Tests/EnvIntegrationTests.cs": "2a3fcd98b6ed1b7409e8659a8304a8a3c499136aed74b159e6a3c5c0e5858328",
+          "tests/Fixture.Tests/Fixture.Tests.csproj": "a60e112e1e0a401e6b86ad686e8171cd07aec04da180ca61e776e9064409f527"
+        },
+        "checksum": "3c7331bd93248cb11305b7df39856ee027e199f68432ceee9dcceea4ef89ab63",
+        "fileCount": 7
+      },
+      "productionSourceChecksums": {
+        "src/Fixture.Core/EnvFile.cs": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+        "src/Fixture.Core/EnvInterpolator.cs": "39d995766be66d733b3d2f5702c816753e66ff47798a28e2045942f48a557f55"
+      },
+      "baselineProductionSourceChecksums": {
+        "src/Fixture.Core/EnvFile.cs": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+        "src/Fixture.Core/EnvInterpolator.cs": "9011b9644d6def6a1a7b06523692011882a835f382b974962e0a8ceaafdb18ee"
+      },
+      "status": "completed",
+      "wallDurationSeconds": 38.909055769996485,
+      "scored": true,
+      "evaluation": {
+        "fixtureId": "ENV-PARSER-002",
+        "privateTests": {
+          "fixtureId": "ENV-PARSER-002",
+          "sourceHash": "8a67401308b21e1acd02fc0557a5254dcb3488d9d2da40ce109e795ba84e7c2f",
+          "command": [
+            "dotnet",
+            "test",
+            "EnvFilePrivateTests.csproj",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 2.723972481006058,
+          "timedOut": false,
+          "outcomes": {
+            "H01": "passed",
+            "H02": "passed",
+            "H03": "passed",
+            "H04": "passed",
+            "H05": "passed",
+            "H06": "passed",
+            "H07": "passed",
+            "H08": "passed"
+          },
+          "passed": 8
+        },
+        "visibleTests": {
+          "fixtureId": "ENV-PARSER-002",
+          "sourceHash": "8a67401308b21e1acd02fc0557a5254dcb3488d9d2da40ce109e795ba84e7c2f",
+          "command": [
+            "dotnet",
+            "test",
+            "/home/philip/.cache/tmp/opencode/objective-agent-parity/visible-eval/ENV-PARSER-002-8a67401308b21e1acd02fc0557a5254dcb3488d9d2da40ce109e795ba84e7c2f",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 3.010562242998276,
+          "timedOut": false,
+          "outcomes": {
+            "Fixture.Tests.EnvIntegrationTests.ParsesEmbeddedEqualsAndPreservesUnknownPlaceholders": "passed"
+          },
+          "allPassed": true
+        },
+        "changeIntegrity": {
+          "changedFiles": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "changedFileChecksums": {
+            "src/Fixture.Core/EnvFile.cs": {
+              "baseline": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+              "run": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5"
+            },
+            "src/Fixture.Core/EnvInterpolator.cs": {
+              "baseline": "9011b9644d6def6a1a7b06523692011882a835f382b974962e0a8ceaafdb18ee",
+              "run": "39d995766be66d733b3d2f5702c816753e66ff47798a28e2045942f48a557f55"
+            }
+          },
+          "addedFiles": [],
+          "removedFiles": [],
+          "modifiedFiles": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "permittedProductionFiles": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "productionFilesChanged": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "productionFileChanged": true,
+          "onlyPermittedProductionFileChanged": true,
+          "snapshotChecksum": "3c7331bd93248cb11305b7df39856ee027e199f68432ceee9dcceea4ef89ab63",
+          "baselineChecksum": "173f5b1318d650cee247138f44117821b3e2556c4b9ca2c0121226ac7a92cd8b",
+          "passed": true
+        },
+        "agentLoop": {
+          "sourceInvestigation": {
+            "score": 5,
+            "sourceSeen": true,
+            "testSeen": true
+          },
+          "fileModification": {
+            "score": 5,
+            "successfulMutation": true,
+            "successfulMutationFiles": [
+              "src/Fixture.Core/EnvFile.cs",
+              "src/Fixture.Core/EnvInterpolator.cs"
+            ],
+            "productionFilesChanged": [
+              "src/Fixture.Core/EnvFile.cs",
+              "src/Fixture.Core/EnvInterpolator.cs"
+            ]
+          },
+          "testExecution": {
+            "score": 5,
+            "ran": true,
+            "executions": 1,
+            "observedPass": true,
+            "actualVisiblePass": true
+          },
+          "toolLifecycle": {
+            "score": 5,
+            "errors": [],
+            "duplicateIds": []
+          },
+          "modelContinuation": {
+            "score": 5,
+            "assistantToolCalls": 11,
+            "toolResults": 11,
+            "followedByAssistant": 11,
+            "missingResults": [],
+            "orphanResults": [],
+            "duplicateResults": []
+          },
+          "completion": {
+            "score": 5,
+            "reportedPass": true,
+            "actualVisiblePass": true,
+            "duplicateSideEffects": false
+          },
+          "recoveryMetrics": {
+            "toolErrors": 0,
+            "recoveredToolErrors": 0,
+            "testExecutions": 1,
+            "errorsConveyedToModel": 0,
+            "mutationFollowedByTest": true,
+            "failedTestFollowedByChange": false,
+            "duplicateToolExecutionIds": [],
+            "duplicateSideEffects": false
+          },
+          "total": 30,
+          "max": 30
+        },
+        "functional": {
+          "privateTests": 40,
+          "visibleTests": 5,
+          "changeIntegrity": 5,
+          "total": 50,
+          "max": 50
+        },
+        "agentTool": {
+          "total": 30,
+          "max": 30
+        },
+        "runScore": 80,
+        "runMax": 80,
+        "completeTaskSuccess": true
+      }
+    },
+    {
+      "runId": "pi-04",
+      "app": "pi",
+      "index": 4,
+      "fixtureId": "ENV-PARSER-002",
+      "model": {
+        "provider": "openai",
+        "id": "gpt-6-luna",
+        "thinking": "xhigh"
+      },
+      "timeoutSeconds": 600.0,
+      "addressSpaceBytes": null,
+      "startChecksum": "173f5b1318d650cee247138f44117821b3e2556c4b9ca2c0121226ac7a92cd8b",
+      "dependencyRestore": {
+        "exitCode": 0,
+        "durationSeconds": 1.2316264529945329,
+        "timedOut": false
+      },
+      "command": [
+        "node",
+        "--import",
+        "file:///home/philip/Projects/pi-pinned/packages/coding-agent/src/experimental/source-resolver.ts",
+        "/home/philip/Projects/pi-pinned/packages/coding-agent/src/cli.ts",
+        "--provider",
+        "openai",
+        "--model",
+        "gpt-6-luna",
+        "--thinking",
+        "xhigh",
+        "--mode",
+        "json",
+        "--session-dir",
+        "/home/philip/.cache/tmp/opencode/objective-agent-parity/sessions/pi-04",
+        "--no-extensions",
+        "--no-skills",
+        "--no-prompt-templates",
+        "--no-context-files",
+        "--no-mcp",
+        "--tools",
+        "read,bash,edit,write,grep,find,ls",
+        "--approve",
+        "--offline",
+        "This .NET project contains a failing integration test. Investigate the implementation, identify the underlying defects and make the smallest appropriate corrections to production code. Preserve the documented behaviour, do not modify the tests, and run `dotnet test` to verify the result. Report what you changed and whether the tests passed."
+      ],
+      "exitCode": 0,
+      "durationSeconds": 38.2237667409936,
+      "timedOut": false,
+      "peakMemoryBytes": 707198976,
+      "peakProcessCount": 5,
+      "sessionFiles": [
+        "sessions/2026-11-06T15-50-57-253Z_01a1b18e-53e5-775f-b270-591fca3b1438.jsonl"
+      ],
+      "workspace": {
+        "files": {
+          "Fixture.slnx": "75d384af0bfe6f0b560655974e4f30db3d499f7ed7e0cfb6759a07bcd49fa2e8",
+          "README.md": "fdd48e82c4c368e296186c66bb3fe2f329c0943793810ebf834ac8ac6b31faa9",
+          "src/Fixture.Core/EnvFile.cs": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+          "src/Fixture.Core/EnvInterpolator.cs": "39d995766be66d733b3d2f5702c816753e66ff47798a28e2045942f48a557f55",
+          "src/Fixture.Core/Fixture.Core.csproj": "2c82dae7a6492e5dc0d99b6b5a5d1c89a4702b892f71757981e46302949d6115",
+          "tests/Fixture.Tests/EnvIntegrationTests.cs": "2a3fcd98b6ed1b7409e8659a8304a8a3c499136aed74b159e6a3c5c0e5858328",
+          "tests/Fixture.Tests/Fixture.Tests.csproj": "a60e112e1e0a401e6b86ad686e8171cd07aec04da180ca61e776e9064409f527"
+        },
+        "checksum": "3c7331bd93248cb11305b7df39856ee027e199f68432ceee9dcceea4ef89ab63",
+        "fileCount": 7
+      },
+      "productionSourceChecksums": {
+        "src/Fixture.Core/EnvFile.cs": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+        "src/Fixture.Core/EnvInterpolator.cs": "39d995766be66d733b3d2f5702c816753e66ff47798a28e2045942f48a557f55"
+      },
+      "baselineProductionSourceChecksums": {
+        "src/Fixture.Core/EnvFile.cs": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+        "src/Fixture.Core/EnvInterpolator.cs": "9011b9644d6def6a1a7b06523692011882a835f382b974962e0a8ceaafdb18ee"
+      },
+      "status": "completed",
+      "wallDurationSeconds": 39.477157988992985,
+      "scored": true,
+      "evaluation": {
+        "fixtureId": "ENV-PARSER-002",
+        "privateTests": {
+          "fixtureId": "ENV-PARSER-002",
+          "sourceHash": "8a67401308b21e1acd02fc0557a5254dcb3488d9d2da40ce109e795ba84e7c2f",
+          "command": [
+            "dotnet",
+            "test",
+            "EnvFilePrivateTests.csproj",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 2.723972481006058,
+          "timedOut": false,
+          "outcomes": {
+            "H01": "passed",
+            "H02": "passed",
+            "H03": "passed",
+            "H04": "passed",
+            "H05": "passed",
+            "H06": "passed",
+            "H07": "passed",
+            "H08": "passed"
+          },
+          "passed": 8
+        },
+        "visibleTests": {
+          "fixtureId": "ENV-PARSER-002",
+          "sourceHash": "8a67401308b21e1acd02fc0557a5254dcb3488d9d2da40ce109e795ba84e7c2f",
+          "command": [
+            "dotnet",
+            "test",
+            "/home/philip/.cache/tmp/opencode/objective-agent-parity/visible-eval/ENV-PARSER-002-8a67401308b21e1acd02fc0557a5254dcb3488d9d2da40ce109e795ba84e7c2f",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 3.010562242998276,
+          "timedOut": false,
+          "outcomes": {
+            "Fixture.Tests.EnvIntegrationTests.ParsesEmbeddedEqualsAndPreservesUnknownPlaceholders": "passed"
+          },
+          "allPassed": true
+        },
+        "changeIntegrity": {
+          "changedFiles": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "changedFileChecksums": {
+            "src/Fixture.Core/EnvFile.cs": {
+              "baseline": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+              "run": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5"
+            },
+            "src/Fixture.Core/EnvInterpolator.cs": {
+              "baseline": "9011b9644d6def6a1a7b06523692011882a835f382b974962e0a8ceaafdb18ee",
+              "run": "39d995766be66d733b3d2f5702c816753e66ff47798a28e2045942f48a557f55"
+            }
+          },
+          "addedFiles": [],
+          "removedFiles": [],
+          "modifiedFiles": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "permittedProductionFiles": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "productionFilesChanged": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "productionFileChanged": true,
+          "onlyPermittedProductionFileChanged": true,
+          "snapshotChecksum": "3c7331bd93248cb11305b7df39856ee027e199f68432ceee9dcceea4ef89ab63",
+          "baselineChecksum": "173f5b1318d650cee247138f44117821b3e2556c4b9ca2c0121226ac7a92cd8b",
+          "passed": true
+        },
+        "agentLoop": {
+          "sourceInvestigation": {
+            "score": 5,
+            "sourceSeen": true,
+            "testSeen": true
+          },
+          "fileModification": {
+            "score": 5,
+            "successfulMutation": true,
+            "successfulMutationFiles": [
+              "src/Fixture.Core/EnvFile.cs",
+              "src/Fixture.Core/EnvInterpolator.cs"
+            ],
+            "productionFilesChanged": [
+              "src/Fixture.Core/EnvFile.cs",
+              "src/Fixture.Core/EnvInterpolator.cs"
+            ]
+          },
+          "testExecution": {
+            "score": 5,
+            "ran": true,
+            "executions": 2,
+            "observedPass": true,
+            "actualVisiblePass": true
+          },
+          "toolLifecycle": {
+            "score": 5,
+            "errors": [],
+            "duplicateIds": []
+          },
+          "modelContinuation": {
+            "score": 5,
+            "assistantToolCalls": 13,
+            "toolResults": 13,
+            "followedByAssistant": 13,
+            "missingResults": [],
+            "orphanResults": [],
+            "duplicateResults": []
+          },
+          "completion": {
+            "score": 5,
+            "reportedPass": true,
+            "actualVisiblePass": true,
+            "duplicateSideEffects": false
+          },
+          "recoveryMetrics": {
+            "toolErrors": 1,
+            "recoveredToolErrors": 1,
+            "testExecutions": 2,
+            "errorsConveyedToModel": 1,
+            "mutationFollowedByTest": true,
+            "failedTestFollowedByChange": true,
+            "duplicateToolExecutionIds": [],
+            "duplicateSideEffects": false
+          },
+          "total": 30,
+          "max": 30
+        },
+        "functional": {
+          "privateTests": 40,
+          "visibleTests": 5,
+          "changeIntegrity": 5,
+          "total": 50,
+          "max": 50
+        },
+        "agentTool": {
+          "total": 30,
+          "max": 30
+        },
+        "runScore": 80,
+        "runMax": 80,
+        "completeTaskSuccess": true
+      }
+    },
+    {
+      "runId": "pi-05",
+      "app": "pi",
+      "index": 5,
+      "fixtureId": "ENV-PARSER-002",
+      "model": {
+        "provider": "openai",
+        "id": "gpt-6-luna",
+        "thinking": "xhigh"
+      },
+      "timeoutSeconds": 600.0,
+      "addressSpaceBytes": null,
+      "startChecksum": "173f5b1318d650cee247138f44117821b3e2556c4b9ca2c0121226ac7a92cd8b",
+      "dependencyRestore": {
+        "exitCode": 0,
+        "durationSeconds": 0.8395457830047235,
+        "timedOut": false
+      },
+      "command": [
+        "node",
+        "--import",
+        "file:///home/philip/Projects/pi-pinned/packages/coding-agent/src/experimental/source-resolver.ts",
+        "/home/philip/Projects/pi-pinned/packages/coding-agent/src/cli.ts",
+        "--provider",
+        "openai",
+        "--model",
+        "gpt-6-luna",
+        "--thinking",
+        "xhigh",
+        "--mode",
+        "json",
+        "--session-dir",
+        "/home/philip/.cache/tmp/opencode/objective-agent-parity/sessions/pi-05",
+        "--no-extensions",
+        "--no-skills",
+        "--no-prompt-templates",
+        "--no-context-files",
+        "--no-mcp",
+        "--tools",
+        "read,bash,edit,write,grep,find,ls",
+        "--approve",
+        "--offline",
+        "This .NET project contains a failing integration test. Investigate the implementation, identify the underlying defects and make the smallest appropriate corrections to production code. Preserve the documented behaviour, do not modify the tests, and run `dotnet test` to verify the result. Report what you changed and whether the tests passed."
+      ],
+      "exitCode": 0,
+      "durationSeconds": 47.34511789199314,
+      "timedOut": false,
+      "peakMemoryBytes": 669978624,
+      "peakProcessCount": 5,
+      "sessionFiles": [
+        "sessions/2026-11-06T15-51-36-541Z_01a1b18e-ed5c-745f-ada0-dcdaa7f29198.jsonl"
+      ],
+      "workspace": {
+        "files": {
+          "Fixture.slnx": "75d384af0bfe6f0b560655974e4f30db3d499f7ed7e0cfb6759a07bcd49fa2e8",
+          "README.md": "fdd48e82c4c368e296186c66bb3fe2f329c0943793810ebf834ac8ac6b31faa9",
+          "src/Fixture.Core/EnvFile.cs": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+          "src/Fixture.Core/EnvInterpolator.cs": "39d995766be66d733b3d2f5702c816753e66ff47798a28e2045942f48a557f55",
+          "src/Fixture.Core/Fixture.Core.csproj": "2c82dae7a6492e5dc0d99b6b5a5d1c89a4702b892f71757981e46302949d6115",
+          "tests/Fixture.Tests/EnvIntegrationTests.cs": "2a3fcd98b6ed1b7409e8659a8304a8a3c499136aed74b159e6a3c5c0e5858328",
+          "tests/Fixture.Tests/Fixture.Tests.csproj": "a60e112e1e0a401e6b86ad686e8171cd07aec04da180ca61e776e9064409f527"
+        },
+        "checksum": "3c7331bd93248cb11305b7df39856ee027e199f68432ceee9dcceea4ef89ab63",
+        "fileCount": 7
+      },
+      "productionSourceChecksums": {
+        "src/Fixture.Core/EnvFile.cs": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+        "src/Fixture.Core/EnvInterpolator.cs": "39d995766be66d733b3d2f5702c816753e66ff47798a28e2045942f48a557f55"
+      },
+      "baselineProductionSourceChecksums": {
+        "src/Fixture.Core/EnvFile.cs": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+        "src/Fixture.Core/EnvInterpolator.cs": "9011b9644d6def6a1a7b06523692011882a835f382b974962e0a8ceaafdb18ee"
+      },
+      "status": "completed",
+      "wallDurationSeconds": 48.206263731990475,
+      "scored": true,
+      "evaluation": {
+        "fixtureId": "ENV-PARSER-002",
+        "privateTests": {
+          "fixtureId": "ENV-PARSER-002",
+          "sourceHash": "8a67401308b21e1acd02fc0557a5254dcb3488d9d2da40ce109e795ba84e7c2f",
+          "command": [
+            "dotnet",
+            "test",
+            "EnvFilePrivateTests.csproj",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 2.723972481006058,
+          "timedOut": false,
+          "outcomes": {
+            "H01": "passed",
+            "H02": "passed",
+            "H03": "passed",
+            "H04": "passed",
+            "H05": "passed",
+            "H06": "passed",
+            "H07": "passed",
+            "H08": "passed"
+          },
+          "passed": 8
+        },
+        "visibleTests": {
+          "fixtureId": "ENV-PARSER-002",
+          "sourceHash": "8a67401308b21e1acd02fc0557a5254dcb3488d9d2da40ce109e795ba84e7c2f",
+          "command": [
+            "dotnet",
+            "test",
+            "/home/philip/.cache/tmp/opencode/objective-agent-parity/visible-eval/ENV-PARSER-002-8a67401308b21e1acd02fc0557a5254dcb3488d9d2da40ce109e795ba84e7c2f",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 3.010562242998276,
+          "timedOut": false,
+          "outcomes": {
+            "Fixture.Tests.EnvIntegrationTests.ParsesEmbeddedEqualsAndPreservesUnknownPlaceholders": "passed"
+          },
+          "allPassed": true
+        },
+        "changeIntegrity": {
+          "changedFiles": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "changedFileChecksums": {
+            "src/Fixture.Core/EnvFile.cs": {
+              "baseline": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+              "run": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5"
+            },
+            "src/Fixture.Core/EnvInterpolator.cs": {
+              "baseline": "9011b9644d6def6a1a7b06523692011882a835f382b974962e0a8ceaafdb18ee",
+              "run": "39d995766be66d733b3d2f5702c816753e66ff47798a28e2045942f48a557f55"
+            }
+          },
+          "addedFiles": [],
+          "removedFiles": [],
+          "modifiedFiles": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "permittedProductionFiles": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "productionFilesChanged": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "productionFileChanged": true,
+          "onlyPermittedProductionFileChanged": true,
+          "snapshotChecksum": "3c7331bd93248cb11305b7df39856ee027e199f68432ceee9dcceea4ef89ab63",
+          "baselineChecksum": "173f5b1318d650cee247138f44117821b3e2556c4b9ca2c0121226ac7a92cd8b",
+          "passed": true
+        },
+        "agentLoop": {
+          "sourceInvestigation": {
+            "score": 5,
+            "sourceSeen": true,
+            "testSeen": true
+          },
+          "fileModification": {
+            "score": 5,
+            "successfulMutation": true,
+            "successfulMutationFiles": [
+              "src/Fixture.Core/EnvFile.cs",
+              "src/Fixture.Core/EnvInterpolator.cs"
+            ],
+            "productionFilesChanged": [
+              "src/Fixture.Core/EnvFile.cs",
+              "src/Fixture.Core/EnvInterpolator.cs"
+            ]
+          },
+          "testExecution": {
+            "score": 5,
+            "ran": true,
+            "executions": 2,
+            "observedPass": true,
+            "actualVisiblePass": true
+          },
+          "toolLifecycle": {
+            "score": 5,
+            "errors": [],
+            "duplicateIds": []
+          },
+          "modelContinuation": {
+            "score": 5,
+            "assistantToolCalls": 13,
+            "toolResults": 13,
+            "followedByAssistant": 13,
+            "missingResults": [],
+            "orphanResults": [],
+            "duplicateResults": []
+          },
+          "completion": {
+            "score": 5,
+            "reportedPass": true,
+            "actualVisiblePass": true,
+            "duplicateSideEffects": false
+          },
+          "recoveryMetrics": {
+            "toolErrors": 1,
+            "recoveredToolErrors": 1,
+            "testExecutions": 2,
+            "errorsConveyedToModel": 1,
+            "mutationFollowedByTest": true,
+            "failedTestFollowedByChange": true,
+            "duplicateToolExecutionIds": [],
+            "duplicateSideEffects": false
+          },
+          "total": 30,
+          "max": 30
+        },
+        "functional": {
+          "privateTests": 40,
+          "visibleTests": 5,
+          "changeIntegrity": 5,
+          "total": 50,
+          "max": 50
+        },
+        "agentTool": {
+          "total": 30,
+          "max": 30
+        },
+        "runScore": 80,
+        "runMax": 80,
+        "completeTaskSuccess": true
+      }
+    },
+    {
+      "runId": "pisharp-01",
+      "app": "pisharp",
+      "index": 1,
+      "fixtureId": "ENV-PARSER-002",
+      "model": {
+        "provider": "openai-codex",
+        "id": "gpt-6-luna",
+        "thinking": "xhigh"
+      },
+      "timeoutSeconds": 600.0,
+      "addressSpaceBytes": null,
+      "startChecksum": "173f5b1318d650cee247138f44117821b3e2556c4b9ca2c0121226ac7a92cd8b",
+      "dependencyRestore": {
+        "exitCode": 0,
+        "durationSeconds": 1.329828005982563,
+        "timedOut": false
+      },
+      "command": [
+        "dotnet",
+        "/home/philip/Projects/pisharp/src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll",
+        "--provider",
+        "openai-codex",
+        "--model",
+        "gpt-6-luna",
+        "--thinking",
+        "xhigh",
+        "--mode",
+        "json",
+        "--session-dir",
+        "/home/philip/.cache/tmp/opencode/objective-agent-parity/sessions/pisharp-01",
+        "--no-extensions",
+        "--no-skills",
+        "--no-prompt-templates",
+        "--no-context-files",
+        "--tools",
+        "read,bash,edit,write,grep,find,ls",
+        "--approve",
+        "--offline",
+        "This .NET project contains a failing integration test. Investigate the implementation, identify the underlying defects and make the smallest appropriate corrections to production code. Preserve the documented behaviour, do not modify the tests, and run `dotnet test` to verify the result. Report what you changed and whether the tests passed."
+      ],
+      "exitCode": 0,
+      "durationSeconds": 38.17344103899086,
+      "timedOut": false,
+      "peakMemoryBytes": 639066112,
+      "peakProcessCount": 5,
+      "sessionFiles": [
+        "sessions/20261106T155224_3d5752f8cdb348afbdaf659b9470f229.session.json",
+        "sessions/20261106T155224_3d5752f8cdb348afbdaf659b9470f229.session.json.lock"
+      ],
+      "workspace": {
+        "files": {
+          "Fixture.slnx": "75d384af0bfe6f0b560655974e4f30db3d499f7ed7e0cfb6759a07bcd49fa2e8",
+          "README.md": "fdd48e82c4c368e296186c66bb3fe2f329c0943793810ebf834ac8ac6b31faa9",
+          "src/Fixture.Core/EnvFile.cs": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+          "src/Fixture.Core/EnvInterpolator.cs": "39d995766be66d733b3d2f5702c816753e66ff47798a28e2045942f48a557f55",
+          "src/Fixture.Core/Fixture.Core.csproj": "2c82dae7a6492e5dc0d99b6b5a5d1c89a4702b892f71757981e46302949d6115",
+          "tests/Fixture.Tests/EnvIntegrationTests.cs": "2a3fcd98b6ed1b7409e8659a8304a8a3c499136aed74b159e6a3c5c0e5858328",
+          "tests/Fixture.Tests/Fixture.Tests.csproj": "a60e112e1e0a401e6b86ad686e8171cd07aec04da180ca61e776e9064409f527"
+        },
+        "checksum": "3c7331bd93248cb11305b7df39856ee027e199f68432ceee9dcceea4ef89ab63",
+        "fileCount": 7
+      },
+      "productionSourceChecksums": {
+        "src/Fixture.Core/EnvFile.cs": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+        "src/Fixture.Core/EnvInterpolator.cs": "39d995766be66d733b3d2f5702c816753e66ff47798a28e2045942f48a557f55"
+      },
+      "baselineProductionSourceChecksums": {
+        "src/Fixture.Core/EnvFile.cs": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+        "src/Fixture.Core/EnvInterpolator.cs": "9011b9644d6def6a1a7b06523692011882a835f382b974962e0a8ceaafdb18ee"
+      },
+      "status": "completed",
+      "wallDurationSeconds": 39.521061612002086,
+      "scored": true,
+      "evaluation": {
+        "fixtureId": "ENV-PARSER-002",
+        "privateTests": {
+          "fixtureId": "ENV-PARSER-002",
+          "sourceHash": "8a67401308b21e1acd02fc0557a5254dcb3488d9d2da40ce109e795ba84e7c2f",
+          "command": [
+            "dotnet",
+            "test",
+            "EnvFilePrivateTests.csproj",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 2.723972481006058,
+          "timedOut": false,
+          "outcomes": {
+            "H01": "passed",
+            "H02": "passed",
+            "H03": "passed",
+            "H04": "passed",
+            "H05": "passed",
+            "H06": "passed",
+            "H07": "passed",
+            "H08": "passed"
+          },
+          "passed": 8
+        },
+        "visibleTests": {
+          "fixtureId": "ENV-PARSER-002",
+          "sourceHash": "8a67401308b21e1acd02fc0557a5254dcb3488d9d2da40ce109e795ba84e7c2f",
+          "command": [
+            "dotnet",
+            "test",
+            "/home/philip/.cache/tmp/opencode/objective-agent-parity/visible-eval/ENV-PARSER-002-8a67401308b21e1acd02fc0557a5254dcb3488d9d2da40ce109e795ba84e7c2f",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 3.010562242998276,
+          "timedOut": false,
+          "outcomes": {
+            "Fixture.Tests.EnvIntegrationTests.ParsesEmbeddedEqualsAndPreservesUnknownPlaceholders": "passed"
+          },
+          "allPassed": true
+        },
+        "changeIntegrity": {
+          "changedFiles": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "changedFileChecksums": {
+            "src/Fixture.Core/EnvFile.cs": {
+              "baseline": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+              "run": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5"
+            },
+            "src/Fixture.Core/EnvInterpolator.cs": {
+              "baseline": "9011b9644d6def6a1a7b06523692011882a835f382b974962e0a8ceaafdb18ee",
+              "run": "39d995766be66d733b3d2f5702c816753e66ff47798a28e2045942f48a557f55"
+            }
+          },
+          "addedFiles": [],
+          "removedFiles": [],
+          "modifiedFiles": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "permittedProductionFiles": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "productionFilesChanged": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "productionFileChanged": true,
+          "onlyPermittedProductionFileChanged": true,
+          "snapshotChecksum": "3c7331bd93248cb11305b7df39856ee027e199f68432ceee9dcceea4ef89ab63",
+          "baselineChecksum": "173f5b1318d650cee247138f44117821b3e2556c4b9ca2c0121226ac7a92cd8b",
+          "passed": true
+        },
+        "agentLoop": {
+          "sourceInvestigation": {
+            "score": 5,
+            "sourceSeen": true,
+            "testSeen": true
+          },
+          "fileModification": {
+            "score": 5,
+            "successfulMutation": true,
+            "successfulMutationFiles": [
+              "src/Fixture.Core/EnvFile.cs",
+              "src/Fixture.Core/EnvInterpolator.cs"
+            ],
+            "productionFilesChanged": [
+              "src/Fixture.Core/EnvFile.cs",
+              "src/Fixture.Core/EnvInterpolator.cs"
+            ]
+          },
+          "testExecution": {
+            "score": 5,
+            "ran": true,
+            "executions": 2,
+            "observedPass": true,
+            "actualVisiblePass": true
+          },
+          "toolLifecycle": {
+            "score": 5,
+            "errors": [],
+            "duplicateIds": []
+          },
+          "modelContinuation": {
+            "score": 5,
+            "assistantToolCalls": 11,
+            "toolResults": 11,
+            "followedByAssistant": 11,
+            "missingResults": [],
+            "orphanResults": [],
+            "duplicateResults": []
+          },
+          "completion": {
+            "score": 5,
+            "reportedPass": true,
+            "actualVisiblePass": true,
+            "duplicateSideEffects": false
+          },
+          "recoveryMetrics": {
+            "toolErrors": 1,
+            "recoveredToolErrors": 1,
+            "testExecutions": 2,
+            "errorsConveyedToModel": 1,
+            "mutationFollowedByTest": true,
+            "failedTestFollowedByChange": true,
+            "duplicateToolExecutionIds": [],
+            "duplicateSideEffects": false
+          },
+          "total": 30,
+          "max": 30
+        },
+        "functional": {
+          "privateTests": 40,
+          "visibleTests": 5,
+          "changeIntegrity": 5,
+          "total": 50,
+          "max": 50
+        },
+        "agentTool": {
+          "total": 30,
+          "max": 30
+        },
+        "runScore": 80,
+        "runMax": 80,
+        "completeTaskSuccess": true
+      }
+    },
+    {
+      "runId": "pisharp-02",
+      "app": "pisharp",
+      "index": 2,
+      "fixtureId": "ENV-PARSER-002",
+      "model": {
+        "provider": "openai-codex",
+        "id": "gpt-6-luna",
+        "thinking": "xhigh"
+      },
+      "timeoutSeconds": 600.0,
+      "addressSpaceBytes": null,
+      "startChecksum": "173f5b1318d650cee247138f44117821b3e2556c4b9ca2c0121226ac7a92cd8b",
+      "dependencyRestore": {
+        "exitCode": 0,
+        "durationSeconds": 1.2489807679958176,
+        "timedOut": false
+      },
+      "command": [
+        "dotnet",
+        "/home/philip/Projects/pisharp/src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll",
+        "--provider",
+        "openai-codex",
+        "--model",
+        "gpt-6-luna",
+        "--thinking",
+        "xhigh",
+        "--mode",
+        "json",
+        "--session-dir",
+        "/home/philip/.cache/tmp/opencode/objective-agent-parity/sessions/pisharp-02",
+        "--no-extensions",
+        "--no-skills",
+        "--no-prompt-templates",
+        "--no-context-files",
+        "--tools",
+        "read,bash,edit,write,grep,find,ls",
+        "--approve",
+        "--offline",
+        "This .NET project contains a failing integration test. Investigate the implementation, identify the underlying defects and make the smallest appropriate corrections to production code. Preserve the documented behaviour, do not modify the tests, and run `dotnet test` to verify the result. Report what you changed and whether the tests passed."
+      ],
+      "exitCode": 0,
+      "durationSeconds": 45.36928739299765,
+      "timedOut": false,
+      "peakMemoryBytes": 630845440,
+      "peakProcessCount": 5,
+      "sessionFiles": [
+        "sessions/20261106T155304_654ec71f2cdf4b87afc4301113ea3505.session.json",
+        "sessions/20261106T155304_654ec71f2cdf4b87afc4301113ea3505.session.json.lock"
+      ],
+      "workspace": {
+        "files": {
+          "Fixture.slnx": "75d384af0bfe6f0b560655974e4f30db3d499f7ed7e0cfb6759a07bcd49fa2e8",
+          "README.md": "fdd48e82c4c368e296186c66bb3fe2f329c0943793810ebf834ac8ac6b31faa9",
+          "src/Fixture.Core/EnvFile.cs": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+          "src/Fixture.Core/EnvInterpolator.cs": "39d995766be66d733b3d2f5702c816753e66ff47798a28e2045942f48a557f55",
+          "src/Fixture.Core/Fixture.Core.csproj": "2c82dae7a6492e5dc0d99b6b5a5d1c89a4702b892f71757981e46302949d6115",
+          "tests/Fixture.Tests/EnvIntegrationTests.cs": "2a3fcd98b6ed1b7409e8659a8304a8a3c499136aed74b159e6a3c5c0e5858328",
+          "tests/Fixture.Tests/Fixture.Tests.csproj": "a60e112e1e0a401e6b86ad686e8171cd07aec04da180ca61e776e9064409f527"
+        },
+        "checksum": "3c7331bd93248cb11305b7df39856ee027e199f68432ceee9dcceea4ef89ab63",
+        "fileCount": 7
+      },
+      "productionSourceChecksums": {
+        "src/Fixture.Core/EnvFile.cs": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+        "src/Fixture.Core/EnvInterpolator.cs": "39d995766be66d733b3d2f5702c816753e66ff47798a28e2045942f48a557f55"
+      },
+      "baselineProductionSourceChecksums": {
+        "src/Fixture.Core/EnvFile.cs": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+        "src/Fixture.Core/EnvInterpolator.cs": "9011b9644d6def6a1a7b06523692011882a835f382b974962e0a8ceaafdb18ee"
+      },
+      "status": "completed",
+      "wallDurationSeconds": 46.639247418992454,
+      "scored": true,
+      "evaluation": {
+        "fixtureId": "ENV-PARSER-002",
+        "privateTests": {
+          "fixtureId": "ENV-PARSER-002",
+          "sourceHash": "8a67401308b21e1acd02fc0557a5254dcb3488d9d2da40ce109e795ba84e7c2f",
+          "command": [
+            "dotnet",
+            "test",
+            "EnvFilePrivateTests.csproj",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 2.723972481006058,
+          "timedOut": false,
+          "outcomes": {
+            "H01": "passed",
+            "H02": "passed",
+            "H03": "passed",
+            "H04": "passed",
+            "H05": "passed",
+            "H06": "passed",
+            "H07": "passed",
+            "H08": "passed"
+          },
+          "passed": 8
+        },
+        "visibleTests": {
+          "fixtureId": "ENV-PARSER-002",
+          "sourceHash": "8a67401308b21e1acd02fc0557a5254dcb3488d9d2da40ce109e795ba84e7c2f",
+          "command": [
+            "dotnet",
+            "test",
+            "/home/philip/.cache/tmp/opencode/objective-agent-parity/visible-eval/ENV-PARSER-002-8a67401308b21e1acd02fc0557a5254dcb3488d9d2da40ce109e795ba84e7c2f",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 3.010562242998276,
+          "timedOut": false,
+          "outcomes": {
+            "Fixture.Tests.EnvIntegrationTests.ParsesEmbeddedEqualsAndPreservesUnknownPlaceholders": "passed"
+          },
+          "allPassed": true
+        },
+        "changeIntegrity": {
+          "changedFiles": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "changedFileChecksums": {
+            "src/Fixture.Core/EnvFile.cs": {
+              "baseline": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+              "run": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5"
+            },
+            "src/Fixture.Core/EnvInterpolator.cs": {
+              "baseline": "9011b9644d6def6a1a7b06523692011882a835f382b974962e0a8ceaafdb18ee",
+              "run": "39d995766be66d733b3d2f5702c816753e66ff47798a28e2045942f48a557f55"
+            }
+          },
+          "addedFiles": [],
+          "removedFiles": [],
+          "modifiedFiles": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "permittedProductionFiles": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "productionFilesChanged": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "productionFileChanged": true,
+          "onlyPermittedProductionFileChanged": true,
+          "snapshotChecksum": "3c7331bd93248cb11305b7df39856ee027e199f68432ceee9dcceea4ef89ab63",
+          "baselineChecksum": "173f5b1318d650cee247138f44117821b3e2556c4b9ca2c0121226ac7a92cd8b",
+          "passed": true
+        },
+        "agentLoop": {
+          "sourceInvestigation": {
+            "score": 5,
+            "sourceSeen": true,
+            "testSeen": true
+          },
+          "fileModification": {
+            "score": 5,
+            "successfulMutation": true,
+            "successfulMutationFiles": [
+              "src/Fixture.Core/EnvFile.cs",
+              "src/Fixture.Core/EnvInterpolator.cs"
+            ],
+            "productionFilesChanged": [
+              "src/Fixture.Core/EnvFile.cs",
+              "src/Fixture.Core/EnvInterpolator.cs"
+            ]
+          },
+          "testExecution": {
+            "score": 5,
+            "ran": true,
+            "executions": 2,
+            "observedPass": true,
+            "actualVisiblePass": true
+          },
+          "toolLifecycle": {
+            "score": 5,
+            "errors": [],
+            "duplicateIds": []
+          },
+          "modelContinuation": {
+            "score": 5,
+            "assistantToolCalls": 16,
+            "toolResults": 16,
+            "followedByAssistant": 16,
+            "missingResults": [],
+            "orphanResults": [],
+            "duplicateResults": []
+          },
+          "completion": {
+            "score": 5,
+            "reportedPass": true,
+            "actualVisiblePass": true,
+            "duplicateSideEffects": false
+          },
+          "recoveryMetrics": {
+            "toolErrors": 1,
+            "recoveredToolErrors": 1,
+            "testExecutions": 2,
+            "errorsConveyedToModel": 1,
+            "mutationFollowedByTest": true,
+            "failedTestFollowedByChange": true,
+            "duplicateToolExecutionIds": [],
+            "duplicateSideEffects": false
+          },
+          "total": 30,
+          "max": 30
+        },
+        "functional": {
+          "privateTests": 40,
+          "visibleTests": 5,
+          "changeIntegrity": 5,
+          "total": 50,
+          "max": 50
+        },
+        "agentTool": {
+          "total": 30,
+          "max": 30
+        },
+        "runScore": 80,
+        "runMax": 80,
+        "completeTaskSuccess": true
+      }
+    },
+    {
+      "runId": "pisharp-03",
+      "app": "pisharp",
+      "index": 3,
+      "fixtureId": "ENV-PARSER-002",
+      "model": {
+        "provider": "openai-codex",
+        "id": "gpt-6-luna",
+        "thinking": "xhigh"
+      },
+      "timeoutSeconds": 600.0,
+      "addressSpaceBytes": null,
+      "startChecksum": "173f5b1318d650cee247138f44117821b3e2556c4b9ca2c0121226ac7a92cd8b",
+      "dependencyRestore": {
+        "exitCode": 0,
+        "durationSeconds": 1.3424079660035204,
+        "timedOut": false
+      },
+      "command": [
+        "dotnet",
+        "/home/philip/Projects/pisharp/src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll",
+        "--provider",
+        "openai-codex",
+        "--model",
+        "gpt-6-luna",
+        "--thinking",
+        "xhigh",
+        "--mode",
+        "json",
+        "--session-dir",
+        "/home/philip/.cache/tmp/opencode/objective-agent-parity/sessions/pisharp-03",
+        "--no-extensions",
+        "--no-skills",
+        "--no-prompt-templates",
+        "--no-context-files",
+        "--tools",
+        "read,bash,edit,write,grep,find,ls",
+        "--approve",
+        "--offline",
+        "This .NET project contains a failing integration test. Investigate the implementation, identify the underlying defects and make the smallest appropriate corrections to production code. Preserve the documented behaviour, do not modify the tests, and run `dotnet test` to verify the result. Report what you changed and whether the tests passed."
+      ],
+      "exitCode": 0,
+      "durationSeconds": 26.517509883007733,
+      "timedOut": false,
+      "peakMemoryBytes": 634302464,
+      "peakProcessCount": 5,
+      "sessionFiles": [
+        "sessions/20261106T155350_d887ac68b42e49f7ae5c0f728e12862a.session.json",
+        "sessions/20261106T155350_d887ac68b42e49f7ae5c0f728e12862a.session.json.lock"
+      ],
+      "workspace": {
+        "files": {
+          "Fixture.slnx": "75d384af0bfe6f0b560655974e4f30db3d499f7ed7e0cfb6759a07bcd49fa2e8",
+          "README.md": "fdd48e82c4c368e296186c66bb3fe2f329c0943793810ebf834ac8ac6b31faa9",
+          "src/Fixture.Core/EnvFile.cs": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+          "src/Fixture.Core/EnvInterpolator.cs": "39d995766be66d733b3d2f5702c816753e66ff47798a28e2045942f48a557f55",
+          "src/Fixture.Core/Fixture.Core.csproj": "2c82dae7a6492e5dc0d99b6b5a5d1c89a4702b892f71757981e46302949d6115",
+          "tests/Fixture.Tests/EnvIntegrationTests.cs": "2a3fcd98b6ed1b7409e8659a8304a8a3c499136aed74b159e6a3c5c0e5858328",
+          "tests/Fixture.Tests/Fixture.Tests.csproj": "a60e112e1e0a401e6b86ad686e8171cd07aec04da180ca61e776e9064409f527"
+        },
+        "checksum": "3c7331bd93248cb11305b7df39856ee027e199f68432ceee9dcceea4ef89ab63",
+        "fileCount": 7
+      },
+      "productionSourceChecksums": {
+        "src/Fixture.Core/EnvFile.cs": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+        "src/Fixture.Core/EnvInterpolator.cs": "39d995766be66d733b3d2f5702c816753e66ff47798a28e2045942f48a557f55"
+      },
+      "baselineProductionSourceChecksums": {
+        "src/Fixture.Core/EnvFile.cs": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+        "src/Fixture.Core/EnvInterpolator.cs": "9011b9644d6def6a1a7b06523692011882a835f382b974962e0a8ceaafdb18ee"
+      },
+      "status": "completed",
+      "wallDurationSeconds": 27.892523012007587,
+      "scored": true,
+      "evaluation": {
+        "fixtureId": "ENV-PARSER-002",
+        "privateTests": {
+          "fixtureId": "ENV-PARSER-002",
+          "sourceHash": "8a67401308b21e1acd02fc0557a5254dcb3488d9d2da40ce109e795ba84e7c2f",
+          "command": [
+            "dotnet",
+            "test",
+            "EnvFilePrivateTests.csproj",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 2.723972481006058,
+          "timedOut": false,
+          "outcomes": {
+            "H01": "passed",
+            "H02": "passed",
+            "H03": "passed",
+            "H04": "passed",
+            "H05": "passed",
+            "H06": "passed",
+            "H07": "passed",
+            "H08": "passed"
+          },
+          "passed": 8
+        },
+        "visibleTests": {
+          "fixtureId": "ENV-PARSER-002",
+          "sourceHash": "8a67401308b21e1acd02fc0557a5254dcb3488d9d2da40ce109e795ba84e7c2f",
+          "command": [
+            "dotnet",
+            "test",
+            "/home/philip/.cache/tmp/opencode/objective-agent-parity/visible-eval/ENV-PARSER-002-8a67401308b21e1acd02fc0557a5254dcb3488d9d2da40ce109e795ba84e7c2f",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 3.010562242998276,
+          "timedOut": false,
+          "outcomes": {
+            "Fixture.Tests.EnvIntegrationTests.ParsesEmbeddedEqualsAndPreservesUnknownPlaceholders": "passed"
+          },
+          "allPassed": true
+        },
+        "changeIntegrity": {
+          "changedFiles": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "changedFileChecksums": {
+            "src/Fixture.Core/EnvFile.cs": {
+              "baseline": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+              "run": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5"
+            },
+            "src/Fixture.Core/EnvInterpolator.cs": {
+              "baseline": "9011b9644d6def6a1a7b06523692011882a835f382b974962e0a8ceaafdb18ee",
+              "run": "39d995766be66d733b3d2f5702c816753e66ff47798a28e2045942f48a557f55"
+            }
+          },
+          "addedFiles": [],
+          "removedFiles": [],
+          "modifiedFiles": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "permittedProductionFiles": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "productionFilesChanged": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "productionFileChanged": true,
+          "onlyPermittedProductionFileChanged": true,
+          "snapshotChecksum": "3c7331bd93248cb11305b7df39856ee027e199f68432ceee9dcceea4ef89ab63",
+          "baselineChecksum": "173f5b1318d650cee247138f44117821b3e2556c4b9ca2c0121226ac7a92cd8b",
+          "passed": true
+        },
+        "agentLoop": {
+          "sourceInvestigation": {
+            "score": 5,
+            "sourceSeen": true,
+            "testSeen": true
+          },
+          "fileModification": {
+            "score": 5,
+            "successfulMutation": true,
+            "successfulMutationFiles": [
+              "src/Fixture.Core/EnvFile.cs",
+              "src/Fixture.Core/EnvInterpolator.cs"
+            ],
+            "productionFilesChanged": [
+              "src/Fixture.Core/EnvFile.cs",
+              "src/Fixture.Core/EnvInterpolator.cs"
+            ]
+          },
+          "testExecution": {
+            "score": 5,
+            "ran": true,
+            "executions": 1,
+            "observedPass": true,
+            "actualVisiblePass": true
+          },
+          "toolLifecycle": {
+            "score": 5,
+            "errors": [],
+            "duplicateIds": []
+          },
+          "modelContinuation": {
+            "score": 5,
+            "assistantToolCalls": 12,
+            "toolResults": 12,
+            "followedByAssistant": 12,
+            "missingResults": [],
+            "orphanResults": [],
+            "duplicateResults": []
+          },
+          "completion": {
+            "score": 5,
+            "reportedPass": true,
+            "actualVisiblePass": true,
+            "duplicateSideEffects": false
+          },
+          "recoveryMetrics": {
+            "toolErrors": 0,
+            "recoveredToolErrors": 0,
+            "testExecutions": 1,
+            "errorsConveyedToModel": 0,
+            "mutationFollowedByTest": true,
+            "failedTestFollowedByChange": false,
+            "duplicateToolExecutionIds": [],
+            "duplicateSideEffects": false
+          },
+          "total": 30,
+          "max": 30
+        },
+        "functional": {
+          "privateTests": 40,
+          "visibleTests": 5,
+          "changeIntegrity": 5,
+          "total": 50,
+          "max": 50
+        },
+        "agentTool": {
+          "total": 30,
+          "max": 30
+        },
+        "runScore": 80,
+        "runMax": 80,
+        "completeTaskSuccess": true
+      }
+    },
+    {
+      "runId": "pisharp-04",
+      "app": "pisharp",
+      "index": 4,
+      "fixtureId": "ENV-PARSER-002",
+      "model": {
+        "provider": "openai-codex",
+        "id": "gpt-6-luna",
+        "thinking": "xhigh"
+      },
+      "timeoutSeconds": 600.0,
+      "addressSpaceBytes": null,
+      "startChecksum": "173f5b1318d650cee247138f44117821b3e2556c4b9ca2c0121226ac7a92cd8b",
+      "dependencyRestore": {
+        "exitCode": 0,
+        "durationSeconds": 1.291387824981939,
+        "timedOut": false
+      },
+      "command": [
+        "dotnet",
+        "/home/philip/Projects/pisharp/src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll",
+        "--provider",
+        "openai-codex",
+        "--model",
+        "gpt-6-luna",
+        "--thinking",
+        "xhigh",
+        "--mode",
+        "json",
+        "--session-dir",
+        "/home/philip/.cache/tmp/opencode/objective-agent-parity/sessions/pisharp-04",
+        "--no-extensions",
+        "--no-skills",
+        "--no-prompt-templates",
+        "--no-context-files",
+        "--tools",
+        "read,bash,edit,write,grep,find,ls",
+        "--approve",
+        "--offline",
+        "This .NET project contains a failing integration test. Investigate the implementation, identify the underlying defects and make the smallest appropriate corrections to production code. Preserve the documented behaviour, do not modify the tests, and run `dotnet test` to verify the result. Report what you changed and whether the tests passed."
+      ],
+      "exitCode": 0,
+      "durationSeconds": 34.89652372000273,
+      "timedOut": false,
+      "peakMemoryBytes": 628834304,
+      "peakProcessCount": 5,
+      "sessionFiles": [
+        "sessions/20261106T155418_d7e89435afe64004a0424b65d2fcaada.session.json",
+        "sessions/20261106T155418_d7e89435afe64004a0424b65d2fcaada.session.json.lock"
+      ],
+      "workspace": {
+        "files": {
+          "Fixture.slnx": "75d384af0bfe6f0b560655974e4f30db3d499f7ed7e0cfb6759a07bcd49fa2e8",
+          "README.md": "fdd48e82c4c368e296186c66bb3fe2f329c0943793810ebf834ac8ac6b31faa9",
+          "src/Fixture.Core/EnvFile.cs": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+          "src/Fixture.Core/EnvInterpolator.cs": "39d995766be66d733b3d2f5702c816753e66ff47798a28e2045942f48a557f55",
+          "src/Fixture.Core/Fixture.Core.csproj": "2c82dae7a6492e5dc0d99b6b5a5d1c89a4702b892f71757981e46302949d6115",
+          "tests/Fixture.Tests/EnvIntegrationTests.cs": "2a3fcd98b6ed1b7409e8659a8304a8a3c499136aed74b159e6a3c5c0e5858328",
+          "tests/Fixture.Tests/Fixture.Tests.csproj": "a60e112e1e0a401e6b86ad686e8171cd07aec04da180ca61e776e9064409f527"
+        },
+        "checksum": "3c7331bd93248cb11305b7df39856ee027e199f68432ceee9dcceea4ef89ab63",
+        "fileCount": 7
+      },
+      "productionSourceChecksums": {
+        "src/Fixture.Core/EnvFile.cs": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+        "src/Fixture.Core/EnvInterpolator.cs": "39d995766be66d733b3d2f5702c816753e66ff47798a28e2045942f48a557f55"
+      },
+      "baselineProductionSourceChecksums": {
+        "src/Fixture.Core/EnvFile.cs": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+        "src/Fixture.Core/EnvInterpolator.cs": "9011b9644d6def6a1a7b06523692011882a835f382b974962e0a8ceaafdb18ee"
+      },
+      "status": "completed",
+      "wallDurationSeconds": 36.20668137699249,
+      "scored": true,
+      "evaluation": {
+        "fixtureId": "ENV-PARSER-002",
+        "privateTests": {
+          "fixtureId": "ENV-PARSER-002",
+          "sourceHash": "8a67401308b21e1acd02fc0557a5254dcb3488d9d2da40ce109e795ba84e7c2f",
+          "command": [
+            "dotnet",
+            "test",
+            "EnvFilePrivateTests.csproj",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 2.723972481006058,
+          "timedOut": false,
+          "outcomes": {
+            "H01": "passed",
+            "H02": "passed",
+            "H03": "passed",
+            "H04": "passed",
+            "H05": "passed",
+            "H06": "passed",
+            "H07": "passed",
+            "H08": "passed"
+          },
+          "passed": 8
+        },
+        "visibleTests": {
+          "fixtureId": "ENV-PARSER-002",
+          "sourceHash": "8a67401308b21e1acd02fc0557a5254dcb3488d9d2da40ce109e795ba84e7c2f",
+          "command": [
+            "dotnet",
+            "test",
+            "/home/philip/.cache/tmp/opencode/objective-agent-parity/visible-eval/ENV-PARSER-002-8a67401308b21e1acd02fc0557a5254dcb3488d9d2da40ce109e795ba84e7c2f",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 3.010562242998276,
+          "timedOut": false,
+          "outcomes": {
+            "Fixture.Tests.EnvIntegrationTests.ParsesEmbeddedEqualsAndPreservesUnknownPlaceholders": "passed"
+          },
+          "allPassed": true
+        },
+        "changeIntegrity": {
+          "changedFiles": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "changedFileChecksums": {
+            "src/Fixture.Core/EnvFile.cs": {
+              "baseline": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+              "run": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5"
+            },
+            "src/Fixture.Core/EnvInterpolator.cs": {
+              "baseline": "9011b9644d6def6a1a7b06523692011882a835f382b974962e0a8ceaafdb18ee",
+              "run": "39d995766be66d733b3d2f5702c816753e66ff47798a28e2045942f48a557f55"
+            }
+          },
+          "addedFiles": [],
+          "removedFiles": [],
+          "modifiedFiles": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "permittedProductionFiles": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "productionFilesChanged": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "productionFileChanged": true,
+          "onlyPermittedProductionFileChanged": true,
+          "snapshotChecksum": "3c7331bd93248cb11305b7df39856ee027e199f68432ceee9dcceea4ef89ab63",
+          "baselineChecksum": "173f5b1318d650cee247138f44117821b3e2556c4b9ca2c0121226ac7a92cd8b",
+          "passed": true
+        },
+        "agentLoop": {
+          "sourceInvestigation": {
+            "score": 5,
+            "sourceSeen": true,
+            "testSeen": true
+          },
+          "fileModification": {
+            "score": 5,
+            "successfulMutation": true,
+            "successfulMutationFiles": [
+              "src/Fixture.Core/EnvFile.cs",
+              "src/Fixture.Core/EnvInterpolator.cs"
+            ],
+            "productionFilesChanged": [
+              "src/Fixture.Core/EnvFile.cs",
+              "src/Fixture.Core/EnvInterpolator.cs"
+            ]
+          },
+          "testExecution": {
+            "score": 5,
+            "ran": true,
+            "executions": 2,
+            "observedPass": true,
+            "actualVisiblePass": true
+          },
+          "toolLifecycle": {
+            "score": 5,
+            "errors": [],
+            "duplicateIds": []
+          },
+          "modelContinuation": {
+            "score": 5,
+            "assistantToolCalls": 12,
+            "toolResults": 12,
+            "followedByAssistant": 12,
+            "missingResults": [],
+            "orphanResults": [],
+            "duplicateResults": []
+          },
+          "completion": {
+            "score": 5,
+            "reportedPass": true,
+            "actualVisiblePass": true,
+            "duplicateSideEffects": false
+          },
+          "recoveryMetrics": {
+            "toolErrors": 1,
+            "recoveredToolErrors": 1,
+            "testExecutions": 2,
+            "errorsConveyedToModel": 1,
+            "mutationFollowedByTest": true,
+            "failedTestFollowedByChange": true,
+            "duplicateToolExecutionIds": [],
+            "duplicateSideEffects": false
+          },
+          "total": 30,
+          "max": 30
+        },
+        "functional": {
+          "privateTests": 40,
+          "visibleTests": 5,
+          "changeIntegrity": 5,
+          "total": 50,
+          "max": 50
+        },
+        "agentTool": {
+          "total": 30,
+          "max": 30
+        },
+        "runScore": 80,
+        "runMax": 80,
+        "completeTaskSuccess": true
+      }
+    },
+    {
+      "runId": "pisharp-05",
+      "app": "pisharp",
+      "index": 5,
+      "fixtureId": "ENV-PARSER-002",
+      "model": {
+        "provider": "openai-codex",
+        "id": "gpt-6-luna",
+        "thinking": "xhigh"
+      },
+      "timeoutSeconds": 600.0,
+      "addressSpaceBytes": null,
+      "startChecksum": "173f5b1318d650cee247138f44117821b3e2556c4b9ca2c0121226ac7a92cd8b",
+      "dependencyRestore": {
+        "exitCode": 0,
+        "durationSeconds": 0.8332693729898892,
+        "timedOut": false
+      },
+      "command": [
+        "dotnet",
+        "/home/philip/Projects/pisharp/src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll",
+        "--provider",
+        "openai-codex",
+        "--model",
+        "gpt-6-luna",
+        "--thinking",
+        "xhigh",
+        "--mode",
+        "json",
+        "--session-dir",
+        "/home/philip/.cache/tmp/opencode/objective-agent-parity/sessions/pisharp-05",
+        "--no-extensions",
+        "--no-skills",
+        "--no-prompt-templates",
+        "--no-context-files",
+        "--tools",
+        "read,bash,edit,write,grep,find,ls",
+        "--approve",
+        "--offline",
+        "This .NET project contains a failing integration test. Investigate the implementation, identify the underlying defects and make the smallest appropriate corrections to production code. Preserve the documented behaviour, do not modify the tests, and run `dotnet test` to verify the result. Report what you changed and whether the tests passed."
+      ],
+      "exitCode": 0,
+      "durationSeconds": 29.08477218900225,
+      "timedOut": false,
+      "peakMemoryBytes": 634707968,
+      "peakProcessCount": 5,
+      "sessionFiles": [
+        "sessions/20261106T155454_55e6e087120f4a529be3328c47c3630b.session.json",
+        "sessions/20261106T155454_55e6e087120f4a529be3328c47c3630b.session.json.lock"
+      ],
+      "workspace": {
+        "files": {
+          "Fixture.slnx": "75d384af0bfe6f0b560655974e4f30db3d499f7ed7e0cfb6759a07bcd49fa2e8",
+          "README.md": "fdd48e82c4c368e296186c66bb3fe2f329c0943793810ebf834ac8ac6b31faa9",
+          "src/Fixture.Core/EnvFile.cs": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+          "src/Fixture.Core/EnvInterpolator.cs": "39d995766be66d733b3d2f5702c816753e66ff47798a28e2045942f48a557f55",
+          "src/Fixture.Core/Fixture.Core.csproj": "2c82dae7a6492e5dc0d99b6b5a5d1c89a4702b892f71757981e46302949d6115",
+          "tests/Fixture.Tests/EnvIntegrationTests.cs": "2a3fcd98b6ed1b7409e8659a8304a8a3c499136aed74b159e6a3c5c0e5858328",
+          "tests/Fixture.Tests/Fixture.Tests.csproj": "a60e112e1e0a401e6b86ad686e8171cd07aec04da180ca61e776e9064409f527"
+        },
+        "checksum": "3c7331bd93248cb11305b7df39856ee027e199f68432ceee9dcceea4ef89ab63",
+        "fileCount": 7
+      },
+      "productionSourceChecksums": {
+        "src/Fixture.Core/EnvFile.cs": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+        "src/Fixture.Core/EnvInterpolator.cs": "39d995766be66d733b3d2f5702c816753e66ff47798a28e2045942f48a557f55"
+      },
+      "baselineProductionSourceChecksums": {
+        "src/Fixture.Core/EnvFile.cs": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+        "src/Fixture.Core/EnvInterpolator.cs": "9011b9644d6def6a1a7b06523692011882a835f382b974962e0a8ceaafdb18ee"
+      },
+      "status": "completed",
+      "wallDurationSeconds": 29.94110336599988,
+      "scored": true,
+      "evaluation": {
+        "fixtureId": "ENV-PARSER-002",
+        "privateTests": {
+          "fixtureId": "ENV-PARSER-002",
+          "sourceHash": "8a67401308b21e1acd02fc0557a5254dcb3488d9d2da40ce109e795ba84e7c2f",
+          "command": [
+            "dotnet",
+            "test",
+            "EnvFilePrivateTests.csproj",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 2.723972481006058,
+          "timedOut": false,
+          "outcomes": {
+            "H01": "passed",
+            "H02": "passed",
+            "H03": "passed",
+            "H04": "passed",
+            "H05": "passed",
+            "H06": "passed",
+            "H07": "passed",
+            "H08": "passed"
+          },
+          "passed": 8
+        },
+        "visibleTests": {
+          "fixtureId": "ENV-PARSER-002",
+          "sourceHash": "8a67401308b21e1acd02fc0557a5254dcb3488d9d2da40ce109e795ba84e7c2f",
+          "command": [
+            "dotnet",
+            "test",
+            "/home/philip/.cache/tmp/opencode/objective-agent-parity/visible-eval/ENV-PARSER-002-8a67401308b21e1acd02fc0557a5254dcb3488d9d2da40ce109e795ba84e7c2f",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 3.010562242998276,
+          "timedOut": false,
+          "outcomes": {
+            "Fixture.Tests.EnvIntegrationTests.ParsesEmbeddedEqualsAndPreservesUnknownPlaceholders": "passed"
+          },
+          "allPassed": true
+        },
+        "changeIntegrity": {
+          "changedFiles": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "changedFileChecksums": {
+            "src/Fixture.Core/EnvFile.cs": {
+              "baseline": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+              "run": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5"
+            },
+            "src/Fixture.Core/EnvInterpolator.cs": {
+              "baseline": "9011b9644d6def6a1a7b06523692011882a835f382b974962e0a8ceaafdb18ee",
+              "run": "39d995766be66d733b3d2f5702c816753e66ff47798a28e2045942f48a557f55"
+            }
+          },
+          "addedFiles": [],
+          "removedFiles": [],
+          "modifiedFiles": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "permittedProductionFiles": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "productionFilesChanged": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "productionFileChanged": true,
+          "onlyPermittedProductionFileChanged": true,
+          "snapshotChecksum": "3c7331bd93248cb11305b7df39856ee027e199f68432ceee9dcceea4ef89ab63",
+          "baselineChecksum": "173f5b1318d650cee247138f44117821b3e2556c4b9ca2c0121226ac7a92cd8b",
+          "passed": true
+        },
+        "agentLoop": {
+          "sourceInvestigation": {
+            "score": 5,
+            "sourceSeen": true,
+            "testSeen": true
+          },
+          "fileModification": {
+            "score": 5,
+            "successfulMutation": true,
+            "successfulMutationFiles": [
+              "src/Fixture.Core/EnvFile.cs",
+              "src/Fixture.Core/EnvInterpolator.cs"
+            ],
+            "productionFilesChanged": [
+              "src/Fixture.Core/EnvFile.cs",
+              "src/Fixture.Core/EnvInterpolator.cs"
+            ]
+          },
+          "testExecution": {
+            "score": 5,
+            "ran": true,
+            "executions": 1,
+            "observedPass": true,
+            "actualVisiblePass": true
+          },
+          "toolLifecycle": {
+            "score": 5,
+            "errors": [],
+            "duplicateIds": []
+          },
+          "modelContinuation": {
+            "score": 5,
+            "assistantToolCalls": 12,
+            "toolResults": 12,
+            "followedByAssistant": 12,
+            "missingResults": [],
+            "orphanResults": [],
+            "duplicateResults": []
+          },
+          "completion": {
+            "score": 5,
+            "reportedPass": true,
+            "actualVisiblePass": true,
+            "duplicateSideEffects": false
+          },
+          "recoveryMetrics": {
+            "toolErrors": 0,
+            "recoveredToolErrors": 0,
+            "testExecutions": 1,
+            "errorsConveyedToModel": 0,
+            "mutationFollowedByTest": true,
+            "failedTestFollowedByChange": false,
+            "duplicateToolExecutionIds": [],
+            "duplicateSideEffects": false
+          },
+          "total": 30,
+          "max": 30
+        },
+        "functional": {
+          "privateTests": 40,
+          "visibleTests": 5,
+          "changeIntegrity": 5,
+          "total": 50,
+          "max": 50
+        },
+        "agentTool": {
+          "total": 30,
+          "max": 30
+        },
+        "runScore": 80,
+        "runMax": 80,
+        "completeTaskSuccess": true
+      }
+    }
+  ],
+  "deterministicContract": {
+    "fixtureId": "ENV-PARSER-002-contract",
+    "mode": "recovery",
+    "build": {
+      "exitCode": 0,
+      "durationSeconds": 2.4954788360046223
+    },
+    "products": [
+      {
+        "app": "pi",
+        "exitCode": 0,
+        "timedOut": false,
+        "durationSeconds": 7.452639961004024,
+        "toolLifecycle": {
+          "ok": true,
+          "errors": [],
+          "executions": [
+            {
+              "id": "recovery-01",
+              "name": "read",
+              "isError": false,
+              "result": "namespace Fixture.Core;\n\npublic static class EnvFile\n{\n    public static Dictionary<string, string> Parse(string text)\n    {\n        ArgumentNullException.ThrowIfNull(text);\n\n        var values = new Dictionary<string, string>(StringComparer.Ordinal);\n        foreach (var rawLine in text.Split('\\n')"
+            },
+            {
+              "id": "recovery-02",
+              "name": "read",
+              "isError": false,
+              "result": "using System.Text.RegularExpressions;\n\nnamespace Fixture.Core;\n\npublic static class EnvInterpolator\n{\n    private static readonly Regex Placeholder = new(@\"\\$\\{([^}]+)\\}\", RegexOptions.Compiled);\n\n    public static string Expand(string input, IReadOnlyDictionary<string, string> values)\n    {\n       "
+            },
+            {
+              "id": "recovery-03",
+              "name": "bash",
+              "isError": true,
+              "result": "  Fixture.Core -> /home/philip/.cache/tmp/opencode/objective-agent-parity/contract-002/workspace/src/Fixture.Core/bin/Debug/net10.0/Fixture.Core.dll\n  Fixture.Tests -> /home/philip/.cache/tmp/opencode/objective-agent-parity/contract-002/workspace/tests/Fixture.Tests/bin/Debug/net10.0/Fixture.Tests.d"
+            },
+            {
+              "id": "recovery-04",
+              "name": "read",
+              "isError": true,
+              "result": "ENOENT: no such file or directory, access '/home/philip/.cache/tmp/opencode/objective-agent-parity/contract-002/workspace/src/Fixture.Core/Missing.cs'"
+            },
+            {
+              "id": "recovery-05",
+              "name": "read",
+              "isError": false,
+              "result": "namespace Fixture.Core;\n\npublic static class EnvFile\n{\n    public static Dictionary<string, string> Parse(string text)\n    {\n        ArgumentNullException.ThrowIfNull(text);\n\n        var values = new Dictionary<string, string>(StringComparer.Ordinal);\n        foreach (var rawLine in text.Split('\\n')"
+            },
+            {
+              "id": "recovery-06",
+              "name": "edit",
+              "isError": false,
+              "result": "Successfully replaced 2 block(s) in src/Fixture.Core/EnvFile.cs."
+            },
+            {
+              "id": "recovery-07",
+              "name": "bash",
+              "isError": true,
+              "result": "  Fixture.Core -> /home/philip/.cache/tmp/opencode/objective-agent-parity/contract-002/workspace/src/Fixture.Core/bin/Debug/net10.0/Fixture.Core.dll\n  Fixture.Tests -> /home/philip/.cache/tmp/opencode/objective-agent-parity/contract-002/workspace/tests/Fixture.Tests/bin/Debug/net10.0/Fixture.Tests.d"
+            },
+            {
+              "id": "recovery-08",
+              "name": "edit",
+              "isError": false,
+              "result": "Successfully replaced 1 block(s) in src/Fixture.Core/EnvInterpolator.cs."
+            },
+            {
+              "id": "recovery-09",
+              "name": "bash",
+              "isError": false,
+              "result": "  Fixture.Core -> /home/philip/.cache/tmp/opencode/objective-agent-parity/contract-002/workspace/src/Fixture.Core/bin/Debug/net10.0/Fixture.Core.dll\n  Fixture.Tests -> /home/philip/.cache/tmp/opencode/objective-agent-parity/contract-002/workspace/tests/Fixture.Tests/bin/Debug/net10.0/Fixture.Tests.d"
+            }
+          ]
+        },
+        "modelContinuation": {
+          "ok": true,
+          "requests": 10,
+          "resultCounts": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "expectedResultCounts": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "duplicateIds": [],
+          "resultIds": [
+            "recovery-01",
+            "recovery-02",
+            "recovery-03",
+            "recovery-04",
+            "recovery-05",
+            "recovery-06",
+            "recovery-07",
+            "recovery-08",
+            "recovery-09"
+          ],
+          "failingResultPresent": true
+        },
+        "completion": {
+          "ok": true,
+          "settled": true,
+          "finalText": "Multi-step contract complete."
+        },
+        "recovery": {
+          "toolErrors": 3,
+          "recoveredToolErrors": 3,
+          "testExecutions": 3,
+          "failingReadConveyed": true
+        },
+        "finalWorkspace": {
+          "changedProductionFiles": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "visiblePassed": true
+        },
+        "passed": true
+      },
+      {
+        "app": "pisharp",
+        "exitCode": 0,
+        "timedOut": false,
+        "durationSeconds": 8.104467441997258,
+        "toolLifecycle": {
+          "ok": true,
+          "errors": [],
+          "executions": [
+            {
+              "id": "f72a9f78bbf4405ea4d1ed1379d44c46",
+              "name": "read",
+              "isError": false,
+              "result": "namespace Fixture.Core;\n\npublic static class EnvFile\n{\n    public static Dictionary<string, string> Parse(string text)\n    {\n        ArgumentNullException.ThrowIfNull(text);\n\n        var values = new Dictionary<string, string>(StringComparer.Ordinal);\n        foreach (var rawLine in text.Split('\\n')"
+            },
+            {
+              "id": "5e11875eea1b4a0b85de50f50516bf34",
+              "name": "read",
+              "isError": false,
+              "result": "using System.Text.RegularExpressions;\n\nnamespace Fixture.Core;\n\npublic static class EnvInterpolator\n{\n    private static readonly Regex Placeholder = new(@\"\\$\\{([^}]+)\\}\", RegexOptions.Compiled);\n\n    public static string Expand(string input, IReadOnlyDictionary<string, string> values)\n    {\n       "
+            },
+            {
+              "id": "0a2c57d72e4d4880b32b090a7941a32f",
+              "name": "bash",
+              "isError": true,
+              "result": "  Fixture.Core -> /home/philip/.cache/tmp/opencode/objective-agent-parity/contract-002/workspace/src/Fixture.Core/bin/Debug/net10.0/Fixture.Core.dll\n  Fixture.Tests -> /home/philip/.cache/tmp/opencode/objective-agent-parity/contract-002/workspace/tests/Fixture.Tests/bin/Debug/net10.0/Fixture.Tests.d"
+            },
+            {
+              "id": "d21a2958371e423d943027fa5d0dfbac",
+              "name": "read",
+              "isError": true,
+              "result": "ENOENT: no such file or directory, access '/home/philip/.cache/tmp/opencode/objective-agent-parity/contract-002/workspace/src/Fixture.Core/Missing.cs'"
+            },
+            {
+              "id": "5c6f8c5773ce43daa2901f91b0cc83ca",
+              "name": "read",
+              "isError": false,
+              "result": "namespace Fixture.Core;\n\npublic static class EnvFile\n{\n    public static Dictionary<string, string> Parse(string text)\n    {\n        ArgumentNullException.ThrowIfNull(text);\n\n        var values = new Dictionary<string, string>(StringComparer.Ordinal);\n        foreach (var rawLine in text.Split('\\n')"
+            },
+            {
+              "id": "f94c7ef1e6a34219aa80b536f7fa9ae0",
+              "name": "edit",
+              "isError": false,
+              "result": "Successfully replaced 2 block(s) in src/Fixture.Core/EnvFile.cs."
+            },
+            {
+              "id": "91e7d089d365445ea1b86307a984bbf1",
+              "name": "bash",
+              "isError": true,
+              "result": "  Fixture.Core -> /home/philip/.cache/tmp/opencode/objective-agent-parity/contract-002/workspace/src/Fixture.Core/bin/Debug/net10.0/Fixture.Core.dll\n  Fixture.Tests -> /home/philip/.cache/tmp/opencode/objective-agent-parity/contract-002/workspace/tests/Fixture.Tests/bin/Debug/net10.0/Fixture.Tests.d"
+            },
+            {
+              "id": "9af3682c239c4310956c6f648415c6c8",
+              "name": "edit",
+              "isError": false,
+              "result": "Successfully replaced 1 block(s) in src/Fixture.Core/EnvInterpolator.cs."
+            },
+            {
+              "id": "cddd2a524bae41fdb46c8ca2219e4163",
+              "name": "bash",
+              "isError": false,
+              "result": "  Fixture.Core -> /home/philip/.cache/tmp/opencode/objective-agent-parity/contract-002/workspace/src/Fixture.Core/bin/Debug/net10.0/Fixture.Core.dll\n  Fixture.Tests -> /home/philip/.cache/tmp/opencode/objective-agent-parity/contract-002/workspace/tests/Fixture.Tests/bin/Debug/net10.0/Fixture.Tests.d"
+            }
+          ]
+        },
+        "modelContinuation": {
+          "ok": true,
+          "requests": 10,
+          "resultCounts": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "expectedResultCounts": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "duplicateIds": [],
+          "resultIds": [
+            "recovery-01",
+            "recovery-02",
+            "recovery-03",
+            "recovery-04",
+            "recovery-05",
+            "recovery-06",
+            "recovery-07",
+            "recovery-08",
+            "recovery-09"
+          ],
+          "failingResultPresent": true
+        },
+        "completion": {
+          "ok": true,
+          "settled": true,
+          "finalText": "Multi-step contract complete."
+        },
+        "recovery": {
+          "toolErrors": 3,
+          "recoveredToolErrors": 3,
+          "testExecutions": 3,
+          "failingReadConveyed": true
+        },
+        "finalWorkspace": {
+          "changedProductionFiles": [
+            "src/Fixture.Core/EnvFile.cs",
+            "src/Fixture.Core/EnvInterpolator.cs"
+          ],
+          "visiblePassed": true
+        },
+        "passed": true
+      }
+    ],
+    "passed": true
+  },
+  "ui": {
+    "fixture": "objective-agent-recovery",
+    "calibration": {
+      "directory": "artifacts/parity/objective-agent-ui-002-20261106/calibration",
+      "harnessMatch": false,
+      "viewportMatch": true,
+      "match": true,
+      "checkpoints": [
+        "startup",
+        "paste-tool-prompt",
+        "run-recovery",
+        "final-idle",
+        "exit"
+      ],
+      "cases": [
+        {
+          "id": "80x24-dark-fullscreen",
+          "match": true,
+          "differences": []
+        },
+        {
+          "id": "120x40-dark-fullscreen",
+          "match": true,
+          "differences": []
+        }
+      ],
+      "note": "Same-Pi calibration compares the stable named viewport checkpoints; full alternate-buffer scrollback scheduling is retained raw but not scored.",
+      "exitCode": 1
+    },
+    "comparison": {
+      "directory": "artifacts/parity/objective-agent-ui-002-20261106/comparison",
+      "match": false,
+      "exitCode": 1
+    },
+    "cases": [
+      {
+        "id": "80x24-dark-fullscreen",
+        "checkpoints": {
+          "tool-start:working": {
+            "points": 2,
+            "pi": {
+              "working": true,
+              "failureOutput": true,
+              "failureStatus": true,
+              "successOutput": false,
+              "finalResponse": false,
+              "idle": false
+            },
+            "pisharp": {
+              "working": true,
+              "failureOutput": false,
+              "failureStatus": false,
+              "successOutput": false,
+              "finalResponse": false,
+              "idle": false
+            },
+            "reason": "represented"
+          },
+          "final-idle:failure_output": {
+            "points": 2,
+            "pi": {
+              "working": false,
+              "failureOutput": true,
+              "failureStatus": true,
+              "successOutput": true,
+              "finalResponse": true,
+              "idle": true
+            },
+            "pisharp": {
+              "working": false,
+              "failureOutput": true,
+              "failureStatus": true,
+              "successOutput": true,
+              "finalResponse": true,
+              "idle": true
+            },
+            "reason": "represented"
+          },
+          "final-idle:failure_status": {
+            "points": 2,
+            "pi": {
+              "working": false,
+              "failureOutput": true,
+              "failureStatus": true,
+              "successOutput": true,
+              "finalResponse": true,
+              "idle": true
+            },
+            "pisharp": {
+              "working": false,
+              "failureOutput": true,
+              "failureStatus": true,
+              "successOutput": true,
+              "finalResponse": true,
+              "idle": true
+            },
+            "reason": "represented"
+          },
+          "final-idle:success_output": {
+            "points": 2,
+            "pi": {
+              "working": false,
+              "failureOutput": true,
+              "failureStatus": true,
+              "successOutput": true,
+              "finalResponse": true,
+              "idle": true
+            },
+            "pisharp": {
+              "working": false,
+              "failureOutput": true,
+              "failureStatus": true,
+              "successOutput": true,
+              "finalResponse": true,
+              "idle": true
+            },
+            "reason": "represented"
+          },
+          "final-idle:final_idle": {
+            "points": 2,
+            "pi": {
+              "working": false,
+              "failureOutput": true,
+              "failureStatus": true,
+              "successOutput": true,
+              "finalResponse": true,
+              "idle": true
+            },
+            "pisharp": {
+              "working": false,
+              "failureOutput": true,
+              "failureStatus": true,
+              "successOutput": true,
+              "finalResponse": true,
+              "idle": true
+            },
+            "reason": "represented"
+          }
+        },
+        "visual": {
+          "labelsIndicatorsPositions": {
+            "points": 0,
+            "max": 2,
+            "match": false
+          },
+          "spacingIndentationWrappingLayout": {
+            "points": 0,
+            "max": 1,
+            "match": false
+          },
+          "coloursAndStyles": {
+            "points": 0,
+            "max": 1,
+            "match": false
+          },
+          "footerCursorFinalState": {
+            "points": 1,
+            "max": 1,
+            "match": true
+          },
+          "total": 1,
+          "max": 5
+        },
+        "differences": [
+          {
+            "checkpoint": "run-recovery",
+            "kind": "text"
+          },
+          {
+            "checkpoint": "run-recovery",
+            "kind": "layout"
+          },
+          {
+            "checkpoint": "run-recovery",
+            "kind": "styles",
+            "cells": 264,
+            "totalCells": 1920
+          },
+          {
+            "checkpoint": "final-idle",
+            "kind": "text"
+          },
+          {
+            "checkpoint": "final-idle",
+            "kind": "layout"
+          },
+          {
+            "checkpoint": "final-idle",
+            "kind": "styles",
+            "cells": 263,
+            "totalCells": 1920
+          },
+          {
+            "checkpoint": "exit",
+            "kind": "text"
+          },
+          {
+            "checkpoint": "exit",
+            "kind": "layout"
+          },
+          {
+            "checkpoint": "exit",
+            "kind": "styles",
+            "cells": 258,
+            "totalCells": 1920
+          }
+        ],
+        "progressPoints": 10,
+        "progressMax": 10,
+        "caseTotal": 11,
+        "caseMax": 20
+      },
+      {
+        "id": "120x40-dark-fullscreen",
+        "checkpoints": {
+          "tool-start:working": {
+            "points": 2,
+            "pi": {
+              "working": true,
+              "failureOutput": true,
+              "failureStatus": true,
+              "successOutput": true,
+              "finalResponse": false,
+              "idle": false
+            },
+            "pisharp": {
+              "working": true,
+              "failureOutput": false,
+              "failureStatus": false,
+              "successOutput": false,
+              "finalResponse": false,
+              "idle": false
+            },
+            "reason": "represented"
+          },
+          "final-idle:failure_output": {
+            "points": 2,
+            "pi": {
+              "working": false,
+              "failureOutput": true,
+              "failureStatus": true,
+              "successOutput": true,
+              "finalResponse": true,
+              "idle": true
+            },
+            "pisharp": {
+              "working": false,
+              "failureOutput": true,
+              "failureStatus": true,
+              "successOutput": true,
+              "finalResponse": true,
+              "idle": true
+            },
+            "reason": "represented"
+          },
+          "final-idle:failure_status": {
+            "points": 2,
+            "pi": {
+              "working": false,
+              "failureOutput": true,
+              "failureStatus": true,
+              "successOutput": true,
+              "finalResponse": true,
+              "idle": true
+            },
+            "pisharp": {
+              "working": false,
+              "failureOutput": true,
+              "failureStatus": true,
+              "successOutput": true,
+              "finalResponse": true,
+              "idle": true
+            },
+            "reason": "represented"
+          },
+          "final-idle:success_output": {
+            "points": 2,
+            "pi": {
+              "working": false,
+              "failureOutput": true,
+              "failureStatus": true,
+              "successOutput": true,
+              "finalResponse": true,
+              "idle": true
+            },
+            "pisharp": {
+              "working": false,
+              "failureOutput": true,
+              "failureStatus": true,
+              "successOutput": true,
+              "finalResponse": true,
+              "idle": true
+            },
+            "reason": "represented"
+          },
+          "final-idle:final_idle": {
+            "points": 2,
+            "pi": {
+              "working": false,
+              "failureOutput": true,
+              "failureStatus": true,
+              "successOutput": true,
+              "finalResponse": true,
+              "idle": true
+            },
+            "pisharp": {
+              "working": false,
+              "failureOutput": true,
+              "failureStatus": true,
+              "successOutput": true,
+              "finalResponse": true,
+              "idle": true
+            },
+            "reason": "represented"
+          }
+        },
+        "visual": {
+          "labelsIndicatorsPositions": {
+            "points": 0,
+            "max": 2,
+            "match": false
+          },
+          "spacingIndentationWrappingLayout": {
+            "points": 0,
+            "max": 1,
+            "match": false
+          },
+          "coloursAndStyles": {
+            "points": 0,
+            "max": 1,
+            "match": false
+          },
+          "footerCursorFinalState": {
+            "points": 0,
+            "max": 1,
+            "match": false
+          },
+          "total": 0,
+          "max": 5
+        },
+        "differences": [
+          {
+            "checkpoint": "run-recovery",
+            "kind": "text"
+          },
+          {
+            "checkpoint": "run-recovery",
+            "kind": "layout"
+          },
+          {
+            "checkpoint": "run-recovery",
+            "kind": "styles",
+            "cells": 693,
+            "totalCells": 4800
+          },
+          {
+            "checkpoint": "final-idle",
+            "kind": "text"
+          },
+          {
+            "checkpoint": "final-idle",
+            "kind": "layout"
+          },
+          {
+            "checkpoint": "final-idle",
+            "kind": "styles",
+            "cells": 692,
+            "totalCells": 4800
+          },
+          {
+            "checkpoint": "exit",
+            "kind": "text"
+          },
+          {
+            "checkpoint": "exit",
+            "kind": "layout"
+          },
+          {
+            "checkpoint": "exit",
+            "kind": "styles",
+            "cells": 1130,
+            "totalCells": 4800
+          }
+        ],
+        "progressPoints": 10,
+        "progressMax": 10,
+        "caseTotal": 10,
+        "caseMax": 20
+      }
+    ],
+    "progressPoints": 10,
+    "visualPoints": 1,
+    "total": 11,
+    "max": 20,
+    "piScore": 20,
+    "pisharpScore": 11,
+    "parityScore": 11,
+    "status": "scored"
+  },
+  "aggregates": {
+    "pi": {
+      "attemptedRuns": 5,
+      "assessableRuns": 5,
+      "blockedRuns": 0,
+      "timedOutRuns": 0,
+      "meanFunctionalScore": 50,
+      "meanAgentToolScore": 30,
+      "meanRealModelScore": 80,
+      "completeTaskSuccesses": 5,
+      "completeTaskSuccessRateOutOfFive": 1.0,
+      "completeTaskSuccessRateAssessable": 1.0,
+      "recoveryMeasurements": {
+        "toolErrors": 3,
+        "recoveredToolErrors": 3,
+        "testExecutions": 8,
+        "errorsConveyedToModel": 3,
+        "duplicateSideEffects": 0
+      },
+      "peakMemoryBytes": 707198976,
+      "perRunScores": [
+        {
+          "runId": "pi-01",
+          "status": "completed",
+          "functional": 50,
+          "agentTool": 30,
+          "total": 80,
+          "completeTaskSuccess": true,
+          "recovery": {
+            "toolErrors": 1,
+            "recoveredToolErrors": 1,
+            "testExecutions": 2,
+            "errorsConveyedToModel": 1,
+            "mutationFollowedByTest": true,
+            "failedTestFollowedByChange": true,
+            "duplicateToolExecutionIds": [],
+            "duplicateSideEffects": false
+          }
+        },
+        {
+          "runId": "pi-02",
+          "status": "completed",
+          "functional": 50,
+          "agentTool": 30,
+          "total": 80,
+          "completeTaskSuccess": true,
+          "recovery": {
+            "toolErrors": 0,
+            "recoveredToolErrors": 0,
+            "testExecutions": 1,
+            "errorsConveyedToModel": 0,
+            "mutationFollowedByTest": true,
+            "failedTestFollowedByChange": false,
+            "duplicateToolExecutionIds": [],
+            "duplicateSideEffects": false
+          }
+        },
+        {
+          "runId": "pi-03",
+          "status": "completed",
+          "functional": 50,
+          "agentTool": 30,
+          "total": 80,
+          "completeTaskSuccess": true,
+          "recovery": {
+            "toolErrors": 0,
+            "recoveredToolErrors": 0,
+            "testExecutions": 1,
+            "errorsConveyedToModel": 0,
+            "mutationFollowedByTest": true,
+            "failedTestFollowedByChange": false,
+            "duplicateToolExecutionIds": [],
+            "duplicateSideEffects": false
+          }
+        },
+        {
+          "runId": "pi-04",
+          "status": "completed",
+          "functional": 50,
+          "agentTool": 30,
+          "total": 80,
+          "completeTaskSuccess": true,
+          "recovery": {
+            "toolErrors": 1,
+            "recoveredToolErrors": 1,
+            "testExecutions": 2,
+            "errorsConveyedToModel": 1,
+            "mutationFollowedByTest": true,
+            "failedTestFollowedByChange": true,
+            "duplicateToolExecutionIds": [],
+            "duplicateSideEffects": false
+          }
+        },
+        {
+          "runId": "pi-05",
+          "status": "completed",
+          "functional": 50,
+          "agentTool": 30,
+          "total": 80,
+          "completeTaskSuccess": true,
+          "recovery": {
+            "toolErrors": 1,
+            "recoveredToolErrors": 1,
+            "testExecutions": 2,
+            "errorsConveyedToModel": 1,
+            "mutationFollowedByTest": true,
+            "failedTestFollowedByChange": true,
+            "duplicateToolExecutionIds": [],
+            "duplicateSideEffects": false
+          }
+        }
+      ],
+      "deterministicUiScore": 20
+    },
+    "pisharp": {
+      "attemptedRuns": 5,
+      "assessableRuns": 5,
+      "blockedRuns": 0,
+      "timedOutRuns": 0,
+      "meanFunctionalScore": 50,
+      "meanAgentToolScore": 30,
+      "meanRealModelScore": 80,
+      "completeTaskSuccesses": 5,
+      "completeTaskSuccessRateOutOfFive": 1.0,
+      "completeTaskSuccessRateAssessable": 1.0,
+      "recoveryMeasurements": {
+        "toolErrors": 3,
+        "recoveredToolErrors": 3,
+        "testExecutions": 8,
+        "errorsConveyedToModel": 3,
+        "duplicateSideEffects": 0
+      },
+      "peakMemoryBytes": 639066112,
+      "perRunScores": [
+        {
+          "runId": "pisharp-01",
+          "status": "completed",
+          "functional": 50,
+          "agentTool": 30,
+          "total": 80,
+          "completeTaskSuccess": true,
+          "recovery": {
+            "toolErrors": 1,
+            "recoveredToolErrors": 1,
+            "testExecutions": 2,
+            "errorsConveyedToModel": 1,
+            "mutationFollowedByTest": true,
+            "failedTestFollowedByChange": true,
+            "duplicateToolExecutionIds": [],
+            "duplicateSideEffects": false
+          }
+        },
+        {
+          "runId": "pisharp-02",
+          "status": "completed",
+          "functional": 50,
+          "agentTool": 30,
+          "total": 80,
+          "completeTaskSuccess": true,
+          "recovery": {
+            "toolErrors": 1,
+            "recoveredToolErrors": 1,
+            "testExecutions": 2,
+            "errorsConveyedToModel": 1,
+            "mutationFollowedByTest": true,
+            "failedTestFollowedByChange": true,
+            "duplicateToolExecutionIds": [],
+            "duplicateSideEffects": false
+          }
+        },
+        {
+          "runId": "pisharp-03",
+          "status": "completed",
+          "functional": 50,
+          "agentTool": 30,
+          "total": 80,
+          "completeTaskSuccess": true,
+          "recovery": {
+            "toolErrors": 0,
+            "recoveredToolErrors": 0,
+            "testExecutions": 1,
+            "errorsConveyedToModel": 0,
+            "mutationFollowedByTest": true,
+            "failedTestFollowedByChange": false,
+            "duplicateToolExecutionIds": [],
+            "duplicateSideEffects": false
+          }
+        },
+        {
+          "runId": "pisharp-04",
+          "status": "completed",
+          "functional": 50,
+          "agentTool": 30,
+          "total": 80,
+          "completeTaskSuccess": true,
+          "recovery": {
+            "toolErrors": 1,
+            "recoveredToolErrors": 1,
+            "testExecutions": 2,
+            "errorsConveyedToModel": 1,
+            "mutationFollowedByTest": true,
+            "failedTestFollowedByChange": true,
+            "duplicateToolExecutionIds": [],
+            "duplicateSideEffects": false
+          }
+        },
+        {
+          "runId": "pisharp-05",
+          "status": "completed",
+          "functional": 50,
+          "agentTool": 30,
+          "total": 80,
+          "completeTaskSuccess": true,
+          "recovery": {
+            "toolErrors": 0,
+            "recoveredToolErrors": 0,
+            "testExecutions": 1,
+            "errorsConveyedToModel": 0,
+            "mutationFollowedByTest": true,
+            "failedTestFollowedByChange": false,
+            "duplicateToolExecutionIds": [],
+            "duplicateSideEffects": false
+          }
+        }
+      ],
+      "deterministicUiScore": 11
+    },
+    "deterministicUi": {
+      "pi": 20,
+      "pisharp": 11,
+      "max": 20,
+      "status": "scored",
+      "parityScore": 11
+    },
+    "combined": {
+      "pi": 100,
+      "pisharp": 91
+    },
+    "scoreDifferencePisharpMinusPi": -9
+  },
+  "classifiedDifferences": [
+    {
+      "id": "ui-text-80x24-dark-fullscreen",
+      "severity": "P1",
+      "summary": "PiSharp collapsed failed/recovered tool output at a different threshold and omitted Pi's ctrl+o expand hint, shifting stable text positions.",
+      "evidence": [
+        "ui-report.json#80x24-dark-fullscreen"
+      ],
+      "details": [
+        {
+          "checkpoint": "run-recovery",
+          "kind": "text"
+        },
+        {
+          "checkpoint": "run-recovery",
+          "kind": "layout"
+        },
+        {
+          "checkpoint": "final-idle",
+          "kind": "text"
+        },
+        {
+          "checkpoint": "final-idle",
+          "kind": "layout"
+        },
+        {
+          "checkpoint": "exit",
+          "kind": "text"
+        },
+        {
+          "checkpoint": "exit",
+          "kind": "layout"
+        }
+      ],
+      "component": "ui"
+    },
+    {
+      "id": "ui-text-120x40-dark-fullscreen",
+      "severity": "P1",
+      "summary": "PiSharp collapsed failed/recovered tool output at a different threshold and omitted Pi's ctrl+o expand hint, shifting stable text positions.",
+      "evidence": [
+        "ui-report.json#120x40-dark-fullscreen"
+      ],
+      "details": [
+        {
+          "checkpoint": "run-recovery",
+          "kind": "text"
+        },
+        {
+          "checkpoint": "run-recovery",
+          "kind": "layout"
+        },
+        {
+          "checkpoint": "final-idle",
+          "kind": "text"
+        },
+        {
+          "checkpoint": "final-idle",
+          "kind": "layout"
+        },
+        {
+          "checkpoint": "exit",
+          "kind": "text"
+        },
+        {
+          "checkpoint": "exit",
+          "kind": "layout"
+        }
+      ],
+      "component": "ui"
+    },
+    {
+      "id": "ui-colours-80x24-dark-fullscreen",
+      "severity": "P2",
+      "summary": "Decoded terminal cell styles differed at deterministic checkpoints; details list affected cells.",
+      "evidence": [
+        "ui-report.json#80x24-dark-fullscreen"
+      ],
+      "details": [
+        {
+          "checkpoint": "run-recovery",
+          "kind": "styles",
+          "cells": 264,
+          "totalCells": 1920
+        },
+        {
+          "checkpoint": "final-idle",
+          "kind": "styles",
+          "cells": 263,
+          "totalCells": 1920
+        },
+        {
+          "checkpoint": "exit",
+          "kind": "styles",
+          "cells": 258,
+          "totalCells": 1920
+        }
+      ],
+      "component": "ui"
+    },
+    {
+      "id": "ui-colours-120x40-dark-fullscreen",
+      "severity": "P2",
+      "summary": "Decoded terminal cell styles differed at deterministic checkpoints; details list affected cells.",
+      "evidence": [
+        "ui-report.json#120x40-dark-fullscreen"
+      ],
+      "details": [
+        {
+          "checkpoint": "run-recovery",
+          "kind": "styles",
+          "cells": 693,
+          "totalCells": 4800
+        },
+        {
+          "checkpoint": "final-idle",
+          "kind": "styles",
+          "cells": 692,
+          "totalCells": 4800
+        },
+        {
+          "checkpoint": "exit",
+          "kind": "styles",
+          "cells": 1130,
+          "totalCells": 4800
+        }
+      ],
+      "component": "ui"
+    }
+  ],
+  "trackedExistingDifferences": [
+    {
+      "id": "ui-trailing-wrapped-command-style",
+      "severity": "P2",
+      "status": "open",
+      "source": "docs/parity/fixtures/objective-agent-parity-2026-11-06/README.md",
+      "summary": "At 80x24, 17 trailing blank cells of a wrapped bash command line carry Pi foreground styling but are unstyled in PiSharp."
+    }
+  ],
+  "highestPriorityConfirmedDiscrepancy": {
+    "id": "ui-text-80x24-dark-fullscreen",
+    "severity": "P1",
+    "summary": "PiSharp collapsed failed/recovered tool output at a different threshold and omitted Pi's ctrl+o expand hint, shifting stable text positions.",
+    "evidence": [
+      "ui-report.json#80x24-dark-fullscreen"
+    ],
+    "details": [
+      {
+        "checkpoint": "run-recovery",
+        "kind": "text"
+      },
+      {
+        "checkpoint": "run-recovery",
+        "kind": "layout"
+      },
+      {
+        "checkpoint": "final-idle",
+        "kind": "text"
+      },
+      {
+        "checkpoint": "final-idle",
+        "kind": "layout"
+      },
+      {
+        "checkpoint": "exit",
+        "kind": "text"
+      },
+      {
+        "checkpoint": "exit",
+        "kind": "layout"
+      }
+    ],
+    "component": "ui"
+  },
+  "suggestedNextSingleDeliverable": "Match Pi's collapsed tool-output threshold and `ctrl+o to expand` hint in failed/recovered tool blocks, then verify with the objective-agent-recovery terminal fixture at 80x24 and 120x40.",
+  "validityGates": {
+    "sameFixtureBaseline": true,
+    "modelConfigurationDocumented": true,
+    "allAttemptedRunsAccountedFor": true,
+    "privateEvaluatorIndependent": true,
+    "toolAndFilesystemTracesComplete": true,
+    "samePiCalibrationPassed": true,
+    "deterministicScoreCalculation": true,
+    "negativeControlPassed": true,
+    "fiveAssessableRunsPerApplication": true,
+    "comparisonComplete": true
+  },
+  "generatedAt": "2026-11-06T16:01:12.824003+00:00",
+  "negativeControls": [
+    {
+      "name": "inflated-private-score",
+      "rejected": true,
+      "errors": [
+        "pi-01 private points are inconsistent",
+        "pi-01 functional total is inconsistent",
+        "pi functional mean is inconsistent"
+      ]
+    },
+    {
+      "name": "agent-score-out-of-range",
+      "rejected": true,
+      "errors": [
+        "pi-01 agent-loop component is outside 0-5",
+        "pi-01 agent/tool total is inconsistent",
+        "pi-01 run score is inconsistent"
+      ]
+    },
+    {
+      "name": "missing-run",
+      "rejected": true,
+      "errors": [
+        "expected 10 real-model run records, found 9",
+        "expected five pisharp runs, found 4",
+        "pisharp assessable-run aggregate is inconsistent",
+        "pisharp task-success count is inconsistent",
+        "pisharp task-success rate is inconsistent"
+      ]
+    },
+    {
+      "name": "wrong-fixture-checksum",
+      "rejected": true,
+      "errors": [
+        "fixture checksum does not match baseline.json"
+      ]
+    },
+    {
+      "name": "forged-change-integrity",
+      "rejected": true,
+      "errors": [
+        "pi-01 change-integrity permission flag is inconsistent",
+        "pi-01 production-file change flag is inconsistent",
+        "pi-01 production-file change list is inconsistent"
+      ]
+    },
+    {
+      "name": "inconsistent-ui-score",
+      "rejected": true,
+      "errors": [
+        "UI case 80x24-dark-fullscreen visual points are inconsistent",
+        "UI aggregate visual points are inconsistent",
+        "UI total is inconsistent",
+        "UI total is outside 0-20",
+        "aggregate PiSharp deterministic UI score is inconsistent"
+      ]
+    },
+    {
+      "name": "false-task-success",
+      "rejected": true,
+      "errors": [
+        "pi-01 private passed count is inconsistent",
+        "pi-01 task-success flag is inconsistent"
+      ]
+    },
+    {
+      "name": "hidden-private-failure",
+      "rejected": true,
+      "errors": [
+        "pi-01 private passed count is inconsistent",
+        "pi-01 private points are inconsistent",
+        "pi-01 functional total is inconsistent",
+        "pi-01 run score is inconsistent"
+      ]
+    },
+    {
+      "name": "wrong-run-score",
+      "rejected": true,
+      "errors": [
+        "pi-01 functional total is inconsistent",
+        "pi functional mean is inconsistent"
+      ]
+    }
+  ]
+}
