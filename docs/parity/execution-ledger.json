@@ -15300,8 +15300,10 @@
       {
         "id": "ui-trailing-wrapped-command-style",
         "severity": "P2",
-        "status": "open",
-        "summary": "ENV-PARSER-001 trailing styled cells on a wrapped Bash command line; unchanged and out of scope for collapse parity."
+        "status": "resolved",
+        "summary": "ENV-PARSER-001 trailing styled cells on a wrapped Bash command line; unchanged and out of scope for collapse parity.",
+        "resolved_by": "wrapped_bash_command_style_parity_2026_11_06",
+        "resolved_at": "0984bfc922714862e2af244133313828617ca730"
       }
     ],
     "agent_execution_unchanged": true,
@@ -15310,5 +15312,99 @@
     "ui_report": "docs/parity/fixtures/collapsed-tool-output-parity-2026-11-06/ui-report.json",
     "comparison": "docs/parity/fixtures/collapsed-tool-output-parity-2026-11-06/terminal-comparison.json",
     "pull_request": "https://github.com/PhilipGB/pisharp/pull/45"
+  },
+  "wrapped_bash_command_style_parity_2026_11_06": {
+    "status": "completed",
+    "prerequisite": "Bash result collapse/expansion parity merged via PR #45 at 0984bfc922714862e2af244133313828617ca730",
+    "branch": "milestone/wrapped-bash-command-style-parity",
+    "base_main": "0984bfc922714862e2af244133313828617ca730",
+    "pi_revision": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "reference_behaviour": {
+      "soft_wrapped_continuation": "title foreground, bold and tool background through all trailing padding including the right output padding",
+      "final_command_row": "default foreground and tool background on trailing padding",
+      "exact_boundary_row": "default foreground and tool background on the right output-padding cell",
+      "following_output": "unchanged row position"
+    },
+    "root_cause": "PR #45's Bash preview builder removed the pre-wrap that turned a soft wrap into a hard newline, fixing the 17-cell continuation padding. The remaining exact-boundary case came from PadTranscriptRow preserving the active style when rowWidth >= transcriptWidth even without a continuation.",
+    "fixture": {
+      "id": "objective-agent-progress",
+      "checksum": "39d16ca1bcb7951b5c2752e300c8b6afda66749e3ae930b1fed0d47abaa29534",
+      "dimensions": [
+        "80x24",
+        "120x40"
+      ]
+    },
+    "deterministic_ui": {
+      "before": {
+        "objective-agent-progress": {
+          "pisharp": 19,
+          "progress": 10,
+          "visual": 9,
+          "max": 20,
+          "differences": 17,
+          "checkpoints": [
+            "tool-complete",
+            "assistant-resume",
+            "final-idle"
+          ]
+        }
+      },
+      "after": {
+        "objective-agent-progress": {
+          "pisharp": 20,
+          "progress": 10,
+          "visual": 10,
+          "max": 20,
+          "differences": 0
+        },
+        "objective-agent-recovery": {
+          "pisharp": 20,
+          "progress": 10,
+          "visual": 10,
+          "max": 20,
+          "differences": 0
+        }
+      },
+      "calibration": {
+        "match": true,
+        "differences": 0,
+        "sizes": [
+          "80x24",
+          "120x40"
+        ]
+      },
+      "normalisation_unchanged": true
+    },
+    "regressions": {
+      "files": [
+        "tests/PiSharp.Tests/Cli/Tui/Rendering/BashToolCollapseTests.cs",
+        "tests/PiSharp.Tests/Cli/Tui/Rendering/ToolCallRenderingTests.cs",
+        "tests/PiSharp.Tests/TestInfrastructure/TerminalStyledFrameReader.cs"
+      ],
+      "added": 11,
+      "fail_first": 2,
+      "passing_after": 34,
+      "fail_first_evidence": "Pre-PR-#45 binary: 17-cell regression failed at row 5 column 63 with default foreground; exact-boundary regression failed with title foreground at the output-padding cell."
+    },
+    "components_changed": [
+      "src/PiSharp.Cli/Tui/Rendering/TerminalScreenCompositor.cs"
+    ],
+    "agent_execution_unchanged": true,
+    "historical_evidence_unchanged": true,
+    "remaining_differences": [],
+    "verification": {
+      "focused_dotnet": "34 passed",
+      "full_dotnet": "4,493 passed; 1 pre-existing PTY TaskCanceledException flake reran green",
+      "terminal_python": "66 passed",
+      "objective_python": "8 passed",
+      "format": "clean",
+      "warnings_as_errors": "clean",
+      "docs": "172 documents, 774 references"
+    },
+    "receipt": "docs/parity/fixtures/wrapped-bash-command-style-parity-2026-11-06/README.md",
+    "ui_report": "docs/parity/fixtures/wrapped-bash-command-style-parity-2026-11-06/ui-report.json",
+    "comparison": "docs/parity/fixtures/wrapped-bash-command-style-parity-2026-11-06/terminal-comparison.json",
+    "suggested_next_single_deliverable": "Broader interactive terminal UI evaluation covering editing, navigation, session interaction and streaming behaviour.",
+    "pull_request": "pending"
   }
 }
