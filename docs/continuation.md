@@ -24,7 +24,7 @@ checkpoints in each of four paired cases (100x30/140x40, dark, fullscreen and
 regular). Paired and same-Pi calibration semantic differences are zero;
 clipboard writes, persisted `enabledModels`, tree label trails and terminal
 restoration match. The full .NET suite passes 4,471/4,471 with zero skips. Format and warnings-as-errors build
-pass; exact-head CI pending second review-correction CI; draft PR #42 open and unmerged.
+pass; exact-head CI Linux CI run `42154036729` on `9f7b8d19`; draft PR #42 open and unmerged.
 Review corrections sanitize session-controlled tree/label text, open
 `/scoped-models` from the available snapshot with one bounded refresh, mark
 removed models unavailable, rerender on resize and honor only the configured

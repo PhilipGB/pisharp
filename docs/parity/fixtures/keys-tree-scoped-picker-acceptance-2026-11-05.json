@@ -2,7 +2,7 @@
   "schema": 1,
   "capability": "keys-tree-scoped-picker",
   "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-  "implementationSha": "329bcb0ca5323ad0aa1261dc3828e409293c8726",
+  "implementationSha": "9f7b8d194b79e060df1d6fd12c94f1acd2d3eb47",
   "oracleFile": "docs/parity/fixtures/keys-tree-scoped-picker-pi-oracle-2026-11-05.json",
   "checkpointFile": "docs/parity/fixtures/keys-tree-scoped-picker-checkpoints-2026-11-05.json",
   "oracleScenarioCount": 15,
@@ -365,10 +365,10 @@
       "skipped": 0
     },
     "exactHeadCi": {
-      "status": "pending",
-      "headSha": "329bcb0ca5323ad0aa1261dc3828e409293c8726",
-      "run": "0",
-      "evidence": "pending exact-head CI for the second review-correction evidence commit"
+      "status": "pass",
+      "headSha": "9f7b8d194b79e060df1d6fd12c94f1acd2d3eb47",
+      "run": "42154036729",
+      "evidence": "Linux CI run 42154036729 on 9f7b8d19 completed successfully (format, warnings-as-errors build, 4471 tests, macOS/Windows/MCP jobs)."
     },
     "ledger": {
       "status": "pass",

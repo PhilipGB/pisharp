@@ -5,7 +5,7 @@ Current status and project goal are maintained in [the continuation](../continua
 ## Completed milestone — Session Tree and Scoped Model Picker — 2026-11-05
 
 The `keys-tree-scoped-picker` capability is verified at implementation source
-`329bcb0ca5323ad0aa1261dc3828e409293c8726` against pinned Pi
+`9f7b8d194b79e060df1d6fd12c94f1acd2d3eb47` against pinned Pi
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The
 [acceptance manifest](fixtures/keys-tree-scoped-picker-acceptance-2026-11-05.json)
 maps T01-T08 (`/tree`) and S01-S07 (`/scoped-models`) to 18 deterministic facts,

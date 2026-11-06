@@ -1,7 +1,7 @@
 # Keys: session tree and scoped model picker
 
 Verified capability `keys-tree-scoped-picker` at implementation source
-`329bcb0ca5323ad0aa1261dc3828e409293c8726` against pinned Pi
+`9f7b8d194b79e060df1d6fd12c94f1acd2d3eb47` against pinned Pi
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 
 ## Contract
@@ -46,7 +46,7 @@ commits the same trail to its native session document).
 | Paired PTY (4 cases) | 0 semantic differences |
 | Same-Pi calibration (4 cases) | 0 semantic differences |
 | Acceptance verifier + mutation controls | pass (284 captured checkpoints; all mutation negative controls rejected) |
-| Exact-head CI | pending second review-correction CI |
+| Exact-head CI | Linux CI run `42154036729` on `9f7b8d19` (success) |
 | Draft PR | #42 (draft, open, unmerged) |
 
 
