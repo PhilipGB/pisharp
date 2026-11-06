@@ -8,7 +8,7 @@ runner, evaluator, report verifier, terminal harness and scoring rubric.
 
 | Fact | Value |
 |---|---|
-| Prerequisite | ENV-PARSER-001 evaluation merged via PR #43 |
+| Prerequisite | ENV-PARSER-001 evaluation merged via PR #43 at `c378f15bc4501390ad4e38c826c9a9572ec4b381` |
 | Fixture | `ENV-PARSER-002` |
 | Fixture checksum | `173f5b1318d650cee247138f44117821b3e2556c4b9ca2c0121226ac7a92cd8b` |
 | Initial baseline | build succeeds; one visible integration test fails at the parsing assertion |
