@@ -202,8 +202,8 @@ internal sealed class TerminalToolPresentation(Func<string, PiSharpToolRenderer?
     public TerminalBashResultPreview.Source? CreateBashResultPreview(AgentLifecycleEvent update,
         string? progressText = null)
     {
-        if (!string.Equals(update.Tool, "bash", StringComparison.OrdinalIgnoreCase)) return null;
-        if (Resolve(update.Tool)?.RenderResult is not null) return null;
+        if (update.Tool is not { } tool || !tool.Equals("bash", StringComparison.OrdinalIgnoreCase)) return null;
+        if (Resolve(tool)?.RenderResult is not null) return null;
         return BashResultSource(GetRememberedArguments(update), update, progressText);
     }
 
