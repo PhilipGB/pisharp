@@ -48,6 +48,7 @@ in an isolated directory.
 ```sh
 # Baseline and private oracle tests
 python3 -m unittest tools/parity/objective_agent_parity/test_objective_agent_parity.py
+python3 tools/parity/objective_agent_parity/validate_fixture.py  # ENV-PARSER-002 sequential baseline
 
 # Deterministic agent-loop/provider contract
 python3 tools/parity/objective_agent_parity/contract_eval.py \
