@@ -1,0 +1,2739 @@
+{
+  "schema": 1,
+  "fixture": {
+    "id": "ENV-PARSER-001",
+    "checksum": "e90c4e5c49d063f6ce0e4ce6664295aaed01145d70faabe1d461fdae2cd4da0f",
+    "baselinePath": "tools/parity/objective_agent_parity/baseline.json",
+    "baselineFailure": "Fixture.Tests.EnvFileTests.ValuesContainingAdditionalEqualsSignsArePreserved",
+    "prompt": "The project contains a failing unit test. Investigate the failure, identify the underlying defect and make the smallest appropriate production-code correction. Preserve the documented behaviour, do not modify tests, and run `dotnet test` to verify the result. Report what you changed and whether the tests passed."
+  },
+  "sourceRevisions": {
+    "pi": {
+      "path": "/home/philip/Projects/pi-pinned",
+      "revision": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "dirty": false
+    },
+    "pisharp": {
+      "path": "/home/philip/Projects/pisharp",
+      "revision": "504be244dc36b29b0ffc70fe0892d4dcdd485bc3",
+      "dirty": true
+    }
+  },
+  "effectiveConfiguration": {
+    "pi": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "thinking": "xhigh",
+      "tools": [
+        "read",
+        "bash",
+        "edit",
+        "write",
+        "grep",
+        "find",
+        "ls"
+      ],
+      "subscriptionAuth": true
+    },
+    "pisharp": {
+      "provider": "openai-codex",
+      "model": "gpt-6-luna",
+      "thinking": "xhigh",
+      "tools": [
+        "read",
+        "bash",
+        "edit",
+        "write",
+        "grep",
+        "find",
+        "ls"
+      ],
+      "subscriptionAuth": true
+    }
+  },
+  "runEnvironment": {
+    "workspace": "/home/philip/.cache/tmp/opencode/objective-agent-parity/ENV-PARSER-001",
+    "timeoutSeconds": 600.0,
+    "resourceLimits": {
+      "timeoutSeconds": 600.0,
+      "cpuSeconds": 605,
+      "addressSpaceBytes": 8589934592,
+      "openFiles": 4096,
+      "processors": null
+    },
+    "environmentObservations": [
+      {
+        "runId": "pi-03",
+        "observation": "Recovered from Roslyn/resource errors with single-node non-shared compilation; final dotnet test passed."
+      },
+      {
+        "runId": "pi-04",
+        "observation": "Recovered from Roslyn out-of-memory with DOTNET_PROCESSOR_COUNT=2 and workstation GC; final dotnet test passed."
+      },
+      {
+        "runId": "pi-05",
+        "observation": "Recovered from Roslyn out-of-memory with workstation GC and a heap limit; final dotnet test passed."
+      },
+      {
+        "runId": "pisharp-01",
+        "observation": "Recovered from Roslyn out-of-memory with a .NET GC heap limit; final dotnet test passed."
+      },
+      {
+        "runId": "pisharp-02",
+        "observation": "Recovered from Roslyn out-of-memory with DOTNET_PROCESSOR_COUNT=2; final dotnet test passed."
+      },
+      {
+        "runId": "pisharp-03",
+        "observation": "Recovered from compiler out-of-memory with DOTNET_gcServer=0; final dotnet test passed."
+      },
+      {
+        "runId": "pisharp-04",
+        "observation": "Recovered from Roslyn out-of-memory with DOTNET_PROCESSOR_COUNT=2 and workstation GC; final dotnet test passed."
+      },
+      {
+        "runId": "pisharp-05",
+        "observation": "Recovered from a transient compiler out-of-memory by rerunning; final dotnet test passed."
+      },
+      {
+        "runId": "all",
+        "observation": "The identical 8 GiB virtual-address limit produced compiler memory pressure in both products; no run timed out, was blocked, or was excluded, and recovered tool failures are reported without score penalty."
+      }
+    ],
+    "build": {
+      "exitCode": 0,
+      "durationSeconds": 2.851749926980119,
+      "dll": "/home/philip/Projects/pisharp/src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll",
+      "dllChecksum": "5d96d14061543a1e3d7cd08e0f5e2513266cdf79fad6c086a0bed8c464fd99fa"
+    },
+    "startedAt": "20261106T135933Z"
+  },
+  "runs": [
+    {
+      "runId": "pi-01",
+      "app": "pi",
+      "index": 1,
+      "fixtureId": "ENV-PARSER-001",
+      "model": {
+        "provider": "openai",
+        "id": "gpt-6-luna",
+        "thinking": "xhigh"
+      },
+      "timeoutSeconds": 600.0,
+      "startChecksum": "e90c4e5c49d063f6ce0e4ce6664295aaed01145d70faabe1d461fdae2cd4da0f",
+      "dependencyRestore": {
+        "exitCode": 0,
+        "durationSeconds": 1.2963949279801454,
+        "timedOut": false
+      },
+      "command": [
+        "node",
+        "--import",
+        "file:///home/philip/Projects/pi-pinned/packages/coding-agent/src/experimental/source-resolver.ts",
+        "/home/philip/Projects/pi-pinned/packages/coding-agent/src/cli.ts",
+        "--provider",
+        "openai",
+        "--model",
+        "gpt-6-luna",
+        "--thinking",
+        "xhigh",
+        "--mode",
+        "json",
+        "--session-dir",
+        "/home/philip/.cache/tmp/opencode/objective-agent-parity/sessions/pi-01",
+        "--no-extensions",
+        "--no-skills",
+        "--no-prompt-templates",
+        "--no-context-files",
+        "--no-mcp",
+        "--tools",
+        "read,bash,edit,write,grep,find,ls",
+        "--approve",
+        "--offline",
+        "The project contains a failing unit test. Investigate the failure, identify the underlying defect and make the smallest appropriate production-code correction. Preserve the documented behaviour, do not modify tests, and run `dotnet test` to verify the result. Report what you changed and whether the tests passed."
+      ],
+      "exitCode": 0,
+      "durationSeconds": 36.494359868986066,
+      "timedOut": false,
+      "sessionFiles": [
+        "sessions/2026-11-06T13-59-38-809Z_01a1b128-6c38-766c-a419-6f5b74b4910d.jsonl"
+      ],
+      "workspace": {
+        "files": {
+          "Fixture.slnx": "75d384af0bfe6f0b560655974e4f30db3d499f7ed7e0cfb6759a07bcd49fa2e8",
+          "README.md": "f3d7b6b3acb0e06d2de3c3f76acb6e2b40b2b31ae8467f3dc9759a29b18eca39",
+          "src/Fixture.Core/EnvFile.cs": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+          "src/Fixture.Core/Fixture.Core.csproj": "2c82dae7a6492e5dc0d99b6b5a5d1c89a4702b892f71757981e46302949d6115",
+          "tests/Fixture.Tests/EnvFileTests.cs": "17cce06abf2efbb6380e208b1c6677ca376e0f2f626f94b7d02b5013ecfd1932",
+          "tests/Fixture.Tests/Fixture.Tests.csproj": "a60e112e1e0a401e6b86ad686e8171cd07aec04da180ca61e776e9064409f527"
+        },
+        "checksum": "181b9c53c7561c56c808def56e4571c86605f70b47bfa3f08de1b15326d0fdd0",
+        "fileCount": 6
+      },
+      "productionSourceChecksum": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+      "baselineProductionSourceChecksum": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+      "status": "completed",
+      "wallDurationSeconds": 37.86266987299314,
+      "scored": true,
+      "evaluation": {
+        "privateTests": {
+          "sourceHash": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+          "command": [
+            "dotnet",
+            "test",
+            "EnvFilePrivateTests.csproj",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 1.796021162008401,
+          "timedOut": false,
+          "outcomes": {
+            "H01": "passed",
+            "H02": "passed",
+            "H03": "passed",
+            "H04": "passed",
+            "H05": "passed",
+            "H06": "passed",
+            "H07": "passed",
+            "H08": "passed"
+          },
+          "passed": 8
+        },
+        "visibleTests": {
+          "sourceHash": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+          "command": [
+            "dotnet",
+            "test",
+            "/home/philip/.cache/tmp/opencode/objective-agent-parity/visible-eval/8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 3.145549638022203,
+          "timedOut": false,
+          "outcomes": {
+            "Fixture.Tests.EnvFileTests.CommentsAndBlankLinesAreIgnored": "passed",
+            "Fixture.Tests.EnvFileTests.StandardAssignmentsParseSuccessfully": "passed",
+            "Fixture.Tests.EnvFileTests.ValuesContainingAdditionalEqualsSignsArePreserved": "passed"
+          },
+          "allPassed": true
+        },
+        "changeIntegrity": {
+          "changedFiles": [
+            "src/Fixture.Core/EnvFile.cs"
+          ],
+          "changedFileChecksums": {
+            "src/Fixture.Core/EnvFile.cs": {
+              "baseline": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+              "run": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5"
+            }
+          },
+          "addedFiles": [],
+          "removedFiles": [],
+          "modifiedFiles": [
+            "src/Fixture.Core/EnvFile.cs"
+          ],
+          "permittedProductionFile": "src/Fixture.Core/EnvFile.cs",
+          "productionFileChanged": true,
+          "onlyPermittedProductionFileChanged": true,
+          "snapshotChecksum": "181b9c53c7561c56c808def56e4571c86605f70b47bfa3f08de1b15326d0fdd0",
+          "baselineChecksum": "e90c4e5c49d063f6ce0e4ce6664295aaed01145d70faabe1d461fdae2cd4da0f",
+          "passed": true
+        },
+        "agentLoop": {
+          "sourceInvestigation": {
+            "score": 5,
+            "sourceSeen": true,
+            "testSeen": true
+          },
+          "fileModification": {
+            "score": 5,
+            "successfulMutation": true,
+            "productionFileChanged": true
+          },
+          "testExecution": {
+            "score": 5,
+            "ran": true,
+            "executions": 2,
+            "observedPass": true,
+            "actualVisiblePass": true
+          },
+          "toolLifecycle": {
+            "score": 5,
+            "errors": [],
+            "duplicateIds": []
+          },
+          "modelContinuation": {
+            "score": 5,
+            "assistantToolCalls": 11,
+            "toolResults": 11,
+            "followedByAssistant": 11,
+            "missingResults": [],
+            "orphanResults": [],
+            "duplicateResults": []
+          },
+          "completion": {
+            "score": 5,
+            "reportedPass": true,
+            "actualVisiblePass": true,
+            "duplicateSideEffects": false
+          },
+          "total": 30,
+          "max": 30
+        },
+        "functional": {
+          "privateTests": 40,
+          "visibleTests": 5,
+          "changeIntegrity": 5,
+          "total": 50,
+          "max": 50
+        },
+        "agentTool": {
+          "total": 30,
+          "max": 30
+        },
+        "runScore": 80,
+        "runMax": 80,
+        "completeTaskSuccess": true
+      }
+    },
+    {
+      "runId": "pi-02",
+      "app": "pi",
+      "index": 2,
+      "fixtureId": "ENV-PARSER-001",
+      "model": {
+        "provider": "openai",
+        "id": "gpt-6-luna",
+        "thinking": "xhigh"
+      },
+      "timeoutSeconds": 600.0,
+      "startChecksum": "e90c4e5c49d063f6ce0e4ce6664295aaed01145d70faabe1d461fdae2cd4da0f",
+      "dependencyRestore": {
+        "exitCode": 0,
+        "durationSeconds": 0.8229741330142133,
+        "timedOut": false
+      },
+      "command": [
+        "node",
+        "--import",
+        "file:///home/philip/Projects/pi-pinned/packages/coding-agent/src/experimental/source-resolver.ts",
+        "/home/philip/Projects/pi-pinned/packages/coding-agent/src/cli.ts",
+        "--provider",
+        "openai",
+        "--model",
+        "gpt-6-luna",
+        "--thinking",
+        "xhigh",
+        "--mode",
+        "json",
+        "--session-dir",
+        "/home/philip/.cache/tmp/opencode/objective-agent-parity/sessions/pi-02",
+        "--no-extensions",
+        "--no-skills",
+        "--no-prompt-templates",
+        "--no-context-files",
+        "--no-mcp",
+        "--tools",
+        "read,bash,edit,write,grep,find,ls",
+        "--approve",
+        "--offline",
+        "The project contains a failing unit test. Investigate the failure, identify the underlying defect and make the smallest appropriate production-code correction. Preserve the documented behaviour, do not modify tests, and run `dotnet test` to verify the result. Report what you changed and whether the tests passed."
+      ],
+      "exitCode": 0,
+      "durationSeconds": 33.904393090022495,
+      "timedOut": false,
+      "sessionFiles": [
+        "sessions/2026-11-06T14-00-16-429Z_01a1b128-ff2d-7690-8729-43eca855b6ea.jsonl"
+      ],
+      "workspace": {
+        "files": {
+          "Fixture.slnx": "75d384af0bfe6f0b560655974e4f30db3d499f7ed7e0cfb6759a07bcd49fa2e8",
+          "README.md": "f3d7b6b3acb0e06d2de3c3f76acb6e2b40b2b31ae8467f3dc9759a29b18eca39",
+          "src/Fixture.Core/EnvFile.cs": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+          "src/Fixture.Core/Fixture.Core.csproj": "2c82dae7a6492e5dc0d99b6b5a5d1c89a4702b892f71757981e46302949d6115",
+          "tests/Fixture.Tests/EnvFileTests.cs": "17cce06abf2efbb6380e208b1c6677ca376e0f2f626f94b7d02b5013ecfd1932",
+          "tests/Fixture.Tests/Fixture.Tests.csproj": "a60e112e1e0a401e6b86ad686e8171cd07aec04da180ca61e776e9064409f527"
+        },
+        "checksum": "181b9c53c7561c56c808def56e4571c86605f70b47bfa3f08de1b15326d0fdd0",
+        "fileCount": 6
+      },
+      "productionSourceChecksum": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+      "baselineProductionSourceChecksum": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+      "status": "completed",
+      "wallDurationSeconds": 34.75538285099901,
+      "scored": true,
+      "evaluation": {
+        "privateTests": {
+          "sourceHash": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+          "command": [
+            "dotnet",
+            "test",
+            "EnvFilePrivateTests.csproj",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 1.796021162008401,
+          "timedOut": false,
+          "outcomes": {
+            "H01": "passed",
+            "H02": "passed",
+            "H03": "passed",
+            "H04": "passed",
+            "H05": "passed",
+            "H06": "passed",
+            "H07": "passed",
+            "H08": "passed"
+          },
+          "passed": 8
+        },
+        "visibleTests": {
+          "sourceHash": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+          "command": [
+            "dotnet",
+            "test",
+            "/home/philip/.cache/tmp/opencode/objective-agent-parity/visible-eval/8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 3.145549638022203,
+          "timedOut": false,
+          "outcomes": {
+            "Fixture.Tests.EnvFileTests.CommentsAndBlankLinesAreIgnored": "passed",
+            "Fixture.Tests.EnvFileTests.StandardAssignmentsParseSuccessfully": "passed",
+            "Fixture.Tests.EnvFileTests.ValuesContainingAdditionalEqualsSignsArePreserved": "passed"
+          },
+          "allPassed": true
+        },
+        "changeIntegrity": {
+          "changedFiles": [
+            "src/Fixture.Core/EnvFile.cs"
+          ],
+          "changedFileChecksums": {
+            "src/Fixture.Core/EnvFile.cs": {
+              "baseline": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+              "run": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5"
+            }
+          },
+          "addedFiles": [],
+          "removedFiles": [],
+          "modifiedFiles": [
+            "src/Fixture.Core/EnvFile.cs"
+          ],
+          "permittedProductionFile": "src/Fixture.Core/EnvFile.cs",
+          "productionFileChanged": true,
+          "onlyPermittedProductionFileChanged": true,
+          "snapshotChecksum": "181b9c53c7561c56c808def56e4571c86605f70b47bfa3f08de1b15326d0fdd0",
+          "baselineChecksum": "e90c4e5c49d063f6ce0e4ce6664295aaed01145d70faabe1d461fdae2cd4da0f",
+          "passed": true
+        },
+        "agentLoop": {
+          "sourceInvestigation": {
+            "score": 5,
+            "sourceSeen": true,
+            "testSeen": true
+          },
+          "fileModification": {
+            "score": 5,
+            "successfulMutation": true,
+            "productionFileChanged": true
+          },
+          "testExecution": {
+            "score": 5,
+            "ran": true,
+            "executions": 2,
+            "observedPass": true,
+            "actualVisiblePass": true
+          },
+          "toolLifecycle": {
+            "score": 5,
+            "errors": [],
+            "duplicateIds": []
+          },
+          "modelContinuation": {
+            "score": 5,
+            "assistantToolCalls": 11,
+            "toolResults": 11,
+            "followedByAssistant": 11,
+            "missingResults": [],
+            "orphanResults": [],
+            "duplicateResults": []
+          },
+          "completion": {
+            "score": 5,
+            "reportedPass": true,
+            "actualVisiblePass": true,
+            "duplicateSideEffects": false
+          },
+          "total": 30,
+          "max": 30
+        },
+        "functional": {
+          "privateTests": 40,
+          "visibleTests": 5,
+          "changeIntegrity": 5,
+          "total": 50,
+          "max": 50
+        },
+        "agentTool": {
+          "total": 30,
+          "max": 30
+        },
+        "runScore": 80,
+        "runMax": 80,
+        "completeTaskSuccess": true
+      }
+    },
+    {
+      "runId": "pi-03",
+      "app": "pi",
+      "index": 3,
+      "fixtureId": "ENV-PARSER-001",
+      "model": {
+        "provider": "openai",
+        "id": "gpt-6-luna",
+        "thinking": "xhigh"
+      },
+      "timeoutSeconds": 600.0,
+      "startChecksum": "e90c4e5c49d063f6ce0e4ce6664295aaed01145d70faabe1d461fdae2cd4da0f",
+      "dependencyRestore": {
+        "exitCode": 0,
+        "durationSeconds": 0.8334081790235359,
+        "timedOut": false
+      },
+      "command": [
+        "node",
+        "--import",
+        "file:///home/philip/Projects/pi-pinned/packages/coding-agent/src/experimental/source-resolver.ts",
+        "/home/philip/Projects/pi-pinned/packages/coding-agent/src/cli.ts",
+        "--provider",
+        "openai",
+        "--model",
+        "gpt-6-luna",
+        "--thinking",
+        "xhigh",
+        "--mode",
+        "json",
+        "--session-dir",
+        "/home/philip/.cache/tmp/opencode/objective-agent-parity/sessions/pi-03",
+        "--no-extensions",
+        "--no-skills",
+        "--no-prompt-templates",
+        "--no-context-files",
+        "--no-mcp",
+        "--tools",
+        "read,bash,edit,write,grep,find,ls",
+        "--approve",
+        "--offline",
+        "The project contains a failing unit test. Investigate the failure, identify the underlying defect and make the smallest appropriate production-code correction. Preserve the documented behaviour, do not modify tests, and run `dotnet test` to verify the result. Report what you changed and whether the tests passed."
+      ],
+      "exitCode": 0,
+      "durationSeconds": 303.1950036570197,
+      "timedOut": false,
+      "sessionFiles": [
+        "sessions/2026-11-06T14-00-50-738Z_01a1b129-8532-75d2-a5e3-27e0a3c8ddbe.jsonl"
+      ],
+      "workspace": {
+        "files": {
+          "Fixture.slnx": "75d384af0bfe6f0b560655974e4f30db3d499f7ed7e0cfb6759a07bcd49fa2e8",
+          "README.md": "f3d7b6b3acb0e06d2de3c3f76acb6e2b40b2b31ae8467f3dc9759a29b18eca39",
+          "src/Fixture.Core/EnvFile.cs": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+          "src/Fixture.Core/Fixture.Core.csproj": "2c82dae7a6492e5dc0d99b6b5a5d1c89a4702b892f71757981e46302949d6115",
+          "tests/Fixture.Tests/EnvFileTests.cs": "17cce06abf2efbb6380e208b1c6677ca376e0f2f626f94b7d02b5013ecfd1932",
+          "tests/Fixture.Tests/Fixture.Tests.csproj": "a60e112e1e0a401e6b86ad686e8171cd07aec04da180ca61e776e9064409f527"
+        },
+        "checksum": "181b9c53c7561c56c808def56e4571c86605f70b47bfa3f08de1b15326d0fdd0",
+        "fileCount": 6
+      },
+      "productionSourceChecksum": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+      "baselineProductionSourceChecksum": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+      "status": "completed",
+      "wallDurationSeconds": 304.107390190009,
+      "scored": true,
+      "evaluation": {
+        "privateTests": {
+          "sourceHash": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+          "command": [
+            "dotnet",
+            "test",
+            "EnvFilePrivateTests.csproj",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 1.796021162008401,
+          "timedOut": false,
+          "outcomes": {
+            "H01": "passed",
+            "H02": "passed",
+            "H03": "passed",
+            "H04": "passed",
+            "H05": "passed",
+            "H06": "passed",
+            "H07": "passed",
+            "H08": "passed"
+          },
+          "passed": 8
+        },
+        "visibleTests": {
+          "sourceHash": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+          "command": [
+            "dotnet",
+            "test",
+            "/home/philip/.cache/tmp/opencode/objective-agent-parity/visible-eval/8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 3.145549638022203,
+          "timedOut": false,
+          "outcomes": {
+            "Fixture.Tests.EnvFileTests.CommentsAndBlankLinesAreIgnored": "passed",
+            "Fixture.Tests.EnvFileTests.StandardAssignmentsParseSuccessfully": "passed",
+            "Fixture.Tests.EnvFileTests.ValuesContainingAdditionalEqualsSignsArePreserved": "passed"
+          },
+          "allPassed": true
+        },
+        "changeIntegrity": {
+          "changedFiles": [
+            "src/Fixture.Core/EnvFile.cs"
+          ],
+          "changedFileChecksums": {
+            "src/Fixture.Core/EnvFile.cs": {
+              "baseline": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+              "run": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5"
+            }
+          },
+          "addedFiles": [],
+          "removedFiles": [],
+          "modifiedFiles": [
+            "src/Fixture.Core/EnvFile.cs"
+          ],
+          "permittedProductionFile": "src/Fixture.Core/EnvFile.cs",
+          "productionFileChanged": true,
+          "onlyPermittedProductionFileChanged": true,
+          "snapshotChecksum": "181b9c53c7561c56c808def56e4571c86605f70b47bfa3f08de1b15326d0fdd0",
+          "baselineChecksum": "e90c4e5c49d063f6ce0e4ce6664295aaed01145d70faabe1d461fdae2cd4da0f",
+          "passed": true
+        },
+        "agentLoop": {
+          "sourceInvestigation": {
+            "score": 5,
+            "sourceSeen": true,
+            "testSeen": true
+          },
+          "fileModification": {
+            "score": 5,
+            "successfulMutation": true,
+            "productionFileChanged": true
+          },
+          "testExecution": {
+            "score": 5,
+            "ran": true,
+            "executions": 7,
+            "observedPass": true,
+            "actualVisiblePass": true
+          },
+          "toolLifecycle": {
+            "score": 5,
+            "errors": [],
+            "duplicateIds": []
+          },
+          "modelContinuation": {
+            "score": 5,
+            "assistantToolCalls": 22,
+            "toolResults": 22,
+            "followedByAssistant": 22,
+            "missingResults": [],
+            "orphanResults": [],
+            "duplicateResults": []
+          },
+          "completion": {
+            "score": 5,
+            "reportedPass": true,
+            "actualVisiblePass": true,
+            "duplicateSideEffects": false
+          },
+          "total": 30,
+          "max": 30
+        },
+        "functional": {
+          "privateTests": 40,
+          "visibleTests": 5,
+          "changeIntegrity": 5,
+          "total": 50,
+          "max": 50
+        },
+        "agentTool": {
+          "total": 30,
+          "max": 30
+        },
+        "runScore": 80,
+        "runMax": 80,
+        "completeTaskSuccess": true
+      }
+    },
+    {
+      "runId": "pi-04",
+      "app": "pi",
+      "index": 4,
+      "fixtureId": "ENV-PARSER-001",
+      "model": {
+        "provider": "openai",
+        "id": "gpt-6-luna",
+        "thinking": "xhigh"
+      },
+      "timeoutSeconds": 600.0,
+      "startChecksum": "e90c4e5c49d063f6ce0e4ce6664295aaed01145d70faabe1d461fdae2cd4da0f",
+      "dependencyRestore": {
+        "exitCode": 0,
+        "durationSeconds": 1.2235075999924447,
+        "timedOut": false
+      },
+      "command": [
+        "node",
+        "--import",
+        "file:///home/philip/Projects/pi-pinned/packages/coding-agent/src/experimental/source-resolver.ts",
+        "/home/philip/Projects/pi-pinned/packages/coding-agent/src/cli.ts",
+        "--provider",
+        "openai",
+        "--model",
+        "gpt-6-luna",
+        "--thinking",
+        "xhigh",
+        "--mode",
+        "json",
+        "--session-dir",
+        "/home/philip/.cache/tmp/opencode/objective-agent-parity/sessions/pi-04",
+        "--no-extensions",
+        "--no-skills",
+        "--no-prompt-templates",
+        "--no-context-files",
+        "--no-mcp",
+        "--tools",
+        "read,bash,edit,write,grep,find,ls",
+        "--approve",
+        "--offline",
+        "The project contains a failing unit test. Investigate the failure, identify the underlying defect and make the smallest appropriate production-code correction. Preserve the documented behaviour, do not modify tests, and run `dotnet test` to verify the result. Report what you changed and whether the tests passed."
+      ],
+      "exitCode": 0,
+      "durationSeconds": 141.93362334099947,
+      "timedOut": false,
+      "sessionFiles": [
+        "sessions/2026-11-06T14-05-55-557Z_01a1b12e-2be4-7088-ba75-72b6540fc9d3.jsonl"
+      ],
+      "workspace": {
+        "files": {
+          "Fixture.slnx": "75d384af0bfe6f0b560655974e4f30db3d499f7ed7e0cfb6759a07bcd49fa2e8",
+          "README.md": "f3d7b6b3acb0e06d2de3c3f76acb6e2b40b2b31ae8467f3dc9759a29b18eca39",
+          "src/Fixture.Core/EnvFile.cs": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+          "src/Fixture.Core/Fixture.Core.csproj": "2c82dae7a6492e5dc0d99b6b5a5d1c89a4702b892f71757981e46302949d6115",
+          "tests/Fixture.Tests/EnvFileTests.cs": "17cce06abf2efbb6380e208b1c6677ca376e0f2f626f94b7d02b5013ecfd1932",
+          "tests/Fixture.Tests/Fixture.Tests.csproj": "a60e112e1e0a401e6b86ad686e8171cd07aec04da180ca61e776e9064409f527"
+        },
+        "checksum": "181b9c53c7561c56c808def56e4571c86605f70b47bfa3f08de1b15326d0fdd0",
+        "fileCount": 6
+      },
+      "productionSourceChecksum": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+      "baselineProductionSourceChecksum": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+      "status": "completed",
+      "wallDurationSeconds": 143.25004622500273,
+      "scored": true,
+      "evaluation": {
+        "privateTests": {
+          "sourceHash": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+          "command": [
+            "dotnet",
+            "test",
+            "EnvFilePrivateTests.csproj",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 1.796021162008401,
+          "timedOut": false,
+          "outcomes": {
+            "H01": "passed",
+            "H02": "passed",
+            "H03": "passed",
+            "H04": "passed",
+            "H05": "passed",
+            "H06": "passed",
+            "H07": "passed",
+            "H08": "passed"
+          },
+          "passed": 8
+        },
+        "visibleTests": {
+          "sourceHash": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+          "command": [
+            "dotnet",
+            "test",
+            "/home/philip/.cache/tmp/opencode/objective-agent-parity/visible-eval/8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 3.145549638022203,
+          "timedOut": false,
+          "outcomes": {
+            "Fixture.Tests.EnvFileTests.CommentsAndBlankLinesAreIgnored": "passed",
+            "Fixture.Tests.EnvFileTests.StandardAssignmentsParseSuccessfully": "passed",
+            "Fixture.Tests.EnvFileTests.ValuesContainingAdditionalEqualsSignsArePreserved": "passed"
+          },
+          "allPassed": true
+        },
+        "changeIntegrity": {
+          "changedFiles": [
+            "src/Fixture.Core/EnvFile.cs"
+          ],
+          "changedFileChecksums": {
+            "src/Fixture.Core/EnvFile.cs": {
+              "baseline": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+              "run": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5"
+            }
+          },
+          "addedFiles": [],
+          "removedFiles": [],
+          "modifiedFiles": [
+            "src/Fixture.Core/EnvFile.cs"
+          ],
+          "permittedProductionFile": "src/Fixture.Core/EnvFile.cs",
+          "productionFileChanged": true,
+          "onlyPermittedProductionFileChanged": true,
+          "snapshotChecksum": "181b9c53c7561c56c808def56e4571c86605f70b47bfa3f08de1b15326d0fdd0",
+          "baselineChecksum": "e90c4e5c49d063f6ce0e4ce6664295aaed01145d70faabe1d461fdae2cd4da0f",
+          "passed": true
+        },
+        "agentLoop": {
+          "sourceInvestigation": {
+            "score": 5,
+            "sourceSeen": true,
+            "testSeen": true
+          },
+          "fileModification": {
+            "score": 5,
+            "successfulMutation": true,
+            "productionFileChanged": true
+          },
+          "testExecution": {
+            "score": 5,
+            "ran": true,
+            "executions": 7,
+            "observedPass": true,
+            "actualVisiblePass": true
+          },
+          "toolLifecycle": {
+            "score": 5,
+            "errors": [],
+            "duplicateIds": []
+          },
+          "modelContinuation": {
+            "score": 5,
+            "assistantToolCalls": 25,
+            "toolResults": 25,
+            "followedByAssistant": 25,
+            "missingResults": [],
+            "orphanResults": [],
+            "duplicateResults": []
+          },
+          "completion": {
+            "score": 5,
+            "reportedPass": true,
+            "actualVisiblePass": true,
+            "duplicateSideEffects": false
+          },
+          "total": 30,
+          "max": 30
+        },
+        "functional": {
+          "privateTests": 40,
+          "visibleTests": 5,
+          "changeIntegrity": 5,
+          "total": 50,
+          "max": 50
+        },
+        "agentTool": {
+          "total": 30,
+          "max": 30
+        },
+        "runScore": 80,
+        "runMax": 80,
+        "completeTaskSuccess": true
+      }
+    },
+    {
+      "runId": "pi-05",
+      "app": "pi",
+      "index": 5,
+      "fixtureId": "ENV-PARSER-001",
+      "model": {
+        "provider": "openai",
+        "id": "gpt-6-luna",
+        "thinking": "xhigh"
+      },
+      "timeoutSeconds": 600.0,
+      "startChecksum": "e90c4e5c49d063f6ce0e4ce6664295aaed01145d70faabe1d461fdae2cd4da0f",
+      "dependencyRestore": {
+        "exitCode": 0,
+        "durationSeconds": 1.249731558986241,
+        "timedOut": false
+      },
+      "command": [
+        "node",
+        "--import",
+        "file:///home/philip/Projects/pi-pinned/packages/coding-agent/src/experimental/source-resolver.ts",
+        "/home/philip/Projects/pi-pinned/packages/coding-agent/src/cli.ts",
+        "--provider",
+        "openai",
+        "--model",
+        "gpt-6-luna",
+        "--thinking",
+        "xhigh",
+        "--mode",
+        "json",
+        "--session-dir",
+        "/home/philip/.cache/tmp/opencode/objective-agent-parity/sessions/pi-05",
+        "--no-extensions",
+        "--no-skills",
+        "--no-prompt-templates",
+        "--no-context-files",
+        "--no-mcp",
+        "--tools",
+        "read,bash,edit,write,grep,find,ls",
+        "--approve",
+        "--offline",
+        "The project contains a failing unit test. Investigate the failure, identify the underlying defect and make the smallest appropriate production-code correction. Preserve the documented behaviour, do not modify tests, and run `dotnet test` to verify the result. Report what you changed and whether the tests passed."
+      ],
+      "exitCode": 0,
+      "durationSeconds": 154.2018062590214,
+      "timedOut": false,
+      "sessionFiles": [
+        "sessions/2026-11-06T14-08-18-788Z_01a1b130-5b63-7229-be70-d2fdc99f3993.jsonl"
+      ],
+      "workspace": {
+        "files": {
+          "Fixture.slnx": "75d384af0bfe6f0b560655974e4f30db3d499f7ed7e0cfb6759a07bcd49fa2e8",
+          "README.md": "f3d7b6b3acb0e06d2de3c3f76acb6e2b40b2b31ae8467f3dc9759a29b18eca39",
+          "src/Fixture.Core/EnvFile.cs": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+          "src/Fixture.Core/Fixture.Core.csproj": "2c82dae7a6492e5dc0d99b6b5a5d1c89a4702b892f71757981e46302949d6115",
+          "tests/Fixture.Tests/EnvFileTests.cs": "17cce06abf2efbb6380e208b1c6677ca376e0f2f626f94b7d02b5013ecfd1932",
+          "tests/Fixture.Tests/Fixture.Tests.csproj": "a60e112e1e0a401e6b86ad686e8171cd07aec04da180ca61e776e9064409f527"
+        },
+        "checksum": "181b9c53c7561c56c808def56e4571c86605f70b47bfa3f08de1b15326d0fdd0",
+        "fileCount": 6
+      },
+      "productionSourceChecksum": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+      "baselineProductionSourceChecksum": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+      "status": "completed",
+      "wallDurationSeconds": 155.56052247199113,
+      "scored": true,
+      "evaluation": {
+        "privateTests": {
+          "sourceHash": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+          "command": [
+            "dotnet",
+            "test",
+            "EnvFilePrivateTests.csproj",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 1.796021162008401,
+          "timedOut": false,
+          "outcomes": {
+            "H01": "passed",
+            "H02": "passed",
+            "H03": "passed",
+            "H04": "passed",
+            "H05": "passed",
+            "H06": "passed",
+            "H07": "passed",
+            "H08": "passed"
+          },
+          "passed": 8
+        },
+        "visibleTests": {
+          "sourceHash": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+          "command": [
+            "dotnet",
+            "test",
+            "/home/philip/.cache/tmp/opencode/objective-agent-parity/visible-eval/8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 3.145549638022203,
+          "timedOut": false,
+          "outcomes": {
+            "Fixture.Tests.EnvFileTests.CommentsAndBlankLinesAreIgnored": "passed",
+            "Fixture.Tests.EnvFileTests.StandardAssignmentsParseSuccessfully": "passed",
+            "Fixture.Tests.EnvFileTests.ValuesContainingAdditionalEqualsSignsArePreserved": "passed"
+          },
+          "allPassed": true
+        },
+        "changeIntegrity": {
+          "changedFiles": [
+            "src/Fixture.Core/EnvFile.cs"
+          ],
+          "changedFileChecksums": {
+            "src/Fixture.Core/EnvFile.cs": {
+              "baseline": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+              "run": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5"
+            }
+          },
+          "addedFiles": [],
+          "removedFiles": [],
+          "modifiedFiles": [
+            "src/Fixture.Core/EnvFile.cs"
+          ],
+          "permittedProductionFile": "src/Fixture.Core/EnvFile.cs",
+          "productionFileChanged": true,
+          "onlyPermittedProductionFileChanged": true,
+          "snapshotChecksum": "181b9c53c7561c56c808def56e4571c86605f70b47bfa3f08de1b15326d0fdd0",
+          "baselineChecksum": "e90c4e5c49d063f6ce0e4ce6664295aaed01145d70faabe1d461fdae2cd4da0f",
+          "passed": true
+        },
+        "agentLoop": {
+          "sourceInvestigation": {
+            "score": 5,
+            "sourceSeen": true,
+            "testSeen": true
+          },
+          "fileModification": {
+            "score": 5,
+            "successfulMutation": true,
+            "productionFileChanged": true
+          },
+          "testExecution": {
+            "score": 5,
+            "ran": true,
+            "executions": 7,
+            "observedPass": true,
+            "actualVisiblePass": true
+          },
+          "toolLifecycle": {
+            "score": 5,
+            "errors": [],
+            "duplicateIds": []
+          },
+          "modelContinuation": {
+            "score": 5,
+            "assistantToolCalls": 22,
+            "toolResults": 22,
+            "followedByAssistant": 22,
+            "missingResults": [],
+            "orphanResults": [],
+            "duplicateResults": []
+          },
+          "completion": {
+            "score": 5,
+            "reportedPass": true,
+            "actualVisiblePass": true,
+            "duplicateSideEffects": false
+          },
+          "total": 30,
+          "max": 30
+        },
+        "functional": {
+          "privateTests": 40,
+          "visibleTests": 5,
+          "changeIntegrity": 5,
+          "total": 50,
+          "max": 50
+        },
+        "agentTool": {
+          "total": 30,
+          "max": 30
+        },
+        "runScore": 80,
+        "runMax": 80,
+        "completeTaskSuccess": true
+      }
+    },
+    {
+      "runId": "pisharp-01",
+      "app": "pisharp",
+      "index": 1,
+      "fixtureId": "ENV-PARSER-001",
+      "model": {
+        "provider": "openai-codex",
+        "id": "gpt-6-luna",
+        "thinking": "xhigh"
+      },
+      "timeoutSeconds": 600.0,
+      "startChecksum": "e90c4e5c49d063f6ce0e4ce6664295aaed01145d70faabe1d461fdae2cd4da0f",
+      "dependencyRestore": {
+        "exitCode": 0,
+        "durationSeconds": 1.549680886004353,
+        "timedOut": false
+      },
+      "command": [
+        "dotnet",
+        "/home/philip/Projects/pisharp/src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll",
+        "--provider",
+        "openai-codex",
+        "--model",
+        "gpt-6-luna",
+        "--thinking",
+        "xhigh",
+        "--mode",
+        "json",
+        "--session-dir",
+        "/home/philip/.cache/tmp/opencode/objective-agent-parity/sessions/pisharp-01",
+        "--no-extensions",
+        "--no-skills",
+        "--no-prompt-templates",
+        "--no-context-files",
+        "--tools",
+        "read,bash,edit,write,grep,find,ls",
+        "--approve",
+        "--offline",
+        "The project contains a failing unit test. Investigate the failure, identify the underlying defect and make the smallest appropriate production-code correction. Preserve the documented behaviour, do not modify tests, and run `dotnet test` to verify the result. Report what you changed and whether the tests passed."
+      ],
+      "exitCode": 0,
+      "durationSeconds": 116.50317801299389,
+      "timedOut": false,
+      "sessionFiles": [
+        "sessions/20261106T141054_684facc789074d4f867d94fad10ee5a5.session.json",
+        "sessions/20261106T141054_684facc789074d4f867d94fad10ee5a5.session.json.lock"
+      ],
+      "workspace": {
+        "files": {
+          "Fixture.slnx": "75d384af0bfe6f0b560655974e4f30db3d499f7ed7e0cfb6759a07bcd49fa2e8",
+          "README.md": "f3d7b6b3acb0e06d2de3c3f76acb6e2b40b2b31ae8467f3dc9759a29b18eca39",
+          "src/Fixture.Core/EnvFile.cs": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+          "src/Fixture.Core/Fixture.Core.csproj": "2c82dae7a6492e5dc0d99b6b5a5d1c89a4702b892f71757981e46302949d6115",
+          "tests/Fixture.Tests/EnvFileTests.cs": "17cce06abf2efbb6380e208b1c6677ca376e0f2f626f94b7d02b5013ecfd1932",
+          "tests/Fixture.Tests/Fixture.Tests.csproj": "a60e112e1e0a401e6b86ad686e8171cd07aec04da180ca61e776e9064409f527"
+        },
+        "checksum": "181b9c53c7561c56c808def56e4571c86605f70b47bfa3f08de1b15326d0fdd0",
+        "fileCount": 6
+      },
+      "productionSourceChecksum": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+      "baselineProductionSourceChecksum": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+      "status": "completed",
+      "wallDurationSeconds": 118.08507267900859,
+      "scored": true,
+      "evaluation": {
+        "privateTests": {
+          "sourceHash": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+          "command": [
+            "dotnet",
+            "test",
+            "EnvFilePrivateTests.csproj",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 1.796021162008401,
+          "timedOut": false,
+          "outcomes": {
+            "H01": "passed",
+            "H02": "passed",
+            "H03": "passed",
+            "H04": "passed",
+            "H05": "passed",
+            "H06": "passed",
+            "H07": "passed",
+            "H08": "passed"
+          },
+          "passed": 8
+        },
+        "visibleTests": {
+          "sourceHash": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+          "command": [
+            "dotnet",
+            "test",
+            "/home/philip/.cache/tmp/opencode/objective-agent-parity/visible-eval/8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 3.145549638022203,
+          "timedOut": false,
+          "outcomes": {
+            "Fixture.Tests.EnvFileTests.CommentsAndBlankLinesAreIgnored": "passed",
+            "Fixture.Tests.EnvFileTests.StandardAssignmentsParseSuccessfully": "passed",
+            "Fixture.Tests.EnvFileTests.ValuesContainingAdditionalEqualsSignsArePreserved": "passed"
+          },
+          "allPassed": true
+        },
+        "changeIntegrity": {
+          "changedFiles": [
+            "src/Fixture.Core/EnvFile.cs"
+          ],
+          "changedFileChecksums": {
+            "src/Fixture.Core/EnvFile.cs": {
+              "baseline": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+              "run": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5"
+            }
+          },
+          "addedFiles": [],
+          "removedFiles": [],
+          "modifiedFiles": [
+            "src/Fixture.Core/EnvFile.cs"
+          ],
+          "permittedProductionFile": "src/Fixture.Core/EnvFile.cs",
+          "productionFileChanged": true,
+          "onlyPermittedProductionFileChanged": true,
+          "snapshotChecksum": "181b9c53c7561c56c808def56e4571c86605f70b47bfa3f08de1b15326d0fdd0",
+          "baselineChecksum": "e90c4e5c49d063f6ce0e4ce6664295aaed01145d70faabe1d461fdae2cd4da0f",
+          "passed": true
+        },
+        "agentLoop": {
+          "sourceInvestigation": {
+            "score": 5,
+            "sourceSeen": true,
+            "testSeen": true
+          },
+          "fileModification": {
+            "score": 5,
+            "successfulMutation": true,
+            "productionFileChanged": true
+          },
+          "testExecution": {
+            "score": 5,
+            "ran": true,
+            "executions": 7,
+            "observedPass": true,
+            "actualVisiblePass": true
+          },
+          "toolLifecycle": {
+            "score": 5,
+            "errors": [],
+            "duplicateIds": []
+          },
+          "modelContinuation": {
+            "score": 5,
+            "assistantToolCalls": 19,
+            "toolResults": 19,
+            "followedByAssistant": 19,
+            "missingResults": [],
+            "orphanResults": [],
+            "duplicateResults": []
+          },
+          "completion": {
+            "score": 5,
+            "reportedPass": true,
+            "actualVisiblePass": true,
+            "duplicateSideEffects": false
+          },
+          "total": 30,
+          "max": 30
+        },
+        "functional": {
+          "privateTests": 40,
+          "visibleTests": 5,
+          "changeIntegrity": 5,
+          "total": 50,
+          "max": 50
+        },
+        "agentTool": {
+          "total": 30,
+          "max": 30
+        },
+        "runScore": 80,
+        "runMax": 80,
+        "completeTaskSuccess": true
+      }
+    },
+    {
+      "runId": "pisharp-02",
+      "app": "pisharp",
+      "index": 2,
+      "fixtureId": "ENV-PARSER-001",
+      "model": {
+        "provider": "openai-codex",
+        "id": "gpt-6-luna",
+        "thinking": "xhigh"
+      },
+      "timeoutSeconds": 600.0,
+      "startChecksum": "e90c4e5c49d063f6ce0e4ce6664295aaed01145d70faabe1d461fdae2cd4da0f",
+      "dependencyRestore": {
+        "exitCode": 0,
+        "durationSeconds": 1.0429244759725407,
+        "timedOut": false
+      },
+      "command": [
+        "dotnet",
+        "/home/philip/Projects/pisharp/src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll",
+        "--provider",
+        "openai-codex",
+        "--model",
+        "gpt-6-luna",
+        "--thinking",
+        "xhigh",
+        "--mode",
+        "json",
+        "--session-dir",
+        "/home/philip/.cache/tmp/opencode/objective-agent-parity/sessions/pisharp-02",
+        "--no-extensions",
+        "--no-skills",
+        "--no-prompt-templates",
+        "--no-context-files",
+        "--tools",
+        "read,bash,edit,write,grep,find,ls",
+        "--approve",
+        "--offline",
+        "The project contains a failing unit test. Investigate the failure, identify the underlying defect and make the smallest appropriate production-code correction. Preserve the documented behaviour, do not modify tests, and run `dotnet test` to verify the result. Report what you changed and whether the tests passed."
+      ],
+      "exitCode": 0,
+      "durationSeconds": 101.34028423199197,
+      "timedOut": false,
+      "sessionFiles": [
+        "sessions/20261106T141251_ede265e1c52c4bc7afc1b655727a85bf.session.json",
+        "sessions/20261106T141251_ede265e1c52c4bc7afc1b655727a85bf.session.json.lock"
+      ],
+      "workspace": {
+        "files": {
+          "Fixture.slnx": "75d384af0bfe6f0b560655974e4f30db3d499f7ed7e0cfb6759a07bcd49fa2e8",
+          "README.md": "f3d7b6b3acb0e06d2de3c3f76acb6e2b40b2b31ae8467f3dc9759a29b18eca39",
+          "src/Fixture.Core/EnvFile.cs": "17e18206a677b9ef0a649f22cb7805d1f8fd97cccde8dd471c85a071d436f1dc",
+          "src/Fixture.Core/Fixture.Core.csproj": "2c82dae7a6492e5dc0d99b6b5a5d1c89a4702b892f71757981e46302949d6115",
+          "tests/Fixture.Tests/EnvFileTests.cs": "17cce06abf2efbb6380e208b1c6677ca376e0f2f626f94b7d02b5013ecfd1932",
+          "tests/Fixture.Tests/Fixture.Tests.csproj": "a60e112e1e0a401e6b86ad686e8171cd07aec04da180ca61e776e9064409f527"
+        },
+        "checksum": "11e82146f1e1d0f59166788d9931b95ac8a464532dc0cc7aa5b23418dcdd515c",
+        "fileCount": 6
+      },
+      "productionSourceChecksum": "17e18206a677b9ef0a649f22cb7805d1f8fd97cccde8dd471c85a071d436f1dc",
+      "baselineProductionSourceChecksum": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+      "status": "completed",
+      "wallDurationSeconds": 102.4081946539809,
+      "scored": true,
+      "evaluation": {
+        "privateTests": {
+          "sourceHash": "17e18206a677b9ef0a649f22cb7805d1f8fd97cccde8dd471c85a071d436f1dc",
+          "command": [
+            "dotnet",
+            "test",
+            "EnvFilePrivateTests.csproj",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 3.090929187979782,
+          "timedOut": false,
+          "outcomes": {
+            "H01": "passed",
+            "H02": "passed",
+            "H03": "passed",
+            "H04": "passed",
+            "H05": "passed",
+            "H06": "passed",
+            "H07": "passed",
+            "H08": "passed"
+          },
+          "passed": 8
+        },
+        "visibleTests": {
+          "sourceHash": "17e18206a677b9ef0a649f22cb7805d1f8fd97cccde8dd471c85a071d436f1dc",
+          "command": [
+            "dotnet",
+            "test",
+            "/home/philip/.cache/tmp/opencode/objective-agent-parity/visible-eval/17e18206a677b9ef0a649f22cb7805d1f8fd97cccde8dd471c85a071d436f1dc",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 3.4809285209921654,
+          "timedOut": false,
+          "outcomes": {
+            "Fixture.Tests.EnvFileTests.CommentsAndBlankLinesAreIgnored": "passed",
+            "Fixture.Tests.EnvFileTests.StandardAssignmentsParseSuccessfully": "passed",
+            "Fixture.Tests.EnvFileTests.ValuesContainingAdditionalEqualsSignsArePreserved": "passed"
+          },
+          "allPassed": true
+        },
+        "changeIntegrity": {
+          "changedFiles": [
+            "src/Fixture.Core/EnvFile.cs"
+          ],
+          "changedFileChecksums": {
+            "src/Fixture.Core/EnvFile.cs": {
+              "baseline": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+              "run": "17e18206a677b9ef0a649f22cb7805d1f8fd97cccde8dd471c85a071d436f1dc"
+            }
+          },
+          "addedFiles": [],
+          "removedFiles": [],
+          "modifiedFiles": [
+            "src/Fixture.Core/EnvFile.cs"
+          ],
+          "permittedProductionFile": "src/Fixture.Core/EnvFile.cs",
+          "productionFileChanged": true,
+          "onlyPermittedProductionFileChanged": true,
+          "snapshotChecksum": "11e82146f1e1d0f59166788d9931b95ac8a464532dc0cc7aa5b23418dcdd515c",
+          "baselineChecksum": "e90c4e5c49d063f6ce0e4ce6664295aaed01145d70faabe1d461fdae2cd4da0f",
+          "passed": true
+        },
+        "agentLoop": {
+          "sourceInvestigation": {
+            "score": 5,
+            "sourceSeen": true,
+            "testSeen": true
+          },
+          "fileModification": {
+            "score": 5,
+            "successfulMutation": true,
+            "productionFileChanged": true
+          },
+          "testExecution": {
+            "score": 5,
+            "ran": true,
+            "executions": 6,
+            "observedPass": true,
+            "actualVisiblePass": true
+          },
+          "toolLifecycle": {
+            "score": 5,
+            "errors": [],
+            "duplicateIds": []
+          },
+          "modelContinuation": {
+            "score": 5,
+            "assistantToolCalls": 17,
+            "toolResults": 17,
+            "followedByAssistant": 17,
+            "missingResults": [],
+            "orphanResults": [],
+            "duplicateResults": []
+          },
+          "completion": {
+            "score": 5,
+            "reportedPass": true,
+            "actualVisiblePass": true,
+            "duplicateSideEffects": false
+          },
+          "total": 30,
+          "max": 30
+        },
+        "functional": {
+          "privateTests": 40,
+          "visibleTests": 5,
+          "changeIntegrity": 5,
+          "total": 50,
+          "max": 50
+        },
+        "agentTool": {
+          "total": 30,
+          "max": 30
+        },
+        "runScore": 80,
+        "runMax": 80,
+        "completeTaskSuccess": true
+      }
+    },
+    {
+      "runId": "pisharp-03",
+      "app": "pisharp",
+      "index": 3,
+      "fixtureId": "ENV-PARSER-001",
+      "model": {
+        "provider": "openai-codex",
+        "id": "gpt-6-luna",
+        "thinking": "xhigh"
+      },
+      "timeoutSeconds": 600.0,
+      "startChecksum": "e90c4e5c49d063f6ce0e4ce6664295aaed01145d70faabe1d461fdae2cd4da0f",
+      "dependencyRestore": {
+        "exitCode": 0,
+        "durationSeconds": 1.3056817930191755,
+        "timedOut": false
+      },
+      "command": [
+        "dotnet",
+        "/home/philip/Projects/pisharp/src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll",
+        "--provider",
+        "openai-codex",
+        "--model",
+        "gpt-6-luna",
+        "--thinking",
+        "xhigh",
+        "--mode",
+        "json",
+        "--session-dir",
+        "/home/philip/.cache/tmp/opencode/objective-agent-parity/sessions/pisharp-03",
+        "--no-extensions",
+        "--no-skills",
+        "--no-prompt-templates",
+        "--no-context-files",
+        "--tools",
+        "read,bash,edit,write,grep,find,ls",
+        "--approve",
+        "--offline",
+        "The project contains a failing unit test. Investigate the failure, identify the underlying defect and make the smallest appropriate production-code correction. Preserve the documented behaviour, do not modify tests, and run `dotnet test` to verify the result. Report what you changed and whether the tests passed."
+      ],
+      "exitCode": 0,
+      "durationSeconds": 94.54268422501627,
+      "timedOut": false,
+      "sessionFiles": [
+        "sessions/20261106T141434_b2ccda193cb642cb993d675f203b9597.session.json",
+        "sessions/20261106T141434_b2ccda193cb642cb993d675f203b9597.session.json.lock"
+      ],
+      "workspace": {
+        "files": {
+          "Fixture.slnx": "75d384af0bfe6f0b560655974e4f30db3d499f7ed7e0cfb6759a07bcd49fa2e8",
+          "README.md": "f3d7b6b3acb0e06d2de3c3f76acb6e2b40b2b31ae8467f3dc9759a29b18eca39",
+          "src/Fixture.Core/EnvFile.cs": "17e18206a677b9ef0a649f22cb7805d1f8fd97cccde8dd471c85a071d436f1dc",
+          "src/Fixture.Core/Fixture.Core.csproj": "2c82dae7a6492e5dc0d99b6b5a5d1c89a4702b892f71757981e46302949d6115",
+          "tests/Fixture.Tests/EnvFileTests.cs": "17cce06abf2efbb6380e208b1c6677ca376e0f2f626f94b7d02b5013ecfd1932",
+          "tests/Fixture.Tests/Fixture.Tests.csproj": "a60e112e1e0a401e6b86ad686e8171cd07aec04da180ca61e776e9064409f527"
+        },
+        "checksum": "11e82146f1e1d0f59166788d9931b95ac8a464532dc0cc7aa5b23418dcdd515c",
+        "fileCount": 6
+      },
+      "productionSourceChecksum": "17e18206a677b9ef0a649f22cb7805d1f8fd97cccde8dd471c85a071d436f1dc",
+      "baselineProductionSourceChecksum": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+      "status": "completed",
+      "wallDurationSeconds": 95.87071474301047,
+      "scored": true,
+      "evaluation": {
+        "privateTests": {
+          "sourceHash": "17e18206a677b9ef0a649f22cb7805d1f8fd97cccde8dd471c85a071d436f1dc",
+          "command": [
+            "dotnet",
+            "test",
+            "EnvFilePrivateTests.csproj",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 3.090929187979782,
+          "timedOut": false,
+          "outcomes": {
+            "H01": "passed",
+            "H02": "passed",
+            "H03": "passed",
+            "H04": "passed",
+            "H05": "passed",
+            "H06": "passed",
+            "H07": "passed",
+            "H08": "passed"
+          },
+          "passed": 8
+        },
+        "visibleTests": {
+          "sourceHash": "17e18206a677b9ef0a649f22cb7805d1f8fd97cccde8dd471c85a071d436f1dc",
+          "command": [
+            "dotnet",
+            "test",
+            "/home/philip/.cache/tmp/opencode/objective-agent-parity/visible-eval/17e18206a677b9ef0a649f22cb7805d1f8fd97cccde8dd471c85a071d436f1dc",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 3.4809285209921654,
+          "timedOut": false,
+          "outcomes": {
+            "Fixture.Tests.EnvFileTests.CommentsAndBlankLinesAreIgnored": "passed",
+            "Fixture.Tests.EnvFileTests.StandardAssignmentsParseSuccessfully": "passed",
+            "Fixture.Tests.EnvFileTests.ValuesContainingAdditionalEqualsSignsArePreserved": "passed"
+          },
+          "allPassed": true
+        },
+        "changeIntegrity": {
+          "changedFiles": [
+            "src/Fixture.Core/EnvFile.cs"
+          ],
+          "changedFileChecksums": {
+            "src/Fixture.Core/EnvFile.cs": {
+              "baseline": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+              "run": "17e18206a677b9ef0a649f22cb7805d1f8fd97cccde8dd471c85a071d436f1dc"
+            }
+          },
+          "addedFiles": [],
+          "removedFiles": [],
+          "modifiedFiles": [
+            "src/Fixture.Core/EnvFile.cs"
+          ],
+          "permittedProductionFile": "src/Fixture.Core/EnvFile.cs",
+          "productionFileChanged": true,
+          "onlyPermittedProductionFileChanged": true,
+          "snapshotChecksum": "11e82146f1e1d0f59166788d9931b95ac8a464532dc0cc7aa5b23418dcdd515c",
+          "baselineChecksum": "e90c4e5c49d063f6ce0e4ce6664295aaed01145d70faabe1d461fdae2cd4da0f",
+          "passed": true
+        },
+        "agentLoop": {
+          "sourceInvestigation": {
+            "score": 5,
+            "sourceSeen": true,
+            "testSeen": true
+          },
+          "fileModification": {
+            "score": 5,
+            "successfulMutation": true,
+            "productionFileChanged": true
+          },
+          "testExecution": {
+            "score": 5,
+            "ran": true,
+            "executions": 5,
+            "observedPass": true,
+            "actualVisiblePass": true
+          },
+          "toolLifecycle": {
+            "score": 5,
+            "errors": [],
+            "duplicateIds": []
+          },
+          "modelContinuation": {
+            "score": 5,
+            "assistantToolCalls": 16,
+            "toolResults": 16,
+            "followedByAssistant": 16,
+            "missingResults": [],
+            "orphanResults": [],
+            "duplicateResults": []
+          },
+          "completion": {
+            "score": 5,
+            "reportedPass": true,
+            "actualVisiblePass": true,
+            "duplicateSideEffects": false
+          },
+          "total": 30,
+          "max": 30
+        },
+        "functional": {
+          "privateTests": 40,
+          "visibleTests": 5,
+          "changeIntegrity": 5,
+          "total": 50,
+          "max": 50
+        },
+        "agentTool": {
+          "total": 30,
+          "max": 30
+        },
+        "runScore": 80,
+        "runMax": 80,
+        "completeTaskSuccess": true
+      }
+    },
+    {
+      "runId": "pisharp-04",
+      "app": "pisharp",
+      "index": 4,
+      "fixtureId": "ENV-PARSER-001",
+      "model": {
+        "provider": "openai-codex",
+        "id": "gpt-6-luna",
+        "thinking": "xhigh"
+      },
+      "timeoutSeconds": 600.0,
+      "startChecksum": "e90c4e5c49d063f6ce0e4ce6664295aaed01145d70faabe1d461fdae2cd4da0f",
+      "dependencyRestore": {
+        "exitCode": 0,
+        "durationSeconds": 1.2674900770070963,
+        "timedOut": false
+      },
+      "command": [
+        "dotnet",
+        "/home/philip/Projects/pisharp/src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll",
+        "--provider",
+        "openai-codex",
+        "--model",
+        "gpt-6-luna",
+        "--thinking",
+        "xhigh",
+        "--mode",
+        "json",
+        "--session-dir",
+        "/home/philip/.cache/tmp/opencode/objective-agent-parity/sessions/pisharp-04",
+        "--no-extensions",
+        "--no-skills",
+        "--no-prompt-templates",
+        "--no-context-files",
+        "--tools",
+        "read,bash,edit,write,grep,find,ls",
+        "--approve",
+        "--offline",
+        "The project contains a failing unit test. Investigate the failure, identify the underlying defect and make the smallest appropriate production-code correction. Preserve the documented behaviour, do not modify tests, and run `dotnet test` to verify the result. Report what you changed and whether the tests passed."
+      ],
+      "exitCode": 0,
+      "durationSeconds": 119.43805871001678,
+      "timedOut": false,
+      "sessionFiles": [
+        "sessions/20261106T141610_dbf4841ee2ec4555bfb8b6aa0b6205ba.session.json",
+        "sessions/20261106T141610_dbf4841ee2ec4555bfb8b6aa0b6205ba.session.json.lock"
+      ],
+      "workspace": {
+        "files": {
+          "Fixture.slnx": "75d384af0bfe6f0b560655974e4f30db3d499f7ed7e0cfb6759a07bcd49fa2e8",
+          "README.md": "f3d7b6b3acb0e06d2de3c3f76acb6e2b40b2b31ae8467f3dc9759a29b18eca39",
+          "src/Fixture.Core/EnvFile.cs": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+          "src/Fixture.Core/Fixture.Core.csproj": "2c82dae7a6492e5dc0d99b6b5a5d1c89a4702b892f71757981e46302949d6115",
+          "tests/Fixture.Tests/EnvFileTests.cs": "17cce06abf2efbb6380e208b1c6677ca376e0f2f626f94b7d02b5013ecfd1932",
+          "tests/Fixture.Tests/Fixture.Tests.csproj": "a60e112e1e0a401e6b86ad686e8171cd07aec04da180ca61e776e9064409f527"
+        },
+        "checksum": "181b9c53c7561c56c808def56e4571c86605f70b47bfa3f08de1b15326d0fdd0",
+        "fileCount": 6
+      },
+      "productionSourceChecksum": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+      "baselineProductionSourceChecksum": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+      "status": "completed",
+      "wallDurationSeconds": 120.7784431129985,
+      "scored": true,
+      "evaluation": {
+        "privateTests": {
+          "sourceHash": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+          "command": [
+            "dotnet",
+            "test",
+            "EnvFilePrivateTests.csproj",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 1.796021162008401,
+          "timedOut": false,
+          "outcomes": {
+            "H01": "passed",
+            "H02": "passed",
+            "H03": "passed",
+            "H04": "passed",
+            "H05": "passed",
+            "H06": "passed",
+            "H07": "passed",
+            "H08": "passed"
+          },
+          "passed": 8
+        },
+        "visibleTests": {
+          "sourceHash": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+          "command": [
+            "dotnet",
+            "test",
+            "/home/philip/.cache/tmp/opencode/objective-agent-parity/visible-eval/8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 3.145549638022203,
+          "timedOut": false,
+          "outcomes": {
+            "Fixture.Tests.EnvFileTests.CommentsAndBlankLinesAreIgnored": "passed",
+            "Fixture.Tests.EnvFileTests.StandardAssignmentsParseSuccessfully": "passed",
+            "Fixture.Tests.EnvFileTests.ValuesContainingAdditionalEqualsSignsArePreserved": "passed"
+          },
+          "allPassed": true
+        },
+        "changeIntegrity": {
+          "changedFiles": [
+            "src/Fixture.Core/EnvFile.cs"
+          ],
+          "changedFileChecksums": {
+            "src/Fixture.Core/EnvFile.cs": {
+              "baseline": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+              "run": "8c6f5abc4bc89d0a72a0afed0ff61dec175d6286ac8b509bfd3014c0b57707c5"
+            }
+          },
+          "addedFiles": [],
+          "removedFiles": [],
+          "modifiedFiles": [
+            "src/Fixture.Core/EnvFile.cs"
+          ],
+          "permittedProductionFile": "src/Fixture.Core/EnvFile.cs",
+          "productionFileChanged": true,
+          "onlyPermittedProductionFileChanged": true,
+          "snapshotChecksum": "181b9c53c7561c56c808def56e4571c86605f70b47bfa3f08de1b15326d0fdd0",
+          "baselineChecksum": "e90c4e5c49d063f6ce0e4ce6664295aaed01145d70faabe1d461fdae2cd4da0f",
+          "passed": true
+        },
+        "agentLoop": {
+          "sourceInvestigation": {
+            "score": 5,
+            "sourceSeen": true,
+            "testSeen": true
+          },
+          "fileModification": {
+            "score": 5,
+            "successfulMutation": true,
+            "productionFileChanged": true
+          },
+          "testExecution": {
+            "score": 5,
+            "ran": true,
+            "executions": 5,
+            "observedPass": true,
+            "actualVisiblePass": true
+          },
+          "toolLifecycle": {
+            "score": 5,
+            "errors": [],
+            "duplicateIds": []
+          },
+          "modelContinuation": {
+            "score": 5,
+            "assistantToolCalls": 19,
+            "toolResults": 19,
+            "followedByAssistant": 19,
+            "missingResults": [],
+            "orphanResults": [],
+            "duplicateResults": []
+          },
+          "completion": {
+            "score": 5,
+            "reportedPass": true,
+            "actualVisiblePass": true,
+            "duplicateSideEffects": false
+          },
+          "total": 30,
+          "max": 30
+        },
+        "functional": {
+          "privateTests": 40,
+          "visibleTests": 5,
+          "changeIntegrity": 5,
+          "total": 50,
+          "max": 50
+        },
+        "agentTool": {
+          "total": 30,
+          "max": 30
+        },
+        "runScore": 80,
+        "runMax": 80,
+        "completeTaskSuccess": true
+      }
+    },
+    {
+      "runId": "pisharp-05",
+      "app": "pisharp",
+      "index": 5,
+      "fixtureId": "ENV-PARSER-001",
+      "model": {
+        "provider": "openai-codex",
+        "id": "gpt-6-luna",
+        "thinking": "xhigh"
+      },
+      "timeoutSeconds": 600.0,
+      "startChecksum": "e90c4e5c49d063f6ce0e4ce6664295aaed01145d70faabe1d461fdae2cd4da0f",
+      "dependencyRestore": {
+        "exitCode": 0,
+        "durationSeconds": 0.8584082080051303,
+        "timedOut": false
+      },
+      "command": [
+        "dotnet",
+        "/home/philip/Projects/pisharp/src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll",
+        "--provider",
+        "openai-codex",
+        "--model",
+        "gpt-6-luna",
+        "--thinking",
+        "xhigh",
+        "--mode",
+        "json",
+        "--session-dir",
+        "/home/philip/.cache/tmp/opencode/objective-agent-parity/sessions/pisharp-05",
+        "--no-extensions",
+        "--no-skills",
+        "--no-prompt-templates",
+        "--no-context-files",
+        "--tools",
+        "read,bash,edit,write,grep,find,ls",
+        "--approve",
+        "--offline",
+        "The project contains a failing unit test. Investigate the failure, identify the underlying defect and make the smallest appropriate production-code correction. Preserve the documented behaviour, do not modify tests, and run `dotnet test` to verify the result. Report what you changed and whether the tests passed."
+      ],
+      "exitCode": 0,
+      "durationSeconds": 86.67076896200888,
+      "timedOut": false,
+      "sessionFiles": [
+        "sessions/20261106T141810_9309d9fe053d4b2caeb29da8cc4a0a6a.session.json",
+        "sessions/20261106T141810_9309d9fe053d4b2caeb29da8cc4a0a6a.session.json.lock"
+      ],
+      "workspace": {
+        "files": {
+          "Fixture.slnx": "75d384af0bfe6f0b560655974e4f30db3d499f7ed7e0cfb6759a07bcd49fa2e8",
+          "README.md": "f3d7b6b3acb0e06d2de3c3f76acb6e2b40b2b31ae8467f3dc9759a29b18eca39",
+          "src/Fixture.Core/EnvFile.cs": "17e18206a677b9ef0a649f22cb7805d1f8fd97cccde8dd471c85a071d436f1dc",
+          "src/Fixture.Core/Fixture.Core.csproj": "2c82dae7a6492e5dc0d99b6b5a5d1c89a4702b892f71757981e46302949d6115",
+          "tests/Fixture.Tests/EnvFileTests.cs": "17cce06abf2efbb6380e208b1c6677ca376e0f2f626f94b7d02b5013ecfd1932",
+          "tests/Fixture.Tests/Fixture.Tests.csproj": "a60e112e1e0a401e6b86ad686e8171cd07aec04da180ca61e776e9064409f527"
+        },
+        "checksum": "11e82146f1e1d0f59166788d9931b95ac8a464532dc0cc7aa5b23418dcdd515c",
+        "fileCount": 6
+      },
+      "productionSourceChecksum": "17e18206a677b9ef0a649f22cb7805d1f8fd97cccde8dd471c85a071d436f1dc",
+      "baselineProductionSourceChecksum": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+      "status": "completed",
+      "wallDurationSeconds": 87.55121680899174,
+      "scored": true,
+      "evaluation": {
+        "privateTests": {
+          "sourceHash": "17e18206a677b9ef0a649f22cb7805d1f8fd97cccde8dd471c85a071d436f1dc",
+          "command": [
+            "dotnet",
+            "test",
+            "EnvFilePrivateTests.csproj",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 3.090929187979782,
+          "timedOut": false,
+          "outcomes": {
+            "H01": "passed",
+            "H02": "passed",
+            "H03": "passed",
+            "H04": "passed",
+            "H05": "passed",
+            "H06": "passed",
+            "H07": "passed",
+            "H08": "passed"
+          },
+          "passed": 8
+        },
+        "visibleTests": {
+          "sourceHash": "17e18206a677b9ef0a649f22cb7805d1f8fd97cccde8dd471c85a071d436f1dc",
+          "command": [
+            "dotnet",
+            "test",
+            "/home/philip/.cache/tmp/opencode/objective-agent-parity/visible-eval/17e18206a677b9ef0a649f22cb7805d1f8fd97cccde8dd471c85a071d436f1dc",
+            "--nologo",
+            "--verbosity",
+            "quiet",
+            "--logger",
+            "trx;LogFileName=results.trx"
+          ],
+          "exitCode": 0,
+          "durationSeconds": 3.4809285209921654,
+          "timedOut": false,
+          "outcomes": {
+            "Fixture.Tests.EnvFileTests.CommentsAndBlankLinesAreIgnored": "passed",
+            "Fixture.Tests.EnvFileTests.StandardAssignmentsParseSuccessfully": "passed",
+            "Fixture.Tests.EnvFileTests.ValuesContainingAdditionalEqualsSignsArePreserved": "passed"
+          },
+          "allPassed": true
+        },
+        "changeIntegrity": {
+          "changedFiles": [
+            "src/Fixture.Core/EnvFile.cs"
+          ],
+          "changedFileChecksums": {
+            "src/Fixture.Core/EnvFile.cs": {
+              "baseline": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+              "run": "17e18206a677b9ef0a649f22cb7805d1f8fd97cccde8dd471c85a071d436f1dc"
+            }
+          },
+          "addedFiles": [],
+          "removedFiles": [],
+          "modifiedFiles": [
+            "src/Fixture.Core/EnvFile.cs"
+          ],
+          "permittedProductionFile": "src/Fixture.Core/EnvFile.cs",
+          "productionFileChanged": true,
+          "onlyPermittedProductionFileChanged": true,
+          "snapshotChecksum": "11e82146f1e1d0f59166788d9931b95ac8a464532dc0cc7aa5b23418dcdd515c",
+          "baselineChecksum": "e90c4e5c49d063f6ce0e4ce6664295aaed01145d70faabe1d461fdae2cd4da0f",
+          "passed": true
+        },
+        "agentLoop": {
+          "sourceInvestigation": {
+            "score": 5,
+            "sourceSeen": true,
+            "testSeen": true
+          },
+          "fileModification": {
+            "score": 5,
+            "successfulMutation": true,
+            "productionFileChanged": true
+          },
+          "testExecution": {
+            "score": 5,
+            "ran": true,
+            "executions": 7,
+            "observedPass": true,
+            "actualVisiblePass": true
+          },
+          "toolLifecycle": {
+            "score": 5,
+            "errors": [],
+            "duplicateIds": []
+          },
+          "modelContinuation": {
+            "score": 5,
+            "assistantToolCalls": 19,
+            "toolResults": 19,
+            "followedByAssistant": 19,
+            "missingResults": [],
+            "orphanResults": [],
+            "duplicateResults": []
+          },
+          "completion": {
+            "score": 5,
+            "reportedPass": true,
+            "actualVisiblePass": true,
+            "duplicateSideEffects": false
+          },
+          "total": 30,
+          "max": 30
+        },
+        "functional": {
+          "privateTests": 40,
+          "visibleTests": 5,
+          "changeIntegrity": 5,
+          "total": 50,
+          "max": 50
+        },
+        "agentTool": {
+          "total": 30,
+          "max": 30
+        },
+        "runScore": 80,
+        "runMax": 80,
+        "completeTaskSuccess": true
+      }
+    }
+  ],
+  "deterministicContract": {
+    "fixtureId": "ENV-PARSER-001-contract",
+    "build": {
+      "exitCode": 0,
+      "durationSeconds": 2.9741539630049374
+    },
+    "products": [
+      {
+        "app": "pi",
+        "exitCode": 0,
+        "timedOut": false,
+        "toolLifecycle": {
+          "ok": true,
+          "errors": [],
+          "executions": [
+            {
+              "id": "call-objective-contract",
+              "name": "bash",
+              "result": "objective-contract-line\n",
+              "isError": false
+            }
+          ]
+        },
+        "modelContinuation": {
+          "ok": true,
+          "requests": 2,
+          "assistantToolCallIds": [
+            "call-objective-contract"
+          ],
+          "toolResultCount": 1,
+          "matchedResultCount": 1,
+          "duplicateIds": [],
+          "secondRequestContainsToolResultAfterCall": true,
+          "resultIds": [
+            "call-objective-contract"
+          ]
+        },
+        "completion": {
+          "ok": true,
+          "settled": true,
+          "finalText": "Deterministic contract complete."
+        },
+        "passed": true
+      },
+      {
+        "app": "pisharp",
+        "exitCode": 0,
+        "timedOut": false,
+        "toolLifecycle": {
+          "ok": true,
+          "errors": [],
+          "executions": [
+            {
+              "id": "8228debf439f43adb48aee50a35f5032",
+              "name": "bash",
+              "result": "objective-contract-line\n",
+              "isError": false
+            }
+          ]
+        },
+        "modelContinuation": {
+          "ok": true,
+          "requests": 2,
+          "assistantToolCallIds": [
+            "call-objective-contract"
+          ],
+          "toolResultCount": 1,
+          "matchedResultCount": 1,
+          "duplicateIds": [],
+          "secondRequestContainsToolResultAfterCall": true,
+          "resultIds": [
+            "call-objective-contract"
+          ]
+        },
+        "completion": {
+          "ok": true,
+          "settled": true,
+          "finalText": "Deterministic contract complete."
+        },
+        "passed": true
+      }
+    ],
+    "passed": true
+  },
+  "ui": {
+    "fixture": "objective-agent-progress",
+    "calibration": {
+      "directory": "artifacts/parity/objective-agent-ui-20261106/calibration",
+      "match": true,
+      "cases": [
+        {
+          "id": "80x24-dark-fullscreen",
+          "match": true,
+          "differences": 0
+        },
+        {
+          "id": "120x40-dark-fullscreen",
+          "match": true,
+          "differences": 0
+        }
+      ],
+      "exitCode": 0
+    },
+    "comparison": {
+      "directory": "artifacts/parity/objective-agent-ui-20261106/comparison",
+      "match": false,
+      "exitCode": 1
+    },
+    "cases": [
+      {
+        "id": "80x24-dark-fullscreen",
+        "checkpoints": {
+          "tool-start": {
+            "points": 2,
+            "pi": {
+              "working": true,
+              "progress": false,
+              "completed": false,
+              "resumed": false,
+              "idle": false,
+              "footer": true
+            },
+            "pisharp": {
+              "working": true,
+              "progress": false,
+              "completed": false,
+              "resumed": false,
+              "idle": false,
+              "footer": true
+            },
+            "reason": "represented"
+          },
+          "tool-progress": {
+            "points": 2,
+            "pi": {
+              "working": true,
+              "progress": true,
+              "completed": false,
+              "resumed": false,
+              "idle": false,
+              "footer": true
+            },
+            "pisharp": {
+              "working": true,
+              "progress": true,
+              "completed": false,
+              "resumed": false,
+              "idle": false,
+              "footer": true
+            },
+            "reason": "represented"
+          },
+          "tool-complete": {
+            "points": 2,
+            "pi": {
+              "working": true,
+              "progress": true,
+              "completed": true,
+              "resumed": false,
+              "idle": false,
+              "footer": true
+            },
+            "pisharp": {
+              "working": true,
+              "progress": true,
+              "completed": true,
+              "resumed": false,
+              "idle": false,
+              "footer": true
+            },
+            "reason": "represented"
+          },
+          "assistant-resume": {
+            "points": 2,
+            "pi": {
+              "working": false,
+              "progress": true,
+              "completed": true,
+              "resumed": true,
+              "idle": true,
+              "footer": true
+            },
+            "pisharp": {
+              "working": false,
+              "progress": true,
+              "completed": true,
+              "resumed": true,
+              "idle": true,
+              "footer": true
+            },
+            "reason": "represented"
+          },
+          "final-idle": {
+            "points": 2,
+            "pi": {
+              "working": false,
+              "progress": true,
+              "completed": true,
+              "resumed": true,
+              "idle": true,
+              "footer": true
+            },
+            "pisharp": {
+              "working": false,
+              "progress": true,
+              "completed": true,
+              "resumed": true,
+              "idle": true,
+              "footer": true
+            },
+            "reason": "represented"
+          }
+        },
+        "visual": {
+          "labelsIndicatorsPositions": {
+            "points": 2,
+            "max": 2,
+            "match": true
+          },
+          "spacingIndentationWrappingLayout": {
+            "points": 1,
+            "max": 1,
+            "match": true
+          },
+          "coloursAndStyles": {
+            "points": 0,
+            "max": 1,
+            "match": false
+          },
+          "footerCursorFinalState": {
+            "points": 1,
+            "max": 1,
+            "match": true
+          },
+          "total": 4,
+          "max": 5
+        },
+        "differences": [
+          {
+            "checkpoint": "tool-complete",
+            "kind": "styles",
+            "cells": 17,
+            "totalCells": 1920
+          },
+          {
+            "checkpoint": "assistant-resume",
+            "kind": "styles",
+            "cells": 17,
+            "totalCells": 1920
+          },
+          {
+            "checkpoint": "final-idle",
+            "kind": "styles",
+            "cells": 17,
+            "totalCells": 1920
+          }
+        ],
+        "progressPoints": 10,
+        "progressMax": 10,
+        "caseTotal": 14,
+        "caseMax": 20
+      },
+      {
+        "id": "120x40-dark-fullscreen",
+        "checkpoints": {
+          "tool-start": {
+            "points": 2,
+            "pi": {
+              "working": true,
+              "progress": false,
+              "completed": false,
+              "resumed": false,
+              "idle": false,
+              "footer": true
+            },
+            "pisharp": {
+              "working": true,
+              "progress": false,
+              "completed": false,
+              "resumed": false,
+              "idle": false,
+              "footer": true
+            },
+            "reason": "represented"
+          },
+          "tool-progress": {
+            "points": 2,
+            "pi": {
+              "working": true,
+              "progress": true,
+              "completed": false,
+              "resumed": false,
+              "idle": false,
+              "footer": true
+            },
+            "pisharp": {
+              "working": true,
+              "progress": true,
+              "completed": false,
+              "resumed": false,
+              "idle": false,
+              "footer": true
+            },
+            "reason": "represented"
+          },
+          "tool-complete": {
+            "points": 2,
+            "pi": {
+              "working": true,
+              "progress": true,
+              "completed": true,
+              "resumed": false,
+              "idle": false,
+              "footer": true
+            },
+            "pisharp": {
+              "working": true,
+              "progress": true,
+              "completed": true,
+              "resumed": false,
+              "idle": false,
+              "footer": true
+            },
+            "reason": "represented"
+          },
+          "assistant-resume": {
+            "points": 2,
+            "pi": {
+              "working": false,
+              "progress": true,
+              "completed": true,
+              "resumed": true,
+              "idle": true,
+              "footer": true
+            },
+            "pisharp": {
+              "working": false,
+              "progress": true,
+              "completed": true,
+              "resumed": true,
+              "idle": true,
+              "footer": true
+            },
+            "reason": "represented"
+          },
+          "final-idle": {
+            "points": 2,
+            "pi": {
+              "working": false,
+              "progress": true,
+              "completed": true,
+              "resumed": true,
+              "idle": true,
+              "footer": true
+            },
+            "pisharp": {
+              "working": false,
+              "progress": true,
+              "completed": true,
+              "resumed": true,
+              "idle": true,
+              "footer": true
+            },
+            "reason": "represented"
+          }
+        },
+        "visual": {
+          "labelsIndicatorsPositions": {
+            "points": 2,
+            "max": 2,
+            "match": true
+          },
+          "spacingIndentationWrappingLayout": {
+            "points": 1,
+            "max": 1,
+            "match": true
+          },
+          "coloursAndStyles": {
+            "points": 1,
+            "max": 1,
+            "match": true
+          },
+          "footerCursorFinalState": {
+            "points": 1,
+            "max": 1,
+            "match": true
+          },
+          "total": 5,
+          "max": 5
+        },
+        "differences": [],
+        "progressPoints": 10,
+        "progressMax": 10,
+        "caseTotal": 15,
+        "caseMax": 20
+      }
+    ],
+    "progressPoints": 10,
+    "visualPoints": 9,
+    "total": 19,
+    "max": 20,
+    "piScore": 20,
+    "pisharpScore": 19,
+    "parityScore": 19,
+    "status": "scored"
+  },
+  "aggregates": {
+    "pi": {
+      "attemptedRuns": 5,
+      "assessableRuns": 5,
+      "blockedRuns": 0,
+      "timedOutRuns": 0,
+      "meanFunctionalScore": 50,
+      "meanAgentToolScore": 30,
+      "meanRealModelScore": 80,
+      "completeTaskSuccesses": 5,
+      "completeTaskSuccessRateOutOfFive": 1.0,
+      "completeTaskSuccessRateAssessable": 1.0,
+      "perRunScores": [
+        {
+          "runId": "pi-01",
+          "status": "completed",
+          "functional": 50,
+          "agentTool": 30,
+          "total": 80,
+          "completeTaskSuccess": true
+        },
+        {
+          "runId": "pi-02",
+          "status": "completed",
+          "functional": 50,
+          "agentTool": 30,
+          "total": 80,
+          "completeTaskSuccess": true
+        },
+        {
+          "runId": "pi-03",
+          "status": "completed",
+          "functional": 50,
+          "agentTool": 30,
+          "total": 80,
+          "completeTaskSuccess": true
+        },
+        {
+          "runId": "pi-04",
+          "status": "completed",
+          "functional": 50,
+          "agentTool": 30,
+          "total": 80,
+          "completeTaskSuccess": true
+        },
+        {
+          "runId": "pi-05",
+          "status": "completed",
+          "functional": 50,
+          "agentTool": 30,
+          "total": 80,
+          "completeTaskSuccess": true
+        }
+      ],
+      "deterministicUiScore": 20
+    },
+    "pisharp": {
+      "attemptedRuns": 5,
+      "assessableRuns": 5,
+      "blockedRuns": 0,
+      "timedOutRuns": 0,
+      "meanFunctionalScore": 50,
+      "meanAgentToolScore": 30,
+      "meanRealModelScore": 80,
+      "completeTaskSuccesses": 5,
+      "completeTaskSuccessRateOutOfFive": 1.0,
+      "completeTaskSuccessRateAssessable": 1.0,
+      "perRunScores": [
+        {
+          "runId": "pisharp-01",
+          "status": "completed",
+          "functional": 50,
+          "agentTool": 30,
+          "total": 80,
+          "completeTaskSuccess": true
+        },
+        {
+          "runId": "pisharp-02",
+          "status": "completed",
+          "functional": 50,
+          "agentTool": 30,
+          "total": 80,
+          "completeTaskSuccess": true
+        },
+        {
+          "runId": "pisharp-03",
+          "status": "completed",
+          "functional": 50,
+          "agentTool": 30,
+          "total": 80,
+          "completeTaskSuccess": true
+        },
+        {
+          "runId": "pisharp-04",
+          "status": "completed",
+          "functional": 50,
+          "agentTool": 30,
+          "total": 80,
+          "completeTaskSuccess": true
+        },
+        {
+          "runId": "pisharp-05",
+          "status": "completed",
+          "functional": 50,
+          "agentTool": 30,
+          "total": 80,
+          "completeTaskSuccess": true
+        }
+      ],
+      "deterministicUiScore": 19
+    },
+    "deterministicUi": {
+      "pi": 20,
+      "pisharp": 19,
+      "max": 20,
+      "status": "scored",
+      "parityScore": 19
+    },
+    "combined": {
+      "pi": 100,
+      "pisharp": 99
+    },
+    "scoreDifferencePisharpMinusPi": -1
+  },
+  "classifiedDifferences": [
+    {
+      "id": "ui-colours-80x24-dark-fullscreen",
+      "severity": "P2",
+      "summary": "Decoded terminal cell styles differed at deterministic checkpoints; details list affected cells.",
+      "evidence": [
+        "ui-report.json#80x24-dark-fullscreen"
+      ],
+      "details": [
+        {
+          "checkpoint": "tool-complete",
+          "kind": "styles",
+          "cells": 17,
+          "totalCells": 1920
+        },
+        {
+          "checkpoint": "assistant-resume",
+          "kind": "styles",
+          "cells": 17,
+          "totalCells": 1920
+        },
+        {
+          "checkpoint": "final-idle",
+          "kind": "styles",
+          "cells": 17,
+          "totalCells": 1920
+        }
+      ],
+      "component": "ui"
+    }
+  ],
+  "highestPriorityConfirmedDiscrepancy": {
+    "id": "ui-colours-80x24-dark-fullscreen",
+    "severity": "P2",
+    "summary": "Decoded terminal cell styles differed at deterministic checkpoints; details list affected cells.",
+    "evidence": [
+      "ui-report.json#80x24-dark-fullscreen"
+    ],
+    "details": [
+      {
+        "checkpoint": "tool-complete",
+        "kind": "styles",
+        "cells": 17,
+        "totalCells": 1920
+      },
+      {
+        "checkpoint": "assistant-resume",
+        "kind": "styles",
+        "cells": 17,
+        "totalCells": 1920
+      },
+      {
+        "checkpoint": "final-idle",
+        "kind": "styles",
+        "cells": 17,
+        "totalCells": 1920
+      }
+    ],
+    "component": "ui"
+  },
+  "suggestedNextSingleDeliverable": "Extend the bash command-line syntax style across the trailing whitespace cells of wrapped command output at 80x24; verify with the objective-agent-progress fixture at both sizes.",
+  "validityGates": {
+    "sameFixtureBaseline": true,
+    "modelConfigurationDocumented": true,
+    "allAttemptedRunsAccountedFor": true,
+    "privateEvaluatorIndependent": true,
+    "toolAndFilesystemTracesComplete": true,
+    "samePiCalibrationPassed": true,
+    "deterministicScoreCalculation": true,
+    "negativeControlPassed": true,
+    "fiveAssessableRunsPerApplication": true,
+    "comparisonComplete": true
+  },
+  "generatedAt": "2026-11-06T14:42:33.624800+00:00",
+  "negativeControls": [
+    {
+      "name": "inflated-private-score",
+      "rejected": true,
+      "errors": [
+        "pi-01 private points are inconsistent",
+        "pi-01 functional total is inconsistent",
+        "pi functional mean is inconsistent"
+      ]
+    },
+    {
+      "name": "agent-score-out-of-range",
+      "rejected": true,
+      "errors": [
+        "pi-01 agent-loop component is outside 0-5",
+        "pi-01 agent/tool total is inconsistent",
+        "pi-01 run score is inconsistent"
+      ]
+    },
+    {
+      "name": "missing-run",
+      "rejected": true,
+      "errors": [
+        "expected 10 real-model run records, found 9",
+        "expected five pisharp runs, found 4",
+        "pisharp assessable-run aggregate is inconsistent",
+        "pisharp task-success count is inconsistent",
+        "pisharp task-success rate is inconsistent"
+      ]
+    },
+    {
+      "name": "wrong-fixture-checksum",
+      "rejected": true,
+      "errors": [
+        "fixture checksum does not match baseline.json"
+      ]
+    },
+    {
+      "name": "forged-change-integrity",
+      "rejected": true,
+      "errors": [
+        "pi-01 change-integrity permission flag is inconsistent",
+        "pi-01 production-file change flag is inconsistent"
+      ]
+    },
+    {
+      "name": "inconsistent-ui-score",
+      "rejected": true,
+      "errors": [
+        "UI case 80x24-dark-fullscreen visual points are inconsistent",
+        "UI aggregate visual points are inconsistent",
+        "UI total is inconsistent",
+        "UI total is outside 0-20",
+        "aggregate PiSharp deterministic UI score is inconsistent"
+      ]
+    },
+    {
+      "name": "false-task-success",
+      "rejected": true,
+      "errors": [
+        "pi-01 private passed count is inconsistent",
+        "pi-01 task-success flag is inconsistent"
+      ]
+    },
+    {
+      "name": "hidden-private-failure",
+      "rejected": true,
+      "errors": [
+        "pi-01 private passed count is inconsistent",
+        "pi-01 private points are inconsistent",
+        "pi-01 functional total is inconsistent",
+        "pi-01 run score is inconsistent"
+      ]
+    },
+    {
+      "name": "wrong-run-score",
+      "rejected": true,
+      "errors": [
+        "pi-01 functional total is inconsistent",
+        "pi functional mean is inconsistent"
+      ]
+    }
+  ]
+}

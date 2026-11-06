@@ -1,0 +1,84 @@
+{
+  "fixtureId": "ENV-PARSER-001-contract",
+  "build": {
+    "exitCode": 0,
+    "durationSeconds": 2.9741539630049374
+  },
+  "products": [
+    {
+      "app": "pi",
+      "exitCode": 0,
+      "timedOut": false,
+      "toolLifecycle": {
+        "ok": true,
+        "errors": [],
+        "executions": [
+          {
+            "id": "call-objective-contract",
+            "name": "bash",
+            "result": "objective-contract-line\n",
+            "isError": false
+          }
+        ]
+      },
+      "modelContinuation": {
+        "ok": true,
+        "requests": 2,
+        "assistantToolCallIds": [
+          "call-objective-contract"
+        ],
+        "toolResultCount": 1,
+        "matchedResultCount": 1,
+        "duplicateIds": [],
+        "secondRequestContainsToolResultAfterCall": true,
+        "resultIds": [
+          "call-objective-contract"
+        ]
+      },
+      "completion": {
+        "ok": true,
+        "settled": true,
+        "finalText": "Deterministic contract complete."
+      },
+      "passed": true
+    },
+    {
+      "app": "pisharp",
+      "exitCode": 0,
+      "timedOut": false,
+      "toolLifecycle": {
+        "ok": true,
+        "errors": [],
+        "executions": [
+          {
+            "id": "8228debf439f43adb48aee50a35f5032",
+            "name": "bash",
+            "result": "objective-contract-line\n",
+            "isError": false
+          }
+        ]
+      },
+      "modelContinuation": {
+        "ok": true,
+        "requests": 2,
+        "assistantToolCallIds": [
+          "call-objective-contract"
+        ],
+        "toolResultCount": 1,
+        "matchedResultCount": 1,
+        "duplicateIds": [],
+        "secondRequestContainsToolResultAfterCall": true,
+        "resultIds": [
+          "call-objective-contract"
+        ]
+      },
+      "completion": {
+        "ok": true,
+        "settled": true,
+        "finalText": "Deterministic contract complete."
+      },
+      "passed": true
+    }
+  ],
+  "passed": true
+}

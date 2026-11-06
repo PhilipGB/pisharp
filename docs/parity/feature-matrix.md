@@ -2,6 +2,24 @@
 
 Current status and project goal are maintained in [the continuation](../continuation.md); open architecture risks are tracked in the [architecture document](../architecture.md#open-architecture-risks). The milestone summaries below are historical and may retain the wording used when they were written; later merges supersede their status claims.
 
+## Completed milestone — Objective Agent Parity Fixture and Scoring Rubric — 2026-11-06
+
+The fixed `ENV-PARSER-001` fixture (checksum
+`e90c4e5c49d063f6ce0e4ce6664295aaed01145d70faabe1d461fdae2cd4da0f`)
+separates functional correctness, agent-loop/tool correctness and terminal UI
+parity. Five real-model runs per product used `gpt-6-luna` at `xhigh` through
+each product's existing OpenAI subscription configuration. Both completed 5/5
+tasks with 80/80 mean real-model scores; every run passed H01-H08, the visible
+suite and change integrity. Deterministic terminal calibration passed and PiSharp
+parity scored 19/20 (progress 10/10, visual 9/10). The only confirmed difference is P2:
+at 80x24, 17 trailing blank cells of the wrapped bash command line carry Pi's
+styled foreground while PiSharp leaves them unstyled; visible text and layout
+match, and 120x40 matches fully. Combined score is 100/100 for Pi and 99/100
+for PiSharp. Nine report-verifier negative controls rejected falsification. See the
+[receipt](fixtures/objective-agent-parity-2026-11-06/README.md) and
+[report](fixtures/objective-agent-parity-2026-11-06/report.json). The next single
+deliverable is the 80x24 trailing wrapped-command style parity task.
+
 ## Completed milestone — Session Tree and Scoped Model Picker — 2026-11-05
 
 The `keys-tree-scoped-picker` capability is verified at implementation source

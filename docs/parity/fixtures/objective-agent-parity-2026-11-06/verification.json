@@ -1,0 +1,89 @@
+{
+  "valid": true,
+  "errors": [],
+  "negativeControls": [
+    {
+      "name": "inflated-private-score",
+      "rejected": true,
+      "errors": [
+        "pi-01 private points are inconsistent",
+        "pi-01 functional total is inconsistent",
+        "pi functional mean is inconsistent"
+      ]
+    },
+    {
+      "name": "agent-score-out-of-range",
+      "rejected": true,
+      "errors": [
+        "pi-01 agent-loop component is outside 0-5",
+        "pi-01 agent/tool total is inconsistent",
+        "pi-01 run score is inconsistent"
+      ]
+    },
+    {
+      "name": "missing-run",
+      "rejected": true,
+      "errors": [
+        "expected 10 real-model run records, found 9",
+        "expected five pisharp runs, found 4",
+        "pisharp assessable-run aggregate is inconsistent",
+        "pisharp task-success count is inconsistent",
+        "pisharp task-success rate is inconsistent"
+      ]
+    },
+    {
+      "name": "wrong-fixture-checksum",
+      "rejected": true,
+      "errors": [
+        "fixture checksum does not match baseline.json"
+      ]
+    },
+    {
+      "name": "forged-change-integrity",
+      "rejected": true,
+      "errors": [
+        "pi-01 change-integrity permission flag is inconsistent",
+        "pi-01 production-file change flag is inconsistent"
+      ]
+    },
+    {
+      "name": "inconsistent-ui-score",
+      "rejected": true,
+      "errors": [
+        "UI case 80x24-dark-fullscreen visual points are inconsistent",
+        "UI aggregate visual points are inconsistent",
+        "UI total is inconsistent",
+        "UI total is outside 0-20",
+        "aggregate PiSharp deterministic UI score is inconsistent"
+      ]
+    },
+    {
+      "name": "false-task-success",
+      "rejected": true,
+      "errors": [
+        "pi-01 private passed count is inconsistent",
+        "pi-01 task-success flag is inconsistent"
+      ]
+    },
+    {
+      "name": "hidden-private-failure",
+      "rejected": true,
+      "errors": [
+        "pi-01 private passed count is inconsistent",
+        "pi-01 private points are inconsistent",
+        "pi-01 functional total is inconsistent",
+        "pi-01 run score is inconsistent"
+      ]
+    },
+    {
+      "name": "wrong-run-score",
+      "rejected": true,
+      "errors": [
+        "pi-01 functional total is inconsistent",
+        "pi functional mean is inconsistent"
+      ]
+    }
+  ],
+  "negativeControlsPassed": true,
+  "requireComplete": true
+}

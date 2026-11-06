@@ -1,0 +1,80 @@
+{
+  "id": "objective-agent-progress",
+  "settings": { "quietStartup": true },
+  "arguments": {
+    "pi": [
+      "--provider", "fixture", "--model", "fixture-model", "--no-session", "--offline",
+      "--no-extensions", "--no-skills", "--no-prompt-templates", "--no-context-files", "--tools", "bash",
+      "--system-prompt", "You are a terminal parity fixture."
+    ],
+    "pisharp": [
+      "--provider", "fixture", "--model", "fixture-model", "--no-session", "--offline",
+      "--no-extensions", "--no-skills", "--no-prompt-templates", "--no-context-files", "--tools", "bash",
+      "--no-approve", "--system-prompt", "You are a terminal parity fixture."
+    ]
+  },
+  "fixtureBehavior": {
+    "chatRequestGates": ["tool-call-request"],
+    "chatResponseGates": ["tool-call-response"],
+    "chatResponseContentGates": [null, "assistant-resume"],
+    "chatToolCallsByRequest": [[
+      {
+        "id": "call-objective-bash",
+        "name": "bash",
+        "arguments": { "command": "x=objective-line; printf '%s-one\\n' \"$x\"; sleep 0.3; printf '%s-two\\n%s-three\\n' \"$x\" \"$x\"" }
+      }
+    ]],
+    "chatResponseContentByRequest": ["fixture tool call", "Objective tool lifecycle complete."]
+  },
+  "dimensions": [
+    { "columns": 80, "rows": 24 },
+    { "columns": 120, "rows": 40 }
+  ],
+  "themes": ["dark"],
+  "modes": ["fullscreen"],
+  "actions": [
+    { "id": "startup", "expect": "fixture-model" },
+    {
+      "id": "paste-tool-prompt",
+      "send": "\u001b[200~Run the fixture tool.\u001b[201~",
+      "expect": "Run the fixture tool.",
+      "renderMatch": true
+    },
+    {
+      "id": "tool-start",
+      "send": "\r",
+      "waitGatesAfter": ["tool-call-request"],
+      "expect": "Working",
+      "allowStaticFrame": true
+    },
+    {
+      "id": "tool-progress",
+      "releaseGates": ["tool-call-response"],
+      "expect": "objective-line-one",
+      "notExpect": "Took",
+      "renderMatch": true
+    },
+    {
+      "id": "tool-complete",
+      "expect": "Took",
+      "renderMatch": true
+    },
+    {
+      "id": "assistant-resume",
+      "releaseGates": ["assistant-resume"],
+      "expect": "Objective tool lifecycle complete.",
+      "notExpect": "Working",
+      "renderMatch": true
+    },
+    {
+      "id": "final-idle",
+      "expect": "fixture-model",
+      "notExpect": "Working",
+      "allowStaticFrame": true
+    },
+    { "id": "exit", "send": "\u0003\u0003", "exit": true }
+  ],
+  "assertionFrames": ["startup", "paste-tool-prompt", "tool-start", "tool-progress",
+    "tool-complete", "assistant-resume", "final-idle", "exit"],
+  "terminal": { "keyboardProtocol": "kitty" }
+}
