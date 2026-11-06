@@ -10,13 +10,12 @@ from statistics import mean
 from typing import Any
 
 from common import (
-    BASELINE_PATH,
-    FIXTURE_ID,
     load_baseline,
     sha256_file,
     write_json,
 )
 from evaluate import evaluate_snapshot
+from fixtures import get_fixture
 
 ROOT = Path(__file__).resolve().parents[3]
 ASSESSABLE = {"completed", "agent_error"}
@@ -32,6 +31,7 @@ def aggregate(runs: list[dict[str, Any]]) -> dict[str, Any]:
     agent_tool = [run["evaluation"]["agentTool"]["total"] for run in scored]
     combined = [run["evaluation"]["runScore"] for run in scored]
     successes = [run for run in scored if run["evaluation"]["completeTaskSuccess"]]
+    recovery = [run["evaluation"]["agentLoop"].get("recoveryMetrics", {}) for run in scored]
     return dict(
         attemptedRuns=len(runs),
         assessableRuns=len(scored),
@@ -43,16 +43,25 @@ def aggregate(runs: list[dict[str, Any]]) -> dict[str, Any]:
         completeTaskSuccesses=len(successes),
         completeTaskSuccessRateOutOfFive=round(len(successes) / 5, 4),
         completeTaskSuccessRateAssessable=round(len(successes) / len(scored), 4) if scored else None,
+        recoveryMeasurements=dict(
+            toolErrors=sum(item.get("toolErrors", 0) for item in recovery),
+            recoveredToolErrors=sum(item.get("recoveredToolErrors", 0) for item in recovery),
+            testExecutions=sum(item.get("testExecutions", 0) for item in recovery),
+            errorsConveyedToModel=sum(item.get("errorsConveyedToModel", 0) for item in recovery),
+            duplicateSideEffects=sum(1 for item in recovery if item.get("duplicateSideEffects")),
+        ),
+        peakMemoryBytes=max((run.get("peakMemoryBytes") or 0 for run in scored), default=0),
         perRunScores=[dict(runId=run["runId"], status=run["status"],
                            functional=run["evaluation"]["functional"]["total"],
                            agentTool=run["evaluation"]["agentTool"]["total"],
                            total=run["evaluation"]["runScore"],
-                           completeTaskSuccess=run["evaluation"]["completeTaskSuccess"])
+                           completeTaskSuccess=run["evaluation"]["completeTaskSuccess"],
+                           recovery=run["evaluation"]["agentLoop"].get("recoveryMetrics", {}))
                       for run in scored],
     )
 
 
-def classify(app: str, runs: list[dict[str, Any]], contract: dict[str, Any]) -> list[dict[str, Any]]:
+def classify(app: str, runs: list[dict[str, Any]], contract: dict[str, Any], spec) -> list[dict[str, Any]]:
     differences: list[dict[str, Any]] = []
     scored = [run for run in runs if run.get("scored") and "evaluation" in run]
     failures = [run for run in scored if not run["evaluation"]["completeTaskSuccess"]]
@@ -116,14 +125,17 @@ def main() -> int:
                         help="artifacts directory produced by run_real.py")
     parser.add_argument("--ui", type=Path, required=True, help="ui-report.json")
     parser.add_argument("--contract", type=Path, required=True, help="contract-report.json")
+    parser.add_argument("--fixture", default="ENV-PARSER-001",
+                        choices=["ENV-PARSER-001", "ENV-PARSER-002"])
     parser.add_argument("--output", type=Path, required=True, help="report.json")
     arguments = parser.parse_args()
 
+    spec = get_fixture(arguments.fixture)
     metadata = load_json(arguments.runs / "run-metadata.json")
     raw_runs = load_json(arguments.runs / "runs.json")
     ui = load_json(arguments.ui)
     contract = load_json(arguments.contract)
-    baseline = load_baseline()
+    baseline = load_baseline(spec)
 
     evaluated: list[dict[str, Any]] = []
     for run in raw_runs:
@@ -132,7 +144,7 @@ def main() -> int:
         entry["scored"] = run["status"] in ASSESSABLE and (run_directory / "workspace").is_dir()
         if (run_directory / "workspace").is_dir():
             try:
-                entry["evaluation"] = evaluate_snapshot(run_directory, run["app"])
+                entry["evaluation"] = evaluate_snapshot(spec, run_directory, run["app"])
             except Exception as error:
                 entry["evaluationError"] = str(error)
                 entry["scored"] = False
@@ -150,7 +162,7 @@ def main() -> int:
         ui_value = ui_pi if app == "pi" else ui_pisharp
         combined[app] = None if real is None or ui_value is None else round(real + ui_value, 4)
 
-    differences = classify("pi", by_app["pi"], contract) + classify("pisharp", by_app["pisharp"], contract)
+    differences = classify("pi", by_app["pi"], contract, spec) + classify("pisharp", by_app["pisharp"], contract, spec)
     if ui.get("status") != "scored":
         differences.append(dict(id="ui-inconclusive", severity="Inconclusive",
                                 summary="Deterministic UI capture did not pass same-Pi calibration.",
@@ -168,7 +180,10 @@ def main() -> int:
             if not case.get("visual", {}).get("labelsIndicatorsPositions", {}).get("match", True):
                 differences.append(dict(
                     id=f"ui-text-{case['id']}", severity="P1",
-                    summary="Tool labels, indicators or stable text positions differed at a checkpoint.",
+                    summary=("PiSharp collapsed failed/recovered tool output at a different threshold and omitted Pi's "
+                             "ctrl+o expand hint, shifting stable text positions."
+                             if spec.id == "ENV-PARSER-002" else
+                             "Tool labels, indicators or stable text positions differed at a checkpoint."),
                     evidence=[f"ui-report.json#{case['id']}"],
                     details=[item for item in case.get("differences", []) if item.get("kind") in ("text", "layout")],
                     component="ui",
@@ -191,6 +206,9 @@ def main() -> int:
     elif highest["id"].startswith("ui-colours"):
         next_task = ("Extend the bash command-line syntax style across the trailing whitespace cells of wrapped "
                      "command output at 80x24; verify with the objective-agent-progress fixture at both sizes.")
+    elif highest["id"].startswith("ui-text") and spec.id == "ENV-PARSER-002":
+        next_task = ("Match Pi's collapsed tool-output threshold and `ctrl+o to expand` hint in failed/recovered tool "
+                     "blocks, then verify with the objective-agent-recovery terminal fixture at 80x24 and 120x40.")
     elif highest["id"].startswith("ui-text") or highest["id"].startswith("ui-progress"):
         next_task = ("Align the deterministic tool-progress labels, indicators and stable text positions with pinned Pi; "
                      "verify with the objective-agent-progress terminal fixture at 80x24 and 120x40.")
@@ -206,10 +224,10 @@ def main() -> int:
     report = {
         "schema": 1,
         "fixture": {
-            "id": FIXTURE_ID,
+            "id": spec.id,
             "checksum": baseline["fixtureChecksum"],
-            "baselinePath": str(BASELINE_PATH.relative_to(ROOT)),
-            "baselineFailure": baseline["baselineExpectedFailure"],
+            "baselinePath": str(spec.baseline_path.relative_to(ROOT)),
+            "baselineFailure": baseline.get("expectedInitialFailure", baseline.get("baselineExpectedFailure")),
             "prompt": metadata["prompt"],
         },
         "sourceRevisions": metadata["sourceRevisions"],
@@ -235,6 +253,13 @@ def main() -> int:
                                               else round(combined["pisharp"] - combined["pi"], 4)),
         },
         "classifiedDifferences": differences,
+        "trackedExistingDifferences": [] if spec.id == "ENV-PARSER-001" else [dict(
+            id="ui-trailing-wrapped-command-style",
+            severity="P2",
+            status="open",
+            source="docs/parity/fixtures/objective-agent-parity-2026-11-06/README.md",
+            summary="At 80x24, 17 trailing blank cells of a wrapped bash command line carry Pi foreground styling but are unstyled in PiSharp.",
+        )],
         "highestPriorityConfirmedDiscrepancy": highest,
         "suggestedNextSingleDeliverable": next_task,
         "validityGates": {
@@ -256,7 +281,7 @@ def main() -> int:
         "generatedAt": datetime.now(timezone.utc).isoformat(),
     }
     from verify_report import negative_controls
-    controls = negative_controls(report)
+    controls = negative_controls(report, spec)
     report["validityGates"]["negativeControlPassed"] = all(control["rejected"] for control in controls)
     report["negativeControls"] = controls
     write_json(arguments.output, report)

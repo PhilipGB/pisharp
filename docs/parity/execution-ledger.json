@@ -15117,5 +15117,119 @@
     "ui_report": "docs/parity/fixtures/objective-agent-parity-2026-11-06/ui-report.json",
     "contract_report": "docs/parity/fixtures/objective-agent-parity-2026-11-06/contract-report.json",
     "verification_report": "docs/parity/fixtures/objective-agent-parity-2026-11-06/verification.json"
+  },
+  "objective_agent_parity_env_parser_002_2026_11_06": {
+    "status": "completed",
+    "fixture_id": "ENV-PARSER-002",
+    "fixture_checksum": "173f5b1318d650cee247138f44117821b3e2556c4b9ca2c0121226ac7a92cd8b",
+    "prerequisite": "ENV-PARSER-001 merged via PR #43",
+    "pi_revision": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "pisharp_revision": "39abb9accc143312f60333b7b0df19c7977bc108",
+    "configuration": {
+      "pi": {
+        "provider": "openai",
+        "model": "gpt-6-luna",
+        "thinking": "xhigh"
+      },
+      "pisharp": {
+        "provider": "openai-codex",
+        "model": "gpt-6-luna",
+        "thinking": "xhigh"
+      }
+    },
+    "resource_limits": {
+      "timeout_seconds": 600,
+      "cpu_seconds": 605,
+      "address_space_bytes": null,
+      "open_files": 4096,
+      "peak_rss_pi": 707198976,
+      "peak_rss_pisharp": 639066112
+    },
+    "real_model_runs": {
+      "pi": {
+        "attempted": 5,
+        "assessable": 5,
+        "complete_task_successes": 5,
+        "mean_functional": 50.0,
+        "mean_agent_tool": 30.0,
+        "mean_real_model": 80.0
+      },
+      "pisharp": {
+        "attempted": 5,
+        "assessable": 5,
+        "complete_task_successes": 5,
+        "mean_functional": 50.0,
+        "mean_agent_tool": 30.0,
+        "mean_real_model": 80.0
+      }
+    },
+    "recovery_measurements": {
+      "pi": {
+        "tool_errors": 3,
+        "recovered_tool_errors": 3,
+        "test_executions": 8,
+        "errors_conveyed_to_model": 3,
+        "duplicate_side_effects": 0
+      },
+      "pisharp": {
+        "tool_errors": 3,
+        "recovered_tool_errors": 3,
+        "test_executions": 8,
+        "errors_conveyed_to_model": 3,
+        "duplicate_side_effects": 0
+      }
+    },
+    "deterministic_ui": {
+      "pi": 20,
+      "pisharp": 11,
+      "max": 20,
+      "progress": 10,
+      "visual": 1,
+      "calibration": "viewport-pass"
+    },
+    "combined": {
+      "pi": 100.0,
+      "pisharp": 91.0,
+      "difference": -9.0
+    },
+    "confirmed_differences": [
+      {
+        "id": "ui-text-80x24-dark-fullscreen",
+        "severity": "P1",
+        "summary": "PiSharp collapses failed/recovered tool output at a different threshold and omits Pi ctrl+o hint, shifting text positions."
+      },
+      {
+        "id": "ui-text-120x40-dark-fullscreen",
+        "severity": "P1",
+        "summary": "Same collapsed-output hint and position difference at 120x40."
+      },
+      {
+        "id": "ui-colours-80x24-dark-fullscreen",
+        "severity": "P2",
+        "summary": "Decoded recovery checkpoint cell styles differ."
+      },
+      {
+        "id": "ui-colours-120x40-dark-fullscreen",
+        "severity": "P2",
+        "summary": "Decoded recovery checkpoint cell styles differ."
+      },
+      {
+        "id": "ui-trailing-wrapped-command-style",
+        "severity": "P2",
+        "summary": "Prior ENV-PARSER-001 trailing wrapped-command styling remains tracked and unfixed."
+      }
+    ],
+    "highest_priority": "P1 ui-text-80x24-dark-fullscreen",
+    "suggested_next_single_deliverable": "Match Pi's collapsed tool-output threshold and ctrl+o hint in failed/recovered tool blocks; verify with objective-agent-recovery at 80x24 and 120x40.",
+    "verification": {
+      "valid": true,
+      "negative_controls": 9,
+      "negative_controls_passed": true
+    },
+    "receipt": "docs/parity/fixtures/objective-agent-parity-002-2026-11-06/README.md",
+    "report": "docs/parity/fixtures/objective-agent-parity-002-2026-11-06/report.json",
+    "ui_report": "docs/parity/fixtures/objective-agent-parity-002-2026-11-06/ui-report.json",
+    "contract_report": "docs/parity/fixtures/objective-agent-parity-002-2026-11-06/contract-report.json",
+    "verification_report": "docs/parity/fixtures/objective-agent-parity-002-2026-11-06/verification.json"
   }
 }

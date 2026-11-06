@@ -1,0 +1,263 @@
+{
+  "fixtureId": "ENV-PARSER-002-contract",
+  "mode": "recovery",
+  "build": {
+    "exitCode": 0,
+    "durationSeconds": 2.4954788360046223
+  },
+  "products": [
+    {
+      "app": "pi",
+      "exitCode": 0,
+      "timedOut": false,
+      "durationSeconds": 7.452639961004024,
+      "toolLifecycle": {
+        "ok": true,
+        "errors": [],
+        "executions": [
+          {
+            "id": "recovery-01",
+            "name": "read",
+            "isError": false,
+            "result": "namespace Fixture.Core;\n\npublic static class EnvFile\n{\n    public static Dictionary<string, string> Parse(string text)\n "
+          },
+          {
+            "id": "recovery-02",
+            "name": "read",
+            "isError": false,
+            "result": "using System.Text.RegularExpressions;\n\nnamespace Fixture.Core;\n\npublic static class EnvInterpolator\n{\n    private static"
+          },
+          {
+            "id": "recovery-03",
+            "name": "bash",
+            "isError": true,
+            "result": "  Fixture.Core -> /home/philip/.cache/tmp/opencode/objective-agent-parity/contract-002/workspace/src/Fixture.Core/bin/De"
+          },
+          {
+            "id": "recovery-04",
+            "name": "read",
+            "isError": true,
+            "result": "ENOENT: no such file or directory, access '/home/philip/.cache/tmp/opencode/objective-agent-parity/contract-002/workspac"
+          },
+          {
+            "id": "recovery-05",
+            "name": "read",
+            "isError": false,
+            "result": "namespace Fixture.Core;\n\npublic static class EnvFile\n{\n    public static Dictionary<string, string> Parse(string text)\n "
+          },
+          {
+            "id": "recovery-06",
+            "name": "edit",
+            "isError": false,
+            "result": "Successfully replaced 2 block(s) in src/Fixture.Core/EnvFile.cs."
+          },
+          {
+            "id": "recovery-07",
+            "name": "bash",
+            "isError": true,
+            "result": "  Fixture.Core -> /home/philip/.cache/tmp/opencode/objective-agent-parity/contract-002/workspace/src/Fixture.Core/bin/De"
+          },
+          {
+            "id": "recovery-08",
+            "name": "edit",
+            "isError": false,
+            "result": "Successfully replaced 1 block(s) in src/Fixture.Core/EnvInterpolator.cs."
+          },
+          {
+            "id": "recovery-09",
+            "name": "bash",
+            "isError": false,
+            "result": "  Fixture.Core -> /home/philip/.cache/tmp/opencode/objective-agent-parity/contract-002/workspace/src/Fixture.Core/bin/De"
+          }
+        ]
+      },
+      "modelContinuation": {
+        "ok": true,
+        "requests": 10,
+        "resultCounts": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "expectedResultCounts": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "duplicateIds": [],
+        "resultIds": [
+          "recovery-01",
+          "recovery-02",
+          "recovery-03",
+          "recovery-04",
+          "recovery-05",
+          "recovery-06",
+          "recovery-07",
+          "recovery-08",
+          "recovery-09"
+        ],
+        "failingResultPresent": true
+      },
+      "completion": {
+        "ok": true,
+        "settled": true,
+        "finalText": "Multi-step contract complete."
+      },
+      "recovery": {
+        "toolErrors": 3,
+        "recoveredToolErrors": 3,
+        "testExecutions": 3,
+        "failingReadConveyed": true
+      },
+      "finalWorkspace": {
+        "changedProductionFiles": [
+          "src/Fixture.Core/EnvFile.cs",
+          "src/Fixture.Core/EnvInterpolator.cs"
+        ],
+        "visiblePassed": true
+      },
+      "passed": true
+    },
+    {
+      "app": "pisharp",
+      "exitCode": 0,
+      "timedOut": false,
+      "durationSeconds": 8.104467441997258,
+      "toolLifecycle": {
+        "ok": true,
+        "errors": [],
+        "executions": [
+          {
+            "id": "f72a9f78bbf4405ea4d1ed1379d44c46",
+            "name": "read",
+            "isError": false,
+            "result": "namespace Fixture.Core;\n\npublic static class EnvFile\n{\n    public static Dictionary<string, string> Parse(string text)\n "
+          },
+          {
+            "id": "5e11875eea1b4a0b85de50f50516bf34",
+            "name": "read",
+            "isError": false,
+            "result": "using System.Text.RegularExpressions;\n\nnamespace Fixture.Core;\n\npublic static class EnvInterpolator\n{\n    private static"
+          },
+          {
+            "id": "0a2c57d72e4d4880b32b090a7941a32f",
+            "name": "bash",
+            "isError": true,
+            "result": "  Fixture.Core -> /home/philip/.cache/tmp/opencode/objective-agent-parity/contract-002/workspace/src/Fixture.Core/bin/De"
+          },
+          {
+            "id": "d21a2958371e423d943027fa5d0dfbac",
+            "name": "read",
+            "isError": true,
+            "result": "ENOENT: no such file or directory, access '/home/philip/.cache/tmp/opencode/objective-agent-parity/contract-002/workspac"
+          },
+          {
+            "id": "5c6f8c5773ce43daa2901f91b0cc83ca",
+            "name": "read",
+            "isError": false,
+            "result": "namespace Fixture.Core;\n\npublic static class EnvFile\n{\n    public static Dictionary<string, string> Parse(string text)\n "
+          },
+          {
+            "id": "f94c7ef1e6a34219aa80b536f7fa9ae0",
+            "name": "edit",
+            "isError": false,
+            "result": "Successfully replaced 2 block(s) in src/Fixture.Core/EnvFile.cs."
+          },
+          {
+            "id": "91e7d089d365445ea1b86307a984bbf1",
+            "name": "bash",
+            "isError": true,
+            "result": "  Fixture.Core -> /home/philip/.cache/tmp/opencode/objective-agent-parity/contract-002/workspace/src/Fixture.Core/bin/De"
+          },
+          {
+            "id": "9af3682c239c4310956c6f648415c6c8",
+            "name": "edit",
+            "isError": false,
+            "result": "Successfully replaced 1 block(s) in src/Fixture.Core/EnvInterpolator.cs."
+          },
+          {
+            "id": "cddd2a524bae41fdb46c8ca2219e4163",
+            "name": "bash",
+            "isError": false,
+            "result": "  Fixture.Core -> /home/philip/.cache/tmp/opencode/objective-agent-parity/contract-002/workspace/src/Fixture.Core/bin/De"
+          }
+        ]
+      },
+      "modelContinuation": {
+        "ok": true,
+        "requests": 10,
+        "resultCounts": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "expectedResultCounts": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "duplicateIds": [],
+        "resultIds": [
+          "recovery-01",
+          "recovery-02",
+          "recovery-03",
+          "recovery-04",
+          "recovery-05",
+          "recovery-06",
+          "recovery-07",
+          "recovery-08",
+          "recovery-09"
+        ],
+        "failingResultPresent": true
+      },
+      "completion": {
+        "ok": true,
+        "settled": true,
+        "finalText": "Multi-step contract complete."
+      },
+      "recovery": {
+        "toolErrors": 3,
+        "recoveredToolErrors": 3,
+        "testExecutions": 3,
+        "failingReadConveyed": true
+      },
+      "finalWorkspace": {
+        "changedProductionFiles": [
+          "src/Fixture.Core/EnvFile.cs",
+          "src/Fixture.Core/EnvInterpolator.cs"
+        ],
+        "visiblePassed": true
+      },
+      "passed": true
+    }
+  ],
+  "passed": true
+}

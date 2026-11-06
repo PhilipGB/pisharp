@@ -1,0 +1,152 @@
+{
+  "id": "objective-agent-recovery",
+  "settings": {
+    "quietStartup": true
+  },
+  "arguments": {
+    "pi": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--no-session",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-context-files",
+      "--tools",
+      "bash",
+      "--system-prompt",
+      "You are a terminal parity fixture."
+    ],
+    "pisharp": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--no-session",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-context-files",
+      "--tools",
+      "bash",
+      "--no-approve",
+      "--system-prompt",
+      "You are a terminal parity fixture."
+    ]
+  },
+  "fixtureBehavior": {
+    "chatRequestGates": [
+      "first-request",
+      "second-request",
+      null
+    ],
+    "chatResponseGates": [
+      null,
+      null,
+      null
+    ],
+    "chatResponseContentGates": [
+      null,
+      null,
+      "final-content"
+    ],
+    "chatToolCallsByRequest": [
+      [
+        {
+          "id": "call-recovery-first",
+          "name": "bash",
+          "arguments": {
+            "command": "printf 'one\\ntwo\\nthree\\n'; printf 'Failed: %d, Passed: 0, Total: 1\\n' 1; exit 1"
+          }
+        }
+      ],
+      [
+        {
+          "id": "call-recovery-second",
+          "name": "bash",
+          "arguments": {
+            "command": "sleep 0.3; printf 'Passed: %d, Failed: 0, Total: 1\\n' 1"
+          }
+        }
+      ],
+      []
+    ],
+    "chatResponseContentByRequest": [
+      "",
+      "",
+      "Recovery complete."
+    ]
+  },
+  "dimensions": [
+    {
+      "columns": 80,
+      "rows": 24
+    },
+    {
+      "columns": 120,
+      "rows": 40
+    }
+  ],
+  "themes": [
+    "dark"
+  ],
+  "modes": [
+    "fullscreen"
+  ],
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "paste-tool-prompt",
+      "send": "\u001b[200~Run the recovery fixture.\u001b[201~",
+      "expect": "Run the recovery fixture.",
+      "renderMatch": true
+    },
+    {
+      "id": "tool-start",
+      "send": "\r",
+      "waitGatesAfter": [
+        "first-request"
+      ],
+      "expect": "Working",
+      "allowStaticFrame": true
+    },
+    {
+      "id": "run-recovery",
+      "expect": "Recovery complete.",
+      "renderMatch": true,
+      "releaseGates": [
+        "second-request",
+        "final-content"
+      ]
+    },
+    {
+      "id": "final-idle",
+      "expect": "fixture-model",
+      "notExpect": "Working",
+      "allowStaticFrame": true
+    },
+    {
+      "id": "exit",
+      "send": "\u0003\u0003",
+      "exit": true
+    }
+  ],
+  "assertionFrames": [
+    "startup",
+    "paste-tool-prompt",
+    "tool-start",
+    "run-recovery",
+    "final-idle",
+    "exit"
+  ],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  }
+}

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the fixed ENV-PARSER-001 coding task against Pi and PiSharp.
+"""Run an objective agent-parity coding task against Pi and PiSharp.
 
 Runs are sequential, isolated and bounded by a monotonic ten-minute deadline.
 Raw JSONL traces and session documents are written below artifacts/parity/;
@@ -19,11 +19,8 @@ from pathlib import Path
 from typing import Any
 
 from common import (
-    BASELINE_PATH,
-    FIXTURE_ID,
     LOCK_PATH,
     STATE_ROOT,
-    WORKSPACE,
     aggregate_manifest,
     clean_build_outputs,
     collect_secrets,
@@ -36,13 +33,8 @@ from common import (
     redact,
     write_json,
 )
+from fixtures import get_fixture
 
-TASK_PROMPT = (
-    "The project contains a failing unit test. Investigate the failure, identify the underlying defect "
-    "and make the smallest appropriate production-code correction. Preserve the documented behaviour, "
-    "do not modify tests, and run `dotnet test` to verify the result. Report what you changed and whether "
-    "the tests passed."
-)
 ROOT = Path(__file__).resolve().parents[3]
 PI_SOURCE = Path("/home/philip/Projects/pi-pinned")
 PISHARP_PROJECT = ROOT / "src/PiSharp.Cli/PiSharp.Cli.csproj"
@@ -52,6 +44,7 @@ PISHARP_AGENT = Path("/home/philip/.pisharp/agent")
 AUTH_PATHS = [PI_AGENT / "auth.json", PISHARP_AGENT / "auth.json"]
 TOOLS = ["read", "bash", "edit", "write", "grep", "find", "ls"]
 RUN_TIMEOUT_SECONDS = 600.0
+DEFAULT_ADDRESS_SPACE = 8 * 1024 * 1024 * 1024
 
 
 def _git(path: Path, *arguments: str) -> str:
@@ -123,7 +116,7 @@ def prepare_agent_directory(app: str, directory: Path) -> None:
         }))
 
 
-def product_command(app: str, sessions: Path) -> list[str]:
+def product_command(app: str, sessions: Path, prompt: str) -> list[str]:
     if app == "pi":
         prefix = [
             "node", "--import",
@@ -145,7 +138,7 @@ def product_command(app: str, sessions: Path) -> list[str]:
         *((["--no-mcp"] if app == "pi" else [])),
         "--tools", ",".join(TOOLS),
         "--approve", "--offline",
-        TASK_PROMPT,
+        prompt,
     ]
 
 
@@ -164,19 +157,19 @@ def copy_sessions(source: Path, destination: Path) -> list[str]:
     return copied
 
 
-def snapshot_workspace(run_directory: Path) -> dict[str, Any]:
+def snapshot_workspace(workspace: Path, run_directory: Path) -> dict[str, Any]:
     destination = run_directory / "workspace"
     if destination.exists():
         shutil.rmtree(destination)
-    shutil.copytree(WORKSPACE, destination, symlinks=False)
+    shutil.copytree(workspace, destination, symlinks=False)
     clean_build_outputs(destination)
     manifest = file_manifest(destination)
     return dict(files=manifest, checksum=aggregate_manifest(manifest), fileCount=len(manifest))
 
 
-def restore_dependencies() -> dict[str, Any]:
-    return run_command(["dotnet", "restore", str(WORKSPACE / "Fixture.slnx"), "--nologo"],
-                       cwd=WORKSPACE, timeout=300.0)
+def restore_dependencies(workspace: Path) -> dict[str, Any]:
+    return run_command(["dotnet", "restore", str(workspace / "Fixture.slnx"), "--nologo"],
+                       cwd=workspace, timeout=300.0)
 
 
 def acquire_lock():
@@ -186,9 +179,11 @@ def acquire_lock():
     return handle
 
 
-def run_one(app: str, index: int, output: Path, secrets: list[str]) -> dict[str, Any]:
-    from common import reset_workspace, verify_baseline
+def run_one(spec, app: str, index: int, output: Path, secrets: list[str],
+            *, address_space_bytes: int) -> dict[str, Any]:
+    from common import reset_workspace
 
+    workspace = spec.workspace
     run_id = f"{app}-{index:02d}"
     run_directory = output / "runs" / run_id
     if run_directory.exists():
@@ -197,17 +192,18 @@ def run_one(app: str, index: int, output: Path, secrets: list[str]) -> dict[str,
     started = time.monotonic()
     record: dict[str, Any] = {
         "runId": run_id, "app": app, "index": index,
-        "fixtureId": FIXTURE_ID,
+        "fixtureId": spec.id,
         "model": {"provider": "openai" if app == "pi" else "openai-codex",
                   "id": "gpt-6-luna", "thinking": "xhigh"},
         "timeoutSeconds": RUN_TIMEOUT_SECONDS,
+        "addressSpaceBytes": address_space_bytes or None,
     }
     try:
-        baseline = reset_workspace()
-        record["startChecksum"] = aggregate_manifest(file_manifest(WORKSPACE))
+        baseline = reset_workspace(spec)
+        record["startChecksum"] = aggregate_manifest(file_manifest(workspace))
         if record["startChecksum"] != baseline["fixtureChecksum"]:
             raise RuntimeError("starting workspace checksum does not match the fixture baseline")
-        restore = restore_dependencies()
+        restore = restore_dependencies(workspace)
         record["dependencyRestore"] = {key: restore[key] for key in
                                        ("exitCode", "durationSeconds", "timedOut")}
         if restore["exitCode"] != 0:
@@ -223,24 +219,31 @@ def run_one(app: str, index: int, output: Path, secrets: list[str]) -> dict[str,
             shutil.rmtree(sessions)
         sessions.mkdir(parents=True)
         prepare_agent_directory(app, agent_directory)
-        command = product_command(app, sessions)
+        command = product_command(app, sessions, spec.prompt)
         env = agent_environment(app, agent_directory, sessions)
-        result = run_agent_process(command, cwd=WORKSPACE, env=env,
-                                   timeout=RUN_TIMEOUT_SECONDS)
+        result = run_agent_process(command, cwd=workspace, env=env,
+                                   timeout=RUN_TIMEOUT_SECONDS,
+                                   address_space_bytes=address_space_bytes)
         record.update({
             "command": [str(part) for part in command],
             "exitCode": result["exitCode"],
             "durationSeconds": result["durationSeconds"],
             "timedOut": result["timedOut"],
+            "peakMemoryBytes": result["peakMemoryBytes"],
+            "peakProcessCount": result["peakProcessCount"],
         })
         (run_directory / "events.jsonl").write_text(redact(result["stdout"], secrets))
         (run_directory / "stderr.log").write_text(redact(result["stderr"], secrets))
         record["sessionFiles"] = copy_sessions(sessions, run_directory)
-        record["workspace"] = snapshot_workspace(run_directory)
-        record["productionSourceChecksum"] = sha256_file(
-            run_directory / "workspace" / "src/Fixture.Core/EnvFile.cs")
-        record["baselineProductionSourceChecksum"] = sha256_file(
-            Path(__file__).with_name("fixture") / FIXTURE_ID / "src/Fixture.Core/EnvFile.cs")
+        record["workspace"] = snapshot_workspace(workspace, run_directory)
+        record["productionSourceChecksums"] = {
+            relative: sha256_file(run_directory / "workspace" / relative)
+            for relative in spec.production_files
+        }
+        record["baselineProductionSourceChecksums"] = {
+            relative: sha256_file(spec.root / relative)
+            for relative in spec.production_files
+        }
         if result["timedOut"]:
             record["status"] = "timed_out"
         elif is_rate_limited(result["stdout"], result["stderr"]):
@@ -266,31 +269,41 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--runs", type=int, default=5, help="runs per application")
     parser.add_argument("--apps", nargs="+", choices=["pi", "pisharp"], default=["pi", "pisharp"])
+    parser.add_argument("--fixture", default="ENV-PARSER-001",
+                        choices=["ENV-PARSER-001", "ENV-PARSER-002"])
     parser.add_argument("--timeout", type=float, default=RUN_TIMEOUT_SECONDS)
+    parser.add_argument("--memory-limit-mb", type=int, default=None,
+                        help="virtual-address ceiling in MiB; 0 disables the ceiling")
     parser.add_argument("--output", type=Path, default=None)
     parser.add_argument("--skip-build", action="store_true")
     arguments = parser.parse_args()
 
     RUN_TIMEOUT_SECONDS = arguments.timeout
+    spec = get_fixture(arguments.fixture)
+    default_memory_mb = 8192 if spec.id == "ENV-PARSER-001" else 0
+    memory_mb = default_memory_mb if arguments.memory_limit_mb is None else arguments.memory_limit_mb
+    address_space_bytes = max(0, memory_mb) * 1024 * 1024
     stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
-    output = arguments.output or (ROOT / "artifacts/parity" / f"objective-agent-parity-{stamp}")
+    output = arguments.output or (ROOT / "artifacts/parity" /
+                                  f"objective-agent-parity-{spec.id.lower()}-{stamp}")
     output.mkdir(parents=True, exist_ok=True)
     secrets = collect_secrets(AUTH_PATHS)
     lock = acquire_lock()
     try:
         verify = subprocess.run(["python3", "-c",
                                  "import sys; sys.path.insert(0, sys.argv[1]); import common; "
-                                 "common.verify_baseline(); print(common.load_baseline()['fixtureChecksum'])",
-                                 str(Path(__file__).parent)],
+                                 "from fixtures import get_fixture; spec=get_fixture(sys.argv[2]); "
+                                 "common.verify_baseline(spec); print(spec.id)",
+                                 str(Path(__file__).parent), spec.id],
                                 capture_output=True, text=True, check=False)
         if verify.returncode != 0:
             print(verify.stderr, file=sys.stderr)
             return 2
         build = None if arguments.skip_build else build_pisharp()
         metadata = {
-            "fixtureId": FIXTURE_ID,
-            "fixtureChecksum": load_baseline()["fixtureChecksum"],
-            "prompt": TASK_PROMPT,
+            "fixtureId": spec.id,
+            "fixtureChecksum": load_baseline(spec)["fixtureChecksum"],
+            "prompt": spec.prompt,
             "sourceRevisions": source_revisions(),
             "effectiveConfiguration": {
                 "pi": {"provider": "openai", "model": "gpt-6-luna", "thinking": "xhigh",
@@ -298,12 +311,12 @@ def main() -> int:
                 "pisharp": {"provider": "openai-codex", "model": "gpt-6-luna", "thinking": "xhigh",
                             "tools": TOOLS, "subscriptionAuth": True},
             },
-            "workspace": str(WORKSPACE),
+            "workspace": str(spec.workspace),
             "timeoutSeconds": RUN_TIMEOUT_SECONDS,
             "resourceLimits": {
                 "timeoutSeconds": RUN_TIMEOUT_SECONDS,
                 "cpuSeconds": int(RUN_TIMEOUT_SECONDS) + 5,
-                "addressSpaceBytes": 8 * 1024 * 1024 * 1024,
+                "addressSpaceBytes": address_space_bytes or None,
                 "openFiles": 4096,
             },
             "build": None if build is None else {
@@ -319,10 +332,12 @@ def main() -> int:
         runs = []
         for app in arguments.apps:
             for index in range(1, arguments.runs + 1):
-                record = run_one(app, index, output, secrets)
+                record = run_one(spec, app, index, output, secrets,
+                                 address_space_bytes=address_space_bytes)
                 runs.append(record)
                 print(f"{record['runId']}: {record['status']} "
-                      f"{record.get('durationSeconds', 0):.1f}s", flush=True)
+                      f"{record.get('durationSeconds', 0):.1f}s "
+                      f"peak={record.get('peakMemoryBytes', 0) / (1024 * 1024):.0f}MiB", flush=True)
         write_json(output / "runs.json", runs)
         print(output)
         return 0

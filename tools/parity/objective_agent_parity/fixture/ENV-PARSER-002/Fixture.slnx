@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="src/Fixture.Core/Fixture.Core.csproj" />
+  <Project Path="tests/Fixture.Tests/Fixture.Tests.csproj" />
+</Solution>

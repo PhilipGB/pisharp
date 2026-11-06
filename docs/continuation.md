@@ -12,6 +12,41 @@ Current status is based on `main` at `80357982b960ce1b7d44237f20eff4a035372640`.
 
 The milestone entries below retain their historical wording and are superseded by this section wherever they describe a milestone as active or a merged PR as open.
 
+## Completed milestone — Multi-Step Agent Execution and Recovery Parity — 2026-11-06
+
+`ENV-PARSER-002` extends the merged ENV-PARSER-001 evaluation with two
+sequential production defects and a multi-step repair/recovery scenario. The
+fixture (checksum
+`173f5b1318d650cee247138f44117821b3e2556c4b9ca2c0121226ac7a92cd8b`)
+fails first at assignment parsing and, after only that correction, at unknown
+placeholder preservation. Five real-model runs per product used `gpt-6-luna` at
+`xhigh` through each product's existing OpenAI subscription configuration under
+an identical ten-minute monotonic deadline. The artificial 8 GiB virtual-address
+ceiling is removed; observed peak RSS was 674 MiB for Pi and 609 MiB for PiSharp,
+with no infrastructure out-of-memory errors.
+
+Both products completed 5/5 tasks with 80/80 mean real-model scores. Every run
+passed H01-H08, the visible integration test and change integrity, changing only
+`EnvFile.cs` and `EnvInterpolator.cs`. Recovery measurements match: 3 tool errors,
+3 recovered, 8 test executions, 3 errors conveyed to the model and zero duplicate
+side effects. The deterministic ten-request contract passes for both, including
+a deliberately failing read, two corrections and provider-bound tool-result
+continuation.
+
+Deterministic recovery UI scored 11/20: progress parity 10/10, visual parity
+1/10. PiSharp collapses failed/recovered tool output at a different threshold and
+omits Pi's `ctrl+o to expand` hint, shifting text positions at 80x24 and 120x40
+(P1). The prior ENV-PARSER-001 P2 is carried forward unchanged. Combined score is
+100/100 for Pi and 91/100 for PiSharp, a nine-point difference, with 5/5 complete
+task successes on both. Report verification passes and all negative controls
+reject falsified evidence. The next single deliverable is the collapsed
+failed/recovered tool-output hint and layout parity task. See the
+[receipt](parity/fixtures/objective-agent-parity-002-2026-11-06/README.md),
+[report](parity/fixtures/objective-agent-parity-002-2026-11-06/report.json),
+[UI report](parity/fixtures/objective-agent-parity-002-2026-11-06/ui-report.json),
+[contract](parity/fixtures/objective-agent-parity-002-2026-11-06/contract-report.json)
+and [verification](parity/fixtures/objective-agent-parity-002-2026-11-06/verification.json).
+
 ## Completed milestone — Objective Agent Parity Fixture and Scoring Rubric — 2026-11-06
 
 The fixed `ENV-PARSER-001` fixture (checksum

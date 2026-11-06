@@ -1,0 +1,399 @@
+{
+  "fixture": "objective-agent-recovery",
+  "calibration": {
+    "directory": "artifacts/parity/objective-agent-ui-002-20261106/calibration",
+    "harnessMatch": false,
+    "viewportMatch": true,
+    "match": true,
+    "checkpoints": [
+      "startup",
+      "paste-tool-prompt",
+      "run-recovery",
+      "final-idle",
+      "exit"
+    ],
+    "cases": [
+      {
+        "id": "80x24-dark-fullscreen",
+        "match": true,
+        "differences": []
+      },
+      {
+        "id": "120x40-dark-fullscreen",
+        "match": true,
+        "differences": []
+      }
+    ],
+    "note": "Same-Pi calibration compares the stable named viewport checkpoints; full alternate-buffer scrollback scheduling is retained raw but not scored.",
+    "exitCode": 1
+  },
+  "comparison": {
+    "directory": "artifacts/parity/objective-agent-ui-002-20261106/comparison",
+    "match": false,
+    "exitCode": 1
+  },
+  "cases": [
+    {
+      "id": "80x24-dark-fullscreen",
+      "checkpoints": {
+        "tool-start:working": {
+          "points": 2,
+          "pi": {
+            "working": true,
+            "failureOutput": true,
+            "failureStatus": true,
+            "successOutput": false,
+            "finalResponse": false,
+            "idle": false
+          },
+          "pisharp": {
+            "working": true,
+            "failureOutput": false,
+            "failureStatus": false,
+            "successOutput": false,
+            "finalResponse": false,
+            "idle": false
+          },
+          "reason": "represented"
+        },
+        "final-idle:failure_output": {
+          "points": 2,
+          "pi": {
+            "working": false,
+            "failureOutput": true,
+            "failureStatus": true,
+            "successOutput": true,
+            "finalResponse": true,
+            "idle": true
+          },
+          "pisharp": {
+            "working": false,
+            "failureOutput": true,
+            "failureStatus": true,
+            "successOutput": true,
+            "finalResponse": true,
+            "idle": true
+          },
+          "reason": "represented"
+        },
+        "final-idle:failure_status": {
+          "points": 2,
+          "pi": {
+            "working": false,
+            "failureOutput": true,
+            "failureStatus": true,
+            "successOutput": true,
+            "finalResponse": true,
+            "idle": true
+          },
+          "pisharp": {
+            "working": false,
+            "failureOutput": true,
+            "failureStatus": true,
+            "successOutput": true,
+            "finalResponse": true,
+            "idle": true
+          },
+          "reason": "represented"
+        },
+        "final-idle:success_output": {
+          "points": 2,
+          "pi": {
+            "working": false,
+            "failureOutput": true,
+            "failureStatus": true,
+            "successOutput": true,
+            "finalResponse": true,
+            "idle": true
+          },
+          "pisharp": {
+            "working": false,
+            "failureOutput": true,
+            "failureStatus": true,
+            "successOutput": true,
+            "finalResponse": true,
+            "idle": true
+          },
+          "reason": "represented"
+        },
+        "final-idle:final_idle": {
+          "points": 2,
+          "pi": {
+            "working": false,
+            "failureOutput": true,
+            "failureStatus": true,
+            "successOutput": true,
+            "finalResponse": true,
+            "idle": true
+          },
+          "pisharp": {
+            "working": false,
+            "failureOutput": true,
+            "failureStatus": true,
+            "successOutput": true,
+            "finalResponse": true,
+            "idle": true
+          },
+          "reason": "represented"
+        }
+      },
+      "visual": {
+        "labelsIndicatorsPositions": {
+          "points": 0,
+          "max": 2,
+          "match": false
+        },
+        "spacingIndentationWrappingLayout": {
+          "points": 0,
+          "max": 1,
+          "match": false
+        },
+        "coloursAndStyles": {
+          "points": 0,
+          "max": 1,
+          "match": false
+        },
+        "footerCursorFinalState": {
+          "points": 1,
+          "max": 1,
+          "match": true
+        },
+        "total": 1,
+        "max": 5
+      },
+      "differences": [
+        {
+          "checkpoint": "run-recovery",
+          "kind": "text"
+        },
+        {
+          "checkpoint": "run-recovery",
+          "kind": "layout"
+        },
+        {
+          "checkpoint": "run-recovery",
+          "kind": "styles",
+          "cells": 264,
+          "totalCells": 1920
+        },
+        {
+          "checkpoint": "final-idle",
+          "kind": "text"
+        },
+        {
+          "checkpoint": "final-idle",
+          "kind": "layout"
+        },
+        {
+          "checkpoint": "final-idle",
+          "kind": "styles",
+          "cells": 263,
+          "totalCells": 1920
+        },
+        {
+          "checkpoint": "exit",
+          "kind": "text"
+        },
+        {
+          "checkpoint": "exit",
+          "kind": "layout"
+        },
+        {
+          "checkpoint": "exit",
+          "kind": "styles",
+          "cells": 258,
+          "totalCells": 1920
+        }
+      ],
+      "progressPoints": 10,
+      "progressMax": 10,
+      "caseTotal": 11,
+      "caseMax": 20
+    },
+    {
+      "id": "120x40-dark-fullscreen",
+      "checkpoints": {
+        "tool-start:working": {
+          "points": 2,
+          "pi": {
+            "working": true,
+            "failureOutput": true,
+            "failureStatus": true,
+            "successOutput": true,
+            "finalResponse": false,
+            "idle": false
+          },
+          "pisharp": {
+            "working": true,
+            "failureOutput": false,
+            "failureStatus": false,
+            "successOutput": false,
+            "finalResponse": false,
+            "idle": false
+          },
+          "reason": "represented"
+        },
+        "final-idle:failure_output": {
+          "points": 2,
+          "pi": {
+            "working": false,
+            "failureOutput": true,
+            "failureStatus": true,
+            "successOutput": true,
+            "finalResponse": true,
+            "idle": true
+          },
+          "pisharp": {
+            "working": false,
+            "failureOutput": true,
+            "failureStatus": true,
+            "successOutput": true,
+            "finalResponse": true,
+            "idle": true
+          },
+          "reason": "represented"
+        },
+        "final-idle:failure_status": {
+          "points": 2,
+          "pi": {
+            "working": false,
+            "failureOutput": true,
+            "failureStatus": true,
+            "successOutput": true,
+            "finalResponse": true,
+            "idle": true
+          },
+          "pisharp": {
+            "working": false,
+            "failureOutput": true,
+            "failureStatus": true,
+            "successOutput": true,
+            "finalResponse": true,
+            "idle": true
+          },
+          "reason": "represented"
+        },
+        "final-idle:success_output": {
+          "points": 2,
+          "pi": {
+            "working": false,
+            "failureOutput": true,
+            "failureStatus": true,
+            "successOutput": true,
+            "finalResponse": true,
+            "idle": true
+          },
+          "pisharp": {
+            "working": false,
+            "failureOutput": true,
+            "failureStatus": true,
+            "successOutput": true,
+            "finalResponse": true,
+            "idle": true
+          },
+          "reason": "represented"
+        },
+        "final-idle:final_idle": {
+          "points": 2,
+          "pi": {
+            "working": false,
+            "failureOutput": true,
+            "failureStatus": true,
+            "successOutput": true,
+            "finalResponse": true,
+            "idle": true
+          },
+          "pisharp": {
+            "working": false,
+            "failureOutput": true,
+            "failureStatus": true,
+            "successOutput": true,
+            "finalResponse": true,
+            "idle": true
+          },
+          "reason": "represented"
+        }
+      },
+      "visual": {
+        "labelsIndicatorsPositions": {
+          "points": 0,
+          "max": 2,
+          "match": false
+        },
+        "spacingIndentationWrappingLayout": {
+          "points": 0,
+          "max": 1,
+          "match": false
+        },
+        "coloursAndStyles": {
+          "points": 0,
+          "max": 1,
+          "match": false
+        },
+        "footerCursorFinalState": {
+          "points": 0,
+          "max": 1,
+          "match": false
+        },
+        "total": 0,
+        "max": 5
+      },
+      "differences": [
+        {
+          "checkpoint": "run-recovery",
+          "kind": "text"
+        },
+        {
+          "checkpoint": "run-recovery",
+          "kind": "layout"
+        },
+        {
+          "checkpoint": "run-recovery",
+          "kind": "styles",
+          "cells": 693,
+          "totalCells": 4800
+        },
+        {
+          "checkpoint": "final-idle",
+          "kind": "text"
+        },
+        {
+          "checkpoint": "final-idle",
+          "kind": "layout"
+        },
+        {
+          "checkpoint": "final-idle",
+          "kind": "styles",
+          "cells": 692,
+          "totalCells": 4800
+        },
+        {
+          "checkpoint": "exit",
+          "kind": "text"
+        },
+        {
+          "checkpoint": "exit",
+          "kind": "layout"
+        },
+        {
+          "checkpoint": "exit",
+          "kind": "styles",
+          "cells": 1130,
+          "totalCells": 4800
+        }
+      ],
+      "progressPoints": 10,
+      "progressMax": 10,
+      "caseTotal": 10,
+      "caseMax": 20
+    }
+  ],
+  "progressPoints": 10,
+  "visualPoints": 1,
+  "total": 11,
+  "max": 20,
+  "piScore": 20,
+  "pisharpScore": 11,
+  "parityScore": 11,
+  "status": "scored"
+}

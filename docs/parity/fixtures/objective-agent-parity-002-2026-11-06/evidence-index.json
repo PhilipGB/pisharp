@@ -1,0 +1,9 @@
+{
+  "fixtureId": "ENV-PARSER-002",
+  "fixtureChecksum": "173f5b1318d650cee247138f44117821b3e2556c4b9ca2c0121226ac7a92cd8b",
+  "rawArtifacts": "artifacts/parity/objective-agent-parity-002-20261106",
+  "deterministicUi": "ui-report.json",
+  "deterministicContract": "contract-report.json",
+  "realModelReport": "report.json",
+  "verification": "verification.json"
+}

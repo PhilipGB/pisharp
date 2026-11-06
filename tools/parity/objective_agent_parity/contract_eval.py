@@ -25,6 +25,9 @@ from common import (
     run_command,
     write_json,
 )
+from fixture_transforms import DEFECT_A_NEW, DEFECT_A_OLD, DEFECT_A_VALUE_NEW, DEFECT_A_VALUE_OLD, DEFECT_B_NEW, DEFECT_B_OLD
+from fixtures import get_fixture
+from evaluate import evaluate_visible
 
 ROOT = Path(__file__).resolve().parents[3]
 PI_SOURCE = Path("/home/philip/Projects/pi-pinned")
@@ -55,7 +58,7 @@ def prepare_workspace(directory: Path) -> None:
     (directory / ".contract-marker").write_text("objective-agent-parity")
 
 
-def command(app: str, agent: Path) -> list[str]:
+def command(app: str, agent: Path, prompt: str, tools: str = "bash") -> list[str]:
     if app == "pi":
         prefix = ["node", "--import",
                   (PI_SOURCE / "packages/coding-agent/src/experimental/source-resolver.ts").as_uri(),
@@ -66,15 +69,17 @@ def command(app: str, agent: Path) -> list[str]:
         extra = []
     return [*prefix, "--provider", "fixture", "--model", "fixture-model", "--mode", "json",
             "--no-session", "--offline", "--no-extensions", "--no-skills",
-            "--no-prompt-templates", "--no-context-files", "--tools", "bash",
-            "--approve", *extra, "Run the fixture tool."]
+            "--no-prompt-templates", "--no-context-files", "--tools", tools,
+            "--approve", *extra, prompt]
 
 
 def environment(app: str, agent: Path, workspace: Path) -> dict[str, str]:
     names = ["PATH", "HOME", "DOTNET_ROOT", "LD_LIBRARY_PATH"]
     result = {name: os.environ[name] for name in names if name in os.environ}
     result.update(LANG="C.UTF-8", LC_ALL="C.UTF-8", TERM="xterm-256color",
-                  DOTNET_CLI_TELEMETRY_OPTOUT="1", DOTNET_NOLOGO="1", PI_OFFLINE="1")
+                  DOTNET_CLI_TELEMETRY_OPTOUT="1", DOTNET_NOLOGO="1", PI_OFFLINE="1",
+                  DOTNET_PROCESSOR_COUNT="2", DOTNET_CLI_USE_MSBUILD_SERVER="0",
+                  MSBUILDDISABLENODEREUSE="1")
     result["PI_CODING_AGENT_DIR" if app == "pi" else "PISHARP_AGENT_DIR"] = str(agent)
     return result
 
@@ -134,7 +139,7 @@ def evaluate_product(app: str, server: FixtureServer, *, timeout: float = 120.0)
     prepare_agent(server, agent)
     prepare_workspace(workspace)
     server.reset()
-    result = run_agent_process(command(app, agent), cwd=workspace,
+    result = run_agent_process(command(app, agent, "Run the fixture tool.", "bash"), cwd=workspace,
                                env=environment(app, agent, workspace), timeout=timeout)
     events_path = STATE_ROOT / "contract" / f"{app}.jsonl"
     events_path.write_text(result["stdout"])
@@ -169,32 +174,192 @@ def evaluate_product(app: str, server: FixtureServer, *, timeout: float = 120.0)
     )
 
 
+def prepare_fixture_workspace(spec, directory: Path) -> None:
+    if directory.exists():
+        shutil.rmtree(directory)
+    shutil.copytree(spec.root, directory, symlinks=False)
+    for name in ("bin", "obj", "TestResults"):
+        for path in list(directory.rglob(name)):
+            if path.is_dir():
+                shutil.rmtree(path, ignore_errors=True)
+    result = run_command(["dotnet", "restore", "Fixture.slnx", "--nologo"],
+                         cwd=directory, env=contract_environment("pi"), timeout=300.0)
+    if result["exitCode"] != 0:
+        raise RuntimeError(f"contract workspace restore failed: {result['stderr'][-2000:]}")
+
+
+def contract_environment(app: str, agent: Path | None = None) -> dict[str, str]:
+    names = ["PATH", "HOME", "DOTNET_ROOT", "LD_LIBRARY_PATH", "NUGET_PACKAGES",
+             "NUGET_HTTP_CACHE_PATH", "DOTNET_CLI_HOME"]
+    result = {name: os.environ[name] for name in names if name in os.environ}
+    result.update(LANG="C.UTF-8", LC_ALL="C.UTF-8", TERM="xterm-256color",
+                  DOTNET_CLI_TELEMETRY_OPTOUT="1", DOTNET_NOLOGO="1", PI_OFFLINE="1",
+                  DOTNET_PROCESSOR_COUNT="2", DOTNET_CLI_USE_MSBUILD_SERVER="0",
+                  MSBUILDDISABLENODEREUSE="1")
+    if agent is not None:
+        result["PI_CODING_AGENT_DIR" if app == "pi" else "PISHARP_AGENT_DIR"] = str(agent)
+    return result
+
+
+def recovery_behavior() -> dict[str, Any]:
+    command = "dotnet test Fixture.slnx --no-restore"
+    calls = [
+        dict(id="recovery-01", name="read", arguments={"path": "src/Fixture.Core/EnvFile.cs"}),
+        dict(id="recovery-02", name="read", arguments={"path": "src/Fixture.Core/EnvInterpolator.cs"}),
+        dict(id="recovery-03", name="bash", arguments={"command": command, "timeout": 120}),
+        dict(id="recovery-04", name="read", arguments={"path": "src/Fixture.Core/Missing.cs"}),
+        dict(id="recovery-05", name="read", arguments={"path": "src/Fixture.Core/EnvFile.cs"}),
+        dict(id="recovery-06", name="edit", arguments={
+            "path": "src/Fixture.Core/EnvFile.cs",
+            "edits": [
+                dict(oldText=DEFECT_A_OLD, newText=DEFECT_A_NEW),
+                dict(oldText=DEFECT_A_VALUE_OLD, newText=DEFECT_A_VALUE_NEW),
+            ],
+        }),
+        dict(id="recovery-07", name="bash", arguments={"command": command, "timeout": 120}),
+        dict(id="recovery-08", name="edit", arguments={
+            "path": "src/Fixture.Core/EnvInterpolator.cs",
+            "edits": [dict(oldText=DEFECT_B_OLD, newText=DEFECT_B_NEW)],
+        }),
+        dict(id="recovery-09", name="bash", arguments={"command": command, "timeout": 120}),
+    ]
+    return {
+        "chatToolCallsByRequest": [[call] for call in calls] + [[]],
+        "chatResponseContentByRequest": [""] * len(calls) + ["Multi-step contract complete."],
+    }
+
+
+def recovery_continuation(requests: list[dict[str, Any]], expected_calls: int) -> dict[str, Any]:
+    chat = [request for request in requests
+            if request.get("method") == "POST" and request.get("path", "").endswith("/chat/completions")]
+    counts = []
+    ids_seen: list[str] = []
+    duplicates: list[str] = []
+    failing_result_present = False
+    for request in chat:
+        messages = request_messages(request)
+        result_ids = [str(message.get("tool_call_id")) for message in messages
+                      if message.get("role") == "tool"]
+        counts.append(len(result_ids))
+        duplicates.extend(sorted({value for value in result_ids if result_ids.count(value) > 1}))
+        ids_seen.extend(result_ids)
+        for message in messages:
+            if message.get("role") == "tool":
+                content = str(message.get("content") or "")
+                if "Missing.cs" in content and any(marker in content.lower() for marker in
+                                                   ("not found", "no such file", "enoent", "error")):
+                    failing_result_present = True
+    expected_counts = list(range(expected_calls + 1))
+    expected_ids = [f"recovery-{index:02d}" for index in range(1, expected_calls + 1)]
+    final_result_ids = [str(message.get("tool_call_id")) for message in request_messages(chat[-1])
+                        if message.get("role") == "tool"] if chat else []
+    unique_seen = sorted(set(ids_seen))
+    ok = (len(chat) == expected_calls + 1
+          and counts == expected_counts
+          and not duplicates
+          and unique_seen == sorted(expected_ids)
+          and sorted(final_result_ids) == sorted(expected_ids)
+          and failing_result_present)
+    return dict(ok=ok, requests=len(chat), resultCounts=counts,
+                expectedResultCounts=expected_counts,
+                duplicateIds=duplicates, resultIds=unique_seen,
+                failingResultPresent=failing_result_present)
+
+
+def evaluate_recovery_product(app: str, server: FixtureServer, spec,
+                              *, timeout: float = 300.0) -> dict[str, Any]:
+    agent = STATE_ROOT / "contract-002" / "agent"
+    workspace = STATE_ROOT / "contract-002" / "workspace"
+    prepare_agent(server, agent)
+    prepare_fixture_workspace(spec, workspace)
+    server.reset()
+    result = run_agent_process(
+        command(app, agent, "Exercise the multi-step repair.", "read,bash,edit"),
+        cwd=workspace, env=contract_environment(app, agent), timeout=timeout)
+    events_path = STATE_ROOT / "contract-002" / f"{app}.jsonl"
+    events_path.write_text(result["stdout"])
+    events = read_jsonl(events_path)
+    trace = parse_agent_trace(app, events)
+    expected_names = ["read", "read", "bash", "read", "read", "edit", "bash", "edit", "bash"]
+    expected_errors = [False, False, True, True, False, False, True, False, False]
+    lifecycle_ok = (len(trace.tool_executions) == len(expected_names)
+                    and [item.name for item in trace.tool_executions] == expected_names
+                    and [item.is_error for item in trace.tool_executions] == expected_errors
+                    and not trace.lifecycle_errors)
+    continuation = recovery_continuation(server.requests, len(expected_names))
+    final = trace.final_text
+    completion_ok = "Multi-step contract complete." in (final or "")
+    settled = any((event.get("type") == "agent_settled")
+                  or (event.get("data", {}).get("Type") in ("agent_settled", "agent_run_completed"))
+                  for event in events)
+    visible = evaluate_visible(spec, workspace)
+    changed = [relative for relative in spec.production_files
+               if (workspace / relative).read_bytes() != (spec.root / relative).read_bytes()]
+    recovered = sum(
+        1 for index, execution in enumerate(trace.tool_executions)
+        if execution.is_error is True
+        and any(later.is_error is False for later in trace.tool_executions[index + 1:]))
+    passed = bool(result["exitCode"] == 0 and not result["timedOut"] and lifecycle_ok
+                  and continuation["ok"] and completion_ok and settled
+                  and visible["allPassed"] and sorted(changed) == sorted(spec.production_files))
+    return dict(
+        app=app, exitCode=result["exitCode"], timedOut=result["timedOut"],
+        durationSeconds=result["durationSeconds"],
+        toolLifecycle=dict(ok=lifecycle_ok, errors=trace.lifecycle_errors,
+                           executions=[dict(id=item.call_id, name=item.name,
+                                            isError=item.is_error,
+                                            result=item.result_text[:300])
+                                       for item in trace.tool_executions]),
+        modelContinuation=continuation,
+        completion=dict(ok=completion_ok, settled=settled, finalText=(final or "")[-500:]),
+        recovery=dict(toolErrors=sum(1 for item in trace.tool_executions if item.is_error is True),
+                      recoveredToolErrors=recovered,
+                      testExecutions=sum(1 for item in trace.tool_executions
+                                         if "dotnet test" in json.dumps(item.arguments or {}).lower()
+                                         or "dotnet test" in item.result_text.lower()
+                                         or "Test run for" in item.result_text
+                                         or "Passed!" in item.result_text
+                                         or "Failed!" in item.result_text),
+                      failingReadConveyed=continuation["failingResultPresent"]),
+        finalWorkspace=dict(changedProductionFiles=changed, visiblePassed=visible["allPassed"]),
+        passed=passed,
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--fixture", default="ENV-PARSER-001",
+                        choices=["ENV-PARSER-001", "ENV-PARSER-002"])
     parser.add_argument("--output", type=Path,
                         default=ROOT / "artifacts/parity/objective-agent-contract")
     arguments = parser.parse_args()
+    spec = get_fixture(arguments.fixture)
     arguments.output.mkdir(parents=True, exist_ok=True)
     build = run_command(["dotnet", "build", str(ROOT / "src/PiSharp.Cli/PiSharp.Cli.csproj"),
                          "-c", "Debug", "--nologo"], cwd=ROOT, timeout=600.0)
-    server = FixtureServer(
-        models=[],
-        props={},
-        behavior={
+    if spec.contract_mode == "recovery":
+        behavior = recovery_behavior()
+    else:
+        behavior = {
             "chatToolCallsByRequest": [[{
                 "id": "call-objective-contract",
                 "name": "bash",
                 "arguments": {"command": "printf 'objective-contract-line\\n'"},
             }]],
             "chatResponseContentByRequest": ["fixture tool call", "Deterministic contract complete."],
-        },
-    )
+        }
+    server = FixtureServer(models=[], props={}, behavior=behavior)
     try:
-        results = [evaluate_product(app, server) for app in ("pi", "pisharp")]
+        if spec.contract_mode == "recovery":
+            results = [evaluate_recovery_product(app, server, spec)
+                       for app in ("pi", "pisharp")]
+        else:
+            results = [evaluate_product(app, server) for app in ("pi", "pisharp")]
     finally:
         server.close()
     report = dict(
-        fixtureId="ENV-PARSER-001-contract",
+        fixtureId=f"{spec.id}-contract",
+        mode=spec.contract_mode,
         build=dict(exitCode=build["exitCode"], durationSeconds=build["durationSeconds"]),
         products=results,
         passed=all(item["passed"] for item in results),

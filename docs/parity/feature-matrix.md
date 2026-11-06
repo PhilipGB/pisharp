@@ -2,6 +2,24 @@
 
 Current status and project goal are maintained in [the continuation](../continuation.md); open architecture risks are tracked in the [architecture document](../architecture.md#open-architecture-risks). The milestone summaries below are historical and may retain the wording used when they were written; later merges supersede their status claims.
 
+## Completed milestone — Multi-Step Agent Execution and Recovery Parity — 2026-11-06
+
+`ENV-PARSER-002` adds two sequential production defects and a multi-step
+repair/recovery scenario on the ENV-PARSER-001 harness. The artificial 8 GiB
+address-space ceiling is removed; peak RSS was 674 MiB for Pi and 609 MiB for
+PiSharp, with no infrastructure out-of-memory errors. Both products completed
+5/5 tasks with 80/80 mean real-model scores and matching recovery measurements:
+3 tool errors, 3 recovered, 8 test executions, 3 errors conveyed and zero
+duplicate side effects. The deterministic ten-request contract passes for both.
+Deterministic recovery UI scored 11/20 (progress 10/10, visual 1/10): PiSharp
+collapses failed/recovered tool output at a different threshold and omits Pi's
+`ctrl+o to expand` hint, shifting text positions (P1). The prior ENV-PARSER-001
+P2 remains tracked. Combined score is 100/100 for Pi and 91/100 for PiSharp. See
+the [receipt](fixtures/objective-agent-parity-002-2026-11-06/README.md) and
+[report](fixtures/objective-agent-parity-002-2026-11-06/report.json). The next
+single deliverable is the collapsed failed/recovered tool-output hint and layout
+parity task.
+
 ## Completed milestone — Objective Agent Parity Fixture and Scoring Rubric — 2026-11-06
 
 The fixed `ENV-PARSER-001` fixture (checksum
