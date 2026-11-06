@@ -2,6 +2,22 @@
 
 Current status and project goal are maintained in [the continuation](../continuation.md); open architecture risks are tracked in the [architecture document](../architecture.md#open-architecture-risks). The milestone summaries below are historical and may retain the wording used when they were written; later merges supersede their status claims.
 
+## Completed milestone — Bash Tool Output Collapse and Expansion Parity — 2026-11-06
+
+PiSharp's Bash tool result now matches pinned Pi: the last five visual rows after
+width wrapping, a muted `... (N earlier lines,` hint with the `dim`-styled
+`ctrl+o` shortcut on its own row, a spacer row between consecutive tool blocks,
+and identical expanded/re-collapsed output. The previous double collapse
+(logical-line preview plus generic ten-row tool-block truncation) is removed for
+bounded Bash results. The recovery fixture gates model responses at stable event
+boundaries, adds Ctrl+O expansion checkpoints, and passes same-Pi calibration
+with zero differences at 80x24 and 120x40. Deterministic UI parity improved from
+11/20 (visual 1/10) to 20/20 (visual 10/10) with the rubric unchanged. Twelve
+Bash collapse regressions were added; six failed before the fix and all pass
+after it. The ENV-PARSER-001 P2 trailing wrapped-command style remains tracked.
+See the [receipt](fixtures/collapsed-tool-output-parity-2026-11-06/README.md) and
+[UI report](fixtures/collapsed-tool-output-parity-2026-11-06/ui-report.json).
+
 ## Completed milestone — Multi-Step Agent Execution and Recovery Parity — 2026-11-06
 
 `ENV-PARSER-002` adds two sequential production defects and a multi-step

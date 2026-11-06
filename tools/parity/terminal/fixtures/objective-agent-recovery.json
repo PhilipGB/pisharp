@@ -42,11 +42,11 @@
     "chatRequestGates": [
       "first-request",
       "second-request",
-      null
+      "third-request"
     ],
     "chatResponseGates": [
-      null,
-      null,
+      "first-response",
+      "second-response",
       null
     ],
     "chatResponseContentGates": [
@@ -60,7 +60,7 @@
           "id": "call-recovery-first",
           "name": "bash",
           "arguments": {
-            "command": "printf 'one\\ntwo\\nthree\\n'; printf 'Failed: %d, Passed: 0, Total: 1\\n' 1; exit 1"
+            "command": "x=objective-recovery; for i in one two three four five; do printf '%s-%s\\n' \"$x\" \"$i\"; done; printf 'Failed: %d, Passed: 0, Total: 1\\n' 1; exit 1"
           }
         }
       ],
@@ -115,16 +115,44 @@
         "first-request"
       ],
       "expect": "Working",
+      "notExpect": "Took",
       "allowStaticFrame": true
     },
     {
-      "id": "run-recovery",
-      "expect": "Recovery complete.",
-      "renderMatch": true,
+      "id": "tool-failure",
       "releaseGates": [
-        "second-request",
+        "first-response"
+      ],
+      "waitGatesAfter": [
+        "second-request"
+      ],
+      "expect": "Command exited with code 1",
+      "notExpect": "Passed: 1",
+      "renderMatch": true
+    },
+    {
+      "id": "expand-failure",
+      "send": "\u000f",
+      "expect": "Tool output: expanded",
+      "notExpect": "earlier lines",
+      "renderMatch": true
+    },
+    {
+      "id": "collapse-failure",
+      "send": "\u000f",
+      "expect": "Tool output: collapsed",
+      "notExpect": "objective-recovery-one",
+      "renderMatch": true
+    },
+    {
+      "id": "run-recovery",
+      "releaseGates": [
+        "second-response",
         "final-content"
-      ]
+      ],
+      "expect": "Recovery complete.",
+      "notExpect": "Working",
+      "renderMatch": true
     },
     {
       "id": "final-idle",
@@ -142,6 +170,9 @@
     "startup",
     "paste-tool-prompt",
     "tool-start",
+    "tool-failure",
+    "expand-failure",
+    "collapse-failure",
     "run-recovery",
     "final-idle",
     "exit"

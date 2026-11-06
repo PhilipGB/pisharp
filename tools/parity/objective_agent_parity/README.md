@@ -23,10 +23,13 @@ the fixture with `--fixture`.
    The server retains the exact provider request bodies, so continuation is
    checked at the wire boundary for both products.
 3. **Deterministic terminal parity** — the reusable terminal harness runs
-   `tools/parity/terminal/fixtures/objective-agent-progress.json` at 80×24 and
-   120×40 after a same-Pi calibration. `ui_score.py` scores five progress
-   checkpoints (10 points) and decoded cells/styles (10 points) using only the
-   rubric's allowed normalisation.
+   `tools/parity/terminal/fixtures/objective-agent-progress.json` (ENV-PARSER-001)
+   or `objective-agent-recovery.json` (ENV-PARSER-002) at 80×24 and 120×40 after
+   a same-Pi calibration. `ui_score.py` scores five progress checkpoints
+   (10 points) and decoded cells/styles (10 points) using only the rubric's
+   allowed normalisation. The recovery fixture gates model responses so every
+   scored frame is an event boundary rather than a timing-sensitive capture;
+   it also captures collapsed, expanded and re-collapsed tool output.
 
 ## Fixture
 

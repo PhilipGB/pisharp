@@ -188,34 +188,34 @@ internal sealed class TerminalToolPresentation(Func<string, PiSharpToolRenderer?
     private static PiSharpToolRenderView RenderBashResult(IReadOnlyDictionary<string, object?> arguments,
         AgentLifecycleEvent update, bool isError, bool expanded, string? progressText)
     {
-        var command = GetStringArgument(arguments, "command");
-        var displayedCommand = command is null ? "[invalid arg]" : command.Length == 0 ? "..." : command;
-        var spans = new List<PiSharpToolTextSpan>
+        var source = BashResultSource(arguments, update, progressText);
+        var view = TerminalBashResultPreview.Render(source, width: 0, expandKeyLabel: "Ctrl+O", expanded);
+        if (!isError || view.Spans.Count > 1) return view;
+        var spans = new List<PiSharpToolTextSpan>(view.Spans)
         {
-            new("$ " + TerminalSafeText.Normalize(displayedCommand), PiSharpToolTextStyle.Title, Bold: true)
+            new("\n", PiSharpToolTextStyle.Error)
         };
-        var output = update.Text is null ? "" : ShellOutputNormalizer.NormalizeComplete(update.Text).Trim();
-        if (output.Length > 0)
-        {
-            var lines = output.Split('\n');
-            var firstLine = expanded ? 0 : Math.Max(0, lines.Length - 5);
-            if (firstLine > 0)
-                spans.Add(new($"\n\n... ({firstLine} earlier lines, to expand)", PiSharpToolTextStyle.Muted));
-            else spans.Add(new("\n\n", PiSharpToolTextStyle.Normal));
-            for (var index = firstLine; index < lines.Length; index++)
-            {
-                if (index > firstLine) spans.Add(new("\n", PiSharpToolTextStyle.Output));
-                spans.Add(new(TerminalSafeText.Normalize(lines[index]), PiSharpToolTextStyle.Output));
-            }
-        }
+        return new(spans);
+    }
+
+    /// <summary>Captures Pi's bash result preview inputs before the call arguments are released.</summary>
+    public TerminalBashResultPreview.Source? CreateBashResultPreview(AgentLifecycleEvent update,
+        string? progressText = null)
+    {
+        if (!string.Equals(update.Tool, "bash", StringComparison.OrdinalIgnoreCase)) return null;
+        if (Resolve(update.Tool)?.RenderResult is not null) return null;
+        return BashResultSource(GetRememberedArguments(update), update, progressText);
+    }
+
+    private static TerminalBashResultPreview.Source BashResultSource(
+        IReadOnlyDictionary<string, object?> arguments, AgentLifecycleEvent update, string? progressText)
+    {
+        var command = GetStringArgument(arguments, "command");
+        var output = update.Text is null ? "" : ShellOutputNormalizer.NormalizeComplete(update.Text);
         var timerText = progressText ?? (update.DurationMs is { } duration
             ? "Took " + ToolDurationText.Format(duration)
             : null);
-        if (!string.IsNullOrEmpty(timerText))
-            spans.Add(new("\n\n" + TerminalSafeText.Normalize(timerText), PiSharpToolTextStyle.Muted));
-        if (isError && spans.Count == 1)
-            spans.Add(new("\n", PiSharpToolTextStyle.Error));
-        return new(spans);
+        return new(command, output, timerText);
     }
 
     private static string? GetStringArgument(IReadOnlyDictionary<string, object?> arguments, string name)
@@ -334,6 +334,7 @@ internal sealed class TerminalToolPresentation(Func<string, PiSharpToolRenderer?
         PiSharpToolTextStyle.Title => "toolTitle",
         PiSharpToolTextStyle.Output => "toolOutput",
         PiSharpToolTextStyle.Muted => "muted",
+        PiSharpToolTextStyle.Dim => "dim",
         PiSharpToolTextStyle.Accent => "accent",
         PiSharpToolTextStyle.Code => "mdCode",
         PiSharpToolTextStyle.Success => "success",

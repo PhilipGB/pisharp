@@ -9,6 +9,7 @@ public enum PiSharpToolTextStyle
     Title,
     Output,
     Muted,
+    Dim,
     Accent,
     Code,
     Success,

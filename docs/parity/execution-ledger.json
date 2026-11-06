@@ -15231,5 +15231,83 @@
     "ui_report": "docs/parity/fixtures/objective-agent-parity-002-2026-11-06/ui-report.json",
     "contract_report": "docs/parity/fixtures/objective-agent-parity-002-2026-11-06/contract-report.json",
     "verification_report": "docs/parity/fixtures/objective-agent-parity-002-2026-11-06/verification.json"
+  },
+  "bash_tool_output_collapse_expansion_parity_2026_11_06": {
+    "status": "completed",
+    "prerequisite": "ENV-PARSER-002 evaluation merged via PR #44 at 7748479cc0d7794464fda43902e5db03a76af642",
+    "branch": "milestone/collapsed-tool-output-parity",
+    "pi_revision": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "pisharp_base": "7748479cc0d7794464fda43902e5db03a76af642",
+    "root_cause": "TerminalToolPresentation.RenderBashResult collapsed on logical lines, omitted the ctrl+o shortcut, appended the hint without a row break, and the transcript then applied a second ten-visual-row collapse with a different hint, shifting following rows.",
+    "reference_behaviour": {
+      "preview_visual_rows": 5,
+      "keep": "end",
+      "hint": "... (N earlier lines, ctrl+o to expand)",
+      "hint_styles": {
+        "text": "muted",
+        "shortcut": "dim",
+        "separator": "default"
+      },
+      "spacer_between_tool_blocks": true
+    },
+    "fixture": {
+      "id": "objective-agent-recovery",
+      "checksum": "2aba18ca274cd6b0e15ccb281e629dc0b2796fb229aaf2854076f036bfa765e2",
+      "previous_checksum": "d66ba909bffbd346a92aaed4b0ec548051f81d993f9e7db4cb3e2fee5232b08d",
+      "changes": "response gating at event boundaries, unique output markers, Ctrl+O expand and re-collapse checkpoints"
+    },
+    "deterministic_ui": {
+      "before": {
+        "pi": 20,
+        "pisharp": 11,
+        "progress": 10,
+        "visual": 1,
+        "max": 20
+      },
+      "after": {
+        "pi": 20,
+        "pisharp": 20,
+        "progress": 10,
+        "visual": 10,
+        "max": 20
+      },
+      "calibration": {
+        "match": true,
+        "differences": 0,
+        "sizes": [
+          "80x24",
+          "120x40"
+        ]
+      },
+      "normalisation_unchanged": true
+    },
+    "regressions": {
+      "file": "tests/PiSharp.Tests/Cli/Tui/Rendering/BashToolCollapseTests.cs",
+      "added": 12,
+      "fail_first": 6,
+      "passing_after": 12
+    },
+    "components_changed": [
+      "src/PiSharp.Cli/Tui/Rendering/TerminalBashResultPreview.cs",
+      "src/PiSharp.Cli/Tui/Rendering/TerminalToolPresentation.cs",
+      "src/PiSharp.Cli/Tui/Rendering/TerminalConversationPresentation.cs",
+      "src/PiSharp.Cli/Tui/Rendering/TerminalTranscriptBuffer.cs",
+      "src/PiSharp.Cli/Tui/Rendering/TerminalScreen.cs",
+      "src/PiSharp.Cli/Tui/Rendering/InteractiveTranscript.cs",
+      "src/PiSharp.Runtime/Extensions/PiSharpToolRenderer.cs"
+    ],
+    "remaining_differences": [
+      {
+        "id": "ui-trailing-wrapped-command-style",
+        "severity": "P2",
+        "status": "open",
+        "summary": "ENV-PARSER-001 trailing styled cells on a wrapped Bash command line; unchanged and out of scope for collapse parity."
+      }
+    ],
+    "agent_execution_unchanged": true,
+    "historical_evidence_unchanged": true,
+    "receipt": "docs/parity/fixtures/collapsed-tool-output-parity-2026-11-06/README.md",
+    "ui_report": "docs/parity/fixtures/collapsed-tool-output-parity-2026-11-06/ui-report.json",
+    "comparison": "docs/parity/fixtures/collapsed-tool-output-parity-2026-11-06/terminal-comparison.json"
   }
 }
