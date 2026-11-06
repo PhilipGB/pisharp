@@ -53,6 +53,7 @@ def main() -> int:
     parser.add_argument("--ui", type=Path, required=True)
     parser.add_argument("--contract", type=Path, required=True)
     parser.add_argument("--verification", type=Path, required=True)
+    parser.add_argument("--raw-artifacts", default="artifacts/parity/objective-agent-parity-20261106")
     parser.add_argument("--output", type=Path, required=True)
     arguments = parser.parse_args()
     arguments.output.mkdir(parents=True, exist_ok=True)
@@ -66,7 +67,7 @@ def main() -> int:
     write_json(arguments.output / "evidence-index.json", dict(
         fixtureId=report["fixture"]["id"],
         fixtureChecksum=report["fixture"]["checksum"],
-        rawArtifacts="artifacts/parity/objective-agent-parity-20261106",
+        rawArtifacts=arguments.raw_artifacts,
         deterministicUi="ui-report.json",
         deterministicContract="contract-report.json",
         realModelReport="report.json",
