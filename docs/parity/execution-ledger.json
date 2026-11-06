@@ -15048,5 +15048,74 @@
       "format_and_warning_as_error_build": "passed",
       "fresh_exact_head_ci": "automatic push and PR workflows run on the correction head"
     }
+  },
+  "objective_agent_parity_2026_11_06": {
+    "status": "completed",
+    "fixture_id": "ENV-PARSER-001",
+    "fixture_checksum": "e90c4e5c49d063f6ce0e4ce6664295aaed01145d70faabe1d461fdae2cd4da0f",
+    "pi_revision": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "pisharp_revision": "504be244dc36b29b0ffc70fe0892d4dcdd485bc3",
+    "configuration": {
+      "pi": {
+        "provider": "openai",
+        "model": "gpt-6-luna",
+        "thinking": "xhigh"
+      },
+      "pisharp": {
+        "provider": "openai-codex",
+        "model": "gpt-6-luna",
+        "thinking": "xhigh"
+      }
+    },
+    "real_model_runs": {
+      "pi": {
+        "attempted": 5,
+        "assessable": 5,
+        "complete_task_successes": 5,
+        "mean_functional": 50.0,
+        "mean_agent_tool": 30.0,
+        "mean_real_model": 80.0
+      },
+      "pisharp": {
+        "attempted": 5,
+        "assessable": 5,
+        "complete_task_successes": 5,
+        "mean_functional": 50.0,
+        "mean_agent_tool": 30.0,
+        "mean_real_model": 80.0
+      }
+    },
+    "deterministic_ui": {
+      "pi": 20,
+      "pisharp": 19,
+      "max": 20,
+      "progress": 10,
+      "visual": 9,
+      "calibration": "pass"
+    },
+    "combined": {
+      "pi": 100.0,
+      "pisharp": 99.0,
+      "difference": -1.0
+    },
+    "confirmed_differences": [
+      {
+        "id": "ui-colours-80x24-dark-fullscreen",
+        "severity": "P2",
+        "summary": "At 80x24, 17 trailing blank cells of the wrapped bash command line carry Pi styled foreground while PiSharp leaves them unstyled; visible text, layout, indicators, footer and final state match."
+      }
+    ],
+    "highest_priority": "P2 ui-colours-80x24-dark-fullscreen",
+    "suggested_next_single_deliverable": "Extend the bash command-line syntax style across trailing blank cells of wrapped command output at 80x24; verify with objective-agent-progress at 80x24 and 120x40.",
+    "verification": {
+      "valid": true,
+      "negative_controls": 9,
+      "negative_controls_passed": true
+    },
+    "receipt": "docs/parity/fixtures/objective-agent-parity-2026-11-06/README.md",
+    "report": "docs/parity/fixtures/objective-agent-parity-2026-11-06/report.json",
+    "ui_report": "docs/parity/fixtures/objective-agent-parity-2026-11-06/ui-report.json",
+    "contract_report": "docs/parity/fixtures/objective-agent-parity-2026-11-06/contract-report.json",
+    "verification_report": "docs/parity/fixtures/objective-agent-parity-2026-11-06/verification.json"
   }
 }

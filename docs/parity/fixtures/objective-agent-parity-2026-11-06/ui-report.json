@@ -1,0 +1,322 @@
+{
+  "fixture": "objective-agent-progress",
+  "calibration": {
+    "directory": "artifacts/parity/objective-agent-ui-20261106/calibration",
+    "match": true,
+    "cases": [
+      {
+        "id": "80x24-dark-fullscreen",
+        "match": true,
+        "differences": 0
+      },
+      {
+        "id": "120x40-dark-fullscreen",
+        "match": true,
+        "differences": 0
+      }
+    ],
+    "exitCode": 0
+  },
+  "comparison": {
+    "directory": "artifacts/parity/objective-agent-ui-20261106/comparison",
+    "match": false,
+    "exitCode": 1
+  },
+  "cases": [
+    {
+      "id": "80x24-dark-fullscreen",
+      "checkpoints": {
+        "tool-start": {
+          "points": 2,
+          "pi": {
+            "working": true,
+            "progress": false,
+            "completed": false,
+            "resumed": false,
+            "idle": false,
+            "footer": true
+          },
+          "pisharp": {
+            "working": true,
+            "progress": false,
+            "completed": false,
+            "resumed": false,
+            "idle": false,
+            "footer": true
+          },
+          "reason": "represented"
+        },
+        "tool-progress": {
+          "points": 2,
+          "pi": {
+            "working": true,
+            "progress": true,
+            "completed": false,
+            "resumed": false,
+            "idle": false,
+            "footer": true
+          },
+          "pisharp": {
+            "working": true,
+            "progress": true,
+            "completed": false,
+            "resumed": false,
+            "idle": false,
+            "footer": true
+          },
+          "reason": "represented"
+        },
+        "tool-complete": {
+          "points": 2,
+          "pi": {
+            "working": true,
+            "progress": true,
+            "completed": true,
+            "resumed": false,
+            "idle": false,
+            "footer": true
+          },
+          "pisharp": {
+            "working": true,
+            "progress": true,
+            "completed": true,
+            "resumed": false,
+            "idle": false,
+            "footer": true
+          },
+          "reason": "represented"
+        },
+        "assistant-resume": {
+          "points": 2,
+          "pi": {
+            "working": false,
+            "progress": true,
+            "completed": true,
+            "resumed": true,
+            "idle": true,
+            "footer": true
+          },
+          "pisharp": {
+            "working": false,
+            "progress": true,
+            "completed": true,
+            "resumed": true,
+            "idle": true,
+            "footer": true
+          },
+          "reason": "represented"
+        },
+        "final-idle": {
+          "points": 2,
+          "pi": {
+            "working": false,
+            "progress": true,
+            "completed": true,
+            "resumed": true,
+            "idle": true,
+            "footer": true
+          },
+          "pisharp": {
+            "working": false,
+            "progress": true,
+            "completed": true,
+            "resumed": true,
+            "idle": true,
+            "footer": true
+          },
+          "reason": "represented"
+        }
+      },
+      "visual": {
+        "labelsIndicatorsPositions": {
+          "points": 2,
+          "max": 2,
+          "match": true
+        },
+        "spacingIndentationWrappingLayout": {
+          "points": 1,
+          "max": 1,
+          "match": true
+        },
+        "coloursAndStyles": {
+          "points": 0,
+          "max": 1,
+          "match": false
+        },
+        "footerCursorFinalState": {
+          "points": 1,
+          "max": 1,
+          "match": true
+        },
+        "total": 4,
+        "max": 5
+      },
+      "differences": [
+        {
+          "checkpoint": "tool-complete",
+          "kind": "styles",
+          "cells": 17,
+          "totalCells": 1920
+        },
+        {
+          "checkpoint": "assistant-resume",
+          "kind": "styles",
+          "cells": 17,
+          "totalCells": 1920
+        },
+        {
+          "checkpoint": "final-idle",
+          "kind": "styles",
+          "cells": 17,
+          "totalCells": 1920
+        }
+      ],
+      "progressPoints": 10,
+      "progressMax": 10,
+      "caseTotal": 14,
+      "caseMax": 20
+    },
+    {
+      "id": "120x40-dark-fullscreen",
+      "checkpoints": {
+        "tool-start": {
+          "points": 2,
+          "pi": {
+            "working": true,
+            "progress": false,
+            "completed": false,
+            "resumed": false,
+            "idle": false,
+            "footer": true
+          },
+          "pisharp": {
+            "working": true,
+            "progress": false,
+            "completed": false,
+            "resumed": false,
+            "idle": false,
+            "footer": true
+          },
+          "reason": "represented"
+        },
+        "tool-progress": {
+          "points": 2,
+          "pi": {
+            "working": true,
+            "progress": true,
+            "completed": false,
+            "resumed": false,
+            "idle": false,
+            "footer": true
+          },
+          "pisharp": {
+            "working": true,
+            "progress": true,
+            "completed": false,
+            "resumed": false,
+            "idle": false,
+            "footer": true
+          },
+          "reason": "represented"
+        },
+        "tool-complete": {
+          "points": 2,
+          "pi": {
+            "working": true,
+            "progress": true,
+            "completed": true,
+            "resumed": false,
+            "idle": false,
+            "footer": true
+          },
+          "pisharp": {
+            "working": true,
+            "progress": true,
+            "completed": true,
+            "resumed": false,
+            "idle": false,
+            "footer": true
+          },
+          "reason": "represented"
+        },
+        "assistant-resume": {
+          "points": 2,
+          "pi": {
+            "working": false,
+            "progress": true,
+            "completed": true,
+            "resumed": true,
+            "idle": true,
+            "footer": true
+          },
+          "pisharp": {
+            "working": false,
+            "progress": true,
+            "completed": true,
+            "resumed": true,
+            "idle": true,
+            "footer": true
+          },
+          "reason": "represented"
+        },
+        "final-idle": {
+          "points": 2,
+          "pi": {
+            "working": false,
+            "progress": true,
+            "completed": true,
+            "resumed": true,
+            "idle": true,
+            "footer": true
+          },
+          "pisharp": {
+            "working": false,
+            "progress": true,
+            "completed": true,
+            "resumed": true,
+            "idle": true,
+            "footer": true
+          },
+          "reason": "represented"
+        }
+      },
+      "visual": {
+        "labelsIndicatorsPositions": {
+          "points": 2,
+          "max": 2,
+          "match": true
+        },
+        "spacingIndentationWrappingLayout": {
+          "points": 1,
+          "max": 1,
+          "match": true
+        },
+        "coloursAndStyles": {
+          "points": 1,
+          "max": 1,
+          "match": true
+        },
+        "footerCursorFinalState": {
+          "points": 1,
+          "max": 1,
+          "match": true
+        },
+        "total": 5,
+        "max": 5
+      },
+      "differences": [],
+      "progressPoints": 10,
+      "progressMax": 10,
+      "caseTotal": 15,
+      "caseMax": 20
+    }
+  ],
+  "progressPoints": 10,
+  "visualPoints": 9,
+  "total": 19,
+  "max": 20,
+  "piScore": 20,
+  "pisharpScore": 19,
+  "parityScore": 19,
+  "status": "scored"
+}

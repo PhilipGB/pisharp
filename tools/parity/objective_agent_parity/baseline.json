@@ -1,0 +1,24 @@
+{
+  "fixtureId": "ENV-PARSER-001",
+  "fixtureChecksum": "e90c4e5c49d063f6ce0e4ce6664295aaed01145d70faabe1d461fdae2cd4da0f",
+  "files": {
+    "Fixture.slnx": "75d384af0bfe6f0b560655974e4f30db3d499f7ed7e0cfb6759a07bcd49fa2e8",
+    "README.md": "f3d7b6b3acb0e06d2de3c3f76acb6e2b40b2b31ae8467f3dc9759a29b18eca39",
+    "src/Fixture.Core/EnvFile.cs": "fd2c1f37ae6b9779c67666af76e05578f5e1ca88952f924c27cf2cb7051ea629",
+    "src/Fixture.Core/Fixture.Core.csproj": "2c82dae7a6492e5dc0d99b6b5a5d1c89a4702b892f71757981e46302949d6115",
+    "tests/Fixture.Tests/EnvFileTests.cs": "17cce06abf2efbb6380e208b1c6677ca376e0f2f626f94b7d02b5013ecfd1932",
+    "tests/Fixture.Tests/Fixture.Tests.csproj": "a60e112e1e0a401e6b86ad686e8171cd07aec04da180ca61e776e9064409f527"
+  },
+  "baselineCommand": "dotnet test Fixture.slnx",
+  "baselineExitCode": 1,
+  "baselineExpectedFailure": "Fixture.Tests.EnvFileTests.ValuesContainingAdditionalEqualsSignsArePreserved",
+  "baselineObserved": {
+    "total": 3,
+    "passed": 2,
+    "failed": 1,
+    "failedTest": "Fixture.Tests.EnvFileTests.ValuesContainingAdditionalEqualsSignsArePreserved",
+    "buildSucceeded": true
+  },
+  "intentionalDefect": "EnvFile.Parse splits on every equals sign and discards assignments whose split does not produce exactly two elements.",
+  "recordedAt": "2026-11-06T13:45:00Z"
+}

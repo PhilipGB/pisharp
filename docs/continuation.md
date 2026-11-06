@@ -12,6 +12,37 @@ Current status is based on `main` at `80357982b960ce1b7d44237f20eff4a035372640`.
 
 The milestone entries below retain their historical wording and are superseded by this section wherever they describe a milestone as active or a merged PR as open.
 
+## Completed milestone — Objective Agent Parity Fixture and Scoring Rubric — 2026-11-06
+
+The fixed `ENV-PARSER-001` fixture (checksum
+`e90c4e5c49d063f6ce0e4ce6664295aaed01145d70faabe1d461fdae2cd4da0f`)
+measures functional correctness, agent-loop/tool correctness and terminal UI
+parity independently. Five real-model runs per product used `gpt-6-luna` at
+`xhigh` through each product's existing OpenAI subscription configuration
+(`openai` for Pi, `openai-codex` for PiSharp), under an identical ten-minute
+monotonic deadline and process resource limits. Both products completed 5/5
+tasks: every run passed the eight private tests, all three visible tests and
+change integrity, changing only `src/Fixture.Core/EnvFile.cs`. Mean real-model
+score is 80/80 for both. The deterministic scripted agent-loop contract passes
+for both, including provider-bound tool-result continuation.
+
+Deterministic terminal parity at 80x24 and 120x40 passed same-Pi calibration
+with zero differences and scored 19/20: progress checkpoints 10/10 and visual
+parity 9/10. The only confirmed difference is P2: at 80x24, seventeen trailing
+blank cells of the wrapped bash command line carry Pi's styled foreground while
+PiSharp leaves them unstyled; visible text, layout, indicators, footer and final
+state match, and 120x40 matches fully. Combined score is 100/100 for Pi and
+99/100 for PiSharp, a one-point difference, with 5/5 complete task successes.
+Report verification passes and nine negative
+controls reject falsified scores, missing runs, forged integrity and inconsistent
+UI totals. The next single deliverable is the 80x24 wrapped-command text-style
+parity task, verified with the objective-agent-progress terminal fixture. See the
+[receipt](parity/fixtures/objective-agent-parity-2026-11-06/README.md),
+[report](parity/fixtures/objective-agent-parity-2026-11-06/report.json),
+[UI report](parity/fixtures/objective-agent-parity-2026-11-06/ui-report.json),
+[contract](parity/fixtures/objective-agent-parity-2026-11-06/contract-report.json)
+and [verification](parity/fixtures/objective-agent-parity-2026-11-06/verification.json).
+
 ## Completed milestone — Session Tree and Scoped Model Picker — 2026-11-05
 
 The `keys-tree-scoped-picker` capability is verified at implementation source
