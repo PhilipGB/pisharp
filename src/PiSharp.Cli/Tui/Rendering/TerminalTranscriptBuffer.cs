@@ -83,7 +83,7 @@ internal sealed class TerminalTranscriptBuffer
     public void AppendThemed(string rendered, bool isError, bool isToolResult,
         Func<TerminalTheme, string> themeRenderer, string capturedText, string? collapsedPreviewText = null,
         Func<TerminalTheme, string>? collapsedRenderer = null, bool isCollapsible = false,
-        bool isPromptStart = false)
+        bool isPromptStart = false, Func<int, string>? collapsedPreviewBuilder = null)
     {
         ArgumentNullException.ThrowIfNull(themeRenderer);
         if (rendered.Length == 0) return;
@@ -92,7 +92,7 @@ internal sealed class TerminalTranscriptBuffer
         _segments.Add(new(collapsible, new StringBuilder(rendered),
             collapsible ? collapsedPreviewText ?? rendered : null,
             themeRenderer: themeRenderer, collapsedRenderer: collapsedRenderer,
-            isPromptStart: isPromptStart));
+            isPromptStart: isPromptStart, collapsedPreviewBuilder: collapsible ? collapsedPreviewBuilder : null));
         _transcriptCharacters += rendered.Length;
         TrimTranscript();
         Revision++;
@@ -146,7 +146,7 @@ internal sealed class TerminalTranscriptBuffer
 
     internal void SetToolResult(string id, string rendered, string collapsed,
         Func<TerminalTheme, string> expandedRenderer, Func<TerminalTheme, string> collapsedRenderer,
-        string captured, bool isError, bool finished)
+        string captured, bool isError, bool finished, Func<int, string>? collapsedPreviewBuilder = null)
     {
         if (!_liveTools.TryGetValue(id, out var row) || !_segments.Contains(row.Segment))
         {
@@ -165,6 +165,7 @@ internal sealed class TerminalTranscriptBuffer
         row.Segment.Text.Clear().Append(rendered);
         row.Segment.KeepLastPreviewLine = true;
         row.Segment.CollapsedPreviewSource = collapsed;
+        row.Segment.CollapsedPreviewBuilder = collapsedPreviewBuilder;
         row.Segment.InvalidateCollapsedPreview();
         row.Segment.ThemeRenderer = expandedRenderer;
         row.Segment.CollapsedRenderer = collapsedRenderer;
@@ -237,8 +238,14 @@ internal sealed class TerminalTranscriptBuffer
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(width, 1);
         var output = new StringBuilder(_transcriptCharacters);
+        var previousToolResult = false;
         foreach (var segment in _segments)
         {
+            // Pi starts every tool execution component with a spacer row; consecutive
+            // bounded bash results therefore gain one blank row between them.
+            if (previousToolResult && segment.CollapsedPreviewBuilder is not null) output.Append('\n');
+            if (!segment.IsStatusMessage)
+                previousToolResult = segment.CollapsedPreviewBuilder is not null;
             var text = segment.IsStatusMessage && latestStatus is not null
                 ? latestStatus()
                 : segment.IsCollapsible && !IsExpanded
@@ -496,6 +503,12 @@ internal sealed class TerminalTranscriptBuffer
     private static string GetCollapsedPreview(TranscriptSegment segment, int width)
     {
         if (segment.CollapsedPreview is { } cached && segment.CollapsedPreviewWidth == width) return cached;
+        if (segment.CollapsedPreviewBuilder is { } builder)
+        {
+            segment.CollapsedPreview = builder(width);
+            segment.CollapsedPreviewWidth = width;
+            return segment.CollapsedPreview;
+        }
 
         var text = segment.CollapsedPreviewSource ?? segment.Text.ToString();
         var layout = TerminalTextLayout.Create(text, width);
@@ -559,7 +572,8 @@ internal sealed class TerminalTranscriptBuffer
         string? thinkingSource = null, string? hiddenThinkingText = null,
         Func<TerminalTheme, string>? visibleThinkingRenderer = null,
         Func<TerminalTheme, string>? hiddenThinkingRenderer = null, bool thinkingHidden = false,
-        CapturedChunkBuilder? capturedThinkingChunk = null, bool isPromptStart = false)
+        CapturedChunkBuilder? capturedThinkingChunk = null, bool isPromptStart = false,
+        Func<int, string>? collapsedPreviewBuilder = null)
     {
         public bool IsCollapsible { get; } = isCollapsible;
         public bool KeepLastPreviewLine { get; set; }
@@ -574,6 +588,8 @@ internal sealed class TerminalTranscriptBuffer
         public string? MarkdownSource { get; set; } = markdownSource;
         public Func<TerminalTheme, string>? ThemeRenderer { get; set; } = themeRenderer;
         public Func<TerminalTheme, string>? CollapsedRenderer { get; set; } = collapsedRenderer;
+        /// <summary>Width-aware collapsed preview; when set it replaces the generic row truncation.</summary>
+        public Func<int, string>? CollapsedPreviewBuilder { get; set; } = collapsedPreviewBuilder;
         public CapturedChunkBuilder? CapturedStatusChunk { get; set; } = capturedStatusChunk;
         public string? ThinkingSource { get; set; } = thinkingSource;
         public string? HiddenThinkingText { get; set; } = hiddenThinkingText;

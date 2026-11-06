@@ -112,11 +112,12 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
                     {
                         DurationMs = ToolExecutionDuration.Get(result)
                     };
+                    var bashPreview = _toolPresentation.CreateBashResultPreview(update);
                     var views = _toolPresentation.RenderResultViews(update, failed);
                     if (name == "codemode") target.CompleteToolRow(result.CallId, views.Collapsed, views.Expanded, failed, images);
                     else target.AppendToolResult(views.Collapsed, views.Expanded, images,
                         suppressUnsupportedImageFallbackWhenCollapsed: name == "read", operationId: result.CallId,
-                        isError: failed);
+                        isError: failed, bashPreview);
                     if (nestedCalls.TryGetValue(result.CallId, out var nested))
                         target.AppendToolResult(RenderNestedToolCalls(nested));
                 }
@@ -306,7 +307,8 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
                 screen.SetToolTimerRenderer(id, timerText => RenderBashPartial(partial, timerText));
                 var timerText = screen.ProgressToolTimerInOutput(id);
                 var views = RenderBashPartial(partial, timerText);
-                screen.UpdateToolRow(id, views.Collapsed, views.Expanded, isError: false);
+                screen.UpdateToolRow(id, views.Collapsed, views.Expanded, isError: false,
+                    bashPreview: _toolPresentation.CreateBashResultPreview(partial, timerText));
                 return;
             }
         }
@@ -403,13 +405,15 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
             (update.OperationId ?? update.ToolCallId) is not null;
         var id = update.OperationId ?? update.ToolCallId;
         if (timed) update = update with { DurationMs = screen!.CompleteToolTimer(id!, update.DurationMs) };
+        var bashPreview = _toolPresentation.CreateBashResultPreview(update);
         var views = _toolPresentation.RenderResultViews(update, update.IsError == true);
         if (screen is null)
             status.WriteLine(TerminalToolPresentation.Render(views.Collapsed, theme: null));
-        else if (timed) screen.CompleteToolRow(id!, views.Collapsed, views.Expanded, update.IsError == true, update.Images);
+        else if (timed) screen.CompleteToolRow(id!, views.Collapsed, views.Expanded, update.IsError == true, update.Images,
+            bashPreview);
         else screen.AppendToolResult(views.Collapsed, views.Expanded, update.Images,
             suppressUnsupportedImageFallbackWhenCollapsed: update.Tool == "read",
-            operationId: id, isError: update.IsError == true);
+            operationId: id, isError: update.IsError == true, bashPreview);
     }
 
     private static void AppendBounded(StringBuilder output, string text)

@@ -12,6 +12,34 @@ Current status is based on `main` at `80357982b960ce1b7d44237f20eff4a035372640`.
 
 The milestone entries below retain their historical wording and are superseded by this section wherever they describe a milestone as active or a merged PR as open.
 
+## Completed milestone — Bash Tool Output Collapse and Expansion Parity — 2026-11-06
+
+ENV-PARSER-002 was reviewed and merged in PR #44 at
+`7748479cc0d7794464fda43902e5db03a76af642`; this milestone branches from that
+merge. PiSharp's Bash tool result now matches pinned Pi: the last five **visual**
+rows after width wrapping, a muted `... (N earlier lines,` hint with the
+`dim`-styled `ctrl+o` shortcut on its own row, a spacer row between consecutive
+tool blocks, and identical expanded output. The earlier double collapse (a
+logical-line preview plus a generic ten-visual-row tool-block truncation with a
+different hint) is removed for bounded Bash results; custom Bash renderers keep
+precedence.
+
+The deterministic `objective-agent-recovery` fixture now gates model responses at
+event boundaries (fixture checksum
+`2aba18ca274cd6b0e15ccb281e629dc0b2796fb229aaf2854076f036bfa765e2`) and adds
+Ctrl+O expansion and re-collapse checkpoints. Same-Pi calibration matches with
+zero text, layout or style differences at 80x24 and 120x40. Deterministic UI
+parity improved from **11/20** (progress 10/10, visual 1/10) to **20/20**
+(progress 10/10, visual 10/10) without changing the rubric, weights or permitted
+normalisation; the ENV-PARSER-002 80/80 agent-functional results remain
+historical evidence and were not rerun. Twelve focused Bash collapse regressions
+were added; six failed before the fix and all pass after it. The ENV-PARSER-001
+P2 trailing wrapped-command style remains tracked and untouched. See the
+[receipt](parity/fixtures/collapsed-tool-output-parity-2026-11-06/README.md),
+[UI report](parity/fixtures/collapsed-tool-output-parity-2026-11-06/ui-report.json)
+and [comparison summary](parity/fixtures/collapsed-tool-output-parity-2026-11-06/terminal-comparison.json).
+The next single deliverable is the 80x24 trailing wrapped-command style fix.
+
 ## Completed milestone — Multi-Step Agent Execution and Recovery Parity — 2026-11-06
 
 `ENV-PARSER-002` extends the merged ENV-PARSER-001 evaluation with two

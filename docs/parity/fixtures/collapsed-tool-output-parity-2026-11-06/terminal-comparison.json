@@ -1,0 +1,206 @@
+{
+  "fixture": {
+    "path": "tools/parity/terminal/fixtures/objective-agent-recovery.json",
+    "checksum": "2aba18ca274cd6b0e15ccb281e629dc0b2796fb229aaf2854076f036bfa765e2",
+    "historicalChecksum": "d66ba909bffbd346a92aaed4b0ec548051f81d993f9e7db4cb3e2fee5232b08d",
+    "assertionFrames": [
+      "startup",
+      "paste-tool-prompt",
+      "tool-start",
+      "tool-failure",
+      "expand-failure",
+      "collapse-failure",
+      "run-recovery",
+      "final-idle",
+      "exit"
+    ]
+  },
+  "calibration": {
+    "match": true,
+    "cases": [
+      {
+        "id": "80x24-dark-fullscreen",
+        "match": true,
+        "differences": 0,
+        "renderDifferences": 0,
+        "scenarioErrors": {},
+        "firstDifferences": []
+      },
+      {
+        "id": "120x40-dark-fullscreen",
+        "match": true,
+        "differences": 0,
+        "renderDifferences": 0,
+        "scenarioErrors": {},
+        "firstDifferences": []
+      }
+    ]
+  },
+  "comparison": {
+    "match": false,
+    "cases": [
+      {
+        "id": "80x24-dark-fullscreen",
+        "match": false,
+        "differences": 17,
+        "renderDifferences": 7,
+        "scenarioErrors": {},
+        "firstDifferences": [
+          {
+            "path": "$.frames[3].state.buffers.alternate.lines[23].cells[9].chars",
+            "pi": "7",
+            "pisharp": "2"
+          },
+          {
+            "path": "$.frames[3].state.viewport[23].cells[9].chars",
+            "pi": "7",
+            "pisharp": "2"
+          },
+          {
+            "path": "$.frames[4].state.buffers.alternate.lines[23].cells[7].chars",
+            "pi": "0",
+            "pisharp": "1"
+          },
+          {
+            "path": "$.frames[4].state.buffers.alternate.lines[23].cells[9].chars",
+            "pi": "7",
+            "pisharp": "8"
+          },
+          {
+            "path": "$.frames[4].state.viewport[23].cells[7].chars",
+            "pi": "0",
+            "pisharp": "1"
+          },
+          {
+            "path": "$.frames[4].state.viewport[23].cells[9].chars",
+            "pi": "7",
+            "pisharp": "8"
+          },
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[23].cells[7].chars",
+            "pi": "0",
+            "pisharp": "1"
+          },
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[23].cells[9].chars",
+            "pi": "7",
+            "pisharp": "8"
+          },
+          {
+            "path": "$.frames[5].state.viewport[23].cells[7].chars",
+            "pi": "0",
+            "pisharp": "1"
+          },
+          {
+            "path": "$.frames[5].state.viewport[23].cells[9].chars",
+            "pi": "7",
+            "pisharp": "8"
+          },
+          {
+            "path": "$.renders.pi[5]",
+            "pi": "unmatched render frame",
+            "pisharp": null
+          },
+          {
+            "path": "$.renders[7].buffers.normal.cursorX",
+            "pi": 80,
+            "pisharp": null
+          }
+        ]
+      },
+      {
+        "id": "120x40-dark-fullscreen",
+        "match": false,
+        "differences": 17,
+        "renderDifferences": 7,
+        "scenarioErrors": {},
+        "firstDifferences": [
+          {
+            "path": "$.frames[3].state.buffers.alternate.lines[39].cells[9].chars",
+            "pi": "7",
+            "pisharp": "2"
+          },
+          {
+            "path": "$.frames[3].state.viewport[39].cells[9].chars",
+            "pi": "7",
+            "pisharp": "2"
+          },
+          {
+            "path": "$.frames[4].state.buffers.alternate.lines[39].cells[7].chars",
+            "pi": "0",
+            "pisharp": "1"
+          },
+          {
+            "path": "$.frames[4].state.buffers.alternate.lines[39].cells[9].chars",
+            "pi": "7",
+            "pisharp": "8"
+          },
+          {
+            "path": "$.frames[4].state.viewport[39].cells[7].chars",
+            "pi": "0",
+            "pisharp": "1"
+          },
+          {
+            "path": "$.frames[4].state.viewport[39].cells[9].chars",
+            "pi": "7",
+            "pisharp": "8"
+          },
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[39].cells[7].chars",
+            "pi": "0",
+            "pisharp": "1"
+          },
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[39].cells[9].chars",
+            "pi": "7",
+            "pisharp": "8"
+          },
+          {
+            "path": "$.frames[5].state.viewport[39].cells[7].chars",
+            "pi": "0",
+            "pisharp": "1"
+          },
+          {
+            "path": "$.frames[5].state.viewport[39].cells[9].chars",
+            "pi": "7",
+            "pisharp": "8"
+          },
+          {
+            "path": "$.renders.pi[5]",
+            "pi": "unmatched render frame",
+            "pisharp": null
+          },
+          {
+            "path": "$.renders[7].buffers.normal.cursorX",
+            "pi": 120,
+            "pisharp": null
+          }
+        ]
+      }
+    ]
+  },
+  "normalisation": {
+    "scored": "text, layout signature, decoded cell styles and footer/cursor/modes per checkpoint",
+    "allowed": "workspace path, usage counters, scroll counters, Elapsed/Took durations, spinner glyphs",
+    "rawDifferenceCounts": [
+      17,
+      17
+    ]
+  },
+  "scores": {
+    "before": {
+      "progressPoints": 10,
+      "visualPoints": 1,
+      "total": 11,
+      "max": 20,
+      "pi": 20
+    },
+    "after": {
+      "progressPoints": 10,
+      "visualPoints": 10,
+      "total": 20,
+      "max": 20,
+      "pi": 20
+    }
+  }
+}

@@ -1528,24 +1528,28 @@ public sealed class TerminalScreen : IDisposable
     }
 
     internal void CompleteToolRow(string id, PiSharpToolRenderView collapsed, PiSharpToolRenderView expanded,
-        bool isError, IReadOnlyList<DataContent>? images)
+        bool isError, IReadOnlyList<DataContent>? images,
+        TerminalBashResultPreview.Source? bashPreview = null)
     {
         lock (_gate)
         {
             if (!_active) return;
-            _conversationPresentation.SetToolResult(id, collapsed, expanded, isError, finished: true, images);
+            _conversationPresentation.SetToolResult(id, collapsed, expanded, isError, finished: true, images,
+                bashPreview);
             _toolTimerRenderers.Remove(id);
             _render.Request();
         }
     }
 
     internal void UpdateToolRow(string id, PiSharpToolRenderView collapsed, PiSharpToolRenderView expanded,
-        bool isError, IReadOnlyList<DataContent>? images = null)
+        bool isError, IReadOnlyList<DataContent>? images = null,
+        TerminalBashResultPreview.Source? bashPreview = null)
     {
         lock (_gate)
         {
             if (!_active) return;
-            _conversationPresentation.SetToolResult(id, collapsed, expanded, isError, finished: false, images);
+            _conversationPresentation.SetToolResult(id, collapsed, expanded, isError, finished: false, images,
+                bashPreview);
             _render.Request();
         }
     }
@@ -1629,7 +1633,8 @@ public sealed class TerminalScreen : IDisposable
 
     internal void AppendToolResult(PiSharpToolRenderView collapsed, PiSharpToolRenderView expanded,
         IReadOnlyList<DataContent>? images = null, bool suppressUnsupportedImageFallbackWhenCollapsed = false,
-        string? operationId = null, bool isError = false)
+        string? operationId = null, bool isError = false,
+        TerminalBashResultPreview.Source? bashPreview = null)
     {
         ArgumentNullException.ThrowIfNull(collapsed);
         ArgumentNullException.ThrowIfNull(expanded);
@@ -1637,7 +1642,7 @@ public sealed class TerminalScreen : IDisposable
         {
             if (!_active) return;
             if (_conversationPresentation.AppendToolResult(collapsed, expanded, images,
-                    suppressUnsupportedImageFallbackWhenCollapsed, operationId, isError)) _render.Request();
+                    suppressUnsupportedImageFallbackWhenCollapsed, operationId, isError, bashPreview)) _render.Request();
         }
     }
 

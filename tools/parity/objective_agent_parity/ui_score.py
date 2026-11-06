@@ -22,12 +22,13 @@ VISUAL_CHECKPOINTS = ["startup", "paste-tool-prompt", *PROGRESS_CHECKPOINTS]
 SIZE_CASES = ["80x24-dark-fullscreen", "120x40-dark-fullscreen"]
 RECOVERY_CHECKPOINTS = [
     ("tool-start", "working"),
-    ("final-idle", "failure_output"),
-    ("final-idle", "failure_status"),
-    ("final-idle", "success_output"),
+    ("tool-failure", "failure_output"),
+    ("tool-failure", "failure_hint"),
+    ("run-recovery", "success_output"),
     ("final-idle", "final_idle"),
 ]
-RECOVERY_VISUAL_CHECKPOINTS = ["startup", "paste-tool-prompt", "run-recovery", "final-idle", "exit"]
+RECOVERY_VISUAL_CHECKPOINTS = ["startup", "paste-tool-prompt", "tool-start", "tool-failure",
+                               "expand-failure", "collapse-failure", "run-recovery", "final-idle", "exit"]
 
 
 def _text(line: dict[str, Any]) -> str:
@@ -194,8 +195,7 @@ def score_case(assertion_path: Path) -> dict[str, Any]:
     return details
 
 
-RECOVERY_CALIBRATION_CHECKPOINTS = ["startup", "paste-tool-prompt", "run-recovery",
-                                    "final-idle", "exit"]
+RECOVERY_CALIBRATION_CHECKPOINTS = RECOVERY_VISUAL_CHECKPOINTS
 
 
 def recovery_viewport_calibration(directory: Path) -> dict[str, Any]:
@@ -225,16 +225,6 @@ def recovery_viewport_calibration(directory: Path) -> dict[str, Any]:
         ok = ok and not mismatches
     return dict(match=ok, checkpoints=RECOVERY_CALIBRATION_CHECKPOINTS, cases=cases)
 
-    text = "\n".join(normalised_lines(frame))
-    return dict(
-        working="Working" in text,
-        failureOutput="Failed: 1" in text,
-        failureStatus="Command exited with code 1" in text,
-        successOutput="Passed: 1" in text,
-        finalResponse="Recovery complete." in text,
-        idle="Working" not in text,
-    )
-
 
 def recovery_semantics(frame: dict[str, Any]) -> dict[str, bool]:
     text = "\n".join(normalised_lines(frame))
@@ -242,6 +232,8 @@ def recovery_semantics(frame: dict[str, Any]) -> dict[str, bool]:
         working="Working" in text,
         failureOutput="Failed: 1" in text,
         failureStatus="Command exited with code 1" in text,
+        failureHint="... (4 earlier lines, ctrl+o to expand)" in text,
+        expanded="objective-recovery-one" in text,
         successOutput="Passed: 1" in text,
         finalResponse="Recovery complete." in text,
         idle="Working" not in text,
@@ -262,6 +254,7 @@ def score_recovery_case(assertion_path: Path) -> dict[str, Any]:
         pi_state = recovery_semantics(pi_frame)
         pisharp_state = recovery_semantics(pisharp_frame)
         key = {"failure_output": "failureOutput", "failure_status": "failureStatus",
+               "failure_hint": "failureHint",
                "success_output": "successOutput", "final_idle": "finalResponse"}.get(semantic, semantic)
         represented = bool(pi_state[key] and pisharp_state[key])
         if semantic == "final_idle":
@@ -344,8 +337,8 @@ def score_recovery_ui(calibration_directory: Path, comparison_directory: Path) -
             "match": calibration_ok,
             "checkpoints": viewport["checkpoints"],
             "cases": viewport["cases"],
-            "note": "Same-Pi calibration compares the stable named viewport checkpoints; "
-                    "full alternate-buffer scrollback scheduling is retained raw but not scored.",
+            "note": "Same-Pi calibration requires every stable event-boundary checkpoint to match "
+                    "in text, layout and styles; the raw render stream is retained as evidence.",
         },
         "comparison": {
             "directory": str(comparison_directory),

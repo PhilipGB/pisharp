@@ -333,7 +333,7 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
 
     public bool AppendToolResult(PiSharpToolRenderView collapsed, PiSharpToolRenderView expanded,
         IReadOnlyList<DataContent>? images, bool suppressUnsupportedImageFallbackWhenCollapsed = false,
-        string? operationId = null, bool isError = false)
+        string? operationId = null, bool isError = false, TerminalBashResultPreview.Source? bashPreview = null)
     {
         ToolPanelState panel;
         if (operationId is { Length: > 0 } && _toolPanelsByCall.Remove(operationId, out var existingPanel))
@@ -384,9 +384,9 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
             return RenderToolPanel(text + Environment.NewLine, theme, panel.BackgroundToken, bottomPadding: true) +
                 (fallbackImages.Count > 0 ? "" : Environment.NewLine);
         }
-        string RenderCollapsed(TerminalTheme theme)
+        string RenderCollapsedView(PiSharpToolRenderView view, TerminalTheme theme)
         {
-            var text = TerminalToolPresentation.Render(collapsed, theme) +
+            var text = TerminalToolPresentation.Render(view, theme) +
                 RenderImageFallbacks(collapsedFallbackImages, theme);
             if (text.Length == 0)
             {
@@ -399,12 +399,18 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
             return panelText + (collapsedFallbackImages.Count > 0 ? "" : Environment.NewLine) +
                 collapsedActiveImageText + (collapsedActiveImageText.Length > 0 ? Environment.NewLine : "");
         }
+        string RenderCollapsed(TerminalTheme theme) => RenderCollapsedView(collapsed, theme);
+        Func<int, string>? BuildCollapsedPreview() => bashPreview is { } source
+            ? width => RenderCollapsedView(TerminalBashResultPreview.Render(
+                source, width, _toolExpandKeyLabel, expanded: false), getTheme())
+            : null;
         var rendered = RenderExpanded(getTheme());
         var captured = EnsureTrailingNewline(TerminalToolPresentation.Render(expanded, theme: null) + capturedImageText) +
             Environment.NewLine;
         if (rendered.Length == 0) return false;
         transcript.AppendThemed(rendered, isError: true, isToolResult: true, RenderExpanded, captured,
-            collapsedPreviewText: RenderCollapsed(getTheme()), collapsedRenderer: RenderCollapsed);
+            collapsedPreviewText: RenderCollapsed(getTheme()), collapsedRenderer: RenderCollapsed,
+            collapsedPreviewBuilder: BuildCollapsedPreview());
         _lastSegmentWasToolResult = true;
         return true;
     }
@@ -457,7 +463,8 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
     }
 
     internal void SetToolResult(string id, PiSharpToolRenderView collapsed, PiSharpToolRenderView expanded,
-        bool isError, bool finished, IReadOnlyList<DataContent>? images = null)
+        bool isError, bool finished, IReadOnlyList<DataContent>? images = null,
+        TerminalBashResultPreview.Source? bashPreview = null)
     {
         if (!_toolPanelsByCall.TryGetValue(id, out var panel)) panel = RegisterToolPanel(id);
         panel.BackgroundToken = finished ? isError ? "toolErrorBg" : "toolSuccessBg" : "toolPendingBg";
@@ -471,22 +478,32 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
             activeImages.Append(Environment.NewLine).Append(marker ?? fallback);
             capturedImages.Append(Environment.NewLine).Append(fallback);
         }
-        string Expanded(TerminalTheme theme) => Environment.NewLine + RenderToolPanel(
-            Environment.NewLine + EnsureTrailingNewline(
-                TerminalToolPresentation.Render(expanded, theme)), theme, panel.BackgroundToken,
-            bottomPadding: true) +
-            activeImages + (activeImages.Length > 0 ? Environment.NewLine : "");
-        string Collapsed(TerminalTheme theme)
+        string RenderExpandedView(PiSharpToolRenderView view, TerminalTheme theme)
+        {
+            var text = RenderToolPanel(
+                Environment.NewLine + EnsureTrailingNewline(TerminalToolPresentation.Render(view, theme)),
+                theme, panel.BackgroundToken, bottomPadding: true);
+            return Environment.NewLine + text + activeImages +
+                (activeImages.Length > 0 ? Environment.NewLine : "");
+        }
+        string Expanded(TerminalTheme theme) => RenderExpandedView(expanded, theme);
+        string RenderCollapsedView(PiSharpToolRenderView view, TerminalTheme theme)
         {
             var panelText = RenderToolPanel(
-                Environment.NewLine + EnsureTrailingNewline(TerminalToolPresentation.Render(collapsed, theme)),
+                Environment.NewLine + EnsureTrailingNewline(TerminalToolPresentation.Render(view, theme)),
                 theme, panel.BackgroundToken, bottomPadding: true);
             return Environment.NewLine + panelText + capturedImages +
                 (capturedImages.Length > 0 ? Environment.NewLine : "");
         }
+        string Collapsed(TerminalTheme theme) => RenderCollapsedView(collapsed, theme);
+        Func<int, string>? BuildCollapsedPreview() => bashPreview is { } source
+            ? width => RenderCollapsedView(TerminalBashResultPreview.Render(
+                source, width, _toolExpandKeyLabel, expanded: false), getTheme())
+            : null;
         transcript.SetToolResult(id, Expanded(getTheme()), Collapsed(getTheme()), Expanded, Collapsed,
             Environment.NewLine + Environment.NewLine +
-            EnsureTrailingNewline(TerminalToolPresentation.Render(expanded, null) + capturedImages), isError, finished);
+            EnsureTrailingNewline(TerminalToolPresentation.Render(expanded, null) + capturedImages), isError, finished,
+            BuildCollapsedPreview());
         _lastSegmentWasToolResult = true;
     }
 
