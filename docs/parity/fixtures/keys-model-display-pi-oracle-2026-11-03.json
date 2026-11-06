@@ -363,7 +363,8 @@
           "app.thinking.cycle",
           "app.thinking.toggle",
           "app.tools.expand",
-          "app.message.copy"
+          "app.message.copy",
+          "app.session.tree"
         ]
       }
     },

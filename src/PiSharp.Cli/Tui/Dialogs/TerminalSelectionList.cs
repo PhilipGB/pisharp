@@ -67,6 +67,14 @@ internal sealed class TerminalSelectionList<T>
     public void SetTitle(string title) => _title = Clean(title);
     public void SelectIndex(int index) => _selectedIndex = Math.Clamp(index, 0, Math.Max(0, _filteredOptions.Count - 1));
     public void SetActionHint(string? actionHint) => _actionHint = string.IsNullOrWhiteSpace(actionHint) ? null : Clean(actionHint);
+    /// <summary>Clears the active search and clamps the selection into the restored list.</summary>
+    public void ClearSearch()
+    {
+        if (_query.Length == 0) return;
+        _query = "";
+        FilterOptions();
+        _selectedIndex = Math.Clamp(_selectedIndex, 0, Math.Max(0, _filteredOptions.Count - 1));
+    }
     public void SetEmptyMessage(string message) => _emptyMessage = Clean(message);
     public TerminalSelection<T>? Selected
     {

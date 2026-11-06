@@ -1057,10 +1057,15 @@ public sealed class TerminalScreen : IDisposable
         {
             if (!_active) return;
             var opening = lines is not null && _overlay is null;
+            // List state sanitizes user text before applying application-owned styling.
+            var next = lines?.Select(line => line.Replace('\n', ' ')).ToArray();
+            // Idle selector loops re-submit identical content; repainting it would stream
+            // output forever and starve quiet detection in PTY drivers.
+            var unchanged = _overlay is null ? next is null : next is not null && _overlay.SequenceEqual(next);
+            if (unchanged) return;
             if (opening && _render.Pending)
                 _render.Flush();
-            // List state sanitizes user text before applying application-owned styling.
-            _overlay = lines?.Select(line => line.Replace('\n', ' ')).ToArray();
+            _overlay = next;
             _render.Request(immediate: opening);
         }
     }

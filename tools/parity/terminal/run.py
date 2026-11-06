@@ -124,6 +124,15 @@ def environment(agent, *, persist_sessions=False):
     return result
 
 
+def read_session_contents(agent):
+    """Capture native session documents so evidence can observe persisted state."""
+    root = agent / 'sessions'
+    if not root.is_dir():
+        return {}
+    return {path.relative_to(agent).as_posix(): path.read_text(errors='replace')
+            for path in sorted(root.rglob('*')) if path.is_file() and not path.is_symlink()}
+
+
 def start_terminal_process(command, cwd, child_environment, options):
     """Start a runner-owned PTY with compressed render spooling enabled."""
     return TerminalProcess(command, cwd, child_environment, options, spool_render_frames=True)
@@ -218,7 +227,8 @@ def write_assertion_evidence(path, products, dimensions, theme, mode, frame_ids=
         frames = list(product.get('assertionFrames', []))
         evidence[name] = dict(frames=frames, http=product['http'], scenarioError=product['scenarioError'],
                               capturedAgentFiles=product.get('capturedAgentFiles', {}),
-                              capturedSessionFiles=product.get('capturedSessionFiles', []))
+                              capturedSessionFiles=product.get('capturedSessionFiles', []),
+                              capturedSessionContents=product.get('capturedSessionContents', {}))
         if include_working_indicator:
             evidence[name]['workingIndicator'] = working_indicator_summary(product['renders'])
 
@@ -460,6 +470,7 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
                     httpByFrame=http_by_frame, clipboardByFrame=clipboard_by_frame,
                     raw=base64.b64encode(prior_raw).decode(), capturedAgentFiles=captured_agent_files,
                     capturedSessionFiles=captured_session_files,
+                    capturedSessionContents=read_session_contents(agent),
                     http=server.requests[request_start:], command=command, scenarioError=None)
     except (TimeoutError, RuntimeError) as error:
         record_frame(dict(id=action['id'], state=terminal.snapshot(), controls=terminal.trace.events[control_mark:],
@@ -474,6 +485,7 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
                                                for path in (agent / 'sessions').rglob('*')
                                                if path.is_file() and not path.is_symlink())
                     if (agent / 'sessions').is_dir() else [],
+                    capturedSessionContents=read_session_contents(agent),
                     http=server.requests[request_start:], command=command, scenarioError=str(error))
     finally:
         terminal.close()

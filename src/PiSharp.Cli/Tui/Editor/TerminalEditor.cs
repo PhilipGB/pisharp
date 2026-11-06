@@ -1,3 +1,4 @@
+using PiSharp.Core;
 using PiSharp.Runtime.Extensions;
 using NativeExtensions = PiSharp.Extensions.Abstractions;
 
@@ -9,7 +10,7 @@ public sealed class TerminalEditor
     internal static readonly string[] ActiveApplicationActions =
     [
         "app.thinking.cycle", "app.thinking.toggle", "app.model.cycleForward",
-        "app.model.cycleBackward", "app.model.select"
+        "app.model.cycleBackward", "app.model.select", "app.session.tree"
     ];
 
     private sealed record CompletionCandidate(string DisplayText, string ReplacementText, bool Native,
@@ -414,6 +415,19 @@ public sealed class TerminalEditor
         int bottomSpacerLines = 0, bool showCurrentMarker = false,
         CancellationToken cancellationToken = default, bool extensionDialog = false, string headerStyle = "dim") =>
         _dialogs.ShowInlineSelectionList(title, options, header, footer, selectedKey, preservePanelAfterSelection, optionIndent, bottomMargin, bottomSpacerLines, showCurrentMarker, cancellationToken, extensionDialog, headerStyle);
+
+    /// <summary>Shows the session tree navigator; returns the selected entry or null when cancelled.</summary>
+    internal async Task<ConversationNode?> ShowTreeSelectorAsync(
+        Func<IReadOnlyList<ConversationNode>> freshEntries,
+        Func<string, string?, Task<bool>> onSaveLabelAsync,
+        Func<string?, Task> onCopyAsync,
+        string? currentLeafId, string? initialSelectedId)
+    {
+        if (_screen is not { IsActive: true } screen) return null;
+        var input = EnsureInput();
+        var selector = new TerminalTreeSelector(freshEntries, onSaveLabelAsync, onCopyAsync, _keymap);
+        return await selector.ShowAsync(screen, input, currentLeafId, initialSelectedId).ConfigureAwait(false);
+    }
 
     internal void ShowInlineSelectionPanel<T>(string title, IReadOnlyList<TerminalSelectionOption<T>> options,
         IReadOnlyList<string>? header = null, string footer = "↑↓ move • enter select • escape/ctrl+c close",

@@ -8,9 +8,32 @@
 
 ## Current state — 2026-11-01
 
-Current status is based on `main` at `80357982b960ce1b7d44237f20eff4a035372640`. The latest merged milestones are the [Complete RPC Protocol and Command Parity](parity/fixtures/rpc-protocol-command-parity/README.md) (PR #29, `480f058a`), [resource path and glob matching parity](parity/fixtures/resource-glob-matching-parity/README.md) (PR #30, `fc75ba2a`), [core agent-loop active-queue parity](parity/core-loop-active-queue-parity-milestone-receipt.md) (PR #31, `50cbb591`) and [Mermaid Markdown parity](parity/fixtures/mermaid-markdown-parity.md) (PR #32, `80357982`). Global parity remains `in_progress` at **14 verified, 147 in progress and 33 not started** across the 194 required capabilities. The next step is to select the next capability from the feature matrix and execution ledger, audit pinned Pi for it, and record the resulting evidence. Open architecture risks are tracked in the [architecture document](architecture.md#open-architecture-risks).
+Current status is based on `main` at `80357982b960ce1b7d44237f20eff4a035372640`. The latest merged milestones are the [Complete RPC Protocol and Command Parity](parity/fixtures/rpc-protocol-command-parity/README.md) (PR #29, `480f058a`), [resource path and glob matching parity](parity/fixtures/resource-glob-matching-parity/README.md) (PR #30, `fc75ba2a`), [core agent-loop active-queue parity](parity/core-loop-active-queue-parity-milestone-receipt.md) (PR #31, `50cbb591`) and [Mermaid Markdown parity](parity/fixtures/mermaid-markdown-parity.md) (PR #32, `80357982`). Global parity remains `in_progress` at **15 verified, 147 in progress and 32 not started** across the 194 required capabilities. The next step is to select the next capability from the feature matrix and execution ledger, audit pinned Pi for it, and record the resulting evidence. Open architecture risks are tracked in the [architecture document](architecture.md#open-architecture-risks).
 
 The milestone entries below retain their historical wording and are superseded by this section wherever they describe a milestone as active or a merged PR as open.
+
+## Completed milestone — Session Tree and Scoped Model Picker — 2026-11-05
+
+The `keys-tree-scoped-picker` capability is verified at implementation source
+`12cd366111f1d9eb126102bb0ba372f461545bad` against pinned Pi
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The frozen oracle defines
+T01-T08 for `/tree` and S01-S07 for `/scoped-models`; the
+[acceptance manifest](parity/fixtures/keys-tree-scoped-picker-acceptance-2026-11-05.json)
+maps every case to 12 deterministic facts, five Linux PTY journeys and 71 named
+checkpoints in each of four paired cases (100x30/140x40, dark, fullscreen and
+regular). Paired and same-Pi calibration semantic differences are zero;
+clipboard writes, persisted `enabledModels`, tree label trails and terminal
+restoration match. The full .NET suite passes 4,471/4,471 with zero skips. Format and warnings-as-errors build
+pass; exact-head CI Linux CI run `42154036729` on `9f7b8d19`; draft PR #42 open and unmerged.
+Review corrections sanitize session-controlled tree/label text, open
+`/scoped-models` from the available snapshot with one bounded refresh, mark
+removed models unavailable, rerender on resize and honor only the configured
+save binding. A second review round preserves editor drafts, makes branch
+summaries Escape-cancellable and reopens the tree at the selection, retains every
+no-match scoped pattern, pans deep selected rows, dispatches `app.session.tree`
+during streaming after restoring queued input and settling the response, and adds
+read line ranges to tree summaries. `settings.treeFilterMode` remains separately tracked. See the
+[receipt](parity/fixtures/keys-tree-scoped-picker-2026-11-05.md).
 
 ## Completed milestone — Complete Tool-Result Contract Parity — 2026-11-02
 

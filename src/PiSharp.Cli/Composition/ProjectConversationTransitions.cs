@@ -33,6 +33,9 @@ internal sealed class ProjectConversationTransitions(string agentDirectory, stri
         var shutdownError = await NotifyShutdownForCommitAsync(outgoingRun, ToShutdownReason(reason));
         if (beforeAdopt is not null) await beforeAdopt(outgoingRun);
         conversationBinding.Adopt(branch.Conversation, branch.Run, branch.Path);
+        // A session switch re-derives the model scope from settings unless the CLI scoped models explicitly.
+        if (!projectBinding.Arguments.HasExplicitModelScope)
+            modelRuntime.SetScope(projectBinding.Configuration.Settings.EnabledModels);
         await ExtensionSessionLifecycleHost.NotifyStartAsync(branch.Run, reason);
         ThrowTransitionErrors(shutdownError, null);
     }

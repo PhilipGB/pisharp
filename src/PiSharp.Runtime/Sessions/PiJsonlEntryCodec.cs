@@ -441,7 +441,7 @@ internal static class PiJsonlEntryCodec
                 StringProperty(message, "output") ?? "", IntProperty(message, "exitCode"), BoolProperty(message, "cancelled"),
                 BoolProperty(message, "truncated"), StringProperty(message, "fullOutputPath"), BoolProperty(message, "excludeFromContext"))
             { PiOriginalEntry = entry.Clone() };
-            return new(id, parentId, "bash_execution", JsonSerializer.SerializeToElement(record), timestamp);
+            return new(id, parentId, "bash_execution", ConversationMessageCodec.EncodeBashExecution(record), timestamp);
         }
         if (type == "compaction")
             return new(id, parentId, type, AddOriginal(entry), timestamp);

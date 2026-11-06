@@ -1990,7 +1990,7 @@ public sealed class TerminalPtyTests
                         output.Append(buffer, 0, count);
                         var captured = output.ToString();
                         if (captured.Contains("\u001b[?2004h", StringComparison.Ordinal)) inputReady.TrySetResult();
-                        if (captured.Contains("Conversation tree", StringComparison.Ordinal)) pickerOpened.TrySetResult();
+                        if (captured.Contains("Session Tree", StringComparison.Ordinal)) pickerOpened.TrySetResult();
                         if (captured.Contains("Summarize branch?", StringComparison.Ordinal))
                             branchSummaryPromptOpened.TrySetResult();
                         if (captured.Contains("Summarize with custom prompt", StringComparison.Ordinal))
@@ -2021,7 +2021,7 @@ public sealed class TerminalPtyTests
             var capturedOutput = await stdout;
             var saved = await store.LoadAsync(sessionPath);
             Assert.Equal(0, process.ExitCode);
-            Assert.Contains("assistant: second answer", capturedOutput);
+            Assert.Contains("assistant: second answer", StripAnsi(capturedOutput));
             Assert.Contains("No summary", capturedOutput);
             Assert.Contains("Summarize", capturedOutput);
             Assert.Contains("Summarize with custom prompt", capturedOutput);
@@ -2034,6 +2034,488 @@ public sealed class TerminalPtyTests
             Assert.DoesNotContain("Agent error:", await stderr);
         }
         finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
+    public async Task SessionTreeNeutralizesControlSequencesThroughLinuxPty()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-tree-sanitize-pty-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(cwd, "agent");
+        Directory.CreateDirectory(agent);
+        try
+        {
+            var store = new PiSharp.Runtime.Sessions.ConversationStore(cwd, Path.Combine(cwd, "sessions"));
+            var conversation = new PiSharp.Runtime.Sessions.ConversationSession(cwd, ConnectionSettings.LocalModel,
+                new Uri(ConnectionSettings.LocalEndpoint).ToString());
+            conversation.Append(new Microsoft.Extensions.AI.ChatMessage(
+                Microsoft.Extensions.AI.ChatRole.User, "safe \u001b[2J\u001b]0;pwned\u0007 text"));
+            var user = conversation.Tree.Entries[^1];
+            conversation.Tree.Append("label", JsonSerializer.SerializeToElement(new
+            {
+                targetId = user.Id,
+                label = "bad \u001b]52;c;cHduZWQ=\u0007"
+            }));
+            var sessionPath = store.NewPath(conversation);
+            await store.SaveAsync(conversation, sessionPath);
+
+            var start = new ProcessStartInfo("/usr/bin/script")
+            {
+                WorkingDirectory = cwd,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                ArgumentList =
+                {
+                    "-q", "-e", "-c",
+                    $"stty rows 24 cols 100; exec dotnet '{typeof(CliArguments).Assembly.Location}' --local --session '{sessionPath}' --session-dir '{store.DirectoryPath}' --no-tools",
+                    "/dev/null"
+                }
+            };
+            start.Environment["PISHARP_AGENT_DIR"] = agent;
+            using var process = Process.Start(start);
+            Assert.NotNull(process);
+            var output = new StringBuilder();
+            var outputLock = new object();
+            var inputReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var pickerOpened = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var stdout = Task.Run(async () =>
+            {
+                var buffer = new char[1024];
+                while (true)
+                {
+                    var count = await process.StandardOutput.ReadAsync(buffer);
+                    if (count == 0) break;
+                    lock (outputLock)
+                    {
+                        output.Append(buffer, 0, count);
+                        var captured = output.ToString();
+                        if (captured.Contains("\u001b[?2004h", StringComparison.Ordinal)) inputReady.TrySetResult();
+                        if (captured.Contains("Session Tree", StringComparison.Ordinal)) pickerOpened.TrySetResult();
+                    }
+                }
+                lock (outputLock) return output.ToString();
+            });
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+            await inputReady.Task.WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync("/tree\r");
+            await process.StandardInput.FlushAsync();
+            await pickerOpened.Task.WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync("\u001b");
+            await process.StandardInput.FlushAsync();
+            await process.StandardInput.WriteAsync("/quit\r");
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+
+            var capturedOutput = await stdout;
+            Assert.Equal(0, process.ExitCode);
+            Assert.Contains("safe [2J]0;pwned text", StripAnsi(capturedOutput));
+            Assert.Contains("bad ]52;c;cHduZWQ=", StripAnsi(capturedOutput));
+            Assert.True(capturedOutput.IndexOf("\u001b]0;pwned", StringComparison.Ordinal) < 0,
+                "OSC title sequence reached the terminal");
+            Assert.True(capturedOutput.IndexOf("\u001b]52;c;cHduZWQ=", StringComparison.Ordinal) < 0,
+                "OSC clipboard sequence reached the terminal");
+            Assert.DoesNotContain("Agent error", await stderr);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
+    public async Task SessionTreeShortcutKeepsAnExistingEditorDraftThroughLinuxPty()
+    {
+        // Pinned Pi only restores the navigated prompt when the editor text is empty.
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-tree-draft-pty-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(cwd, "agent");
+        Directory.CreateDirectory(agent);
+        Process? process = null;
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(agent, "keybindings.json"), """
+                { "app.session.tree": "ctrl+n" }
+                """);
+            var store = new PiSharp.Runtime.Sessions.ConversationStore(cwd, Path.Combine(cwd, "sessions"));
+            var conversation = new PiSharp.Runtime.Sessions.ConversationSession(cwd, ConnectionSettings.LocalModel,
+                new Uri(ConnectionSettings.LocalEndpoint).ToString());
+            conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "first prompt"));
+            conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.Assistant, "first answer"));
+            var sharedHead = conversation.Tree.HeadId!;
+            conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "second prompt"));
+            var selected = conversation.Tree.Entries[^1];
+            conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.Assistant, "second answer"));
+            conversation.Tree.Select(sharedHead);
+            conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "alternate prompt"));
+            conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.Assistant, "alternate answer"));
+            var sessionPath = store.NewPath(conversation);
+            await store.SaveAsync(conversation, sessionPath);
+
+            var start = new ProcessStartInfo("/usr/bin/script")
+            {
+                WorkingDirectory = cwd,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                ArgumentList =
+                {
+                    "-q", "-e", "-c",
+                    $"stty rows 24 cols 100; exec dotnet '{typeof(CliArguments).Assembly.Location}' --local --session '{sessionPath}' --session-dir '{store.DirectoryPath}' --no-tools",
+                    "/dev/null"
+                }
+            };
+            start.Environment["PISHARP_AGENT_DIR"] = agent;
+            process = Process.Start(start);
+            Assert.NotNull(process);
+            var screen = new PtyScreenCapture(process, rows: 24, columns: 100);
+            var stdout = screen.ReadCompletion;
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            await screen.InputReady.WaitAsync(timeout.Token);
+
+            async Task SendAsync(string input)
+            {
+                await process.StandardInput.WriteAsync(input);
+                await process.StandardInput.FlushAsync();
+            }
+
+            async Task<string> WaitForAsync(Func<string, bool> predicate, string description)
+            {
+                try { return await screen.WaitForFrameAsync(predicate).WaitAsync(timeout.Token); }
+                catch (OperationCanceledException)
+                {
+                    throw new InvalidOperationException($"Timed out waiting for {description}. Current frame:\n{screen.LastFrame}");
+                }
+            }
+
+            await SendAsync("draft to keep");
+            await WaitForAsync(frame => frame.Contains("draft to keep", StringComparison.Ordinal), "editor draft");
+            await SendAsync("\u000e");
+            await WaitForAsync(frame => frame.Contains("Session Tree", StringComparison.Ordinal), "configured tree shortcut");
+            await SendAsync("second prompt");
+            await WaitForAsync(frame => frame.Contains("Type to search: second prompt", StringComparison.Ordinal), "tree search");
+            await SendAsync("\r");
+            await WaitForAsync(frame => frame.Contains("Summarize branch?", StringComparison.Ordinal), "branch summary prompt");
+            await SendAsync("\r");
+            await WaitForAsync(frame => frame.Contains($"Selected {selected.Id[..12]}", StringComparison.Ordinal),
+                "tree navigation");
+            var afterNavigation = await WaitForAsync(frame =>
+                !frame.Contains("Session Tree", StringComparison.Ordinal) &&
+                !frame.Contains("Summarize branch?", StringComparison.Ordinal) &&
+                frame.Contains("draft to keep", StringComparison.Ordinal), "draft after navigation");
+
+            await SendAsync("\u0015/quit\r");
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+            var capturedOutput = await stdout;
+            var saved = await store.LoadAsync(sessionPath);
+
+            Assert.Equal(0, process.ExitCode);
+            Assert.Contains("draft to keep", StripAnsi(capturedOutput));
+            Assert.DoesNotContain("second prompt", StripAnsi(afterNavigation));
+            Assert.Equal(sharedHead, saved.Tree.HeadId);
+            Assert.DoesNotContain("Agent error", await stderr);
+        }
+        finally
+        {
+            if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
+            process?.Dispose();
+            Directory.Delete(cwd, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task BranchSummaryEscapeCancelsAndReopensTheTreeThroughLinuxPty()
+    {
+        // Pinned Pi installs an Escape handler that aborts branch summarization and
+        // reopens the tree at the same selection.
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-tree-summary-cancel-pty-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(cwd, "agent");
+        Directory.CreateDirectory(agent);
+        using var listener = StartLoopbackListener(out var port);
+        using var serverStop = new CancellationTokenSource();
+        Process? process = null;
+        var summaryRequested = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseSummary = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var server = Task.Run(async () =>
+        {
+            try
+            {
+                var request = await listener.GetContextAsync().WaitAsync(serverStop.Token);
+                using var reader = new StreamReader(request.Request.InputStream);
+                _ = await reader.ReadToEndAsync(serverStop.Token);
+                request.Response.ContentType = "text/event-stream";
+                request.Response.KeepAlive = false;
+                await using var writer = new StreamWriter(request.Response.OutputStream);
+                await writer.WriteAsync("data: {\"type\":\"response.created\",\"response\":{\"id\":\"summary_hold\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"in_progress\",\"output\":[]}}\n\n");
+                await writer.FlushAsync();
+                summaryRequested.TrySetResult();
+                await releaseSummary.Task.WaitAsync(serverStop.Token);
+            }
+            catch (Exception error) when (error is OperationCanceledException or IOException or
+                HttpListenerException or ObjectDisposedException)
+            { }
+        });
+
+        try
+        {
+            var models = """
+                {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:PORT/v1","apiKey":"fixture-key",
+                  "models":[{"id":"fixture-model","api":"openai-responses"}]}}}
+                """.Replace("PORT", port.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    StringComparison.Ordinal);
+            await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), models);
+            var store = new PiSharp.Runtime.Sessions.ConversationStore(cwd, Path.Combine(cwd, "sessions"));
+            var conversation = new PiSharp.Runtime.Sessions.ConversationSession(cwd, "fixture-model",
+                $"http://127.0.0.1:{port}/v1", provider: "fixture");
+            conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "first prompt"));
+            conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.Assistant, "first answer"));
+            conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "second prompt"));
+            conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.Assistant, "second answer"));
+            var sessionPath = store.NewPath(conversation);
+            await store.SaveAsync(conversation, sessionPath);
+
+            var start = new ProcessStartInfo("/usr/bin/script")
+            {
+                WorkingDirectory = cwd,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                ArgumentList =
+                {
+                    "-q", "-e", "-c",
+                    $"stty rows 24 cols 100; exec dotnet '{typeof(CliArguments).Assembly.Location}' --offline --session '{sessionPath}' --session-dir '{store.DirectoryPath}' --no-tools",
+                    "/dev/null"
+                }
+            };
+            start.Environment["PISHARP_AGENT_DIR"] = agent;
+            process = Process.Start(start);
+            Assert.NotNull(process);
+            var screen = new PtyScreenCapture(process, rows: 24, columns: 100);
+            var stdout = screen.ReadCompletion;
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+            await screen.InputReady.WaitAsync(timeout.Token);
+
+            async Task SendAsync(string input)
+            {
+                await process.StandardInput.WriteAsync(input);
+                await process.StandardInput.FlushAsync();
+            }
+
+            async Task<string> WaitForAsync(Func<string, bool> predicate, string description)
+            {
+                try { return await screen.WaitForFrameAsync(predicate).WaitAsync(timeout.Token); }
+                catch (OperationCanceledException)
+                {
+                    throw new InvalidOperationException($"Timed out waiting for {description}. Current frame:\n{screen.LastFrame}");
+                }
+            }
+
+            await SendAsync("/tree\r");
+            await WaitForAsync(frame => frame.Contains("Session Tree", StringComparison.Ordinal), "tree selector");
+            await SendAsync("first answer");
+            await WaitForAsync(frame => frame.Contains("Type to search: first answer", StringComparison.Ordinal), "tree search");
+            await SendAsync("\r");
+            await WaitForAsync(frame => frame.Contains("Summarize branch?", StringComparison.Ordinal), "summary prompt");
+            await SendAsync("\u001b[B\r");
+            await WaitForAsync(frame => frame.Contains("Summarizing branch", StringComparison.Ordinal), "summary progress");
+            await summaryRequested.Task.WaitAsync(timeout.Token);
+            await SendAsync("\u001b");
+            var reopened = await WaitForAsync(frame =>
+                frame.Contains("Session Tree", StringComparison.Ordinal) &&
+                frame.Contains("assistant: first answer", StringComparison.Ordinal), "reopened tree");
+
+            await SendAsync("\u001b");
+            await WaitForAsync(frame => !frame.Contains("Session Tree", StringComparison.Ordinal),
+                "tree dismissal after cancellation");
+            await SendAsync("/quit\r");
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+            _ = await stdout;
+            var saved = await store.LoadAsync(sessionPath);
+
+            Assert.Equal(0, process.ExitCode);
+            Assert.Contains("assistant: first answer", reopened);
+            Assert.Equal(["first prompt", "first answer", "second prompt", "second answer"],
+                saved.ActiveMessages().Select(message => message.Text));
+            Assert.DoesNotContain(saved.Tree.Entries, entry => entry.Type == "branch_summary");
+            Assert.DoesNotContain("Agent error", await stderr);
+        }
+        finally
+        {
+            releaseSummary.TrySetResult();
+            serverStop.Cancel();
+            listener.Close();
+            try { await server; }
+            catch (Exception error) when (error is OperationCanceledException or HttpListenerException or
+                ObjectDisposedException or IOException)
+            { }
+            if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
+            process?.Dispose();
+            Directory.Delete(cwd, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task SessionTreeShortcutAbortsStreamingRestoresInputAndNavigatesThroughLinuxPty()
+    {
+        // Pinned Pi supports app.session.tree while streaming: queued input returns to the
+        // editor, the active response is aborted, and navigation waits for it to settle.
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-tree-stream-pty-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(cwd, "agent");
+        Directory.CreateDirectory(agent);
+        using var listener = StartLoopbackListener(out var port);
+        using var serverStop = new CancellationTokenSource();
+        Process? process = null;
+        var firstRequest = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var providerAborted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var server = Task.Run(async () =>
+        {
+            try
+            {
+                var request = await listener.GetContextAsync().WaitAsync(serverStop.Token);
+                using var reader = new StreamReader(request.Request.InputStream);
+                _ = await reader.ReadToEndAsync(serverStop.Token);
+                firstRequest.TrySetResult();
+                request.Response.ContentType = "text/event-stream";
+                request.Response.KeepAlive = false;
+                await using var writer = new StreamWriter(request.Response.OutputStream);
+                await writer.WriteAsync("data: {\"type\":\"response.created\",\"response\":{\"id\":\"stream_hold\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"in_progress\",\"output\":[]}}\n\n");
+                await writer.WriteAsync("data: {\"type\":\"response.output_text.delta\",\"item_id\":\"msg_hold\",\"output_index\":0,\"content_index\":0,\"delta\":\"STREAM_HELD\\n\"}\n\n");
+                await writer.FlushAsync();
+                while (!serverStop.IsCancellationRequested)
+                {
+                    await Task.Delay(50).ConfigureAwait(false);
+                    await writer.WriteAsync("data: {\"type\":\"response.output_text.delta\",\"item_id\":\"msg_hold\",\"output_index\":0,\"content_index\":0,\"delta\":\".\"}\n\n");
+                    await writer.FlushAsync();
+                }
+            }
+            catch (Exception error) when (error is OperationCanceledException or IOException or
+                HttpListenerException or ObjectDisposedException)
+            {
+                providerAborted.TrySetResult();
+            }
+        });
+
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(agent, "keybindings.json"), """
+                { "app.session.tree": "ctrl+n" }
+                """);
+            var models = """
+                {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:PORT/v1","apiKey":"fixture-key",
+                  "models":[{"id":"fixture-model","api":"openai-responses"}]}}}
+                """.Replace("PORT", port.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    StringComparison.Ordinal);
+            await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), models);
+            var store = new PiSharp.Runtime.Sessions.ConversationStore(cwd, Path.Combine(cwd, "sessions"));
+            var conversation = new PiSharp.Runtime.Sessions.ConversationSession(cwd, "fixture-model",
+                $"http://127.0.0.1:{port}/v1", provider: "fixture");
+            conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "first prompt"));
+            var firstUser = conversation.Tree.Entries[^1];
+            conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.Assistant, "first answer"));
+            var sharedHead = conversation.Tree.HeadId!;
+            conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "second prompt"));
+            conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.Assistant, "second answer"));
+            conversation.Tree.Select(sharedHead);
+            conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "alternate prompt"));
+            conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.Assistant, "alternate answer"));
+            var sessionPath = store.NewPath(conversation);
+            await store.SaveAsync(conversation, sessionPath);
+
+            var start = new ProcessStartInfo("/usr/bin/script")
+            {
+                WorkingDirectory = cwd,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                ArgumentList =
+                {
+                    "-q", "-e", "-c",
+                    $"stty rows 30 cols 100; exec dotnet '{typeof(CliArguments).Assembly.Location}' --offline --session '{sessionPath}' --session-dir '{store.DirectoryPath}' --no-tools",
+                    "/dev/null"
+                }
+            };
+            start.Environment["PISHARP_AGENT_DIR"] = agent;
+            process = Process.Start(start);
+            Assert.NotNull(process);
+            var screen = new PtyScreenCapture(process, rows: 30, columns: 100);
+            var stdout = screen.ReadCompletion;
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+            await screen.InputReady.WaitAsync(timeout.Token);
+
+            async Task SendAsync(string input)
+            {
+                await process.StandardInput.WriteAsync(input);
+                await process.StandardInput.FlushAsync();
+            }
+
+            async Task<string> WaitForAsync(Func<string, bool> predicate, string description)
+            {
+                try { return await screen.WaitForFrameAsync(predicate).WaitAsync(timeout.Token); }
+                catch (OperationCanceledException)
+                {
+                    throw new InvalidOperationException($"Timed out waiting for {description}. Current frame:\n{screen.LastFrame}");
+                }
+            }
+
+            await SendAsync("start stream\r");
+            await firstRequest.Task.WaitAsync(timeout.Token);
+            await WaitForAsync(frame => frame.Contains("STREAM_HELD", StringComparison.Ordinal) &&
+                frame.Contains("Working", StringComparison.Ordinal), "active stream");
+            await SendAsync("queued steer\r");
+            await WaitForAsync(frame => frame.Contains("queued steer", StringComparison.Ordinal), "queued steering message");
+            await SendAsync("draft to keep");
+            await WaitForAsync(frame => frame.Contains("draft to keep", StringComparison.Ordinal), "streaming draft");
+            await SendAsync("\u000e");
+            await WaitForAsync(frame => frame.Contains("Session Tree", StringComparison.Ordinal), "active tree shortcut");
+            await SendAsync("first prompt");
+            await WaitForAsync(frame => frame.Contains("Type to search: first prompt", StringComparison.Ordinal),
+                "tree search during stream");
+            await SendAsync("\r");
+            await WaitForAsync(frame => frame.Contains("Summarize branch?", StringComparison.Ordinal),
+                "summary prompt during stream");
+            await SendAsync("\r");
+            await WaitForAsync(frame => frame.Contains("Selected " + firstUser.Id[..12], StringComparison.Ordinal),
+                "streaming tree navigation");
+            var restored = await WaitForAsync(frame =>
+                frame.Contains("queued steer", StringComparison.Ordinal) &&
+                frame.Contains("draft to keep", StringComparison.Ordinal) &&
+                !frame.Contains("Working", StringComparison.Ordinal), "restored queued input");
+            await providerAborted.Task.WaitAsync(timeout.Token);
+
+            await SendAsync("\u0003/quit\r");
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+            var capturedOutput = await stdout;
+            var saved = await store.LoadAsync(sessionPath);
+
+            Assert.Equal(0, process.ExitCode);
+            Assert.Contains("queued steer", StripAnsi(restored));
+            Assert.Contains("draft to keep", StripAnsi(restored));
+            Assert.Contains("Operation aborted", StripAnsi(capturedOutput));
+            Assert.True(firstUser.ParentId == saved.Tree.HeadId,
+                $"parent={firstUser.ParentId ?? "null"} head={saved.Tree.HeadId ?? "null"} entries=" +
+                string.Join(" | ", saved.Tree.Entries.Select(entry =>
+                    $"{entry.Id[..8]}:{entry.Type}:{entry.ParentId?[..Math.Min(8, entry.ParentId.Length)] ?? "null"}")));
+            Assert.DoesNotContain(saved.Tree.Entries, entry => entry.Type == "branch_summary");
+            Assert.DoesNotContain("Agent error", await stderr);
+        }
+        finally
+        {
+            serverStop.Cancel();
+            listener.Close();
+            try { await server; }
+            catch (Exception error) when (error is OperationCanceledException or HttpListenerException or
+                ObjectDisposedException or IOException)
+            { }
+            if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
+            process?.Dispose();
+            Directory.Delete(cwd, recursive: true);
+        }
     }
 
     [Fact]
@@ -2879,21 +3361,22 @@ public sealed class TerminalPtyTests
         await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), """
             {"providers":{"fixture":{"baseUrl":"https://fixture.test/v1","apiKeyEnv":"PISHARP_SCOPED_KEY","models":[
               {"id":"model-a","name":"Model A","reasoning":true},
-              {"id":"model-b","name":"Model B","reasoning":true}
+              {"id":"model-b","name":"Model B","reasoning":true},
+              {"id":"model-c","name":"Model C","reasoning":true}
             ]}}}
             """);
         await File.WriteAllTextAsync(Path.Combine(agent, "settings.json"),
-            "{\"shellCommandPrefix\":\"preserved\",\"enabledModels\":[\"fixture/model-a\",\"fixture/model-b\"]}\n");
+            "{\"shellCommandPrefix\":\"preserved\",\"enabledModels\":[\"fixture/model-a\",\"fixture/model-b\",\"fixture/model-c\"]}\n");
 
         Process? process = null;
         Process? restoredProcess = null;
         try
         {
-            process = StartThinkingFixtureProcess(root, agent);
+            process = StartThinkingFixtureProcess(root, agent, scopedKey: "fixture-key");
             var screen = new PtyScreenCapture(process, rows: 24, columns: 100);
             var stdout = screen.ReadCompletion;
             var stderr = process.StandardError.ReadToEndAsync();
-            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(300));
             try { await screen.InputReady.WaitAsync(timeout.Token); }
             catch (OperationCanceledException)
             {
@@ -2919,8 +3402,9 @@ public sealed class TerminalPtyTests
                 EditorInputLine(frame).Length == 0).WaitAsync(timeout.Token);
 
             using (var unchanged = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(agent, "settings.json"))))
-                Assert.Equal(new[] { "fixture/model-a", "fixture/model-b" }, unchanged.RootElement.GetProperty("enabledModels")
-                    .EnumerateArray().Select(item => item.GetString()));
+                Assert.Equal(new[] { "fixture/model-a", "fixture/model-b", "fixture/model-c" },
+                    unchanged.RootElement.GetProperty("enabledModels")
+                        .EnumerateArray().Select(item => item.GetString()));
 
             await process.StandardInput.WriteAsync("/scoped-models\r");
             await process.StandardInput.FlushAsync();
@@ -2938,6 +3422,19 @@ public sealed class TerminalPtyTests
             await process.StandardInput.WriteAsync("\u0018");
             await process.StandardInput.FlushAsync();
             await process.StandardInput.WriteAsync("\u0001");
+            await process.StandardInput.FlushAsync();
+            // Ctrl+C clears the active search; disable model-c, then reorder model-b before model-a.
+            await process.StandardInput.WriteAsync("\u0003");
+            await process.StandardInput.FlushAsync();
+            await process.StandardInput.WriteAsync("fixture/model-c");
+            await process.StandardInput.FlushAsync();
+            await process.StandardInput.WriteAsync("\r");
+            await process.StandardInput.FlushAsync();
+            await process.StandardInput.WriteAsync("\u0003");
+            await process.StandardInput.FlushAsync();
+            await process.StandardInput.WriteAsync("\u001b[B");
+            await process.StandardInput.FlushAsync();
+            await process.StandardInput.WriteAsync("\u001b[1;3A");
             await process.StandardInput.FlushAsync();
             await process.StandardInput.WriteAsync("\u0013");
             await process.StandardInput.FlushAsync();
@@ -2966,7 +3463,10 @@ public sealed class TerminalPtyTests
                 var stdoutTail = screen.CapturedOutput;
                 if (!process.HasExited) process.Kill(entireProcessTree: true);
                 var errorText = await stderr;
-                throw new InvalidOperationException($"Scoped-model selection was not saved. Screen: {screen.LastFrame}. stdout: {stdoutTail[^Math.Min(2000, stdoutTail.Length)..]} stderr: {errorText}");
+                var settingsText = File.Exists(settingsPath)
+                    ? await File.ReadAllTextAsync(settingsPath)
+                    : "<missing>";
+                throw new InvalidOperationException($"Scoped-model selection was not saved. Settings: {settingsText} Screen: {screen.LastFrame}. stdout: {stdoutTail[^Math.Min(3000, stdoutTail.Length)..]} stderr: {errorText}");
             }
             var saved = await UserSettings.LoadAsync(agent, _ => null, timeout.Token);
             Assert.Equal("preserved", saved.ShellCommandPrefix);
@@ -2974,10 +3474,11 @@ public sealed class TerminalPtyTests
 
             await process.StandardInput.WriteAsync("\u001b");
             await process.StandardInput.FlushAsync();
-            await screen.WaitForFrameAsync(frame => frame.Contains(
-                    $"Scoped models: {saved.EnabledModels!.Count} model references", StringComparison.Ordinal))
-                .WaitAsync(timeout.Token);
-            await process.StandardInput.WriteAsync("/quit\r");
+            await screen.WaitForFrameAsync(frame => !frame.Contains("Scoped Models", StringComparison.Ordinal) &&
+                frame.Contains($"Scoped models: {saved.EnabledModels!.Count} model references",
+                    StringComparison.Ordinal)).WaitAsync(timeout.Token);
+            // The selector's final render can still be settling; clear any editor text before quitting.
+            await process.StandardInput.WriteAsync("\u0003/quit\r");
             process.StandardInput.Close();
             await process.WaitForExitAsync(timeout.Token);
             await stdout.WaitAsync(timeout.Token);
@@ -2985,7 +3486,7 @@ public sealed class TerminalPtyTests
             Assert.Equal(0, process.ExitCode);
             Assert.DoesNotContain("Exception:", await stderr, StringComparison.Ordinal);
 
-            restoredProcess = StartThinkingFixtureProcess(root, agent);
+            restoredProcess = StartThinkingFixtureProcess(root, agent, scopedKey: "fixture-key");
             var restoredScreen = new PtyScreenCapture(restoredProcess, rows: 24, columns: 100);
             var restoredStdout = restoredScreen.ReadCompletion;
             var restoredStderr = restoredProcess.StandardError.ReadToEndAsync();
@@ -3237,7 +3738,6 @@ public sealed class TerminalPtyTests
             process.StandardInput.Close();
             await process.WaitForExitAsync(timeout.Token);
             await stdout.WaitAsync(timeout.Token);
-            await server.WaitAsync(timeout.Token);
             Assert.Equal(0, process.ExitCode);
             Assert.DoesNotContain("Exception:", await stderr, StringComparison.Ordinal);
         }
@@ -3263,23 +3763,26 @@ public sealed class TerminalPtyTests
         Directory.CreateDirectory(agent);
         using var listener = StartLoopbackListener(out var port);
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        using var serverStop = new CancellationTokenSource();
         var refreshRequest = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var releaseRefresh = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var server = Task.Run(async () =>
         {
-            for (var index = 0; index < 2; index++)
+            var first = true;
+            while (true)
             {
-                var request = await listener.GetContextAsync().WaitAsync(timeout.Token);
+                HttpListenerContext request;
+                try { request = await listener.GetContextAsync().WaitAsync(serverStop.Token); }
+                catch (OperationCanceledException) { return; }
                 Assert.Equal("/v1/models", request.Request.Url?.AbsolutePath);
                 Assert.Equal("Bearer scoped-key", request.Request.Headers["Authorization"]);
-                if (index == 1)
+                if (first)
                 {
+                    first = false;
                     refreshRequest.TrySetResult();
                     await releaseRefresh.Task.WaitAsync(timeout.Token);
                 }
-                var body = index == 0
-                    ? """{"data":[{"id":"model-a","name":"Model A","reasoning":true}]}"""
-                    : """{"data":[{"id":"model-a","name":"Model A","reasoning":true},{"id":"refresh-probe-zebra-482","name":"Refresh Probe","reasoning":true}]}""";
+                var body = """{"data":[{"id":"model-a","name":"Model A","reasoning":true},{"id":"refresh-probe-zebra-482","name":"Refresh Probe","reasoning":true}]}""";
                 var bytes = Encoding.UTF8.GetBytes(body);
                 request.Response.ContentType = "application/json";
                 request.Response.ContentLength64 = bytes.Length;
@@ -3324,13 +3827,16 @@ public sealed class TerminalPtyTests
             process.StandardInput.Close();
             await process.WaitForExitAsync(timeout.Token);
             await stdout.WaitAsync(timeout.Token);
-            await server.WaitAsync(timeout.Token);
             Assert.Equal(0, process.ExitCode);
             Assert.DoesNotContain("Exception:", await stderr, StringComparison.Ordinal);
         }
         finally
         {
             releaseRefresh.TrySetResult();
+            serverStop.Cancel();
+            listener.Close();
+            try { await server; }
+            catch (Exception error) when (error is OperationCanceledException or HttpListenerException or ObjectDisposedException) { }
             if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
             process?.Dispose();
             Directory.Delete(root, recursive: true);
@@ -3778,6 +4284,9 @@ public sealed class TerminalPtyTests
     }
 
     private static string ShellQuote(string value) => "'" + value.Replace("'", "'\\''", StringComparison.Ordinal) + "'";
+
+    private static string StripAnsi(string text) =>
+        System.Text.RegularExpressions.Regex.Replace(text, "\u001b\\[[0-9;?]*[A-Za-z]", "");
 
     private static int CountOccurrences(string text, string value)
     {

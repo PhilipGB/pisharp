@@ -1,0 +1,429 @@
+{
+  "capability": "keys-tree-scoped-picker",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "sources": [
+    {
+      "path": "packages/coding-agent/src/modes/interactive/components/tree-selector.ts",
+      "anchors": [
+        "export type FilterMode = \"default\" | \"no-tools\" | \"user-only\" | \"labeled-only\" | \"all\";",
+        "class TreeList implements Component",
+        "private findNearestVisibleIndex(entryId: string | null): number {",
+        "private buildActivePath(): void {",
+        "private flattenTree(roots: SessionTreeNode[]): FlatNode[] {",
+        "private applyFilter(): void {",
+        "private recalculateVisualStructure(): void {",
+        "copySelected(): void {",
+        "private getEntryCopyText(node: SessionTreeNode): string | undefined {",
+        "private hasTextContent(content: unknown): boolean {",
+        "handleInput(keyData: string): void {",
+        "kb.matches(keyData, \"tui.select.up\")",
+        "kb.matches(keyData, \"tui.select.down\")",
+        "kb.matches(keyData, \"app.tree.foldOrUp\")",
+        "kb.matches(keyData, \"app.tree.unfoldOrDown\")",
+        "kb.matches(keyData, \"tui.editor.cursorLeft\") || kb.matches(keyData, \"tui.select.pageUp\")",
+        "kb.matches(keyData, \"tui.editor.cursorRight\") || kb.matches(keyData, \"tui.select.pageDown\")",
+        "kb.matches(keyData, \"tui.select.confirm\")",
+        "kb.matches(keyData, \"app.message.copy\")",
+        "kb.matches(keyData, \"tui.select.cancel\")",
+        "if (this.searchQuery) {",
+        "this.foldedNodes.clear();",
+        "kb.matches(keyData, \"app.tree.filter.default\")",
+        "kb.matches(keyData, \"app.tree.filter.noTools\")",
+        "kb.matches(keyData, \"app.tree.filter.userOnly\")",
+        "kb.matches(keyData, \"app.tree.filter.labeledOnly\")",
+        "kb.matches(keyData, \"app.tree.filter.all\")",
+        "kb.matches(keyData, \"app.tree.filter.cycleBackward\")",
+        "kb.matches(keyData, \"app.tree.filter.cycleForward\")",
+        "kb.matches(keyData, \"tui.editor.deleteCharBackward\")",
+        "kb.matches(keyData, \"app.tree.editLabel\")",
+        "kb.matches(keyData, \"app.tree.toggleLabelTimestamp\")",
+        "const modes: FilterMode[] = [\"default\", \"no-tools\", \"user-only\", \"labeled-only\", \"all\"];",
+        "private isFoldable(entryId: string): boolean {",
+        "private findBranchSegmentStart(direction: \"up\" | \"down\"): number {",
+        "case \"message\": {",
+        "case \"custom_message\":",
+        "case \"compaction\":",
+        "case \"branch_summary\":",
+        "case \"model_change\":",
+        "case \"thinking_level_change\":",
+        "case \"custom\":",
+        "case \"context_edit\":",
+        "case \"label\":",
+        "case \"session_info\":",
+        "if (entry.type === \"usage\") return false;",
+        "const isSettingsEntry =",
+        "const TREE_HELP_ITEMS:",
+        "class TreeSelectorComponent extends Container implements Focusable",
+        "initialFilterMode?: FilterMode,",
+        "maxVisibleLines = Math.max(5, Math.floor(terminalHeight / 2));"
+      ]
+    },
+    {
+      "path": "packages/coding-agent/src/modes/interactive/components/scoped-models-selector.ts",
+      "anchors": [
+        "// EnabledIds: null = all enabled (no filter), string[] = explicit ordered list",
+        "function isEnabled(enabledIds: EnabledIds, id: string): boolean {",
+        "function normalizeEnabled(result: string[], allIds: string[]): EnabledIds {",
+        "return result.length === allIds.length && result.every((id) => allIds.includes(id)) ? null : result;",
+        "function toggle(enabledIds: EnabledIds, allIds: string[], id: string): EnabledIds {",
+        "function enableAll(enabledIds: EnabledIds, allIds: string[], targetIds?: string[]): EnabledIds {",
+        "function clearAll(enabledIds: EnabledIds, allIds: string[], targetIds?: string[]): EnabledIds {",
+        "function move(enabledIds: EnabledIds, id: string, delta: number): EnabledIds {",
+        "function getSortedIds(enabledIds: EnabledIds, allIds: string[]): string[] {",
+        "export class ScopedModelsSelectorComponent extends Container implements Focusable",
+        "onChange: (enabledModelIds: string[] | null) => void | Promise<void>;",
+        "onPersist: (enabledModelIds: string[] | null) => void | Promise<void>;",
+        "this.enabledIds = config.enabledModelIds === null ? null : [...config.enabledModelIds];",
+        "if (kb.matches(data, \"tui.select.up\"))",
+        "if (kb.matches(data, \"tui.select.down\"))",
+        "const reorderUp = kb.matches(data, \"app.models.reorderUp\");",
+        "if (kb.matches(data, \"tui.select.confirm\"))",
+        "if (kb.matches(data, \"app.models.enableAll\"))",
+        "if (kb.matches(data, \"app.models.clearAll\"))",
+        "if (kb.matches(data, \"app.models.toggleProvider\"))",
+        "if (kb.matches(data, \"app.models.save\"))",
+        "if (matchesKey(data, Key.ctrl(\"c\")))",
+        "if (matchesKey(data, Key.escape)) {",
+        "const targetIds = this.searchInput.getValue() ? this.filteredItems.map((i) => i.fullId) : undefined;",
+        "const providerIds = this.allIds.filter((id) => this.modelsById.get(id)!.provider === provider);",
+        "if (this.enabledIds === null) return;",
+        "this.selectedIndex += delta;"
+      ]
+    },
+    {
+      "path": "packages/coding-agent/src/modes/interactive/interactive-mode.ts",
+      "anchors": [
+        "\"app.message.copy\",\n\t\t\t() => void this.handleCopyCommand({ flashConfirmation: true, preferSelection: true }),",
+        "this.defaultEditor.onAction(\"app.session.tree\", () => this.showTreeSelector());",
+        "this.defaultEditor.onAction(\"app.session.fork\", () => this.showUserMessageSelector());",
+        "private showModelsSelector(): void {",
+        "private showTreeSelector(initialSelectedId?: string): void {",
+        "const initialFilterMode = this.settingsManager.getTreeFilterMode();",
+        "const tree = this.sessionManager.getTree();",
+        "const realLeafId = this.sessionManager.getLeafId();",
+        "const selector = new ScopedModelsSelectorComponent(",
+        "onChange: (enabledIds) => {",
+        "onPersist: (enabledIds) => {",
+        "const allEnabled =",
+        "this.settingsManager.setEnabledModels(newPatterns ? [...newPatterns] : undefined);",
+        "const updateSessionModels = (enabledIds: string[] | null): void => {",
+        "selector.onCopy = async (text) => {",
+        "this.sessionManager.appendLabelChange(entryId, label);",
+        "await this.session.navigateTree(entryId, {",
+        "if (entryId === this.sessionManager.getLeafId()) {",
+        "await copyToClipboard(text);",
+        "const configuredEnabledIds = (models: readonly Model<any>[]): string[] | null => {",
+        "if (!selectionChanged && sessionScopedModels.length === 0) {",
+        "if (currentEnabledIds !== null) updateSessionModels(currentEnabledIds);"
+      ]
+    },
+    {
+      "path": "packages/coding-agent/src/core/session-manager.ts",
+      "anchors": [
+        "getTree(): SessionTreeNode[] {",
+        "appendLabelChange(targetId: string, label: string | undefined): string {",
+        "private labelsById: Map<string, string> = new Map();",
+        "if (entry.type === \"label\") {",
+        "const label = this.labelsById.get(entry.id);",
+        "const labelTimestamp = this.labelTimestampsById.get(entry.id);",
+        "// Sort children by timestamp (oldest first, newest at bottom)"
+      ]
+    },
+    {
+      "path": "packages/coding-agent/src/core/keybindings.ts",
+      "anchors": [
+        "\"app.session.tree\": { defaultKeys: [], description: \"Open session tree\" },",
+        "\"app.tree.foldOrUp\": {",
+        "defaultKeys: process.platform === \"darwin\" ? [\"alt+left\", \"ctrl+left\"] : [\"ctrl+left\", \"alt+left\"],",
+        "defaultKeys: process.platform === \"darwin\" ? [\"alt+right\", \"ctrl+right\"] : [\"ctrl+right\", \"alt+right\"],",
+        "\"app.tree.editLabel\": {",
+        "defaultKeys: \"shift+l\",",
+        "\"app.tree.toggleLabelTimestamp\": {",
+        "defaultKeys: \"shift+t\",",
+        "\"app.tree.filter.default\": {",
+        "defaultKeys: \"ctrl+d\",",
+        "\"app.tree.filter.noTools\": {",
+        "defaultKeys: \"ctrl+t\",",
+        "\"app.tree.filter.userOnly\": {",
+        "defaultKeys: \"ctrl+u\",",
+        "\"app.tree.filter.labeledOnly\": {",
+        "defaultKeys: \"ctrl+l\",",
+        "\"app.tree.filter.all\": {",
+        "defaultKeys: \"ctrl+a\",",
+        "\"app.tree.filter.cycleForward\": {",
+        "defaultKeys: \"ctrl+o\",",
+        "\"app.tree.filter.cycleBackward\": {",
+        "defaultKeys: \"shift+ctrl+o\",",
+        "\"app.models.save\": {",
+        "defaultKeys: \"ctrl+s\",",
+        "\"app.models.enableAll\": {",
+        "\"app.models.clearAll\": {",
+        "\"app.models.toggleProvider\": {",
+        "\"app.models.reorderUp\": {",
+        "defaultKeys: \"alt+up\",",
+        "\"app.models.reorderDown\": {",
+        "defaultKeys: \"alt+down\",",
+        "\"app.message.copy\": {",
+        "defaultKeys: \"ctrl+x\","
+      ]
+    },
+    {
+      "path": "packages/coding-agent/docs/keybindings.md",
+      "anchors": [
+        "| `app.session.tree` | None | Open session tree navigator (`/tree`) |",
+        "| `app.message.copy` | `ctrl+x` | Copy the selected message in `/tree`;",
+        "| `app.tree.foldOrUp` | `ctrl+left`, `alt+left` | Fold current branch segment, or jump to the previous segment start |",
+        "| `app.tree.unfoldOrDown` | `ctrl+right`, `alt+right` | Unfold current branch segment, or jump to the next segment start or branch end |",
+        "| `app.tree.editLabel` | `shift+l` | Edit the label on the selected tree node |",
+        "| `app.tree.toggleLabelTimestamp` | `shift+t` | Toggle label timestamps in the tree |",
+        "| `app.tree.filter.default` | `ctrl+d` | Set tree filter to default view |",
+        "| `app.tree.filter.noTools` | `ctrl+t` | Toggle tree filter that hides tool results |",
+        "| `app.tree.filter.userOnly` | `ctrl+u` | Toggle tree filter that shows only user messages |",
+        "| `app.tree.filter.labeledOnly` | `ctrl+l` | Toggle tree filter that shows only labeled entries |",
+        "| `app.tree.filter.all` | `ctrl+a` | Toggle tree filter that shows all entries |",
+        "| `app.tree.filter.cycleForward` | `ctrl+o` | Cycle tree filter forward |",
+        "| `app.tree.filter.cycleBackward` | `shift+ctrl+o` | Cycle tree filter backward |",
+        "| `app.models.save` | `ctrl+s` | Save the selected default model or scoped model configuration to settings |",
+        "| `app.models.enableAll` | `ctrl+a` | Enable all models (or all matching the current search) |",
+        "| `app.models.clearAll` | `ctrl+x` | Clear all models (or all matching the current search) |",
+        "| `app.models.toggleProvider` | `ctrl+p` | Toggle all models for the current provider |",
+        "| `app.models.reorderUp` | `alt+up` | Move the selected model up in the cycle order |",
+        "| `app.models.reorderDown` | `alt+down` | Move the selected model down in the cycle order |"
+      ]
+    }
+  ],
+  "scenarios": {
+    "T01": {
+      "description": "/tree opens the session tree navigator; initial selection is the current leaf; Up/Down move the selection with wraparound; Left/Right or tui.select.pageUp/pageDown move by one window; Enter selects an entry and reconstructs the branch; Escape or app.session.tree cancellation closes without mutation.",
+      "expected": {
+        "initialSelection": "currentLeafId",
+        "paging": [
+          "tui.editor.cursorLeft",
+          "tui.editor.cursorRight",
+          "tui.select.pageUp",
+          "tui.select.pageDown"
+        ],
+        "cancel": "close without mutation; editor draft preserved",
+        "reopen": "same initial state after cancellation"
+      },
+      "source": "tree-selector.ts handleInput + TreeSelectorComponent; interactive-mode.ts showTreeSelector"
+    },
+    "T02": {
+      "description": "app.tree.foldOrUp folds a foldable selected segment, otherwise jumps to the previous branch segment start; app.tree.unfoldOrDown unfolds a folded selected segment, otherwise jumps to the next branch segment start or branch end. Folding state is cleared by search edits, Escape-with-search, and filter changes.",
+      "expected": {
+        "foldable": "visible children > 0 and (no visible parent or parent has >1 visible children)",
+        "foldOrUp": [
+          "fold if foldable and not folded",
+          "otherwise jump to previous segment start"
+        ],
+        "unfoldOrDown": [
+          "unfold if folded",
+          "otherwise jump to next segment start or branch end"
+        ],
+        "foldedVisibility": "descendants of folded nodes are hidden"
+      },
+      "source": "tree-selector.ts isFoldable/findBranchSegmentStart/handleInput"
+    },
+    "T03": {
+      "description": "Direct filters: ctrl+d default (settings/bookkeeping hidden), ctrl+t toggles no-tools (hide tool results), ctrl+u toggles user-only, ctrl+l toggles labeled-only, ctrl+a toggles all. Usage entries and tool-call-only assistant messages without text/error/abort are never shown except as the current leaf. Filter changes clear folding state and restore selection by id.",
+      "expected": {
+        "usageEntries": "always hidden",
+        "toolCallOnlyAssistant": "hidden unless current leaf or error/aborted",
+        "toggleSemantics": "noTools/userOnly/labeledOnly/all toggle with default",
+        "foldingCleared": true,
+        "selectionRestored": "nearest visible ancestor of last selected id"
+      },
+      "source": "tree-selector.ts applyFilter/handleInput"
+    },
+    "T04": {
+      "description": "ctrl+o cycles default → no-tools → user-only → labeled-only → all → default; shift+ctrl+o cycles backward with wraparound; direct shortcuts reset the cycle position. Both clear folding state.",
+      "expected": {
+        "cycleForward": [
+          "default",
+          "no-tools",
+          "user-only",
+          "labeled-only",
+          "all",
+          "default"
+        ],
+        "cycleBackward": [
+          "default",
+          "all",
+          "labeled-only",
+          "user-only",
+          "no-tools",
+          "default"
+        ]
+      },
+      "source": "tree-selector.ts cycleForward/cycleBackward"
+    },
+    "T05": {
+      "description": "Typing filters visible entries case-insensitively by whitespace tokens; Backspace removes the last character; selection follows the last selected id or its nearest visible ancestor; Escape with a nonempty search clears search and folding and keeps the navigator open; Escape with an empty search closes the navigator. The editor draft is preserved either way.",
+      "expected": {
+        "search": "every whitespace token must be a substring of the node's lowercased searchable text",
+        "backspace": "removes the last code unit and clears folding",
+        "escapeWithSearch": "clear search + folding, keep navigator open",
+        "escapeWithoutSearch": "close navigator",
+        "editorDraftPreserved": true
+      },
+      "source": "tree-selector.ts handleInput/applyFilter"
+    },
+    "T06": {
+      "description": "shift+l opens the label editor for the selected entry; Enter saves, Escape cancels, an empty value removes the label; labels render as [label] before the entry text; shift+t toggles label timestamp rendering (today HH:MM, current-year M/D HH:MM, otherwise YY/M/D HH:MM); labels persist via label entries appended to the session tree and survive reopening.",
+      "expected": {
+        "editLabel": [
+          "initial label prefilled",
+          "Enter saves or clears with empty value",
+          "Escape cancels without mutation"
+        ],
+        "toggleLabelTimestamp": "cycles showLabelTimestamps",
+        "persistence": "label entry appended to the tree; visible after reopening"
+      },
+      "source": "tree-selector.ts LabelInput/updateNodeLabel; interactive-mode.ts appendLabelChange"
+    },
+    "T07": {
+      "description": "ctrl+x copies the selected entry's Pi clipboard text while the tree owns input: bashExecution command; message content joined from text blocks (assistant falls back to errorMessage); custom_message content; compaction summary; branch_summary summary. Entries without text (e.g., label/model_change/toolResult without content, whitespace-only) yield no clipboard write. The tree must not trigger the editor's last-assistant-message copy.",
+      "expected": {
+        "copyText": [
+          "bashExecution: command",
+          "message: full text content; assistant fallback errorMessage",
+          "custom_message: text content",
+          "compaction: summary",
+          "branch_summary: summary"
+        ],
+        "empty": "whitespace-only or missing text produces no clipboard write",
+        "owner": "app.message.copy is bound to the tree while open"
+      },
+      "source": "tree-selector.ts getEntryCopyText/copySelected; interactive-mode.ts selector.onCopy"
+    },
+    "T08": {
+      "description": "Selecting a tree entry navigates the session: the active branch is reconstructed from the selected entry (parent-aware for user messages, which also return their text to the editor), the leaf moves to the chosen point, the branch summary prompt appears unless skipped, and cancellation leaves the session untouched. The next provider prompt observes the reconstructed branch.",
+      "expected": {
+        "branchReconstruction": "navigateTree to the selected entry; user message selection moves the leaf to its parent and returns the text to the editor",
+        "cancellation": "no session mutation",
+        "noDuplicates": "rebuilt context contains each message exactly once along the selected branch",
+        "providerContext": "the next prompt carries the reconstructed branch"
+      },
+      "source": "interactive-mode.ts showTreeSelector + agent-session.ts navigateTree"
+    },
+    "S01": {
+      "description": "/scoped-models opens the scoped-model selector listing the available snapshot in stable provider order with enabled state, order, search input and save hint; entries are the union of the snapshot and configured-but-missing patterns; cancellation preserves the active session scope.",
+      "expected": {
+        "available": "getAvailableSnapshot() (+ unavailable configured patterns)",
+        "order": "enabled ids first in enabled order, then disabled in snapshot order",
+        "cancellation": "does not persist or change the session scope beyond prior onChange calls"
+      },
+      "source": "scoped-models-selector.ts; interactive-mode.ts showModelsSelector"
+    },
+    "S02": {
+      "description": "Enter toggles the selected model between enabled and disabled. Normalization: an explicit list covering every available model collapses to null (all enabled); null toggles produce allIds minus the id; removal keeps relative order; additions append at the end. Exact enabled IDs and order after each operation match pinned Pi.",
+      "expected": {
+        "toggle": [
+          "null → allIds minus id",
+          "explicit list: remove id preserving order",
+          "explicit list + id: append, collapse to null only when result length equals allIds length and every id is in allIds"
+        ],
+        "nullMeansAllEnabled": true
+      },
+      "source": "scoped-models-selector.ts toggle/normalizeEnabled"
+    },
+    "S03": {
+      "description": "ctrl+a enables all (explicit list becomes the union of enabled+allIds, normalized to null; null is a no-op); ctrl+x clears all (null becomes allIds; explicit list filters targets preserving order). With an active search, only matching models are affected; unaffected models keep state and relative order.",
+      "expected": {
+        "enableAll": "enabled ∪ targets (or null when targets cover everything)",
+        "clearAll": "explicit filter of targets preserving order; null → allIds minus targets",
+        "searchScoping": "only filtered items are targeted"
+      },
+      "source": "scoped-models-selector.ts enableAll/clearAll/handleInput"
+    },
+    "S04": {
+      "description": "ctrl+p toggles all models of the provider of the currently selected model: if every provider model is enabled, clear them; otherwise enable them. PiSharp must not cycle the active model while the scoped-model selector owns input.",
+      "expected": {
+        "providerToggle": [
+          "all provider models enabled → clear provider models",
+          "otherwise → enable provider models"
+        ],
+        "noCycle": "app.model.cycleForward/backward do not dispatch while the selector is open"
+      },
+      "source": "scoped-models-selector.ts toggleProvider; interactive-mode.ts app.model.cycleForward handler"
+    },
+    "S05": {
+      "description": "alt+up/alt+down swaps the selected enabled model with its neighbor in the explicit enabled order and moves selection with it; disabled models, boundary positions and null scope are no-ops; reordering never restores queued messages or touches the editor.",
+      "expected": {
+        "reorder": "swap within enabledIds; selection follows the item",
+        "noOp": [
+          "disabled selection",
+          "boundary",
+          "null scope"
+        ],
+        "noDequeue": "app.message.dequeue does not fire"
+      },
+      "source": "scoped-models-selector.ts move/reorder handler"
+    },
+    "S06": {
+      "description": "Selector changes are session-only until ctrl+s persists them: onChange applies the scope to the current session without touching settings; onPersist writes enabledModels to global settings (explicit list, or removal when null/all-available-enabled). A session switch re-derives the scope from settings (unless an explicit CLI scope is set). After saving, Ctrl+P cycles the persisted scope; the choice survives an application restart. Partial enablement affects the next provider prompt's model.",
+      "expected": {
+        "unsaved": "settings.json unchanged outside ctrl+s",
+        "save": "enabledModels = explicit list, or removed when null/all-available-enabled",
+        "sessionSwitch": "scope re-derived from settings (CLI --models scope wins)",
+        "restart": "persisted scope applies at startup",
+        "cycle": "Ctrl+P cycles the scoped models in enabled order"
+      },
+      "source": "interactive-mode.ts showModelsSelector/updateSessionModels/onPersist; settings-manager.ts setEnabledModels"
+    },
+    "S07": {
+      "description": "Every tree and scoped-model action is configurable and disableable via keybindings.json; unset actions fall back to pinned defaults; disabled actions do not dispatch and their hints are not advertised; context-specific conflicts resolve by owning surface (tree filters vs exit/thinking/tool-expansion, scoped save vs session-picker sort, copy vs editor copy, provider toggle vs model cycling, scoped save vs tui.select.confirm).",
+      "expected": {
+        "replacement": "configured key dispatches the action",
+        "disabled": "empty key list disables the action; no dispatch; no hint",
+        "precedence": "selector-owned actions win while the selector is focused",
+        "conflicts": [
+          "ctrl+a: tree filter.all vs scoped enableAll vs editor select-all",
+          "ctrl+x: tree copy vs scoped clearAll vs editor app.message.copy",
+          "ctrl+p: scoped toggleProvider vs app.model.cycleForward",
+          "ctrl+s: scoped save vs app.session.toggleSort",
+          "ctrl+d: tree filter.default vs app.exit",
+          "ctrl+t: tree filter.noTools vs app.thinking.toggle",
+          "ctrl+o: tree cycleForward vs app.tools.expand",
+          "alt+up: scoped reorderUp vs app.message.dequeue"
+        ]
+      },
+      "source": "keybindings.ts APP_KEYBINDINGS; docs/keybindings.md; interactive-mode.ts action registration"
+    }
+  },
+  "ptyScenarios": {
+    "100x30-dark-fullscreen": {
+      "columns": 100,
+      "rows": 30,
+      "theme": "dark",
+      "mode": "fullscreen"
+    },
+    "100x30-dark-regular": {
+      "columns": 100,
+      "rows": 30,
+      "theme": "dark",
+      "mode": "regular"
+    },
+    "140x40-dark-fullscreen": {
+      "columns": 140,
+      "rows": 40,
+      "theme": "dark",
+      "mode": "fullscreen"
+    },
+    "140x40-dark-regular": {
+      "columns": 140,
+      "rows": 40,
+      "theme": "dark",
+      "mode": "regular"
+    }
+  },
+  "oracleNotes": {
+    "treeOrder": "Pi orders tree children by timestamp (oldest first) and prioritizes the branch containing the active leaf during display; entry ids and folded state, not pixel columns, are the comparison anchors.",
+    "usageEntries": "Pi never renders usage entries in any filter mode; PiSharp hides native bookkeeping entries (run_started, tool_intent, tool_outcome, assistant_progress, usage, context_projection, tool_loadout, interrupted, run_finished, run_recovered, tool_skipped, tool_transcript) in every filter mode — there is no Pi equivalent.",
+    "initialFilterMode": "Pi reads settings.treeFilterMode at /tree open; PiSharp passes the default filter here and leaves the treeFilterMode configuration contract to the separately tracked settings-treefiltermode capability.",
+    "clipboard": "Pi writes OSC 52 payloads; PiSharp writes OSC 52 payloads through the same terminal path; the evidence harness compares captured clipboard writes.",
+    "labels": "Pi projects labels from every label entry in the session tree (latest per target wins); PiSharp does the same from the native entry stream.",
+    "scopedModelsUnavailable": "Configured patterns that match nothing are kept as unavailable entries (strikethrough) in both products; order follows enabled-then-snapshot rules.",
+    "sessionSwitchScope": "Both products re-derive the session scope from settings (or the explicit CLI --models scope) on session switch; unsaved /scoped-models changes do not survive /new or /resume."
+  }
+}
