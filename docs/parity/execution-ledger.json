@@ -15405,6 +15405,6 @@
     "ui_report": "docs/parity/fixtures/wrapped-bash-command-style-parity-2026-11-06/ui-report.json",
     "comparison": "docs/parity/fixtures/wrapped-bash-command-style-parity-2026-11-06/terminal-comparison.json",
     "suggested_next_single_deliverable": "Broader interactive terminal UI evaluation covering editing, navigation, session interaction and streaming behaviour.",
-    "pull_request": "pending"
+    "pull_request": "https://github.com/PhilipGB/pisharp/pull/46"
   }
 }
