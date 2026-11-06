@@ -523,7 +523,11 @@ def run_focused_tests(implementation):
 
 def run_quality():
     run(["dotnet", "format", "PiSharp.slnx", "--verify-no-changes", "--no-restore"])
-    run(["dotnet", "build", "PiSharp.slnx", "--warnaserror", "--nologo"])
+    environment = dict(os.environ)
+    environment["MSBUILDDISABLENODEREUSE"] = "1"
+    environment["DOTNET_CLI_USE_MSBUILD_SERVER"] = "0"
+    run(["dotnet", "build", "PiSharp.slnx", "--warnaserror", "--nologo", "-p:UseSharedCompilation=false"],
+        env=environment)
 
 
 def self_test(manifest, oracle, checkpoints, results, ledger):

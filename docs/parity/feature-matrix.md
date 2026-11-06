@@ -5,17 +5,20 @@ Current status and project goal are maintained in [the continuation](../continua
 ## Completed milestone — Session Tree and Scoped Model Picker — 2026-11-05
 
 The `keys-tree-scoped-picker` capability is verified at implementation source
-`12cd366111f1d9eb126102bb0ba372f461545bad` against pinned Pi
+`329bcb0ca5323ad0aa1261dc3828e409293c8726` against pinned Pi
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The
 [acceptance manifest](fixtures/keys-tree-scoped-picker-acceptance-2026-11-05.json)
-maps T01-T08 (`/tree`) and S01-S07 (`/scoped-models`) to 12 deterministic facts,
-five Linux PTY journeys and 71 named checkpoints in each of four paired cases
+maps T01-T08 (`/tree`) and S01-S07 (`/scoped-models`) to 18 deterministic facts,
+seven Linux tree/scoped PTY journeys, two double-Escape PTY journeys and 71 named checkpoints in each of four paired cases
 (100x30/140x40, dark, fullscreen and regular). Paired and same-Pi calibration
 semantic differences are zero; tree rows, selection, fold/filter/search state,
 labels, clipboard writes, scoped enabled order/counts, saved `enabledModels` and
 restart scope all match. Review corrections add control-sequence sanitization,
 snapshot-first scoped opening, removed-model availability, resize rerendering
-and configured save bindings. See the
+and configured save bindings. A second review round preserves drafts, supports
+Escape-cancelled branch summaries, retains no-match scope patterns, pans deep
+selected rows, dispatches the tree during streaming and includes read ranges in
+tree summaries. See the
 [receipt](fixtures/keys-tree-scoped-picker-2026-11-05.md). `settings.treeFilterMode`
 remains separately tracked.
 

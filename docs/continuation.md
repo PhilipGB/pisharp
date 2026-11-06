@@ -23,12 +23,16 @@ maps every case to 12 deterministic facts, five Linux PTY journeys and 71 named
 checkpoints in each of four paired cases (100x30/140x40, dark, fullscreen and
 regular). Paired and same-Pi calibration semantic differences are zero;
 clipboard writes, persisted `enabledModels`, tree label trails and terminal
-restoration match. The full .NET suite passes 4,465/4,465 with zero skips. Format and warnings-as-errors build
-pass; exact-head CI Linux CI run `42090111711` on `6db37543`; draft PR #42 open and unmerged.
+restoration match. The full .NET suite passes 4,471/4,471 with zero skips. Format and warnings-as-errors build
+pass; exact-head CI pending second review-correction CI; draft PR #42 open and unmerged.
 Review corrections sanitize session-controlled tree/label text, open
 `/scoped-models` from the available snapshot with one bounded refresh, mark
 removed models unavailable, rerender on resize and honor only the configured
-save binding. `settings.treeFilterMode` remains separately tracked. See the
+save binding. A second review round preserves editor drafts, makes branch
+summaries Escape-cancellable and reopens the tree at the selection, retains every
+no-match scoped pattern, pans deep selected rows, dispatches `app.session.tree`
+during streaming after restoring queued input and settling the response, and adds
+read line ranges to tree summaries. `settings.treeFilterMode` remains separately tracked. See the
 [receipt](parity/fixtures/keys-tree-scoped-picker-2026-11-05.md).
 
 ## Completed milestone — Complete Tool-Result Contract Parity — 2026-11-02
