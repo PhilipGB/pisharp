@@ -3474,9 +3474,9 @@ public sealed class TerminalPtyTests
 
             await process.StandardInput.WriteAsync("\u001b");
             await process.StandardInput.FlushAsync();
-            await screen.WaitForFrameAsync(frame => frame.Contains(
-                    $"Scoped models: {saved.EnabledModels!.Count} model references", StringComparison.Ordinal))
-                .WaitAsync(timeout.Token);
+            await screen.WaitForFrameAsync(frame => !frame.Contains("Scoped Models", StringComparison.Ordinal) &&
+                frame.Contains($"Scoped models: {saved.EnabledModels!.Count} model references",
+                    StringComparison.Ordinal)).WaitAsync(timeout.Token);
             // The selector's final render can still be settling; clear any editor text before quitting.
             await process.StandardInput.WriteAsync("\u0003/quit\r");
             process.StandardInput.Close();
