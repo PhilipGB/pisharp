@@ -15308,6 +15308,7 @@
     "historical_evidence_unchanged": true,
     "receipt": "docs/parity/fixtures/collapsed-tool-output-parity-2026-11-06/README.md",
     "ui_report": "docs/parity/fixtures/collapsed-tool-output-parity-2026-11-06/ui-report.json",
-    "comparison": "docs/parity/fixtures/collapsed-tool-output-parity-2026-11-06/terminal-comparison.json"
+    "comparison": "docs/parity/fixtures/collapsed-tool-output-parity-2026-11-06/terminal-comparison.json",
+    "pull_request": "https://github.com/PhilipGB/pisharp/pull/45"
   }
 }
