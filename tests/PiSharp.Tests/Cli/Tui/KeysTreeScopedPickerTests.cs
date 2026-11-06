@@ -241,6 +241,71 @@ public sealed class KeysTreeScopedPickerTests
     }
 
     [Fact]
+    public void ScopedInitialSelectionRetainsEveryNoMatchPattern()
+    {
+        ModelDescriptor[] available =
+        [
+            new("one", "One", null, "available", Provider: "fixture", Available: true)
+        ];
+
+        var enabled = TerminalScopedModelsSelector.InitialEnabledIds(
+            ["fixture/one", "anthropic/old-*", "missing-unqualified", "fixture/one"], available);
+
+        Assert.Equal(["fixture/one", "anthropic/old-*", "missing-unqualified"], enabled);
+        Assert.Null(TerminalScopedModelsSelector.InitialEnabledIds([], available));
+        Assert.Null(TerminalScopedModelsSelector.InitialEnabledIds(null, available));
+    }
+
+    [Fact]
+    public void TreeReadSummaryUsesPinnedPiLineRangeFormatting()
+    {
+        Assert.Equal("", TerminalTreeEntryCodec.FormatReadLineRange(null, null));
+        Assert.Equal(":10", TerminalTreeEntryCodec.FormatReadLineRange(10, null));
+        Assert.Equal(":1-5", TerminalTreeEntryCodec.FormatReadLineRange(null, 5));
+        Assert.Equal(":10-29", TerminalTreeEntryCodec.FormatReadLineRange("10", "20"));
+        Assert.Equal(":0-4", TerminalTreeEntryCodec.FormatReadLineRange(0d, 5d));
+        Assert.Equal(":1", TerminalTreeEntryCodec.FormatReadLineRange(1d, 0d));
+        Assert.Equal("", TerminalTreeEntryCodec.FormatReadLineRange("not-a-number", 20));
+        Assert.Equal("", TerminalTreeEntryCodec.FormatReadLineRange(10, "NaN"));
+        Assert.Equal("", TerminalTreeEntryCodec.FormatReadLineRange(true, false));
+
+        using var document = JsonDocument.Parse("""{"offset":10,"limit":20}""");
+        Assert.Equal(":10-29", TerminalTreeEntryCodec.FormatReadLineRange(
+            document.RootElement.GetProperty("offset"),
+            document.RootElement.GetProperty("limit")));
+        Assert.Equal("", TerminalTreeEntryCodec.FormatReadLineRange(
+            document.RootElement.GetProperty("offset"), document.RootElement));
+
+        var tree = new ConversationTree();
+        tree.Append("chat", ConversationMessageCodec.EncodeMessage(new ChatMessage(ChatRole.Assistant,
+            [new FunctionCallContent("range-call", "read", new Dictionary<string, object?>
+            {
+                ["path"] = "src/file.cs", ["offset"] = 10, ["limit"] = 20
+            })])), at: Stamp(0));
+        tree.Append("chat", ConversationMessageCodec.EncodeMessage(new ChatMessage(ChatRole.Tool,
+            [new FunctionResultContent("range-call", "content")])), at: Stamp(1));
+        var state = new TerminalTreeState(tree.Entries, tree.HeadId);
+        Assert.Contains(state.VisibleNodes, node =>
+            state.Decode(node.Node.Entry.Id).Text == "[read: src/file.cs:10-29]");
+    }
+
+    [Fact]
+    public void TreePansDeepSelectedRowsOnNarrowTerminals()
+    {
+        var tree = new ConversationTree();
+        for (var index = 0; index < 14; index++)
+            tree.Append("chat", CodecChat(index % 2 == 0 ? ChatRole.User : ChatRole.Assistant, $"level {index}"),
+                at: Stamp(index));
+        tree.Append("chat", CodecChat(ChatRole.User, "deep selected payload"), at: Stamp(14));
+
+        var state = new TerminalTreeState(tree.Entries, tree.HeadId);
+        var rendered = TerminalTreeView.Render(state, TerminalTheme.Default, 40, 40, _ => "key");
+        var selected = Assert.Single(rendered, line => line.Contains("› ", StringComparison.Ordinal));
+
+        Assert.Contains("deep selected payload", selected);
+    }
+
+    [Fact]
     public void ScopedRefreshMarksModelsMissingFromTheSnapshotUnavailable()
     {
         var known = new Dictionary<string, ModelDescriptor>(StringComparer.Ordinal)

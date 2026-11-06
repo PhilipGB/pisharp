@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.AI;
@@ -313,10 +314,13 @@ internal sealed class TerminalTreeEntryCodec
 
     private static string FormatToolCall(string name, IDictionary<string, object?> arguments)
     {
+        static object? ArgumentValue(IDictionary<string, object?> arguments, string name) =>
+            arguments.TryGetValue(name, out var value) ? value : null;
+
         static string? StringArgument(IDictionary<string, object?> arguments, string name)
         {
-            if (!arguments.TryGetValue(name, out var value) || value is null) return null;
-            return TerminalTreeText.Line(value as string ?? value.ToString() ?? "");
+            var value = ArgumentValue(arguments, name);
+            return value is null ? null : TerminalTreeText.Line(value as string ?? value.ToString() ?? "");
         }
 
         static string ShortenPath(string path)
@@ -330,7 +334,8 @@ internal sealed class TerminalTreeEntryCodec
         switch (name)
         {
             case "read":
-                return $"[read: {ShortenPath(StringArgument(arguments, "path") ?? StringArgument(arguments, "file_path") ?? "")}]";
+                return $"[read: {ShortenPath(StringArgument(arguments, "path") ?? StringArgument(arguments, "file_path") ?? "")}" +
+                    $"{FormatReadLineRange(ArgumentValue(arguments, "offset"), ArgumentValue(arguments, "limit"))}]";
             case "write":
                 return $"[write: {ShortenPath(StringArgument(arguments, "path") ?? StringArgument(arguments, "file_path") ?? "")}]";
             case "edit":
@@ -358,4 +363,38 @@ internal sealed class TerminalTreeEntryCodec
                 }
         }
     }
+
+    /// <summary>Formats finite numbers or numeric strings as Pi's read line range; omits malformed ranges.</summary>
+    internal static string FormatReadLineRange(object? offset, object? limit)
+    {
+        if (offset is null && limit is null) return "";
+        var start = offset is null ? 1d : ParseLineNumber(offset);
+        if (start is not { } startValue) return "";
+        if (limit is null) return ":" + FormatLineNumber(startValue);
+        if (ParseLineNumber(limit) is not { } count) return "";
+        var end = startValue + count - 1;
+        return ":" + FormatLineNumber(startValue) + (end != 0 ? "-" + FormatLineNumber(end) : "");
+    }
+
+    private static double? ParseLineNumber(object? value) => value switch
+    {
+        null => null,
+        JsonElement element => element.ValueKind switch
+        {
+            JsonValueKind.Number => element.TryGetDouble(out var number) && double.IsFinite(number) ? number : null,
+            JsonValueKind.String => ParseLineNumber(element.GetString()),
+            _ => null
+        },
+        string text when text.Trim().Length == 0 => null,
+        string text => double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var number) &&
+            double.IsFinite(number) ? number : null,
+        double number => double.IsFinite(number) ? number : null,
+        float number => float.IsFinite(number) ? number : null,
+        decimal number => (double)number,
+        sbyte or byte or short or ushort or int or uint or long or ulong =>
+            Convert.ToDouble(value, CultureInfo.InvariantCulture),
+        _ => null
+    };
+
+    private static string FormatLineNumber(double value) => value.ToString(CultureInfo.InvariantCulture);
 }

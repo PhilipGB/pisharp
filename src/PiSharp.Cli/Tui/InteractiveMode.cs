@@ -51,6 +51,7 @@ internal static class InteractiveMode
             () => projectBinding.Settings.EnabledModels);
         var sessionNavigation = new TerminalSessionNavigation(projectBinding, conversationBinding, projectTransitions,
             presentation, AdoptProjectSession);
+        sessionNavigation.ConfigureActiveRunInterruption(() => execution.IsRunning, execution.SettleActiveRunAsync);
         sessionNavigationReference = sessionNavigation;
         var modelSelection = new TerminalModelSelectionCommands(modelRuntime, modelRuntimeController, projectBinding, modelBinding,
             modelTransitions, presentation, settingsCommands);

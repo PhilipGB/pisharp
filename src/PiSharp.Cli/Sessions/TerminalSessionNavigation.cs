@@ -11,7 +11,18 @@ internal sealed class TerminalSessionNavigation(ActiveProjectRuntime projectBind
 {
     private TerminalSessionPicker? _picker = presentation.Editor is null ? null : new TerminalSessionPicker(projectBinding.Store, presentation.Editor);
     private readonly TerminalForkPicker? _forkPicker = presentation.Editor is null ? null : new TerminalForkPicker(presentation.Editor);
+    private Func<bool>? _isRunActive;
+    private Func<CancellationToken, Task>? _settleRun;
     public void RefreshPicker() => _picker = presentation.Editor is null ? null : new TerminalSessionPicker(projectBinding.Store, presentation.Editor);
+
+    /// <summary>Lets tree navigation stop and settle an in-flight response before it changes the head.</summary>
+    public void ConfigureActiveRunInterruption(Func<bool> isRunActive, Func<CancellationToken, Task> settleRun)
+    {
+        ArgumentNullException.ThrowIfNull(isRunActive);
+        ArgumentNullException.ThrowIfNull(settleRun);
+        _isRunActive = isRunActive;
+        _settleRun = settleRun;
+    }
 
     public async Task ResumeSessionAsync(SessionListing listing)
     {
@@ -99,7 +110,8 @@ internal sealed class TerminalSessionNavigation(ActiveProjectRuntime projectBind
             Console.WriteLine("No entries in session");
             return;
         }
-        if (presentation.Editor is null)
+        var editor = presentation.Editor;
+        if (editor is null)
         {
             foreach (var entry in entries)
                 Console.WriteLine($"{Short(entry.Id)} · {entry.Type} · {entry.Timestamp:HH:mm:ss}");
@@ -109,7 +121,7 @@ internal sealed class TerminalSessionNavigation(ActiveProjectRuntime projectBind
         string? reopenId = null;
         while (true)
         {
-            var selected = await presentation.Editor.ShowTreeSelectorAsync(
+            var selected = await editor.ShowTreeSelectorAsync(
                 () => conversationBinding.Conversation.Tree.Entries,
                 SetEntryLabelAsync,
                 CopyTreeEntryAsync,
@@ -130,16 +142,50 @@ internal sealed class TerminalSessionNavigation(ActiveProjectRuntime projectBind
                 continue;
             }
 
+            // Pinned Pi stops an active response before committing a tree navigation.
+            await InterruptActiveRunAsync(CancellationToken.None).ConfigureAwait(false);
+
             var branchSummarySettings = projectBinding.Settings.BranchSummary ?? new BranchSummarySettings();
-            var navigation = await conversationBinding.Run.NavigateTreeAsync(selected.Id,
-                new ConversationTreeSelectionOptions(Summarize: summarize, CustomInstructions: customInstructions,
-                    ReserveTokens: branchSummarySettings.EffectiveReserveTokens)).ConfigureAwait(false);
+            var options = new ConversationTreeSelectionOptions(Summarize: summarize,
+                CustomInstructions: customInstructions,
+                ReserveTokens: branchSummarySettings.EffectiveReserveTokens);
+            ConversationTreeNavigationResult navigation;
+            if (summarize && presentation.Screen is { IsActive: true })
+            {
+                // Keep reading input while the summary runs so Escape can abort it.
+                var outcome = await editor.RunProgressAsync("Summarizing branch…", "Branch summary",
+                    "Cancel branch summary?", "The branch will not be summarized.",
+                    (token, _) => conversationBinding.Run.NavigateTreeAsync(selected.Id, options, token),
+                    () => Task.CompletedTask, confirmCancellation: false).ConfigureAwait(false);
+                if (outcome.Cancelled)
+                {
+                    Console.WriteLine("Branch summarization cancelled");
+                    reopenId = selected.Id;
+                    continue;
+                }
+                navigation = outcome.Value!;
+            }
+            else
+            {
+                navigation = await conversationBinding.Run.NavigateTreeAsync(selected.Id, options)
+                    .ConfigureAwait(false);
+            }
 
             presentation.LoadSessionTranscript();
-            if (navigation.EditorText is { } draft) presentation.Editor.Prefill(draft);
+            // Pinned Pi never replaces a non-empty draft with the navigated prompt.
+            if (navigation.EditorText is { } draft && string.IsNullOrWhiteSpace(editor.Draft))
+                editor.Prefill(draft);
             Console.WriteLine($"Selected {Short(selected.Id)} · {selected.Type}");
             return;
         }
+    }
+
+    private async Task InterruptActiveRunAsync(CancellationToken cancellationToken)
+    {
+        if (_isRunActive?.Invoke() != true) return;
+        var pending = conversationBinding.Run.ClearPendingPrompts().InDeliveryOrder;
+        presentation.Editor?.RestorePending(pending);
+        if (_settleRun is not null) await _settleRun(cancellationToken).ConfigureAwait(false);
     }
 
     private static string Short(string id) => id[..Math.Min(12, id.Length)];

@@ -41,7 +41,7 @@ TREE_TOKENS = (
     ("assistant: branch answer", ("B5",)),
     ("user: second prompt", ("C7",)),
     ("assistant: second answer", ("C8",)),
-    ("[read: README.md]", ("R10",)),
+    ("[read: README.md:10-29]", ("R10",)),
     ("[compaction: 12k tokens]", ("K11",)),
     ("[note]: custom note text", ("Y12",)),
     ("[bash]: echo fixture-output", ("Z13",)),

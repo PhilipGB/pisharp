@@ -297,21 +297,24 @@ internal sealed class TerminalScopedModelsSelector(ProviderModelRuntime modelRun
     {
         var configured = configuredEnabledModels?.Invoke();
         var patterns = modelRuntime.HasScope ? modelRuntime.Scope : configured;
+        return InitialEnabledIds(patterns, available);
+    }
+
+    /// <summary>Resolves configured patterns and keeps every no-match diagnostic, as pinned Pi does.</summary>
+    internal static List<string>? InitialEnabledIds(IReadOnlyList<string>? patterns,
+        IReadOnlyList<ModelDescriptor> available)
+    {
         if (patterns is not { Count: > 0 }) return null;
-        var result = ModelScopeResolver.Resolve(patterns, available).Models
+        var resolution = ModelScopeResolver.Resolve(patterns, available);
+        var result = resolution.Models
             .Where(item => item.Model.Provider is not null)
             .Select(item => Key(item.Model.Provider!, item.Model.Id))
             .Distinct(StringComparer.Ordinal).ToList();
-        foreach (var pattern in patterns)
+        foreach (var diagnostic in resolution.Diagnostics)
         {
-            if (pattern.Contains('/') && !pattern.Any(character => character is '*' or '?' or '[' or '{') &&
-                !result.Contains(pattern, StringComparer.Ordinal))
-            {
-                var slash = pattern.IndexOf('/');
-                var provider = pattern[..slash];
-                var id = pattern[(slash + 1)..];
-                if (provider.Length > 0 && id.Length > 0) result.Add(Key(provider, id));
-            }
+            if (diagnostic.Code != "no-match" ||
+                result.Contains(diagnostic.Pattern, StringComparer.Ordinal)) continue;
+            result.Add(diagnostic.Pattern);
         }
         return result;
     }

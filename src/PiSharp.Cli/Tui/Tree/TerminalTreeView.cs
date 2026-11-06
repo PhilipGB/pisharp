@@ -5,6 +5,15 @@ namespace PiSharp.Cli.Tui;
 /// <summary>Renders the tree rows, help and status lines into terminal lines.</summary>
 internal static class TerminalTreeView
 {
+    private const int TreeGutterWidth = 2;
+    private const int MinimumVisibleAnchorContentWidth = 4;
+    private const int MaximumVisibleAnchorContentWidth = 20;
+    private const int MinimumAnchorContextWidth = 2;
+    private const int MaximumAnchorContextWidth = 12;
+
+    private readonly record struct HorizontalRow(string Gutter, string Body, int AnchorCol, int BodyWidth,
+        bool IsSelected);
+
     public static IReadOnlyList<string> Render(TerminalTreeState state, TerminalTheme theme, int width, int height,
         Func<string, string?> displayKeys) =>
         RenderCore(state, theme, width, height, displayKeys);
@@ -25,20 +34,15 @@ internal static class TerminalTreeView
         lines.Add(SearchLine(theme, state.SearchQuery, width));
         lines.Add(Border(theme, width));
 
-        var startIndex = 0;
-        var endIndex = 0;
-        var selectedLineIndex = -1;
         if (!empty)
         {
-            startIndex = Math.Max(0, Math.Min(state.SelectedIndex - maxVisible / 2,
+            var startIndex = Math.Max(0, Math.Min(state.SelectedIndex - maxVisible / 2,
                 state.VisibleNodes.Count - maxVisible));
-            endIndex = Math.Min(startIndex + maxVisible, state.VisibleNodes.Count);
+            var endIndex = Math.Min(startIndex + maxVisible, state.VisibleNodes.Count);
+            var rows = new List<HorizontalRow>(endIndex - startIndex);
             for (var index = startIndex; index < endIndex; index++)
-            {
-                var isSelected = index == state.SelectedIndex;
-                lines.Add(Row(theme, state, state.VisibleNodes[index], index, isSelected, width));
-                if (isSelected) selectedLineIndex = lines.Count - 1;
-            }
+                rows.Add(Row(theme, state, state.VisibleNodes[index], index == state.SelectedIndex));
+            lines.AddRange(RenderHorizontalViewport(rows, theme, width));
         }
         else
         {
@@ -129,8 +133,8 @@ internal static class TerminalTreeView
             (safeQuery.Length > 0 ? " " + Style(theme, "accent", safeQuery) : ""), width);
     }
 
-    private static string Row(TerminalTheme theme, TerminalTreeState state, TerminalTreeFlatNode flatNode,
-        int index, bool isSelected, int width)
+    private static HorizontalRow Row(TerminalTheme theme, TerminalTreeState state, TerminalTreeFlatNode flatNode,
+        bool isSelected)
     {
         var entry = flatNode.Node.Entry;
         var multipleRoots = state.HasMultipleRoots;
@@ -178,11 +182,46 @@ internal static class TerminalTreeView
                 : "";
 
         var content = Content(theme, state, flatNode, isSelected);
-        var body = Style(theme, "dim", prefix) + foldMarker + pathMarker + label + labelTimestamp + content;
+        var anchor = Style(theme, "dim", prefix) + foldMarker + pathMarker;
+        var body = anchor + label + labelTimestamp + content;
         var cursor = isSelected ? Style(theme, "accent", "› ") : "  ";
-        var line = cursor + body;
-        line = TerminalTranscriptViewport.Clip(line, width);
-        return isSelected ? Style(theme, "selectedBg", line, background: true) : line;
+        return new HorizontalRow(cursor, body, TerminalTextLayout.Width(anchor),
+            TerminalTextLayout.Width(body), isSelected);
+    }
+
+    /// <summary>Keeps the navigation gutter fixed and pans row bodies when the selected anchor is off-screen.</summary>
+    private static IReadOnlyList<string> RenderHorizontalViewport(IReadOnlyList<HorizontalRow> rows,
+        TerminalTheme theme, int width)
+    {
+        var viewportWidth = Math.Max(0, width - TreeGutterWidth);
+        var maxBodyWidth = rows.Count == 0 ? 0 : rows.Max(row => row.BodyWidth);
+        var maxHorizontalScroll = Math.Max(0, maxBodyWidth - viewportWidth);
+        var selectedRow = rows.FirstOrDefault(row => row.IsSelected);
+
+        var horizontalScroll = 0;
+        if (selectedRow.IsSelected && maxHorizontalScroll > 0)
+        {
+            var minVisibleAnchorContentWidth = Math.Min(MaximumVisibleAnchorContentWidth,
+                Math.Max(MinimumVisibleAnchorContentWidth, viewportWidth / 3));
+            if (selectedRow.AnchorCol > viewportWidth - minVisibleAnchorContentWidth)
+            {
+                var anchorContextWidth = Math.Min(MaximumAnchorContextWidth,
+                    Math.Max(MinimumAnchorContextWidth, viewportWidth / 4));
+                horizontalScroll = Math.Min(maxHorizontalScroll, selectedRow.AnchorCol - anchorContextWidth);
+            }
+        }
+
+        var rendered = new List<string>(rows.Count);
+        foreach (var row in rows)
+        {
+            var line = horizontalScroll > 0
+                ? row.Gutter + TerminalTextLayout.SliceStyledCells(row.Body, horizontalScroll,
+                    horizontalScroll + viewportWidth) + "\u001b[0m"
+                : row.Gutter + row.Body;
+            line = TerminalTranscriptViewport.Clip(line, width);
+            rendered.Add(row.IsSelected ? Style(theme, "selectedBg", line, background: true) : line);
+        }
+        return rendered;
     }
 
     private static string Content(TerminalTheme theme, TerminalTreeState state, TerminalTreeFlatNode flatNode,

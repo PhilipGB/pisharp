@@ -47,11 +47,23 @@ internal sealed class TerminalConversationExecution
     public Action? RequestApplicationShutdown { get; set; }
     private CancellationTokenSource? _activeRun;
     private TaskCompletionSource? _activeRunCompletion;
+    private TaskCompletionSource? _activeRunSettled;
+
+    public bool IsRunning => Volatile.Read(ref _activeRun) is not null;
 
     public void AbortCurrentRun()
     {
         try { Volatile.Read(ref _activeRun)?.Cancel(); }
         catch (ObjectDisposedException) { }
+    }
+
+    /// <summary>Cancels the active response and waits until its event stream stops producing output.</summary>
+    public async Task SettleActiveRunAsync(CancellationToken cancellationToken)
+    {
+        var settled = Volatile.Read(ref _activeRunSettled);
+        if (settled is null) return;
+        AbortCurrentRun();
+        await settled.Task.WaitAsync(cancellationToken);
     }
 
     public async Task CancelActiveRunAsync(CancellationToken cancellationToken)
@@ -89,6 +101,7 @@ internal sealed class TerminalConversationExecution
     {
         using var runCancel = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var settled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var execution = new InteractivePromptExecution(_presentation.Editor, _presentation.Screen, () => Console.Error,
             () => _projectBinding.Resources, () => _conversationBinding.Run,
             (includeEstimateWhenNoMessages, providerContextTokens) => _presentation.IdleFooter(
@@ -102,6 +115,7 @@ internal sealed class TerminalConversationExecution
         var transcript = _presentation.CreateInteractiveTranscript(interactive: !_print);
         ActiveTranscript = transcript;
         Volatile.Write(ref _activeRunCompletion, completion);
+        Volatile.Write(ref _activeRunSettled, settled);
         _activeRun = runCancel;
         try
         {
@@ -111,6 +125,7 @@ internal sealed class TerminalConversationExecution
         catch (Exception ex) { Console.Error.WriteLine($"Agent error: {ex.Message}"); Environment.ExitCode = 1; }
         finally
         {
+            settled.TrySetResult();
             _presentation.Screen?.ClearTerminalProgress();
             await execution.StopMonitoringAsync();
             // Store the selected branch and any completed/aborted messages even when a turn fails.
@@ -123,6 +138,7 @@ internal sealed class TerminalConversationExecution
             _presentation.Screen?.SetWorkingStatus(null);
             completion.TrySetResult();
             Interlocked.CompareExchange(ref _activeRunCompletion, null, completion);
+            Interlocked.CompareExchange(ref _activeRunSettled, null, settled);
         }
     }
 

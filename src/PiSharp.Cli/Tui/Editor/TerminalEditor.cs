@@ -10,7 +10,7 @@ public sealed class TerminalEditor
     internal static readonly string[] ActiveApplicationActions =
     [
         "app.thinking.cycle", "app.thinking.toggle", "app.model.cycleForward",
-        "app.model.cycleBackward", "app.model.select"
+        "app.model.cycleBackward", "app.model.select", "app.session.tree"
     ];
 
     private sealed record CompletionCandidate(string DisplayText, string ReplacementText, bool Native,

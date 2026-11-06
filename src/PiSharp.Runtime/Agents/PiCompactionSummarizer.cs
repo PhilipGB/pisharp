@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
@@ -198,6 +199,38 @@ internal sealed class PiCompactionSummarizer
         return summary with { Text = BranchSummaryPreamble + summary.Text };
     }
 
+    /// <summary>Stops waiting on a provider stream as soon as the caller cancels.</summary>
+    private static async IAsyncEnumerable<AgentResponseUpdate> AwaitCancellableAsync(
+        IAsyncEnumerable<AgentResponseUpdate> updates, [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        var enumerator = updates.GetAsyncEnumerator(cancellationToken);
+        var cancelled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var registration = cancellationToken.Register(static state =>
+            ((TaskCompletionSource)state!).TrySetResult(), cancelled);
+        try
+        {
+            while (true)
+            {
+                var move = enumerator.MoveNextAsync().AsTask();
+                if (await Task.WhenAny(move, cancelled.Task).ConfigureAwait(false) != move)
+                {
+                    // The provider stream may not observe cancellation while it is idle. Abandon
+                    // the pending read and let the caller reopen the tree immediately.
+                    _ = move.ContinueWith(task => _ = task.Exception,
+                        TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
+                    throw new OperationCanceledException(cancellationToken);
+                }
+                if (!await move.ConfigureAwait(false)) yield break;
+                yield return enumerator.Current;
+            }
+        }
+        finally
+        {
+            try { await enumerator.DisposeAsync().ConfigureAwait(false); }
+            catch (NotSupportedException) { }
+        }
+    }
+
     private async Task<PiAgent.CompactionSummary> RunSummaryAsync(string request, IReadOnlyList<ChatMessage> messages,
         string usageSource, CancellationToken cancellationToken, int? reserveTokens = null, bool turnPrefix = false,
         string? retrySource = null, string? compactionReason = null,
@@ -232,7 +265,7 @@ internal sealed class PiCompactionSummarizer
                     var updates = _summarizer.RunStreamingAsync(request,
                         options: requestOptions is null ? null : new ChatClientAgentRunOptions(requestOptions),
                         cancellationToken: cancellationToken);
-                    await foreach (var update in updates.ConfigureAwait(false))
+                    await foreach (var update in AwaitCancellableAsync(updates, cancellationToken).ConfigureAwait(false))
                     {
                         responseText.Append(update.Text);
                         if (update.FinishReason is { } updateFinishReason) finishReason = updateFinishReason;
