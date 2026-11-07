@@ -1169,6 +1169,26 @@ public sealed class TerminalScreenCompositorTests
         Assert.Contains(theme.Fg("thinkingOff") + "◆", defaultFrame.Rows[19]);
     }
 
+    [Theory]
+    [InlineData("medium", "thinkingMedium")]
+    [InlineData("high", "thinkingHigh")]
+    [InlineData("off", "thinkingOff")]
+    public void WorkingRuleUsesPiThinkingLevelColor(string thinkingLevel, string token)
+    {
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+        var theme = TerminalThemeCatalog.LoadBuiltIn("dark", TerminalColorMode.TrueColor);
+
+        var frame = compositor.Compose("", 0, null, null, "", "fixture-model",
+            overlay: null, scrollOffset: 0, columns: 100, height: 32,
+            new TranscriptSearchController(), new TerminalMouseRouter(), theme,
+            workingStatus: "Working", workingFrame: "⠋", thinkingLevel: thinkingLevel);
+
+        Assert.Equal(theme.Style(token, new string('─', 100)), frame.Rows[29]);
+        Assert.StartsWith(theme.Style(token, "── "), frame.Rows[27]);
+        Assert.Contains(theme.Fg(token) + "Working", frame.Rows[27]);
+        Assert.Contains(theme.Fg(token) + "⠋", frame.Rows[27]);
+    }
+
     [Fact]
     public void TranscriptPaddingResetsInlineStylesBeforeTrailingCells()
     {

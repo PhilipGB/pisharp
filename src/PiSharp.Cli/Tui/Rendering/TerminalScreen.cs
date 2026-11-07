@@ -16,6 +16,7 @@ public sealed class TerminalScreen : IDisposable
     private readonly TextWriter _originalOut;
     private readonly TextWriter _originalError;
     private readonly Func<int> _getColumns;
+    private readonly Func<string> _getThinkingLevel;
     private readonly Func<int> _getRows;
     private readonly TerminalRenderScheduler _render;
     private readonly FullscreenWheelScrollAccelerator _wheelScroll;
@@ -138,7 +139,8 @@ public sealed class TerminalScreen : IDisposable
         bool queryTerminalColors, bool followTerminalAppearance = false, bool deferInitialRender = false,
         TimeSpan? minimumRenderInterval = null, TimeProvider? timeProvider = null, bool useAlternateScreen = true,
         Func<string, TerminalMermaidArt?>? mermaidSyncProvider = null,
-        Func<string, CancellationToken, Task<TerminalMermaidArt?>>? mermaidAsyncProvider = null)
+        Func<string, CancellationToken, Task<TerminalMermaidArt?>>? mermaidAsyncProvider = null,
+        Func<string>? getThinkingLevel = null)
     {
         ArgumentNullException.ThrowIfNull(originalOut);
         ArgumentNullException.ThrowIfNull(originalError);
@@ -167,6 +169,7 @@ public sealed class TerminalScreen : IDisposable
         _terminalColors = new(theme.TerminalForeground, theme.TerminalBackground);
         _getColumns = getColumns ?? ReadColumns;
         _getRows = getRows ?? ReadRows;
+        _getThinkingLevel = getThinkingLevel ?? (() => "off");
         _compositor = new(_originalOut, _images, _useAlternateScreen);
         _conversationPresentation = new(_transcript, _images, Columns, () => _theme,
             mermaidSyncProvider, mermaidAsyncProvider,
@@ -1927,7 +1930,7 @@ public sealed class TerminalScreen : IDisposable
             _extensionCustomPanel ?? _extensionEditorReplacement, _extensionWorkingFrameVerbatim,
             _transcriptBottomKeyLabel, _transcriptSearchPanel, _transientScrollbarVisible,
             _transcriptSearchCursorColumn, transientFlashes: _selectionFlashes.Messages,
-            editorScrollOffset: _editorScrollOffset);
+            editorScrollOffset: _editorScrollOffset, thinkingLevel: _getThinkingLevel());
         _editorScrollOffset = frame.EditorScrollOffset;
         if (frame.ScrollOffset != _scrollOffset) ShowTransientScrollbarLocked();
         _scrollOffset = frame.ScrollOffset;

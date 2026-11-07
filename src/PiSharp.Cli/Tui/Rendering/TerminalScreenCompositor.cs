@@ -88,9 +88,10 @@ internal sealed class TerminalScreenCompositor
         bool transientScrollbarVisible = false,
         int? transcriptSearchCursorColumn = null,
         string? transientFlash = null, IReadOnlyList<string>? transientFlashes = null,
-        int editorScrollOffset = 0)
+        int editorScrollOffset = 0, string thinkingLevel = "off")
     {
         var activeTheme = theme ?? TerminalTheme.Default;
+        var thinkingToken = TerminalTheme.ThinkingToken(thinkingLevel);
         var initialScrollOffset = scrollOffset;
         var homeDirectory = Environment.GetEnvironmentVariable("HOME") ??
             Environment.GetEnvironmentVariable("USERPROFILE");
@@ -286,7 +287,7 @@ internal sealed class TerminalScreenCompositor
 
         if (borderHeight > 0)
         {
-            var border = activeTheme.Style("thinkingOff", new string('─', columns));
+            var border = activeTheme.Style(thinkingToken, new string('─', columns));
             rows[editorStart] = border;
             rows[editorStart + editorHeight - 1] = border;
             if (!string.IsNullOrWhiteSpace(workingStatus))
@@ -297,11 +298,11 @@ internal sealed class TerminalScreenCompositor
                 if (columns >= statusWidth + 5)
                 {
                     var tail = new string('─', columns - statusWidth - 4);
-                    rows[editorStart] = activeTheme.Style("thinkingOff", "── ") +
-                        (workingFrameVerbatim ? indicator : activeTheme.Style("thinkingOff", indicator)) +
+                    rows[editorStart] = activeTheme.Style(thinkingToken, "── ") +
+                        (workingFrameVerbatim ? indicator : activeTheme.Style(thinkingToken, indicator)) +
                         (indicator.Length == 0 ? "" : " ") +
-                        activeTheme.Style("thinkingOff", workingStatus) +
-                        activeTheme.Style("thinkingOff", $" {tail}");
+                        activeTheme.Style(thinkingToken, workingStatus) +
+                        activeTheme.Style(thinkingToken, $" {tail}");
                 }
             }
         }
