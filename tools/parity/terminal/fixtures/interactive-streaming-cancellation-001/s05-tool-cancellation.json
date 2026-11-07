@@ -1,6 +1,8 @@
 {
   "id": "interactive-streaming-cancellation-001-s05-tool-cancellation",
-  "forbiddenStreamTokens": ["TOOL_COMPLETED"],
+  "forbiddenStreamTokens": [
+    "TOOL_COMPLETED"
+  ],
   "forbiddenStreamFrom": "s05-04-cancellation-requested",
   "settings": {
     "quietStartup": true
@@ -172,7 +174,7 @@
       ],
       "allowStaticFrame": true,
       "expect": "SECOND_TOOL_PROMPT_OK the run recovered.",
-      "notExpect": "TOOL_COMPLETED"
+      "notExpect": "Working"
     },
     {
       "id": "s05-10-idle",
