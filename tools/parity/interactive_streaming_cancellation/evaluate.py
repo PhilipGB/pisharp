@@ -656,6 +656,22 @@ def score_scenario(scenario_id, scenario, comparison_by_case, calibration_by_cas
         errors.append('Pi did not reach every named checkpoint')
     if any(unmatched_by_case.values()):
         errors.append('unmatched difference has no explicit finding predicate')
+    if scenario_id in CLEANUP_SCENARIOS:
+        for contract_group in (pi_contract_by_case, pisharp_contract_by_case):
+            for contract in contract_group.values():
+                forbidden = contract.get('forbiddenStream') or {}
+                if forbidden.get('required') and forbidden.get('scanned') is not True:
+                    errors.append('post-cancellation stream scan evidence is missing')
+                    break
+    if 'cleanupCheckpoint' in scenario:
+        for contract_group in (pi_contract_by_case, pisharp_contract_by_case):
+            for contract in contract_group.values():
+                evidence = contract.get('cleanupEvidence') or {}
+                if (not evidence.get('initialProcesses')
+                        or not evidence.get('cleanupProcesses')):
+                    errors.append('process cleanup evidence is missing')
+                    break
+    errors = list(dict.fromkeys(errors))
     assessable = not errors
 
     visual_by_size = {}

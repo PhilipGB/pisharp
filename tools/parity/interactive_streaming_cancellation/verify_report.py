@@ -313,25 +313,27 @@ def verify(evidence_dir, manifest_path=None, require_verification=False):
             pi_complete &= expected_pi['complete']
             pisharp_complete &= expected_ps['complete']
             if scenario_id in CLEANUP_SCENARIOS:
-                forbidden = ps_contract.get('forbiddenStream') or {}
-                check(checks, f'{scenario_id} {case_id} PiSharp forbidden stream evidence',
-                      forbidden.get('required') is True
-                      and forbidden.get('scanned') is True
-                      and forbidden.get('tokens') == spec.get('forbiddenStreamTokens'),
-                      forbidden)
-                if forbidden.get('occurrenceCount', 0) > 0:
-                    check(checks, f'{scenario_id} {case_id} forbidden stream not marked clean',
-                          (ps_contract.get('cleanupChecks') or {}).get('noLateOutput') is False,
-                          ps_contract.get('cleanupChecks'))
-                cleanup_evidence = ps_contract.get('cleanupEvidence') or {}
-                check(checks, f'{scenario_id} {case_id} cleanup evidence',
-                      {'normalScreenRestored', 'cursorVisible', 'synchronizedOutputOff'} <= set(
-                          cleanup_evidence), cleanup_evidence)
-                if 'cleanupCheckpoint' in spec:
-                    check(checks, f'{scenario_id} {case_id} process cleanup evidence',
-                          isinstance(cleanup_evidence.get('processesGone'), bool)
-                          and cleanup_evidence.get('processesGone') is True,
-                          cleanup_evidence)
+                for product, product_contract in (('Pi', pi_contract),
+                                                  ('PiSharp', ps_contract)):
+                    forbidden = product_contract.get('forbiddenStream') or {}
+                    check(checks, f'{scenario_id} {case_id} {product} forbidden stream evidence',
+                          forbidden.get('required') is True
+                          and forbidden.get('scanned') is True
+                          and forbidden.get('tokens') == spec.get('forbiddenStreamTokens'),
+                          forbidden)
+                    if forbidden.get('occurrenceCount', 0) > 0:
+                        check(checks, f'{scenario_id} {case_id} {product} forbidden stream not marked clean',
+                              (product_contract.get('cleanupChecks') or {}).get('noLateOutput') is False,
+                              product_contract.get('cleanupChecks'))
+                    cleanup_evidence = product_contract.get('cleanupEvidence') or {}
+                    check(checks, f'{scenario_id} {case_id} {product} cleanup evidence',
+                          {'normalScreenRestored', 'cursorVisible', 'synchronizedOutputOff'} <= set(
+                              cleanup_evidence), cleanup_evidence)
+                    if 'cleanupCheckpoint' in spec:
+                        check(checks, f'{scenario_id} {case_id} {product} process cleanup evidence',
+                              isinstance(cleanup_evidence.get('processesGone'), bool)
+                              and cleanup_evidence.get('processesGone') is True,
+                              cleanup_evidence)
 
         check(checks, f'{scenario_id} Pi contract passes', pi_passes, pi_passes)
         check(checks, f'{scenario_id} checkpoint coverage', pi_complete and pisharp_complete,
