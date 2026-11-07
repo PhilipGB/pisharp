@@ -35,7 +35,7 @@ def buffer_state(text):
 
 def evidence_with_frames(*frames):
     return dict(frames=[dict(id=frame_id, state=state) for frame_id, state in frames],
-                http=[], scenarioError=None, processByFrame=[])
+                http=[], scenarioError=None, processByFrame=[], provenance={})
 
 
 class DynamicMaskTests(unittest.TestCase):
@@ -71,22 +71,64 @@ class ContentCheckTests(unittest.TestCase):
             ('s01-01', buffer_state('TOKEN TOKEN')),
             ('exit', buffer_state('TOKEN')),
         )
-        scenario = dict(requiredText=['TOKEN'], finalTextExactOnce=['TOKEN'])
+        scenario = dict(idleCheckpoint='exit', requiredText=['TOKEN'],
+                        finalTextExactOnce=['TOKEN'])
         result = evaluate.content_check(evidence, scenario)
         self.assertEqual(result['missing'], [])
         self.assertEqual(result['duplicates'], {})
 
     def test_duplicate_in_final_transcript_is_reported(self):
         evidence = evidence_with_frames(('exit', buffer_state('TOKEN TOKEN')))
-        scenario = dict(requiredText=['TOKEN'], finalTextExactOnce=['TOKEN'])
+        scenario = dict(idleCheckpoint='exit', requiredText=['TOKEN'],
+                        finalTextExactOnce=['TOKEN'])
         result = evaluate.content_check(evidence, scenario)
         self.assertEqual(result['duplicates'], {'TOKEN': 2})
 
     def test_missing_required_text_is_reported(self):
         evidence = evidence_with_frames(('exit', buffer_state('something else')))
-        scenario = dict(requiredText=['TOKEN'], finalTextExactOnce=[])
+        scenario = dict(idleCheckpoint='exit', requiredText=['TOKEN'],
+                        finalTextExactOnce=[])
         result = evaluate.content_check(evidence, scenario)
         self.assertEqual(result['missing'], ['TOKEN'])
+
+
+class FindingPredicateTests(unittest.TestCase):
+    def setUp(self):
+        self.manifest = json.loads(MANIFEST.read_text())
+
+    def test_unknown_difference_has_no_finding(self):
+        scenario = dict(self.manifest['scenarios']['S01'])
+        difference = dict(checkpoint='s01-06-idle', category='layout',
+                          path='$.cursor.visible', pi=True, pisharp=False)
+        self.assertIsNone(evaluate.match_finding('S01', scenario, difference))
+
+    def test_known_paths_map_explicitly(self):
+        scenario = dict(self.manifest['scenarios']['S01'])
+        difference = dict(checkpoint='s01-04-incomplete-code-block', category='style',
+                          path='$.buffers.alternate.lines[7].cells[3].foreground.value',
+                          pi=10983639, pisharp=-1)
+        self.assertEqual(evaluate.match_finding('S01', scenario, difference),
+                         'S01-code-syntax-builtin-highlight')
+
+        scenario = dict(self.manifest['scenarios']['S02'])
+        difference = dict(checkpoint='s02-01-before-reasoning', category='style',
+                          path='$.buffers.alternate.lines[21].cells[0].foreground.value',
+                          pi=6391244, pisharp=7108219)
+        self.assertEqual(evaluate.match_finding('S02', scenario, difference),
+                         'S02-reasoning-status-style')
+
+        scenario = dict(self.manifest['scenarios']['S05'])
+        difference = dict(checkpoint='s05-05-tool-cancellation-settles', category='text',
+                          path='$.viewport[10].cells[1].chars', pi='E', pisharp='O')
+        self.assertEqual(evaluate.match_finding('S05', scenario, difference),
+                         'S05-tool-cancel-error-wording')
+
+    def test_wrong_values_do_not_match(self):
+        scenario = dict(self.manifest['scenarios']['S01'])
+        difference = dict(checkpoint='s01-04-incomplete-code-block', category='style',
+                          path='$.buffers.alternate.lines[7].cells[3].foreground.value',
+                          pi=1, pisharp=2)
+        self.assertIsNone(evaluate.match_finding('S01', scenario, difference))
 
 
 class VerifierTests(unittest.TestCase):
@@ -118,22 +160,27 @@ class VerifierTests(unittest.TestCase):
         self.assertTrue(all(item['passed'] for item in checks),
                         [item for item in checks if not item['passed']])
 
+    def scenario(self, document, scenario_id):
+        return next(item for item in document['scenarios'] if item['id'] == scenario_id)
+
     def test_missing_scenario_is_rejected(self):
         for name in ('report.json', 'comparison.json', 'ui-report.json'):
             document = self.load(name)
             if name == 'report.json':
                 document['scenarios'] = [item for item in document['scenarios']
                                          if item['id'] != 'S03']
+            elif isinstance(document['scenarios'], dict):
+                document['scenarios'].pop('S03', None)
             else:
-                document['scenarios'].pop('S03', None) if isinstance(document['scenarios'], dict) \
-                    else document['scenarios'].remove(
-                        next(item for item in document['scenarios'] if item['id'] == 'S03'))
+                document['scenarios'] = [item for item in document['scenarios']
+                                         if item['id'] != 'S03']
             self.write(name, document)
         self.assert_fails('missing scenario')
 
     def test_missing_checkpoint_is_rejected(self):
         document = self.load('report.json')
-        document['scenarios'][0]['assertions']['checkpointOrder'][0].pop()
+        self.scenario(document, 'S01')['contracts']['pi']['80x24-dark-fullscreen'][
+            'checkpointOrder'].pop()
         self.write('report.json', document)
         self.assert_fails('missing checkpoint')
 
@@ -144,6 +191,50 @@ class VerifierTests(unittest.TestCase):
         self.write('report.json', document)
         self.assert_fails('bad checksum')
 
+    def test_provenance_missing_sha_is_rejected(self):
+        document = self.load('report.json')
+        document['captureProvenance']['pi'][0]['sha'] = ''
+        self.write('report.json', document)
+        self.assert_fails('missing provenance sha')
+
+    def test_provenance_dirty_state_mismatch_is_rejected(self):
+        document = self.load('report.json')
+        document['captureProvenance']['pisharp'][0]['dirty'] = True
+        document['captureProvenance']['pisharp'][0]['trackedChanges'] = []
+        self.write('report.json', document)
+        self.assert_fails('dirty state mismatch')
+
+    def test_pi_contract_failure_marked_assessable_is_rejected(self):
+        document = self.load('report.json')
+        contract = self.scenario(document, 'S01')['contracts']['pi']['80x24-dark-fullscreen']
+        contract['functionalChecks']['content'] = False
+        contract['passes'] = False
+        self.write('report.json', document)
+        self.assert_fails('Pi contract failure')
+
+    def test_missing_pi_contract_is_rejected(self):
+        document = self.load('report.json')
+        self.scenario(document, 'S01')['contracts']['pi'] = {}
+        self.write('report.json', document)
+        self.assert_fails('missing Pi contract')
+
+    def test_forbidden_stream_occurrence_marked_clean_is_rejected(self):
+        document = self.load('report.json')
+        contract = self.scenario(document, 'S04')['contracts']['pisharp']['80x24-dark-fullscreen']
+        contract['forbiddenStream']['occurrenceCount'] = 1
+        contract['forbiddenStream']['counts']['CANCEL_LATE'] = 1
+        contract['forbiddenStream']['valid'] = False
+        contract['cleanupChecks']['noLateOutput'] = True
+        self.write('report.json', document)
+        self.assert_fails('forbidden stream marked clean')
+
+    def test_missing_forbidden_stream_evidence_is_rejected(self):
+        document = self.load('report.json')
+        self.scenario(document, 'S05')['contracts']['pisharp']['80x24-dark-fullscreen'][
+            'forbiddenStream'] = None
+        self.write('report.json', document)
+        self.assert_fails('missing forbidden stream')
+
     def test_inflated_total_is_rejected(self):
         document = self.load('report.json')
         document['total'] += 10
@@ -152,31 +243,41 @@ class VerifierTests(unittest.TestCase):
 
     def test_inflated_scenario_score_is_rejected(self):
         document = self.load('report.json')
-        document['scenarios'][0]['functional'] = 10
+        self.scenario(document, 'S01')['functional'] = 10
         self.write('report.json', document)
         self.assert_fails('inflated scenario score')
 
     def test_invalid_calibration_marked_assessable_is_rejected(self):
         document = self.load('report.json')
-        scenario = next(item for item in document['scenarios'] if item['id'] == 'S02')
+        scenario = self.scenario(document, 'S02')
         scenario['calibration']['80x24-dark-fullscreen'] = True
         self.write('report.json', document)
         self.assert_fails('invalid calibration')
 
     def test_failed_cancellation_marked_successful_is_rejected(self):
         document = self.load('report.json')
-        scenario = next(item for item in document['scenarios'] if item['id'] == 'S04')
-        scenario['assertions']['absenceFailures'][0].append(
+        scenario = self.scenario(document, 'S04')
+        scenario['contracts']['pisharp']['80x24-dark-fullscreen']['absenceFailures'].append(
             dict(checkpoint='s04-06-partial-retained', token='CANCEL_LATE'))
         self.write('report.json', document)
         self.assert_fails('failed cancellation')
 
     def test_missing_cleanup_evidence_is_rejected(self):
         document = self.load('report.json')
-        scenario = next(item for item in document['scenarios'] if item['id'] == 'S05')
-        scenario['assertions']['cleanup'] = {}
+        scenario = self.scenario(document, 'S05')
+        scenario['contracts']['pisharp']['80x24-dark-fullscreen']['cleanupEvidence'] = {}
         self.write('report.json', document)
         self.assert_fails('missing cleanup evidence')
+
+    def test_unmatched_difference_is_rejected(self):
+        document = self.load('report.json')
+        scenario = self.scenario(document, 'S01')
+        scenario['unmatchedDifferences'] = [dict(case='80x24-dark-fullscreen',
+                                                 checkpoint='s01-06-idle',
+                                                 category='layout',
+                                                 path='$.cursor.visible')]
+        self.write('report.json', document)
+        self.assert_fails('unmatched difference')
 
     def test_omitted_difference_is_rejected(self):
         document = self.load('report.json')

@@ -139,6 +139,66 @@ def start_terminal_process(command, cwd, child_environment, options):
     return TerminalProcess(command, cwd, child_environment, options, spool_render_frames=True)
 
 
+def git_provenance(path):
+    """Record the exact source state used by a capture."""
+    path = Path(path).resolve()
+    sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=path, text=True).strip()
+    branch = subprocess.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+                                     cwd=path, text=True).strip()
+    tracked = subprocess.check_output(
+        ['git', 'status', '--porcelain', '--untracked-files=no'], cwd=path, text=True).strip()
+    changes = tracked.splitlines() if tracked else []
+    return dict(sha=sha, branch=branch, dirty=bool(changes), trackedChanges=changes[:50])
+
+
+def render_state_text(state):
+    """Decode the visible text that a completed synchronized render frame painted."""
+    lines = state.get('viewport', [])
+    return '\n'.join(
+        ''.join(cell.get('chars', '') for cell in line.get('cells', []) if isinstance(cell, dict))
+        for line in lines)
+
+
+def render_state_buffer_text(state):
+    """Include alternate and normal buffers so scrolled-off rows are inspected too."""
+    chunks = []
+    for name in ('alternate', 'normal'):
+        lines = state.get('buffers', {}).get(name, {}).get('lines', [])
+        chunks.append('\n'.join(
+            ''.join(cell.get('chars', '') for cell in line.get('cells', []) if isinstance(cell, dict))
+            for line in lines))
+    return '\n'.join(chunks)
+
+
+def scan_forbidden_render_frames(frames, start_index, tokens):
+    """Count forbidden tokens in every render frame after an explicit action.
+
+    The named checkpoints are intentionally sparse. This scan closes the gap
+    between them by retaining frame-level evidence for tokens that must never be
+    painted after cancellation, even if a later checkpoint has already settled.
+    """
+    if not tokens or start_index is None:
+        return dict(scanned=start_index is not None, fromRenderIndex=start_index,
+                    tokens=list(tokens), renderFrameCount=0, counts={token: 0 for token in tokens},
+                    occurrences=[])
+    counts = {token: 0 for token in tokens}
+    occurrences = []
+    total = 0
+    for index, state in enumerate(frames):
+        if index < start_index:
+            continue
+        text = render_state_text(state) + '\n' + render_state_buffer_text(state)
+        for token in tokens:
+            if token in text:
+                counts[token] += 1
+                total += 1
+                if len(occurrences) < 50:
+                    occurrences.append(dict(frameIndex=index, token=token))
+    return dict(scanned=True, fromRenderIndex=start_index, tokens=list(tokens),
+                renderFrameCount=len(frames), counts=counts,
+                occurrenceCount=total, occurrences=occurrences)
+
+
 def wait_for_gate(server, terminal, gate, timeout):
     """Wait for a fixture gate while draining the PTY.
 
@@ -315,20 +375,20 @@ def working_indicator_summary(render_states):
 
 
 def write_assertion_evidence(path, products, dimensions, theme, mode, frame_ids=(),
-                            include_working_indicator=False):
+                            include_working_indicator=False, provenance=None):
     """Write named checkpoints and request traces without the large render/raw streams."""
     requested_frames = set(frame_ids)
     evidence = dict(dimensions=dimensions, theme=theme, mode=mode,
-                    assertionFrames=sorted(requested_frames))
+                    assertionFrames=sorted(requested_frames), provenance=provenance)
     for name, product in products.items():
         frames = list(product.get('assertionFrames', []))
         evidence[name] = dict(frames=frames, http=product['http'], scenarioError=product['scenarioError'],
                               processByFrame=product.get('processByFrame', []),
+                              forbiddenStream=product.get('forbiddenStream'),
+                              provenance=product.get('provenance'),
                               capturedAgentFiles=product.get('capturedAgentFiles', {}),
                               capturedSessionFiles=product.get('capturedSessionFiles', []),
                               capturedSessionContents=product.get('capturedSessionContents', {}))
-        if include_working_indicator:
-            evidence[name]['workingIndicator'] = working_indicator_summary(product['renders'])
 
     with path.open('wb') as output:
         compressed = gzip.GzipFile(fileobj=output, mode='wb', compresslevel=1, mtime=0)
@@ -458,12 +518,15 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
     http_by_frame = []
     clipboard_by_frame = []
     process_by_frame = []
+    forbidden_render_start = None
     prior_raw = bytearray()
     prior_render_frames = []
     request_start = len(server.requests)
     try:
         for action in scenario['actions']:
             request_mark = len(server.requests)
+            if action['id'] == scenario.get('forbiddenStreamFrom'):
+                forbidden_render_start = len(terminal.render_frames)
             cursor_before = terminal.snapshot().get('cursor') if action.get('expectCursorChange') else None
             mark, control_mark = len(terminal.raw), len(terminal.trace.events)
             wait_gates = action.get('waitGates', [])
@@ -567,6 +630,9 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
             http_by_frame.append(dict(id=action['id'], requests=server.requests[request_mark:]))
             clipboard_by_frame.append(record_clipboard_checkpoint(action, terminal.raw[mark:]))
         prior_raw.extend(terminal.raw)
+        forbidden_stream = scan_forbidden_render_frames(
+            terminal.render_frames, forbidden_render_start,
+            scenario.get('forbiddenStreamTokens', []))
         captured_agent_files = {}
         for relative in scenario.get('captureAgentFiles', []):
             path = (agent / relative).resolve()
@@ -587,12 +653,15 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
                     capturedSessionFiles=captured_session_files,
                     capturedSessionContents=read_session_contents(agent),
                     http=server.requests[request_start:], command=command, scenarioError=None,
-                    processByFrame=process_by_frame)
+                    processByFrame=process_by_frame, forbiddenStream=forbidden_stream)
     except (TimeoutError, RuntimeError) as error:
         record_frame(dict(id=action['id'], state=terminal.snapshot(), controls=terminal.trace.events[control_mark:],
                           controlPending=terminal.trace.pending.hex()))
         http_by_frame.append(dict(id=action['id'], requests=server.requests[request_mark:]))
         combined_raw = prior_raw + terminal.raw
+        forbidden_stream = scan_forbidden_render_frames(
+            terminal.render_frames, forbidden_render_start,
+            scenario.get('forbiddenStreamTokens', []))
         return dict(frames=frames, assertionFrames=assertion_frames,
                     renders=RenderFrameSequence(*prior_render_frames, terminal.render_frames),
                     httpByFrame=http_by_frame, clipboardByFrame=clipboard_by_frame,
@@ -603,7 +672,7 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
                     if (agent / 'sessions').is_dir() else [],
                     capturedSessionContents=read_session_contents(agent),
                     http=server.requests[request_start:], command=command, scenarioError=str(error),
-                    processByFrame=process_by_frame)
+                    processByFrame=process_by_frame, forbiddenStream=forbidden_stream)
     finally:
         kill_orphan_processes(process_by_frame)
         terminal.close()
@@ -633,8 +702,11 @@ def main():
     scenario = json.loads(args.fixture.read_text())
     args.output.mkdir(parents=True, exist_ok=True)
     product_commands = commands(args.pi.resolve(), args.pisharp.resolve(), scenario, args.pisharp_extension)
-    report = dict(piSha=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=args.pi, text=True).strip(),
-                  pisharpSha=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
+    repositories = dict(pi=git_provenance(args.pi), pisharp=git_provenance(ROOT))
+    provenance = dict(pi=repositories['pi'],
+                      pisharp=repositories['pi'] if args.calibrate else repositories['pisharp'])
+    report = dict(piSha=provenance['pi']['sha'], pisharpSha=provenance['pisharp']['sha'],
+                  provenance=provenance, repositories=repositories,
                   fixture=scenario['id'], calibration=args.calibrate,
                   concurrentHttpGroups=scenario.get('concurrentHttpGroups', []),
                   normalization=('Named checkpoints and render streams are compared exactly. Render streams align identical '
@@ -671,6 +743,7 @@ def main():
                 server.reset()
                 products[label] = run_product('pi' if args.calibrate else label, product_commands['pi'] if args.calibrate else command,
                                               scenario, dimensions, theme, mode, server, args.pisharp_extension)
+                products[label]['provenance'] = provenance[label]
             comparison = compare_products(products['pi'], products['pisharp'],
                                           scenario.get('concurrentHttpGroups', []))
             delta = comparison['differences']
@@ -717,7 +790,8 @@ def main():
                     compressed.close()
                 write_assertion_evidence(assertion_artifact_path, products, dimensions, theme, mode,
                                          frame_ids=scenario.get('assertionFrames', []),
-                                         include_working_indicator=scenario['id'] == 'project-trust-extension-ui')
+                                         include_working_indicator=scenario['id'] == 'project-trust-extension-ui',
+                                         provenance=provenance)
             finally:
                 for product in products.values():
                     product['frames'].close()

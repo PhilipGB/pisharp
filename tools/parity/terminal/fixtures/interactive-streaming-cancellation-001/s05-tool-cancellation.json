@@ -1,5 +1,7 @@
 {
   "id": "interactive-streaming-cancellation-001-s05-tool-cancellation",
+  "forbiddenStreamTokens": ["TOOL_COMPLETED"],
+  "forbiddenStreamFrom": "s05-04-cancellation-requested",
   "settings": {
     "quietStartup": true
   },

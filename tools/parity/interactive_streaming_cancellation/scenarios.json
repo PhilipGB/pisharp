@@ -138,6 +138,8 @@
         "SECOND_PROMPT_OK the editor recovered."
       ],
       "cancelledCheckpoint": "s04-05-cancellation-settled",
+      "forbiddenStreamTokens": ["CANCEL_LATE", "CANCEL_FINISH"],
+      "forbiddenStreamFrom": "s04-04-cancellation-requested",
       "absenceEverywhere": ["CANCEL_LATE", "CANCEL_FINISH"],
       "secondPromptResponse": "SECOND_PROMPT_OK the editor recovered.",
       "idleCheckpoint": "s04-08-idle",
@@ -166,6 +168,8 @@
         "SECOND_TOOL_PROMPT_OK the run recovered."
       ],
       "cancelledCheckpoint": "s05-05-tool-cancellation-settles",
+      "forbiddenStreamTokens": ["TOOL_COMPLETED"],
+      "forbiddenStreamFrom": "s05-04-cancellation-requested",
       "absenceEverywhere": ["TOOL_COMPLETED"],
       "secondPromptResponse": "SECOND_TOOL_PROMPT_OK the run recovered.",
       "idleCheckpoint": "s05-10-idle",

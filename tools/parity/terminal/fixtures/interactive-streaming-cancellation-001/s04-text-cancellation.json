@@ -1,5 +1,7 @@
 {
   "id": "interactive-streaming-cancellation-001-s04-text-cancellation",
+  "forbiddenStreamTokens": ["CANCEL_LATE", "CANCEL_FINISH"],
+  "forbiddenStreamFrom": "s04-04-cancellation-requested",
   "settings": { "quietStartup": true },
   "arguments": {
     "pi": [

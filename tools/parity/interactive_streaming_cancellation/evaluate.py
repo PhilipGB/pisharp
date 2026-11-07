@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Score the interactive streaming/cancellation fixture from captured evidence.
 
-The evaluator deliberately reads only the compact ``*.assertions.json.gz``
-companions produced by ``tools/parity/terminal/run.py``. It does not launch a
-product, contact a provider, or read wall-clock timings. Every point in the
-report is derived from a named checkpoint, a fixture gate assertion, or the
-deterministic fixture HTTP trace.
+The evaluator reads only the compact ``*.assertions.json.gz`` companions. It
+evaluates the frozen functional, temporal and cleanup contract independently for
+Pi and PiSharp, binds every capture to the exact source state that produced it,
+scans the post-cancellation render stream for forbidden tokens, and maps every
+decoded difference to an explicit path/checkpoint predicate. An unmatched
+difference is a validation failure, not a generic finding.
 """
 import argparse
 import copy
@@ -29,6 +30,8 @@ DYNAMIC_PATTERNS = [
 CATEGORY_ORDER = ['text', 'style', 'layout']
 SCENARIO_POINTS = dict(functional=8, temporal=4, visual=6, cleanup=5)
 CLEANUP_SCENARIOS = {'S04', 'S05'}
+PROVENANCE_FIELDS = ('sha', 'branch', 'dirty', 'trackedChanges')
+SHA_PATTERN = re.compile(r'^[0-9a-f]{40}$')
 
 
 def load_gzip_json(path):
@@ -37,16 +40,17 @@ def load_gzip_json(path):
 
 
 def state_text(state, buffer_name=None):
-    """Render the visible characters of a normalized terminal state."""
-    if buffer_name is None:
-        lines = state.get('viewport', [])
-    else:
-        lines = state.get('buffers', {}).get(buffer_name, {}).get('lines', [])
+    """Render visible characters, treating normalized blank cells as spaces."""
+    if not isinstance(state, dict):
+        return ''
+    lines = state.get('viewport', []) if buffer_name is None else \
+        state.get('buffers', {}).get(buffer_name, {}).get('lines', [])
     rendered = []
     for line in lines:
-        chars = ''.join(' ' if (cell.get('chars') if isinstance(cell, dict) else None) in BLANKS
-                        else cell.get('chars', '')
-                        for cell in line.get('cells', []) if isinstance(cell, dict))
+        chars = ''.join(
+            ' ' if (cell.get('chars') if isinstance(cell, dict) else None) in BLANKS
+            else cell.get('chars', '')
+            for cell in line.get('cells', []) if isinstance(cell, dict))
         rendered.append(chars.rstrip())
     return '\n'.join(rendered).strip('\n')
 
@@ -58,10 +62,9 @@ def collapsed(text):
 def mask_dynamic(lines, marker_width=16):
     """Mask wall-clock durations and partial-stream usage percentages.
 
-    The replacement keeps a fixed number of cells so two runs that print values
-    of different character width (``0.6s`` and ``0.98s``) still line up. The
-    prefix and suffix cells, including their styles, are preserved; only the
-    measured value becomes a canonical marker.
+    A fixed-width marker keeps two runs that print values of different width
+    aligned. Prefix and suffix cells, including their styles, are preserved;
+    only the measured value becomes a canonical marker.
     """
     for line in lines:
         if not isinstance(line, dict) or not isinstance(line.get('cells'), list):
@@ -168,8 +171,7 @@ def chat_requests(evidence):
 def assistant_tool_call_ids(evidence):
     ids = []
     for request in chat_requests(evidence):
-        messages = request.get('body', {}).get('messages', [])
-        for message in messages:
+        for message in request.get('body', {}).get('messages', []):
             if message.get('role') != 'assistant':
                 continue
             for call in message.get('tool_calls', []):
@@ -197,9 +199,65 @@ def process_summary(processes):
             for name, entry in sorted(processes.items())}
 
 
-def process_summaries(evidence):
-    return {checkpoint: process_summary(processes)
-            for checkpoint, processes in process_by_checkpoint(evidence).items()}
+def product_provenance(evidence, product):
+    value = (evidence.get(product) or {}).get('provenance')
+    if not isinstance(value, dict):
+        return None
+    return {field: value.get(field) for field in PROVENANCE_FIELDS}
+
+
+def provenance_valid(value):
+    return (isinstance(value, dict)
+            and bool(SHA_PATTERN.fullmatch(str(value.get('sha', ''))))
+            and isinstance(value.get('dirty'), bool)
+            and isinstance(value.get('trackedChanges'), list)
+            and value['dirty'] == bool(value['trackedChanges']))
+
+
+def capture_bundle(calibration, comparison):
+    return dict(
+        calibration=dict(pi=product_provenance(calibration, 'pi'),
+                         pisharp=product_provenance(calibration, 'pisharp')),
+        comparison=dict(pi=product_provenance(comparison, 'pi'),
+                        pisharp=product_provenance(comparison, 'pisharp')),
+    )
+
+
+def provenance_json(value):
+    return json.dumps(value, sort_keys=True, separators=(',', ':'))
+
+
+def scenario_provenance_checks(captures):
+    """Verify that every case ran the expected source state for each role."""
+    errors = []
+    pi_states = set()
+    pisharp_states = set()
+    for case_id, capture in captures.items():
+        calibration = capture['calibration']
+        comparison = capture['comparison']
+        for label in ('pi', 'pisharp'):
+            for name, value in (('calibration.pi', calibration['pi']),
+                                ('calibration.pisharp', calibration['pisharp']),
+                                ('comparison.pi', comparison['pi']),
+                                ('comparison.pisharp', comparison['pisharp'])):
+                if name.endswith(label) and not provenance_valid(value):
+                    errors.append(f'{case_id} {name} provenance is incomplete or inconsistent')
+        if calibration['pisharp'] != calibration['pi']:
+            errors.append(f'{case_id} calibration second run is not the Pi source state')
+        pi_states.add(provenance_json(calibration['pi']))
+        pi_states.add(provenance_json(calibration['pisharp']))
+        pi_states.add(provenance_json(comparison['pi']))
+        pisharp_states.add(provenance_json(comparison['pisharp']))
+    if len(pi_states) != 1:
+        errors.append(f'Pi source state changed between captures: {sorted(pi_states)}')
+    if len(pisharp_states) != 1:
+        errors.append(f'PiSharp source state changed between captures: {sorted(pisharp_states)}')
+    return dict(
+        consistent=not errors,
+        errors=errors,
+        pi=sorted(json.loads(value) for value in pi_states),
+        pisharp=sorted(json.loads(value) for value in pisharp_states),
+    )
 
 
 def calibration_differences(first_evidence, second_evidence, scenario):
@@ -219,11 +277,18 @@ def calibration_differences(first_evidence, second_evidence, scenario):
         if evidence.get('scenarioError'):
             found.append(dict(checkpoint='scenario', path='$.scenarioError',
                               left=label, right=evidence['scenarioError']))
-    first_processes = process_summaries(first_evidence)
-    second_processes = process_summaries(second_evidence)
+    first_processes = {key: process_summary(value)
+                       for key, value in process_by_checkpoint(first_evidence).items()}
+    second_processes = {key: process_summary(value)
+                        for key, value in process_by_checkpoint(second_evidence).items()}
     if first_processes != second_processes:
         found.append(dict(checkpoint='process', path='$.processByFrame',
                           left=first_processes, right=second_processes))
+    first_forbidden = forbidden_check(first_evidence, scenario)
+    second_forbidden = forbidden_check(second_evidence, scenario)
+    if first_forbidden != second_forbidden:
+        found.append(dict(checkpoint='stream', path='$.forbiddenStream',
+                          left=first_forbidden, right=second_forbidden))
     first_requests = len(chat_requests(first_evidence))
     second_requests = len(chat_requests(second_evidence))
     if first_requests != second_requests:
@@ -304,47 +369,205 @@ def request_check(evidence, scenario):
     return result
 
 
+def idle_check(evidence, scenario):
+    state = by_checkpoint(evidence).get(scenario['idleCheckpoint'])
+    return dict(missing=state is None,
+                hasWorking=bool(state) and 'Working' in state_text(normalized_state(state)))
+
+
+def subsequent_check(evidence, scenario):
+    if 'secondPromptResponse' in scenario:
+        return collapsed(scenario['secondPromptResponse']) in collapsed(final_transcript_text(evidence))
+    exit_state = final_state(evidence)
+    return (exit_state.get('exitCode') == 0
+            and bool(exit_state.get('cursor', {}).get('visible')))
+
+
 def cleanup_check(evidence, scenario):
     processes = process_by_checkpoint(evidence)
     cleanup = processes.get(scenario.get('cleanupCheckpoint'), {})
     initial = processes.get(scenario.get('processCheckpoint'), {})
     exit_state = by_checkpoint(evidence).get('exit', {})
-    normal_restored = exit_state.get('activeScreen') == 'normal'
-    cursor_visible = bool(exit_state.get('cursor', {}).get('visible'))
-    sync_off = not exit_state.get('modes', {}).get('private', {}).get('2026', False)
     applies = 'cleanupCheckpoint' in scenario
     return dict(
         initialProcesses=process_summary(initial),
         cleanupProcesses=process_summary(cleanup),
         processesGone=(bool(cleanup) and all(entry.get('state') is None
                                              for entry in cleanup.values())) if applies else None,
-        normalScreenRestored=normal_restored,
-        cursorVisible=cursor_visible,
-        synchronizedOutputOff=sync_off,
+        normalScreenRestored=exit_state.get('activeScreen') == 'normal',
+        cursorVisible=bool(exit_state.get('cursor', {}).get('visible')),
+        synchronizedOutputOff=not exit_state.get('modes', {}).get('private', {}).get('2026', False),
     )
 
 
-def finding_for(scenario_id, difference):
+def forbidden_check(evidence, scenario):
+    tokens = scenario.get('forbiddenStreamTokens', [])
+    value = evidence.get('forbiddenStream')
+    if not tokens:
+        return dict(required=False, scanned=None, valid=True, tokens=[], counts={},
+                    occurrenceCount=0, occurrences=[])
+    if not isinstance(value, dict):
+        return dict(required=True, scanned=False, valid=False, tokens=tokens, counts={},
+                    occurrenceCount=None, occurrences=[])
+    counts = value.get('counts', {})
+    occurrence_count = value.get('occurrenceCount', value.get('total', 0))
+    valid = (value.get('scanned') is True
+             and value.get('tokens') == tokens
+             and occurrence_count == 0
+             and all(counts.get(token, 0) == 0 for token in tokens))
+    return dict(required=True, **value, valid=valid)
+
+
+def evaluate_contract(scenario_id, scenario, evidence):
+    """Evaluate the frozen functional/temporal/cleanup contract for one product."""
+    order = checkpoint_order(evidence)
+    errors = evidence.get('scenarioError')
+    complete = not errors and order == scenario['checkpoints']
+    absences = absence_failures(evidence, scenario)
+    content = content_check(evidence, scenario)
+    requests = request_check(evidence, scenario)
+    idle = idle_check(evidence, scenario)
+    subsequent = subsequent_check(evidence, scenario)
+    processes = cleanup_check(evidence, scenario)
+    forbidden = forbidden_check(evidence, scenario)
+    content_ok = not content['missing'] and not content['duplicates']
+    requests_ok = (requests['countMatch'] and requests.get('toolResultExact', True)
+                   and not requests['duplicateToolCall'])
+    transitions = complete and not absences
+    idle_ok = not idle['missing'] and not idle['hasWorking']
+    process_ok = processes['processesGone'] is True if 'cleanupCheckpoint' in scenario else True
+    forbidden_ok = forbidden['valid']
+    subsequent_ok = bool(subsequent)
+
+    functional_checks = dict(
+        transitions=transitions,
+        content=content_ok,
+        finalState=transitions and requests_ok and idle_ok and process_ok,
+        subsequent=subsequent_ok,
+    )
+    temporal_checks = dict(complete=complete, absence=transitions, idle=idle_ok,
+                           requests=requests_ok)
+    cleanup_checks = None
+    cancelled_has_working = {}
+    if scenario_id in CLEANUP_SCENARIOS:
+        frames = by_checkpoint(evidence)
+        cancelled = frames.get(scenario['cancelledCheckpoint'])
+        cancelled_text = state_text(normalized_state(cancelled)) if cancelled else ''
+        cancelled_has_working = {scenario['cancelledCheckpoint']: (not cancelled)
+                                 or 'Working' in cancelled_text}
+        cleanup_checks = dict(
+            cancellationSettled=not any(cancelled_has_working.values()),
+            noLateOutput=not absences and forbidden_ok,
+            terminalRestored=(processes['normalScreenRestored'] and processes['cursorVisible']
+                              and processes['synchronizedOutputOff']),
+            cleanupTarget=(processes['processesGone'] is True
+                           if 'cleanupCheckpoint' in scenario else not idle['hasWorking']),
+            subsequentPrompt=subsequent_ok,
+        )
+    functional = sum(2 for value in functional_checks.values() if value)
+    temporal = sum(1 for value in temporal_checks.values() if value)
+    cleanup = sum(1 for value in cleanup_checks.values() if value) if cleanup_checks else None
+    passes = (all(functional_checks.values()) and all(temporal_checks.values())
+              and (cleanup_checks is None or all(cleanup_checks.values())))
+    return dict(
+        complete=complete,
+        errors=errors,
+        checkpointOrder=order,
+        absenceFailures=absences,
+        content=[content],
+        requests=[requests],
+        idleHasWorking=dict(idle=idle['hasWorking']),
+        idleMissing=dict(idle=idle['missing']),
+        cancelledHasWorking=cancelled_has_working,
+        subsequentPrompt=dict(subsequent=subsequent_ok),
+        cleanupEvidence=processes,
+        forbiddenStream=forbidden,
+        functionalChecks=functional_checks,
+        temporalChecks=temporal_checks,
+        cleanupChecks=cleanup_checks,
+        functional=functional,
+        temporal=temporal,
+        cleanup=cleanup,
+        passes=passes,
+    )
+
+
+def checkpoint_index(scenario, checkpoint):
+    try:
+        return scenario['checkpoints'].index(checkpoint)
+    except ValueError:
+        return None
+
+
+def in_checkpoint_range(scenario, checkpoint, start, end='exit'):
+    index = checkpoint_index(scenario, checkpoint)
+    first = checkpoint_index(scenario, start)
+    last = checkpoint_index(scenario, end)
+    return (index is not None and first is not None and last is not None
+            and first <= index <= last)
+
+
+S01_BUILTIN_PATH = re.compile(
+    r'\$\.(?:buffers\.(?:alternate|normal)\.lines\[(?:7|8)\]|viewport\[(?:7|8)\])'
+    r'\.cells\[[3-7]\]\.foreground\.(?:mode|value)')
+S02_ITALIC_PATH = re.compile(
+    r'\$\.(?:buffers\.(?:alternate|normal)\.lines\[\d+\]|viewport\[\d+\])'
+    r'\.cells\[\d+\]\.attributes\.italic')
+S02_STATUS_PATH = re.compile(
+    r'\$\.(?:buffers\.(?:alternate|normal)\.lines\[(?:19|21|35|37)\]|viewport\[(?:19|21|35|37)\])'
+    r'\.cells\[\d+\]\.foreground\.value')
+S02_TEXT_PATH = re.compile(
+    r'\$\.(?:buffers\.(?:alternate|normal)\.lines\[\d+\]|viewport\[\d+\])'
+    r'\.cells\[\d+\]\.chars')
+S02_LAYOUT_PATH = re.compile(
+    r'\$\.(?:buffers\.(?:alternate|normal)\.cursor[XY]|cursor\.(?:x|y|visible))')
+S02_SHIFT_STYLE_PATH = re.compile(
+    r'\$\.(?:buffers\.(?:alternate|normal)\.lines\[\d+\]|viewport\[\d+\])'
+    r'\.cells\[\d+\]\.(?:foreground|background|attributes)(?:\.(?:mode|value|bold|dim|italic|underline|blink|inverse|invisible|strikethrough|overline))?')
+S05_TEXT_PATH = re.compile(
+    r'\$\.(?:buffers\.(?:alternate|normal)\.lines\[(?:10|11|16)\]|viewport\[(?:10|11|16)\])'
+    r'\.cells\[\d+\]\.chars')
+S05_STYLE_PATH = re.compile(
+    r'\$\.(?:buffers\.(?:alternate|normal)\.lines\[(?:10|11|16)\]|viewport\[(?:10|11|16)\])'
+    r'\.cells\[\d+\]\.(?:foreground|background|attributes)(?:\.(?:mode|value|bold|dim|italic|underline|blink|inverse|invisible|strikethrough|overline))?')
+
+
+def match_finding(scenario_id, scenario, difference):
+    """Map a decoded difference to one explicit finding, or None."""
+    checkpoint = difference['checkpoint']
     category = difference['category']
     path = str(difference.get('path', ''))
-    checkpoint = difference.get('checkpoint')
+    pi = difference.get('pi')
+    pisharp = difference.get('pisharp')
     if scenario_id == 'S01':
-        if category == 'style':
+        if (category == 'style' and in_checkpoint_range(scenario, checkpoint,
+                                                         's01-04-incomplete-code-block')
+                and S01_BUILTIN_PATH.fullmatch(path)
+                and (pi, pisharp) in {('rgb', 'default'), (10983639, -1)}):
             return 'S01-code-syntax-builtin-highlight'
-        return 'S01-unclassified'
     if scenario_id == 'S02':
-        if '.attributes.italic' in path:
+        if (in_checkpoint_range(scenario, checkpoint, 's02-02-reasoning-begins')
+                and S02_ITALIC_PATH.fullmatch(path)
+                and (pi, pisharp) == (True, False)):
             return 'S02-reasoning-italic-style'
-        if checkpoint == 's02-01-before-reasoning' and category == 'style':
+        if (checkpoint == 's02-01-before-reasoning'
+                and S02_STATUS_PATH.fullmatch(path)
+                and (pi, pisharp) == (6391244, 7108219)):
             return 'S02-reasoning-status-style'
-        return 'S02-reasoning-block-layout'
-    if scenario_id == 'S05':
-        if category == 'text':
+        if in_checkpoint_range(scenario, checkpoint, 's02-02-reasoning-begins'):
+            if category == 'text' and S02_TEXT_PATH.fullmatch(path):
+                return 'S02-reasoning-block-layout'
+            if category == 'layout' and S02_LAYOUT_PATH.fullmatch(path):
+                return 'S02-reasoning-block-layout'
+            if category == 'style' and S02_SHIFT_STYLE_PATH.fullmatch(path):
+                return 'S02-reasoning-block-layout'
+    if scenario_id == 'S05' and in_checkpoint_range(scenario, checkpoint,
+                                                     's05-05-tool-cancellation-settles'):
+        if category == 'text' and S05_TEXT_PATH.fullmatch(path):
             return 'S05-tool-cancel-error-wording'
-        if category == 'style':
+        if category == 'style' and S05_STYLE_PATH.fullmatch(path):
             return 'S05-tool-cancel-error-style'
-        return 'S05-unclassified'
-    return f'{scenario_id}-{category}-unclassified'
+    return None
 
 
 FINDINGS = {
@@ -358,9 +581,9 @@ FINDINGS = {
                      '--pisharp src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll '
                      '--fixture tools/parity/terminal/fixtures/interactive-streaming-cancellation-001/s01-text-streaming.json '
                      '--case 80x24-dark-fullscreen --output artifacts/parity/repro-s01',
-        evidence='comparison.json S01 80x24/120x40 style cells for print; ui-report.json checkpoint text'),
+        evidence='comparison.json S01 style cells for print; ui-report.json checkpoint text'),
     'S02-reasoning-block-layout': dict(
-        severity='P1', category='layout/text',
+        severity='P1', category='layout/text/style',
         piObservation='Pi keeps one reasoning section, renders one Thinking... placeholder while hidden, and restores the joined reasoning block without extra rows.',
         pisharpObservation='PiSharp splits reasoning chunks around toggle status lines, shows two Thinking... placeholders, and leaves extra blank/indented rows; the final transcript is shifted by three rows.',
         source='src/PiSharp.Cli/Tui/Rendering/TerminalConversationPresentation.cs',
@@ -369,7 +592,7 @@ FINDINGS = {
                      '--pisharp src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll '
                      '--fixture tools/parity/terminal/fixtures/interactive-streaming-cancellation-001/s02-reasoning-streaming.json '
                      '--case 80x24-dark-fullscreen --output artifacts/parity/repro-s02',
-        evidence='comparison.json S02 text/layout differences from s02-02 through exit; ui-report.json checkpoint text'),
+        evidence='comparison.json S02 text/layout/style differences from s02-02 through exit; ui-report.json checkpoint text'),
     'S02-reasoning-italic-style': dict(
         severity='P2', category='style',
         piObservation='Pi renders reasoning text with the italic attribute.',
@@ -418,49 +641,22 @@ FINDINGS = {
 
 
 def score_scenario(scenario_id, scenario, comparison_by_case, calibration_by_case,
-                   calibration_details, evidence_by_case):
-    errors = [evidence.get('scenarioError') for evidence in evidence_by_case.values()]
-    orders = [checkpoint_order(evidence) for evidence in evidence_by_case.values()]
-    expected_order = scenario['checkpoints']
-    complete = all(not error for error in errors) and all(order == expected_order for order in orders)
-
-    absences = [absence_failures(evidence, scenario) for evidence in evidence_by_case.values()]
-    transitions = complete and all(not failures for failures in absences)
-    content_checks = [content_check(evidence, scenario) for evidence in evidence_by_case.values()]
-    content_ok = all(not check['missing'] and not check['duplicates'] for check in content_checks)
-    request_checks = [request_check(evidence, scenario) for evidence in evidence_by_case.values()]
-    requests_ok = all(check['countMatch'] and check.get('toolResultExact', True)
-                      and not check['duplicateToolCall'] for check in request_checks)
-
-    idle_by_case = {}
-    for case_id, evidence in evidence_by_case.items():
-        state = by_checkpoint(evidence).get(scenario['idleCheckpoint'])
-        idle_by_case[case_id] = bool(state) and 'Working' in state_text(normalized_state(state))
-    idle_ok = not any(idle_by_case.values())
-
-    cleanup_by_case = {case_id: cleanup_check(evidence, scenario)
-                       for case_id, evidence in evidence_by_case.items()}
-    process_ok = all(item['processesGone'] is True for item in cleanup_by_case.values()) \
-        if 'cleanupCheckpoint' in scenario else True
-
-    subsequent_by_case = {}
-    for case_id, evidence in evidence_by_case.items():
-        if 'secondPromptResponse' in scenario:
-            subsequent_by_case[case_id] = collapsed(scenario['secondPromptResponse']) in \
-                collapsed(final_transcript_text(evidence))
-        else:
-            exit_state = final_state(evidence)
-            subsequent_by_case[case_id] = (exit_state.get('exitCode') == 0
-                                           and bool(exit_state.get('cursor', {}).get('visible')))
-    subsequent_ok = all(subsequent_by_case.values())
-
-    functional_checks = dict(transitions=transitions, content=content_ok,
-                             finalState=transitions and requests_ok and idle_ok and process_ok,
-                             subsequent=subsequent_ok)
-    functional = sum(2 for value in functional_checks.values() if value)
-    temporal_checks = dict(complete=complete, absence=transitions, idle=idle_ok,
-                           requests=requests_ok)
-    temporal = sum(1 for value in temporal_checks.values() if value)
+                   calibration_details, pi_contract_by_case, pisharp_contract_by_case,
+                   provenance_checks_by_case, unmatched_by_case):
+    errors = []
+    if not all(not value for value in calibration_by_case.values()):
+        errors.append('same-Pi calibration failed')
+    if not all(item['consistent'] for item in provenance_checks_by_case.values()):
+        errors.append('capture provenance is inconsistent or incomplete')
+    if not all(item['passes'] for item in pi_contract_by_case.values()):
+        errors.append('Pi failed the frozen contract')
+    if not all(item['complete'] for item in pisharp_contract_by_case.values()):
+        errors.append('PiSharp did not reach every named checkpoint')
+    if not all(item['complete'] for item in pi_contract_by_case.values()):
+        errors.append('Pi did not reach every named checkpoint')
+    if any(unmatched_by_case.values()):
+        errors.append('unmatched difference has no explicit finding predicate')
+    assessable = not errors
 
     visual_by_size = {}
     for dimension in scenario['dims']:
@@ -477,74 +673,43 @@ def score_scenario(scenario_id, scenario, comparison_by_case, calibration_by_cas
     visual = sum(sum(value for key, value in scores.items() if key != 'differences')
                  for scores in visual_by_size.values())
 
+    pisharp_contracts = [pisharp_contract_by_case[dimension['id']]
+                         for dimension in scenario['dims']]
+    functional = min(item['functional'] for item in pisharp_contracts)
+    temporal = min(item['temporal'] for item in pisharp_contracts)
     cleanup = None
-    cleanup_checks = None
-    cancelled_has_working = {}
     if scenario_id in CLEANUP_SCENARIOS:
-        cleanup_checks = dict(cancellationSettled=True, noLateOutput=True,
-                              terminalRestored=True, cleanupTarget=True,
-                              subsequentPrompt=subsequent_ok)
-        for case_id, evidence in evidence_by_case.items():
-            frames = by_checkpoint(evidence)
-            cancelled = frames.get(scenario['cancelledCheckpoint'])
-            cancelled_text = state_text(normalized_state(cancelled)) if cancelled else ''
-            cancelled_has_working[case_id] = (not cancelled) or 'Working' in cancelled_text
-            cleanup_checks['cancellationSettled'] &= not cancelled_has_working[case_id]
-            cleanup_checks['noLateOutput'] &= all(
-                token not in all_visible_text(evidence)
-                for token in scenario.get('absenceEverywhere', []))
-            item = cleanup_by_case[case_id]
-            cleanup_checks['terminalRestored'] &= bool(item['normalScreenRestored']
-                                                       and item['cursorVisible']
-                                                       and item['synchronizedOutputOff'])
-            if 'cleanupCheckpoint' in scenario:
-                cleanup_checks['cleanupTarget'] &= item['processesGone'] is True
-            else:
-                cleanup_checks['cleanupTarget'] &= not idle_by_case[case_id]
-        cleanup = sum(1 for value in cleanup_checks.values() if value)
-
-    calibrates = all(not value for value in calibration_by_case.values())
-    assessable = calibrates and complete
-    maximum = SCENARIO_POINTS['functional'] + SCENARIO_POINTS['temporal'] + \
-        SCENARIO_POINTS['visual'] + (SCENARIO_POINTS['cleanup'] if cleanup is not None else 0)
+        cleanup = min(item['cleanup'] for item in pisharp_contracts if item['cleanup'] is not None)
+    maximum = (SCENARIO_POINTS['functional'] + SCENARIO_POINTS['temporal']
+               + SCENARIO_POINTS['visual']
+               + (SCENARIO_POINTS['cleanup'] if cleanup is not None else 0))
     subtotal = functional + temporal + visual + (cleanup or 0) if assessable else None
 
-    finding_ids = sorted({finding_for(scenario_id, diff)
-                          for case_diffs in comparison_by_case.values() for diff in case_diffs})
-    result = dict(
+    finding_ids = sorted({diff['findingId'] for case_diffs in comparison_by_case.values()
+                          for diff in case_diffs if diff.get('findingId')})
+    unmatched = [dict(case=case, **diff)
+                 for case, diffs in unmatched_by_case.items() for diff in diffs]
+    return dict(
         id=scenario_id, title=scenario['title'], fixture=scenario['fixture'],
-        calibrates=calibrates, assessable=assessable,
+        calibrates=all(not value for value in calibration_by_case.values()),
+        assessable=assessable,
+        validationErrors=errors,
         functional=functional if assessable else None,
         temporal=temporal if assessable else None,
         visual=visual if assessable else None,
-        visualBySize=visual_by_size if assessable else None,
         cleanup=cleanup if assessable else None,
+        visualBySize=visual_by_size,
         subtotal=subtotal,
         maximum=maximum,
         calibration=calibration_by_case,
         calibrationDifferences=calibration_details,
-        scoreInputs=dict(
-            complete=complete,
-            functionalChecks=functional_checks,
-            temporalChecks=temporal_checks,
-            visualBySize=visual_by_size,
-            cleanupChecks=cleanup_checks,
-            cancelledHasWorking=cancelled_has_working,
-            idleHasWorking=idle_by_case,
-            subsequentPrompt=subsequent_by_case,
-            processOk=process_ok,
-        ),
-        assertions=dict(
-            scenarioErrors=errors,
-            checkpointOrder=orders,
-            absenceFailures=absences,
-            content=content_checks,
-            requests=request_checks,
-            cleanup=cleanup_by_case,
-        ),
+        captures=provenance_checks_by_case,
+        contracts=dict(pi={case: pi_contract_by_case[case] for case in pi_contract_by_case},
+                       pisharp={case: pisharp_contract_by_case[case]
+                                for case in pisharp_contract_by_case}),
+        unmatchedDifferences=unmatched,
         findings=finding_ids,
     )
-    return result
 
 
 def build_evidence(manifest, artifacts, revisions):
@@ -558,6 +723,11 @@ def build_evidence(manifest, artifacts, revisions):
     total = 0
     assessed_maximum = 0
     category_totals = dict(functional=0, temporal=0, visual=0, cleanup=0)
+    validation_errors = []
+    all_pi_states = set()
+    all_pisharp_states = set()
+    total_unmatched = 0
+    provenance_errors = []
 
     for scenario_id, scenario in manifest['scenarios'].items():
         scenario = dict(scenario)
@@ -567,8 +737,14 @@ def build_evidence(manifest, artifacts, revisions):
         fixture_checksums[scenario['fixture']] = hashlib.sha256(fixture_path.read_bytes()).hexdigest()
         calibration_by_case = {}
         comparison_by_case = {}
-        evidence_by_case = {}
         calibration_details = {}
+        pi_contracts = {}
+        pisharp_contracts = {}
+        provenance_checks = {}
+        unmatched_by_case = {}
+        captures = {}
+        comparison_evidence = {}
+
         for dimension in dimensions:
             case_id = dimension['id']
             stem = scenario['fixture'].removesuffix('.json')
@@ -576,29 +752,46 @@ def build_evidence(manifest, artifacts, revisions):
                                          f'{case_id}.assertions.json.gz')
             comparison = load_gzip_json(artifacts / 'comparison' / stem /
                                         f'{case_id}.assertions.json.gz')
+            captures[case_id] = capture_bundle(calibration, comparison)
             calibration_diff = calibration_differences(calibration['pi'], calibration['pisharp'],
                                                        scenario)
             calibration_by_case[case_id] = bool(calibration_diff)
             calibration_details[case_id] = calibration_diff
-            comparison_by_case[case_id] = compare_products(comparison['pi'], comparison['pisharp'],
-                                                           scenario)
-            evidence_by_case[case_id] = comparison['pisharp']
-            for diff in comparison_by_case[case_id]:
-                diff['findingId'] = finding_for(scenario_id, diff)
+            diffs = compare_products(comparison['pi'], comparison['pisharp'], scenario)
+            for diff in diffs:
+                diff['findingId'] = match_finding(scenario_id, scenario, diff)
+            unmatched_by_case[case_id] = [diff for diff in diffs if not diff.get('findingId')]
+            comparison_by_case[case_id] = diffs
+            comparison_evidence[case_id] = comparison
+            pi_contracts[case_id] = evaluate_contract(scenario_id, scenario, comparison['pi'])
+            pisharp_contracts[case_id] = evaluate_contract(scenario_id, scenario,
+                                                           comparison['pisharp'])
+        provenance = scenario_provenance_checks(captures)
+        provenance_errors.extend(f'{scenario_id}: {error}' for error in provenance['errors'])
+        for case_id, capture in captures.items():
+            provenance_checks[case_id] = dict(
+                consistent=provenance['consistent'],
+                errors=provenance['errors'],
+                calibration=capture['calibration'],
+                comparison=capture['comparison'],
+            )
+        for value in provenance['pi']:
+            all_pi_states.add(provenance_json(value))
+        for value in provenance['pisharp']:
+            all_pisharp_states.add(provenance_json(value))
 
-        result = score_scenario(scenario_id, scenario, comparison_by_case,
-                                calibration_by_case, calibration_details, evidence_by_case)
+        result = score_scenario(scenario_id, scenario, comparison_by_case, calibration_by_case,
+                                calibration_details, pi_contracts, pisharp_contracts,
+                                provenance_checks, unmatched_by_case)
+        total_unmatched += sum(len(value) for value in unmatched_by_case.values())
         if not result['assessable']:
-            if not result['calibrates']:
-                reason = 'same-Pi calibration failed'
-            else:
-                reason = 'scenario did not reach every named checkpoint'
-            unassessable.append(dict(
-                scenario=scenario_id, reason=reason,
-                cases={case: [dict(checkpoint=item['checkpoint'], path=item['path'])
-                              for item in items[:10]]
-                       for case, items in calibration_details.items() if items},
-            ))
+            unassessable.append(dict(scenario=scenario_id, reason='; '.join(result['validationErrors']),
+                                     cases={case: [dict(checkpoint=item['checkpoint'],
+                                                        path=item['path'])
+                                                   for item in items[:10]]
+                                            for case, items in calibration_details.items() if items}))
+            validation_errors.append(dict(scenario=scenario_id,
+                                          errors=result['validationErrors']))
         else:
             total += result['subtotal']
             assessed_maximum += result['maximum']
@@ -606,16 +799,10 @@ def build_evidence(manifest, artifacts, revisions):
             category_totals['temporal'] += result['temporal']
             category_totals['visual'] += result['visual']
             category_totals['cleanup'] += result['cleanup'] or 0
-
             for finding_id in result['findings']:
                 spec = FINDINGS.get(finding_id)
                 if spec is None:
-                    spec = dict(severity='Inconclusive', category='unclassified',
-                                piObservation='Difference was not matched to a documented finding.',
-                                pisharpObservation='Difference was not matched to a documented finding.',
-                                source='unknown', correction='Investigate before scoring.',
-                                reproduction='Inspect comparison.json for this scenario.',
-                                evidence='comparison.json')
+                    raise RuntimeError(f'Missing finding specification: {finding_id}')
                 matches = [diff for diffs in comparison_by_case.values() for diff in diffs
                            if diff.get('findingId') == finding_id]
                 all_findings.setdefault(finding_id, dict(
@@ -632,48 +819,54 @@ def build_evidence(manifest, artifacts, revisions):
         scenario_reports.append(result)
         comparison_report[scenario_id] = dict(
             scenario=scenario['title'], fixture=scenario['fixture'],
+            captureProvenance=captures,
             cases={case: dict(
                 differences=len(diffs),
                 byCategory={category: sum(1 for diff in diffs if diff['category'] == category)
                             for category in CATEGORY_ORDER},
-                findingIds=sorted({diff['findingId'] for diff in diffs}),
+                findingIds=sorted({diff['findingId'] for diff in diffs if diff.get('findingId')}),
+                unmatchedDifferenceCount=len(unmatched_by_case[case]),
                 samples=diffs[:40],
             ) for case, diffs in comparison_by_case.items()})
-    for scenario_id, scenario in manifest['scenarios'].items():
-        scenario = dict(scenario)
-        result = next(item for item in scenario_reports if item['id'] == scenario_id)
-        cases = {}
+
+        ui_cases = {}
         for dimension in dimensions:
             case_id = dimension['id']
-            stem = scenario['fixture'].removesuffix('.json')
-            calibration = load_gzip_json(artifacts / 'calibration' / stem /
-                                         f'{case_id}.assertions.json.gz')
-            comparison = load_gzip_json(artifacts / 'comparison' / stem /
-                                        f'{case_id}.assertions.json.gz')
-            calibration_frames = by_checkpoint(calibration['pi'])
+            comparison = comparison_evidence[case_id]
             comparison_frames = by_checkpoint(comparison['pisharp'])
+            pi_frames = by_checkpoint(comparison['pi'])
             checkpoints = []
             for checkpoint in scenario['checkpoints']:
-                pi_text = state_text(normalized_state(calibration_frames[checkpoint])) \
-                    if checkpoint in calibration_frames else ''
+                pi_text = state_text(normalized_state(pi_frames[checkpoint])) \
+                    if checkpoint in pi_frames else ''
                 ps_text = state_text(normalized_state(comparison_frames[checkpoint])) \
                     if checkpoint in comparison_frames else ''
                 checkpoints.append(dict(id=checkpoint, pi=pi_text, pisharp=ps_text))
-            cases[case_id] = dict(
-                visual=result['visualBySize'][case_id] if result['visualBySize'] else None,
+            ui_cases[case_id] = dict(
+                visual=result['visualBySize'][case_id],
                 checkpoints=checkpoints,
             )
-        ui_scenarios.append(dict(id=scenario_id, title=scenario['title'], cases=cases))
+        ui_scenarios.append(dict(id=scenario_id, title=scenario['title'], cases=ui_cases))
 
+    provenance_consistent = (len(all_pi_states) == 1 and len(all_pisharp_states) == 1)
+    capture_provenance = dict(
+        consistent=provenance_consistent and not provenance_errors and not any(
+            not item['consistent'] for scenario in scenario_reports
+            for item in scenario['captures'].values()),
+        errors=provenance_errors,
+        pi=sorted(json.loads(value) for value in all_pi_states),
+        pisharp=sorted(json.loads(value) for value in all_pisharp_states),
+    )
     report = dict(
-        schema=1,
+        schema=2,
         fixture=manifest['fixture'],
         revisions=revisions,
         reference=manifest.get('piReference'),
         dimensions=dimensions,
         normalization=manifest['normalization'],
         weights=dict(functional=40, temporal=20, visual=30, cleanup=10,
-                     perScenario=SCENARIO_POINTS),
+                     perScenario=SCENARIO_POINTS, cleanupScenarios=sorted(CLEANUP_SCENARIOS)),
+        captureProvenance=capture_provenance,
         scenarios=scenario_reports,
         categoryTotals=category_totals,
         total=total,
@@ -682,15 +875,26 @@ def build_evidence(manifest, artifacts, revisions):
         coverage=dict(assessedScenarios=sum(1 for item in scenario_reports if item['assessable']),
                       totalScenarios=len(scenario_reports),
                       assessedPoints=assessed_maximum, availablePoints=100,
-                      percent=round(100 * assessed_maximum / 100, 1)),
+                      percent=round(assessed_maximum, 1)),
         unassessable=unassessable,
+        validation=dict(passed=not validation_errors and total_unmatched == 0
+                        and provenance_consistent and not provenance_errors,
+                        errors=validation_errors,
+                        unmatchedDifferenceCount=total_unmatched,
+                        provenanceConsistent=provenance_consistent,
+                        provenanceErrors=provenance_errors,
+                        piContractsPass=all(item['passes']
+                                            for scenario in scenario_reports
+                                            for item in scenario['contracts']['pi'].values())),
         findings=sorted(all_findings.values(), key=lambda finding: finding['id']),
         fixtureChecksums=fixture_checksums,
     )
     comparison = dict(fixture=manifest['fixture'], revisions=revisions,
-                      dimensions=dimensions, scenarios=comparison_report)
+                      dimensions=dimensions, captureProvenance=capture_provenance,
+                      scenarios=comparison_report)
     ui_report = dict(fixture=manifest['fixture'], revisions=revisions,
                      dimensions=dimensions, normalization=manifest['normalization'],
+                     captureProvenance=capture_provenance,
                      scenarios=ui_scenarios, findings=report['findings'])
     return report, comparison, ui_report
 
@@ -702,7 +906,7 @@ def main():
     parser.add_argument('--artifacts', type=Path, required=True)
     parser.add_argument('--evidence', type=Path, required=True)
     parser.add_argument('--revisions', type=Path, required=True,
-                        help='JSON with piSha, pisharpSha, branch and fixture checksums')
+                        help='JSON with piReference, baseMain, branch and captureSource')
     args = parser.parse_args()
 
     manifest = json.loads(args.manifest.read_text())
@@ -714,8 +918,9 @@ def main():
     (args.evidence / 'ui-report.json').write_text(json.dumps(ui_report, indent=2) + '\n')
     print(json.dumps(dict(total=report['total'], maximum=report['assessedMaximum'],
                           assessment=report['categoryTotals'],
+                          validation=report['validation'],
                           unassessable=len(report['unassessable'])), indent=2))
-    return 0
+    return 0 if report['validation']['passed'] else 1
 
 
 if __name__ == '__main__':
