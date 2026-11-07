@@ -5,8 +5,8 @@ namespace PiSharp.Cli.Tui;
 /// <summary>Owns bounded active transcript state, tool previews, and post-screen scrollback capture.</summary>
 internal sealed class TerminalTranscriptBuffer
 {
-    private const int MaximumTranscriptCharacters = 1_000_000;
-    private const int MaximumTranscriptSegments = 10_000;
+    internal const int MaximumTranscriptCharacters = 1_000_000;
+    internal const int MaximumTranscriptSegments = 10_000;
     private const int MaximumCapturedCharacters = 4_000_000;
     private const int ToolPreviewContentRows = 10;
     private const int MaximumRememberedLiveTools = 1_024;
@@ -399,7 +399,7 @@ internal sealed class TerminalTranscriptBuffer
             {
                 excess -= first.Text.Length;
                 _transcriptCharacters -= first.Text.Length;
-                _segments.RemoveAt(0);
+                RemoveLeadingSegment();
                 continue;
             }
 
@@ -429,8 +429,15 @@ internal sealed class TerminalTranscriptBuffer
         while (_segments.Count > MaximumTranscriptSegments)
         {
             _transcriptCharacters -= _segments[0].Text.Length;
-            _segments.RemoveAt(0);
+            RemoveLeadingSegment();
         }
+    }
+
+    /// <summary>Keeps the live assistant insertion point aligned when the bounded transcript evicts its oldest segment.</summary>
+    private void RemoveLeadingSegment()
+    {
+        _segments.RemoveAt(0);
+        if (_assistantInsertIndex is { } index) _assistantInsertIndex = Math.Max(0, index - 1);
     }
 
     private void Capture(string text, bool isError)
