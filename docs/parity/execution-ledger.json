@@ -302,7 +302,7 @@
         "status": "pending_external_publication_receipt"
       }
     ],
-    "progress_policy": "Fixed twenty mission checkpoints. A–R are complete at this repository receipt; later S/T state, final head and CI are authoritative in PR #22 description. Do not report a later reduced completed count from this frozen snapshot.",
+    "progress_policy": "Fixed twenty mission checkpoints. A\u2013R are complete at this repository receipt; later S/T state, final head and CI are authoritative in PR #22 description. Do not report a later reduced completed count from this frozen snapshot.",
     "required_differential": {
       "minimum_cases": 70,
       "minimum_per_tool": 10,
@@ -670,7 +670,7 @@
           "strict": true
         },
         "receipt": "docs/parity/fixtures/builtin-coding-tool-read-acceptance-2026-10-22.json",
-        "remaining_cross_cutting": "M–P integration, cancellation, concurrency and reliability gates remain open."
+        "remaining_cross_cutting": "M\u2013P integration, cancellation, concurrency and reliability gates remain open."
       }
     },
     "write_contract": {
@@ -683,7 +683,7 @@
       "related_passed_after": 52,
       "pinned_regressions": "docs/parity/fixtures/builtin-coding-tool-write-regressions-2026-10-22.json",
       "legacy_permission_receipt": "docs/parity/fixtures/builtin-coding-tool-write-permission-2026-10-22.json",
-      "status": "supported checkpoint verified with explicit safety exclusions; M–P acceptance pending",
+      "status": "supported checkpoint verified with explicit safety exclusions; M\u2013P acceptance pending",
       "safety_candidates": [
         "private new-file modes",
         "atomic replacement and inode identity",
@@ -732,7 +732,7 @@
       "pre_fix_total": 67,
       "related_passed_after": 332,
       "pinned_fixture": "docs/parity/fixtures/builtin-coding-tool-edit-results-2026-10-22.json",
-      "status": "supported checkpoint verified with explicit safety exclusions; shared M–P acceptance pending",
+      "status": "supported checkpoint verified with explicit safety exclusions; shared M\u2013P acceptance pending",
       "first_correction_source": "2250b589",
       "first_correction_strict_passed": 30,
       "first_correction_total": 68,
@@ -5451,7 +5451,7 @@
         "Paired real-PTY differential: 25 cases across terminal-app-control-tree/fork/none/bash/suspend/rebind and terminal-abort-stream. Same-Pi calibration reports 0 differences for all 25 cases. Fixture-selected checkpoints from docs/parity/fixtures/keys-app-control-checkpoints-2026-11-03.json match in editor text, editor-relative cursor row, cursor column and lifecycle state for all 180 selected checkpoint observations (48 distinct names); provider request texts and counts match exactly (including the abort-stream prompt and the one tree/fork/none prompt).",
         "Real Linux PTY evidence: idle and active-operation Escape/Ctrl+C/Ctrl+D (including double Ctrl+C and empty-editor Ctrl+D during streaming and Bash), tree/fork/none double Escape with 500 ms boundary, interactive Bash escape with zero surviving marked children and a later command, streaming abort restoring steer/follow-up/current draft with exactly two provider requests, four shutdown paths with termios and bracketed-paste restoration, and suspend/resume with a resize during suspension in fullscreen and regular modes.",
         "Deterministic tests: AppControlTests covers idle Escape, Bash-entry mode, double-Escape window and settings, Ctrl+C window, Ctrl+D grapheme/selection, legacy/Kitty equivalence, configurable bindings, disabled bindings, Windows unsupported suspension message and selection-tree binding. BashProcessLifetimeTests verifies cancellation kills child and detached grandchild before settling and later Bash execution still works. ExtensionSessionStateTests verifies shutdown callbacks run once. TerminalPtyTests covers double Ctrl+C exit and streaming/search cancellation.",
-        "Focused suite: 76/76 with zero skips; full suite: 4,354/4,354 with zero skips; format and warnings-as-errors build clean. tools/parity/verify_keys_app_control.py independently rejects missing/duplicate/failed/skipped cases, stale implementation/Pi SHAs, unresolved comparisons, missing oracle/test/PTY/checkpoint references, incorrect editor/cursor observations, calibration errors, provider request mismatches, surviving children, wrong queue order, wrong double-Escape action, leaked terminal modes, stale PTY records and failed/skipped focused tests. Active-completion evidence verifies Tab → Escape dismisses completion without aborting generation, and the next Escape aborts. Configurable-binding PTY evidence rebinds app.clear to F7 and app.interrupt to F8, verifies the original Ctrl+C/Escape keys are inert, and confirms F7 clears and F8 cancels Bash. Mutation-based negative controls (29) exercise the production validators, including active-operation exit and rebinding evidence.",
+        "Focused suite: 76/76 with zero skips; full suite: 4,354/4,354 with zero skips; format and warnings-as-errors build clean. tools/parity/verify_keys_app_control.py independently rejects missing/duplicate/failed/skipped cases, stale implementation/Pi SHAs, unresolved comparisons, missing oracle/test/PTY/checkpoint references, incorrect editor/cursor observations, calibration errors, provider request mismatches, surviving children, wrong queue order, wrong double-Escape action, leaked terminal modes, stale PTY records and failed/skipped focused tests. Active-completion evidence verifies Tab \u2192 Escape dismisses completion without aborting generation, and the next Escape aborts. Configurable-binding PTY evidence rebinds app.clear to F7 and app.interrupt to F8, verifies the original Ctrl+C/Escape keys are inert, and confirms F7 clears and F8 cancels Bash. Mutation-based negative controls (29) exercise the production validators, including active-operation exit and rebinding evidence.",
         "Linux CI run 41586112603 passed on evidence head 4c3298e6d8041e816ef977e2cee63127b85d750e. Implementation commit 6c22d60db2a4236d7a7a11d69e124ef0e483b6a9. Acceptance manifest docs/parity/fixtures/keys-app-control-acceptance-2026-11-03.json and receipt docs/parity/fixtures/keys-app-control-current-pi-2026-11-03.md."
       ],
       "dependencies": [],
@@ -8865,7 +8865,7 @@
       ],
       "evidence": [
         "Current Pi pins @modelcontextprotocol/conformance@0.2.0-alpha.11 and runs modes 2025-03-26, 2025-06-18 and 2025-11-25. Its runner compares each check against a committed baseline. PiSharp has no equivalent harness or baseline yet.",
-        "At current Pi 4270522473e677ddba7b093caa0064a3df51d459, reran packages/coding-agent/test/mcp-conformance/run.ts against @modelcontextprotocol/conformance@0.2.0-alpha.11. All 26 scenarios across protocol versions 2025-03-26, 2025-06-18 and 2025-11-25 match Pi’s committed baseline: 261 checks pass and the same eight checks fail in the three documented cases (six elicitation defaults, CIMD client-id use, and the deliberate three-sign-in limit). PiSharp’s equivalent runner and baseline remain to be implemented and classified.",
+        "At current Pi 4270522473e677ddba7b093caa0064a3df51d459, reran packages/coding-agent/test/mcp-conformance/run.ts against @modelcontextprotocol/conformance@0.2.0-alpha.11. All 26 scenarios across protocol versions 2025-03-26, 2025-06-18 and 2025-11-25 match Pi\u2019s committed baseline: 261 checks pass and the same eight checks fail in the three documented cases (six elicitation defaults, CIMD client-id use, and the deliberate three-sign-in limit). PiSharp\u2019s equivalent runner and baseline remain to be implemented and classified.",
         "PiSharp candidate based on 10ce13a3: the executable official-suite harness drives production McpRuntime, real registered tools and the OAuth loopback callback. Full run against @modelcontextprotocol/conformance@0.2.0-alpha.11 matches current Pi 4270522473e677ddba7b093caa0064a3df51d459 across all 26 scenarios and three protocol modes: 261 checks pass and the same eight known checks fail, each classified. The run verifies selected protocol fallback, SSE reconnect/resume, OAuth scope step-up, tool calls and JSON Schema 2020-12 preservation. Focused MCP tests pass 76/76; terminal tests 24/24; Python tests 38/38; dotnet format passes; warnings-as-errors build has zero warnings/errors; full .NET suite passes 1,343/1,343 with zero skips. See tools/parity/mcp-conformance/README.md.",
         "Exact-head Linux CI run 38212383263 passes on PiSharp 0cfdf05e448192b15b4090406f602027bdfbc95d: standard job passes terminal 24/24, Python 38/38, format, warnings-as-errors build and .NET 1,343/1,343 with zero skips; the dedicated official MCP conformance job builds and passes the full three-mode suite. Current Pi remained at 4270522473e677ddba7b093caa0064a3df51d459 after a fresh fetch. The MCP conformance capability is verified; the overall parity gate remains open.",
         "Exact-head Linux CI 38222962860 on PiSharp e92d592b818cb5655046b98abafbd288a5e375d5 passes the official 26-scenario conformance suite across all three protocol modes with 261 passing checks, the same eight documented failures, and no baseline regressions."
@@ -9374,7 +9374,7 @@
       "status": "verified",
       "source": "earendil-works/pi@eba849739511223c51a62bbd7e3f1c00f99fb1d0: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
       "acceptance": [
-        "Audit and match Download model…, repository search, quantization selection and exact owner/repository[:quant] input.",
+        "Audit and match Download model\u2026, repository search, quantization selection and exact owner/repository[:quant] input.",
         "Match HF_TOKEN and token-file lookup precedence, gated-model warnings/access links, cancellation and unload/retain prompts.",
         "The router downloads the model; deterministic local HTTP/process and full terminal differential evidence is required."
       ],
@@ -13009,7 +13009,7 @@
       "status": "completed",
       "conclusion": "success",
       "exact_head": "548f8cd435c78801663a39ee1156ee34a595ed4c",
-      "note": "Latest completed full exact-head CI before the integrated queues 4–6/9/12 and root queue 5; current wave CI is pending."
+      "note": "Latest completed full exact-head CI before the integrated queues 4\u20136/9/12 and root queue 5; current wave CI is pending."
     },
     "readiness": "READY FOR LUNA HANDOVER",
     "stopping_audit": [
@@ -13099,7 +13099,7 @@
     "starting_sha": "77caa3290a0300e2e02d61039b306260f127872a",
     "base_sha": "21d5e47e5a4b2cf084ed01b0a0ee7cca9efbc538",
     "queue_position": 13,
-    "milestone": "Bounded slices for queues 1–12 are integrated. Queue 7 thinkingBudgets is verified; queue 8 has a six-case Google/Vertex transcript match; queues 10–11 add Azure Responses, Azure Foundry, and Mistral local transport coverage. Broader provider contracts remain in progress; queue 13 is next.",
+    "milestone": "Bounded slices for queues 1\u201312 are integrated. Queue 7 thinkingBudgets is verified; queue 8 has a six-case Google/Vertex transcript match; queues 10\u201311 add Azure Responses, Azure Foundry, and Mistral local transport coverage. Broader provider contracts remain in progress; queue 13 is next.",
     "mode": "parallel-wave",
     "isolation_gates": {
       "two_worker": "not run",
@@ -13126,7 +13126,7 @@
       "sha": "1cdb57f7cfd2723152a3d45b0dd1498052995231",
       "conclusion": "success",
       "url": "https://github.com/PhilipGB/pisharp/actions/runs/38789357300",
-      "note": "Exact-head Linux CI passed for the integrated queue 7–12 product source. The run covered the test and MCP conformance jobs."
+      "note": "Exact-head Linux CI passed for the integrated queue 7\u201312 product source. The run covered the test and MCP conformance jobs."
     },
     "upstream_observed": "5ab7fe74c400097b386662205cd93900695b8a71",
     "upstream_policy": "Configured pin retained at b06c1f2c. Original three-commit review plus resumed eight-commit review through5ab7fe74 are recorded. New error-result image placement is required P2 deferred to existing queue43; no P0/P1 interrupt.",
@@ -13533,7 +13533,7 @@
     "oracle": "docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
     "provider_wire_oracle": "docs/parity/fixtures/model-selection-thinking-provider-wire-oracle-2026-10-24.json",
     "receipt": "docs/parity/fixtures/model-selection-thinking-configuration-2026-10-24.md",
-    "checkpoint_policy": "Fixed 22 checkpoints A–V. A–T are complete with implementation, acceptance, full validation and documentation evidence; U draft PR #24 publication is complete; V exact-head push and PR CI passed on 683a485e43e9f07190d0b5cead56efaafd2a1a84. The PR description is authoritative for the published head and current workflow evidence. A later review correction preserves model-mapped extended reasoning; its wire differential and current exact-head checks are tracked in the PR description.",
+    "checkpoint_policy": "Fixed 22 checkpoints A\u2013V. A\u2013T are complete with implementation, acceptance, full validation and documentation evidence; U draft PR #24 publication is complete; V exact-head push and PR CI passed on 683a485e43e9f07190d0b5cead56efaafd2a1a84. The PR description is authoritative for the published head and current workflow evidence. A later review correction preserves model-mapped extended reasoning; its wire differential and current exact-head checks are tracked in the PR description.",
     "differential": {
       "direct_pi_cases": 93,
       "direct_pi_passed": 93,
@@ -15300,8 +15300,10 @@
       {
         "id": "ui-trailing-wrapped-command-style",
         "severity": "P2",
-        "status": "open",
-        "summary": "ENV-PARSER-001 trailing styled cells on a wrapped Bash command line; unchanged and out of scope for collapse parity."
+        "status": "resolved",
+        "summary": "ENV-PARSER-001 trailing styled cells on a wrapped Bash command line; unchanged and out of scope for collapse parity.",
+        "resolved_by": "wrapped_bash_command_style_parity_2026_11_06",
+        "resolved_at": "0984bfc922714862e2af244133313828617ca730"
       }
     ],
     "agent_execution_unchanged": true,
@@ -15310,5 +15312,107 @@
     "ui_report": "docs/parity/fixtures/collapsed-tool-output-parity-2026-11-06/ui-report.json",
     "comparison": "docs/parity/fixtures/collapsed-tool-output-parity-2026-11-06/terminal-comparison.json",
     "pull_request": "https://github.com/PhilipGB/pisharp/pull/45"
+  },
+  "wrapped_bash_command_style_parity_2026_11_06": {
+    "status": "draft_open_unmerged",
+    "prerequisite": "Bash result collapse/expansion parity merged via PR #45 at 0984bfc922714862e2af244133313828617ca730",
+    "branch": "milestone/wrapped-bash-command-style-parity",
+    "base_main": "0984bfc922714862e2af244133313828617ca730",
+    "implementation_revision": "95704af040c2e8043457383ea31f88204eba7a72",
+    "pi_revision": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "reference_behaviour": {
+      "soft_wrapped_continuation": "title foreground, bold and tool background through all trailing padding including the right output padding",
+      "final_command_row": "default foreground and tool background on trailing padding",
+      "exact_boundary_row": "default foreground and tool background on the right output-padding cell",
+      "following_output": "unchanged row position"
+    },
+    "root_cause": "PR #45's Bash preview builder removed the pre-wrap that turned a soft wrap into a hard newline, fixing the 17-cell continuation padding. The remaining exact-boundary case came from PadTranscriptRow preserving the active style when rowWidth >= transcriptWidth even without a continuation.",
+    "fixture": {
+      "id": "objective-agent-progress",
+      "checksum": "39d16ca1bcb7951b5c2752e300c8b6afda66749e3ae930b1fed0d47abaa29534",
+      "dimensions": [
+        "80x24",
+        "120x40"
+      ]
+    },
+    "deterministic_ui": {
+      "before": {
+        "objective-agent-progress": {
+          "pisharp": 19,
+          "progress": 10,
+          "visual": 9,
+          "max": 20,
+          "differences": 17,
+          "checkpoints": [
+            "tool-complete",
+            "assistant-resume",
+            "final-idle"
+          ]
+        }
+      },
+      "after": {
+        "objective-agent-progress": {
+          "pisharp": 20,
+          "progress": 10,
+          "visual": 10,
+          "max": 20,
+          "differences": 0
+        },
+        "objective-agent-recovery": {
+          "pisharp": 20,
+          "progress": 10,
+          "visual": 10,
+          "max": 20,
+          "differences": 0
+        }
+      },
+      "calibration": {
+        "match": true,
+        "differences": 0,
+        "sizes": [
+          "80x24",
+          "120x40"
+        ]
+      },
+      "normalisation_unchanged": true
+    },
+    "regressions": {
+      "files": [
+        "tests/PiSharp.Tests/Cli/Tui/Rendering/BashToolCollapseTests.cs",
+        "tests/PiSharp.Tests/Cli/Tui/Rendering/ToolCallRenderingTests.cs",
+        "tests/PiSharp.Tests/Cli/Tui/Rendering/TerminalStyledFrameReaderTests.cs",
+        "tests/PiSharp.Tests/TestInfrastructure/TerminalStyledFrameReader.cs"
+      ],
+      "added": 13,
+      "fail_first": 2,
+      "passing_after": 36,
+      "fail_first_evidence": "Pre-PR-#45 binary: 17-cell regression failed at row 5 column 63 with default foreground. PR #45 merge: exact-boundary regression failed with title foreground at the output-padding cell. Both pass on the implementation revision."
+    },
+    "components_changed": [
+      "src/PiSharp.Cli/Tui/Rendering/TerminalScreenCompositor.cs"
+    ],
+    "review_corrections": [
+      "terminal-comparison records the PR #45 merge separately from the implementation revision",
+      "continuation distinguishes draft PR #46 from merged milestones and uses ledger counts 21/142/31",
+      "styled-frame test decoder handles wide, emoji and combining graphemes with focused tests"
+    ],
+    "agent_execution_unchanged": true,
+    "historical_evidence_unchanged": true,
+    "remaining_differences": [],
+    "verification": {
+      "focused_dotnet": "36 passed",
+      "full_dotnet": "4,494 passed, 2 pre-existing process/PTY timing flakes reran green",
+      "terminal_python": "66 passed",
+      "objective_python": "8 passed",
+      "format": "clean",
+      "warnings_as_errors": "clean",
+      "docs": "173 documents, 784 references"
+    },
+    "receipt": "docs/parity/fixtures/wrapped-bash-command-style-parity-2026-11-06/README.md",
+    "ui_report": "docs/parity/fixtures/wrapped-bash-command-style-parity-2026-11-06/ui-report.json",
+    "comparison": "docs/parity/fixtures/wrapped-bash-command-style-parity-2026-11-06/terminal-comparison.json",
+    "suggested_next_single_deliverable": "Broader interactive terminal UI evaluation covering editing, navigation, session interaction and streaming behaviour.",
+    "pull_request": "https://github.com/PhilipGB/pisharp/pull/46",
+    "initial_review_head": "26ee415c9141ba6c01a3ebc8bad19bf06048b330"
   }
 }
