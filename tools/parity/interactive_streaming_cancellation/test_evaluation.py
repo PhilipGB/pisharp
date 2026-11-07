@@ -316,13 +316,22 @@ class VerifierTests(unittest.TestCase):
         self.write('report.json', document)
         self.assert_fails('unmatched difference')
 
-    def test_omitted_difference_is_rejected(self):
+    def test_orphan_finding_is_rejected(self):
+        # The clean bundle has no findings, so exercise the same integrity check
+        # with an orphan finding that has no matching classified comparison sample.
         document = self.load('report.json')
-        removed = document['findings'].pop(0)['id']
-        for scenario in document['scenarios']:
-            scenario['findings'] = [item for item in scenario['findings'] if item != removed]
+        finding = dict(evaluate.FINDINGS['S01-code-syntax-builtin-highlight'])
+        finding.update(id='S01-code-syntax-builtin-highlight', scenario='S01',
+                       cases=['80x24-dark-fullscreen'],
+                       checkpoints=['s01-04-incomplete-code-block'],
+                       differenceCount=1,
+                       samplePaths=['$.buffers.alternate.lines[7].cells[3].foreground.value'])
+        document['findings'].append(finding)
         self.write('report.json', document)
-        self.assert_fails('omitted difference')
+        checks = self.assert_fails('orphan finding')
+        self.assertTrue(any(item['name'] == 'findings complete' and not item['passed']
+                            for item in checks),
+                        [item for item in checks if not item['passed']])
 
     def test_missing_artifact_hash_is_rejected(self):
         document = self.load('report.json')

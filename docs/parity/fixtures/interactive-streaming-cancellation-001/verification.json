@@ -3,8 +3,8 @@
   "verifier": "tools/parity/interactive_streaming_cancellation/verify_report.py",
   "revisions": {
     "piReference": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-    "baseMain": "c615fc17232886d76c5092f8d5b6cd5b22f418fe",
-    "branch": "milestone/interactive-streaming-cancellation-parity",
+    "baseMain": "03bfa4e87ebcac597fe89f1ac7506abf02aa2385",
+    "branch": "milestone/interactive-visual-parity",
     "captureSource": "branch working tree"
   },
   "command": "python3 tools/parity/interactive_streaming_cancellation/run_evaluation.py --artifacts artifacts/parity/interactive-streaming-cancellation-001 --evidence docs/parity/fixtures/interactive-streaming-cancellation-001",
@@ -62,7 +62,7 @@
     {
       "name": "single PiSharp capture state",
       "passed": true,
-      "detail": "[{'artifact': {'builtFromSha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'file': 'PiSharp.Cli.dll', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'sha256': 'a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51', 'size': 3429888, 'sourceDirty': False}, 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'sha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'trackedChanges': []}]"
+      "detail": "[{'artifact': {'builtFromSha': '2fe9c89a0f09fb7318701219ff993677a9b7c919', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'file': 'PiSharp.Cli.dll', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'sha256': 'b7e9ee318c252afedecb189128e5462a391475a7384c0500c2f28de45073aebc', 'size': 3433472, 'sourceDirty': False}, 'branch': 'milestone/interactive-visual-parity', 'dirty': False, 'sha': '2fe9c89a0f09fb7318701219ff993677a9b7c919', 'trackedChanges': []}]"
     },
     {
       "name": "Pi capture state valid",
@@ -77,17 +77,17 @@
     {
       "name": "PiSharp capture state valid",
       "passed": true,
-      "detail": "{'artifact': {'builtFromSha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'file': 'PiSharp.Cli.dll', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'sha256': 'a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51', 'size': 3429888, 'sourceDirty': False}, 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'sha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'trackedChanges': []}"
+      "detail": "{'artifact': {'builtFromSha': '2fe9c89a0f09fb7318701219ff993677a9b7c919', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'file': 'PiSharp.Cli.dll', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'sha256': 'b7e9ee318c252afedecb189128e5462a391475a7384c0500c2f28de45073aebc', 'size': 3433472, 'sourceDirty': False}, 'branch': 'milestone/interactive-visual-parity', 'dirty': False, 'sha': '2fe9c89a0f09fb7318701219ff993677a9b7c919', 'trackedChanges': []}"
     },
     {
       "name": "PiSharp artifact hashes present",
       "passed": true,
-      "detail": "{'builtFromSha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'file': 'PiSharp.Cli.dll', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'sha256': 'a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51', 'size': 3429888, 'sourceDirty': False}"
+      "detail": "{'builtFromSha': '2fe9c89a0f09fb7318701219ff993677a9b7c919', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'file': 'PiSharp.Cli.dll', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'sha256': 'b7e9ee318c252afedecb189128e5462a391475a7384c0500c2f28de45073aebc', 'size': 3433472, 'sourceDirty': False}"
     },
     {
       "name": "PiSharp artifact built from captured source",
       "passed": true,
-      "detail": "d1b844acb51e012a9494acbe75745bc87b54c531 != d1b844acb51e012a9494acbe75745bc87b54c531"
+      "detail": "2fe9c89a0f09fb7318701219ff993677a9b7c919 != 2fe9c89a0f09fb7318701219ff993677a9b7c919"
     },
     {
       "name": "PiSharp artifact source clean",
@@ -132,7 +132,7 @@
     {
       "name": "fixture manifest checksum S05",
       "passed": true,
-      "detail": "d137dd905a1d6b2b4785d451fbb2f02029ec0a0af5c6dce40b8d458a148335ee != d137dd905a1d6b2b4785d451fbb2f02029ec0a0af5c6dce40b8d458a148335ee"
+      "detail": "c332f9cc8345de7f7d2dad0fabc50fbc4fc14c64d2e9f09288f3f969feb016ef != c332f9cc8345de7f7d2dad0fabc50fbc4fc14c64d2e9f09288f3f969feb016ef"
     },
     {
       "name": "scenario set",
@@ -192,7 +192,7 @@
     {
       "name": "S01 capture provenance",
       "passed": true,
-      "detail": "{'80x24-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'trackedChanges': [], 'artifact': {'file': 'PiSharp.Cli.dll', 'size': 3429888, 'sha256': 'a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'builtFromSha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'sourceDirty': False}}}}, '120x40-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'trackedChanges': [], 'artifact': {'file': 'PiSharp.Cli.dll', 'size': 3429888, 'sha256': 'a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'builtFromSha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'sourceDirty': False}}}}}"
+      "detail": "{'80x24-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': '2fe9c89a0f09fb7318701219ff993677a9b7c919', 'branch': 'milestone/interactive-visual-parity', 'dirty': False, 'trackedChanges': [], 'artifact': {'file': 'PiSharp.Cli.dll', 'size': 3433472, 'sha256': 'b7e9ee318c252afedecb189128e5462a391475a7384c0500c2f28de45073aebc', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'builtFromSha': '2fe9c89a0f09fb7318701219ff993677a9b7c919', 'sourceDirty': False}}}}, '120x40-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': '2fe9c89a0f09fb7318701219ff993677a9b7c919', 'branch': 'milestone/interactive-visual-parity', 'dirty': False, 'trackedChanges': [], 'artifact': {'file': 'PiSharp.Cli.dll', 'size': 3433472, 'sha256': 'b7e9ee318c252afedecb189128e5462a391475a7384c0500c2f28de45073aebc', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'builtFromSha': '2fe9c89a0f09fb7318701219ff993677a9b7c919', 'sourceDirty': False}}}}}"
     },
     {
       "name": "S01 Pi contracts",
@@ -282,17 +282,17 @@
     {
       "name": "S01 80x24-dark-fullscreen difference count",
       "passed": true,
-      "detail": "140 {'text': 0, 'style': 140, 'layout': 0}"
+      "detail": "0 {'text': 0, 'style': 0, 'layout': 0}"
     },
     {
       "name": "S01 80x24-dark-fullscreen visual points",
       "passed": true,
-      "detail": "recorded={'text': 1, 'style': 0, 'layout': 1, 'differences': {'text': 0, 'style': 140, 'layout': 0}} expected={'text': 1, 'style': 0, 'layout': 1}"
+      "detail": "recorded={'text': 1, 'style': 1, 'layout': 1, 'differences': {'text': 0, 'style': 0, 'layout': 0}} expected={'text': 1, 'style': 1, 'layout': 1}"
     },
     {
       "name": "S01 80x24-dark-fullscreen visual differences",
       "passed": true,
-      "detail": "recorded={'text': 0, 'style': 140, 'layout': 0} expected={'text': 0, 'style': 140, 'layout': 0}"
+      "detail": "recorded={'text': 0, 'style': 0, 'layout': 0} expected={'text': 0, 'style': 0, 'layout': 0}"
     },
     {
       "name": "S01 80x24-dark-fullscreen findings known",
@@ -300,224 +300,19 @@
       "detail": "[]"
     },
     {
-      "name": "S01 80x24-dark-fullscreen differences classified",
-      "passed": true,
-      "detail": "findingIds=['S01-code-syntax-builtin-highlight'] unmatched=0"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.buffers.alternate.lines[7].cells[3].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.buffers.alternate.lines[7].cells[3].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.buffers.alternate.lines[7].cells[4].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.buffers.alternate.lines[7].cells[4].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.buffers.alternate.lines[7].cells[5].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.buffers.alternate.lines[7].cells[5].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.buffers.alternate.lines[7].cells[6].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.buffers.alternate.lines[7].cells[6].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.buffers.alternate.lines[7].cells[7].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.buffers.alternate.lines[7].cells[7].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.viewport[7].cells[3].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.viewport[7].cells[3].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.viewport[7].cells[4].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.viewport[7].cells[4].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.viewport[7].cells[5].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.viewport[7].cells[5].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.viewport[7].cells[6].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.viewport[7].cells[6].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.viewport[7].cells[7].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.viewport[7].cells[7].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[7].cells[3].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[7].cells[3].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[7].cells[4].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[7].cells[4].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[7].cells[5].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[7].cells[5].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[7].cells[6].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[7].cells[6].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[7].cells[7].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[7].cells[7].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[8].cells[3].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[8].cells[3].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[8].cells[4].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[8].cells[4].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[8].cells[5].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[8].cells[5].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[8].cells[6].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[8].cells[6].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[8].cells[7].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[8].cells[7].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
       "name": "S01 120x40-dark-fullscreen difference count",
       "passed": true,
-      "detail": "140 {'text': 0, 'style': 140, 'layout': 0}"
+      "detail": "0 {'text': 0, 'style': 0, 'layout': 0}"
     },
     {
       "name": "S01 120x40-dark-fullscreen visual points",
       "passed": true,
-      "detail": "recorded={'text': 1, 'style': 0, 'layout': 1, 'differences': {'text': 0, 'style': 140, 'layout': 0}} expected={'text': 1, 'style': 0, 'layout': 1}"
+      "detail": "recorded={'text': 1, 'style': 1, 'layout': 1, 'differences': {'text': 0, 'style': 0, 'layout': 0}} expected={'text': 1, 'style': 1, 'layout': 1}"
     },
     {
       "name": "S01 120x40-dark-fullscreen visual differences",
       "passed": true,
-      "detail": "recorded={'text': 0, 'style': 140, 'layout': 0} expected={'text': 0, 'style': 140, 'layout': 0}"
+      "detail": "recorded={'text': 0, 'style': 0, 'layout': 0} expected={'text': 0, 'style': 0, 'layout': 0}"
     },
     {
       "name": "S01 120x40-dark-fullscreen findings known",
@@ -525,214 +320,9 @@
       "detail": "[]"
     },
     {
-      "name": "S01 120x40-dark-fullscreen differences classified",
-      "passed": true,
-      "detail": "findingIds=['S01-code-syntax-builtin-highlight'] unmatched=0"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.buffers.alternate.lines[7].cells[3].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.buffers.alternate.lines[7].cells[3].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.buffers.alternate.lines[7].cells[4].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.buffers.alternate.lines[7].cells[4].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.buffers.alternate.lines[7].cells[5].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.buffers.alternate.lines[7].cells[5].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.buffers.alternate.lines[7].cells[6].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.buffers.alternate.lines[7].cells[6].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.buffers.alternate.lines[7].cells[7].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.buffers.alternate.lines[7].cells[7].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.viewport[7].cells[3].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.viewport[7].cells[3].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.viewport[7].cells[4].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.viewport[7].cells[4].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.viewport[7].cells[5].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.viewport[7].cells[5].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.viewport[7].cells[6].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.viewport[7].cells[6].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.viewport[7].cells[7].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-04-incomplete-code-block $.viewport[7].cells[7].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[7].cells[3].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[7].cells[3].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[7].cells[4].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[7].cells[4].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[7].cells[5].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[7].cells[5].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[7].cells[6].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[7].cells[6].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[7].cells[7].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[7].cells[7].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[8].cells[3].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[8].cells[3].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[8].cells[4].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[8].cells[4].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[8].cells[5].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[8].cells[5].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[8].cells[6].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[8].cells[6].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[8].cells[7].foreground.mode -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s01-05-completed-response $.buffers.alternate.lines[8].cells[7].foreground.value -> S01-code-syntax-builtin-highlight expected S01-code-syntax-builtin-highlight"
-    },
-    {
       "name": "S01 findings listed",
       "passed": true,
-      "detail": "['S01-code-syntax-builtin-highlight']"
+      "detail": "[]"
     },
     {
       "name": "S01 unmatched differences",
@@ -742,7 +332,7 @@
     {
       "name": "S01 findings cover every difference",
       "passed": true,
-      "detail": "findings=280 differences=280"
+      "detail": "findings=0 differences=0"
     },
     {
       "name": "S01 assessable flag",
@@ -762,7 +352,7 @@
     {
       "name": "S01 visual score",
       "passed": true,
-      "detail": "4 != 4"
+      "detail": "6 != 6"
     },
     {
       "name": "S01 cleanup score",
@@ -772,7 +362,7 @@
     {
       "name": "S01 subtotal",
       "passed": true,
-      "detail": "16 != 16"
+      "detail": "18 != 18"
     },
     {
       "name": "S01 maximum",
@@ -817,7 +407,7 @@
     {
       "name": "S02 capture provenance",
       "passed": true,
-      "detail": "{'80x24-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'trackedChanges': [], 'artifact': {'file': 'PiSharp.Cli.dll', 'size': 3429888, 'sha256': 'a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'builtFromSha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'sourceDirty': False}}}}, '120x40-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'trackedChanges': [], 'artifact': {'file': 'PiSharp.Cli.dll', 'size': 3429888, 'sha256': 'a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'builtFromSha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'sourceDirty': False}}}}}"
+      "detail": "{'80x24-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': '2fe9c89a0f09fb7318701219ff993677a9b7c919', 'branch': 'milestone/interactive-visual-parity', 'dirty': False, 'trackedChanges': [], 'artifact': {'file': 'PiSharp.Cli.dll', 'size': 3433472, 'sha256': 'b7e9ee318c252afedecb189128e5462a391475a7384c0500c2f28de45073aebc', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'builtFromSha': '2fe9c89a0f09fb7318701219ff993677a9b7c919', 'sourceDirty': False}}}}, '120x40-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': '2fe9c89a0f09fb7318701219ff993677a9b7c919', 'branch': 'milestone/interactive-visual-parity', 'dirty': False, 'trackedChanges': [], 'artifact': {'file': 'PiSharp.Cli.dll', 'size': 3433472, 'sha256': 'b7e9ee318c252afedecb189128e5462a391475a7384c0500c2f28de45073aebc', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'builtFromSha': '2fe9c89a0f09fb7318701219ff993677a9b7c919', 'sourceDirty': False}}}}}"
     },
     {
       "name": "S02 Pi contracts",
@@ -907,17 +497,17 @@
     {
       "name": "S02 80x24-dark-fullscreen difference count",
       "passed": true,
-      "detail": "12962 {'text': 3780, 'style': 9180, 'layout': 2}"
+      "detail": "0 {'text': 0, 'style': 0, 'layout': 0}"
     },
     {
       "name": "S02 80x24-dark-fullscreen visual points",
       "passed": true,
-      "detail": "recorded={'text': 0, 'style': 0, 'layout': 0, 'differences': {'text': 3780, 'style': 9180, 'layout': 2}} expected={'text': 0, 'style': 0, 'layout': 0}"
+      "detail": "recorded={'text': 1, 'style': 1, 'layout': 1, 'differences': {'text': 0, 'style': 0, 'layout': 0}} expected={'text': 1, 'style': 1, 'layout': 1}"
     },
     {
       "name": "S02 80x24-dark-fullscreen visual differences",
       "passed": true,
-      "detail": "recorded={'text': 3780, 'style': 9180, 'layout': 2} expected={'text': 3780, 'style': 9180, 'layout': 2}"
+      "detail": "recorded={'text': 0, 'style': 0, 'layout': 0} expected={'text': 0, 'style': 0, 'layout': 0}"
     },
     {
       "name": "S02 80x24-dark-fullscreen findings known",
@@ -925,224 +515,19 @@
       "detail": "[]"
     },
     {
-      "name": "S02 80x24-dark-fullscreen differences classified",
-      "passed": true,
-      "detail": "findingIds=['S02-reasoning-block-layout', 'S02-reasoning-italic-style', 'S02-reasoning-status-style'] unmatched=0"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[0].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[1].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[2].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[3].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[5].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[6].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[7].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[8].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[9].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[10].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[11].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[12].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[13].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[14].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[15].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[16].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[17].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[18].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[19].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[20].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[21].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[22].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[23].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[24].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[25].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[26].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[27].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[28].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[29].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[30].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[31].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[32].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[33].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[34].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[35].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[36].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[37].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[38].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[39].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[19].cells[40].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
       "name": "S02 120x40-dark-fullscreen difference count",
       "passed": true,
-      "detail": "14910 {'text': 4286, 'style': 10622, 'layout': 2}"
+      "detail": "0 {'text': 0, 'style': 0, 'layout': 0}"
     },
     {
       "name": "S02 120x40-dark-fullscreen visual points",
       "passed": true,
-      "detail": "recorded={'text': 0, 'style': 0, 'layout': 0, 'differences': {'text': 4286, 'style': 10622, 'layout': 2}} expected={'text': 0, 'style': 0, 'layout': 0}"
+      "detail": "recorded={'text': 1, 'style': 1, 'layout': 1, 'differences': {'text': 0, 'style': 0, 'layout': 0}} expected={'text': 1, 'style': 1, 'layout': 1}"
     },
     {
       "name": "S02 120x40-dark-fullscreen visual differences",
       "passed": true,
-      "detail": "recorded={'text': 4286, 'style': 10622, 'layout': 2} expected={'text': 4286, 'style': 10622, 'layout': 2}"
+      "detail": "recorded={'text': 0, 'style': 0, 'layout': 0} expected={'text': 0, 'style': 0, 'layout': 0}"
     },
     {
       "name": "S02 120x40-dark-fullscreen findings known",
@@ -1150,214 +535,9 @@
       "detail": "[]"
     },
     {
-      "name": "S02 120x40-dark-fullscreen differences classified",
-      "passed": true,
-      "detail": "findingIds=['S02-reasoning-block-layout', 'S02-reasoning-italic-style', 'S02-reasoning-status-style'] unmatched=0"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[0].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[1].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[2].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[3].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[5].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[6].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[7].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[8].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[9].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[10].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[11].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[12].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[13].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[14].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[15].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[16].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[17].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[18].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[19].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[20].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[21].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[22].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[23].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[24].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[25].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[26].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[27].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[28].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[29].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[30].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[31].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[32].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[33].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[34].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[35].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[36].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[37].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[38].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[39].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
-      "name": "S02 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s02-01-before-reasoning $.buffers.alternate.lines[35].cells[40].foreground.value -> S02-reasoning-status-style expected S02-reasoning-status-style"
-    },
-    {
       "name": "S02 findings listed",
       "passed": true,
-      "detail": "['S02-reasoning-block-layout', 'S02-reasoning-italic-style', 'S02-reasoning-status-style']"
+      "detail": "[]"
     },
     {
       "name": "S02 unmatched differences",
@@ -1367,7 +547,7 @@
     {
       "name": "S02 findings cover every difference",
       "passed": true,
-      "detail": "findings=27872 differences=27872"
+      "detail": "findings=0 differences=0"
     },
     {
       "name": "S02 assessable flag",
@@ -1387,7 +567,7 @@
     {
       "name": "S02 visual score",
       "passed": true,
-      "detail": "0 != 0"
+      "detail": "6 != 6"
     },
     {
       "name": "S02 cleanup score",
@@ -1397,7 +577,7 @@
     {
       "name": "S02 subtotal",
       "passed": true,
-      "detail": "12 != 12"
+      "detail": "18 != 18"
     },
     {
       "name": "S02 maximum",
@@ -1442,7 +622,7 @@
     {
       "name": "S03 capture provenance",
       "passed": true,
-      "detail": "{'80x24-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'trackedChanges': [], 'artifact': {'file': 'PiSharp.Cli.dll', 'size': 3429888, 'sha256': 'a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'builtFromSha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'sourceDirty': False}}}}, '120x40-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'trackedChanges': [], 'artifact': {'file': 'PiSharp.Cli.dll', 'size': 3429888, 'sha256': 'a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'builtFromSha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'sourceDirty': False}}}}}"
+      "detail": "{'80x24-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': '2fe9c89a0f09fb7318701219ff993677a9b7c919', 'branch': 'milestone/interactive-visual-parity', 'dirty': False, 'trackedChanges': [], 'artifact': {'file': 'PiSharp.Cli.dll', 'size': 3433472, 'sha256': 'b7e9ee318c252afedecb189128e5462a391475a7384c0500c2f28de45073aebc', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'builtFromSha': '2fe9c89a0f09fb7318701219ff993677a9b7c919', 'sourceDirty': False}}}}, '120x40-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': '2fe9c89a0f09fb7318701219ff993677a9b7c919', 'branch': 'milestone/interactive-visual-parity', 'dirty': False, 'trackedChanges': [], 'artifact': {'file': 'PiSharp.Cli.dll', 'size': 3433472, 'sha256': 'b7e9ee318c252afedecb189128e5462a391475a7384c0500c2f28de45073aebc', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'builtFromSha': '2fe9c89a0f09fb7318701219ff993677a9b7c919', 'sourceDirty': False}}}}}"
     },
     {
       "name": "S03 Pi contracts",
@@ -1657,7 +837,7 @@
     {
       "name": "S04 capture provenance",
       "passed": true,
-      "detail": "{'80x24-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'trackedChanges': [], 'artifact': {'file': 'PiSharp.Cli.dll', 'size': 3429888, 'sha256': 'a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'builtFromSha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'sourceDirty': False}}}}, '120x40-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'trackedChanges': [], 'artifact': {'file': 'PiSharp.Cli.dll', 'size': 3429888, 'sha256': 'a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'builtFromSha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'sourceDirty': False}}}}}"
+      "detail": "{'80x24-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': '2fe9c89a0f09fb7318701219ff993677a9b7c919', 'branch': 'milestone/interactive-visual-parity', 'dirty': False, 'trackedChanges': [], 'artifact': {'file': 'PiSharp.Cli.dll', 'size': 3433472, 'sha256': 'b7e9ee318c252afedecb189128e5462a391475a7384c0500c2f28de45073aebc', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'builtFromSha': '2fe9c89a0f09fb7318701219ff993677a9b7c919', 'sourceDirty': False}}}}, '120x40-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': '2fe9c89a0f09fb7318701219ff993677a9b7c919', 'branch': 'milestone/interactive-visual-parity', 'dirty': False, 'trackedChanges': [], 'artifact': {'file': 'PiSharp.Cli.dll', 'size': 3433472, 'sha256': 'b7e9ee318c252afedecb189128e5462a391475a7384c0500c2f28de45073aebc', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'builtFromSha': '2fe9c89a0f09fb7318701219ff993677a9b7c919', 'sourceDirty': False}}}}}"
     },
     {
       "name": "S04 Pi contracts",
@@ -1702,7 +882,7 @@
     {
       "name": "S04 80x24-dark-fullscreen Pi forbidden stream evidence",
       "passed": true,
-      "detail": "{'required': True, 'scanned': True, 'fromRenderIndex': 13, 'tokens': ['CANCEL_LATE', 'CANCEL_FINISH'], 'renderFrameCount': 23, 'counts': {'CANCEL_LATE': 0, 'CANCEL_FINISH': 0}, 'occurrenceCount': 0, 'occurrences': [], 'valid': True}"
+      "detail": "{'required': True, 'scanned': True, 'fromRenderIndex': 16, 'tokens': ['CANCEL_LATE', 'CANCEL_FINISH'], 'renderFrameCount': 26, 'counts': {'CANCEL_LATE': 0, 'CANCEL_FINISH': 0}, 'occurrenceCount': 0, 'occurrences': [], 'valid': True}"
     },
     {
       "name": "S04 80x24-dark-fullscreen Pi cleanup evidence",
@@ -1712,7 +892,7 @@
     {
       "name": "S04 80x24-dark-fullscreen PiSharp forbidden stream evidence",
       "passed": true,
-      "detail": "{'required': True, 'scanned': True, 'fromRenderIndex': 15, 'tokens': ['CANCEL_LATE', 'CANCEL_FINISH'], 'renderFrameCount': 33, 'counts': {'CANCEL_LATE': 0, 'CANCEL_FINISH': 0}, 'occurrenceCount': 0, 'occurrences': [], 'valid': True}"
+      "detail": "{'required': True, 'scanned': True, 'fromRenderIndex': 16, 'tokens': ['CANCEL_LATE', 'CANCEL_FINISH'], 'renderFrameCount': 37, 'counts': {'CANCEL_LATE': 0, 'CANCEL_FINISH': 0}, 'occurrenceCount': 0, 'occurrences': [], 'valid': True}"
     },
     {
       "name": "S04 80x24-dark-fullscreen PiSharp cleanup evidence",
@@ -1752,7 +932,7 @@
     {
       "name": "S04 120x40-dark-fullscreen Pi forbidden stream evidence",
       "passed": true,
-      "detail": "{'required': True, 'scanned': True, 'fromRenderIndex': 56, 'tokens': ['CANCEL_LATE', 'CANCEL_FINISH'], 'renderFrameCount': 92, 'counts': {'CANCEL_LATE': 0, 'CANCEL_FINISH': 0}, 'occurrenceCount': 0, 'occurrences': [], 'valid': True}"
+      "detail": "{'required': True, 'scanned': True, 'fromRenderIndex': 67, 'tokens': ['CANCEL_LATE', 'CANCEL_FINISH'], 'renderFrameCount': 116, 'counts': {'CANCEL_LATE': 0, 'CANCEL_FINISH': 0}, 'occurrenceCount': 0, 'occurrences': [], 'valid': True}"
     },
     {
       "name": "S04 120x40-dark-fullscreen Pi cleanup evidence",
@@ -1762,7 +942,7 @@
     {
       "name": "S04 120x40-dark-fullscreen PiSharp forbidden stream evidence",
       "passed": true,
-      "detail": "{'required': True, 'scanned': True, 'fromRenderIndex': 16, 'tokens': ['CANCEL_LATE', 'CANCEL_FINISH'], 'renderFrameCount': 36, 'counts': {'CANCEL_LATE': 0, 'CANCEL_FINISH': 0}, 'occurrenceCount': 0, 'occurrences': [], 'valid': True}"
+      "detail": "{'required': True, 'scanned': True, 'fromRenderIndex': 15, 'tokens': ['CANCEL_LATE', 'CANCEL_FINISH'], 'renderFrameCount': 34, 'counts': {'CANCEL_LATE': 0, 'CANCEL_FINISH': 0}, 'occurrenceCount': 0, 'occurrences': [], 'valid': True}"
     },
     {
       "name": "S04 120x40-dark-fullscreen PiSharp cleanup evidence",
@@ -1892,7 +1072,7 @@
     {
       "name": "S05 fixture checksum",
       "passed": true,
-      "detail": "d137dd905a1d6b2b4785d451fbb2f02029ec0a0af5c6dce40b8d458a148335ee"
+      "detail": "c332f9cc8345de7f7d2dad0fabc50fbc4fc14c64d2e9f09288f3f969feb016ef"
     },
     {
       "name": "S05 calibration cases",
@@ -1912,7 +1092,7 @@
     {
       "name": "S05 capture provenance",
       "passed": true,
-      "detail": "{'80x24-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'trackedChanges': [], 'artifact': {'file': 'PiSharp.Cli.dll', 'size': 3429888, 'sha256': 'a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'builtFromSha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'sourceDirty': False}}}}, '120x40-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'trackedChanges': [], 'artifact': {'file': 'PiSharp.Cli.dll', 'size': 3429888, 'sha256': 'a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'builtFromSha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'sourceDirty': False}}}}}"
+      "detail": "{'80x24-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': '2fe9c89a0f09fb7318701219ff993677a9b7c919', 'branch': 'milestone/interactive-visual-parity', 'dirty': False, 'trackedChanges': [], 'artifact': {'file': 'PiSharp.Cli.dll', 'size': 3433472, 'sha256': 'b7e9ee318c252afedecb189128e5462a391475a7384c0500c2f28de45073aebc', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'builtFromSha': '2fe9c89a0f09fb7318701219ff993677a9b7c919', 'sourceDirty': False}}}}, '120x40-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': '2fe9c89a0f09fb7318701219ff993677a9b7c919', 'branch': 'milestone/interactive-visual-parity', 'dirty': False, 'trackedChanges': [], 'artifact': {'file': 'PiSharp.Cli.dll', 'size': 3433472, 'sha256': 'b7e9ee318c252afedecb189128e5462a391475a7384c0500c2f28de45073aebc', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'builtFromSha': '2fe9c89a0f09fb7318701219ff993677a9b7c919', 'sourceDirty': False}}}}}"
     },
     {
       "name": "S05 Pi contracts",
@@ -1957,7 +1137,7 @@
     {
       "name": "S05 80x24-dark-fullscreen Pi forbidden stream evidence",
       "passed": true,
-      "detail": "{'required': True, 'scanned': True, 'fromRenderIndex': 11, 'tokens': ['TOOL_COMPLETED'], 'renderFrameCount': 22, 'counts': {'TOOL_COMPLETED': 0}, 'occurrenceCount': 0, 'occurrences': [], 'valid': True}"
+      "detail": "{'required': True, 'scanned': True, 'fromRenderIndex': 9, 'tokens': ['TOOL_COMPLETED'], 'renderFrameCount': 19, 'counts': {'TOOL_COMPLETED': 0}, 'occurrenceCount': 0, 'occurrences': [], 'valid': True}"
     },
     {
       "name": "S05 80x24-dark-fullscreen Pi cleanup evidence",
@@ -2017,7 +1197,7 @@
     {
       "name": "S05 120x40-dark-fullscreen Pi forbidden stream evidence",
       "passed": true,
-      "detail": "{'required': True, 'scanned': True, 'fromRenderIndex': 23, 'tokens': ['TOOL_COMPLETED'], 'renderFrameCount': 53, 'counts': {'TOOL_COMPLETED': 0}, 'occurrenceCount': 0, 'occurrences': [], 'valid': True}"
+      "detail": "{'required': True, 'scanned': True, 'fromRenderIndex': 23, 'tokens': ['TOOL_COMPLETED'], 'renderFrameCount': 52, 'counts': {'TOOL_COMPLETED': 0}, 'occurrenceCount': 0, 'occurrences': [], 'valid': True}"
     },
     {
       "name": "S05 120x40-dark-fullscreen Pi cleanup evidence",
@@ -2032,7 +1212,7 @@
     {
       "name": "S05 120x40-dark-fullscreen PiSharp forbidden stream evidence",
       "passed": true,
-      "detail": "{'required': True, 'scanned': True, 'fromRenderIndex': 15, 'tokens': ['TOOL_COMPLETED'], 'renderFrameCount': 37, 'counts': {'TOOL_COMPLETED': 0}, 'occurrenceCount': 0, 'occurrences': [], 'valid': True}"
+      "detail": "{'required': True, 'scanned': True, 'fromRenderIndex': 15, 'tokens': ['TOOL_COMPLETED'], 'renderFrameCount': 36, 'counts': {'TOOL_COMPLETED': 0}, 'occurrenceCount': 0, 'occurrences': [], 'valid': True}"
     },
     {
       "name": "S05 120x40-dark-fullscreen PiSharp cleanup evidence",
@@ -2062,17 +1242,17 @@
     {
       "name": "S05 80x24-dark-fullscreen difference count",
       "passed": true,
-      "detail": "868 {'text': 420, 'style': 448, 'layout': 0}"
+      "detail": "0 {'text': 0, 'style': 0, 'layout': 0}"
     },
     {
       "name": "S05 80x24-dark-fullscreen visual points",
       "passed": true,
-      "detail": "recorded={'text': 0, 'style': 0, 'layout': 1, 'differences': {'text': 420, 'style': 448, 'layout': 0}} expected={'text': 0, 'style': 0, 'layout': 1}"
+      "detail": "recorded={'text': 1, 'style': 1, 'layout': 1, 'differences': {'text': 0, 'style': 0, 'layout': 0}} expected={'text': 1, 'style': 1, 'layout': 1}"
     },
     {
       "name": "S05 80x24-dark-fullscreen visual differences",
       "passed": true,
-      "detail": "recorded={'text': 420, 'style': 448, 'layout': 0} expected={'text': 420, 'style': 448, 'layout': 0}"
+      "detail": "recorded={'text': 0, 'style': 0, 'layout': 0} expected={'text': 0, 'style': 0, 'layout': 0}"
     },
     {
       "name": "S05 80x24-dark-fullscreen findings known",
@@ -2080,224 +1260,19 @@
       "detail": "[]"
     },
     {
-      "name": "S05 80x24-dark-fullscreen differences classified",
-      "passed": true,
-      "detail": "findingIds=['S05-tool-cancel-error-style', 'S05-tool-cancel-error-wording'] unmatched=0"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[1].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[2].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[3].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[4].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[5].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[6].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[7].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[8].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[9].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[10].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[11].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[12].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[14].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[15].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[16].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[17].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[18].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[18].foreground.mode -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[18].foreground.value -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[19].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[19].foreground.mode -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[19].foreground.value -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[20].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[20].foreground.mode -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[20].foreground.value -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[21].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[21].foreground.mode -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[21].foreground.value -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[22].foreground.mode -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[22].foreground.value -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[23].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[23].foreground.mode -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[23].foreground.value -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[24].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[24].foreground.mode -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[24].foreground.value -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[25].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[25].foreground.mode -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[25].foreground.value -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05 80x24-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[26].foreground.mode -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
       "name": "S05 120x40-dark-fullscreen difference count",
       "passed": true,
-      "detail": "868 {'text': 420, 'style': 448, 'layout': 0}"
+      "detail": "0 {'text': 0, 'style': 0, 'layout': 0}"
     },
     {
       "name": "S05 120x40-dark-fullscreen visual points",
       "passed": true,
-      "detail": "recorded={'text': 0, 'style': 0, 'layout': 1, 'differences': {'text': 420, 'style': 448, 'layout': 0}} expected={'text': 0, 'style': 0, 'layout': 1}"
+      "detail": "recorded={'text': 1, 'style': 1, 'layout': 1, 'differences': {'text': 0, 'style': 0, 'layout': 0}} expected={'text': 1, 'style': 1, 'layout': 1}"
     },
     {
       "name": "S05 120x40-dark-fullscreen visual differences",
       "passed": true,
-      "detail": "recorded={'text': 420, 'style': 448, 'layout': 0} expected={'text': 420, 'style': 448, 'layout': 0}"
+      "detail": "recorded={'text': 0, 'style': 0, 'layout': 0} expected={'text': 0, 'style': 0, 'layout': 0}"
     },
     {
       "name": "S05 120x40-dark-fullscreen findings known",
@@ -2305,214 +1280,9 @@
       "detail": "[]"
     },
     {
-      "name": "S05 120x40-dark-fullscreen differences classified",
-      "passed": true,
-      "detail": "findingIds=['S05-tool-cancel-error-style', 'S05-tool-cancel-error-wording'] unmatched=0"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[1].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[2].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[3].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[4].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[5].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[6].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[7].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[8].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[9].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[10].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[11].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[12].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[14].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[15].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[16].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[17].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[18].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[18].foreground.mode -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[18].foreground.value -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[19].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[19].foreground.mode -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[19].foreground.value -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[20].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[20].foreground.mode -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[20].foreground.value -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[21].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[21].foreground.mode -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[21].foreground.value -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[22].foreground.mode -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[22].foreground.value -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[23].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[23].foreground.mode -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[23].foreground.value -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[24].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[24].foreground.mode -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[24].foreground.value -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[25].chars -> S05-tool-cancel-error-wording expected S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[25].foreground.mode -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[25].foreground.value -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05 120x40-dark-fullscreen sample predicate",
-      "passed": true,
-      "detail": "s05-05-tool-cancellation-settles $.buffers.alternate.lines[16].cells[26].foreground.mode -> S05-tool-cancel-error-style expected S05-tool-cancel-error-style"
-    },
-    {
       "name": "S05 findings listed",
       "passed": true,
-      "detail": "['S05-tool-cancel-error-style', 'S05-tool-cancel-error-wording']"
+      "detail": "[]"
     },
     {
       "name": "S05 unmatched differences",
@@ -2522,7 +1292,7 @@
     {
       "name": "S05 findings cover every difference",
       "passed": true,
-      "detail": "findings=1736 differences=1736"
+      "detail": "findings=0 differences=0"
     },
     {
       "name": "S05 assessable flag",
@@ -2542,7 +1312,7 @@
     {
       "name": "S05 visual score",
       "passed": true,
-      "detail": "2 != 2"
+      "detail": "6 != 6"
     },
     {
       "name": "S05 cleanup score",
@@ -2552,7 +1322,7 @@
     {
       "name": "S05 subtotal",
       "passed": true,
-      "detail": "19 != 19"
+      "detail": "23 != 23"
     },
     {
       "name": "S05 maximum",
@@ -2562,12 +1332,12 @@
     {
       "name": "category totals",
       "passed": true,
-      "detail": "{'functional': 40, 'temporal': 20, 'visual': 18, 'cleanup': 10} != {'functional': 40, 'temporal': 20, 'visual': 18, 'cleanup': 10}"
+      "detail": "{'functional': 40, 'temporal': 20, 'visual': 30, 'cleanup': 10} != {'functional': 40, 'temporal': 20, 'visual': 30, 'cleanup': 10}"
     },
     {
       "name": "total",
       "passed": true,
-      "detail": "88 != 88"
+      "detail": "100 != 100"
     },
     {
       "name": "assessed maximum",
@@ -2577,7 +1347,7 @@
     {
       "name": "total within maximum",
       "passed": true,
-      "detail": "88/100"
+      "detail": "100/100"
     },
     {
       "name": "coverage",
@@ -2613,216 +1383,6 @@
       "name": "findings complete",
       "passed": true,
       "detail": "missing=[] orphan=[]"
-    },
-    {
-      "name": "S01-code-syntax-builtin-highlight fields",
-      "passed": true,
-      "detail": "[]"
-    },
-    {
-      "name": "S01-code-syntax-builtin-highlight explicit predicate",
-      "passed": true,
-      "detail": "S01-code-syntax-builtin-highlight"
-    },
-    {
-      "name": "S01-code-syntax-builtin-highlight severity",
-      "passed": true,
-      "detail": "P2"
-    },
-    {
-      "name": "S01-code-syntax-builtin-highlight difference count",
-      "passed": true,
-      "detail": "280"
-    },
-    {
-      "name": "S01-code-syntax-builtin-highlight sample paths",
-      "passed": true,
-      "detail": "['$.buffers.alternate.lines[7].cells[3].foreground.mode', '$.buffers.alternate.lines[7].cells[3].foreground.value', '$.buffers.alternate.lines[7].cells[4].foreground.mode', '$.buffers.alternate.lines[7].cells[4].foreground.value', '$.buffers.alternate.lines[7].cells[5].foreground.mode', '$.buffers.alternate.lines[7].cells[5].foreground.value', '$.buffers.alternate.lines[7].cells[6].foreground.mode', '$.buffers.alternate.lines[7].cells[6].foreground.value', '$.buffers.alternate.lines[7].cells[7].foreground.mode', '$.buffers.alternate.lines[7].cells[7].foreground.value', '$.buffers.alternate.lines[8].cells[3].foreground.mode', '$.buffers.alternate.lines[8].cells[3].foreground.value', '$.buffers.alternate.lines[8].cells[4].foreground.mode', '$.buffers.alternate.lines[8].cells[4].foreground.value', '$.buffers.alternate.lines[8].cells[5].foreground.mode', '$.buffers.alternate.lines[8].cells[5].foreground.value', '$.buffers.alternate.lines[8].cells[6].foreground.mode', '$.buffers.alternate.lines[8].cells[6].foreground.value', '$.buffers.alternate.lines[8].cells[7].foreground.mode', '$.buffers.alternate.lines[8].cells[7].foreground.value']"
-    },
-    {
-      "name": "S01-code-syntax-builtin-highlight scenario",
-      "passed": true,
-      "detail": "S01"
-    },
-    {
-      "name": "S01-code-syntax-builtin-highlight cases",
-      "passed": true,
-      "detail": "['120x40-dark-fullscreen', '80x24-dark-fullscreen']"
-    },
-    {
-      "name": "S02-reasoning-block-layout fields",
-      "passed": true,
-      "detail": "[]"
-    },
-    {
-      "name": "S02-reasoning-block-layout explicit predicate",
-      "passed": true,
-      "detail": "S02-reasoning-block-layout"
-    },
-    {
-      "name": "S02-reasoning-block-layout severity",
-      "passed": true,
-      "detail": "P1"
-    },
-    {
-      "name": "S02-reasoning-block-layout difference count",
-      "passed": true,
-      "detail": "26054"
-    },
-    {
-      "name": "S02-reasoning-block-layout sample paths",
-      "passed": true,
-      "detail": "['$.buffers.alternate.lines[10].cells[10].chars', '$.buffers.alternate.lines[10].cells[10].foreground.mode', '$.buffers.alternate.lines[10].cells[10].foreground.value', '$.buffers.alternate.lines[10].cells[11].chars', '$.buffers.alternate.lines[10].cells[11].foreground.mode', '$.buffers.alternate.lines[10].cells[11].foreground.value', '$.buffers.alternate.lines[10].cells[12].chars', '$.buffers.alternate.lines[10].cells[12].foreground.mode', '$.buffers.alternate.lines[10].cells[12].foreground.value', '$.buffers.alternate.lines[10].cells[13].chars', '$.buffers.alternate.lines[10].cells[13].foreground.mode', '$.buffers.alternate.lines[10].cells[13].foreground.value', '$.buffers.alternate.lines[10].cells[14].chars', '$.buffers.alternate.lines[10].cells[14].foreground.mode', '$.buffers.alternate.lines[10].cells[14].foreground.value', '$.buffers.alternate.lines[10].cells[15].chars', '$.buffers.alternate.lines[10].cells[15].foreground.mode', '$.buffers.alternate.lines[10].cells[15].foreground.value', '$.buffers.alternate.lines[10].cells[16].chars', '$.buffers.alternate.lines[10].cells[16].foreground.mode']"
-    },
-    {
-      "name": "S02-reasoning-block-layout scenario",
-      "passed": true,
-      "detail": "S02"
-    },
-    {
-      "name": "S02-reasoning-block-layout cases",
-      "passed": true,
-      "detail": "['120x40-dark-fullscreen', '80x24-dark-fullscreen']"
-    },
-    {
-      "name": "S02-reasoning-italic-style fields",
-      "passed": true,
-      "detail": "[]"
-    },
-    {
-      "name": "S02-reasoning-italic-style explicit predicate",
-      "passed": true,
-      "detail": "S02-reasoning-italic-style"
-    },
-    {
-      "name": "S02-reasoning-italic-style severity",
-      "passed": true,
-      "detail": "P2"
-    },
-    {
-      "name": "S02-reasoning-italic-style difference count",
-      "passed": true,
-      "detail": "1022"
-    },
-    {
-      "name": "S02-reasoning-italic-style sample paths",
-      "passed": true,
-      "detail": "['$.buffers.alternate.lines[4].cells[1].attributes.italic', '$.buffers.alternate.lines[4].cells[45].attributes.italic', '$.buffers.alternate.lines[4].cells[46].attributes.italic', '$.buffers.alternate.lines[4].cells[47].attributes.italic', '$.buffers.alternate.lines[4].cells[48].attributes.italic', '$.buffers.alternate.lines[4].cells[49].attributes.italic', '$.buffers.alternate.lines[4].cells[50].attributes.italic', '$.buffers.alternate.lines[4].cells[51].attributes.italic', '$.buffers.alternate.lines[4].cells[52].attributes.italic', '$.buffers.alternate.lines[4].cells[53].attributes.italic', '$.buffers.alternate.lines[4].cells[54].attributes.italic', '$.buffers.alternate.lines[4].cells[55].attributes.italic', '$.buffers.alternate.lines[4].cells[56].attributes.italic', '$.buffers.alternate.lines[4].cells[57].attributes.italic', '$.buffers.alternate.lines[4].cells[58].attributes.italic', '$.buffers.alternate.lines[4].cells[59].attributes.italic', '$.buffers.alternate.lines[4].cells[60].attributes.italic', '$.buffers.alternate.lines[4].cells[61].attributes.italic', '$.buffers.alternate.lines[4].cells[62].attributes.italic', '$.buffers.alternate.lines[4].cells[63].attributes.italic']"
-    },
-    {
-      "name": "S02-reasoning-italic-style scenario",
-      "passed": true,
-      "detail": "S02"
-    },
-    {
-      "name": "S02-reasoning-italic-style cases",
-      "passed": true,
-      "detail": "['120x40-dark-fullscreen', '80x24-dark-fullscreen']"
-    },
-    {
-      "name": "S02-reasoning-status-style fields",
-      "passed": true,
-      "detail": "[]"
-    },
-    {
-      "name": "S02-reasoning-status-style explicit predicate",
-      "passed": true,
-      "detail": "S02-reasoning-status-style"
-    },
-    {
-      "name": "S02-reasoning-status-style severity",
-      "passed": true,
-      "detail": "P2"
-    },
-    {
-      "name": "S02-reasoning-status-style difference count",
-      "passed": true,
-      "detail": "796"
-    },
-    {
-      "name": "S02-reasoning-status-style sample paths",
-      "passed": true,
-      "detail": "['$.buffers.alternate.lines[19].cells[0].foreground.value', '$.buffers.alternate.lines[19].cells[10].foreground.value', '$.buffers.alternate.lines[19].cells[11].foreground.value', '$.buffers.alternate.lines[19].cells[12].foreground.value', '$.buffers.alternate.lines[19].cells[13].foreground.value', '$.buffers.alternate.lines[19].cells[14].foreground.value', '$.buffers.alternate.lines[19].cells[15].foreground.value', '$.buffers.alternate.lines[19].cells[16].foreground.value', '$.buffers.alternate.lines[19].cells[17].foreground.value', '$.buffers.alternate.lines[19].cells[18].foreground.value', '$.buffers.alternate.lines[19].cells[19].foreground.value', '$.buffers.alternate.lines[19].cells[1].foreground.value', '$.buffers.alternate.lines[19].cells[20].foreground.value', '$.buffers.alternate.lines[19].cells[21].foreground.value', '$.buffers.alternate.lines[19].cells[22].foreground.value', '$.buffers.alternate.lines[19].cells[23].foreground.value', '$.buffers.alternate.lines[19].cells[24].foreground.value', '$.buffers.alternate.lines[19].cells[25].foreground.value', '$.buffers.alternate.lines[19].cells[26].foreground.value', '$.buffers.alternate.lines[19].cells[27].foreground.value']"
-    },
-    {
-      "name": "S02-reasoning-status-style scenario",
-      "passed": true,
-      "detail": "S02"
-    },
-    {
-      "name": "S02-reasoning-status-style cases",
-      "passed": true,
-      "detail": "['120x40-dark-fullscreen', '80x24-dark-fullscreen']"
-    },
-    {
-      "name": "S05-tool-cancel-error-style fields",
-      "passed": true,
-      "detail": "[]"
-    },
-    {
-      "name": "S05-tool-cancel-error-style explicit predicate",
-      "passed": true,
-      "detail": "S05-tool-cancel-error-style"
-    },
-    {
-      "name": "S05-tool-cancel-error-style severity",
-      "passed": true,
-      "detail": "P2"
-    },
-    {
-      "name": "S05-tool-cancel-error-style difference count",
-      "passed": true,
-      "detail": "896"
-    },
-    {
-      "name": "S05-tool-cancel-error-style sample paths",
-      "passed": true,
-      "detail": "['$.buffers.alternate.lines[11].cells[18].foreground.mode', '$.buffers.alternate.lines[11].cells[18].foreground.value', '$.buffers.alternate.lines[11].cells[19].foreground.mode', '$.buffers.alternate.lines[11].cells[19].foreground.value', '$.buffers.alternate.lines[11].cells[20].foreground.mode', '$.buffers.alternate.lines[11].cells[20].foreground.value', '$.buffers.alternate.lines[11].cells[21].foreground.mode', '$.buffers.alternate.lines[11].cells[21].foreground.value', '$.buffers.alternate.lines[11].cells[22].foreground.mode', '$.buffers.alternate.lines[11].cells[22].foreground.value', '$.buffers.alternate.lines[11].cells[23].foreground.mode', '$.buffers.alternate.lines[11].cells[23].foreground.value', '$.buffers.alternate.lines[11].cells[24].foreground.mode', '$.buffers.alternate.lines[11].cells[24].foreground.value', '$.buffers.alternate.lines[11].cells[25].foreground.mode', '$.buffers.alternate.lines[11].cells[25].foreground.value', '$.buffers.alternate.lines[11].cells[26].foreground.mode', '$.buffers.alternate.lines[11].cells[26].foreground.value', '$.buffers.alternate.lines[11].cells[27].foreground.mode', '$.buffers.alternate.lines[11].cells[27].foreground.value']"
-    },
-    {
-      "name": "S05-tool-cancel-error-style scenario",
-      "passed": true,
-      "detail": "S05"
-    },
-    {
-      "name": "S05-tool-cancel-error-style cases",
-      "passed": true,
-      "detail": "['120x40-dark-fullscreen', '80x24-dark-fullscreen']"
-    },
-    {
-      "name": "S05-tool-cancel-error-wording fields",
-      "passed": true,
-      "detail": "[]"
-    },
-    {
-      "name": "S05-tool-cancel-error-wording explicit predicate",
-      "passed": true,
-      "detail": "S05-tool-cancel-error-wording"
-    },
-    {
-      "name": "S05-tool-cancel-error-wording severity",
-      "passed": true,
-      "detail": "P2"
-    },
-    {
-      "name": "S05-tool-cancel-error-wording difference count",
-      "passed": true,
-      "detail": "840"
-    },
-    {
-      "name": "S05-tool-cancel-error-wording sample paths",
-      "passed": true,
-      "detail": "['$.buffers.alternate.lines[11].cells[10].chars', '$.buffers.alternate.lines[11].cells[11].chars', '$.buffers.alternate.lines[11].cells[12].chars', '$.buffers.alternate.lines[11].cells[14].chars', '$.buffers.alternate.lines[11].cells[15].chars', '$.buffers.alternate.lines[11].cells[16].chars', '$.buffers.alternate.lines[11].cells[17].chars', '$.buffers.alternate.lines[11].cells[18].chars', '$.buffers.alternate.lines[11].cells[19].chars', '$.buffers.alternate.lines[11].cells[1].chars', '$.buffers.alternate.lines[11].cells[20].chars', '$.buffers.alternate.lines[11].cells[21].chars', '$.buffers.alternate.lines[11].cells[23].chars', '$.buffers.alternate.lines[11].cells[24].chars', '$.buffers.alternate.lines[11].cells[25].chars', '$.buffers.alternate.lines[11].cells[27].chars', '$.buffers.alternate.lines[11].cells[28].chars', '$.buffers.alternate.lines[11].cells[29].chars', '$.buffers.alternate.lines[11].cells[2].chars', '$.buffers.alternate.lines[11].cells[30].chars']"
-    },
-    {
-      "name": "S05-tool-cancel-error-wording scenario",
-      "passed": true,
-      "detail": "S05"
-    },
-    {
-      "name": "S05-tool-cancel-error-wording cases",
-      "passed": true,
-      "detail": "['120x40-dark-fullscreen', '80x24-dark-fullscreen']"
     },
     {
       "name": "S01 80x24-dark-fullscreen ui case",
@@ -2926,9 +1486,9 @@
     }
   ],
   "evidenceChecksums": {
-    "report.json": "b4c075c50fc27a9f10ef5447d098b8c57d5cbc686a1150749fae232a8a7777f1",
-    "comparison.json": "1cfe7a05583dd82349d403bf0e833cdb16f21776103e594f1170c38e570cb2c0",
-    "ui-report.json": "2dcef513ce91a65f87d50b02025fee10af0504e877cfd97c5824c09684f9ac76"
+    "report.json": "8451a34887e8ddfa7e97f0ab843c4466c122b13abf86a28e693e1c164a777c89",
+    "comparison.json": "d833210cef7ba246f2ee9326d91c23987b2d204980491e6a9bb457c23124d15a",
+    "ui-report.json": "5a4d2f3db12fefea509c0f1a2be8ec1a4fa521633e250c3ea8abe7da411eb582"
   },
   "passed": true
 }
