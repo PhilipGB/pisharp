@@ -1227,9 +1227,9 @@ public sealed class TerminalScreen : IDisposable
         var liveOffset = _conversationPresentation.LiveSemanticAnchorOffset;
         if (liveOffset >= 0)
         {
-            var transcriptLength = GetTranscriptTextLocked(width).Length -
-                _conversationPresentation.LiveText.Length;
-            offsets.Add(transcriptLength + liveOffset);
+            _ = _transcript.GetTextWithLiveAssistant(width, _conversationPresentation.LiveText,
+                out var insertionOffset);
+            offsets.Add(insertionOffset + liveOffset);
         }
         return offsets;
     }
@@ -1852,7 +1852,8 @@ public sealed class TerminalScreen : IDisposable
         }
     }
 
-    private string GetTranscriptTextLocked(int width) => _transcript.GetText(width) + _conversationPresentation.LiveText;
+    private string GetTranscriptTextLocked(int width) =>
+        _transcript.GetTextWithLiveAssistant(width, _conversationPresentation.LiveText, out _);
 
     private void RenderFrameLocked()
     {

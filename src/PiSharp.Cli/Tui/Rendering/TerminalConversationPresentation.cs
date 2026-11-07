@@ -89,9 +89,7 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
         transcript.ReRenderThemedSegments(getTheme());
         _liveAssistant = _liveAssistantSource.Length == 0 ? "" :
             (_liveAssistantNeedsSpacer ? Environment.NewLine : "") + RenderMarkdown(_liveAssistantSource, _liveAssistantStreaming);
-        _liveThinking = _liveThinkingSource.Length == 0 ? "" :
-            (_liveThinkingNeedsSpacer ? Environment.NewLine : "") +
-            RenderThinking(getTheme(), _liveThinkingSource, _thinkingBlocksHidden);
+        _liveThinking = LiveThinking();
         TouchLive();
     }
 
@@ -143,21 +141,23 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
 
     public void SetAssistantText(string markdown)
     {
+        transcript.BeginAssistantMessage();
         if (_liveAssistantSource.Length == 0) _liveAssistantNeedsSpacer = _lastSegmentWasToolResult;
         _liveAssistantSource = TerminalSafeText.Normalize(markdown);
         _liveAssistantStreaming = true;
         Interlocked.Increment(ref _mermaidVersion);
         _liveAssistant = (_liveAssistantNeedsSpacer ? Environment.NewLine : "") +
             RenderMarkdown(_liveAssistantSource, streaming: true);
+        _liveThinking = LiveThinking();
         TouchLive();
     }
 
     public void SetAssistantThinkingText(string text)
     {
+        transcript.BeginAssistantMessage();
         if (_liveThinkingSource.Length == 0) _liveThinkingNeedsSpacer = _lastSegmentWasToolResult;
         _liveThinkingSource = TerminalSafeText.Normalize(text);
-        _liveThinking = (_liveThinkingNeedsSpacer ? Environment.NewLine : "") +
-            RenderThinking(getTheme(), _liveThinkingSource, _thinkingBlocksHidden);
+        _liveThinking = LiveThinking();
         TouchLive();
     }
 
@@ -175,9 +175,7 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
         if (_thinkingBlocksHidden == hidden) return false;
         _thinkingBlocksHidden = hidden;
         transcript.SetThinkingBlocksHidden(hidden, getTheme());
-        _liveThinking = _liveThinkingSource.Length == 0 ? "" :
-            (_liveThinkingNeedsSpacer ? Environment.NewLine : "") +
-            RenderThinking(getTheme(), _liveThinkingSource, _thinkingBlocksHidden);
+        _liveThinking = LiveThinking();
         TouchLive();
         return true;
     }
@@ -188,9 +186,7 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
         if (string.Equals(_hiddenThinkingLabel, safe, StringComparison.Ordinal)) return false;
         _hiddenThinkingLabel = safe;
         transcript.SetHiddenThinkingLabel(safe, getTheme());
-        _liveThinking = _liveThinkingSource.Length == 0 ? "" :
-            (_liveThinkingNeedsSpacer ? Environment.NewLine : "") +
-            RenderThinking(getTheme(), _liveThinkingSource, _thinkingBlocksHidden);
+        _liveThinking = LiveThinking();
         TouchLive();
         return true;
     }
@@ -211,6 +207,7 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
         _lastSegmentWasToolResult = false;
         if (displayed.Length > 0) _hasConversationContent = true;
         transcript.AppendMarkdown(safe, displayed, isError: false, isPromptStart: isPromptStart);
+        transcript.EndAssistantMessage();
     }
 
     public bool AppendUserMessage(string safe, IReadOnlyList<DataContent>? images)
@@ -510,8 +507,11 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
     public void AppendThinkingBlock(string text)
     {
         var leadingSpacer = _lastSegmentWasToolResult ? Environment.NewLine : "";
-        string RenderVisible(TerminalTheme theme) => leadingSpacer + RenderThinking(theme, text, hidden: false);
-        string RenderHidden(TerminalTheme theme) => leadingSpacer + RenderThinking(theme, text, hidden: true);
+        var contentFollows = _liveAssistantSource.Length > 0;
+        string RenderVisible(TerminalTheme theme) =>
+            leadingSpacer + RenderThinking(theme, text, hidden: false, contentFollows);
+        string RenderHidden(TerminalTheme theme) =>
+            leadingSpacer + RenderThinking(theme, text, hidden: true, contentFollows);
         var isPromptStart = !_assistantAnchorCommitted;
         _assistantAnchorCommitted = true;
         transcript.AppendThinkingBlock(text, _hiddenThinkingLabel, RenderVisible, RenderHidden, getTheme(),
@@ -669,7 +669,11 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
         return "\n" + rendered;
     }
 
-    private string RenderThinking(TerminalTheme theme, string text, bool hidden) =>
-        Environment.NewLine + " " + theme.Style("thinkingText", hidden ? _hiddenThinkingLabel : text, italic: true) +
-        Environment.NewLine;
+    private string LiveThinking() => _liveThinkingSource.Length == 0 ? "" :
+        (_liveThinkingNeedsSpacer ? Environment.NewLine : "") +
+        RenderThinking(getTheme(), _liveThinkingSource, _thinkingBlocksHidden, _liveAssistantSource.Length > 0);
+
+    private string RenderThinking(TerminalTheme theme, string text, bool hidden, bool contentFollows) =>
+        Environment.NewLine + theme.Style("thinkingText", hidden ? _hiddenThinkingLabel : text, italic: true) +
+        (contentFollows ? Environment.NewLine : "");
 }

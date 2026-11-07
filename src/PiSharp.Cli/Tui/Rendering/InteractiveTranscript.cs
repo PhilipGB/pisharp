@@ -129,7 +129,9 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
     public void Render(AgentLifecycleEvent update)
     {
         ArgumentNullException.ThrowIfNull(update);
-        if (update.Type is not ("model_text_delta" or "model_content_update") && !DeferAssistantCommit(update))
+        var deferReasoning = update.Type == "reasoning_delta" && _assistantThinking.Length > 0;
+        if (update.Type is not ("model_text_delta" or "model_content_update") && !deferReasoning &&
+            !DeferAssistantCommit(update))
         {
             CommitAssistantThinkingText();
             CommitAssistantText();
@@ -149,7 +151,6 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
                 screen.AppendUserMessage(Safe(update.Text ?? ""), update.Images);
                 break;
             case "model_text_delta" when !string.IsNullOrEmpty(update.Text):
-                CommitAssistantThinkingText();
                 var assistantText = Safe(update.Text);
                 if (screen is null) output.Write(assistantText);
                 else
