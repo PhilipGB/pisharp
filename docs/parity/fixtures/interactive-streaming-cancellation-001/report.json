@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "fixture": "interactive-streaming-cancellation-001",
   "revisions": {
     "piReference": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
@@ -41,7 +41,31 @@
       "temporal": 4,
       "visual": 6,
       "cleanup": 5
-    }
+    },
+    "cleanupScenarios": [
+      "S04",
+      "S05"
+    ]
+  },
+  "captureProvenance": {
+    "consistent": true,
+    "errors": [],
+    "pi": [
+      {
+        "branch": "HEAD",
+        "dirty": false,
+        "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+        "trackedChanges": []
+      }
+    ],
+    "pisharp": [
+      {
+        "branch": "milestone/interactive-streaming-cancellation-parity",
+        "dirty": false,
+        "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+        "trackedChanges": []
+      }
+    ]
   },
   "scenarios": [
     {
@@ -50,9 +74,11 @@
       "fixture": "s01-text-streaming.json",
       "calibrates": true,
       "assessable": true,
+      "validationErrors": [],
       "functional": 8,
       "temporal": 4,
       "visual": 4,
+      "cleanup": null,
       "visualBySize": {
         "80x24-dark-fullscreen": {
           "text": 1,
@@ -75,7 +101,6 @@
           }
         }
       },
-      "cleanup": null,
       "subtotal": 16,
       "maximum": 18,
       "calibration": {
@@ -86,130 +111,375 @@
         "80x24-dark-fullscreen": [],
         "120x40-dark-fullscreen": []
       },
-      "scoreInputs": {
-        "complete": true,
-        "functionalChecks": {
-          "transitions": true,
-          "content": true,
-          "finalState": true,
-          "subsequent": true
-        },
-        "temporalChecks": {
-          "complete": true,
-          "absence": true,
-          "idle": true,
-          "requests": true
-        },
-        "visualBySize": {
-          "80x24-dark-fullscreen": {
-            "text": 1,
-            "style": 0,
-            "layout": 1,
-            "differences": {
-              "text": 0,
-              "style": 140,
-              "layout": 0
+      "captures": {
+        "80x24-dark-fullscreen": {
+          "consistent": true,
+          "errors": [],
+          "calibration": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
             }
           },
-          "120x40-dark-fullscreen": {
-            "text": 1,
-            "style": 0,
-            "layout": 1,
-            "differences": {
-              "text": 0,
-              "style": 140,
-              "layout": 0
+          "comparison": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "branch": "milestone/interactive-streaming-cancellation-parity",
+              "dirty": false,
+              "trackedChanges": []
             }
           }
         },
-        "cleanupChecks": null,
-        "cancelledHasWorking": {},
-        "idleHasWorking": {
-          "80x24-dark-fullscreen": false,
-          "120x40-dark-fullscreen": false
-        },
-        "subsequentPrompt": {
-          "80x24-dark-fullscreen": true,
-          "120x40-dark-fullscreen": true
-        },
-        "processOk": true
-      },
-      "assertions": {
-        "scenarioErrors": [
-          null,
-          null
-        ],
-        "checkpointOrder": [
-          [
-            "s01-01-before-first-chunk",
-            "s01-02-after-first-chunk",
-            "s01-03-after-second-chunk",
-            "s01-04-incomplete-code-block",
-            "s01-05-completed-response",
-            "s01-06-idle",
-            "exit"
-          ],
-          [
-            "s01-01-before-first-chunk",
-            "s01-02-after-first-chunk",
-            "s01-03-after-second-chunk",
-            "s01-04-incomplete-code-block",
-            "s01-05-completed-response",
-            "s01-06-idle",
-            "exit"
-          ]
-        ],
-        "absenceFailures": [
-          [],
-          []
-        ],
-        "content": [
-          {
-            "missing": [],
-            "duplicates": {},
-            "finalText": " Stream the staged answer.\n\n\n The first clause is deliberately incomplete and the continuation completes it.\n\n ```python\n   print('first line')\n   print('second line')\n ```\n\n The final paragraph remains stable.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n/tmp/pisharp-terminal-fixture-workspace\n\u219110 \u21933 <dynamic>               /8.2k (auto)                                            f"
+        "120x40-dark-fullscreen": {
+          "consistent": true,
+          "errors": [],
+          "calibration": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            }
           },
-          {
-            "missing": [],
-            "duplicates": {},
-            "finalText": " Stream the staged answer.\n\n\n The first clause is deliberately incomplete and the continuation completes it.\n\n ```python\n   print('first line')\n   print('second line')\n ```\n\n The final paragraph remains stable.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n/tmp/pisharp-terminal-fixture-workspace\n\u219110 \u21933 <dynamic>               /8.2k (auto)                                                                                    f"
-          }
-        ],
-        "requests": [
-          {
-            "count": 1,
-            "expected": 1,
-            "countMatch": true,
-            "assistantToolCallIds": [],
-            "duplicateToolCall": false
-          },
-          {
-            "count": 1,
-            "expected": 1,
-            "countMatch": true,
-            "assistantToolCallIds": [],
-            "duplicateToolCall": false
-          }
-        ],
-        "cleanup": {
-          "80x24-dark-fullscreen": {
-            "initialProcesses": {},
-            "cleanupProcesses": {},
-            "processesGone": null,
-            "normalScreenRestored": true,
-            "cursorVisible": true,
-            "synchronizedOutputOff": true
-          },
-          "120x40-dark-fullscreen": {
-            "initialProcesses": {},
-            "cleanupProcesses": {},
-            "processesGone": null,
-            "normalScreenRestored": true,
-            "cursorVisible": true,
-            "synchronizedOutputOff": true
+          "comparison": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "branch": "milestone/interactive-streaming-cancellation-parity",
+              "dirty": false,
+              "trackedChanges": []
+            }
           }
         }
       },
+      "contracts": {
+        "pi": {
+          "80x24-dark-fullscreen": {
+            "complete": true,
+            "errors": null,
+            "checkpointOrder": [
+              "s01-01-before-first-chunk",
+              "s01-02-after-first-chunk",
+              "s01-03-after-second-chunk",
+              "s01-04-incomplete-code-block",
+              "s01-05-completed-response",
+              "s01-06-idle",
+              "exit"
+            ],
+            "absenceFailures": [],
+            "content": [
+              {
+                "missing": [],
+                "duplicates": {},
+                "finalText": " Stream the staged answer.\n\n\n The first clause is deliberately incomplete and the continuation completes it.\n\n ```python\n   print('first line')\n   print('second line')\n ```\n\n The final paragraph remains stable.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n/tmp/pisharp-terminal-fixture-workspace\n\u219110 \u21933 <dynamic>               /8.2k (auto)                                            f"
+              }
+            ],
+            "requests": [
+              {
+                "count": 1,
+                "expected": 1,
+                "countMatch": true,
+                "assistantToolCallIds": [],
+                "duplicateToolCall": false
+              }
+            ],
+            "idleHasWorking": {
+              "idle": false
+            },
+            "idleMissing": {
+              "idle": false
+            },
+            "cancelledHasWorking": {},
+            "subsequentPrompt": {
+              "subsequent": true
+            },
+            "cleanupEvidence": {
+              "initialProcesses": {},
+              "cleanupProcesses": {},
+              "processesGone": null,
+              "normalScreenRestored": true,
+              "cursorVisible": true,
+              "synchronizedOutputOff": true
+            },
+            "forbiddenStream": {
+              "required": false,
+              "scanned": null,
+              "valid": true,
+              "tokens": [],
+              "counts": {},
+              "occurrenceCount": 0,
+              "occurrences": []
+            },
+            "functionalChecks": {
+              "transitions": true,
+              "content": true,
+              "finalState": true,
+              "subsequent": true
+            },
+            "temporalChecks": {
+              "complete": true,
+              "absence": true,
+              "idle": true,
+              "requests": true
+            },
+            "cleanupChecks": null,
+            "functional": 8,
+            "temporal": 4,
+            "cleanup": null,
+            "passes": true
+          },
+          "120x40-dark-fullscreen": {
+            "complete": true,
+            "errors": null,
+            "checkpointOrder": [
+              "s01-01-before-first-chunk",
+              "s01-02-after-first-chunk",
+              "s01-03-after-second-chunk",
+              "s01-04-incomplete-code-block",
+              "s01-05-completed-response",
+              "s01-06-idle",
+              "exit"
+            ],
+            "absenceFailures": [],
+            "content": [
+              {
+                "missing": [],
+                "duplicates": {},
+                "finalText": " Stream the staged answer.\n\n\n The first clause is deliberately incomplete and the continuation completes it.\n\n ```python\n   print('first line')\n   print('second line')\n ```\n\n The final paragraph remains stable.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n/tmp/pisharp-terminal-fixture-workspace\n\u219110 \u21933 <dynamic>               /8.2k (auto)                                                                                    f"
+              }
+            ],
+            "requests": [
+              {
+                "count": 1,
+                "expected": 1,
+                "countMatch": true,
+                "assistantToolCallIds": [],
+                "duplicateToolCall": false
+              }
+            ],
+            "idleHasWorking": {
+              "idle": false
+            },
+            "idleMissing": {
+              "idle": false
+            },
+            "cancelledHasWorking": {},
+            "subsequentPrompt": {
+              "subsequent": true
+            },
+            "cleanupEvidence": {
+              "initialProcesses": {},
+              "cleanupProcesses": {},
+              "processesGone": null,
+              "normalScreenRestored": true,
+              "cursorVisible": true,
+              "synchronizedOutputOff": true
+            },
+            "forbiddenStream": {
+              "required": false,
+              "scanned": null,
+              "valid": true,
+              "tokens": [],
+              "counts": {},
+              "occurrenceCount": 0,
+              "occurrences": []
+            },
+            "functionalChecks": {
+              "transitions": true,
+              "content": true,
+              "finalState": true,
+              "subsequent": true
+            },
+            "temporalChecks": {
+              "complete": true,
+              "absence": true,
+              "idle": true,
+              "requests": true
+            },
+            "cleanupChecks": null,
+            "functional": 8,
+            "temporal": 4,
+            "cleanup": null,
+            "passes": true
+          }
+        },
+        "pisharp": {
+          "80x24-dark-fullscreen": {
+            "complete": true,
+            "errors": null,
+            "checkpointOrder": [
+              "s01-01-before-first-chunk",
+              "s01-02-after-first-chunk",
+              "s01-03-after-second-chunk",
+              "s01-04-incomplete-code-block",
+              "s01-05-completed-response",
+              "s01-06-idle",
+              "exit"
+            ],
+            "absenceFailures": [],
+            "content": [
+              {
+                "missing": [],
+                "duplicates": {},
+                "finalText": " Stream the staged answer.\n\n\n The first clause is deliberately incomplete and the continuation completes it.\n\n ```python\n   print('first line')\n   print('second line')\n ```\n\n The final paragraph remains stable.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n/tmp/pisharp-terminal-fixture-workspace\n\u219110 \u21933 <dynamic>               /8.2k (auto)                                            f"
+              }
+            ],
+            "requests": [
+              {
+                "count": 1,
+                "expected": 1,
+                "countMatch": true,
+                "assistantToolCallIds": [],
+                "duplicateToolCall": false
+              }
+            ],
+            "idleHasWorking": {
+              "idle": false
+            },
+            "idleMissing": {
+              "idle": false
+            },
+            "cancelledHasWorking": {},
+            "subsequentPrompt": {
+              "subsequent": true
+            },
+            "cleanupEvidence": {
+              "initialProcesses": {},
+              "cleanupProcesses": {},
+              "processesGone": null,
+              "normalScreenRestored": true,
+              "cursorVisible": true,
+              "synchronizedOutputOff": true
+            },
+            "forbiddenStream": {
+              "required": false,
+              "scanned": null,
+              "valid": true,
+              "tokens": [],
+              "counts": {},
+              "occurrenceCount": 0,
+              "occurrences": []
+            },
+            "functionalChecks": {
+              "transitions": true,
+              "content": true,
+              "finalState": true,
+              "subsequent": true
+            },
+            "temporalChecks": {
+              "complete": true,
+              "absence": true,
+              "idle": true,
+              "requests": true
+            },
+            "cleanupChecks": null,
+            "functional": 8,
+            "temporal": 4,
+            "cleanup": null,
+            "passes": true
+          },
+          "120x40-dark-fullscreen": {
+            "complete": true,
+            "errors": null,
+            "checkpointOrder": [
+              "s01-01-before-first-chunk",
+              "s01-02-after-first-chunk",
+              "s01-03-after-second-chunk",
+              "s01-04-incomplete-code-block",
+              "s01-05-completed-response",
+              "s01-06-idle",
+              "exit"
+            ],
+            "absenceFailures": [],
+            "content": [
+              {
+                "missing": [],
+                "duplicates": {},
+                "finalText": " Stream the staged answer.\n\n\n The first clause is deliberately incomplete and the continuation completes it.\n\n ```python\n   print('first line')\n   print('second line')\n ```\n\n The final paragraph remains stable.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n/tmp/pisharp-terminal-fixture-workspace\n\u219110 \u21933 <dynamic>               /8.2k (auto)                                                                                    f"
+              }
+            ],
+            "requests": [
+              {
+                "count": 1,
+                "expected": 1,
+                "countMatch": true,
+                "assistantToolCallIds": [],
+                "duplicateToolCall": false
+              }
+            ],
+            "idleHasWorking": {
+              "idle": false
+            },
+            "idleMissing": {
+              "idle": false
+            },
+            "cancelledHasWorking": {},
+            "subsequentPrompt": {
+              "subsequent": true
+            },
+            "cleanupEvidence": {
+              "initialProcesses": {},
+              "cleanupProcesses": {},
+              "processesGone": null,
+              "normalScreenRestored": true,
+              "cursorVisible": true,
+              "synchronizedOutputOff": true
+            },
+            "forbiddenStream": {
+              "required": false,
+              "scanned": null,
+              "valid": true,
+              "tokens": [],
+              "counts": {},
+              "occurrenceCount": 0,
+              "occurrences": []
+            },
+            "functionalChecks": {
+              "transitions": true,
+              "content": true,
+              "finalState": true,
+              "subsequent": true
+            },
+            "temporalChecks": {
+              "complete": true,
+              "absence": true,
+              "idle": true,
+              "requests": true
+            },
+            "cleanupChecks": null,
+            "functional": 8,
+            "temporal": 4,
+            "cleanup": null,
+            "passes": true
+          }
+        }
+      },
+      "unmatchedDifferences": [],
       "findings": [
         "S01-code-syntax-builtin-highlight"
       ]
@@ -220,9 +490,11 @@
       "fixture": "s02-reasoning-streaming.json",
       "calibrates": true,
       "assessable": true,
+      "validationErrors": [],
       "functional": 8,
       "temporal": 4,
       "visual": 0,
+      "cleanup": null,
       "visualBySize": {
         "80x24-dark-fullscreen": {
           "text": 0,
@@ -245,7 +517,6 @@
           }
         }
       },
-      "cleanup": null,
       "subtotal": 12,
       "maximum": 18,
       "calibration": {
@@ -256,134 +527,383 @@
         "80x24-dark-fullscreen": [],
         "120x40-dark-fullscreen": []
       },
-      "scoreInputs": {
-        "complete": true,
-        "functionalChecks": {
-          "transitions": true,
-          "content": true,
-          "finalState": true,
-          "subsequent": true
-        },
-        "temporalChecks": {
-          "complete": true,
-          "absence": true,
-          "idle": true,
-          "requests": true
-        },
-        "visualBySize": {
-          "80x24-dark-fullscreen": {
-            "text": 0,
-            "style": 0,
-            "layout": 0,
-            "differences": {
-              "text": 3780,
-              "style": 9180,
-              "layout": 2
+      "captures": {
+        "80x24-dark-fullscreen": {
+          "consistent": true,
+          "errors": [],
+          "calibration": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
             }
           },
-          "120x40-dark-fullscreen": {
-            "text": 0,
-            "style": 0,
-            "layout": 0,
-            "differences": {
-              "text": 4286,
-              "style": 10622,
-              "layout": 2
+          "comparison": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "branch": "milestone/interactive-streaming-cancellation-parity",
+              "dirty": false,
+              "trackedChanges": []
             }
           }
         },
-        "cleanupChecks": null,
-        "cancelledHasWorking": {},
-        "idleHasWorking": {
-          "80x24-dark-fullscreen": false,
-          "120x40-dark-fullscreen": false
-        },
-        "subsequentPrompt": {
-          "80x24-dark-fullscreen": true,
-          "120x40-dark-fullscreen": true
-        },
-        "processOk": true
-      },
-      "assertions": {
-        "scenarioErrors": [
-          null,
-          null
-        ],
-        "checkpointOrder": [
-          [
-            "s02-01-before-reasoning",
-            "s02-02-reasoning-begins",
-            "s02-03-more-reasoning",
-            "s02-04-hide-reasoning",
-            "s02-05-assistant-text-begins",
-            "s02-06-show-reasoning-again",
-            "s02-07-response-completes",
-            "s02-08-idle",
-            "exit"
-          ],
-          [
-            "s02-01-before-reasoning",
-            "s02-02-reasoning-begins",
-            "s02-03-more-reasoning",
-            "s02-04-hide-reasoning",
-            "s02-05-assistant-text-begins",
-            "s02-06-show-reasoning-again",
-            "s02-07-response-completes",
-            "s02-08-idle",
-            "exit"
-          ]
-        ],
-        "absenceFailures": [
-          [],
-          []
-        ],
-        "content": [
-          {
-            "missing": [],
-            "duplicates": {},
-            "finalText": " Stream reasoning and then an answer.\n\n\n  REASONING_BEGIN inspect the staged request.\n\n\n Thinking blocks: hidden\n   REASONING_CONTINUATION choose the visible answer.\n\n\n Thinking blocks: visible\n ANSWER_BEGIN the visible answer starts here.\n ANSWER_END the visible answer completes.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n/tmp/pisharp-terminal-fixture-workspace\n\u219110 \u21933 <dynamic>               /8.2k (auto)                                   fixture-mo"
+        "120x40-dark-fullscreen": {
+          "consistent": true,
+          "errors": [],
+          "calibration": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            }
           },
-          {
-            "missing": [],
-            "duplicates": {},
-            "finalText": " Stream reasoning and then an answer.\n\n\n  REASONING_BEGIN inspect the staged request.\n\n\n Thinking blocks: hidden\n   REASONING_CONTINUATION choose the visible answer.\n\n\n Thinking blocks: visible\n ANSWER_BEGIN the visible answer starts here.\n ANSWER_END the visible answer completes.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n/tmp/pisharp-terminal-fixture-workspace\n\u219110 \u21933 <dynamic>               /8.2k (auto)                                                                           fixture-mo"
-          }
-        ],
-        "requests": [
-          {
-            "count": 1,
-            "expected": 1,
-            "countMatch": true,
-            "assistantToolCallIds": [],
-            "duplicateToolCall": false
-          },
-          {
-            "count": 1,
-            "expected": 1,
-            "countMatch": true,
-            "assistantToolCallIds": [],
-            "duplicateToolCall": false
-          }
-        ],
-        "cleanup": {
-          "80x24-dark-fullscreen": {
-            "initialProcesses": {},
-            "cleanupProcesses": {},
-            "processesGone": null,
-            "normalScreenRestored": true,
-            "cursorVisible": true,
-            "synchronizedOutputOff": true
-          },
-          "120x40-dark-fullscreen": {
-            "initialProcesses": {},
-            "cleanupProcesses": {},
-            "processesGone": null,
-            "normalScreenRestored": true,
-            "cursorVisible": true,
-            "synchronizedOutputOff": true
+          "comparison": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "branch": "milestone/interactive-streaming-cancellation-parity",
+              "dirty": false,
+              "trackedChanges": []
+            }
           }
         }
       },
+      "contracts": {
+        "pi": {
+          "80x24-dark-fullscreen": {
+            "complete": true,
+            "errors": null,
+            "checkpointOrder": [
+              "s02-01-before-reasoning",
+              "s02-02-reasoning-begins",
+              "s02-03-more-reasoning",
+              "s02-04-hide-reasoning",
+              "s02-05-assistant-text-begins",
+              "s02-06-show-reasoning-again",
+              "s02-07-response-completes",
+              "s02-08-idle",
+              "exit"
+            ],
+            "absenceFailures": [],
+            "content": [
+              {
+                "missing": [],
+                "duplicates": {},
+                "finalText": " Stream reasoning and then an answer.\n\n\n REASONING_BEGIN inspect the staged request. REASONING_CONTINUATION choose the\n visible answer.\n\n ANSWER_BEGIN the visible answer starts here.\n ANSWER_END the visible answer completes.\n\n Thinking blocks: visible\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n/tmp/pisharp-terminal-fixture-workspace\n\u219110 \u21933 <dynamic>               /8.2k (auto)                                   fixture-mo"
+              }
+            ],
+            "requests": [
+              {
+                "count": 1,
+                "expected": 1,
+                "countMatch": true,
+                "assistantToolCallIds": [],
+                "duplicateToolCall": false
+              }
+            ],
+            "idleHasWorking": {
+              "idle": false
+            },
+            "idleMissing": {
+              "idle": false
+            },
+            "cancelledHasWorking": {},
+            "subsequentPrompt": {
+              "subsequent": true
+            },
+            "cleanupEvidence": {
+              "initialProcesses": {},
+              "cleanupProcesses": {},
+              "processesGone": null,
+              "normalScreenRestored": true,
+              "cursorVisible": true,
+              "synchronizedOutputOff": true
+            },
+            "forbiddenStream": {
+              "required": false,
+              "scanned": null,
+              "valid": true,
+              "tokens": [],
+              "counts": {},
+              "occurrenceCount": 0,
+              "occurrences": []
+            },
+            "functionalChecks": {
+              "transitions": true,
+              "content": true,
+              "finalState": true,
+              "subsequent": true
+            },
+            "temporalChecks": {
+              "complete": true,
+              "absence": true,
+              "idle": true,
+              "requests": true
+            },
+            "cleanupChecks": null,
+            "functional": 8,
+            "temporal": 4,
+            "cleanup": null,
+            "passes": true
+          },
+          "120x40-dark-fullscreen": {
+            "complete": true,
+            "errors": null,
+            "checkpointOrder": [
+              "s02-01-before-reasoning",
+              "s02-02-reasoning-begins",
+              "s02-03-more-reasoning",
+              "s02-04-hide-reasoning",
+              "s02-05-assistant-text-begins",
+              "s02-06-show-reasoning-again",
+              "s02-07-response-completes",
+              "s02-08-idle",
+              "exit"
+            ],
+            "absenceFailures": [],
+            "content": [
+              {
+                "missing": [],
+                "duplicates": {},
+                "finalText": " Stream reasoning and then an answer.\n\n\n REASONING_BEGIN inspect the staged request. REASONING_CONTINUATION choose the visible answer.\n\n ANSWER_BEGIN the visible answer starts here.\n ANSWER_END the visible answer completes.\n\n Thinking blocks: visible\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n/tmp/pisharp-terminal-fixture-workspace\n\u219110 \u21933 <dynamic>               /8.2k (auto)                                                                           fixture-mo"
+              }
+            ],
+            "requests": [
+              {
+                "count": 1,
+                "expected": 1,
+                "countMatch": true,
+                "assistantToolCallIds": [],
+                "duplicateToolCall": false
+              }
+            ],
+            "idleHasWorking": {
+              "idle": false
+            },
+            "idleMissing": {
+              "idle": false
+            },
+            "cancelledHasWorking": {},
+            "subsequentPrompt": {
+              "subsequent": true
+            },
+            "cleanupEvidence": {
+              "initialProcesses": {},
+              "cleanupProcesses": {},
+              "processesGone": null,
+              "normalScreenRestored": true,
+              "cursorVisible": true,
+              "synchronizedOutputOff": true
+            },
+            "forbiddenStream": {
+              "required": false,
+              "scanned": null,
+              "valid": true,
+              "tokens": [],
+              "counts": {},
+              "occurrenceCount": 0,
+              "occurrences": []
+            },
+            "functionalChecks": {
+              "transitions": true,
+              "content": true,
+              "finalState": true,
+              "subsequent": true
+            },
+            "temporalChecks": {
+              "complete": true,
+              "absence": true,
+              "idle": true,
+              "requests": true
+            },
+            "cleanupChecks": null,
+            "functional": 8,
+            "temporal": 4,
+            "cleanup": null,
+            "passes": true
+          }
+        },
+        "pisharp": {
+          "80x24-dark-fullscreen": {
+            "complete": true,
+            "errors": null,
+            "checkpointOrder": [
+              "s02-01-before-reasoning",
+              "s02-02-reasoning-begins",
+              "s02-03-more-reasoning",
+              "s02-04-hide-reasoning",
+              "s02-05-assistant-text-begins",
+              "s02-06-show-reasoning-again",
+              "s02-07-response-completes",
+              "s02-08-idle",
+              "exit"
+            ],
+            "absenceFailures": [],
+            "content": [
+              {
+                "missing": [],
+                "duplicates": {},
+                "finalText": " Stream reasoning and then an answer.\n\n\n  REASONING_BEGIN inspect the staged request.\n\n\n Thinking blocks: hidden\n   REASONING_CONTINUATION choose the visible answer.\n\n\n Thinking blocks: visible\n ANSWER_BEGIN the visible answer starts here.\n ANSWER_END the visible answer completes.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n/tmp/pisharp-terminal-fixture-workspace\n\u219110 \u21933 <dynamic>               /8.2k (auto)                                   fixture-mo"
+              }
+            ],
+            "requests": [
+              {
+                "count": 1,
+                "expected": 1,
+                "countMatch": true,
+                "assistantToolCallIds": [],
+                "duplicateToolCall": false
+              }
+            ],
+            "idleHasWorking": {
+              "idle": false
+            },
+            "idleMissing": {
+              "idle": false
+            },
+            "cancelledHasWorking": {},
+            "subsequentPrompt": {
+              "subsequent": true
+            },
+            "cleanupEvidence": {
+              "initialProcesses": {},
+              "cleanupProcesses": {},
+              "processesGone": null,
+              "normalScreenRestored": true,
+              "cursorVisible": true,
+              "synchronizedOutputOff": true
+            },
+            "forbiddenStream": {
+              "required": false,
+              "scanned": null,
+              "valid": true,
+              "tokens": [],
+              "counts": {},
+              "occurrenceCount": 0,
+              "occurrences": []
+            },
+            "functionalChecks": {
+              "transitions": true,
+              "content": true,
+              "finalState": true,
+              "subsequent": true
+            },
+            "temporalChecks": {
+              "complete": true,
+              "absence": true,
+              "idle": true,
+              "requests": true
+            },
+            "cleanupChecks": null,
+            "functional": 8,
+            "temporal": 4,
+            "cleanup": null,
+            "passes": true
+          },
+          "120x40-dark-fullscreen": {
+            "complete": true,
+            "errors": null,
+            "checkpointOrder": [
+              "s02-01-before-reasoning",
+              "s02-02-reasoning-begins",
+              "s02-03-more-reasoning",
+              "s02-04-hide-reasoning",
+              "s02-05-assistant-text-begins",
+              "s02-06-show-reasoning-again",
+              "s02-07-response-completes",
+              "s02-08-idle",
+              "exit"
+            ],
+            "absenceFailures": [],
+            "content": [
+              {
+                "missing": [],
+                "duplicates": {},
+                "finalText": " Stream reasoning and then an answer.\n\n\n  REASONING_BEGIN inspect the staged request.\n\n\n Thinking blocks: hidden\n   REASONING_CONTINUATION choose the visible answer.\n\n\n Thinking blocks: visible\n ANSWER_BEGIN the visible answer starts here.\n ANSWER_END the visible answer completes.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n/tmp/pisharp-terminal-fixture-workspace\n\u219110 \u21933 <dynamic>               /8.2k (auto)                                                                           fixture-mo"
+              }
+            ],
+            "requests": [
+              {
+                "count": 1,
+                "expected": 1,
+                "countMatch": true,
+                "assistantToolCallIds": [],
+                "duplicateToolCall": false
+              }
+            ],
+            "idleHasWorking": {
+              "idle": false
+            },
+            "idleMissing": {
+              "idle": false
+            },
+            "cancelledHasWorking": {},
+            "subsequentPrompt": {
+              "subsequent": true
+            },
+            "cleanupEvidence": {
+              "initialProcesses": {},
+              "cleanupProcesses": {},
+              "processesGone": null,
+              "normalScreenRestored": true,
+              "cursorVisible": true,
+              "synchronizedOutputOff": true
+            },
+            "forbiddenStream": {
+              "required": false,
+              "scanned": null,
+              "valid": true,
+              "tokens": [],
+              "counts": {},
+              "occurrenceCount": 0,
+              "occurrences": []
+            },
+            "functionalChecks": {
+              "transitions": true,
+              "content": true,
+              "finalState": true,
+              "subsequent": true
+            },
+            "temporalChecks": {
+              "complete": true,
+              "absence": true,
+              "idle": true,
+              "requests": true
+            },
+            "cleanupChecks": null,
+            "functional": 8,
+            "temporal": 4,
+            "cleanup": null,
+            "passes": true
+          }
+        }
+      },
+      "unmatchedDifferences": [],
       "findings": [
         "S02-reasoning-block-layout",
         "S02-reasoning-italic-style",
@@ -396,9 +916,11 @@
       "fixture": "s03-tool-progress.json",
       "calibrates": true,
       "assessable": true,
+      "validationErrors": [],
       "functional": 8,
       "temporal": 4,
       "visual": 6,
+      "cleanup": null,
       "visualBySize": {
         "80x24-dark-fullscreen": {
           "text": 1,
@@ -421,7 +943,6 @@
           }
         }
       },
-      "cleanup": null,
       "subtotal": 18,
       "maximum": 18,
       "calibration": {
@@ -432,148 +953,411 @@
         "80x24-dark-fullscreen": [],
         "120x40-dark-fullscreen": []
       },
-      "scoreInputs": {
-        "complete": true,
-        "functionalChecks": {
-          "transitions": true,
-          "content": true,
-          "finalState": true,
-          "subsequent": true
-        },
-        "temporalChecks": {
-          "complete": true,
-          "absence": true,
-          "idle": true,
-          "requests": true
-        },
-        "visualBySize": {
-          "80x24-dark-fullscreen": {
-            "text": 1,
-            "style": 1,
-            "layout": 1,
-            "differences": {
-              "text": 0,
-              "style": 0,
-              "layout": 0
+      "captures": {
+        "80x24-dark-fullscreen": {
+          "consistent": true,
+          "errors": [],
+          "calibration": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
             }
           },
-          "120x40-dark-fullscreen": {
-            "text": 1,
-            "style": 1,
-            "layout": 1,
-            "differences": {
-              "text": 0,
-              "style": 0,
-              "layout": 0
+          "comparison": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "branch": "milestone/interactive-streaming-cancellation-parity",
+              "dirty": false,
+              "trackedChanges": []
             }
           }
         },
-        "cleanupChecks": null,
-        "cancelledHasWorking": {},
-        "idleHasWorking": {
-          "80x24-dark-fullscreen": false,
-          "120x40-dark-fullscreen": false
-        },
-        "subsequentPrompt": {
-          "80x24-dark-fullscreen": true,
-          "120x40-dark-fullscreen": true
-        },
-        "processOk": true
-      },
-      "assertions": {
-        "scenarioErrors": [
-          null,
-          null
-        ],
-        "checkpointOrder": [
-          [
-            "s03-01-tool-announced",
-            "s03-02-tool-starts",
-            "s03-03-first-marker",
-            "s03-04-first-progress",
-            "s03-05-second-progress",
-            "s03-06-tool-completes",
-            "s03-07-assistant-continues",
-            "s03-08-idle",
-            "exit"
-          ],
-          [
-            "s03-01-tool-announced",
-            "s03-02-tool-starts",
-            "s03-03-first-marker",
-            "s03-04-first-progress",
-            "s03-05-second-progress",
-            "s03-06-tool-completes",
-            "s03-07-assistant-continues",
-            "s03-08-idle",
-            "exit"
-          ]
-        ],
-        "absenceFailures": [
-          [],
-          []
-        ],
-        "content": [
-          {
-            "missing": [],
-            "duplicates": {},
-            "finalText": " Run the controlled fixture tool.\n\n\n\n $ sh controlled-tool.sh\n\n TOOL_STARTED\n PROGRESS_01\n PROGRESS_02\n TOOL_COMPLETED\n\n Took <dynamic>\n\n\n Tool lifecycle complete.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n/tmp/pisharp-terminal-fixture-workspace\n\u219120 \u21936 <dynamic>               /8.2k (auto)                                            f"
+        "120x40-dark-fullscreen": {
+          "consistent": true,
+          "errors": [],
+          "calibration": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            }
           },
-          {
-            "missing": [],
-            "duplicates": {},
-            "finalText": " Run the controlled fixture tool.\n\n\n\n $ sh controlled-tool.sh\n\n TOOL_STARTED\n PROGRESS_01\n PROGRESS_02\n TOOL_COMPLETED\n\n Took <dynamic>\n\n\n Tool lifecycle complete.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n/tmp/pisharp-terminal-fixture-workspace\n\u219120 \u21936 <dynamic>               /8.2k (auto)                                                                                    f"
-          }
-        ],
-        "requests": [
-          {
-            "count": 2,
-            "expected": 2,
-            "countMatch": true,
-            "assistantToolCallIds": [
-              "call-s03-progress"
-            ],
-            "duplicateToolCall": false,
-            "toolResults": 1,
-            "toolResultIds": [
-              "call-s03-progress"
-            ],
-            "toolResultExact": true
-          },
-          {
-            "count": 2,
-            "expected": 2,
-            "countMatch": true,
-            "assistantToolCallIds": [
-              "call-s03-progress"
-            ],
-            "duplicateToolCall": false,
-            "toolResults": 1,
-            "toolResultIds": [
-              "call-s03-progress"
-            ],
-            "toolResultExact": true
-          }
-        ],
-        "cleanup": {
-          "80x24-dark-fullscreen": {
-            "initialProcesses": {},
-            "cleanupProcesses": {},
-            "processesGone": null,
-            "normalScreenRestored": true,
-            "cursorVisible": true,
-            "synchronizedOutputOff": true
-          },
-          "120x40-dark-fullscreen": {
-            "initialProcesses": {},
-            "cleanupProcesses": {},
-            "processesGone": null,
-            "normalScreenRestored": true,
-            "cursorVisible": true,
-            "synchronizedOutputOff": true
+          "comparison": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "branch": "milestone/interactive-streaming-cancellation-parity",
+              "dirty": false,
+              "trackedChanges": []
+            }
           }
         }
       },
+      "contracts": {
+        "pi": {
+          "80x24-dark-fullscreen": {
+            "complete": true,
+            "errors": null,
+            "checkpointOrder": [
+              "s03-01-tool-announced",
+              "s03-02-tool-starts",
+              "s03-03-first-marker",
+              "s03-04-first-progress",
+              "s03-05-second-progress",
+              "s03-06-tool-completes",
+              "s03-07-assistant-continues",
+              "s03-08-idle",
+              "exit"
+            ],
+            "absenceFailures": [],
+            "content": [
+              {
+                "missing": [],
+                "duplicates": {},
+                "finalText": " Run the controlled fixture tool.\n\n\n\n $ sh controlled-tool.sh\n\n TOOL_STARTED\n PROGRESS_01\n PROGRESS_02\n TOOL_COMPLETED\n\n Took <dynamic>\n\n\n Tool lifecycle complete.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n/tmp/pisharp-terminal-fixture-workspace\n\u219120 \u21936 <dynamic>               /8.2k (auto)                                            f"
+              }
+            ],
+            "requests": [
+              {
+                "count": 2,
+                "expected": 2,
+                "countMatch": true,
+                "assistantToolCallIds": [
+                  "call-s03-progress"
+                ],
+                "duplicateToolCall": false,
+                "toolResults": 1,
+                "toolResultIds": [
+                  "call-s03-progress"
+                ],
+                "toolResultExact": true
+              }
+            ],
+            "idleHasWorking": {
+              "idle": false
+            },
+            "idleMissing": {
+              "idle": false
+            },
+            "cancelledHasWorking": {},
+            "subsequentPrompt": {
+              "subsequent": true
+            },
+            "cleanupEvidence": {
+              "initialProcesses": {},
+              "cleanupProcesses": {},
+              "processesGone": null,
+              "normalScreenRestored": true,
+              "cursorVisible": true,
+              "synchronizedOutputOff": true
+            },
+            "forbiddenStream": {
+              "required": false,
+              "scanned": null,
+              "valid": true,
+              "tokens": [],
+              "counts": {},
+              "occurrenceCount": 0,
+              "occurrences": []
+            },
+            "functionalChecks": {
+              "transitions": true,
+              "content": true,
+              "finalState": true,
+              "subsequent": true
+            },
+            "temporalChecks": {
+              "complete": true,
+              "absence": true,
+              "idle": true,
+              "requests": true
+            },
+            "cleanupChecks": null,
+            "functional": 8,
+            "temporal": 4,
+            "cleanup": null,
+            "passes": true
+          },
+          "120x40-dark-fullscreen": {
+            "complete": true,
+            "errors": null,
+            "checkpointOrder": [
+              "s03-01-tool-announced",
+              "s03-02-tool-starts",
+              "s03-03-first-marker",
+              "s03-04-first-progress",
+              "s03-05-second-progress",
+              "s03-06-tool-completes",
+              "s03-07-assistant-continues",
+              "s03-08-idle",
+              "exit"
+            ],
+            "absenceFailures": [],
+            "content": [
+              {
+                "missing": [],
+                "duplicates": {},
+                "finalText": " Run the controlled fixture tool.\n\n\n\n $ sh controlled-tool.sh\n\n TOOL_STARTED\n PROGRESS_01\n PROGRESS_02\n TOOL_COMPLETED\n\n Took <dynamic>\n\n\n Tool lifecycle complete.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n/tmp/pisharp-terminal-fixture-workspace\n\u219120 \u21936 <dynamic>               /8.2k (auto)                                                                                    f"
+              }
+            ],
+            "requests": [
+              {
+                "count": 2,
+                "expected": 2,
+                "countMatch": true,
+                "assistantToolCallIds": [
+                  "call-s03-progress"
+                ],
+                "duplicateToolCall": false,
+                "toolResults": 1,
+                "toolResultIds": [
+                  "call-s03-progress"
+                ],
+                "toolResultExact": true
+              }
+            ],
+            "idleHasWorking": {
+              "idle": false
+            },
+            "idleMissing": {
+              "idle": false
+            },
+            "cancelledHasWorking": {},
+            "subsequentPrompt": {
+              "subsequent": true
+            },
+            "cleanupEvidence": {
+              "initialProcesses": {},
+              "cleanupProcesses": {},
+              "processesGone": null,
+              "normalScreenRestored": true,
+              "cursorVisible": true,
+              "synchronizedOutputOff": true
+            },
+            "forbiddenStream": {
+              "required": false,
+              "scanned": null,
+              "valid": true,
+              "tokens": [],
+              "counts": {},
+              "occurrenceCount": 0,
+              "occurrences": []
+            },
+            "functionalChecks": {
+              "transitions": true,
+              "content": true,
+              "finalState": true,
+              "subsequent": true
+            },
+            "temporalChecks": {
+              "complete": true,
+              "absence": true,
+              "idle": true,
+              "requests": true
+            },
+            "cleanupChecks": null,
+            "functional": 8,
+            "temporal": 4,
+            "cleanup": null,
+            "passes": true
+          }
+        },
+        "pisharp": {
+          "80x24-dark-fullscreen": {
+            "complete": true,
+            "errors": null,
+            "checkpointOrder": [
+              "s03-01-tool-announced",
+              "s03-02-tool-starts",
+              "s03-03-first-marker",
+              "s03-04-first-progress",
+              "s03-05-second-progress",
+              "s03-06-tool-completes",
+              "s03-07-assistant-continues",
+              "s03-08-idle",
+              "exit"
+            ],
+            "absenceFailures": [],
+            "content": [
+              {
+                "missing": [],
+                "duplicates": {},
+                "finalText": " Run the controlled fixture tool.\n\n\n\n $ sh controlled-tool.sh\n\n TOOL_STARTED\n PROGRESS_01\n PROGRESS_02\n TOOL_COMPLETED\n\n Took <dynamic>\n\n\n Tool lifecycle complete.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n/tmp/pisharp-terminal-fixture-workspace\n\u219120 \u21936 <dynamic>               /8.2k (auto)                                            f"
+              }
+            ],
+            "requests": [
+              {
+                "count": 2,
+                "expected": 2,
+                "countMatch": true,
+                "assistantToolCallIds": [
+                  "call-s03-progress"
+                ],
+                "duplicateToolCall": false,
+                "toolResults": 1,
+                "toolResultIds": [
+                  "call-s03-progress"
+                ],
+                "toolResultExact": true
+              }
+            ],
+            "idleHasWorking": {
+              "idle": false
+            },
+            "idleMissing": {
+              "idle": false
+            },
+            "cancelledHasWorking": {},
+            "subsequentPrompt": {
+              "subsequent": true
+            },
+            "cleanupEvidence": {
+              "initialProcesses": {},
+              "cleanupProcesses": {},
+              "processesGone": null,
+              "normalScreenRestored": true,
+              "cursorVisible": true,
+              "synchronizedOutputOff": true
+            },
+            "forbiddenStream": {
+              "required": false,
+              "scanned": null,
+              "valid": true,
+              "tokens": [],
+              "counts": {},
+              "occurrenceCount": 0,
+              "occurrences": []
+            },
+            "functionalChecks": {
+              "transitions": true,
+              "content": true,
+              "finalState": true,
+              "subsequent": true
+            },
+            "temporalChecks": {
+              "complete": true,
+              "absence": true,
+              "idle": true,
+              "requests": true
+            },
+            "cleanupChecks": null,
+            "functional": 8,
+            "temporal": 4,
+            "cleanup": null,
+            "passes": true
+          },
+          "120x40-dark-fullscreen": {
+            "complete": true,
+            "errors": null,
+            "checkpointOrder": [
+              "s03-01-tool-announced",
+              "s03-02-tool-starts",
+              "s03-03-first-marker",
+              "s03-04-first-progress",
+              "s03-05-second-progress",
+              "s03-06-tool-completes",
+              "s03-07-assistant-continues",
+              "s03-08-idle",
+              "exit"
+            ],
+            "absenceFailures": [],
+            "content": [
+              {
+                "missing": [],
+                "duplicates": {},
+                "finalText": " Run the controlled fixture tool.\n\n\n\n $ sh controlled-tool.sh\n\n TOOL_STARTED\n PROGRESS_01\n PROGRESS_02\n TOOL_COMPLETED\n\n Took <dynamic>\n\n\n Tool lifecycle complete.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n/tmp/pisharp-terminal-fixture-workspace\n\u219120 \u21936 <dynamic>               /8.2k (auto)                                                                                    f"
+              }
+            ],
+            "requests": [
+              {
+                "count": 2,
+                "expected": 2,
+                "countMatch": true,
+                "assistantToolCallIds": [
+                  "call-s03-progress"
+                ],
+                "duplicateToolCall": false,
+                "toolResults": 1,
+                "toolResultIds": [
+                  "call-s03-progress"
+                ],
+                "toolResultExact": true
+              }
+            ],
+            "idleHasWorking": {
+              "idle": false
+            },
+            "idleMissing": {
+              "idle": false
+            },
+            "cancelledHasWorking": {},
+            "subsequentPrompt": {
+              "subsequent": true
+            },
+            "cleanupEvidence": {
+              "initialProcesses": {},
+              "cleanupProcesses": {},
+              "processesGone": null,
+              "normalScreenRestored": true,
+              "cursorVisible": true,
+              "synchronizedOutputOff": true
+            },
+            "forbiddenStream": {
+              "required": false,
+              "scanned": null,
+              "valid": true,
+              "tokens": [],
+              "counts": {},
+              "occurrenceCount": 0,
+              "occurrences": []
+            },
+            "functionalChecks": {
+              "transitions": true,
+              "content": true,
+              "finalState": true,
+              "subsequent": true
+            },
+            "temporalChecks": {
+              "complete": true,
+              "absence": true,
+              "idle": true,
+              "requests": true
+            },
+            "cleanupChecks": null,
+            "functional": 8,
+            "temporal": 4,
+            "cleanup": null,
+            "passes": true
+          }
+        }
+      },
+      "unmatchedDifferences": [],
       "findings": []
     },
     {
@@ -582,9 +1366,11 @@
       "fixture": "s04-text-cancellation.json",
       "calibrates": true,
       "assessable": true,
+      "validationErrors": [],
       "functional": 8,
       "temporal": 4,
       "visual": 6,
+      "cleanup": 5,
       "visualBySize": {
         "80x24-dark-fullscreen": {
           "text": 1,
@@ -607,7 +1393,6 @@
           }
         }
       },
-      "cleanup": 5,
       "subtotal": 23,
       "maximum": 23,
       "calibration": {
@@ -618,143 +1403,447 @@
         "80x24-dark-fullscreen": [],
         "120x40-dark-fullscreen": []
       },
-      "scoreInputs": {
-        "complete": true,
-        "functionalChecks": {
-          "transitions": true,
-          "content": true,
-          "finalState": true,
-          "subsequent": true
-        },
-        "temporalChecks": {
-          "complete": true,
-          "absence": true,
-          "idle": true,
-          "requests": true
-        },
-        "visualBySize": {
-          "80x24-dark-fullscreen": {
-            "text": 1,
-            "style": 1,
-            "layout": 1,
-            "differences": {
-              "text": 0,
-              "style": 0,
-              "layout": 0
+      "captures": {
+        "80x24-dark-fullscreen": {
+          "consistent": true,
+          "errors": [],
+          "calibration": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
             }
           },
-          "120x40-dark-fullscreen": {
-            "text": 1,
-            "style": 1,
-            "layout": 1,
-            "differences": {
-              "text": 0,
-              "style": 0,
-              "layout": 0
+          "comparison": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "branch": "milestone/interactive-streaming-cancellation-parity",
+              "dirty": false,
+              "trackedChanges": []
             }
           }
         },
-        "cleanupChecks": {
-          "cancellationSettled": true,
-          "noLateOutput": true,
-          "terminalRestored": true,
-          "cleanupTarget": true,
-          "subsequentPrompt": true
-        },
-        "cancelledHasWorking": {
-          "80x24-dark-fullscreen": false,
-          "120x40-dark-fullscreen": false
-        },
-        "idleHasWorking": {
-          "80x24-dark-fullscreen": false,
-          "120x40-dark-fullscreen": false
-        },
-        "subsequentPrompt": {
-          "80x24-dark-fullscreen": true,
-          "120x40-dark-fullscreen": true
-        },
-        "processOk": true
-      },
-      "assertions": {
-        "scenarioErrors": [
-          null,
-          null
-        ],
-        "checkpointOrder": [
-          [
-            "s04-01-streaming-begins",
-            "s04-02-first-partial",
-            "s04-03-second-partial",
-            "s04-04-cancellation-requested",
-            "s04-05-cancellation-settled",
-            "s04-06-partial-retained",
-            "s04-07-second-prompt",
-            "s04-08-idle",
-            "exit"
-          ],
-          [
-            "s04-01-streaming-begins",
-            "s04-02-first-partial",
-            "s04-03-second-partial",
-            "s04-04-cancellation-requested",
-            "s04-05-cancellation-settled",
-            "s04-06-partial-retained",
-            "s04-07-second-prompt",
-            "s04-08-idle",
-            "exit"
-          ]
-        ],
-        "absenceFailures": [
-          [],
-          []
-        ],
-        "content": [
-          {
-            "missing": [],
-            "duplicates": {},
-            "finalText": " Stream a response I will cancel.\n\n\n CANCEL_BEGIN the partial response starts.\n CANCEL_CONTINUATION the partial response continues.\n\n Operation aborted\n\n\n Send a second prompt after cancellation.\n\n\n SECOND_PROMPT_OK the editor recovered.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n/tmp/pisharp-terminal-fixture-workspace\n\u219110 \u21933 <dynamic>               /8.2k (auto)                                            f"
+        "120x40-dark-fullscreen": {
+          "consistent": true,
+          "errors": [],
+          "calibration": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            }
           },
-          {
-            "missing": [],
-            "duplicates": {},
-            "finalText": " Stream a response I will cancel.\n\n\n CANCEL_BEGIN the partial response starts.\n CANCEL_CONTINUATION the partial response continues.\n\n Operation aborted\n\n\n Send a second prompt after cancellation.\n\n\n SECOND_PROMPT_OK the editor recovered.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n/tmp/pisharp-terminal-fixture-workspace\n\u219110 \u21933 <dynamic>               /8.2k (auto)                                                                                    f"
-          }
-        ],
-        "requests": [
-          {
-            "count": 2,
-            "expected": 2,
-            "countMatch": true,
-            "assistantToolCallIds": [],
-            "duplicateToolCall": false
-          },
-          {
-            "count": 2,
-            "expected": 2,
-            "countMatch": true,
-            "assistantToolCallIds": [],
-            "duplicateToolCall": false
-          }
-        ],
-        "cleanup": {
-          "80x24-dark-fullscreen": {
-            "initialProcesses": {},
-            "cleanupProcesses": {},
-            "processesGone": null,
-            "normalScreenRestored": true,
-            "cursorVisible": true,
-            "synchronizedOutputOff": true
-          },
-          "120x40-dark-fullscreen": {
-            "initialProcesses": {},
-            "cleanupProcesses": {},
-            "processesGone": null,
-            "normalScreenRestored": true,
-            "cursorVisible": true,
-            "synchronizedOutputOff": true
+          "comparison": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "branch": "milestone/interactive-streaming-cancellation-parity",
+              "dirty": false,
+              "trackedChanges": []
+            }
           }
         }
       },
+      "contracts": {
+        "pi": {
+          "80x24-dark-fullscreen": {
+            "complete": true,
+            "errors": null,
+            "checkpointOrder": [
+              "s04-01-streaming-begins",
+              "s04-02-first-partial",
+              "s04-03-second-partial",
+              "s04-04-cancellation-requested",
+              "s04-05-cancellation-settled",
+              "s04-06-partial-retained",
+              "s04-07-second-prompt",
+              "s04-08-idle",
+              "exit"
+            ],
+            "absenceFailures": [],
+            "content": [
+              {
+                "missing": [],
+                "duplicates": {},
+                "finalText": " Stream a response I will cancel.\n\n\n CANCEL_BEGIN the partial response starts.\n CANCEL_CONTINUATION the partial response continues.\n\n Operation aborted\n\n\n Send a second prompt after cancellation.\n\n\n SECOND_PROMPT_OK the editor recovered.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n/tmp/pisharp-terminal-fixture-workspace\n\u219110 \u21933 <dynamic>               /8.2k (auto)                                            f"
+              }
+            ],
+            "requests": [
+              {
+                "count": 2,
+                "expected": 2,
+                "countMatch": true,
+                "assistantToolCallIds": [],
+                "duplicateToolCall": false
+              }
+            ],
+            "idleHasWorking": {
+              "idle": false
+            },
+            "idleMissing": {
+              "idle": false
+            },
+            "cancelledHasWorking": {
+              "s04-05-cancellation-settled": false
+            },
+            "subsequentPrompt": {
+              "subsequent": true
+            },
+            "cleanupEvidence": {
+              "initialProcesses": {},
+              "cleanupProcesses": {},
+              "processesGone": null,
+              "normalScreenRestored": true,
+              "cursorVisible": true,
+              "synchronizedOutputOff": true
+            },
+            "forbiddenStream": {
+              "required": true,
+              "scanned": true,
+              "fromRenderIndex": 16,
+              "tokens": [
+                "CANCEL_LATE",
+                "CANCEL_FINISH"
+              ],
+              "renderFrameCount": 27,
+              "counts": {
+                "CANCEL_LATE": 0,
+                "CANCEL_FINISH": 0
+              },
+              "occurrenceCount": 0,
+              "occurrences": [],
+              "valid": true
+            },
+            "functionalChecks": {
+              "transitions": true,
+              "content": true,
+              "finalState": true,
+              "subsequent": true
+            },
+            "temporalChecks": {
+              "complete": true,
+              "absence": true,
+              "idle": true,
+              "requests": true
+            },
+            "cleanupChecks": {
+              "cancellationSettled": true,
+              "noLateOutput": true,
+              "terminalRestored": true,
+              "cleanupTarget": true,
+              "subsequentPrompt": true
+            },
+            "functional": 8,
+            "temporal": 4,
+            "cleanup": 5,
+            "passes": true
+          },
+          "120x40-dark-fullscreen": {
+            "complete": true,
+            "errors": null,
+            "checkpointOrder": [
+              "s04-01-streaming-begins",
+              "s04-02-first-partial",
+              "s04-03-second-partial",
+              "s04-04-cancellation-requested",
+              "s04-05-cancellation-settled",
+              "s04-06-partial-retained",
+              "s04-07-second-prompt",
+              "s04-08-idle",
+              "exit"
+            ],
+            "absenceFailures": [],
+            "content": [
+              {
+                "missing": [],
+                "duplicates": {},
+                "finalText": " Stream a response I will cancel.\n\n\n CANCEL_BEGIN the partial response starts.\n CANCEL_CONTINUATION the partial response continues.\n\n Operation aborted\n\n\n Send a second prompt after cancellation.\n\n\n SECOND_PROMPT_OK the editor recovered.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n/tmp/pisharp-terminal-fixture-workspace\n\u219110 \u21933 <dynamic>               /8.2k (auto)                                                                                    f"
+              }
+            ],
+            "requests": [
+              {
+                "count": 2,
+                "expected": 2,
+                "countMatch": true,
+                "assistantToolCallIds": [],
+                "duplicateToolCall": false
+              }
+            ],
+            "idleHasWorking": {
+              "idle": false
+            },
+            "idleMissing": {
+              "idle": false
+            },
+            "cancelledHasWorking": {
+              "s04-05-cancellation-settled": false
+            },
+            "subsequentPrompt": {
+              "subsequent": true
+            },
+            "cleanupEvidence": {
+              "initialProcesses": {},
+              "cleanupProcesses": {},
+              "processesGone": null,
+              "normalScreenRestored": true,
+              "cursorVisible": true,
+              "synchronizedOutputOff": true
+            },
+            "forbiddenStream": {
+              "required": true,
+              "scanned": true,
+              "fromRenderIndex": 86,
+              "tokens": [
+                "CANCEL_LATE",
+                "CANCEL_FINISH"
+              ],
+              "renderFrameCount": 135,
+              "counts": {
+                "CANCEL_LATE": 0,
+                "CANCEL_FINISH": 0
+              },
+              "occurrenceCount": 0,
+              "occurrences": [],
+              "valid": true
+            },
+            "functionalChecks": {
+              "transitions": true,
+              "content": true,
+              "finalState": true,
+              "subsequent": true
+            },
+            "temporalChecks": {
+              "complete": true,
+              "absence": true,
+              "idle": true,
+              "requests": true
+            },
+            "cleanupChecks": {
+              "cancellationSettled": true,
+              "noLateOutput": true,
+              "terminalRestored": true,
+              "cleanupTarget": true,
+              "subsequentPrompt": true
+            },
+            "functional": 8,
+            "temporal": 4,
+            "cleanup": 5,
+            "passes": true
+          }
+        },
+        "pisharp": {
+          "80x24-dark-fullscreen": {
+            "complete": true,
+            "errors": null,
+            "checkpointOrder": [
+              "s04-01-streaming-begins",
+              "s04-02-first-partial",
+              "s04-03-second-partial",
+              "s04-04-cancellation-requested",
+              "s04-05-cancellation-settled",
+              "s04-06-partial-retained",
+              "s04-07-second-prompt",
+              "s04-08-idle",
+              "exit"
+            ],
+            "absenceFailures": [],
+            "content": [
+              {
+                "missing": [],
+                "duplicates": {},
+                "finalText": " Stream a response I will cancel.\n\n\n CANCEL_BEGIN the partial response starts.\n CANCEL_CONTINUATION the partial response continues.\n\n Operation aborted\n\n\n Send a second prompt after cancellation.\n\n\n SECOND_PROMPT_OK the editor recovered.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n/tmp/pisharp-terminal-fixture-workspace\n\u219110 \u21933 <dynamic>               /8.2k (auto)                                            f"
+              }
+            ],
+            "requests": [
+              {
+                "count": 2,
+                "expected": 2,
+                "countMatch": true,
+                "assistantToolCallIds": [],
+                "duplicateToolCall": false
+              }
+            ],
+            "idleHasWorking": {
+              "idle": false
+            },
+            "idleMissing": {
+              "idle": false
+            },
+            "cancelledHasWorking": {
+              "s04-05-cancellation-settled": false
+            },
+            "subsequentPrompt": {
+              "subsequent": true
+            },
+            "cleanupEvidence": {
+              "initialProcesses": {},
+              "cleanupProcesses": {},
+              "processesGone": null,
+              "normalScreenRestored": true,
+              "cursorVisible": true,
+              "synchronizedOutputOff": true
+            },
+            "forbiddenStream": {
+              "required": true,
+              "scanned": true,
+              "fromRenderIndex": 16,
+              "tokens": [
+                "CANCEL_LATE",
+                "CANCEL_FINISH"
+              ],
+              "renderFrameCount": 35,
+              "counts": {
+                "CANCEL_LATE": 0,
+                "CANCEL_FINISH": 0
+              },
+              "occurrenceCount": 0,
+              "occurrences": [],
+              "valid": true
+            },
+            "functionalChecks": {
+              "transitions": true,
+              "content": true,
+              "finalState": true,
+              "subsequent": true
+            },
+            "temporalChecks": {
+              "complete": true,
+              "absence": true,
+              "idle": true,
+              "requests": true
+            },
+            "cleanupChecks": {
+              "cancellationSettled": true,
+              "noLateOutput": true,
+              "terminalRestored": true,
+              "cleanupTarget": true,
+              "subsequentPrompt": true
+            },
+            "functional": 8,
+            "temporal": 4,
+            "cleanup": 5,
+            "passes": true
+          },
+          "120x40-dark-fullscreen": {
+            "complete": true,
+            "errors": null,
+            "checkpointOrder": [
+              "s04-01-streaming-begins",
+              "s04-02-first-partial",
+              "s04-03-second-partial",
+              "s04-04-cancellation-requested",
+              "s04-05-cancellation-settled",
+              "s04-06-partial-retained",
+              "s04-07-second-prompt",
+              "s04-08-idle",
+              "exit"
+            ],
+            "absenceFailures": [],
+            "content": [
+              {
+                "missing": [],
+                "duplicates": {},
+                "finalText": " Stream a response I will cancel.\n\n\n CANCEL_BEGIN the partial response starts.\n CANCEL_CONTINUATION the partial response continues.\n\n Operation aborted\n\n\n Send a second prompt after cancellation.\n\n\n SECOND_PROMPT_OK the editor recovered.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n/tmp/pisharp-terminal-fixture-workspace\n\u219110 \u21933 <dynamic>               /8.2k (auto)                                                                                    f"
+              }
+            ],
+            "requests": [
+              {
+                "count": 2,
+                "expected": 2,
+                "countMatch": true,
+                "assistantToolCallIds": [],
+                "duplicateToolCall": false
+              }
+            ],
+            "idleHasWorking": {
+              "idle": false
+            },
+            "idleMissing": {
+              "idle": false
+            },
+            "cancelledHasWorking": {
+              "s04-05-cancellation-settled": false
+            },
+            "subsequentPrompt": {
+              "subsequent": true
+            },
+            "cleanupEvidence": {
+              "initialProcesses": {},
+              "cleanupProcesses": {},
+              "processesGone": null,
+              "normalScreenRestored": true,
+              "cursorVisible": true,
+              "synchronizedOutputOff": true
+            },
+            "forbiddenStream": {
+              "required": true,
+              "scanned": true,
+              "fromRenderIndex": 14,
+              "tokens": [
+                "CANCEL_LATE",
+                "CANCEL_FINISH"
+              ],
+              "renderFrameCount": 33,
+              "counts": {
+                "CANCEL_LATE": 0,
+                "CANCEL_FINISH": 0
+              },
+              "occurrenceCount": 0,
+              "occurrences": [],
+              "valid": true
+            },
+            "functionalChecks": {
+              "transitions": true,
+              "content": true,
+              "finalState": true,
+              "subsequent": true
+            },
+            "temporalChecks": {
+              "complete": true,
+              "absence": true,
+              "idle": true,
+              "requests": true
+            },
+            "cleanupChecks": {
+              "cancellationSettled": true,
+              "noLateOutput": true,
+              "terminalRestored": true,
+              "cleanupTarget": true,
+              "subsequentPrompt": true
+            },
+            "functional": 8,
+            "temporal": 4,
+            "cleanup": 5,
+            "passes": true
+          }
+        }
+      },
+      "unmatchedDifferences": [],
       "findings": []
     },
     {
@@ -763,9 +1852,11 @@
       "fixture": "s05-tool-cancellation.json",
       "calibrates": true,
       "assessable": true,
+      "validationErrors": [],
       "functional": 8,
       "temporal": 4,
       "visual": 2,
+      "cleanup": 5,
       "visualBySize": {
         "80x24-dark-fullscreen": {
           "text": 0,
@@ -788,7 +1879,6 @@
           }
         }
       },
-      "cleanup": 5,
       "subtotal": 19,
       "maximum": 23,
       "calibration": {
@@ -799,179 +1889,511 @@
         "80x24-dark-fullscreen": [],
         "120x40-dark-fullscreen": []
       },
-      "scoreInputs": {
-        "complete": true,
-        "functionalChecks": {
-          "transitions": true,
-          "content": true,
-          "finalState": true,
-          "subsequent": true
-        },
-        "temporalChecks": {
-          "complete": true,
-          "absence": true,
-          "idle": true,
-          "requests": true
-        },
-        "visualBySize": {
-          "80x24-dark-fullscreen": {
-            "text": 0,
-            "style": 0,
-            "layout": 1,
-            "differences": {
-              "text": 420,
-              "style": 448,
-              "layout": 0
+      "captures": {
+        "80x24-dark-fullscreen": {
+          "consistent": true,
+          "errors": [],
+          "calibration": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
             }
           },
-          "120x40-dark-fullscreen": {
-            "text": 0,
-            "style": 0,
-            "layout": 1,
-            "differences": {
-              "text": 420,
-              "style": 448,
-              "layout": 0
+          "comparison": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "branch": "milestone/interactive-streaming-cancellation-parity",
+              "dirty": false,
+              "trackedChanges": []
             }
           }
         },
-        "cleanupChecks": {
-          "cancellationSettled": true,
-          "noLateOutput": true,
-          "terminalRestored": true,
-          "cleanupTarget": true,
-          "subsequentPrompt": true
-        },
-        "cancelledHasWorking": {
-          "80x24-dark-fullscreen": false,
-          "120x40-dark-fullscreen": false
-        },
-        "idleHasWorking": {
-          "80x24-dark-fullscreen": false,
-          "120x40-dark-fullscreen": false
-        },
-        "subsequentPrompt": {
-          "80x24-dark-fullscreen": true,
-          "120x40-dark-fullscreen": true
-        },
-        "processOk": true
-      },
-      "assertions": {
-        "scenarioErrors": [
-          null,
-          null
-        ],
-        "checkpointOrder": [
-          [
-            "s05-01-tool-announced",
-            "s05-02-tool-process-starts",
-            "s05-03-start-marker-observed",
-            "s05-04-cancellation-requested",
-            "s05-05-tool-cancellation-settles",
-            "s05-06-no-late-tool-output",
-            "s05-07-processes-cleaned",
-            "s05-08-terminal-idle",
-            "s05-09-second-prompt",
-            "s05-10-idle",
-            "exit"
-          ],
-          [
-            "s05-01-tool-announced",
-            "s05-02-tool-process-starts",
-            "s05-03-start-marker-observed",
-            "s05-04-cancellation-requested",
-            "s05-05-tool-cancellation-settles",
-            "s05-06-no-late-tool-output",
-            "s05-07-processes-cleaned",
-            "s05-08-terminal-idle",
-            "s05-09-second-prompt",
-            "s05-10-idle",
-            "exit"
-          ]
-        ],
-        "absenceFailures": [
-          [],
-          []
-        ],
-        "content": [
-          {
-            "missing": [],
-            "duplicates": {},
-            "finalText": " Run the cancellable fixture tool.\n\n\n\n $ sh cancellable-tool.sh\n\n TOOL_STARTED\n PIDS_READY\n\n\n Command aborted\n\n Took <dynamic>\n\n\n Operation aborted\n\n\n Send a second prompt after tool cancellation.\n\n\n SECOND_TOOL_PROMPT_OK the run recovered.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n/tmp/pisharp-terminal-fixture-workspace\n\u219120 \u21936 <dynamic>               /8.2k (auto)                                            f"
+        "120x40-dark-fullscreen": {
+          "consistent": true,
+          "errors": [],
+          "calibration": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            }
           },
-          {
-            "missing": [],
-            "duplicates": {},
-            "finalText": " Run the cancellable fixture tool.\n\n\n\n $ sh cancellable-tool.sh\n\n TOOL_STARTED\n PIDS_READY\n\n\n Command aborted\n\n Took <dynamic>\n\n\n Operation aborted\n\n\n Send a second prompt after tool cancellation.\n\n\n SECOND_TOOL_PROMPT_OK the run recovered.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n/tmp/pisharp-terminal-fixture-workspace\n\u219120 \u21936 <dynamic>               /8.2k (auto)                                                                                    f"
-          }
-        ],
-        "requests": [
-          {
-            "count": 2,
-            "expected": 2,
-            "countMatch": true,
-            "assistantToolCallIds": [
-              "call-s05-cancel"
-            ],
-            "duplicateToolCall": false
-          },
-          {
-            "count": 2,
-            "expected": 2,
-            "countMatch": true,
-            "assistantToolCallIds": [
-              "call-s05-cancel"
-            ],
-            "duplicateToolCall": false
-          }
-        ],
-        "cleanup": {
-          "80x24-dark-fullscreen": {
-            "initialProcesses": {
-              "child.pid": {
-                "state": "S (sleeping)"
-              },
-              "shell.pid": {
-                "state": "S (sleeping)"
-              }
+          "comparison": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
             },
-            "cleanupProcesses": {
-              "child.pid": {
-                "state": null
-              },
-              "shell.pid": {
-                "state": null
-              }
-            },
-            "processesGone": true,
-            "normalScreenRestored": true,
-            "cursorVisible": true,
-            "synchronizedOutputOff": true
-          },
-          "120x40-dark-fullscreen": {
-            "initialProcesses": {
-              "child.pid": {
-                "state": "S (sleeping)"
-              },
-              "shell.pid": {
-                "state": "S (sleeping)"
-              }
-            },
-            "cleanupProcesses": {
-              "child.pid": {
-                "state": null
-              },
-              "shell.pid": {
-                "state": null
-              }
-            },
-            "processesGone": true,
-            "normalScreenRestored": true,
-            "cursorVisible": true,
-            "synchronizedOutputOff": true
+            "pisharp": {
+              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "branch": "milestone/interactive-streaming-cancellation-parity",
+              "dirty": false,
+              "trackedChanges": []
+            }
           }
         }
       },
+      "contracts": {
+        "pi": {
+          "80x24-dark-fullscreen": {
+            "complete": true,
+            "errors": null,
+            "checkpointOrder": [
+              "s05-01-tool-announced",
+              "s05-02-tool-process-starts",
+              "s05-03-start-marker-observed",
+              "s05-04-cancellation-requested",
+              "s05-05-tool-cancellation-settles",
+              "s05-06-no-late-tool-output",
+              "s05-07-processes-cleaned",
+              "s05-08-terminal-idle",
+              "s05-09-second-prompt",
+              "s05-10-idle",
+              "exit"
+            ],
+            "absenceFailures": [],
+            "content": [
+              {
+                "missing": [],
+                "duplicates": {},
+                "finalText": " Run the cancellable fixture tool.\n\n\n\n $ sh cancellable-tool.sh\n\n TOOL_STARTED\n PIDS_READY\n\n\n Command aborted\n\n Took <dynamic>\n\n\n Error: This operation was aborted\n\n\n Send a second prompt after tool cancellation.\n\n\n SECOND_TOOL_PROMPT_OK the run recovered.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n/tmp/pisharp-terminal-fixture-workspace\n\u219120 \u21936 <dynamic>               /8.2k (auto)                                            f"
+              }
+            ],
+            "requests": [
+              {
+                "count": 2,
+                "expected": 2,
+                "countMatch": true,
+                "assistantToolCallIds": [
+                  "call-s05-cancel"
+                ],
+                "duplicateToolCall": false
+              }
+            ],
+            "idleHasWorking": {
+              "idle": false
+            },
+            "idleMissing": {
+              "idle": false
+            },
+            "cancelledHasWorking": {
+              "s05-05-tool-cancellation-settles": false
+            },
+            "subsequentPrompt": {
+              "subsequent": true
+            },
+            "cleanupEvidence": {
+              "initialProcesses": {
+                "child.pid": {
+                  "state": "S (sleeping)"
+                },
+                "shell.pid": {
+                  "state": "S (sleeping)"
+                }
+              },
+              "cleanupProcesses": {
+                "child.pid": {
+                  "state": null
+                },
+                "shell.pid": {
+                  "state": null
+                }
+              },
+              "processesGone": true,
+              "normalScreenRestored": true,
+              "cursorVisible": true,
+              "synchronizedOutputOff": true
+            },
+            "forbiddenStream": {
+              "required": true,
+              "scanned": true,
+              "fromRenderIndex": 14,
+              "tokens": [
+                "TOOL_COMPLETED"
+              ],
+              "renderFrameCount": 26,
+              "counts": {
+                "TOOL_COMPLETED": 0
+              },
+              "occurrenceCount": 0,
+              "occurrences": [],
+              "valid": true
+            },
+            "functionalChecks": {
+              "transitions": true,
+              "content": true,
+              "finalState": true,
+              "subsequent": true
+            },
+            "temporalChecks": {
+              "complete": true,
+              "absence": true,
+              "idle": true,
+              "requests": true
+            },
+            "cleanupChecks": {
+              "cancellationSettled": true,
+              "noLateOutput": true,
+              "terminalRestored": true,
+              "cleanupTarget": true,
+              "subsequentPrompt": true
+            },
+            "functional": 8,
+            "temporal": 4,
+            "cleanup": 5,
+            "passes": true
+          },
+          "120x40-dark-fullscreen": {
+            "complete": true,
+            "errors": null,
+            "checkpointOrder": [
+              "s05-01-tool-announced",
+              "s05-02-tool-process-starts",
+              "s05-03-start-marker-observed",
+              "s05-04-cancellation-requested",
+              "s05-05-tool-cancellation-settles",
+              "s05-06-no-late-tool-output",
+              "s05-07-processes-cleaned",
+              "s05-08-terminal-idle",
+              "s05-09-second-prompt",
+              "s05-10-idle",
+              "exit"
+            ],
+            "absenceFailures": [],
+            "content": [
+              {
+                "missing": [],
+                "duplicates": {},
+                "finalText": " Run the cancellable fixture tool.\n\n\n\n $ sh cancellable-tool.sh\n\n TOOL_STARTED\n PIDS_READY\n\n\n Command aborted\n\n Took <dynamic>\n\n\n Error: This operation was aborted\n\n\n Send a second prompt after tool cancellation.\n\n\n SECOND_TOOL_PROMPT_OK the run recovered.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n/tmp/pisharp-terminal-fixture-workspace\n\u219120 \u21936 <dynamic>               /8.2k (auto)                                                                                    f"
+              }
+            ],
+            "requests": [
+              {
+                "count": 2,
+                "expected": 2,
+                "countMatch": true,
+                "assistantToolCallIds": [
+                  "call-s05-cancel"
+                ],
+                "duplicateToolCall": false
+              }
+            ],
+            "idleHasWorking": {
+              "idle": false
+            },
+            "idleMissing": {
+              "idle": false
+            },
+            "cancelledHasWorking": {
+              "s05-05-tool-cancellation-settles": false
+            },
+            "subsequentPrompt": {
+              "subsequent": true
+            },
+            "cleanupEvidence": {
+              "initialProcesses": {
+                "child.pid": {
+                  "state": "S (sleeping)"
+                },
+                "shell.pid": {
+                  "state": "S (sleeping)"
+                }
+              },
+              "cleanupProcesses": {
+                "child.pid": {
+                  "state": null
+                },
+                "shell.pid": {
+                  "state": null
+                }
+              },
+              "processesGone": true,
+              "normalScreenRestored": true,
+              "cursorVisible": true,
+              "synchronizedOutputOff": true
+            },
+            "forbiddenStream": {
+              "required": true,
+              "scanned": true,
+              "fromRenderIndex": 20,
+              "tokens": [
+                "TOOL_COMPLETED"
+              ],
+              "renderFrameCount": 49,
+              "counts": {
+                "TOOL_COMPLETED": 0
+              },
+              "occurrenceCount": 0,
+              "occurrences": [],
+              "valid": true
+            },
+            "functionalChecks": {
+              "transitions": true,
+              "content": true,
+              "finalState": true,
+              "subsequent": true
+            },
+            "temporalChecks": {
+              "complete": true,
+              "absence": true,
+              "idle": true,
+              "requests": true
+            },
+            "cleanupChecks": {
+              "cancellationSettled": true,
+              "noLateOutput": true,
+              "terminalRestored": true,
+              "cleanupTarget": true,
+              "subsequentPrompt": true
+            },
+            "functional": 8,
+            "temporal": 4,
+            "cleanup": 5,
+            "passes": true
+          }
+        },
+        "pisharp": {
+          "80x24-dark-fullscreen": {
+            "complete": true,
+            "errors": null,
+            "checkpointOrder": [
+              "s05-01-tool-announced",
+              "s05-02-tool-process-starts",
+              "s05-03-start-marker-observed",
+              "s05-04-cancellation-requested",
+              "s05-05-tool-cancellation-settles",
+              "s05-06-no-late-tool-output",
+              "s05-07-processes-cleaned",
+              "s05-08-terminal-idle",
+              "s05-09-second-prompt",
+              "s05-10-idle",
+              "exit"
+            ],
+            "absenceFailures": [],
+            "content": [
+              {
+                "missing": [],
+                "duplicates": {},
+                "finalText": " Run the cancellable fixture tool.\n\n\n\n $ sh cancellable-tool.sh\n\n TOOL_STARTED\n PIDS_READY\n\n\n Command aborted\n\n Took <dynamic>\n\n\n Operation aborted\n\n\n Send a second prompt after tool cancellation.\n\n\n SECOND_TOOL_PROMPT_OK the run recovered.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n/tmp/pisharp-terminal-fixture-workspace\n\u219120 \u21936 <dynamic>               /8.2k (auto)                                            f"
+              }
+            ],
+            "requests": [
+              {
+                "count": 2,
+                "expected": 2,
+                "countMatch": true,
+                "assistantToolCallIds": [
+                  "call-s05-cancel"
+                ],
+                "duplicateToolCall": false
+              }
+            ],
+            "idleHasWorking": {
+              "idle": false
+            },
+            "idleMissing": {
+              "idle": false
+            },
+            "cancelledHasWorking": {
+              "s05-05-tool-cancellation-settles": false
+            },
+            "subsequentPrompt": {
+              "subsequent": true
+            },
+            "cleanupEvidence": {
+              "initialProcesses": {
+                "child.pid": {
+                  "state": "S (sleeping)"
+                },
+                "shell.pid": {
+                  "state": "S (sleeping)"
+                }
+              },
+              "cleanupProcesses": {
+                "child.pid": {
+                  "state": null
+                },
+                "shell.pid": {
+                  "state": null
+                }
+              },
+              "processesGone": true,
+              "normalScreenRestored": true,
+              "cursorVisible": true,
+              "synchronizedOutputOff": true
+            },
+            "forbiddenStream": {
+              "required": true,
+              "scanned": true,
+              "fromRenderIndex": 15,
+              "tokens": [
+                "TOOL_COMPLETED"
+              ],
+              "renderFrameCount": 35,
+              "counts": {
+                "TOOL_COMPLETED": 0
+              },
+              "occurrenceCount": 0,
+              "occurrences": [],
+              "valid": true
+            },
+            "functionalChecks": {
+              "transitions": true,
+              "content": true,
+              "finalState": true,
+              "subsequent": true
+            },
+            "temporalChecks": {
+              "complete": true,
+              "absence": true,
+              "idle": true,
+              "requests": true
+            },
+            "cleanupChecks": {
+              "cancellationSettled": true,
+              "noLateOutput": true,
+              "terminalRestored": true,
+              "cleanupTarget": true,
+              "subsequentPrompt": true
+            },
+            "functional": 8,
+            "temporal": 4,
+            "cleanup": 5,
+            "passes": true
+          },
+          "120x40-dark-fullscreen": {
+            "complete": true,
+            "errors": null,
+            "checkpointOrder": [
+              "s05-01-tool-announced",
+              "s05-02-tool-process-starts",
+              "s05-03-start-marker-observed",
+              "s05-04-cancellation-requested",
+              "s05-05-tool-cancellation-settles",
+              "s05-06-no-late-tool-output",
+              "s05-07-processes-cleaned",
+              "s05-08-terminal-idle",
+              "s05-09-second-prompt",
+              "s05-10-idle",
+              "exit"
+            ],
+            "absenceFailures": [],
+            "content": [
+              {
+                "missing": [],
+                "duplicates": {},
+                "finalText": " Run the cancellable fixture tool.\n\n\n\n $ sh cancellable-tool.sh\n\n TOOL_STARTED\n PIDS_READY\n\n\n Command aborted\n\n Took <dynamic>\n\n\n Operation aborted\n\n\n Send a second prompt after tool cancellation.\n\n\n SECOND_TOOL_PROMPT_OK the run recovered.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n/tmp/pisharp-terminal-fixture-workspace\n\u219120 \u21936 <dynamic>               /8.2k (auto)                                                                                    f"
+              }
+            ],
+            "requests": [
+              {
+                "count": 2,
+                "expected": 2,
+                "countMatch": true,
+                "assistantToolCallIds": [
+                  "call-s05-cancel"
+                ],
+                "duplicateToolCall": false
+              }
+            ],
+            "idleHasWorking": {
+              "idle": false
+            },
+            "idleMissing": {
+              "idle": false
+            },
+            "cancelledHasWorking": {
+              "s05-05-tool-cancellation-settles": false
+            },
+            "subsequentPrompt": {
+              "subsequent": true
+            },
+            "cleanupEvidence": {
+              "initialProcesses": {
+                "child.pid": {
+                  "state": "S (sleeping)"
+                },
+                "shell.pid": {
+                  "state": "S (sleeping)"
+                }
+              },
+              "cleanupProcesses": {
+                "child.pid": {
+                  "state": null
+                },
+                "shell.pid": {
+                  "state": null
+                }
+              },
+              "processesGone": true,
+              "normalScreenRestored": true,
+              "cursorVisible": true,
+              "synchronizedOutputOff": true
+            },
+            "forbiddenStream": {
+              "required": true,
+              "scanned": true,
+              "fromRenderIndex": 16,
+              "tokens": [
+                "TOOL_COMPLETED"
+              ],
+              "renderFrameCount": 37,
+              "counts": {
+                "TOOL_COMPLETED": 0
+              },
+              "occurrenceCount": 0,
+              "occurrences": [],
+              "valid": true
+            },
+            "functionalChecks": {
+              "transitions": true,
+              "content": true,
+              "finalState": true,
+              "subsequent": true
+            },
+            "temporalChecks": {
+              "complete": true,
+              "absence": true,
+              "idle": true,
+              "requests": true
+            },
+            "cleanupChecks": {
+              "cancellationSettled": true,
+              "noLateOutput": true,
+              "terminalRestored": true,
+              "cleanupTarget": true,
+              "subsequentPrompt": true
+            },
+            "functional": 8,
+            "temporal": 4,
+            "cleanup": 5,
+            "passes": true
+          }
+        }
+      },
+      "unmatchedDifferences": [],
       "findings": [
         "S05-tool-cancel-error-style",
         "S05-tool-cancel-error-wording"
@@ -992,9 +2414,17 @@
     "totalScenarios": 5,
     "assessedPoints": 100,
     "availablePoints": 100,
-    "percent": 100.0
+    "percent": 100
   },
   "unassessable": [],
+  "validation": {
+    "passed": true,
+    "errors": [],
+    "unmatchedDifferenceCount": 0,
+    "provenanceConsistent": true,
+    "provenanceErrors": [],
+    "piContractsPass": true
+  },
   "findings": [
     {
       "id": "S01-code-syntax-builtin-highlight",
@@ -1039,7 +2469,7 @@
       "source": "src/PiSharp.Cli/Tui/Rendering/TerminalSyntaxHighlighter.cs",
       "correction": "Add Python builtin-name highlighting to the syntax token table and cover it with a cell-style regression.",
       "reproduction": "python3 tools/parity/terminal/run.py --pi /tmp/pisharp-current-pi --pisharp src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll --fixture tools/parity/terminal/fixtures/interactive-streaming-cancellation-001/s01-text-streaming.json --case 80x24-dark-fullscreen --output artifacts/parity/repro-s01",
-      "evidence": "comparison.json S01 80x24/120x40 style cells for print; ui-report.json checkpoint text"
+      "evidence": "comparison.json S01 style cells for print; ui-report.json checkpoint text"
     },
     {
       "id": "S02-reasoning-block-layout",
@@ -1058,7 +2488,7 @@
         "s02-07-response-completes",
         "s02-08-idle"
       ],
-      "differenceCount": 24954,
+      "differenceCount": 26054,
       "samplePaths": [
         "$.buffers.alternate.lines[10].cells[10].chars",
         "$.buffers.alternate.lines[10].cells[10].foreground.mode",
@@ -1082,13 +2512,13 @@
         "$.buffers.alternate.lines[10].cells[16].foreground.mode"
       ],
       "severity": "P1",
-      "category": "layout/text",
+      "category": "layout/text/style",
       "piObservation": "Pi keeps one reasoning section, renders one Thinking... placeholder while hidden, and restores the joined reasoning block without extra rows.",
       "pisharpObservation": "PiSharp splits reasoning chunks around toggle status lines, shows two Thinking... placeholders, and leaves extra blank/indented rows; the final transcript is shifted by three rows.",
       "source": "src/PiSharp.Cli/Tui/Rendering/TerminalConversationPresentation.cs",
       "correction": "Collapse streamed reasoning into one block, keep a single hidden placeholder, and re-render the block in place when visibility changes.",
       "reproduction": "python3 tools/parity/terminal/run.py --pi /tmp/pisharp-current-pi --pisharp src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll --fixture tools/parity/terminal/fixtures/interactive-streaming-cancellation-001/s02-reasoning-streaming.json --case 80x24-dark-fullscreen --output artifacts/parity/repro-s02",
-      "evidence": "comparison.json S02 text/layout differences from s02-02 through exit; ui-report.json checkpoint text"
+      "evidence": "comparison.json S02 text/layout/style differences from s02-02 through exit; ui-report.json checkpoint text"
     },
     {
       "id": "S02-reasoning-italic-style",
@@ -1107,11 +2537,9 @@
         "s02-07-response-completes",
         "s02-08-idle"
       ],
-      "differenceCount": 2122,
+      "differenceCount": 1022,
       "samplePaths": [
-        "$.buffers.alternate.lines[4].cells[12].attributes.italic",
         "$.buffers.alternate.lines[4].cells[1].attributes.italic",
-        "$.buffers.alternate.lines[4].cells[44].attributes.italic",
         "$.buffers.alternate.lines[4].cells[45].attributes.italic",
         "$.buffers.alternate.lines[4].cells[46].attributes.italic",
         "$.buffers.alternate.lines[4].cells[47].attributes.italic",
@@ -1128,7 +2556,9 @@
         "$.buffers.alternate.lines[4].cells[58].attributes.italic",
         "$.buffers.alternate.lines[4].cells[59].attributes.italic",
         "$.buffers.alternate.lines[4].cells[60].attributes.italic",
-        "$.buffers.alternate.lines[4].cells[61].attributes.italic"
+        "$.buffers.alternate.lines[4].cells[61].attributes.italic",
+        "$.buffers.alternate.lines[4].cells[62].attributes.italic",
+        "$.buffers.alternate.lines[4].cells[63].attributes.italic"
       ],
       "severity": "P2",
       "category": "style",
@@ -1282,7 +2712,7 @@
     "s01-text-streaming.json": "bee9b3362b449df3052b64a8eb3653585b3c01581590bd3f91909fa99661d361",
     "s02-reasoning-streaming.json": "b0fbfeeae128e8bdd29383024ed9be081fa155b4f0e8a0adf88d417f2ab84733",
     "s03-tool-progress.json": "e603dc6f789255fdc870fb94b5c8adbc6cab1ec6a8b7c6416fae94972b15b176",
-    "s04-text-cancellation.json": "254702441ff630263798b7eed26eba30223cda03564481205f6d3abe03aef2b6",
-    "s05-tool-cancellation.json": "845b419ad6c1f5c542f794c6d206afc82d198e853bdcb5a515a6a66f371a7e3f"
+    "s04-text-cancellation.json": "2db88263896b2c8376eb4ebdb6ffca88dd771e0683c0979fa61b5455c9e5c3c3",
+    "s05-tool-cancellation.json": "2e6c0170bce6272be1220f624cef0b1b37e30b709e5373c9564b3ff52cc521e6"
   }
 }

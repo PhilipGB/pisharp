@@ -284,8 +284,11 @@ def calibration_differences(first_evidence, second_evidence, scenario):
     if first_processes != second_processes:
         found.append(dict(checkpoint='process', path='$.processByFrame',
                           left=first_processes, right=second_processes))
-    first_forbidden = forbidden_check(first_evidence, scenario)
-    second_forbidden = forbidden_check(second_evidence, scenario)
+    def forbidden_signature(value):
+        return {key: value.get(key) for key in
+                ('required', 'scanned', 'tokens', 'counts', 'occurrenceCount', 'valid')}
+    first_forbidden = forbidden_signature(forbidden_check(first_evidence, scenario))
+    second_forbidden = forbidden_signature(forbidden_check(second_evidence, scenario))
     if first_forbidden != second_forbidden:
         found.append(dict(checkpoint='stream', path='$.forbiddenStream',
                           left=first_forbidden, right=second_forbidden))

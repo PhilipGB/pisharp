@@ -390,6 +390,8 @@ def write_assertion_evidence(path, products, dimensions, theme, mode, frame_ids=
                               capturedSessionFiles=product.get('capturedSessionFiles', []),
                               capturedSessionContents=product.get('capturedSessionContents', {}))
 
+        if include_working_indicator:
+            evidence[name]['workingIndicator'] = working_indicator_summary(product['renders'])
     with path.open('wb') as output:
         compressed = gzip.GzipFile(fileobj=output, mode='wb', compresslevel=1, mtime=0)
         writer = io.TextIOWrapper(compressed, encoding='utf-8')

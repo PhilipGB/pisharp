@@ -18,10 +18,92 @@
       "rows": 40
     }
   ],
+  "captureProvenance": {
+    "consistent": true,
+    "errors": [],
+    "pi": [
+      {
+        "branch": "HEAD",
+        "dirty": false,
+        "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+        "trackedChanges": []
+      }
+    ],
+    "pisharp": [
+      {
+        "branch": "milestone/interactive-streaming-cancellation-parity",
+        "dirty": false,
+        "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+        "trackedChanges": []
+      }
+    ]
+  },
   "scenarios": {
     "S01": {
       "scenario": "Partial assistant-text streaming",
       "fixture": "s01-text-streaming.json",
+      "captureProvenance": {
+        "80x24-dark-fullscreen": {
+          "calibration": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          },
+          "comparison": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "branch": "milestone/interactive-streaming-cancellation-parity",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          }
+        },
+        "120x40-dark-fullscreen": {
+          "calibration": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          },
+          "comparison": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "branch": "milestone/interactive-streaming-cancellation-parity",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          }
+        }
+      },
       "cases": {
         "80x24-dark-fullscreen": {
           "differences": 140,
@@ -33,6 +115,7 @@
           "findingIds": [
             "S01-code-syntax-builtin-highlight"
           ],
+          "unmatchedDifferenceCount": 0,
           "samples": [
             {
               "checkpoint": "s01-04-incomplete-code-block",
@@ -366,6 +449,7 @@
           "findingIds": [
             "S01-code-syntax-builtin-highlight"
           ],
+          "unmatchedDifferenceCount": 0,
           "samples": [
             {
               "checkpoint": "s01-04-incomplete-code-block",
@@ -694,6 +778,68 @@
     "S02": {
       "scenario": "Reasoning visibility and streaming",
       "fixture": "s02-reasoning-streaming.json",
+      "captureProvenance": {
+        "80x24-dark-fullscreen": {
+          "calibration": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          },
+          "comparison": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "branch": "milestone/interactive-streaming-cancellation-parity",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          }
+        },
+        "120x40-dark-fullscreen": {
+          "calibration": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          },
+          "comparison": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "branch": "milestone/interactive-streaming-cancellation-parity",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          }
+        }
+      },
       "cases": {
         "80x24-dark-fullscreen": {
           "differences": 12962,
@@ -707,6 +853,7 @@
             "S02-reasoning-italic-style",
             "S02-reasoning-status-style"
           ],
+          "unmatchedDifferenceCount": 0,
           "samples": [
             {
               "checkpoint": "s02-01-before-reasoning",
@@ -1042,6 +1189,7 @@
             "S02-reasoning-italic-style",
             "S02-reasoning-status-style"
           ],
+          "unmatchedDifferenceCount": 0,
           "samples": [
             {
               "checkpoint": "s02-01-before-reasoning",
@@ -1370,6 +1518,68 @@
     "S03": {
       "scenario": "Tool execution with live progress",
       "fixture": "s03-tool-progress.json",
+      "captureProvenance": {
+        "80x24-dark-fullscreen": {
+          "calibration": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          },
+          "comparison": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "branch": "milestone/interactive-streaming-cancellation-parity",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          }
+        },
+        "120x40-dark-fullscreen": {
+          "calibration": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          },
+          "comparison": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "branch": "milestone/interactive-streaming-cancellation-parity",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          }
+        }
+      },
       "cases": {
         "80x24-dark-fullscreen": {
           "differences": 0,
@@ -1379,6 +1589,7 @@
             "layout": 0
           },
           "findingIds": [],
+          "unmatchedDifferenceCount": 0,
           "samples": []
         },
         "120x40-dark-fullscreen": {
@@ -1389,6 +1600,7 @@
             "layout": 0
           },
           "findingIds": [],
+          "unmatchedDifferenceCount": 0,
           "samples": []
         }
       }
@@ -1396,6 +1608,68 @@
     "S04": {
       "scenario": "Cancellation during assistant-text streaming",
       "fixture": "s04-text-cancellation.json",
+      "captureProvenance": {
+        "80x24-dark-fullscreen": {
+          "calibration": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          },
+          "comparison": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "branch": "milestone/interactive-streaming-cancellation-parity",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          }
+        },
+        "120x40-dark-fullscreen": {
+          "calibration": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          },
+          "comparison": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "branch": "milestone/interactive-streaming-cancellation-parity",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          }
+        }
+      },
       "cases": {
         "80x24-dark-fullscreen": {
           "differences": 0,
@@ -1405,6 +1679,7 @@
             "layout": 0
           },
           "findingIds": [],
+          "unmatchedDifferenceCount": 0,
           "samples": []
         },
         "120x40-dark-fullscreen": {
@@ -1415,6 +1690,7 @@
             "layout": 0
           },
           "findingIds": [],
+          "unmatchedDifferenceCount": 0,
           "samples": []
         }
       }
@@ -1422,6 +1698,68 @@
     "S05": {
       "scenario": "Cancellation while Bash is running",
       "fixture": "s05-tool-cancellation.json",
+      "captureProvenance": {
+        "80x24-dark-fullscreen": {
+          "calibration": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          },
+          "comparison": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "branch": "milestone/interactive-streaming-cancellation-parity",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          }
+        },
+        "120x40-dark-fullscreen": {
+          "calibration": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          },
+          "comparison": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "branch": "milestone/interactive-streaming-cancellation-parity",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          }
+        }
+      },
       "cases": {
         "80x24-dark-fullscreen": {
           "differences": 868,
@@ -1434,6 +1772,7 @@
             "S05-tool-cancel-error-style",
             "S05-tool-cancel-error-wording"
           ],
+          "unmatchedDifferenceCount": 0,
           "samples": [
             {
               "checkpoint": "s05-05-tool-cancellation-settles",
@@ -1768,6 +2107,7 @@
             "S05-tool-cancel-error-style",
             "S05-tool-cancel-error-wording"
           ],
+          "unmatchedDifferenceCount": 0,
           "samples": [
             {
               "checkpoint": "s05-05-tool-cancellation-settles",

@@ -71,9 +71,49 @@ cell width so `0.6s` and `0.98s` align without hiding styles or layout.
 
 The same-Pi calibration is exact for S01, S02, S03, S04 and S05 at both sizes
 after that normalization. For transparency, the raw harness calibration
-reported 2 dynamic-only differences at S03 `80x24` (`Elapsed` value) and 26
-dynamic-only differences at S05 `120x40` (`Elapsed`/`Took` values and their
-render duplicates); neither is a product difference, and both normalize away.
+reported dynamic-only differences at S03 (`18` at `80x24`, `32` at `120x40`) and
+S05 (`28` at `80x24`, `50` at `120x40`) across checkpoint and render frames;
+S01, S02 and S04 reported none. The differences were `Elapsed`/`Took` values and
+their render duplicates, not product behavior, and all normalize away.
+
+## Capture provenance
+
+Every calibration and comparison capture writes a top-level and per-product
+provenance record. The report and fixture manifest bind each case to the exact
+Pi and PiSharp `HEAD`, branch, tracked-change list, and `dirty` flag. This bundle
+captures both products from a clean tree: Pi at
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` and PiSharp at
+`8d30011952c3017d210f9a41c8d743ffd5adb3bf`; no implicit working-tree changes are
+accepted. The verifier rejects a missing SHA, a non-boolean or contradictory
+dirty state, a calibration second run that is not the Pi source, or source drift
+between cases.
+
+## Independent product contracts
+
+The frozen functional, temporal and cleanup contract is evaluated separately
+for Pi and PiSharp at every case. Pi must pass its own contract before a case is
+assessable; PiSharp is then scored against the same assertions. The report
+records both contracts, and the verifier recomputes both from checkpoint,
+request, process and render-stream evidence. A Pi contract failure makes the
+case not assessable rather than awarding parity points.
+
+## Post-cancellation render stream
+
+S04 and S05 declare forbidden tokens and a cancellation action. The runner scans
+every completed render frame after that action, including viewport and
+alternate/normal buffers, and records frame-level occurrence counts. These
+tokens are not inferred from sparse named checkpoints: `CANCEL_LATE` /
+`CANCEL_FINISH` for S04 and `TOOL_COMPLETED` for S05 must have zero render-frame
+occurrences. The verifier rejects missing scan evidence or a stream occurrence
+that is scored as clean.
+
+## Finding predicates
+
+Every decoded difference must match an explicit scenario/checkpoint/path/value
+predicate. There is no scenario-wide catch-all mapping. The predicates are
+listed in `evaluate.py`; unmatched differences are retained in the report and
+make validation fail. The verifier also re-runs the predicate on every
+comparison sample and rejects an unknown or mismatched finding id.
 
 ## Results
 
@@ -237,13 +277,14 @@ python3 tools/parity/terminal/run.py --pi /tmp/pisharp-current-pi \
 
 ## Verification
 
-- Evaluator and verifier unit tests — 17 passed:
-  `python3 -m unittest tools/parity/interactive_streaming_cancellation/test_evaluation.py`
-- Report verifier — 226 checks, 0 failed, including fixture checksums,
-  recomputed scores/totals, calibration consistency, cancellation cleanup
-  evidence and finding coverage.
-- Report generation is deterministic: two runs over the same assertions produce
-  byte-identical `report.json`, `comparison.json` and `ui-report.json`.
+- Evaluator and verifier unit tests — 27 passed:
+  `python3 -m unittest discover -s tools/parity/interactive_streaming_cancellation -p 'test_*.py'`
+- Report verifier — 586 checks, 0 failed, including fixture checksums,
+  capture provenance for every case, independently recomputed Pi and PiSharp
+  contracts, post-cancellation render-stream evidence, recomputed scores and
+  totals, cancellation cleanup evidence and finding coverage.
+- Report generation is deterministic: repeated runs over the same assertions
+  produce byte-identical `report.json`, `comparison.json` and `ui-report.json`.
 - Terminal Python suite and the focused .NET terminal/lifecycle suites are
   recorded on the draft PR.
 - `dotnet build PiSharp.slnx --warnaserror` and
@@ -253,13 +294,17 @@ The verifier rejects a report with a missing scenario or checkpoint, a bad
 fixture or evidence checksum, an inflated scenario score or total, an
 unassessable/invalid calibration treated as assessable, a failed cancellation
 marked successful, missing cleanup evidence, or a difference omitted from the
-finding set. Negative controls for each case live in
+finding set. It also rejects a missing or dirty/mismatched capture SHA, a Pi
+contract failure marked assessable, missing post-cancellation render-stream scan
+evidence or a forbidden token marked clean, and an unmatched difference with no
+explicit finding predicate. Negative controls for each case live in
 `test_evaluation.py`.
 
 ## Evidence files
 
-- [`report.json`](report.json) — the scored report, per-scenario score inputs,
-  checkpoint assertions, calibration, findings and fixture checksums.
+- [`report.json`](report.json) — the scored report: capture provenance,
+  independent Pi/PiSharp contracts, post-cancellation stream scans, calibration,
+  checkpoint assertions, findings and fixture checksums.
 - [`comparison.json`](comparison.json) — per-scenario, per-size decoded
   difference counts, category totals and bounded samples.
 - [`ui-report.json`](ui-report.json) — normalized visible checkpoint text for

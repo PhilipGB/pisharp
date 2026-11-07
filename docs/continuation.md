@@ -8,7 +8,7 @@
 
 ## Current state — 2026-11-07
 
-Current status is based on `main` at `c615fc17232886d76c5092f8d5b6cd5b22f418fe`. The latest merged milestones are [Wrapped Bash command style parity](parity/fixtures/wrapped-bash-command-style-parity-2026-11-06/README.md) (PR #46, `c615fc17`), [Bash tool output collapse and expansion parity](parity/fixtures/collapsed-tool-output-parity-2026-11-06/README.md) (PR #45, `0984bfc9`) and [multi-step agent execution and recovery parity](parity/fixtures/objective-agent-parity-002-2026-11-06/README.md) (PR #44, `7748479c`). [Interactive streaming, reasoning, tool progress and cancellation parity evaluation](parity/fixtures/interactive-streaming-cancellation-001/README.md) is implemented on branch `milestone/interactive-streaming-cancellation-parity` and remains a draft PR, open and unmerged. Global parity is `in_progress` at **21 verified, 142 in progress and 31 not started** across the 194 required capabilities, derived from the committed execution ledger. The next single deliverable is to correct the confirmed S02 reasoning-block layout P1 (one reasoning block, one hidden placeholder, stable transcript rows), then re-run this fixture before selecting the next capability. Open architecture risks are tracked in the [architecture document](architecture.md#open-architecture-risks).
+Current status is based on `main` at `c615fc17232886d76c5092f8d5b6cd5b22f418fe`. The latest merged milestones are [Wrapped Bash command style parity](parity/fixtures/wrapped-bash-command-style-parity-2026-11-06/README.md) (PR #46, `c615fc17`), [Bash tool output collapse and expansion parity](parity/fixtures/collapsed-tool-output-parity-2026-11-06/README.md) (PR #45, `0984bfc9`) and [multi-step agent execution and recovery parity](parity/fixtures/objective-agent-parity-002-2026-11-06/README.md) (PR #44, `7748479c`). [Interactive streaming, reasoning, tool progress and cancellation parity evaluation](parity/fixtures/interactive-streaming-cancellation-001/README.md) is implemented on branch `milestone/interactive-streaming-cancellation-parity` and remains draft PR [#47](https://github.com/PhilipGB/pisharp/pull/47), open and unmerged. Global parity is `in_progress` at **21 verified, 142 in progress and 31 not started** across the 194 required capabilities, derived from the committed execution ledger. The next single deliverable is to correct the confirmed S02 reasoning-block layout P1 (one reasoning block, one hidden placeholder, stable transcript rows), then re-run this fixture before selecting the next capability. Open architecture risks are tracked in the [architecture document](architecture.md#open-architecture-risks).
 
 The milestone entries below retain their historical wording and are superseded by this section wherever they describe a milestone as active or a merged PR as open.
 
@@ -21,7 +21,16 @@ cancellation (S04) and Bash cancellation with child-process cleanup (S05).
 Provider chunk gates, tool-release gates, PID liveness and named checkpoints
 replace wall-clock waits. Same-Pi calibration is exact at both sizes after the
 declared normalization; raw calibration differed only in masked `Elapsed`/`Took`
-values (2 paths at S03 80x24 and 26 at S05 120x40).
+values at S03 (18 at 80x24, 32 at 120x40) and S05 (28 at 80x24, 50 at 120x40),
+with none at S01/S02/S04. Every capture is bound to the clean Pi source
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` and clean PiSharp source
+`8d30011952c3017d210f9a41c8d743ffd5adb3bf`; the report, fixture manifest and
+per-case assertions record SHA, branch, dirty flag and tracked changes. The
+frozen functional/temporal/cleanup contract is evaluated independently for Pi
+and PiSharp, and Pi must pass before a case is assessable. S04/S05 forbidden
+tokens are scanned across every render frame after the cancellation action, not
+only named checkpoints. Finding assignment uses explicit
+path/checkpoint/value predicates; unmatched differences fail validation.
 
 The deterministic score is **88/100**: functional **40/40**, temporal **20/20**,
 visual **18/30** and cleanup **10/10**. S03 and S04 match exactly at both sizes.
@@ -30,10 +39,12 @@ renders two `Thinking...` placeholders and shifts the final transcript by three
 rows. Five P2s are confirmed: Python builtin `print` syntax colour (S01),
 reasoning italic (S02), reasoning-model `Working` rule colour (S02), and the
 cancelled-tool error wording and style (S05). No P0 was observed. The
-evaluation intentionally does not fix these defects. The verifier rejects
-missing scenarios/checkpoints, bad checksums, inflated scores or totals, invalid
-calibration, failed cancellation marked successful, missing cleanup evidence and
-omitted differences. See the
+evaluation intentionally does not fix these defects. The verifier performs 586
+checks and rejects missing scenarios/checkpoints, bad checksums, inflated scores
+or totals, invalid calibration, failed cancellation marked successful, missing
+cleanup evidence, omitted differences, missing or mismatched capture provenance,
+Pi contract failures treated as assessable, missing post-cancellation render
+scans, and unmatched differences without an explicit predicate. See the
 [receipt](parity/fixtures/interactive-streaming-cancellation-001/README.md),
 [report](parity/fixtures/interactive-streaming-cancellation-001/report.json),
 [comparison](parity/fixtures/interactive-streaming-cancellation-001/comparison.json),

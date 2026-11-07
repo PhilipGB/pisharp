@@ -29,6 +29,26 @@
       "Missing or duplicated output, tool status, reasoning visibility, cursor position, cancellation state, transcript row positions, styles, or stale activity indicators."
     ]
   },
+  "captureProvenance": {
+    "consistent": true,
+    "errors": [],
+    "pi": [
+      {
+        "branch": "HEAD",
+        "dirty": false,
+        "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+        "trackedChanges": []
+      }
+    ],
+    "pisharp": [
+      {
+        "branch": "milestone/interactive-streaming-cancellation-parity",
+        "dirty": false,
+        "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+        "trackedChanges": []
+      }
+    ]
+  },
   "scenarios": [
     {
       "id": "S01",
@@ -695,7 +715,7 @@
       "source": "src/PiSharp.Cli/Tui/Rendering/TerminalSyntaxHighlighter.cs",
       "correction": "Add Python builtin-name highlighting to the syntax token table and cover it with a cell-style regression.",
       "reproduction": "python3 tools/parity/terminal/run.py --pi /tmp/pisharp-current-pi --pisharp src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll --fixture tools/parity/terminal/fixtures/interactive-streaming-cancellation-001/s01-text-streaming.json --case 80x24-dark-fullscreen --output artifacts/parity/repro-s01",
-      "evidence": "comparison.json S01 80x24/120x40 style cells for print; ui-report.json checkpoint text"
+      "evidence": "comparison.json S01 style cells for print; ui-report.json checkpoint text"
     },
     {
       "id": "S02-reasoning-block-layout",
@@ -714,7 +734,7 @@
         "s02-07-response-completes",
         "s02-08-idle"
       ],
-      "differenceCount": 24954,
+      "differenceCount": 26054,
       "samplePaths": [
         "$.buffers.alternate.lines[10].cells[10].chars",
         "$.buffers.alternate.lines[10].cells[10].foreground.mode",
@@ -738,13 +758,13 @@
         "$.buffers.alternate.lines[10].cells[16].foreground.mode"
       ],
       "severity": "P1",
-      "category": "layout/text",
+      "category": "layout/text/style",
       "piObservation": "Pi keeps one reasoning section, renders one Thinking... placeholder while hidden, and restores the joined reasoning block without extra rows.",
       "pisharpObservation": "PiSharp splits reasoning chunks around toggle status lines, shows two Thinking... placeholders, and leaves extra blank/indented rows; the final transcript is shifted by three rows.",
       "source": "src/PiSharp.Cli/Tui/Rendering/TerminalConversationPresentation.cs",
       "correction": "Collapse streamed reasoning into one block, keep a single hidden placeholder, and re-render the block in place when visibility changes.",
       "reproduction": "python3 tools/parity/terminal/run.py --pi /tmp/pisharp-current-pi --pisharp src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll --fixture tools/parity/terminal/fixtures/interactive-streaming-cancellation-001/s02-reasoning-streaming.json --case 80x24-dark-fullscreen --output artifacts/parity/repro-s02",
-      "evidence": "comparison.json S02 text/layout differences from s02-02 through exit; ui-report.json checkpoint text"
+      "evidence": "comparison.json S02 text/layout/style differences from s02-02 through exit; ui-report.json checkpoint text"
     },
     {
       "id": "S02-reasoning-italic-style",
@@ -763,11 +783,9 @@
         "s02-07-response-completes",
         "s02-08-idle"
       ],
-      "differenceCount": 2122,
+      "differenceCount": 1022,
       "samplePaths": [
-        "$.buffers.alternate.lines[4].cells[12].attributes.italic",
         "$.buffers.alternate.lines[4].cells[1].attributes.italic",
-        "$.buffers.alternate.lines[4].cells[44].attributes.italic",
         "$.buffers.alternate.lines[4].cells[45].attributes.italic",
         "$.buffers.alternate.lines[4].cells[46].attributes.italic",
         "$.buffers.alternate.lines[4].cells[47].attributes.italic",
@@ -784,7 +802,9 @@
         "$.buffers.alternate.lines[4].cells[58].attributes.italic",
         "$.buffers.alternate.lines[4].cells[59].attributes.italic",
         "$.buffers.alternate.lines[4].cells[60].attributes.italic",
-        "$.buffers.alternate.lines[4].cells[61].attributes.italic"
+        "$.buffers.alternate.lines[4].cells[61].attributes.italic",
+        "$.buffers.alternate.lines[4].cells[62].attributes.italic",
+        "$.buffers.alternate.lines[4].cells[63].attributes.italic"
       ],
       "severity": "P2",
       "category": "style",

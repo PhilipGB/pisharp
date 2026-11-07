@@ -5,6 +5,7 @@
   "piReference": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
   "baseMain": "c615fc17232886d76c5092f8d5b6cd5b22f418fe",
   "branch": "milestone/interactive-streaming-cancellation-parity",
+  "captureSource": "branch working tree",
   "scenariosManifest": "tools/parity/interactive_streaming_cancellation/scenarios.json",
   "evaluate": "tools/parity/interactive_streaming_cancellation/evaluate.py",
   "verifier": "tools/parity/interactive_streaming_cancellation/verify_report.py",
@@ -34,7 +35,9 @@
         "s01-05-completed-response",
         "s01-06-idle",
         "exit"
-      ]
+      ],
+      "forbiddenStreamTokens": [],
+      "forbiddenStreamFrom": null
     },
     {
       "id": "S02",
@@ -51,7 +54,9 @@
         "s02-07-response-completes",
         "s02-08-idle",
         "exit"
-      ]
+      ],
+      "forbiddenStreamTokens": [],
+      "forbiddenStreamFrom": null
     },
     {
       "id": "S03",
@@ -68,13 +73,15 @@
         "s03-07-assistant-continues",
         "s03-08-idle",
         "exit"
-      ]
+      ],
+      "forbiddenStreamTokens": [],
+      "forbiddenStreamFrom": null
     },
     {
       "id": "S04",
       "title": "Cancellation during assistant-text streaming",
       "fixture": "s04-text-cancellation.json",
-      "sha256": "254702441ff630263798b7eed26eba30223cda03564481205f6d3abe03aef2b6",
+      "sha256": "2db88263896b2c8376eb4ebdb6ffca88dd771e0683c0979fa61b5455c9e5c3c3",
       "checkpoints": [
         "s04-01-streaming-begins",
         "s04-02-first-partial",
@@ -85,13 +92,18 @@
         "s04-07-second-prompt",
         "s04-08-idle",
         "exit"
-      ]
+      ],
+      "forbiddenStreamTokens": [
+        "CANCEL_LATE",
+        "CANCEL_FINISH"
+      ],
+      "forbiddenStreamFrom": "s04-04-cancellation-requested"
     },
     {
       "id": "S05",
       "title": "Cancellation while Bash is running",
       "fixture": "s05-tool-cancellation.json",
-      "sha256": "845b419ad6c1f5c542f794c6d206afc82d198e853bdcb5a515a6a66f371a7e3f",
+      "sha256": "2e6c0170bce6272be1220f624cef0b1b37e30b709e5373c9564b3ff52cc521e6",
       "checkpoints": [
         "s05-01-tool-announced",
         "s05-02-tool-process-starts",
@@ -104,9 +116,33 @@
         "s05-09-second-prompt",
         "s05-10-idle",
         "exit"
-      ]
+      ],
+      "forbiddenStreamTokens": [
+        "TOOL_COMPLETED"
+      ],
+      "forbiddenStreamFrom": "s05-04-cancellation-requested"
     }
   ],
+  "captureProvenance": {
+    "consistent": true,
+    "errors": [],
+    "pi": [
+      {
+        "branch": "HEAD",
+        "dirty": false,
+        "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+        "trackedChanges": []
+      }
+    ],
+    "pisharp": [
+      {
+        "branch": "milestone/interactive-streaming-cancellation-parity",
+        "dirty": false,
+        "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+        "trackedChanges": []
+      }
+    ]
+  },
   "normalization": {
     "permitted": [
       "Loader spinner glyphs are canonicalized to one glyph (existing runner normalization).",
@@ -130,7 +166,7 @@
     "comparison": "python3 tools/parity/terminal/run.py --pi /tmp/pisharp-current-pi --pisharp src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll --fixture tools/parity/terminal/fixtures/interactive-streaming-cancellation-001/<scenario>.json --output artifacts/parity/interactive-streaming-cancellation-001/comparison/<stem>",
     "evaluate": "python3 tools/parity/interactive_streaming_cancellation/run_evaluation.py --artifacts artifacts/parity/interactive-streaming-cancellation-001 --evidence docs/parity/fixtures/interactive-streaming-cancellation-001",
     "verify": "python3 tools/parity/interactive_streaming_cancellation/verify_report.py --evidence docs/parity/fixtures/interactive-streaming-cancellation-001 --require-verification",
-    "tests": "python3 -m unittest tools/parity/interactive_streaming_cancellation/test_evaluation.py"
+    "tests": "python3 -m unittest discover -s tools/parity/interactive_streaming_cancellation -p 'test_*.py'"
   },
   "rawArtifacts": "artifacts/parity/interactive-streaming-cancellation-001 (Git ignored)"
 }
