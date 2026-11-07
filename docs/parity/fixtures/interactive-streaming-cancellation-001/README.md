@@ -9,7 +9,7 @@ pipeline.
 - Pi reference: `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` (unchanged)
 - Base main: `03bfa4e87ebcac597fe89f1ac7506abf02aa2385` (PR #47 merge)
 - Branch: `milestone/interactive-visual-parity`
-- Capture source: `2fe9c89a0f09fb7318701219ff993677a9b7c919`
+- Capture source: `689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47`
 - Fixture: `interactive-streaming-cancellation-001`
 - Dimensions: `80x24-dark-fullscreen`, `120x40-dark-fullscreen`
 - Providers: deterministic local HTTP fixture only. No live provider, auth,
@@ -91,7 +91,7 @@ provenance record. The report and fixture manifest bind each case to the exact
 Pi and PiSharp `HEAD`, branch, tracked-change list, and `dirty` flag. This bundle
 captures both products from a clean tree: Pi at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` and PiSharp at
-`2fe9c89a0f09fb7318701219ff993677a9b7c919`; no implicit working-tree changes are
+`689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47`; no implicit working-tree changes are
 accepted. The verifier rejects a missing SHA, a non-boolean or contradictory
 dirty state, a calibration second run that is not the Pi source, or source drift
 between cases. Strict worktree status includes non-ignored untracked files, so an
@@ -101,7 +101,7 @@ The executed PiSharp binary is bound separately. `capture.py` records the clean
 source SHA, publishes into the capture-owned `pisharp-artifact/` directory,
 rechecks the SHA and worktree, and hashes the DLL, `.deps.json` and
 `.runtimeconfig.json`. This bundle records DLL
-`b7e9ee318c252afedecb189128e5462a391475a7384c0500c2f28de45073aebc`, deps
+`9cfb2a8bb0ade07ec218eb432a9fdfd6c098654e86efe7de34dfba743922b839`, deps
 `15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af` and runtime
 config `f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a`.
 Every PiSharp case must use the same artifact, and `builtFromSha` must equal the
@@ -183,6 +183,10 @@ A separate cross-component regression,
 reasoning, a reasoning toggle, a Python code block with builtins, a cancelled
 Bash tool and idle in one transcript at both widths. It checks ordering,
 single-instance markers and the reasoning/syntax/error styles together.
+`TerminalTranscriptBufferTrimTests` additionally proves that character-limit and
+segment-count eviction move the live assistant insertion point with the removed
+segment, preserving `reasoning → answer → status` order both while streaming and
+after commit.
 
 ## Reproduction
 

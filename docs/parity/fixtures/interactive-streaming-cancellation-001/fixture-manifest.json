@@ -138,19 +138,19 @@
     "pisharp": [
       {
         "artifact": {
-          "builtFromSha": "2fe9c89a0f09fb7318701219ff993677a9b7c919",
+          "builtFromSha": "689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47",
           "depsFile": "PiSharp.Cli.deps.json",
           "depsSha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
           "file": "PiSharp.Cli.dll",
           "runtimeConfigFile": "PiSharp.Cli.runtimeconfig.json",
           "runtimeConfigSha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a",
-          "sha256": "b7e9ee318c252afedecb189128e5462a391475a7384c0500c2f28de45073aebc",
+          "sha256": "9cfb2a8bb0ade07ec218eb432a9fdfd6c098654e86efe7de34dfba743922b839",
           "size": 3433472,
           "sourceDirty": false
         },
         "branch": "milestone/interactive-visual-parity",
         "dirty": false,
-        "sha": "2fe9c89a0f09fb7318701219ff993677a9b7c919",
+        "sha": "689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47",
         "trackedChanges": []
       }
     ]

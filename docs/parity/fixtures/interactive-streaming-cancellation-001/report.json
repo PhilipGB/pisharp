@@ -62,19 +62,19 @@
     "pisharp": [
       {
         "artifact": {
-          "builtFromSha": "2fe9c89a0f09fb7318701219ff993677a9b7c919",
+          "builtFromSha": "689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47",
           "depsFile": "PiSharp.Cli.deps.json",
           "depsSha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
           "file": "PiSharp.Cli.dll",
           "runtimeConfigFile": "PiSharp.Cli.runtimeconfig.json",
           "runtimeConfigSha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a",
-          "sha256": "b7e9ee318c252afedecb189128e5462a391475a7384c0500c2f28de45073aebc",
+          "sha256": "9cfb2a8bb0ade07ec218eb432a9fdfd6c098654e86efe7de34dfba743922b839",
           "size": 3433472,
           "sourceDirty": false
         },
         "branch": "milestone/interactive-visual-parity",
         "dirty": false,
-        "sha": "2fe9c89a0f09fb7318701219ff993677a9b7c919",
+        "sha": "689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47",
         "trackedChanges": []
       }
     ]
@@ -152,19 +152,19 @@
               "artifact": null
             },
             "pisharp": {
-              "sha": "2fe9c89a0f09fb7318701219ff993677a9b7c919",
+              "sha": "689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47",
               "branch": "milestone/interactive-visual-parity",
               "dirty": false,
               "trackedChanges": [],
               "artifact": {
                 "file": "PiSharp.Cli.dll",
                 "size": 3433472,
-                "sha256": "b7e9ee318c252afedecb189128e5462a391475a7384c0500c2f28de45073aebc",
+                "sha256": "9cfb2a8bb0ade07ec218eb432a9fdfd6c098654e86efe7de34dfba743922b839",
                 "depsFile": "PiSharp.Cli.deps.json",
                 "depsSha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
                 "runtimeConfigFile": "PiSharp.Cli.runtimeconfig.json",
                 "runtimeConfigSha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a",
-                "builtFromSha": "2fe9c89a0f09fb7318701219ff993677a9b7c919",
+                "builtFromSha": "689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47",
                 "sourceDirty": false
               }
             }
@@ -198,19 +198,19 @@
               "artifact": null
             },
             "pisharp": {
-              "sha": "2fe9c89a0f09fb7318701219ff993677a9b7c919",
+              "sha": "689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47",
               "branch": "milestone/interactive-visual-parity",
               "dirty": false,
               "trackedChanges": [],
               "artifact": {
                 "file": "PiSharp.Cli.dll",
                 "size": 3433472,
-                "sha256": "b7e9ee318c252afedecb189128e5462a391475a7384c0500c2f28de45073aebc",
+                "sha256": "9cfb2a8bb0ade07ec218eb432a9fdfd6c098654e86efe7de34dfba743922b839",
                 "depsFile": "PiSharp.Cli.deps.json",
                 "depsSha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
                 "runtimeConfigFile": "PiSharp.Cli.runtimeconfig.json",
                 "runtimeConfigSha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a",
-                "builtFromSha": "2fe9c89a0f09fb7318701219ff993677a9b7c919",
+                "builtFromSha": "689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47",
                 "sourceDirty": false
               }
             }
@@ -594,19 +594,19 @@
               "artifact": null
             },
             "pisharp": {
-              "sha": "2fe9c89a0f09fb7318701219ff993677a9b7c919",
+              "sha": "689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47",
               "branch": "milestone/interactive-visual-parity",
               "dirty": false,
               "trackedChanges": [],
               "artifact": {
                 "file": "PiSharp.Cli.dll",
                 "size": 3433472,
-                "sha256": "b7e9ee318c252afedecb189128e5462a391475a7384c0500c2f28de45073aebc",
+                "sha256": "9cfb2a8bb0ade07ec218eb432a9fdfd6c098654e86efe7de34dfba743922b839",
                 "depsFile": "PiSharp.Cli.deps.json",
                 "depsSha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
                 "runtimeConfigFile": "PiSharp.Cli.runtimeconfig.json",
                 "runtimeConfigSha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a",
-                "builtFromSha": "2fe9c89a0f09fb7318701219ff993677a9b7c919",
+                "builtFromSha": "689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47",
                 "sourceDirty": false
               }
             }
@@ -640,19 +640,19 @@
               "artifact": null
             },
             "pisharp": {
-              "sha": "2fe9c89a0f09fb7318701219ff993677a9b7c919",
+              "sha": "689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47",
               "branch": "milestone/interactive-visual-parity",
               "dirty": false,
               "trackedChanges": [],
               "artifact": {
                 "file": "PiSharp.Cli.dll",
                 "size": 3433472,
-                "sha256": "b7e9ee318c252afedecb189128e5462a391475a7384c0500c2f28de45073aebc",
+                "sha256": "9cfb2a8bb0ade07ec218eb432a9fdfd6c098654e86efe7de34dfba743922b839",
                 "depsFile": "PiSharp.Cli.deps.json",
                 "depsSha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
                 "runtimeConfigFile": "PiSharp.Cli.runtimeconfig.json",
                 "runtimeConfigSha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a",
-                "builtFromSha": "2fe9c89a0f09fb7318701219ff993677a9b7c919",
+                "builtFromSha": "689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47",
                 "sourceDirty": false
               }
             }
@@ -1044,19 +1044,19 @@
               "artifact": null
             },
             "pisharp": {
-              "sha": "2fe9c89a0f09fb7318701219ff993677a9b7c919",
+              "sha": "689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47",
               "branch": "milestone/interactive-visual-parity",
               "dirty": false,
               "trackedChanges": [],
               "artifact": {
                 "file": "PiSharp.Cli.dll",
                 "size": 3433472,
-                "sha256": "b7e9ee318c252afedecb189128e5462a391475a7384c0500c2f28de45073aebc",
+                "sha256": "9cfb2a8bb0ade07ec218eb432a9fdfd6c098654e86efe7de34dfba743922b839",
                 "depsFile": "PiSharp.Cli.deps.json",
                 "depsSha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
                 "runtimeConfigFile": "PiSharp.Cli.runtimeconfig.json",
                 "runtimeConfigSha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a",
-                "builtFromSha": "2fe9c89a0f09fb7318701219ff993677a9b7c919",
+                "builtFromSha": "689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47",
                 "sourceDirty": false
               }
             }
@@ -1090,19 +1090,19 @@
               "artifact": null
             },
             "pisharp": {
-              "sha": "2fe9c89a0f09fb7318701219ff993677a9b7c919",
+              "sha": "689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47",
               "branch": "milestone/interactive-visual-parity",
               "dirty": false,
               "trackedChanges": [],
               "artifact": {
                 "file": "PiSharp.Cli.dll",
                 "size": 3433472,
-                "sha256": "b7e9ee318c252afedecb189128e5462a391475a7384c0500c2f28de45073aebc",
+                "sha256": "9cfb2a8bb0ade07ec218eb432a9fdfd6c098654e86efe7de34dfba743922b839",
                 "depsFile": "PiSharp.Cli.deps.json",
                 "depsSha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
                 "runtimeConfigFile": "PiSharp.Cli.runtimeconfig.json",
                 "runtimeConfigSha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a",
-                "builtFromSha": "2fe9c89a0f09fb7318701219ff993677a9b7c919",
+                "builtFromSha": "689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47",
                 "sourceDirty": false
               }
             }
@@ -1522,19 +1522,19 @@
               "artifact": null
             },
             "pisharp": {
-              "sha": "2fe9c89a0f09fb7318701219ff993677a9b7c919",
+              "sha": "689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47",
               "branch": "milestone/interactive-visual-parity",
               "dirty": false,
               "trackedChanges": [],
               "artifact": {
                 "file": "PiSharp.Cli.dll",
                 "size": 3433472,
-                "sha256": "b7e9ee318c252afedecb189128e5462a391475a7384c0500c2f28de45073aebc",
+                "sha256": "9cfb2a8bb0ade07ec218eb432a9fdfd6c098654e86efe7de34dfba743922b839",
                 "depsFile": "PiSharp.Cli.deps.json",
                 "depsSha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
                 "runtimeConfigFile": "PiSharp.Cli.runtimeconfig.json",
                 "runtimeConfigSha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a",
-                "builtFromSha": "2fe9c89a0f09fb7318701219ff993677a9b7c919",
+                "builtFromSha": "689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47",
                 "sourceDirty": false
               }
             }
@@ -1568,19 +1568,19 @@
               "artifact": null
             },
             "pisharp": {
-              "sha": "2fe9c89a0f09fb7318701219ff993677a9b7c919",
+              "sha": "689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47",
               "branch": "milestone/interactive-visual-parity",
               "dirty": false,
               "trackedChanges": [],
               "artifact": {
                 "file": "PiSharp.Cli.dll",
                 "size": 3433472,
-                "sha256": "b7e9ee318c252afedecb189128e5462a391475a7384c0500c2f28de45073aebc",
+                "sha256": "9cfb2a8bb0ade07ec218eb432a9fdfd6c098654e86efe7de34dfba743922b839",
                 "depsFile": "PiSharp.Cli.deps.json",
                 "depsSha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
                 "runtimeConfigFile": "PiSharp.Cli.runtimeconfig.json",
                 "runtimeConfigSha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a",
-                "builtFromSha": "2fe9c89a0f09fb7318701219ff993677a9b7c919",
+                "builtFromSha": "689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47",
                 "sourceDirty": false
               }
             }
@@ -1643,12 +1643,12 @@
             "forbiddenStream": {
               "required": true,
               "scanned": true,
-              "fromRenderIndex": 16,
+              "fromRenderIndex": 25,
               "tokens": [
                 "CANCEL_LATE",
                 "CANCEL_FINISH"
               ],
-              "renderFrameCount": 26,
+              "renderFrameCount": 40,
               "counts": {
                 "CANCEL_LATE": 0,
                 "CANCEL_FINISH": 0
@@ -1735,12 +1735,12 @@
             "forbiddenStream": {
               "required": true,
               "scanned": true,
-              "fromRenderIndex": 67,
+              "fromRenderIndex": 119,
               "tokens": [
                 "CANCEL_LATE",
                 "CANCEL_FINISH"
               ],
-              "renderFrameCount": 116,
+              "renderFrameCount": 168,
               "counts": {
                 "CANCEL_LATE": 0,
                 "CANCEL_FINISH": 0
@@ -1921,12 +1921,12 @@
             "forbiddenStream": {
               "required": true,
               "scanned": true,
-              "fromRenderIndex": 15,
+              "fromRenderIndex": 17,
               "tokens": [
                 "CANCEL_LATE",
                 "CANCEL_FINISH"
               ],
-              "renderFrameCount": 34,
+              "renderFrameCount": 38,
               "counts": {
                 "CANCEL_LATE": 0,
                 "CANCEL_FINISH": 0
@@ -2036,19 +2036,19 @@
               "artifact": null
             },
             "pisharp": {
-              "sha": "2fe9c89a0f09fb7318701219ff993677a9b7c919",
+              "sha": "689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47",
               "branch": "milestone/interactive-visual-parity",
               "dirty": false,
               "trackedChanges": [],
               "artifact": {
                 "file": "PiSharp.Cli.dll",
                 "size": 3433472,
-                "sha256": "b7e9ee318c252afedecb189128e5462a391475a7384c0500c2f28de45073aebc",
+                "sha256": "9cfb2a8bb0ade07ec218eb432a9fdfd6c098654e86efe7de34dfba743922b839",
                 "depsFile": "PiSharp.Cli.deps.json",
                 "depsSha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
                 "runtimeConfigFile": "PiSharp.Cli.runtimeconfig.json",
                 "runtimeConfigSha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a",
-                "builtFromSha": "2fe9c89a0f09fb7318701219ff993677a9b7c919",
+                "builtFromSha": "689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47",
                 "sourceDirty": false
               }
             }
@@ -2082,19 +2082,19 @@
               "artifact": null
             },
             "pisharp": {
-              "sha": "2fe9c89a0f09fb7318701219ff993677a9b7c919",
+              "sha": "689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47",
               "branch": "milestone/interactive-visual-parity",
               "dirty": false,
               "trackedChanges": [],
               "artifact": {
                 "file": "PiSharp.Cli.dll",
                 "size": 3433472,
-                "sha256": "b7e9ee318c252afedecb189128e5462a391475a7384c0500c2f28de45073aebc",
+                "sha256": "9cfb2a8bb0ade07ec218eb432a9fdfd6c098654e86efe7de34dfba743922b839",
                 "depsFile": "PiSharp.Cli.deps.json",
                 "depsSha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
                 "runtimeConfigFile": "PiSharp.Cli.runtimeconfig.json",
                 "runtimeConfigSha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a",
-                "builtFromSha": "2fe9c89a0f09fb7318701219ff993677a9b7c919",
+                "builtFromSha": "689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47",
                 "sourceDirty": false
               }
             }
@@ -2175,11 +2175,11 @@
             "forbiddenStream": {
               "required": true,
               "scanned": true,
-              "fromRenderIndex": 9,
+              "fromRenderIndex": 12,
               "tokens": [
                 "TOOL_COMPLETED"
               ],
-              "renderFrameCount": 19,
+              "renderFrameCount": 25,
               "counts": {
                 "TOOL_COMPLETED": 0
               },
@@ -2283,11 +2283,11 @@
             "forbiddenStream": {
               "required": true,
               "scanned": true,
-              "fromRenderIndex": 23,
+              "fromRenderIndex": 33,
               "tokens": [
                 "TOOL_COMPLETED"
               ],
-              "renderFrameCount": 52,
+              "renderFrameCount": 81,
               "counts": {
                 "TOOL_COMPLETED": 0
               },
@@ -2393,11 +2393,11 @@
             "forbiddenStream": {
               "required": true,
               "scanned": true,
-              "fromRenderIndex": 14,
+              "fromRenderIndex": 16,
               "tokens": [
                 "TOOL_COMPLETED"
               ],
-              "renderFrameCount": 34,
+              "renderFrameCount": 39,
               "counts": {
                 "TOOL_COMPLETED": 0
               },
@@ -2501,11 +2501,11 @@
             "forbiddenStream": {
               "required": true,
               "scanned": true,
-              "fromRenderIndex": 15,
+              "fromRenderIndex": 17,
               "tokens": [
                 "TOOL_COMPLETED"
               ],
-              "renderFrameCount": 36,
+              "renderFrameCount": 39,
               "counts": {
                 "TOOL_COMPLETED": 0
               },

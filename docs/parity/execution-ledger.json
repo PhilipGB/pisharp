@@ -15637,7 +15637,7 @@
     "status": "draft_open_unmerged",
     "branch": "milestone/interactive-visual-parity",
     "base_main": "03bfa4e87ebcac597fe89f1ac7506abf02aa2385",
-    "source_sha": "2fe9c89a0f09fb7318701219ff993677a9b7c919",
+    "source_sha": "689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47",
     "pi_revision": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
     "fixture": "interactive-streaming-cancellation-001",
     "deterministic_ui": {
@@ -15700,14 +15700,14 @@
         "tracked_changes": []
       },
       "pisharp": {
-        "sha": "2fe9c89a0f09fb7318701219ff993677a9b7c919",
+        "sha": "689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47",
         "branch": "milestone/interactive-visual-parity",
         "dirty": false,
         "tracked_changes": [],
         "artifact": {
-          "built_from_sha": "2fe9c89a0f09fb7318701219ff993677a9b7c919",
+          "built_from_sha": "689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47",
           "file": "PiSharp.Cli.dll",
-          "sha256": "b7e9ee318c252afedecb189128e5462a391475a7384c0500c2f28de45073aebc",
+          "sha256": "9cfb2a8bb0ade07ec218eb432a9fdfd6c098654e86efe7de34dfba743922b839",
           "deps_sha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
           "runtime_config_sha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a",
           "source_dirty": false
@@ -15791,7 +15791,7 @@
       "forbidden_stream_scan": "0 occurrences across post-cancellation render frames",
       "finding_predicates": "0 findings; 0 unmatched differences",
       "terminal_python": "66 passed",
-      "focused_dotnet": "219 passed, 0 failed (reasoning layout, cancellation presentation, cross-component composition, compositor, screen, transcript, markdown and theme tests)",
+      "focused_dotnet": "221 passed, 0 failed (reasoning layout, bounded transcript trimming, cancellation presentation, cross-component composition, compositor, screen, transcript, markdown and theme tests)",
       "full_dotnet": "Exact-head Linux CI (the local full run reached 3,990 passes and hit a pre-existing NativeExtensionUiTests.PackageInputListenersRunBeforeFocusedCustomComponents hang reproduced on base 03bfa4e8; the two parallel-run failures pass individually)",
       "format": "clean",
       "warnings_as_errors": "Exact-head Linux CI build step",
@@ -15804,6 +15804,14 @@
     "ui_report": "docs/parity/fixtures/interactive-streaming-cancellation-001/ui-report.json",
     "verification_file": "docs/parity/fixtures/interactive-streaming-cancellation-001/verification.json",
     "fixture_manifest": "docs/parity/fixtures/interactive-streaming-cancellation-001/fixture-manifest.json",
-    "suggested_next_single_deliverable": "Select the next verified-capability gap from the execution ledger."
+    "suggested_next_single_deliverable": "Select the next verified-capability gap from the execution ledger.",
+    "bounded_transcript": {
+      "change": "TrimTranscript now removes leading segments through RemoveLeadingSegment, which decrements the live assistant insertion index so bounded eviction cannot move reasoning behind trailing status rows.",
+      "tests": [
+        "TerminalTranscriptBufferTrimTests.CharacterTrimmingKeepsLiveAssistantBeforeTrailingStatus",
+        "TerminalTranscriptBufferTrimTests.SegmentTrimmingKeepsLiveAssistantBeforeTrailingStatus"
+      ],
+      "coverage": "Character-limit and segment-count trimming while reasoning and status are live, plus committed reasoning/answer/status ordering."
+    }
   }
 }

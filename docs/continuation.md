@@ -17,7 +17,7 @@ The milestone entries below retain their historical wording and are superseded b
 This bounded follow-up corrects the six visual differences exposed by the merged
 `interactive-streaming-cancellation-001` evaluation and re-runs the same
 artifact-bound capture pipeline. Final evidence is on source
-`2fe9c89a0f09fb7318701219ff993677a9b7c919` against the unchanged Pi pin
+`689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47` against the unchanged Pi pin
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The deterministic score is
 **100/100**: functional **40/40**, temporal **20/20**, visual **30/30** and
 cleanup **10/10**. All five scenarios are 6/6 visual at 80x24 and 120x40; every
@@ -35,10 +35,12 @@ text-only cancellation keeps `Operation aborted`. The reported S02 italic
 difference was an artifact of the displaced rows; a styled-cell regression now
 pins the already-correct thinking style. A cross-component regression composes
 reasoning, a toggle, Python builtins, Bash cancellation and idle in one
-transcript at both widths.
+transcript at both widths. Bounded-transcript regressions also verify that
+character-limit and segment-count eviction keep the live insertion point aligned,
+preserving reasoning, answer and status order while streaming and after commit.
 
 The fresh capture-owned publish binds DLL
-`b7e9ee318c252afedecb189128e5462a391475a7384c0500c2f28de45073aebc`, deps
+`9cfb2a8bb0ade07ec218eb432a9fdfd6c098654e86efe7de34dfba743922b839`, deps
 `15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af` and runtime
 config `f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a` to that
 source. The final bundle contains clean reruns after an S04 second-prompt
