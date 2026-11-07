@@ -96,6 +96,46 @@ public sealed class ReasoningStreamingLayoutTests
         Assert.Equal(0, Occurrences(resized.Screen, "REASONING_BEGIN"));
     }
 
+
+    [Theory]
+    [InlineData(80, 24)]
+    [InlineData(120, 40)]
+    public void VisibleReasoningUsesPiItalicThinkingStyle(int columns, int rows)
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var theme = TerminalThemeCatalog.LoadBuiltIn("dark", TerminalColorMode.TrueColor);
+        using var screen = new TerminalScreen(output, error, () => columns, () => rows,
+            new TerminalImageRenderer(), theme);
+        var transcript = new InteractiveTranscript(screen.Output, screen.Error, screen: screen);
+
+        screen.AppendUserMessage(UserPrompt);
+        transcript.Render(new AgentLifecycleEvent("reasoning_delta", Text: ReasoningBegin));
+        transcript.Render(new AgentLifecycleEvent("reasoning_delta", Text: ReasoningContinuation));
+        var visible = output.ToString();
+        SgrAssertions.AssertStyleAt(visible, "REASONING_BEGIN", italic: true, foreground: true);
+        if (columns == 80)
+            SgrAssertions.AssertStyleAt(visible, "visible answer.", italic: true, foreground: true);
+
+        var hiddenStart = output.GetStringBuilder().Length;
+        screen.SetThinkingBlocksHidden(true);
+        screen.AppendThemedStatusLine("Thinking blocks: hidden");
+        var hidden = output.ToString()[hiddenStart..];
+        SgrAssertions.AssertStyleAt(hidden, "Thinking...", italic: true, foreground: true);
+        SgrAssertions.AssertStyleAt(hidden, "Thinking blocks: hidden", italic: false);
+
+        var shownStart = output.GetStringBuilder().Length;
+        screen.SetThinkingBlocksHidden(false);
+        screen.AppendThemedStatusLine("Thinking blocks: visible");
+        var shown = output.ToString()[shownStart..];
+        SgrAssertions.AssertStyleAt(shown, "REASONING_BEGIN", italic: true, foreground: true);
+
+        var answerStart = output.GetStringBuilder().Length;
+        transcript.Render(new AgentLifecycleEvent("model_text_delta", Text: AnswerBegin));
+        var answer = output.ToString()[answerStart..];
+        SgrAssertions.AssertStyleAt(answer, "ANSWER_BEGIN", italic: false);
+    }
+
     private static string[] ExpectedRows(int columns)
     {
         if (columns == 80)
