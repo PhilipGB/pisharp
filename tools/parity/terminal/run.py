@@ -4,6 +4,7 @@ import argparse
 import base64
 import fcntl
 import gzip
+import hashlib
 import io
 import itertools
 import json
@@ -146,9 +147,40 @@ def git_provenance(path):
     branch = subprocess.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
                                      cwd=path, text=True).strip()
     tracked = subprocess.check_output(
-        ['git', 'status', '--porcelain', '--untracked-files=no'], cwd=path, text=True).strip()
+        ['git', 'status', '--porcelain'], cwd=path, text=True).strip()
     changes = tracked.splitlines() if tracked else []
     return dict(sha=sha, branch=branch, dirty=bool(changes), trackedChanges=changes[:50])
+
+
+def artifact_provenance(path):
+    """Hash the exact executable artifacts the harness will run."""
+    path = Path(path).resolve()
+    if not path.is_file():
+        raise ValueError(f'PiSharp artifact does not exist: {path}')
+    deps = path.with_suffix('.deps.json')
+    runtime = path.with_suffix('.runtimeconfig.json')
+
+    def digest(candidate):
+        return hashlib.sha256(candidate.read_bytes()).hexdigest() if candidate.is_file() else None
+
+    artifact = dict(
+        file=path.name,
+        size=path.stat().st_size,
+        sha256=digest(path),
+        depsFile=deps.name if deps.is_file() else None,
+        depsSha256=digest(deps),
+        runtimeConfigFile=runtime.name if runtime.is_file() else None,
+        runtimeConfigSha256=digest(runtime),
+    )
+    manifest = path.parent / 'pisharp-artifact.json'
+    if manifest.is_file():
+        value = json.loads(manifest.read_text())
+        artifact.update(
+            builtFromSha=value.get('sourceSha'),
+            sourceDirty=value.get('sourceDirty'),
+            buildCommand=value.get('buildCommand'),
+        )
+    return artifact
 
 
 def render_state_text(state):
@@ -704,7 +736,9 @@ def main():
     scenario = json.loads(args.fixture.read_text())
     args.output.mkdir(parents=True, exist_ok=True)
     product_commands = commands(args.pi.resolve(), args.pisharp.resolve(), scenario, args.pisharp_extension)
-    repositories = dict(pi=git_provenance(args.pi), pisharp=git_provenance(ROOT))
+    pisharp_artifact = artifact_provenance(args.pisharp)
+    repositories = dict(pi=git_provenance(args.pi),
+                        pisharp=dict(git_provenance(ROOT), artifact=pisharp_artifact))
     provenance = dict(pi=repositories['pi'],
                       pisharp=repositories['pi'] if args.calibrate else repositories['pisharp'])
     report = dict(piSha=provenance['pi']['sha'], pisharpSha=provenance['pisharp']['sha'],

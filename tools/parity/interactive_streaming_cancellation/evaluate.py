@@ -30,8 +30,9 @@ DYNAMIC_PATTERNS = [
 CATEGORY_ORDER = ['text', 'style', 'layout']
 SCENARIO_POINTS = dict(functional=8, temporal=4, visual=6, cleanup=5)
 CLEANUP_SCENARIOS = {'S04', 'S05'}
-PROVENANCE_FIELDS = ('sha', 'branch', 'dirty', 'trackedChanges')
+PROVENANCE_FIELDS = ('sha', 'branch', 'dirty', 'trackedChanges', 'artifact')
 SHA_PATTERN = re.compile(r'^[0-9a-f]{40}$')
+HASH_PATTERN = re.compile(r'^[0-9a-f]{64}$')
 
 
 def load_gzip_json(path):
@@ -206,12 +207,24 @@ def product_provenance(evidence, product):
     return {field: value.get(field) for field in PROVENANCE_FIELDS}
 
 
+def artifact_valid(value):
+    if not isinstance(value, dict):
+        return False
+    if not HASH_PATTERN.fullmatch(str(value.get('sha256', ''))):
+        return False
+    for field in ('depsSha256', 'runtimeConfigSha256'):
+        if not HASH_PATTERN.fullmatch(str(value.get(field, ''))):
+            return False
+    return True
+
+
 def provenance_valid(value):
     return (isinstance(value, dict)
             and bool(SHA_PATTERN.fullmatch(str(value.get('sha', ''))))
             and isinstance(value.get('dirty'), bool)
             and isinstance(value.get('trackedChanges'), list)
-            and value['dirty'] == bool(value['trackedChanges']))
+            and value['dirty'] == bool(value['trackedChanges'])
+            and (value.get('artifact') is None or artifact_valid(value['artifact'])))
 
 
 def capture_bundle(calibration, comparison):

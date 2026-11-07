@@ -4,6 +4,7 @@ import copy
 import json
 from pathlib import Path
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -12,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import evaluate  # noqa: E402
 import verify_report  # noqa: E402
+import run as terminal_run  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[3]
 MANIFEST = Path(__file__).with_name('scenarios.json')
@@ -129,6 +131,41 @@ class FindingPredicateTests(unittest.TestCase):
                           path='$.buffers.alternate.lines[7].cells[3].foreground.value',
                           pi=1, pisharp=2)
         self.assertIsNone(evaluate.match_finding('S01', scenario, difference))
+
+
+class ProvenanceTests(unittest.TestCase):
+    def test_git_provenance_includes_nonignored_untracked_files(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary)
+            subprocess.run(['git', 'init', '-q'], cwd=repository, check=True)
+            (repository / 'tracked.cs').write_text('class Tracked {}\n')
+            subprocess.run(['git', 'add', 'tracked.cs'], cwd=repository, check=True)
+            subprocess.run(['git', '-c', 'user.name=Test', '-c', 'user.email=test@example.invalid',
+                            'commit', '-q', '-m', 'initial'], cwd=repository, check=True)
+            self.assertFalse(terminal_run.git_provenance(repository)['dirty'])
+            (repository / 'untracked.cs').write_text('class Untracked {}\n')
+            provenance = terminal_run.git_provenance(repository)
+            self.assertTrue(provenance['dirty'])
+            self.assertTrue(any(item.startswith('?? untracked.cs')
+                                for item in provenance['trackedChanges']))
+
+    def test_artifact_hash_reads_publish_manifest(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            for name, content in (('PiSharp.Cli.dll', b'dll'),
+                                  ('PiSharp.Cli.deps.json', b'deps'),
+                                  ('PiSharp.Cli.runtimeconfig.json', b'runtime')):
+                (directory / name).write_bytes(content)
+            (directory / 'pisharp-artifact.json').write_text(json.dumps(dict(
+                sourceSha='1' * 40, sourceDirty=False, buildCommand='dotnet publish')))
+            artifact = terminal_run.artifact_provenance(directory / 'PiSharp.Cli.dll')
+            self.assertEqual(artifact['builtFromSha'], '1' * 40)
+            self.assertEqual(artifact['sha256'],
+                             __import__('hashlib').sha256(b'dll').hexdigest())
+            self.assertEqual(artifact['depsSha256'],
+                             __import__('hashlib').sha256(b'deps').hexdigest())
+            self.assertEqual(artifact['runtimeConfigSha256'],
+                             __import__('hashlib').sha256(b'runtime').hexdigest())
 
 
 class VerifierTests(unittest.TestCase):
@@ -286,6 +323,27 @@ class VerifierTests(unittest.TestCase):
             scenario['findings'] = [item for item in scenario['findings'] if item != removed]
         self.write('report.json', document)
         self.assert_fails('omitted difference')
+
+    def test_missing_artifact_hash_is_rejected(self):
+        document = self.load('report.json')
+        document['captureProvenance']['pisharp'][0]['artifact']['sha256'] = ''
+        self.write('report.json', document)
+        self.assert_fails('missing artifact hash')
+
+    def test_built_from_sha_mismatch_is_rejected(self):
+        document = self.load('report.json')
+        document['captureProvenance']['pisharp'][0]['artifact']['builtFromSha'] = '0' * 40
+        self.write('report.json', document)
+        self.assert_fails('artifact source mismatch')
+
+    def test_differing_case_artifact_hash_is_rejected(self):
+        document = self.load('report.json')
+        scenario = self.scenario(document, 'S03')
+        artifact = scenario['captures']['80x24-dark-fullscreen']['comparison']['pisharp'][
+            'artifact']
+        artifact['sha256'] = '0' * 64
+        self.write('report.json', document)
+        self.assert_fails('differing artifact hash')
 
     def test_stale_verification_checksum_is_rejected(self):
         shutil.copy2(EVIDENCE / 'verification.json', self.temp / 'verification.json')

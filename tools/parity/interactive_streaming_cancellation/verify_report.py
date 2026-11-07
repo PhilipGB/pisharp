@@ -165,8 +165,16 @@ def verify(evidence_dir, manifest_path=None, require_verification=False):
         check(checks, 'Pi capture is pinned reference',
               pi_states[0].get('sha') == manifest.get('piReference'), pi_states[0].get('sha'))
     if pisharp_states:
-        check(checks, 'PiSharp capture state valid', provenance_valid(pisharp_states[0]),
-              pisharp_states[0])
+        state = pisharp_states[0]
+        artifact = state.get('artifact') or {}
+        check(checks, 'PiSharp capture state valid', provenance_valid(state), state)
+        check(checks, 'PiSharp artifact hashes present',
+              evaluate.artifact_valid(artifact), artifact)
+        check(checks, 'PiSharp artifact built from captured source',
+              artifact.get('builtFromSha') == state.get('sha'),
+              f'{artifact.get("builtFromSha")} != {state.get("sha")}')
+        check(checks, 'PiSharp artifact source clean',
+              artifact.get('sourceDirty') is False, artifact.get('sourceDirty'))
 
     manifest_file = evidence_dir / 'fixture-manifest.json'
     if manifest_file.is_file():
@@ -254,6 +262,8 @@ def verify(evidence_dir, manifest_path=None, require_verification=False):
             comparison_pair = capture.get('comparison') or {}
             scenario_provenance_ok &= (comparison_pair.get('pi') in pi_states
                                        and comparison_pair.get('pisharp') in pisharp_states)
+            scenario_provenance_ok &= evaluate.artifact_valid(
+                (comparison_pair.get('pisharp') or {}).get('artifact'))
         check(checks, f'{scenario_id} capture provenance', scenario_provenance_ok, captures)
 
         contracts = scenario.get('contracts') or {}
