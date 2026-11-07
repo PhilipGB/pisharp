@@ -1,0 +1,96 @@
+{
+  "id": "interactive-streaming-cancellation-001-s01-text-streaming",
+  "settings": { "quietStartup": true },
+  "arguments": {
+    "pi": [
+      "--provider", "fixture", "--model", "fixture-model", "--no-session", "--offline",
+      "--no-extensions", "--no-skills", "--no-prompt-templates", "--no-tools", "--no-context-files",
+      "--system-prompt", "You are a terminal parity fixture."
+    ],
+    "pisharp": [
+      "--provider", "fixture", "--model", "fixture-model", "--no-session", "--offline",
+      "--no-extensions", "--no-skills", "--no-prompt-templates", "--no-tools", "--no-approve",
+      "--no-context-files", "--system-prompt", "You are a terminal parity fixture."
+    ]
+  },
+  "fixtureBehavior": {
+    "chatRequestGates": ["s01-request"],
+    "chatResponseChunksByRequest": [[
+      "The first clause is deliberately incomplete",
+      " and the continuation completes it.\n\n",
+      "```python\nprint('first line')\n",
+      "print('second line')\n```\n\nThe final paragraph remains stable.\n"
+    ]],
+    "chatResponseChunkGatesByRequest": [[
+      "s01-chunk-1", "s01-chunk-2", "s01-chunk-3", "s01-chunk-4"
+    ]],
+    "chatResponseChunkReadyGatesByRequest": [[
+      "s01-chunk-1-ready", "s01-chunk-2-ready", "s01-chunk-3-ready", "s01-chunk-4-ready"
+    ]],
+    "chatResponseFinishGates": ["s01-finish"]
+  },
+  "dimensions": [
+    { "columns": 80, "rows": 24 },
+    { "columns": 120, "rows": 40 }
+  ],
+  "themes": ["dark"],
+  "modes": ["fullscreen"],
+  "actions": [
+    { "id": "startup", "expect": "fixture-model" },
+    {
+      "id": "s01-01-before-first-chunk",
+      "send": "Stream the staged answer.\r",
+      "waitGatesAfter": ["s01-request"],
+      "allowStaticFrame": true,
+      "expect": "Stream the staged answer."
+    },
+    {
+      "id": "s01-02-after-first-chunk",
+      "releaseGates": ["s01-chunk-1"],
+      "waitGatesAfter": ["s01-chunk-1-ready"],
+      "allowStaticFrame": true,
+      "expect": "The first clause is deliberately incomplete",
+      "notExpect": "continuation completes it"
+    },
+    {
+      "id": "s01-03-after-second-chunk",
+      "releaseGates": ["s01-chunk-2"],
+      "waitGatesAfter": ["s01-chunk-2-ready"],
+      "allowStaticFrame": true,
+      "expect": "The first clause is deliberately incomplete and the continuation completes it.",
+      "notExpect": "final paragraph remains stable"
+    },
+    {
+      "id": "s01-04-incomplete-code-block",
+      "releaseGates": ["s01-chunk-3"],
+      "waitGatesAfter": ["s01-chunk-3-ready"],
+      "allowStaticFrame": true,
+      "expect": "print('first line')",
+      "notExpect": "final paragraph remains stable"
+    },
+    {
+      "id": "s01-05-completed-response",
+      "releaseGates": ["s01-chunk-4"],
+      "waitGatesAfter": ["s01-chunk-4-ready"],
+      "allowStaticFrame": true,
+      "expect": "The final paragraph remains stable."
+    },
+    {
+      "id": "s01-06-idle",
+      "releaseGates": ["s01-finish"],
+      "expect": "fixture-model",
+      "notExpect": "Working"
+    },
+    { "id": "exit", "send": "\u0003\u0003", "exit": true }
+  ],
+  "terminal": { "keyboardProtocol": "kitty" },
+  "assertionFrames": [
+    "s01-01-before-first-chunk",
+    "s01-02-after-first-chunk",
+    "s01-03-after-second-chunk",
+    "s01-04-incomplete-code-block",
+    "s01-05-completed-response",
+    "s01-06-idle",
+    "exit"
+  ]
+}

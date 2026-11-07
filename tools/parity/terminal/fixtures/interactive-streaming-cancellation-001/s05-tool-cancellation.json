@@ -1,0 +1,205 @@
+{
+  "id": "interactive-streaming-cancellation-001-s05-tool-cancellation",
+  "forbiddenStreamTokens": ["TOOL_COMPLETED"],
+  "forbiddenStreamFrom": "s05-04-cancellation-requested",
+  "settings": {
+    "quietStartup": true
+  },
+  "arguments": {
+    "pi": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--no-session",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-context-files",
+      "--tools",
+      "bash",
+      "--system-prompt",
+      "You are a terminal parity fixture."
+    ],
+    "pisharp": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--no-session",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-context-files",
+      "--tools",
+      "bash",
+      "--no-approve",
+      "--system-prompt",
+      "You are a terminal parity fixture."
+    ]
+  },
+  "projectFiles": {
+    "cancellable-tool.sh": "echo TOOL_STARTED\nsleep 600 &\nchild=$!\necho \"$child\" > child.pid\necho \"$$\" > shell.pid\necho PIDS_READY\nwhile [ ! -f release ]; do sleep 0.05; done\necho TOOL_COMPLETED\nwait \"$child\"\n"
+  },
+  "fixtureBehavior": {
+    "chatRequestGates": [
+      "s05-tool-request",
+      "s05-second-request"
+    ],
+    "chatResponseGates": [
+      "s05-tool-call-response"
+    ],
+    "chatToolCallsByRequest": [
+      [
+        {
+          "id": "call-s05-cancel",
+          "name": "bash",
+          "arguments": {
+            "command": "sh cancellable-tool.sh"
+          }
+        }
+      ]
+    ],
+    "chatResponseChunksByRequest": [
+      null,
+      [
+        "SECOND_TOOL_PROMPT_OK the run recovered.\n"
+      ]
+    ]
+  },
+  "dimensions": [
+    {
+      "columns": 80,
+      "rows": 24
+    },
+    {
+      "columns": 120,
+      "rows": 40
+    }
+  ],
+  "themes": [
+    "dark"
+  ],
+  "modes": [
+    "fullscreen"
+  ],
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "s05-01-tool-announced",
+      "send": "Run the cancellable fixture tool.\r",
+      "waitGatesAfter": [
+        "s05-tool-request"
+      ],
+      "allowStaticFrame": true,
+      "expect": "Run the cancellable fixture tool."
+    },
+    {
+      "id": "s05-02-tool-process-starts",
+      "releaseGates": [
+        "s05-tool-call-response"
+      ],
+      "allowStaticFrame": true,
+      "expect": "Working"
+    },
+    {
+      "id": "s05-03-start-marker-observed",
+      "allowStaticFrame": true,
+      "expect": "PIDS_READY",
+      "notExpect": "TOOL_COMPLETED",
+      "processFiles": [
+        "child.pid",
+        "shell.pid"
+      ]
+    },
+    {
+      "id": "s05-04-cancellation-requested",
+      "send": "\u001b",
+      "allowStaticFrame": true
+    },
+    {
+      "id": "s05-05-tool-cancellation-settles",
+      "allowStaticFrame": true,
+      "expect": {
+        "pi": "Command aborted",
+        "pisharp": "Operation aborted"
+      },
+      "notExpect": "Working"
+    },
+    {
+      "id": "s05-06-no-late-tool-output",
+      "writeFiles": {
+        "workspace": {
+          "release": ""
+        }
+      },
+      "allowStaticFrame": true,
+      "expect": {
+        "pi": "Command aborted",
+        "pisharp": "Operation aborted"
+      },
+      "notExpect": "TOOL_COMPLETED"
+    },
+    {
+      "id": "s05-07-processes-cleaned",
+      "waitForProcessesGone": [
+        "child.pid",
+        "shell.pid"
+      ],
+      "processTimeout": 5,
+      "allowStaticFrame": true,
+      "expect": {
+        "pi": "Command aborted",
+        "pisharp": "Operation aborted"
+      }
+    },
+    {
+      "id": "s05-08-terminal-idle",
+      "allowStaticFrame": true,
+      "expect": "fixture-model",
+      "notExpect": "Working"
+    },
+    {
+      "id": "s05-09-second-prompt",
+      "send": "Send a second prompt after tool cancellation.\r",
+      "waitGatesAfter": [
+        "s05-second-request"
+      ],
+      "allowStaticFrame": true,
+      "expect": "SECOND_TOOL_PROMPT_OK the run recovered.",
+      "notExpect": "TOOL_COMPLETED"
+    },
+    {
+      "id": "s05-10-idle",
+      "allowStaticFrame": true,
+      "expect": "fixture-model",
+      "notExpect": "Working"
+    },
+    {
+      "id": "exit",
+      "send": "\u0003\u0003",
+      "exit": true
+    }
+  ],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  },
+  "assertionFrames": [
+    "s05-01-tool-announced",
+    "s05-02-tool-process-starts",
+    "s05-03-start-marker-observed",
+    "s05-04-cancellation-requested",
+    "s05-05-tool-cancellation-settles",
+    "s05-06-no-late-tool-output",
+    "s05-07-processes-cleaned",
+    "s05-08-terminal-idle",
+    "s05-09-second-prompt",
+    "s05-10-idle",
+    "exit"
+  ]
+}

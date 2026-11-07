@@ -1,0 +1,2437 @@
+{
+  "fixture": "interactive-streaming-cancellation-001",
+  "revisions": {
+    "piReference": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "baseMain": "c615fc17232886d76c5092f8d5b6cd5b22f418fe",
+    "branch": "milestone/interactive-streaming-cancellation-parity",
+    "captureSource": "branch working tree"
+  },
+  "dimensions": [
+    {
+      "id": "80x24-dark-fullscreen",
+      "columns": 80,
+      "rows": 24
+    },
+    {
+      "id": "120x40-dark-fullscreen",
+      "columns": 120,
+      "rows": 40
+    }
+  ],
+  "captureProvenance": {
+    "consistent": true,
+    "errors": [],
+    "pi": [
+      {
+        "branch": "HEAD",
+        "dirty": false,
+        "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+        "trackedChanges": []
+      }
+    ],
+    "pisharp": [
+      {
+        "branch": "milestone/interactive-streaming-cancellation-parity",
+        "dirty": false,
+        "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+        "trackedChanges": []
+      }
+    ]
+  },
+  "scenarios": {
+    "S01": {
+      "scenario": "Partial assistant-text streaming",
+      "fixture": "s01-text-streaming.json",
+      "captureProvenance": {
+        "80x24-dark-fullscreen": {
+          "calibration": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          },
+          "comparison": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "branch": "milestone/interactive-streaming-cancellation-parity",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          }
+        },
+        "120x40-dark-fullscreen": {
+          "calibration": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          },
+          "comparison": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "branch": "milestone/interactive-streaming-cancellation-parity",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          }
+        }
+      },
+      "cases": {
+        "80x24-dark-fullscreen": {
+          "differences": 140,
+          "byCategory": {
+            "text": 0,
+            "style": 140,
+            "layout": 0
+          },
+          "findingIds": [
+            "S01-code-syntax-builtin-highlight"
+          ],
+          "unmatchedDifferenceCount": 0,
+          "samples": [
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[3].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[3].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[4].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[4].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[5].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[5].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[6].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[6].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[7].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[7].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.viewport[7].cells[3].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.viewport[7].cells[3].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.viewport[7].cells[4].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.viewport[7].cells[4].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.viewport[7].cells[5].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.viewport[7].cells[5].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.viewport[7].cells[6].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.viewport[7].cells[6].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.viewport[7].cells[7].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.viewport[7].cells[7].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[3].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[3].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[4].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[4].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[5].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[5].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[6].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[6].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[7].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[7].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[8].cells[3].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[8].cells[3].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[8].cells[4].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[8].cells[4].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[8].cells[5].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[8].cells[5].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[8].cells[6].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[8].cells[6].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[8].cells[7].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[8].cells[7].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            }
+          ]
+        },
+        "120x40-dark-fullscreen": {
+          "differences": 140,
+          "byCategory": {
+            "text": 0,
+            "style": 140,
+            "layout": 0
+          },
+          "findingIds": [
+            "S01-code-syntax-builtin-highlight"
+          ],
+          "unmatchedDifferenceCount": 0,
+          "samples": [
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[3].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[3].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[4].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[4].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[5].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[5].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[6].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[6].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[7].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[7].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.viewport[7].cells[3].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.viewport[7].cells[3].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.viewport[7].cells[4].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.viewport[7].cells[4].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.viewport[7].cells[5].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.viewport[7].cells[5].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.viewport[7].cells[6].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.viewport[7].cells[6].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.viewport[7].cells[7].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-04-incomplete-code-block",
+              "category": "style",
+              "path": "$.viewport[7].cells[7].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[3].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[3].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[4].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[4].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[5].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[5].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[6].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[6].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[7].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[7].cells[7].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[8].cells[3].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[8].cells[3].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[8].cells[4].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[8].cells[4].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[8].cells[5].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[8].cells[5].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[8].cells[6].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[8].cells[6].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[8].cells[7].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S01-code-syntax-builtin-highlight"
+            },
+            {
+              "checkpoint": "s01-05-completed-response",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[8].cells[7].foreground.value",
+              "pi": 10983639,
+              "pisharp": -1,
+              "findingId": "S01-code-syntax-builtin-highlight"
+            }
+          ]
+        }
+      }
+    },
+    "S02": {
+      "scenario": "Reasoning visibility and streaming",
+      "fixture": "s02-reasoning-streaming.json",
+      "captureProvenance": {
+        "80x24-dark-fullscreen": {
+          "calibration": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          },
+          "comparison": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "branch": "milestone/interactive-streaming-cancellation-parity",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          }
+        },
+        "120x40-dark-fullscreen": {
+          "calibration": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          },
+          "comparison": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "branch": "milestone/interactive-streaming-cancellation-parity",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          }
+        }
+      },
+      "cases": {
+        "80x24-dark-fullscreen": {
+          "differences": 12962,
+          "byCategory": {
+            "text": 3780,
+            "style": 9180,
+            "layout": 2
+          },
+          "findingIds": [
+            "S02-reasoning-block-layout",
+            "S02-reasoning-italic-style",
+            "S02-reasoning-status-style"
+          ],
+          "unmatchedDifferenceCount": 0,
+          "samples": [
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[0].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[1].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[2].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[3].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[5].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[6].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[7].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[8].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[9].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[10].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[11].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[12].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[13].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[14].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[15].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[16].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[17].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[18].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[19].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[20].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[21].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[22].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[23].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[24].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[25].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[26].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[27].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[28].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[29].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[30].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[31].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[32].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[33].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[34].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[35].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[36].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[37].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[38].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[39].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[19].cells[40].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            }
+          ]
+        },
+        "120x40-dark-fullscreen": {
+          "differences": 14910,
+          "byCategory": {
+            "text": 4286,
+            "style": 10622,
+            "layout": 2
+          },
+          "findingIds": [
+            "S02-reasoning-block-layout",
+            "S02-reasoning-italic-style",
+            "S02-reasoning-status-style"
+          ],
+          "unmatchedDifferenceCount": 0,
+          "samples": [
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[0].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[1].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[2].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[3].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[5].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[6].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[7].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[8].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[9].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[10].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[11].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[12].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[13].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[14].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[15].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[16].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[17].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[18].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[19].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[20].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[21].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[22].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[23].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[24].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[25].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[26].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[27].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[28].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[29].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[30].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[31].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[32].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[33].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[34].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[35].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[36].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[37].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[38].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[39].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            },
+            {
+              "checkpoint": "s02-01-before-reasoning",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[35].cells[40].foreground.value",
+              "pi": 6391244,
+              "pisharp": 7108219,
+              "findingId": "S02-reasoning-status-style"
+            }
+          ]
+        }
+      }
+    },
+    "S03": {
+      "scenario": "Tool execution with live progress",
+      "fixture": "s03-tool-progress.json",
+      "captureProvenance": {
+        "80x24-dark-fullscreen": {
+          "calibration": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          },
+          "comparison": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "branch": "milestone/interactive-streaming-cancellation-parity",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          }
+        },
+        "120x40-dark-fullscreen": {
+          "calibration": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          },
+          "comparison": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "branch": "milestone/interactive-streaming-cancellation-parity",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          }
+        }
+      },
+      "cases": {
+        "80x24-dark-fullscreen": {
+          "differences": 0,
+          "byCategory": {
+            "text": 0,
+            "style": 0,
+            "layout": 0
+          },
+          "findingIds": [],
+          "unmatchedDifferenceCount": 0,
+          "samples": []
+        },
+        "120x40-dark-fullscreen": {
+          "differences": 0,
+          "byCategory": {
+            "text": 0,
+            "style": 0,
+            "layout": 0
+          },
+          "findingIds": [],
+          "unmatchedDifferenceCount": 0,
+          "samples": []
+        }
+      }
+    },
+    "S04": {
+      "scenario": "Cancellation during assistant-text streaming",
+      "fixture": "s04-text-cancellation.json",
+      "captureProvenance": {
+        "80x24-dark-fullscreen": {
+          "calibration": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          },
+          "comparison": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "branch": "milestone/interactive-streaming-cancellation-parity",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          }
+        },
+        "120x40-dark-fullscreen": {
+          "calibration": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          },
+          "comparison": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "branch": "milestone/interactive-streaming-cancellation-parity",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          }
+        }
+      },
+      "cases": {
+        "80x24-dark-fullscreen": {
+          "differences": 0,
+          "byCategory": {
+            "text": 0,
+            "style": 0,
+            "layout": 0
+          },
+          "findingIds": [],
+          "unmatchedDifferenceCount": 0,
+          "samples": []
+        },
+        "120x40-dark-fullscreen": {
+          "differences": 0,
+          "byCategory": {
+            "text": 0,
+            "style": 0,
+            "layout": 0
+          },
+          "findingIds": [],
+          "unmatchedDifferenceCount": 0,
+          "samples": []
+        }
+      }
+    },
+    "S05": {
+      "scenario": "Cancellation while Bash is running",
+      "fixture": "s05-tool-cancellation.json",
+      "captureProvenance": {
+        "80x24-dark-fullscreen": {
+          "calibration": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          },
+          "comparison": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "branch": "milestone/interactive-streaming-cancellation-parity",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          }
+        },
+        "120x40-dark-fullscreen": {
+          "calibration": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          },
+          "comparison": {
+            "pi": {
+              "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+              "branch": "HEAD",
+              "dirty": false,
+              "trackedChanges": []
+            },
+            "pisharp": {
+              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "branch": "milestone/interactive-streaming-cancellation-parity",
+              "dirty": false,
+              "trackedChanges": []
+            }
+          }
+        }
+      },
+      "cases": {
+        "80x24-dark-fullscreen": {
+          "differences": 868,
+          "byCategory": {
+            "text": 420,
+            "style": 448,
+            "layout": 0
+          },
+          "findingIds": [
+            "S05-tool-cancel-error-style",
+            "S05-tool-cancel-error-wording"
+          ],
+          "unmatchedDifferenceCount": 0,
+          "samples": [
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[1].chars",
+              "pi": "E",
+              "pisharp": "O",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[2].chars",
+              "pi": "r",
+              "pisharp": "p",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[3].chars",
+              "pi": "r",
+              "pisharp": "e",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[4].chars",
+              "pi": "o",
+              "pisharp": "r",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[5].chars",
+              "pi": "r",
+              "pisharp": "a",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[6].chars",
+              "pi": ":",
+              "pisharp": "t",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[7].chars",
+              "pi": "<empty-cell>",
+              "pisharp": "i",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[8].chars",
+              "pi": "T",
+              "pisharp": "o",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[9].chars",
+              "pi": "h",
+              "pisharp": "n",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[10].chars",
+              "pi": "i",
+              "pisharp": "<empty-cell>",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[11].chars",
+              "pi": "s",
+              "pisharp": "a",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[12].chars",
+              "pi": "<empty-cell>",
+              "pisharp": "b",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[14].chars",
+              "pi": "p",
+              "pisharp": "r",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[15].chars",
+              "pi": "e",
+              "pisharp": "t",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[16].chars",
+              "pi": "r",
+              "pisharp": "e",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[17].chars",
+              "pi": "a",
+              "pisharp": "d",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[18].chars",
+              "pi": "t",
+              "pisharp": "<empty-cell>",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[18].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S05-tool-cancel-error-style"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[18].foreground.value",
+              "pi": 15368065,
+              "pisharp": -1,
+              "findingId": "S05-tool-cancel-error-style"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[19].chars",
+              "pi": "i",
+              "pisharp": "<empty-cell>",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[19].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S05-tool-cancel-error-style"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[19].foreground.value",
+              "pi": 15368065,
+              "pisharp": -1,
+              "findingId": "S05-tool-cancel-error-style"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[20].chars",
+              "pi": "o",
+              "pisharp": "<empty-cell>",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[20].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S05-tool-cancel-error-style"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[20].foreground.value",
+              "pi": 15368065,
+              "pisharp": -1,
+              "findingId": "S05-tool-cancel-error-style"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[21].chars",
+              "pi": "n",
+              "pisharp": "<empty-cell>",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[21].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S05-tool-cancel-error-style"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[21].foreground.value",
+              "pi": 15368065,
+              "pisharp": -1,
+              "findingId": "S05-tool-cancel-error-style"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[22].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S05-tool-cancel-error-style"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[22].foreground.value",
+              "pi": 15368065,
+              "pisharp": -1,
+              "findingId": "S05-tool-cancel-error-style"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[23].chars",
+              "pi": "w",
+              "pisharp": "<empty-cell>",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[23].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S05-tool-cancel-error-style"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[23].foreground.value",
+              "pi": 15368065,
+              "pisharp": -1,
+              "findingId": "S05-tool-cancel-error-style"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[24].chars",
+              "pi": "a",
+              "pisharp": "<empty-cell>",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[24].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S05-tool-cancel-error-style"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[24].foreground.value",
+              "pi": 15368065,
+              "pisharp": -1,
+              "findingId": "S05-tool-cancel-error-style"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[25].chars",
+              "pi": "s",
+              "pisharp": "<empty-cell>",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[25].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S05-tool-cancel-error-style"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[25].foreground.value",
+              "pi": 15368065,
+              "pisharp": -1,
+              "findingId": "S05-tool-cancel-error-style"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[26].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S05-tool-cancel-error-style"
+            }
+          ]
+        },
+        "120x40-dark-fullscreen": {
+          "differences": 868,
+          "byCategory": {
+            "text": 420,
+            "style": 448,
+            "layout": 0
+          },
+          "findingIds": [
+            "S05-tool-cancel-error-style",
+            "S05-tool-cancel-error-wording"
+          ],
+          "unmatchedDifferenceCount": 0,
+          "samples": [
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[1].chars",
+              "pi": "E",
+              "pisharp": "O",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[2].chars",
+              "pi": "r",
+              "pisharp": "p",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[3].chars",
+              "pi": "r",
+              "pisharp": "e",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[4].chars",
+              "pi": "o",
+              "pisharp": "r",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[5].chars",
+              "pi": "r",
+              "pisharp": "a",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[6].chars",
+              "pi": ":",
+              "pisharp": "t",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[7].chars",
+              "pi": "<empty-cell>",
+              "pisharp": "i",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[8].chars",
+              "pi": "T",
+              "pisharp": "o",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[9].chars",
+              "pi": "h",
+              "pisharp": "n",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[10].chars",
+              "pi": "i",
+              "pisharp": "<empty-cell>",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[11].chars",
+              "pi": "s",
+              "pisharp": "a",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[12].chars",
+              "pi": "<empty-cell>",
+              "pisharp": "b",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[14].chars",
+              "pi": "p",
+              "pisharp": "r",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[15].chars",
+              "pi": "e",
+              "pisharp": "t",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[16].chars",
+              "pi": "r",
+              "pisharp": "e",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[17].chars",
+              "pi": "a",
+              "pisharp": "d",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[18].chars",
+              "pi": "t",
+              "pisharp": "<empty-cell>",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[18].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S05-tool-cancel-error-style"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[18].foreground.value",
+              "pi": 15368065,
+              "pisharp": -1,
+              "findingId": "S05-tool-cancel-error-style"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[19].chars",
+              "pi": "i",
+              "pisharp": "<empty-cell>",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[19].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S05-tool-cancel-error-style"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[19].foreground.value",
+              "pi": 15368065,
+              "pisharp": -1,
+              "findingId": "S05-tool-cancel-error-style"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[20].chars",
+              "pi": "o",
+              "pisharp": "<empty-cell>",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[20].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S05-tool-cancel-error-style"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[20].foreground.value",
+              "pi": 15368065,
+              "pisharp": -1,
+              "findingId": "S05-tool-cancel-error-style"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[21].chars",
+              "pi": "n",
+              "pisharp": "<empty-cell>",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[21].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S05-tool-cancel-error-style"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[21].foreground.value",
+              "pi": 15368065,
+              "pisharp": -1,
+              "findingId": "S05-tool-cancel-error-style"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[22].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S05-tool-cancel-error-style"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[22].foreground.value",
+              "pi": 15368065,
+              "pisharp": -1,
+              "findingId": "S05-tool-cancel-error-style"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[23].chars",
+              "pi": "w",
+              "pisharp": "<empty-cell>",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[23].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S05-tool-cancel-error-style"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[23].foreground.value",
+              "pi": 15368065,
+              "pisharp": -1,
+              "findingId": "S05-tool-cancel-error-style"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[24].chars",
+              "pi": "a",
+              "pisharp": "<empty-cell>",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[24].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S05-tool-cancel-error-style"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[24].foreground.value",
+              "pi": 15368065,
+              "pisharp": -1,
+              "findingId": "S05-tool-cancel-error-style"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "text",
+              "path": "$.buffers.alternate.lines[16].cells[25].chars",
+              "pi": "s",
+              "pisharp": "<empty-cell>",
+              "findingId": "S05-tool-cancel-error-wording"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[25].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S05-tool-cancel-error-style"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[25].foreground.value",
+              "pi": 15368065,
+              "pisharp": -1,
+              "findingId": "S05-tool-cancel-error-style"
+            },
+            {
+              "checkpoint": "s05-05-tool-cancellation-settles",
+              "category": "style",
+              "path": "$.buffers.alternate.lines[16].cells[26].foreground.mode",
+              "pi": "rgb",
+              "pisharp": "default",
+              "findingId": "S05-tool-cancel-error-style"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
