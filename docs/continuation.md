@@ -6,43 +6,55 @@
 
 **Stop condition:** a full current-Pi audit finds no material in-scope gaps, required behavioral/differential evidence passes, exact-head CI is green, and major architecture bottlenecks are resolved.
 
-## Current state — 2026-11-06
+## Current state — 2026-11-07
 
-Current status is based on `main` at `0984bfc922714862e2af244133313828617ca730`. The latest merged milestones are [Bash tool output collapse and expansion parity](parity/fixtures/collapsed-tool-output-parity-2026-11-06/README.md) (PR #45, `0984bfc9`) and [multi-step agent execution and recovery parity](parity/fixtures/objective-agent-parity-002-2026-11-06/README.md) (PR #44, `7748479c`). [Wrapped Bash command style parity](parity/fixtures/wrapped-bash-command-style-parity-2026-11-06/README.md) is implemented in draft PR #46 and remains unmerged. Global parity is `in_progress` at **21 verified, 142 in progress and 31 not started** across the 194 required capabilities, derived from the committed execution ledger. The next step is a broader evaluation of PiSharp's interactive terminal UI, particularly editing, navigation, session interaction and streaming behavior, then selecting the next capability from the feature matrix and execution ledger. Open architecture risks are tracked in the [architecture document](architecture.md#open-architecture-risks).
+Current status is based on `main` at `c615fc17232886d76c5092f8d5b6cd5b22f418fe`. The latest merged milestones are [Wrapped Bash command style parity](parity/fixtures/wrapped-bash-command-style-parity-2026-11-06/README.md) (PR #46, `c615fc17`), [Bash tool output collapse and expansion parity](parity/fixtures/collapsed-tool-output-parity-2026-11-06/README.md) (PR #45, `0984bfc9`) and [multi-step agent execution and recovery parity](parity/fixtures/objective-agent-parity-002-2026-11-06/README.md) (PR #44, `7748479c`). [Interactive streaming, reasoning, tool progress and cancellation parity evaluation](parity/fixtures/interactive-streaming-cancellation-001/README.md) is implemented on branch `milestone/interactive-streaming-cancellation-parity` and remains draft PR [#47](https://github.com/PhilipGB/pisharp/pull/47), open and unmerged. Global parity is `in_progress` at **21 verified, 142 in progress and 31 not started** across the 194 required capabilities, derived from the committed execution ledger. The next single deliverable is to correct the confirmed S02 reasoning-block layout P1 (one reasoning block, one hidden placeholder, stable transcript rows), then re-run this fixture before selecting the next capability. Open architecture risks are tracked in the [architecture document](architecture.md#open-architecture-risks).
 
 The milestone entries below retain their historical wording and are superseded by this section wherever they describe a milestone as active or a merged PR as open.
 
-## Milestone in review — Wrapped Bash Command Style Parity — 2026-11-06
+## Milestone in review — Interactive Streaming, Reasoning, Tool Progress and Cancellation Evaluation — 2026-11-07
 
-The ENV-PARSER-001 P2 `ui-trailing-wrapped-command-style` is addressed by draft
-PR #46, which remains open and unmerged. The implementation branches from merged
-PR #45 at `0984bfc922714862e2af244133313828617ca730` and is at revision
-`95704af040c2e8043457383ea31f88204eba7a72`. Pi's wrapped Bash command header
-keeps its title foreground, bold attribute and tool background across every
-soft-wrapped row's trailing padding, including the right output-padding cell;
-the final command row and a command that exactly fills the transcript width
-leave the output padding at the default foreground. PR #45 had already removed
-the pre-wrap that caused the original 17 unstyled cells; draft PR #46 fixes the
-remaining exact-boundary output-padding cell in `TerminalScreenCompositor` and
-adds decoded-cell regressions for one-row, two-row, multi-row, exact-boundary,
-output-following, failed/recovered, resize and expanded/re-collapsed commands.
-The decoded-frame test utility handles wide, emoji and combining graphemes.
+This evaluation adds fixture `interactive-streaming-cancellation-001` with five
+deterministic scenarios at 80x24 and 120x40 dark fullscreen: partial text
+streaming (S01), reasoning visibility (S02), live tool progress (S03), text
+cancellation (S04) and Bash cancellation with child-process cleanup (S05).
+Provider chunk gates, tool-release gates, PID liveness and named checkpoints
+replace wall-clock waits. Same-Pi calibration is exact at both sizes after the
+declared normalization; raw calibration differed only in masked `Elapsed`/`Took`
+values at S03 (20 at 80x24, 0 at 120x40) and S05 (28 at 80x24, 24 at 120x40),
+with none at S01/S02/S04. Every capture is bound to the clean Pi source
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` and clean PiSharp source
+`d1b844acb51e012a9494acbe75745bc87b54c531`; the report, fixture manifest and
+per-case assertions record SHA, branch, dirty flag and tracked/untracked worktree
+changes. A fresh capture-owned publish binds the executed DLL
+`a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51`, deps and
+runtime config hashes to that source. The
+frozen functional/temporal/cleanup contract is evaluated independently for Pi
+and PiSharp, and Pi must pass before a case is assessable. S04/S05 forbidden
+tokens are scanned across every render frame after the cancellation action, not
+only named checkpoints. Finding assignment uses explicit
+path/checkpoint/value predicates; unmatched differences fail validation.
 
-The 17-cell regression fails on the pre-#45 binary at row 5 column 63 with the
-default foreground and passes on the PR #45 merge. The exact-boundary regression
-fails on the PR #45 merge and passes on this branch. Deterministic
-`objective-agent-progress` parity improved from **19/20** (visual 9/10) before
-PR #45 to **20/20** (visual 10/10) at 80x24; 120x40 remains 20/20. The
-ENV-PARSER-002 `objective-agent-recovery` fixture remains 20/20 at both sizes,
-including collapse, expand, re-collapse and recovery checkpoints. The rubric,
-weights and permitted normalisation are unchanged. No live Luna run was
-repeated; the historical 80/80 agent-functional evidence is unchanged. See the
-[receipt](parity/fixtures/wrapped-bash-command-style-parity-2026-11-06/README.md),
-[UI report](parity/fixtures/wrapped-bash-command-style-parity-2026-11-06/ui-report.json)
-and [comparison](parity/fixtures/wrapped-bash-command-style-parity-2026-11-06/terminal-comparison.json).
-The next single deliverable is a broader evaluation of PiSharp's interactive
-terminal UI, particularly editing, navigation, session interaction and streaming
-behavior; it has not been started.
+The deterministic score is **88/100**: functional **40/40**, temporal **20/20**,
+visual **18/30** and cleanup **10/10**. S03 and S04 match exactly at both sizes.
+One P1 is confirmed: S02 splits streamed reasoning around toggle status lines,
+renders two `Thinking...` placeholders and shifts the final transcript by three
+rows. Five P2s are confirmed: Python builtin `print` syntax colour (S01),
+reasoning italic (S02), reasoning-model `Working` rule colour (S02), and the
+cancelled-tool error wording and style (S05). No P0 was observed. The
+evaluation intentionally does not fix these defects. The verifier performs 589
+checks and rejects missing scenarios/checkpoints, bad checksums, inflated scores
+or totals, invalid calibration, failed cancellation marked successful, missing
+cleanup evidence, omitted differences, missing or mismatched capture provenance,
+Pi contract failures treated as assessable, missing post-cancellation render
+scans, and unmatched differences without an explicit predicate. See the
+[receipt](parity/fixtures/interactive-streaming-cancellation-001/README.md),
+[report](parity/fixtures/interactive-streaming-cancellation-001/report.json),
+[comparison](parity/fixtures/interactive-streaming-cancellation-001/comparison.json),
+[UI report](parity/fixtures/interactive-streaming-cancellation-001/ui-report.json)
+and [verification](parity/fixtures/interactive-streaming-cancellation-001/verification.json).
+Raw PTY evidence remains under the Git-ignored
+`artifacts/parity/interactive-streaming-cancellation-001/` directory.
 
 ## Completed milestone — Bash Tool Output Collapse and Expansion Parity — 2026-11-06
 

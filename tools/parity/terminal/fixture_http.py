@@ -18,7 +18,8 @@ class FixtureServer:
                       if key.endswith('Gate') and isinstance(name, str)]
         for key in ('chatRequestGates', 'chatResponseGates', 'chatResponseContentGates',
                     'chatResponseFinishGates', 'chatResponseChunkGatesByRequest',
-                    'chatResponseChunkReadyGatesByRequest'):
+                    'chatResponseChunkReadyGatesByRequest', 'chatResponseReasoningChunkGatesByRequest',
+                    'chatResponseReasoningChunkReadyGatesByRequest'):
             for value in self.behavior.get(key, []):
                 if isinstance(value, str):
                     gate_names.append(value)
@@ -282,6 +283,13 @@ class FixtureServer:
                     configured_reasoning = outer.behavior.get('chatResponseReasoningByRequest', [])
                     reasoning = (configured_reasoning[request_index]
                                  if request_index < len(configured_reasoning) else None)
+                    configured_reasoning_chunks = outer.behavior.get(
+                        'chatResponseReasoningChunksByRequest', [])
+                    reasoning_chunks = (configured_reasoning_chunks[request_index]
+                                        if request_index < len(configured_reasoning_chunks) else None)
+                    if reasoning_chunks is not None:
+                        reasoning_chunks = [str(chunk) for chunk in reasoning_chunks]
+                        reasoning = None
                     configured_chunks = outer.behavior.get('chatResponseChunksByRequest', [])
                     content_chunks = (configured_chunks[request_index]
                                       if request_index < len(configured_chunks) else [reply])
@@ -298,10 +306,12 @@ class FixtureServer:
                         self.send_header('Cache-Control', 'no-cache')
                         self.end_headers()
                         chunks = []
-                        if reasoning:
+                        reasoning_fragments = reasoning_chunks if reasoning_chunks is not None else (
+                            [reasoning] if reasoning else [])
+                        for fragment in reasoning_fragments:
                             chunks.append(dict(id='fixture-response', object='chat.completion.chunk', created=1,
                                                model=model, choices=[dict(index=0,
-                                                   delta=dict(role='assistant', reasoning_content=reasoning),
+                                                   delta=dict(role='assistant', reasoning_content=fragment),
                                                    finish_reason=None)]))
                         if tool_calls:
                             calls = []
@@ -333,22 +343,36 @@ class FixtureServer:
                                                usage=dict(prompt_tokens=10, completion_tokens=3, total_tokens=13)))
                         try:
                             content_chunk_index = 0
+                            reasoning_chunk_index = 0
                             chunk_gates = outer.behavior.get('chatResponseChunkGatesByRequest', [])
                             chunk_gates = (chunk_gates[request_index]
                                            if request_index < len(chunk_gates) else [])
                             ready_gates = outer.behavior.get('chatResponseChunkReadyGatesByRequest', [])
                             ready_gates = (ready_gates[request_index]
                                            if request_index < len(ready_gates) else [])
+                            reasoning_gates = outer.behavior.get(
+                                'chatResponseReasoningChunkGatesByRequest', [])
+                            reasoning_gates = (reasoning_gates[request_index]
+                                               if request_index < len(reasoning_gates) else [])
+                            reasoning_ready_gates = outer.behavior.get(
+                                'chatResponseReasoningChunkReadyGatesByRequest', [])
+                            reasoning_ready_gates = (reasoning_ready_gates[request_index]
+                                                     if request_index < len(reasoning_ready_gates) else [])
                             for chunk in chunks:
                                 choices = chunk.get('choices', [])
                                 has_content = any(choice.get('delta', {}).get('content')
                                                   for choice in choices)
+                                has_reasoning = any(choice.get('delta', {}).get('reasoning_content')
+                                                    for choice in choices)
                                 has_finish = any(choice.get('finish_reason') is not None
                                                  for choice in choices)
                                 if has_content and content_gate is not None:
                                     outer.wait_for_gate(content_gate)
                                 if has_content and content_chunk_index < len(chunk_gates):
                                     outer.wait_for_gate(chunk_gates[content_chunk_index])
+                                if (has_reasoning and reasoning_chunk_index < len(reasoning_gates) and
+                                        reasoning_gates[reasoning_chunk_index] is not None):
+                                    outer.wait_for_gate(reasoning_gates[reasoning_chunk_index])
                                 if has_finish and finish_gate is not None:
                                     outer.wait_for_gate(finish_gate)
                                 self.wfile.write(('data: ' + json.dumps(chunk) + '\n\n').encode())
@@ -357,6 +381,10 @@ class FixtureServer:
                                     if content_chunk_index < len(ready_gates):
                                         outer.signal_gate(ready_gates[content_chunk_index])
                                     content_chunk_index += 1
+                                if has_reasoning:
+                                    if reasoning_chunk_index < len(reasoning_ready_gates):
+                                        outer.signal_gate(reasoning_ready_gates[reasoning_chunk_index])
+                                    reasoning_chunk_index += 1
                             self.wfile.write(b'data: [DONE]\n\n')
                             self.wfile.flush()
                         except (BrokenPipeError, ConnectionResetError):

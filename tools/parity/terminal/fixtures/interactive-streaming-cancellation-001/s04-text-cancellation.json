@@ -1,0 +1,116 @@
+{
+  "id": "interactive-streaming-cancellation-001-s04-text-cancellation",
+  "forbiddenStreamTokens": ["CANCEL_LATE", "CANCEL_FINISH"],
+  "forbiddenStreamFrom": "s04-04-cancellation-requested",
+  "settings": { "quietStartup": true },
+  "arguments": {
+    "pi": [
+      "--provider", "fixture", "--model", "fixture-model", "--no-session", "--offline",
+      "--no-extensions", "--no-skills", "--no-prompt-templates", "--no-tools", "--no-context-files",
+      "--system-prompt", "You are a terminal parity fixture."
+    ],
+    "pisharp": [
+      "--provider", "fixture", "--model", "fixture-model", "--no-session", "--offline",
+      "--no-extensions", "--no-skills", "--no-prompt-templates", "--no-tools", "--no-approve",
+      "--no-context-files", "--system-prompt", "You are a terminal parity fixture."
+    ]
+  },
+  "fixtureBehavior": {
+    "chatRequestGates": ["s04-request", "s04-second-request"],
+    "chatResponseChunksByRequest": [
+      [
+        "CANCEL_BEGIN the partial response starts.\n",
+        "CANCEL_CONTINUATION the partial response continues.\n",
+        "CANCEL_LATE this chunk must never appear.\n",
+        "CANCEL_FINISH this chunk must never appear.\n"
+      ],
+      ["SECOND_PROMPT_OK the editor recovered.\n"]
+    ],
+    "chatResponseChunkGatesByRequest": [
+      ["s04-chunk-1", "s04-chunk-2", "s04-chunk-3", "s04-chunk-4"],
+      []
+    ],
+    "chatResponseChunkReadyGatesByRequest": [
+      ["s04-chunk-1-ready", "s04-chunk-2-ready", "s04-chunk-3-ready", "s04-chunk-4-ready"],
+      []
+    ],
+    "chatResponseFinishGates": ["s04-finish", null]
+  },
+  "dimensions": [
+    { "columns": 80, "rows": 24 },
+    { "columns": 120, "rows": 40 }
+  ],
+  "themes": ["dark"],
+  "modes": ["fullscreen"],
+  "actions": [
+    { "id": "startup", "expect": "fixture-model" },
+    {
+      "id": "s04-01-streaming-begins",
+      "send": "Stream a response I will cancel.\r",
+      "waitGatesAfter": ["s04-request"],
+      "allowStaticFrame": true,
+      "expect": "Stream a response I will cancel."
+    },
+    {
+      "id": "s04-02-first-partial",
+      "releaseGates": ["s04-chunk-1"],
+      "waitGatesAfter": ["s04-chunk-1-ready"],
+      "allowStaticFrame": true,
+      "expect": "CANCEL_BEGIN the partial response starts.",
+      "notExpect": "CANCEL_CONTINUATION"
+    },
+    {
+      "id": "s04-03-second-partial",
+      "releaseGates": ["s04-chunk-2"],
+      "waitGatesAfter": ["s04-chunk-2-ready"],
+      "allowStaticFrame": true,
+      "expect": "CANCEL_CONTINUATION the partial response continues.",
+      "notExpect": "CANCEL_LATE"
+    },
+    {
+      "id": "s04-04-cancellation-requested",
+      "send": "\u001b",
+      "allowStaticFrame": true
+    },
+    {
+      "id": "s04-05-cancellation-settled",
+      "allowStaticFrame": true,
+      "expect": "Operation aborted",
+      "notExpect": "Working"
+    },
+    {
+      "id": "s04-06-partial-retained",
+      "releaseGates": ["s04-chunk-3", "s04-chunk-4", "s04-finish"],
+      "allowStaticFrame": true,
+      "expect": "CANCEL_CONTINUATION the partial response continues.",
+      "notExpect": "CANCEL_LATE"
+    },
+    {
+      "id": "s04-07-second-prompt",
+      "send": "Send a second prompt after cancellation.\r",
+      "waitGatesAfter": ["s04-second-request"],
+      "allowStaticFrame": true,
+      "expect": "SECOND_PROMPT_OK the editor recovered.",
+      "notExpect": "CANCEL_LATE"
+    },
+    {
+      "id": "s04-08-idle",
+      "allowStaticFrame": true,
+      "expect": "fixture-model",
+      "notExpect": "Working"
+    },
+    { "id": "exit", "send": "\u0003\u0003", "exit": true }
+  ],
+  "terminal": { "keyboardProtocol": "kitty" },
+  "assertionFrames": [
+    "s04-01-streaming-begins",
+    "s04-02-first-partial",
+    "s04-03-second-partial",
+    "s04-04-cancellation-requested",
+    "s04-05-cancellation-settled",
+    "s04-06-partial-retained",
+    "s04-07-second-prompt",
+    "s04-08-idle",
+    "exit"
+  ]
+}

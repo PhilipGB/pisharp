@@ -15314,7 +15314,7 @@
     "pull_request": "https://github.com/PhilipGB/pisharp/pull/45"
   },
   "wrapped_bash_command_style_parity_2026_11_06": {
-    "status": "draft_open_unmerged",
+    "status": "merged",
     "prerequisite": "Bash result collapse/expansion parity merged via PR #45 at 0984bfc922714862e2af244133313828617ca730",
     "branch": "milestone/wrapped-bash-command-style-parity",
     "base_main": "0984bfc922714862e2af244133313828617ca730",
@@ -15411,8 +15411,224 @@
     "receipt": "docs/parity/fixtures/wrapped-bash-command-style-parity-2026-11-06/README.md",
     "ui_report": "docs/parity/fixtures/wrapped-bash-command-style-parity-2026-11-06/ui-report.json",
     "comparison": "docs/parity/fixtures/wrapped-bash-command-style-parity-2026-11-06/terminal-comparison.json",
-    "suggested_next_single_deliverable": "Broader interactive terminal UI evaluation covering editing, navigation, session interaction and streaming behaviour.",
+    "suggested_next_single_deliverable": "Correct the S02 reasoning block layout P1, then re-run interactive-streaming-cancellation-001.",
     "pull_request": "https://github.com/PhilipGB/pisharp/pull/46",
-    "initial_review_head": "26ee415c9141ba6c01a3ebc8bad19bf06048b330"
+    "initial_review_head": "26ee415c9141ba6c01a3ebc8bad19bf06048b330",
+    "merge_revision": "c615fc17232886d76c5092f8d5b6cd5b22f418fe",
+    "status_after_merge": "merged"
+  },
+  "interactive_streaming_cancellation_parity_2026_11_07": {
+    "status": "draft_open_unmerged",
+    "branch": "milestone/interactive-streaming-cancellation-parity",
+    "base_main": "c615fc17232886d76c5092f8d5b6cd5b22f418fe",
+    "pi_revision": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "fixture": {
+      "id": "interactive-streaming-cancellation-001",
+      "dimensions": [
+        "80x24-dark-fullscreen",
+        "120x40-dark-fullscreen"
+      ],
+      "scenario_count": 5,
+      "checkpoint_count": 45,
+      "scenarios": {
+        "S01": "partial assistant-text streaming",
+        "S02": "reasoning visibility and streaming",
+        "S03": "tool execution with live progress",
+        "S04": "cancellation during assistant-text streaming",
+        "S05": "cancellation while Bash is running"
+      }
+    },
+    "rubric": {
+      "functional": 40,
+      "temporal": 20,
+      "visual": 30,
+      "cleanup": 10
+    },
+    "deterministic_ui": {
+      "total": 88,
+      "maximum": 100,
+      "category_totals": {
+        "functional": 40,
+        "temporal": 20,
+        "visual": 18,
+        "cleanup": 10
+      },
+      "scenarios": {
+        "S01": {
+          "subtotal": 16,
+          "maximum": 18,
+          "differences": "0 text / 140 style / 0 layout at each size"
+        },
+        "S02": {
+          "subtotal": 12,
+          "maximum": 18,
+          "differences": "3780/9180/2 at 80x24; 4286/10622/2 at 120x40"
+        },
+        "S03": {
+          "subtotal": 18,
+          "maximum": 18,
+          "differences": "0 at both sizes"
+        },
+        "S04": {
+          "subtotal": 23,
+          "maximum": 23,
+          "differences": "0 at both sizes"
+        },
+        "S05": {
+          "subtotal": 19,
+          "maximum": 23,
+          "differences": "420 text / 448 style / 0 layout at each size"
+        }
+      },
+      "calibration": {
+        "normalized_match": true,
+        "sizes": [
+          "80x24",
+          "120x40"
+        ],
+        "raw_dynamic_only_differences": {
+          "S03-80x24": 20,
+          "S03-120x40": 0,
+          "S05-80x24": 28,
+          "S05-120x40": 24
+        },
+        "note": "Raw same-Pi differences were only Elapsed/Took values and their render duplicates; the declared evaluator normalization masks those values and token counts stay exact."
+      }
+    },
+    "capture_provenance": {
+      "consistent": true,
+      "pi": {
+        "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+        "branch": "HEAD",
+        "dirty": false,
+        "tracked_changes": []
+      },
+      "pisharp": {
+        "sha": "d1b844acb51e012a9494acbe75745bc87b54c531",
+        "branch": "milestone/interactive-streaming-cancellation-parity",
+        "dirty": false,
+        "tracked_changes": [],
+        "artifact": {
+          "built_from_sha": "d1b844acb51e012a9494acbe75745bc87b54c531",
+          "file": "PiSharp.Cli.dll",
+          "sha256": "a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51",
+          "deps_sha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
+          "runtime_config_sha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a",
+          "source_dirty": false
+        }
+      },
+      "note": "Every calibration and comparison case records the exact source SHA, branch, dirty flag and tracked/untracked changes; the comparison also records hashes of the freshly published DLL, deps manifest and runtime config. The verifier rejects missing, contradictory, drifted or differing artifact states."
+    },
+    "contract_evaluation": {
+      "independent_products": [
+        "pi",
+        "pisharp"
+      ],
+      "pi_must_pass": true,
+      "scored_product": "pisharp",
+      "result": "Both products pass the frozen functional/temporal/cleanup contract at both sizes; PiSharp visual differences remain the scored parity gap."
+    },
+    "forbidden_stream_scan": {
+      "from_action": {
+        "S04": "s04-04-cancellation-requested",
+        "S05": "s05-04-cancellation-requested"
+      },
+      "tokens": {
+        "S04": [
+          "CANCEL_LATE",
+          "CANCEL_FINISH"
+        ],
+        "S05": [
+          "TOOL_COMPLETED"
+        ]
+      },
+      "occurrences": 0,
+      "note": "Every completed render frame after cancellation, including viewport and alternate/normal buffers, was scanned; sparse checkpoints alone are insufficient."
+    },
+    "finding_predicates": {
+      "unmatched_differences": 0,
+      "policy": "Explicit scenario, checkpoint, path and value predicates; no scenario-wide catch-all."
+    },
+    "confirmed_differences": [
+      {
+        "id": "S02-reasoning-block-layout",
+        "severity": "P1",
+        "checkpoints": "s02-02-reasoning-begins through exit",
+        "pi_observation": "One reasoning section, one hidden Thinking... placeholder, stable transcript rows.",
+        "pisharp_observation": "Reasoning splits around toggle status lines, two Thinking... placeholders, and a three-row transcript shift.",
+        "correction": "Collapse streamed reasoning into one block, keep one hidden placeholder, and re-render in place."
+      },
+      {
+        "id": "S01-code-syntax-builtin-highlight",
+        "severity": "P2",
+        "checkpoints": "s01-04-incomplete-code-block through exit",
+        "pi_observation": "Python builtin print uses the syntax keyword colour rgb(10983639).",
+        "pisharp_observation": "print stays at the default foreground.",
+        "correction": "Add Python builtin-name highlighting to the syntax token table."
+      },
+      {
+        "id": "S02-reasoning-italic-style",
+        "severity": "P2",
+        "checkpoints": "s02-02-reasoning-begins through exit",
+        "pi_observation": "Reasoning text is italic.",
+        "pisharp_observation": "Reasoning text is not italic.",
+        "correction": "Apply the reasoning italic attribute to every reasoning cell."
+      },
+      {
+        "id": "S02-reasoning-status-style",
+        "severity": "P2",
+        "checkpoints": "s02-01-before-reasoning",
+        "pi_observation": "Reasoning-model Working rule uses rgb(6391244).",
+        "pisharp_observation": "Working rule keeps the non-reasoning rgb(7108219).",
+        "correction": "Select the reasoning-model Working status colour."
+      },
+      {
+        "id": "S05-tool-cancel-error-wording",
+        "severity": "P2",
+        "checkpoints": "s05-05-tool-cancellation-settles through exit",
+        "pi_observation": "Command aborted followed by Error: This operation was aborted.",
+        "pisharp_observation": "Command aborted followed by Operation aborted.",
+        "correction": "Render the cancelled tool error with Pi's Error: prefix and abort wording."
+      },
+      {
+        "id": "S05-tool-cancel-error-style",
+        "severity": "P2",
+        "checkpoints": "s05-05-tool-cancellation-settles through exit",
+        "pi_observation": "Tool error styling covers the full Error: This operation was aborted row.",
+        "pisharp_observation": "Error styling follows the shorter Operation aborted text and colour runs differ.",
+        "correction": "Render the corrected cancellation error through the same tool-error style path."
+      }
+    ],
+    "p0_differences": [],
+    "inconclusive_differences": [],
+    "components_changed": [],
+    "harness_changes": [
+      "tools/parity/terminal/pty_process.py drains all available PTY bytes per pump",
+      "tools/parity/terminal/run.py pumps the PTY while waiting for fixture gates",
+      "tools/parity/terminal/run.py captures and waits for owned process PIDs, then kills orphans in finally",
+      "tools/parity/terminal/fixture_http.py adds gated reasoning chunks"
+    ],
+    "verification": {
+      "evaluation_tests": "32 passed",
+      "report_verifier": "589 checks, 0 failed",
+      "capture_provenance": "Pi and PiSharp clean; every case bound to exact SHA, worktree state and published PiSharp artifact hash",
+      "contract_evaluation": "Pi and PiSharp pass the frozen functional/temporal/cleanup contract at both sizes",
+      "forbidden_stream_scan": "0 occurrences across post-cancellation render frames",
+      "finding_predicates": "0 unmatched differences",
+      "terminal_python": "66 passed",
+      "focused_dotnet": "222 passed (no C# changes since the previous full run)",
+      "full_dotnet": "4,496 passed, 0 failed (no C# changes since that run)",
+      "format": "clean",
+      "warnings_as_errors": "clean; one initial build attempt hit a transient internal CLR error and the immediate retry built with 0 warnings",
+      "docs": "174 documents, 802 references"
+    },
+    "receipt": "docs/parity/fixtures/interactive-streaming-cancellation-001/README.md",
+    "report": "docs/parity/fixtures/interactive-streaming-cancellation-001/report.json",
+    "comparison": "docs/parity/fixtures/interactive-streaming-cancellation-001/comparison.json",
+    "ui_report": "docs/parity/fixtures/interactive-streaming-cancellation-001/ui-report.json",
+    "verification_file": "docs/parity/fixtures/interactive-streaming-cancellation-001/verification.json",
+    "fixture_manifest": "docs/parity/fixtures/interactive-streaming-cancellation-001/fixture-manifest.json",
+    "historical_evidence_unchanged": true,
+    "suggested_next_single_deliverable": "Correct the S02 reasoning block layout P1, then re-run interactive-streaming-cancellation-001."
   }
 }

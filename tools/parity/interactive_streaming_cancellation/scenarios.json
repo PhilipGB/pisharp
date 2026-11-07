@@ -1,0 +1,181 @@
+{
+  "fixture": "interactive-streaming-cancellation-001",
+  "piReference": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "dimensions": [
+    { "id": "80x24-dark-fullscreen", "columns": 80, "rows": 24 },
+    { "id": "120x40-dark-fullscreen", "columns": 120, "rows": 40 }
+  ],
+  "normalization": {
+    "permitted": [
+      "Loader spinner glyphs are canonicalized to one glyph (existing runner normalization).",
+      "Hidden cursor coordinates are ignored (existing runner normalization).",
+      "Elapsed/Took durations are masked because they measure wall-clock scheduling, not the event under test.",
+      "The footer context-usage percentage is masked because partial-stream estimates depend on arrival timing; token counts stay exact."
+    ],
+    "forbidden": [
+      "Missing or duplicated output, tool status, reasoning visibility, cursor position, cancellation state, transcript row positions, styles, or stale activity indicators."
+    ]
+  },
+  "scenarios": {
+    "S01": {
+      "title": "Partial assistant-text streaming",
+      "fixture": "s01-text-streaming.json",
+      "checkpoints": [
+        "s01-01-before-first-chunk",
+        "s01-02-after-first-chunk",
+        "s01-03-after-second-chunk",
+        "s01-04-incomplete-code-block",
+        "s01-05-completed-response",
+        "s01-06-idle",
+        "exit"
+      ],
+      "requiredText": [
+        "The first clause is deliberately incomplete and the continuation completes it.",
+        "print('first line')",
+        "print('second line')",
+        "The final paragraph remains stable."
+      ],
+      "finalTextExactOnce": [
+        "The first clause is deliberately incomplete",
+        "print('first line')",
+        "print('second line')",
+        "The final paragraph remains stable."
+      ],
+      "absenceByCheckpoint": {
+        "s01-02-after-first-chunk": ["continuation completes it"],
+        "s01-04-incomplete-code-block": ["final paragraph remains stable"]
+      },
+      "idleCheckpoint": "s01-06-idle",
+      "expectedModelRequests": 1
+    },
+    "S02": {
+      "title": "Reasoning visibility and streaming",
+      "fixture": "s02-reasoning-streaming.json",
+      "checkpoints": [
+        "s02-01-before-reasoning",
+        "s02-02-reasoning-begins",
+        "s02-03-more-reasoning",
+        "s02-04-hide-reasoning",
+        "s02-05-assistant-text-begins",
+        "s02-06-show-reasoning-again",
+        "s02-07-response-completes",
+        "s02-08-idle",
+        "exit"
+      ],
+      "requiredText": [
+        "REASONING_BEGIN inspect the staged request.",
+        "REASONING_CONTINUATION",
+        "ANSWER_BEGIN the visible answer starts here.",
+        "ANSWER_END the visible answer completes."
+      ],
+      "finalTextExactOnce": [
+        "REASONING_BEGIN",
+        "REASONING_CONTINUATION",
+        "ANSWER_BEGIN",
+        "ANSWER_END"
+      ],
+      "absenceByCheckpoint": {
+        "s02-01-before-reasoning": ["REASONING_BEGIN"],
+        "s02-04-hide-reasoning": ["REASONING_BEGIN", "REASONING_CONTINUATION"],
+        "s02-05-assistant-text-begins": ["REASONING_BEGIN", "REASONING_CONTINUATION"]
+      },
+      "idleCheckpoint": "s02-08-idle",
+      "expectedModelRequests": 1
+    },
+    "S03": {
+      "title": "Tool execution with live progress",
+      "fixture": "s03-tool-progress.json",
+      "checkpoints": [
+        "s03-01-tool-announced",
+        "s03-02-tool-starts",
+        "s03-03-first-marker",
+        "s03-04-first-progress",
+        "s03-05-second-progress",
+        "s03-06-tool-completes",
+        "s03-07-assistant-continues",
+        "s03-08-idle",
+        "exit"
+      ],
+      "requiredText": [
+        "TOOL_STARTED",
+        "PROGRESS_01",
+        "PROGRESS_02",
+        "TOOL_COMPLETED",
+        "Tool lifecycle complete."
+      ],
+      "finalTextExactOnce": [
+        "TOOL_STARTED",
+        "PROGRESS_01",
+        "PROGRESS_02",
+        "TOOL_COMPLETED"
+      ],
+      "absenceByCheckpoint": {
+        "s03-03-first-marker": ["PROGRESS_01", "PROGRESS_02", "TOOL_COMPLETED"],
+        "s03-04-first-progress": ["PROGRESS_02", "TOOL_COMPLETED"],
+        "s03-05-second-progress": ["TOOL_COMPLETED"]
+      },
+      "idleCheckpoint": "s03-08-idle",
+      "expectedModelRequests": 2,
+      "toolResult": "TOOL_STARTED\nPROGRESS_01\nPROGRESS_02\nTOOL_COMPLETED\n"
+    },
+    "S04": {
+      "title": "Cancellation during assistant-text streaming",
+      "fixture": "s04-text-cancellation.json",
+      "checkpoints": [
+        "s04-01-streaming-begins",
+        "s04-02-first-partial",
+        "s04-03-second-partial",
+        "s04-04-cancellation-requested",
+        "s04-05-cancellation-settled",
+        "s04-06-partial-retained",
+        "s04-07-second-prompt",
+        "s04-08-idle",
+        "exit"
+      ],
+      "requiredText": [
+        "CANCEL_BEGIN the partial response starts.",
+        "CANCEL_CONTINUATION the partial response continues.",
+        "SECOND_PROMPT_OK the editor recovered."
+      ],
+      "cancelledCheckpoint": "s04-05-cancellation-settled",
+      "forbiddenStreamTokens": ["CANCEL_LATE", "CANCEL_FINISH"],
+      "forbiddenStreamFrom": "s04-04-cancellation-requested",
+      "absenceEverywhere": ["CANCEL_LATE", "CANCEL_FINISH"],
+      "secondPromptResponse": "SECOND_PROMPT_OK the editor recovered.",
+      "idleCheckpoint": "s04-08-idle",
+      "expectedModelRequests": 2
+    },
+    "S05": {
+      "title": "Cancellation while Bash is running",
+      "fixture": "s05-tool-cancellation.json",
+      "checkpoints": [
+        "s05-01-tool-announced",
+        "s05-02-tool-process-starts",
+        "s05-03-start-marker-observed",
+        "s05-04-cancellation-requested",
+        "s05-05-tool-cancellation-settles",
+        "s05-06-no-late-tool-output",
+        "s05-07-processes-cleaned",
+        "s05-08-terminal-idle",
+        "s05-09-second-prompt",
+        "s05-10-idle",
+        "exit"
+      ],
+      "requiredText": [
+        "TOOL_STARTED",
+        "PIDS_READY",
+        "Command aborted",
+        "SECOND_TOOL_PROMPT_OK the run recovered."
+      ],
+      "cancelledCheckpoint": "s05-05-tool-cancellation-settles",
+      "forbiddenStreamTokens": ["TOOL_COMPLETED"],
+      "forbiddenStreamFrom": "s05-04-cancellation-requested",
+      "absenceEverywhere": ["TOOL_COMPLETED"],
+      "secondPromptResponse": "SECOND_TOOL_PROMPT_OK the run recovered.",
+      "idleCheckpoint": "s05-10-idle",
+      "expectedModelRequests": 2,
+      "processCheckpoint": "s05-03-start-marker-observed",
+      "cleanupCheckpoint": "s05-07-processes-cleaned"
+    }
+  }
+}
