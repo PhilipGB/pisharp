@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import time
@@ -138,10 +139,106 @@ def start_terminal_process(command, cwd, child_environment, options):
     return TerminalProcess(command, cwd, child_environment, options, spool_render_frames=True)
 
 
+def wait_for_gate(server, terminal, gate, timeout):
+    """Wait for a fixture gate while draining the PTY.
+
+    A blocked gate waits for the CLI to reach a provider boundary, but an
+    animated working indicator keeps writing to the PTY. Without draining, a
+    full PTY buffer can block the CLI before it reaches that boundary.
+    """
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if server.wait_for_gate(gate, timeout=0.01):
+            return True
+        terminal.pump(timeout=0.01)
+    return server.wait_for_gate(gate, timeout=0)
+
+
 def expand_environment(values, agent, router_url):
     return {name: value.replace('{router}', router_url).replace('{agent}', str(agent))
             if isinstance(value, str) else value
             for name, value in values.items()}
+
+
+def read_workspace_pid(base, relative):
+    """Read a PID file written by a fixture command inside the owned workspace."""
+    root = base.resolve()
+    path = (base / relative).resolve()
+    if not path.is_relative_to(root):
+        raise ValueError(f'PID file leaves its owned directory: {relative}')
+    text = path.read_text().strip()
+    if not re.fullmatch(r'\d+', text):
+        raise RuntimeError(f'PID file {relative} did not contain a decimal PID: {text!r}')
+    return int(text)
+
+
+def process_state(pid):
+    """Return the Linux process state, or None when the process no longer exists."""
+    try:
+        status = Path(f'/proc/{pid}/status').read_text()
+    except (FileNotFoundError, ProcessLookupError):
+        return None
+    except PermissionError:
+        return 'unknown'
+    for line in status.splitlines():
+        if line.startswith('State:'):
+            return line.split(None, 1)[1].strip()
+    return 'unknown'
+
+
+def process_tree(pid, seen=None):
+    """Collect a process and its descendants for cleanup of an unexpected orphan."""
+    seen = set() if seen is None else seen
+    if pid in seen:
+        return seen
+    seen.add(pid)
+    try:
+        children = Path(f'/proc/{pid}/task/{pid}/children').read_text().split()
+    except (FileNotFoundError, ProcessLookupError, PermissionError):
+        children = []
+    for child in children:
+        if child.isdigit():
+            process_tree(int(child), seen)
+    return seen
+
+
+def capture_process_checkpoint(action, base):
+    """Read PID files and record whether each owned process is still alive."""
+    entries = {}
+    for relative in action.get('processFiles', []):
+        pid = read_workspace_pid(base, relative)
+        entries[relative] = dict(pid=pid, state=process_state(pid),
+                                 tree=sorted(process_tree(pid)) if process_state(pid) else [])
+    return entries
+
+
+def wait_for_process_exit(action, base, terminal, timeout):
+    """Wait for every recorded PID to disappear, draining the PTY while polling."""
+    deadline = time.monotonic() + timeout
+    relatives = action.get('waitForProcessesGone', [])
+    while True:
+        entries = capture_process_checkpoint(dict(processFiles=relatives), base)
+        remaining = [name for name, entry in entries.items() if entry['state'] is not None]
+        if not remaining or time.monotonic() >= deadline:
+            return entries
+        terminal.pump(timeout=0.02)
+
+
+def kill_orphan_processes(process_by_frame):
+    """Best-effort cleanup for processes a product failed to terminate."""
+    pids = set()
+    for frame in process_by_frame:
+        for entry in (frame.get('processes') or {}).values():
+            pids.update(entry.get('tree') or [])
+            if entry.get('pid'):
+                pids.add(entry['pid'])
+    for pid in sorted(pids, reverse=True):
+        if process_state(pid) is None:
+            continue
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
 
 
 def record_clipboard_checkpoint(action, raw):
@@ -226,6 +323,7 @@ def write_assertion_evidence(path, products, dimensions, theme, mode, frame_ids=
     for name, product in products.items():
         frames = list(product.get('assertionFrames', []))
         evidence[name] = dict(frames=frames, http=product['http'], scenarioError=product['scenarioError'],
+                              processByFrame=product.get('processByFrame', []),
                               capturedAgentFiles=product.get('capturedAgentFiles', {}),
                               capturedSessionFiles=product.get('capturedSessionFiles', []),
                               capturedSessionContents=product.get('capturedSessionContents', {}))
@@ -359,6 +457,7 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
 
     http_by_frame = []
     clipboard_by_frame = []
+    process_by_frame = []
     prior_raw = bytearray()
     prior_render_frames = []
     request_start = len(server.requests)
@@ -371,7 +470,7 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
             if isinstance(wait_gates, str):
                 wait_gates = [wait_gates]
             for gate in wait_gates:
-                if not server.wait_for_gate(gate, timeout=action.get('gateTimeout', 20)):
+                if not wait_for_gate(server, terminal, gate, action.get('gateTimeout', 20)):
                     raise TimeoutError(f'Fixture gate was not signaled: {gate}')
             release_gates = action.get('releaseGates', [])
             if isinstance(release_gates, str):
@@ -410,7 +509,7 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
             if isinstance(wait_gates_after, str):
                 wait_gates_after = [wait_gates_after]
             for gate in wait_gates_after:
-                if not server.wait_for_gate(gate, timeout=action.get('gateTimeout', 20)):
+                if not wait_for_gate(server, terminal, gate, action.get('gateTimeout', 20)):
                     raise TimeoutError(f'Fixture gate was not signaled after action: {gate}')
             poll_model = action.get('waitForModelPoll')
             if poll_model and not server.wait_for_model_poll(poll_model, timeout=action.get('gateTimeout', 20)):
@@ -439,6 +538,22 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
                                         allow_static_frame=action.get('allowStaticFrame', False),
                                         cursor_before=cursor_before,
                                         clipboard_texts=action.get('expectClipboardTexts'), clipboard_after=mark)
+            process_entries = {}
+            if action.get('processFiles'):
+                process_entries.update(capture_process_checkpoint(action, WORKSPACE))
+            if action.get('waitForProcessesGone'):
+                process_entries.update(wait_for_process_exit(
+                    action, WORKSPACE, terminal, action.get('processTimeout', 5)))
+                alive = {name: entry for name, entry in process_entries.items()
+                         if entry.get('state') is not None}
+                if alive:
+                    record_frame(dict(id=action['id'], state=frame,
+                                      controls=terminal.trace.events[control_mark:],
+                                      controlPending=terminal.trace.pending.hex()))
+                    process_by_frame.append(dict(id=action['id'], processes=process_entries))
+                    raise RuntimeError(f'Fixture processes were still alive after cancellation: {alive}')
+            if process_entries:
+                process_by_frame.append(dict(id=action['id'], processes=process_entries))
             expected_model_status = action.get('expectModelStatus')
             if expected_model_status:
                 model = next((value for value in server.models
@@ -471,7 +586,8 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
                     raw=base64.b64encode(prior_raw).decode(), capturedAgentFiles=captured_agent_files,
                     capturedSessionFiles=captured_session_files,
                     capturedSessionContents=read_session_contents(agent),
-                    http=server.requests[request_start:], command=command, scenarioError=None)
+                    http=server.requests[request_start:], command=command, scenarioError=None,
+                    processByFrame=process_by_frame)
     except (TimeoutError, RuntimeError) as error:
         record_frame(dict(id=action['id'], state=terminal.snapshot(), controls=terminal.trace.events[control_mark:],
                           controlPending=terminal.trace.pending.hex()))
@@ -486,8 +602,10 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
                                                if path.is_file() and not path.is_symlink())
                     if (agent / 'sessions').is_dir() else [],
                     capturedSessionContents=read_session_contents(agent),
-                    http=server.requests[request_start:], command=command, scenarioError=str(error))
+                    http=server.requests[request_start:], command=command, scenarioError=str(error),
+                    processByFrame=process_by_frame)
     finally:
+        kill_orphan_processes(process_by_frame)
         terminal.close()
 
 

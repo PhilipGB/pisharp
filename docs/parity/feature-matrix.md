@@ -1,25 +1,44 @@
-## Current state — 2026-11-06
+## Current state — 2026-11-07
 
 Current status and project goal are maintained in [the continuation](../continuation.md); open architecture risks are tracked in the [architecture document](../architecture.md#open-architecture-risks). The milestone summaries below are historical and may retain the wording used when they were written; later merges supersede their status claims.
 
-## Milestone in review — Wrapped Bash Command Style Parity — 2026-11-06
+## Milestone in review — Interactive Streaming, Reasoning, Tool Progress and Cancellation Evaluation — 2026-11-07
 
-Draft PR #46 implements wrapped Bash command style parity on top of merged PR
-#45 at `0984bfc922714862e2af244133313828617ca730`; it remains open and
-unmerged at implementation revision
-`95704af040c2e8043457383ea31f88204eba7a72`. Pi's wrapped Bash command header
-keeps its title foreground, bold attribute and tool background across
-soft-wrapped rows' trailing padding, including the right output-padding cell;
-the final command row and a command that exactly fills the transcript width use
-the default foreground on output padding. The original 17-cell ENV-PARSER-001
-P2 is resolved by PR #45; the exact-boundary variant found while establishing
-the Pi contract is corrected in `TerminalScreenCompositor` by this draft.
-Cell-level regressions cover one-row, wrapped, multi-row, exact-boundary,
-output-following, failed/recovered, resize and expanded/re-collapsed commands;
-the 17-cell regression fails on the pre-#45 binary and the exact-boundary
-regression fails on the PR #45 merge, both passing here. `objective-agent-progress`
-improves from 19/20 to 20/20 at 80x24 and remains 20/20 at 120x40;
-`objective-agent-recovery` remains 20/20 at both sizes. See the
+Fixture `interactive-streaming-cancellation-001` evaluates five deterministic
+scenarios at 80x24 and 120x40 dark fullscreen: partial assistant-text streaming,
+reasoning visibility, live tool progress, text cancellation and Bash
+cancellation with child-process cleanup. Provider gates, tool-release gates,
+PID liveness and named checkpoints replace wall-clock waits. Same-Pi
+calibration is exact at both sizes after masking only `Elapsed`/`Took`
+durations and partial-stream usage percentages. The score is **88/100**:
+functional 40/40, temporal 20/20, visual 18/30, cleanup 10/10. S03 and S04
+match exactly at both sizes. One P1 is confirmed (S02 reasoning block splits
+around toggle lines, duplicates the hidden `Thinking...` placeholder and shifts
+the transcript by three rows); five P2s cover Python builtin syntax colour
+(S01), reasoning italic and reasoning-model `Working` colour (S02), and
+cancelled-tool error wording/style (S05). No P0 was observed. This evaluation
+does not fix them. See the
+[receipt](fixtures/interactive-streaming-cancellation-001/README.md),
+[report](fixtures/interactive-streaming-cancellation-001/report.json) and
+[verification](fixtures/interactive-streaming-cancellation-001/verification.json).
+
+## Completed milestone — Wrapped Bash Command Style Parity — 2026-11-06
+
+PR #46 merged wrapped Bash command style parity at
+`c615fc17232886d76c5092f8d5b6cd5b22f418fe` on top of merged PR #45. Pi's
+wrapped Bash command header keeps its title foreground, bold attribute and tool
+background across soft-wrapped rows' trailing padding, including the right
+output-padding cell; the final command row and a command that exactly fills the
+transcript width use the default foreground on output padding. The original
+17-cell ENV-PARSER-001 P2 was resolved by PR #45; the exact-boundary variant
+found while establishing the Pi contract is corrected in
+`TerminalScreenCompositor` by PR #46. Cell-level regressions cover one-row,
+wrapped, multi-row, exact-boundary, output-following, failed/recovered, resize
+and expanded/re-collapsed commands; the 17-cell regression fails on the
+pre-#45 binary and the exact-boundary regression fails on the PR #45 merge,
+both passing on the merge. `objective-agent-progress` improves from 19/20 to
+20/20 at 80x24 and remains 20/20 at 120x40; `objective-agent-recovery` remains
+20/20 at both sizes. See the
 [receipt](fixtures/wrapped-bash-command-style-parity-2026-11-06/README.md) and
 [UI report](fixtures/wrapped-bash-command-style-parity-2026-11-06/ui-report.json).
 

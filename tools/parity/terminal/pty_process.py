@@ -134,14 +134,27 @@ class TerminalProcess:
         self._new_render_frames = []
         if self.closed or not select.select([self.master], [], [], timeout)[0]:
             return False
-        try:
-            data = os.read(self.master, 65536)
-        except OSError as error:
-            if error.errno != errno.EIO:
-                raise
-            data = b''
+        # Drain every byte that is already available so a checkpoint cannot be
+        # sampled in the middle of a single terminal write. Some kernels return
+        # PTY reads below the requested size, which otherwise leaves the tail of
+        # a synchronized-output frame (its closing mode) pending indefinitely
+        # while an animated status redraws. The cap keeps a producer that writes
+        # faster than the harness from starving checkpoint evaluation.
+        data = bytearray()
+        while len(data) < 1024 * 1024:
+            try:
+                chunk = os.read(self.master, 65536)
+            except OSError as error:
+                if error.errno != errno.EIO:
+                    raise
+                chunk = b''
+            if not chunk:
+                self.closed = True
+                break
+            data.extend(chunk)
+            if not select.select([self.master], [], [], 0)[0]:
+                break
         if not data:
-            self.closed = True
             return False
         self.raw.extend(data)
         self.trace.write(data)

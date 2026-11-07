@@ -1,0 +1,186 @@
+{
+  "id": "interactive-streaming-cancellation-001-s03-tool-progress",
+  "settings": {
+    "quietStartup": true
+  },
+  "arguments": {
+    "pi": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--no-session",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-context-files",
+      "--tools",
+      "bash",
+      "--system-prompt",
+      "You are a terminal parity fixture."
+    ],
+    "pisharp": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--no-session",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-context-files",
+      "--tools",
+      "bash",
+      "--no-approve",
+      "--system-prompt",
+      "You are a terminal parity fixture."
+    ]
+  },
+  "projectFiles": {
+    "controlled-tool.sh": "echo TOOL_STARTED\nwhile [ ! -f release_01 ]; do sleep 0.02; done\necho PROGRESS_01\nwhile [ ! -f release_02 ]; do sleep 0.02; done\necho PROGRESS_02\nwhile [ ! -f release_03 ]; do sleep 0.02; done\necho TOOL_COMPLETED\n"
+  },
+  "fixtureBehavior": {
+    "chatRequestGates": [
+      "s03-tool-request",
+      "s03-continuation-request"
+    ],
+    "chatResponseGates": [
+      "s03-tool-call-response",
+      "s03-continuation-response"
+    ],
+    "chatToolCallsByRequest": [
+      [
+        {
+          "id": "call-s03-progress",
+          "name": "bash",
+          "arguments": {
+            "command": "sh controlled-tool.sh"
+          }
+        }
+      ]
+    ],
+    "chatResponseChunksByRequest": [
+      null,
+      [
+        "Tool lifecycle ",
+        "complete.\n"
+      ]
+    ]
+  },
+  "dimensions": [
+    {
+      "columns": 80,
+      "rows": 24
+    },
+    {
+      "columns": 120,
+      "rows": 40
+    }
+  ],
+  "themes": [
+    "dark"
+  ],
+  "modes": [
+    "fullscreen"
+  ],
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "s03-01-tool-announced",
+      "send": "Run the controlled fixture tool.\r",
+      "waitGatesAfter": [
+        "s03-tool-request"
+      ],
+      "allowStaticFrame": true,
+      "expect": "Run the controlled fixture tool."
+    },
+    {
+      "id": "s03-02-tool-starts",
+      "releaseGates": [
+        "s03-tool-call-response"
+      ],
+      "expect": "Working",
+      "allowStaticFrame": true
+    },
+    {
+      "id": "s03-03-first-marker",
+      "expect": "TOOL_STARTED",
+      "notExpect": "PROGRESS_01",
+      "allowStaticFrame": true
+    },
+    {
+      "id": "s03-04-first-progress",
+      "writeFiles": {
+        "workspace": {
+          "release_01": ""
+        }
+      },
+      "expect": "PROGRESS_01",
+      "notExpect": "PROGRESS_02",
+      "allowStaticFrame": true
+    },
+    {
+      "id": "s03-05-second-progress",
+      "writeFiles": {
+        "workspace": {
+          "release_02": ""
+        }
+      },
+      "expect": "PROGRESS_02",
+      "notExpect": "TOOL_COMPLETED",
+      "allowStaticFrame": true
+    },
+    {
+      "id": "s03-06-tool-completes",
+      "writeFiles": {
+        "workspace": {
+          "release_03": ""
+        }
+      },
+      "waitGatesAfter": [
+        "s03-continuation-request"
+      ],
+      "allowStaticFrame": true,
+      "expect": "TOOL_COMPLETED"
+    },
+    {
+      "id": "s03-07-assistant-continues",
+      "releaseGates": [
+        "s03-continuation-response"
+      ],
+      "expect": "Tool lifecycle complete.",
+      "notExpect": "Working",
+      "allowStaticFrame": true
+    },
+    {
+      "id": "s03-08-idle",
+      "expect": "fixture-model",
+      "notExpect": "Working",
+      "allowStaticFrame": true
+    },
+    {
+      "id": "exit",
+      "send": "\u0003\u0003",
+      "exit": true
+    }
+  ],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  },
+  "assertionFrames": [
+    "s03-01-tool-announced",
+    "s03-02-tool-starts",
+    "s03-03-first-marker",
+    "s03-04-first-progress",
+    "s03-05-second-progress",
+    "s03-06-tool-completes",
+    "s03-07-assistant-continues",
+    "s03-08-idle",
+    "exit"
+  ]
+}

@@ -1,0 +1,205 @@
+{
+  "id": "interactive-streaming-cancellation-001-s02-reasoning-streaming",
+  "modelReasoning": true,
+  "settings": {
+    "quietStartup": true,
+    "hideThinkingBlock": false
+  },
+  "arguments": {
+    "pi": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--no-session",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-tools",
+      "--no-context-files",
+      "--system-prompt",
+      "You are a terminal parity fixture."
+    ],
+    "pisharp": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--no-session",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-tools",
+      "--no-approve",
+      "--no-context-files",
+      "--system-prompt",
+      "You are a terminal parity fixture."
+    ]
+  },
+  "fixtureBehavior": {
+    "chatRequestGates": [
+      "s02-request"
+    ],
+    "chatResponseReasoningChunksByRequest": [
+      [
+        "REASONING_BEGIN inspect the staged request.",
+        " REASONING_CONTINUATION choose the visible answer."
+      ]
+    ],
+    "chatResponseReasoningChunkGatesByRequest": [
+      [
+        "s02-reasoning-1",
+        "s02-reasoning-2"
+      ]
+    ],
+    "chatResponseReasoningChunkReadyGatesByRequest": [
+      [
+        "s02-reasoning-1-ready",
+        "s02-reasoning-2-ready"
+      ]
+    ],
+    "chatResponseChunksByRequest": [
+      [
+        "ANSWER_BEGIN the visible answer starts here.\n",
+        "ANSWER_END the visible answer completes.\n"
+      ]
+    ],
+    "chatResponseChunkGatesByRequest": [
+      [
+        "s02-content-1",
+        "s02-content-2"
+      ]
+    ],
+    "chatResponseChunkReadyGatesByRequest": [
+      [
+        "s02-content-1-ready",
+        "s02-content-2-ready"
+      ]
+    ],
+    "chatResponseFinishGates": [
+      "s02-finish"
+    ]
+  },
+  "dimensions": [
+    {
+      "columns": 80,
+      "rows": 24
+    },
+    {
+      "columns": 120,
+      "rows": 40
+    }
+  ],
+  "themes": [
+    "dark"
+  ],
+  "modes": [
+    "fullscreen"
+  ],
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "s02-01-before-reasoning",
+      "send": "Stream reasoning and then an answer.\r",
+      "waitGatesAfter": [
+        "s02-request"
+      ],
+      "allowStaticFrame": true,
+      "expect": "Stream reasoning and then an answer.",
+      "notExpect": "REASONING_BEGIN"
+    },
+    {
+      "id": "s02-02-reasoning-begins",
+      "releaseGates": [
+        "s02-reasoning-1"
+      ],
+      "waitGatesAfter": [
+        "s02-reasoning-1-ready"
+      ],
+      "allowStaticFrame": true,
+      "expect": "REASONING_BEGIN inspect the staged request.",
+      "notExpect": "REASONING_CONTINUATION"
+    },
+    {
+      "id": "s02-03-more-reasoning",
+      "releaseGates": [
+        "s02-reasoning-2"
+      ],
+      "waitGatesAfter": [
+        "s02-reasoning-2-ready"
+      ],
+      "allowStaticFrame": true,
+      "expect": "REASONING_CONTINUATION",
+      "notExpect": "ANSWER_BEGIN"
+    },
+    {
+      "id": "s02-04-hide-reasoning",
+      "send": "\u0014",
+      "allowStaticFrame": true,
+      "expect": "Thinking blocks: hidden",
+      "notExpect": "REASONING_BEGIN"
+    },
+    {
+      "id": "s02-05-assistant-text-begins",
+      "releaseGates": [
+        "s02-content-1"
+      ],
+      "waitGatesAfter": [
+        "s02-content-1-ready"
+      ],
+      "allowStaticFrame": true,
+      "expect": "ANSWER_BEGIN the visible answer starts here.",
+      "notExpect": "REASONING_BEGIN"
+    },
+    {
+      "id": "s02-06-show-reasoning-again",
+      "send": "\u0014",
+      "allowStaticFrame": true,
+      "expect": "REASONING_BEGIN inspect the staged request."
+    },
+    {
+      "id": "s02-07-response-completes",
+      "releaseGates": [
+        "s02-content-2"
+      ],
+      "waitGatesAfter": [
+        "s02-content-2-ready"
+      ],
+      "allowStaticFrame": true,
+      "expect": "ANSWER_END the visible answer completes."
+    },
+    {
+      "id": "s02-08-idle",
+      "releaseGates": [
+        "s02-finish"
+      ],
+      "allowStaticFrame": true,
+      "expect": "fixture-model",
+      "notExpect": "Working"
+    },
+    {
+      "id": "exit",
+      "send": "\u0003\u0003",
+      "exit": true
+    }
+  ],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  },
+  "assertionFrames": [
+    "s02-01-before-reasoning",
+    "s02-02-reasoning-begins",
+    "s02-03-more-reasoning",
+    "s02-04-hide-reasoning",
+    "s02-05-assistant-text-begins",
+    "s02-06-show-reasoning-again",
+    "s02-07-response-completes",
+    "s02-08-idle",
+    "exit"
+  ]
+}
