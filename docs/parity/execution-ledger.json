@@ -15487,10 +15487,10 @@
           "120x40"
         ],
         "raw_dynamic_only_differences": {
-          "S03-80x24": 18,
-          "S03-120x40": 32,
+          "S03-80x24": 20,
+          "S03-120x40": 0,
           "S05-80x24": 28,
-          "S05-120x40": 50
+          "S05-120x40": 24
         },
         "note": "Raw same-Pi differences were only Elapsed/Took values and their render duplicates; the declared evaluator normalization masks those values and token counts stay exact."
       }
@@ -15504,12 +15504,20 @@
         "tracked_changes": []
       },
       "pisharp": {
-        "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+        "sha": "d1b844acb51e012a9494acbe75745bc87b54c531",
         "branch": "milestone/interactive-streaming-cancellation-parity",
         "dirty": false,
-        "tracked_changes": []
+        "tracked_changes": [],
+        "artifact": {
+          "built_from_sha": "d1b844acb51e012a9494acbe75745bc87b54c531",
+          "file": "PiSharp.Cli.dll",
+          "sha256": "a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51",
+          "deps_sha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
+          "runtime_config_sha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a",
+          "source_dirty": false
+        }
       },
-      "note": "Every calibration and comparison case records the exact source SHA, branch, dirty flag and tracked changes; the verifier rejects missing, contradictory or drifted states."
+      "note": "Every calibration and comparison case records the exact source SHA, branch, dirty flag and tracked/untracked changes; the comparison also records hashes of the freshly published DLL, deps manifest and runtime config. The verifier rejects missing, contradictory, drifted or differing artifact states."
     },
     "contract_evaluation": {
       "independent_products": [
@@ -15601,9 +15609,9 @@
       "tools/parity/terminal/fixture_http.py adds gated reasoning chunks"
     ],
     "verification": {
-      "evaluation_tests": "27 passed",
-      "report_verifier": "586 checks, 0 failed",
-      "capture_provenance": "Pi and PiSharp clean; every case bound to exact SHA and dirty state",
+      "evaluation_tests": "32 passed",
+      "report_verifier": "589 checks, 0 failed",
+      "capture_provenance": "Pi and PiSharp clean; every case bound to exact SHA, worktree state and published PiSharp artifact hash",
       "contract_evaluation": "Pi and PiSharp pass the frozen functional/temporal/cleanup contract at both sizes",
       "forbidden_stream_scan": "0 occurrences across post-cancellation render frames",
       "finding_predicates": "0 unmatched differences",
@@ -15612,7 +15620,7 @@
       "full_dotnet": "4,496 passed, 0 failed (no C# changes since that run)",
       "format": "clean",
       "warnings_as_errors": "clean; one initial build attempt hit a transient internal CLR error and the immediate retry built with 0 warnings",
-      "docs": "174 documents, 803 references"
+      "docs": "174 documents, 802 references"
     },
     "receipt": "docs/parity/fixtures/interactive-streaming-cancellation-001/README.md",
     "report": "docs/parity/fixtures/interactive-streaming-cancellation-001/report.json",

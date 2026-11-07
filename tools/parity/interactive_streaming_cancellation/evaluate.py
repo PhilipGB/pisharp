@@ -204,7 +204,14 @@ def product_provenance(evidence, product):
     value = (evidence.get(product) or {}).get('provenance')
     if not isinstance(value, dict):
         return None
-    return {field: value.get(field) for field in PROVENANCE_FIELDS}
+    result = {field: value.get(field) for field in PROVENANCE_FIELDS}
+    artifact = result.get('artifact')
+    if isinstance(artifact, dict):
+        # The raw publish manifest keeps the absolute build command; committed
+        # evidence stays machine-independent and binds by source/artifact hash.
+        result['artifact'] = {key: item for key, item in artifact.items()
+                              if key != 'buildCommand'}
+    return result
 
 
 def artifact_valid(value):

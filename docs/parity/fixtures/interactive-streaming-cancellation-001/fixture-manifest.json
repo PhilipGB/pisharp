@@ -103,7 +103,7 @@
       "id": "S05",
       "title": "Cancellation while Bash is running",
       "fixture": "s05-tool-cancellation.json",
-      "sha256": "2e6c0170bce6272be1220f624cef0b1b37e30b709e5373c9564b3ff52cc521e6",
+      "sha256": "d137dd905a1d6b2b4785d451fbb2f02029ec0a0af5c6dce40b8d458a148335ee",
       "checkpoints": [
         "s05-01-tool-announced",
         "s05-02-tool-process-starts",
@@ -128,6 +128,7 @@
     "errors": [],
     "pi": [
       {
+        "artifact": null,
         "branch": "HEAD",
         "dirty": false,
         "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
@@ -136,9 +137,20 @@
     ],
     "pisharp": [
       {
+        "artifact": {
+          "builtFromSha": "d1b844acb51e012a9494acbe75745bc87b54c531",
+          "depsFile": "PiSharp.Cli.deps.json",
+          "depsSha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
+          "file": "PiSharp.Cli.dll",
+          "runtimeConfigFile": "PiSharp.Cli.runtimeconfig.json",
+          "runtimeConfigSha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a",
+          "sha256": "a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51",
+          "size": 3429888,
+          "sourceDirty": false
+        },
         "branch": "milestone/interactive-streaming-cancellation-parity",
         "dirty": false,
-        "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+        "sha": "d1b844acb51e012a9494acbe75745bc87b54c531",
         "trackedChanges": []
       }
     ]
@@ -162,8 +174,7 @@
     "readme": "README.md"
   },
   "capture": {
-    "calibration": "python3 tools/parity/terminal/run.py --pi /tmp/pisharp-current-pi --fixture tools/parity/terminal/fixtures/interactive-streaming-cancellation-001/<scenario>.json --calibrate --output artifacts/parity/interactive-streaming-cancellation-001/calibration/<stem>",
-    "comparison": "python3 tools/parity/terminal/run.py --pi /tmp/pisharp-current-pi --pisharp src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll --fixture tools/parity/terminal/fixtures/interactive-streaming-cancellation-001/<scenario>.json --output artifacts/parity/interactive-streaming-cancellation-001/comparison/<stem>",
+    "all_cases": "python3 tools/parity/interactive_streaming_cancellation/capture.py --pi /tmp/pisharp-current-pi --output artifacts/parity/interactive-streaming-cancellation-001",
     "evaluate": "python3 tools/parity/interactive_streaming_cancellation/run_evaluation.py --artifacts artifacts/parity/interactive-streaming-cancellation-001 --evidence docs/parity/fixtures/interactive-streaming-cancellation-001",
     "verify": "python3 tools/parity/interactive_streaming_cancellation/verify_report.py --evidence docs/parity/fixtures/interactive-streaming-cancellation-001 --require-verification",
     "tests": "python3 -m unittest discover -s tools/parity/interactive_streaming_cancellation -p 'test_*.py'"

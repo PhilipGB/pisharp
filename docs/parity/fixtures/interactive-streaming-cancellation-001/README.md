@@ -71,8 +71,8 @@ cell width so `0.6s` and `0.98s` align without hiding styles or layout.
 
 The same-Pi calibration is exact for S01, S02, S03, S04 and S05 at both sizes
 after that normalization. For transparency, the raw harness calibration
-reported dynamic-only differences at S03 (`18` at `80x24`, `32` at `120x40`) and
-S05 (`28` at `80x24`, `50` at `120x40`) across checkpoint and render frames;
+reported dynamic-only differences at S03 (`20` at `80x24`, `0` at `120x40`) and
+S05 (`28` at `80x24`, `24` at `120x40`) across checkpoint and render frames;
 S01, S02 and S04 reported none. The differences were `Elapsed`/`Took` values and
 their render duplicates, not product behavior, and all normalize away.
 
@@ -83,10 +83,21 @@ provenance record. The report and fixture manifest bind each case to the exact
 Pi and PiSharp `HEAD`, branch, tracked-change list, and `dirty` flag. This bundle
 captures both products from a clean tree: Pi at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` and PiSharp at
-`8d30011952c3017d210f9a41c8d743ffd5adb3bf`; no implicit working-tree changes are
+`d1b844acb51e012a9494acbe75745bc87b54c531`; no implicit working-tree changes are
 accepted. The verifier rejects a missing SHA, a non-boolean or contradictory
 dirty state, a calibration second run that is not the Pi source, or source drift
-between cases.
+between cases. Strict worktree status includes non-ignored untracked files, so an
+untracked `.cs` file or build props file makes the capture dirty.
+
+The executed PiSharp binary is bound separately. `capture.py` records the clean
+source SHA, publishes into the capture-owned `pisharp-artifact/` directory,
+rechecks the SHA and worktree, and hashes the DLL, `.deps.json` and
+`.runtimeconfig.json`. This bundle records DLL
+`a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51`, deps
+`15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af` and runtime
+config `f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a`.
+Every PiSharp case must use the same artifact, and `builtFromSha` must equal the
+source SHA.
 
 ## Independent product contracts
 
@@ -236,23 +247,18 @@ no `Inconclusive` differences in this run.
 
 ## Reproduction
 
-Build PiSharp from `src/PiSharp.Cli/PiSharp.Cli.csproj` and check out the
-pinned Pi reference first. The harness defaults to the built PiSharp DLL under
-the project's `bin/Debug/net10.0` output and the pinned Pi checkout at
+The reproducible path is `capture.py`. It verifies the source tree is clean
+(including non-ignored untracked files), records the source SHA, publishes
+PiSharp into the capture-owned `pisharp-artifact/` directory, rechecks the SHA
+and worktree, hashes the DLL/deps/runtime config, and runs all calibration and
+comparison cases against that artifact. The pinned Pi checkout is
 `/tmp/pisharp-current-pi`; substitute your paths.
 
 ```sh
-# Same-Pi calibration, one scenario (repeat for S01..S05)
-python3 tools/parity/terminal/run.py --pi /tmp/pisharp-current-pi \
-  --fixture tools/parity/terminal/fixtures/interactive-streaming-cancellation-001/s01-text-streaming.json \
-  --calibrate \
-  --output artifacts/parity/interactive-streaming-cancellation-001/calibration/s01-text-streaming
-
-# Pi vs PiSharp comparison, same scenario
-python3 tools/parity/terminal/run.py --pi /tmp/pisharp-current-pi \
-  --pisharp src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll \
-  --fixture tools/parity/terminal/fixtures/interactive-streaming-cancellation-001/s01-text-streaming.json \
-  --output artifacts/parity/interactive-streaming-cancellation-001/comparison/s01-text-streaming
+# Fresh publish plus all calibration/comparison cases
+python3 tools/parity/interactive_streaming_cancellation/capture.py \
+  --pi /tmp/pisharp-current-pi \
+  --output artifacts/parity/interactive-streaming-cancellation-001
 
 # Score all captured evidence and write the committed bundle
 python3 tools/parity/interactive_streaming_cancellation/run_evaluation.py \
@@ -269,7 +275,7 @@ One finding can be reproduced at a single size with `--case`, for example:
 
 ```sh
 python3 tools/parity/terminal/run.py --pi /tmp/pisharp-current-pi \
-  --pisharp src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll \
+  --pisharp artifacts/parity/interactive-streaming-cancellation-001/pisharp-artifact/PiSharp.Cli.dll \
   --fixture tools/parity/terminal/fixtures/interactive-streaming-cancellation-001/s05-tool-cancellation.json \
   --case 80x24-dark-fullscreen \
   --output artifacts/parity/repro-s05
@@ -277,9 +283,9 @@ python3 tools/parity/terminal/run.py --pi /tmp/pisharp-current-pi \
 
 ## Verification
 
-- Evaluator and verifier unit tests — 27 passed:
+- Evaluator and verifier unit tests — 32 passed:
   `python3 -m unittest discover -s tools/parity/interactive_streaming_cancellation -p 'test_*.py'`
-- Report verifier — 586 checks, 0 failed, including fixture checksums,
+- Report verifier — 589 checks, 0 failed, including fixture checksums,
   capture provenance for every case, independently recomputed Pi and PiSharp
   contracts, post-cancellation render-stream evidence, recomputed scores and
   totals, cancellation cleanup evidence and finding coverage.
@@ -294,11 +300,12 @@ The verifier rejects a report with a missing scenario or checkpoint, a bad
 fixture or evidence checksum, an inflated scenario score or total, an
 unassessable/invalid calibration treated as assessable, a failed cancellation
 marked successful, missing cleanup evidence, or a difference omitted from the
-finding set. It also rejects a missing or dirty/mismatched capture SHA, a Pi
-contract failure marked assessable, missing post-cancellation render-stream scan
-evidence or a forbidden token marked clean, and an unmatched difference with no
-explicit finding predicate. Negative controls for each case live in
-`test_evaluation.py`.
+finding set. It also rejects a missing or dirty/mismatched capture SHA, a
+missing artifact hash or `builtFromSha` mismatch, differing artifact hashes
+across cases, a Pi contract failure marked assessable, missing
+post-cancellation render-stream scan evidence or a forbidden token marked clean,
+and an unmatched difference with no explicit finding predicate. Negative
+controls for each case live in `test_evaluation.py`.
 
 ## Evidence files
 

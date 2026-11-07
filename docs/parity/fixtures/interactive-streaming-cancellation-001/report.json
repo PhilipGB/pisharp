@@ -52,6 +52,7 @@
     "errors": [],
     "pi": [
       {
+        "artifact": null,
         "branch": "HEAD",
         "dirty": false,
         "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
@@ -60,9 +61,20 @@
     ],
     "pisharp": [
       {
+        "artifact": {
+          "builtFromSha": "d1b844acb51e012a9494acbe75745bc87b54c531",
+          "depsFile": "PiSharp.Cli.deps.json",
+          "depsSha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
+          "file": "PiSharp.Cli.dll",
+          "runtimeConfigFile": "PiSharp.Cli.runtimeconfig.json",
+          "runtimeConfigSha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a",
+          "sha256": "a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51",
+          "size": 3429888,
+          "sourceDirty": false
+        },
         "branch": "milestone/interactive-streaming-cancellation-parity",
         "dirty": false,
-        "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+        "sha": "d1b844acb51e012a9494acbe75745bc87b54c531",
         "trackedChanges": []
       }
     ]
@@ -120,13 +132,15 @@
               "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
               "branch": "HEAD",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": null
             },
             "pisharp": {
               "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
               "branch": "HEAD",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": null
             }
           },
           "comparison": {
@@ -134,13 +148,25 @@
               "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
               "branch": "HEAD",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": null
             },
             "pisharp": {
-              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "sha": "d1b844acb51e012a9494acbe75745bc87b54c531",
               "branch": "milestone/interactive-streaming-cancellation-parity",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": {
+                "file": "PiSharp.Cli.dll",
+                "size": 3429888,
+                "sha256": "a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51",
+                "depsFile": "PiSharp.Cli.deps.json",
+                "depsSha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
+                "runtimeConfigFile": "PiSharp.Cli.runtimeconfig.json",
+                "runtimeConfigSha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a",
+                "builtFromSha": "d1b844acb51e012a9494acbe75745bc87b54c531",
+                "sourceDirty": false
+              }
             }
           }
         },
@@ -152,13 +178,15 @@
               "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
               "branch": "HEAD",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": null
             },
             "pisharp": {
               "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
               "branch": "HEAD",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": null
             }
           },
           "comparison": {
@@ -166,13 +194,25 @@
               "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
               "branch": "HEAD",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": null
             },
             "pisharp": {
-              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "sha": "d1b844acb51e012a9494acbe75745bc87b54c531",
               "branch": "milestone/interactive-streaming-cancellation-parity",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": {
+                "file": "PiSharp.Cli.dll",
+                "size": 3429888,
+                "sha256": "a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51",
+                "depsFile": "PiSharp.Cli.deps.json",
+                "depsSha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
+                "runtimeConfigFile": "PiSharp.Cli.runtimeconfig.json",
+                "runtimeConfigSha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a",
+                "builtFromSha": "d1b844acb51e012a9494acbe75745bc87b54c531",
+                "sourceDirty": false
+              }
             }
           }
         }
@@ -536,13 +576,15 @@
               "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
               "branch": "HEAD",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": null
             },
             "pisharp": {
               "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
               "branch": "HEAD",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": null
             }
           },
           "comparison": {
@@ -550,13 +592,25 @@
               "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
               "branch": "HEAD",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": null
             },
             "pisharp": {
-              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "sha": "d1b844acb51e012a9494acbe75745bc87b54c531",
               "branch": "milestone/interactive-streaming-cancellation-parity",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": {
+                "file": "PiSharp.Cli.dll",
+                "size": 3429888,
+                "sha256": "a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51",
+                "depsFile": "PiSharp.Cli.deps.json",
+                "depsSha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
+                "runtimeConfigFile": "PiSharp.Cli.runtimeconfig.json",
+                "runtimeConfigSha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a",
+                "builtFromSha": "d1b844acb51e012a9494acbe75745bc87b54c531",
+                "sourceDirty": false
+              }
             }
           }
         },
@@ -568,13 +622,15 @@
               "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
               "branch": "HEAD",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": null
             },
             "pisharp": {
               "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
               "branch": "HEAD",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": null
             }
           },
           "comparison": {
@@ -582,13 +638,25 @@
               "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
               "branch": "HEAD",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": null
             },
             "pisharp": {
-              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "sha": "d1b844acb51e012a9494acbe75745bc87b54c531",
               "branch": "milestone/interactive-streaming-cancellation-parity",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": {
+                "file": "PiSharp.Cli.dll",
+                "size": 3429888,
+                "sha256": "a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51",
+                "depsFile": "PiSharp.Cli.deps.json",
+                "depsSha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
+                "runtimeConfigFile": "PiSharp.Cli.runtimeconfig.json",
+                "runtimeConfigSha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a",
+                "builtFromSha": "d1b844acb51e012a9494acbe75745bc87b54c531",
+                "sourceDirty": false
+              }
             }
           }
         }
@@ -962,13 +1030,15 @@
               "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
               "branch": "HEAD",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": null
             },
             "pisharp": {
               "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
               "branch": "HEAD",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": null
             }
           },
           "comparison": {
@@ -976,13 +1046,25 @@
               "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
               "branch": "HEAD",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": null
             },
             "pisharp": {
-              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "sha": "d1b844acb51e012a9494acbe75745bc87b54c531",
               "branch": "milestone/interactive-streaming-cancellation-parity",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": {
+                "file": "PiSharp.Cli.dll",
+                "size": 3429888,
+                "sha256": "a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51",
+                "depsFile": "PiSharp.Cli.deps.json",
+                "depsSha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
+                "runtimeConfigFile": "PiSharp.Cli.runtimeconfig.json",
+                "runtimeConfigSha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a",
+                "builtFromSha": "d1b844acb51e012a9494acbe75745bc87b54c531",
+                "sourceDirty": false
+              }
             }
           }
         },
@@ -994,13 +1076,15 @@
               "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
               "branch": "HEAD",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": null
             },
             "pisharp": {
               "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
               "branch": "HEAD",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": null
             }
           },
           "comparison": {
@@ -1008,13 +1092,25 @@
               "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
               "branch": "HEAD",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": null
             },
             "pisharp": {
-              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "sha": "d1b844acb51e012a9494acbe75745bc87b54c531",
               "branch": "milestone/interactive-streaming-cancellation-parity",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": {
+                "file": "PiSharp.Cli.dll",
+                "size": 3429888,
+                "sha256": "a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51",
+                "depsFile": "PiSharp.Cli.deps.json",
+                "depsSha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
+                "runtimeConfigFile": "PiSharp.Cli.runtimeconfig.json",
+                "runtimeConfigSha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a",
+                "builtFromSha": "d1b844acb51e012a9494acbe75745bc87b54c531",
+                "sourceDirty": false
+              }
             }
           }
         }
@@ -1412,13 +1508,15 @@
               "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
               "branch": "HEAD",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": null
             },
             "pisharp": {
               "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
               "branch": "HEAD",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": null
             }
           },
           "comparison": {
@@ -1426,13 +1524,25 @@
               "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
               "branch": "HEAD",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": null
             },
             "pisharp": {
-              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "sha": "d1b844acb51e012a9494acbe75745bc87b54c531",
               "branch": "milestone/interactive-streaming-cancellation-parity",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": {
+                "file": "PiSharp.Cli.dll",
+                "size": 3429888,
+                "sha256": "a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51",
+                "depsFile": "PiSharp.Cli.deps.json",
+                "depsSha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
+                "runtimeConfigFile": "PiSharp.Cli.runtimeconfig.json",
+                "runtimeConfigSha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a",
+                "builtFromSha": "d1b844acb51e012a9494acbe75745bc87b54c531",
+                "sourceDirty": false
+              }
             }
           }
         },
@@ -1444,13 +1554,15 @@
               "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
               "branch": "HEAD",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": null
             },
             "pisharp": {
               "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
               "branch": "HEAD",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": null
             }
           },
           "comparison": {
@@ -1458,13 +1570,25 @@
               "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
               "branch": "HEAD",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": null
             },
             "pisharp": {
-              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "sha": "d1b844acb51e012a9494acbe75745bc87b54c531",
               "branch": "milestone/interactive-streaming-cancellation-parity",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": {
+                "file": "PiSharp.Cli.dll",
+                "size": 3429888,
+                "sha256": "a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51",
+                "depsFile": "PiSharp.Cli.deps.json",
+                "depsSha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
+                "runtimeConfigFile": "PiSharp.Cli.runtimeconfig.json",
+                "runtimeConfigSha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a",
+                "builtFromSha": "d1b844acb51e012a9494acbe75745bc87b54c531",
+                "sourceDirty": false
+              }
             }
           }
         }
@@ -1525,12 +1649,12 @@
             "forbiddenStream": {
               "required": true,
               "scanned": true,
-              "fromRenderIndex": 16,
+              "fromRenderIndex": 13,
               "tokens": [
                 "CANCEL_LATE",
                 "CANCEL_FINISH"
               ],
-              "renderFrameCount": 27,
+              "renderFrameCount": 23,
               "counts": {
                 "CANCEL_LATE": 0,
                 "CANCEL_FINISH": 0
@@ -1617,12 +1741,12 @@
             "forbiddenStream": {
               "required": true,
               "scanned": true,
-              "fromRenderIndex": 86,
+              "fromRenderIndex": 56,
               "tokens": [
                 "CANCEL_LATE",
                 "CANCEL_FINISH"
               ],
-              "renderFrameCount": 135,
+              "renderFrameCount": 92,
               "counts": {
                 "CANCEL_LATE": 0,
                 "CANCEL_FINISH": 0
@@ -1711,12 +1835,12 @@
             "forbiddenStream": {
               "required": true,
               "scanned": true,
-              "fromRenderIndex": 16,
+              "fromRenderIndex": 15,
               "tokens": [
                 "CANCEL_LATE",
                 "CANCEL_FINISH"
               ],
-              "renderFrameCount": 35,
+              "renderFrameCount": 33,
               "counts": {
                 "CANCEL_LATE": 0,
                 "CANCEL_FINISH": 0
@@ -1803,12 +1927,12 @@
             "forbiddenStream": {
               "required": true,
               "scanned": true,
-              "fromRenderIndex": 14,
+              "fromRenderIndex": 16,
               "tokens": [
                 "CANCEL_LATE",
                 "CANCEL_FINISH"
               ],
-              "renderFrameCount": 33,
+              "renderFrameCount": 36,
               "counts": {
                 "CANCEL_LATE": 0,
                 "CANCEL_FINISH": 0
@@ -1898,13 +2022,15 @@
               "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
               "branch": "HEAD",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": null
             },
             "pisharp": {
               "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
               "branch": "HEAD",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": null
             }
           },
           "comparison": {
@@ -1912,13 +2038,25 @@
               "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
               "branch": "HEAD",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": null
             },
             "pisharp": {
-              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "sha": "d1b844acb51e012a9494acbe75745bc87b54c531",
               "branch": "milestone/interactive-streaming-cancellation-parity",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": {
+                "file": "PiSharp.Cli.dll",
+                "size": 3429888,
+                "sha256": "a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51",
+                "depsFile": "PiSharp.Cli.deps.json",
+                "depsSha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
+                "runtimeConfigFile": "PiSharp.Cli.runtimeconfig.json",
+                "runtimeConfigSha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a",
+                "builtFromSha": "d1b844acb51e012a9494acbe75745bc87b54c531",
+                "sourceDirty": false
+              }
             }
           }
         },
@@ -1930,13 +2068,15 @@
               "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
               "branch": "HEAD",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": null
             },
             "pisharp": {
               "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
               "branch": "HEAD",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": null
             }
           },
           "comparison": {
@@ -1944,13 +2084,25 @@
               "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
               "branch": "HEAD",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": null
             },
             "pisharp": {
-              "sha": "8d30011952c3017d210f9a41c8d743ffd5adb3bf",
+              "sha": "d1b844acb51e012a9494acbe75745bc87b54c531",
               "branch": "milestone/interactive-streaming-cancellation-parity",
               "dirty": false,
-              "trackedChanges": []
+              "trackedChanges": [],
+              "artifact": {
+                "file": "PiSharp.Cli.dll",
+                "size": 3429888,
+                "sha256": "a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51",
+                "depsFile": "PiSharp.Cli.deps.json",
+                "depsSha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
+                "runtimeConfigFile": "PiSharp.Cli.runtimeconfig.json",
+                "runtimeConfigSha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a",
+                "builtFromSha": "d1b844acb51e012a9494acbe75745bc87b54c531",
+                "sourceDirty": false
+              }
             }
           }
         }
@@ -2029,11 +2181,11 @@
             "forbiddenStream": {
               "required": true,
               "scanned": true,
-              "fromRenderIndex": 14,
+              "fromRenderIndex": 11,
               "tokens": [
                 "TOOL_COMPLETED"
               ],
-              "renderFrameCount": 26,
+              "renderFrameCount": 22,
               "counts": {
                 "TOOL_COMPLETED": 0
               },
@@ -2137,11 +2289,11 @@
             "forbiddenStream": {
               "required": true,
               "scanned": true,
-              "fromRenderIndex": 20,
+              "fromRenderIndex": 23,
               "tokens": [
                 "TOOL_COMPLETED"
               ],
-              "renderFrameCount": 49,
+              "renderFrameCount": 53,
               "counts": {
                 "TOOL_COMPLETED": 0
               },
@@ -2247,11 +2399,11 @@
             "forbiddenStream": {
               "required": true,
               "scanned": true,
-              "fromRenderIndex": 15,
+              "fromRenderIndex": 14,
               "tokens": [
                 "TOOL_COMPLETED"
               ],
-              "renderFrameCount": 35,
+              "renderFrameCount": 34,
               "counts": {
                 "TOOL_COMPLETED": 0
               },
@@ -2355,7 +2507,7 @@
             "forbiddenStream": {
               "required": true,
               "scanned": true,
-              "fromRenderIndex": 16,
+              "fromRenderIndex": 15,
               "tokens": [
                 "TOOL_COMPLETED"
               ],
@@ -2713,6 +2865,6 @@
     "s02-reasoning-streaming.json": "b0fbfeeae128e8bdd29383024ed9be081fa155b4f0e8a0adf88d417f2ab84733",
     "s03-tool-progress.json": "e603dc6f789255fdc870fb94b5c8adbc6cab1ec6a8b7c6416fae94972b15b176",
     "s04-text-cancellation.json": "2db88263896b2c8376eb4ebdb6ffca88dd771e0683c0979fa61b5455c9e5c3c3",
-    "s05-tool-cancellation.json": "2e6c0170bce6272be1220f624cef0b1b37e30b709e5373c9564b3ff52cc521e6"
+    "s05-tool-cancellation.json": "d137dd905a1d6b2b4785d451fbb2f02029ec0a0af5c6dce40b8d458a148335ee"
   }
 }

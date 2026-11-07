@@ -12,8 +12,11 @@ PID liveness and named checkpoints replace wall-clock waits. Same-Pi
 calibration is exact at both sizes after masking only `Elapsed`/`Took`
 durations and partial-stream usage percentages. Every capture is bound to clean
 Pi `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` and clean PiSharp
-`8d30011952c3017d210f9a41c8d743ffd5adb3bf`; the report and fixture manifest
-record SHA, branch, dirty flag and tracked changes. The frozen
+`d1b844acb51e012a9494acbe75745bc87b54c531`; the report and fixture manifest
+record SHA, branch, dirty flag and tracked/untracked changes. A fresh
+capture-owned publish binds the executed DLL hash
+`a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51` and its deps
+and runtime config to that source. The frozen
 functional/temporal/cleanup contract is evaluated independently for Pi and
 PiSharp, and Pi must pass before a case is assessable. Forbidden cancellation
 tokens are scanned across every post-cancellation render frame, and every
@@ -24,7 +27,7 @@ splits around toggle lines, duplicates the hidden `Thinking...` placeholder and
 shifts the transcript by three rows); five P2s cover Python builtin syntax
 colour (S01), reasoning italic and reasoning-model `Working` colour (S02), and
 cancelled-tool error wording/style (S05). No P0 was observed. The verifier
-performs 586 checks; evaluator/verifier tests pass 27/27. This evaluation does
+performs 589 checks; evaluator/verifier tests pass 32/32. This evaluation does
 not fix the differences. See the
 [receipt](fixtures/interactive-streaming-cancellation-001/README.md),
 [report](fixtures/interactive-streaming-cancellation-001/report.json) and

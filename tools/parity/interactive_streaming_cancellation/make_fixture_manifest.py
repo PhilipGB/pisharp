@@ -55,15 +55,9 @@ def main():
             readme='README.md',
         ),
         capture=dict(
-            calibration='python3 tools/parity/terminal/run.py --pi /tmp/pisharp-current-pi '
-                        '--fixture tools/parity/terminal/fixtures/interactive-streaming-cancellation-001/'
-                        '<scenario>.json --calibrate --output '
-                        'artifacts/parity/interactive-streaming-cancellation-001/calibration/<stem>',
-            comparison='python3 tools/parity/terminal/run.py --pi /tmp/pisharp-current-pi '
-                       '--pisharp src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll '
-                       '--fixture tools/parity/terminal/fixtures/interactive-streaming-cancellation-001/'
-                       '<scenario>.json --output '
-                       'artifacts/parity/interactive-streaming-cancellation-001/comparison/<stem>',
+            all_cases='python3 tools/parity/interactive_streaming_cancellation/capture.py '
+                      '--pi /tmp/pisharp-current-pi '
+                      '--output artifacts/parity/interactive-streaming-cancellation-001',
             evaluate='python3 tools/parity/interactive_streaming_cancellation/run_evaluation.py '
                      '--artifacts artifacts/parity/interactive-streaming-cancellation-001 '
                      '--evidence docs/parity/fixtures/interactive-streaming-cancellation-001',

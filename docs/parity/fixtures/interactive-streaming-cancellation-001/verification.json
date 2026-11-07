@@ -57,17 +57,17 @@
     {
       "name": "single Pi capture state",
       "passed": true,
-      "detail": "[{'branch': 'HEAD', 'dirty': False, 'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'trackedChanges': []}]"
+      "detail": "[{'artifact': None, 'branch': 'HEAD', 'dirty': False, 'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'trackedChanges': []}]"
     },
     {
       "name": "single PiSharp capture state",
       "passed": true,
-      "detail": "[{'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'sha': '8d30011952c3017d210f9a41c8d743ffd5adb3bf', 'trackedChanges': []}]"
+      "detail": "[{'artifact': {'builtFromSha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'file': 'PiSharp.Cli.dll', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'sha256': 'a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51', 'size': 3429888, 'sourceDirty': False}, 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'sha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'trackedChanges': []}]"
     },
     {
       "name": "Pi capture state valid",
       "passed": true,
-      "detail": "{'branch': 'HEAD', 'dirty': False, 'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'trackedChanges': []}"
+      "detail": "{'artifact': None, 'branch': 'HEAD', 'dirty': False, 'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'trackedChanges': []}"
     },
     {
       "name": "Pi capture is pinned reference",
@@ -77,7 +77,22 @@
     {
       "name": "PiSharp capture state valid",
       "passed": true,
-      "detail": "{'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'sha': '8d30011952c3017d210f9a41c8d743ffd5adb3bf', 'trackedChanges': []}"
+      "detail": "{'artifact': {'builtFromSha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'file': 'PiSharp.Cli.dll', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'sha256': 'a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51', 'size': 3429888, 'sourceDirty': False}, 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'sha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'trackedChanges': []}"
+    },
+    {
+      "name": "PiSharp artifact hashes present",
+      "passed": true,
+      "detail": "{'builtFromSha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'file': 'PiSharp.Cli.dll', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'sha256': 'a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51', 'size': 3429888, 'sourceDirty': False}"
+    },
+    {
+      "name": "PiSharp artifact built from captured source",
+      "passed": true,
+      "detail": "d1b844acb51e012a9494acbe75745bc87b54c531 != d1b844acb51e012a9494acbe75745bc87b54c531"
+    },
+    {
+      "name": "PiSharp artifact source clean",
+      "passed": true,
+      "detail": "False"
     },
     {
       "name": "fixture manifest id",
@@ -117,7 +132,7 @@
     {
       "name": "fixture manifest checksum S05",
       "passed": true,
-      "detail": "2e6c0170bce6272be1220f624cef0b1b37e30b709e5373c9564b3ff52cc521e6 != 2e6c0170bce6272be1220f624cef0b1b37e30b709e5373c9564b3ff52cc521e6"
+      "detail": "d137dd905a1d6b2b4785d451fbb2f02029ec0a0af5c6dce40b8d458a148335ee != d137dd905a1d6b2b4785d451fbb2f02029ec0a0af5c6dce40b8d458a148335ee"
     },
     {
       "name": "scenario set",
@@ -177,7 +192,7 @@
     {
       "name": "S01 capture provenance",
       "passed": true,
-      "detail": "{'80x24-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': []}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': []}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': []}, 'pisharp': {'sha': '8d30011952c3017d210f9a41c8d743ffd5adb3bf', 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'trackedChanges': []}}}, '120x40-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': []}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': []}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': []}, 'pisharp': {'sha': '8d30011952c3017d210f9a41c8d743ffd5adb3bf', 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'trackedChanges': []}}}}"
+      "detail": "{'80x24-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'trackedChanges': [], 'artifact': {'file': 'PiSharp.Cli.dll', 'size': 3429888, 'sha256': 'a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'builtFromSha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'sourceDirty': False}}}}, '120x40-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'trackedChanges': [], 'artifact': {'file': 'PiSharp.Cli.dll', 'size': 3429888, 'sha256': 'a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'builtFromSha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'sourceDirty': False}}}}}"
     },
     {
       "name": "S01 Pi contracts",
@@ -802,7 +817,7 @@
     {
       "name": "S02 capture provenance",
       "passed": true,
-      "detail": "{'80x24-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': []}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': []}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': []}, 'pisharp': {'sha': '8d30011952c3017d210f9a41c8d743ffd5adb3bf', 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'trackedChanges': []}}}, '120x40-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': []}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': []}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': []}, 'pisharp': {'sha': '8d30011952c3017d210f9a41c8d743ffd5adb3bf', 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'trackedChanges': []}}}}"
+      "detail": "{'80x24-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'trackedChanges': [], 'artifact': {'file': 'PiSharp.Cli.dll', 'size': 3429888, 'sha256': 'a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'builtFromSha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'sourceDirty': False}}}}, '120x40-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'trackedChanges': [], 'artifact': {'file': 'PiSharp.Cli.dll', 'size': 3429888, 'sha256': 'a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'builtFromSha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'sourceDirty': False}}}}}"
     },
     {
       "name": "S02 Pi contracts",
@@ -1427,7 +1442,7 @@
     {
       "name": "S03 capture provenance",
       "passed": true,
-      "detail": "{'80x24-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': []}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': []}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': []}, 'pisharp': {'sha': '8d30011952c3017d210f9a41c8d743ffd5adb3bf', 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'trackedChanges': []}}}, '120x40-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': []}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': []}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': []}, 'pisharp': {'sha': '8d30011952c3017d210f9a41c8d743ffd5adb3bf', 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'trackedChanges': []}}}}"
+      "detail": "{'80x24-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'trackedChanges': [], 'artifact': {'file': 'PiSharp.Cli.dll', 'size': 3429888, 'sha256': 'a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'builtFromSha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'sourceDirty': False}}}}, '120x40-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'trackedChanges': [], 'artifact': {'file': 'PiSharp.Cli.dll', 'size': 3429888, 'sha256': 'a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'builtFromSha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'sourceDirty': False}}}}}"
     },
     {
       "name": "S03 Pi contracts",
@@ -1642,7 +1657,7 @@
     {
       "name": "S04 capture provenance",
       "passed": true,
-      "detail": "{'80x24-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': []}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': []}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': []}, 'pisharp': {'sha': '8d30011952c3017d210f9a41c8d743ffd5adb3bf', 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'trackedChanges': []}}}, '120x40-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': []}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': []}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': []}, 'pisharp': {'sha': '8d30011952c3017d210f9a41c8d743ffd5adb3bf', 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'trackedChanges': []}}}}"
+      "detail": "{'80x24-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'trackedChanges': [], 'artifact': {'file': 'PiSharp.Cli.dll', 'size': 3429888, 'sha256': 'a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'builtFromSha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'sourceDirty': False}}}}, '120x40-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'trackedChanges': [], 'artifact': {'file': 'PiSharp.Cli.dll', 'size': 3429888, 'sha256': 'a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'builtFromSha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'sourceDirty': False}}}}}"
     },
     {
       "name": "S04 Pi contracts",
@@ -1687,7 +1702,7 @@
     {
       "name": "S04 80x24-dark-fullscreen Pi forbidden stream evidence",
       "passed": true,
-      "detail": "{'required': True, 'scanned': True, 'fromRenderIndex': 16, 'tokens': ['CANCEL_LATE', 'CANCEL_FINISH'], 'renderFrameCount': 27, 'counts': {'CANCEL_LATE': 0, 'CANCEL_FINISH': 0}, 'occurrenceCount': 0, 'occurrences': [], 'valid': True}"
+      "detail": "{'required': True, 'scanned': True, 'fromRenderIndex': 13, 'tokens': ['CANCEL_LATE', 'CANCEL_FINISH'], 'renderFrameCount': 23, 'counts': {'CANCEL_LATE': 0, 'CANCEL_FINISH': 0}, 'occurrenceCount': 0, 'occurrences': [], 'valid': True}"
     },
     {
       "name": "S04 80x24-dark-fullscreen Pi cleanup evidence",
@@ -1697,7 +1712,7 @@
     {
       "name": "S04 80x24-dark-fullscreen PiSharp forbidden stream evidence",
       "passed": true,
-      "detail": "{'required': True, 'scanned': True, 'fromRenderIndex': 16, 'tokens': ['CANCEL_LATE', 'CANCEL_FINISH'], 'renderFrameCount': 35, 'counts': {'CANCEL_LATE': 0, 'CANCEL_FINISH': 0}, 'occurrenceCount': 0, 'occurrences': [], 'valid': True}"
+      "detail": "{'required': True, 'scanned': True, 'fromRenderIndex': 15, 'tokens': ['CANCEL_LATE', 'CANCEL_FINISH'], 'renderFrameCount': 33, 'counts': {'CANCEL_LATE': 0, 'CANCEL_FINISH': 0}, 'occurrenceCount': 0, 'occurrences': [], 'valid': True}"
     },
     {
       "name": "S04 80x24-dark-fullscreen PiSharp cleanup evidence",
@@ -1737,7 +1752,7 @@
     {
       "name": "S04 120x40-dark-fullscreen Pi forbidden stream evidence",
       "passed": true,
-      "detail": "{'required': True, 'scanned': True, 'fromRenderIndex': 86, 'tokens': ['CANCEL_LATE', 'CANCEL_FINISH'], 'renderFrameCount': 135, 'counts': {'CANCEL_LATE': 0, 'CANCEL_FINISH': 0}, 'occurrenceCount': 0, 'occurrences': [], 'valid': True}"
+      "detail": "{'required': True, 'scanned': True, 'fromRenderIndex': 56, 'tokens': ['CANCEL_LATE', 'CANCEL_FINISH'], 'renderFrameCount': 92, 'counts': {'CANCEL_LATE': 0, 'CANCEL_FINISH': 0}, 'occurrenceCount': 0, 'occurrences': [], 'valid': True}"
     },
     {
       "name": "S04 120x40-dark-fullscreen Pi cleanup evidence",
@@ -1747,7 +1762,7 @@
     {
       "name": "S04 120x40-dark-fullscreen PiSharp forbidden stream evidence",
       "passed": true,
-      "detail": "{'required': True, 'scanned': True, 'fromRenderIndex': 14, 'tokens': ['CANCEL_LATE', 'CANCEL_FINISH'], 'renderFrameCount': 33, 'counts': {'CANCEL_LATE': 0, 'CANCEL_FINISH': 0}, 'occurrenceCount': 0, 'occurrences': [], 'valid': True}"
+      "detail": "{'required': True, 'scanned': True, 'fromRenderIndex': 16, 'tokens': ['CANCEL_LATE', 'CANCEL_FINISH'], 'renderFrameCount': 36, 'counts': {'CANCEL_LATE': 0, 'CANCEL_FINISH': 0}, 'occurrenceCount': 0, 'occurrences': [], 'valid': True}"
     },
     {
       "name": "S04 120x40-dark-fullscreen PiSharp cleanup evidence",
@@ -1877,7 +1892,7 @@
     {
       "name": "S05 fixture checksum",
       "passed": true,
-      "detail": "2e6c0170bce6272be1220f624cef0b1b37e30b709e5373c9564b3ff52cc521e6"
+      "detail": "d137dd905a1d6b2b4785d451fbb2f02029ec0a0af5c6dce40b8d458a148335ee"
     },
     {
       "name": "S05 calibration cases",
@@ -1897,7 +1912,7 @@
     {
       "name": "S05 capture provenance",
       "passed": true,
-      "detail": "{'80x24-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': []}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': []}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': []}, 'pisharp': {'sha': '8d30011952c3017d210f9a41c8d743ffd5adb3bf', 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'trackedChanges': []}}}, '120x40-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': []}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': []}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': []}, 'pisharp': {'sha': '8d30011952c3017d210f9a41c8d743ffd5adb3bf', 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'trackedChanges': []}}}}"
+      "detail": "{'80x24-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'trackedChanges': [], 'artifact': {'file': 'PiSharp.Cli.dll', 'size': 3429888, 'sha256': 'a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'builtFromSha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'sourceDirty': False}}}}, '120x40-dark-fullscreen': {'consistent': True, 'errors': [], 'calibration': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}}, 'comparison': {'pi': {'sha': 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6', 'branch': 'HEAD', 'dirty': False, 'trackedChanges': [], 'artifact': None}, 'pisharp': {'sha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'branch': 'milestone/interactive-streaming-cancellation-parity', 'dirty': False, 'trackedChanges': [], 'artifact': {'file': 'PiSharp.Cli.dll', 'size': 3429888, 'sha256': 'a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51', 'depsFile': 'PiSharp.Cli.deps.json', 'depsSha256': '15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af', 'runtimeConfigFile': 'PiSharp.Cli.runtimeconfig.json', 'runtimeConfigSha256': 'f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a', 'builtFromSha': 'd1b844acb51e012a9494acbe75745bc87b54c531', 'sourceDirty': False}}}}}"
     },
     {
       "name": "S05 Pi contracts",
@@ -1942,7 +1957,7 @@
     {
       "name": "S05 80x24-dark-fullscreen Pi forbidden stream evidence",
       "passed": true,
-      "detail": "{'required': True, 'scanned': True, 'fromRenderIndex': 14, 'tokens': ['TOOL_COMPLETED'], 'renderFrameCount': 26, 'counts': {'TOOL_COMPLETED': 0}, 'occurrenceCount': 0, 'occurrences': [], 'valid': True}"
+      "detail": "{'required': True, 'scanned': True, 'fromRenderIndex': 11, 'tokens': ['TOOL_COMPLETED'], 'renderFrameCount': 22, 'counts': {'TOOL_COMPLETED': 0}, 'occurrenceCount': 0, 'occurrences': [], 'valid': True}"
     },
     {
       "name": "S05 80x24-dark-fullscreen Pi cleanup evidence",
@@ -1957,7 +1972,7 @@
     {
       "name": "S05 80x24-dark-fullscreen PiSharp forbidden stream evidence",
       "passed": true,
-      "detail": "{'required': True, 'scanned': True, 'fromRenderIndex': 15, 'tokens': ['TOOL_COMPLETED'], 'renderFrameCount': 35, 'counts': {'TOOL_COMPLETED': 0}, 'occurrenceCount': 0, 'occurrences': [], 'valid': True}"
+      "detail": "{'required': True, 'scanned': True, 'fromRenderIndex': 14, 'tokens': ['TOOL_COMPLETED'], 'renderFrameCount': 34, 'counts': {'TOOL_COMPLETED': 0}, 'occurrenceCount': 0, 'occurrences': [], 'valid': True}"
     },
     {
       "name": "S05 80x24-dark-fullscreen PiSharp cleanup evidence",
@@ -2002,7 +2017,7 @@
     {
       "name": "S05 120x40-dark-fullscreen Pi forbidden stream evidence",
       "passed": true,
-      "detail": "{'required': True, 'scanned': True, 'fromRenderIndex': 20, 'tokens': ['TOOL_COMPLETED'], 'renderFrameCount': 49, 'counts': {'TOOL_COMPLETED': 0}, 'occurrenceCount': 0, 'occurrences': [], 'valid': True}"
+      "detail": "{'required': True, 'scanned': True, 'fromRenderIndex': 23, 'tokens': ['TOOL_COMPLETED'], 'renderFrameCount': 53, 'counts': {'TOOL_COMPLETED': 0}, 'occurrenceCount': 0, 'occurrences': [], 'valid': True}"
     },
     {
       "name": "S05 120x40-dark-fullscreen Pi cleanup evidence",
@@ -2017,7 +2032,7 @@
     {
       "name": "S05 120x40-dark-fullscreen PiSharp forbidden stream evidence",
       "passed": true,
-      "detail": "{'required': True, 'scanned': True, 'fromRenderIndex': 16, 'tokens': ['TOOL_COMPLETED'], 'renderFrameCount': 37, 'counts': {'TOOL_COMPLETED': 0}, 'occurrenceCount': 0, 'occurrences': [], 'valid': True}"
+      "detail": "{'required': True, 'scanned': True, 'fromRenderIndex': 15, 'tokens': ['TOOL_COMPLETED'], 'renderFrameCount': 37, 'counts': {'TOOL_COMPLETED': 0}, 'occurrenceCount': 0, 'occurrences': [], 'valid': True}"
     },
     {
       "name": "S05 120x40-dark-fullscreen PiSharp cleanup evidence",
@@ -2911,9 +2926,9 @@
     }
   ],
   "evidenceChecksums": {
-    "report.json": "d81a46c74cad3292dfaf06f2c182226b8cbe73a97fc5edc7ee11b9972a50ae0f",
-    "comparison.json": "b4e42b923f4fea5d70ec556979999588a204bfa5402d3ea24a8c34ee52f2d1b6",
-    "ui-report.json": "bf958c60c19031be35fa50696e19cb235600b5c11d93d4f6e0699ba634145c8a"
+    "report.json": "b4c075c50fc27a9f10ef5447d098b8c57d5cbc686a1150749fae232a8a7777f1",
+    "comparison.json": "1cfe7a05583dd82349d403bf0e833cdb16f21776103e594f1170c38e570cb2c0",
+    "ui-report.json": "2dcef513ce91a65f87d50b02025fee10af0504e877cfd97c5824c09684f9ac76"
   },
   "passed": true
 }

@@ -21,11 +21,14 @@ cancellation (S04) and Bash cancellation with child-process cleanup (S05).
 Provider chunk gates, tool-release gates, PID liveness and named checkpoints
 replace wall-clock waits. Same-Pi calibration is exact at both sizes after the
 declared normalization; raw calibration differed only in masked `Elapsed`/`Took`
-values at S03 (18 at 80x24, 32 at 120x40) and S05 (28 at 80x24, 50 at 120x40),
+values at S03 (20 at 80x24, 0 at 120x40) and S05 (28 at 80x24, 24 at 120x40),
 with none at S01/S02/S04. Every capture is bound to the clean Pi source
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` and clean PiSharp source
-`8d30011952c3017d210f9a41c8d743ffd5adb3bf`; the report, fixture manifest and
-per-case assertions record SHA, branch, dirty flag and tracked changes. The
+`d1b844acb51e012a9494acbe75745bc87b54c531`; the report, fixture manifest and
+per-case assertions record SHA, branch, dirty flag and tracked/untracked worktree
+changes. A fresh capture-owned publish binds the executed DLL
+`a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51`, deps and
+runtime config hashes to that source. The
 frozen functional/temporal/cleanup contract is evaluated independently for Pi
 and PiSharp, and Pi must pass before a case is assessable. S04/S05 forbidden
 tokens are scanned across every render frame after the cancellation action, not
@@ -39,7 +42,7 @@ renders two `Thinking...` placeholders and shifts the final transcript by three
 rows. Five P2s are confirmed: Python builtin `print` syntax colour (S01),
 reasoning italic (S02), reasoning-model `Working` rule colour (S02), and the
 cancelled-tool error wording and style (S05). No P0 was observed. The
-evaluation intentionally does not fix these defects. The verifier performs 586
+evaluation intentionally does not fix these defects. The verifier performs 589
 checks and rejects missing scenarios/checkpoints, bad checksums, inflated scores
 or totals, invalid calibration, failed cancellation marked successful, missing
 cleanup evidence, omitted differences, missing or mismatched capture provenance,
