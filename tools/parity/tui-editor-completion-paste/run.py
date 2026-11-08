@@ -103,13 +103,11 @@ def observe(evidence, product):
         cursor = state.get('cursor') or {}
         private = {key for key, value in (state.get('modes') or {}).get('private', {}).items() if value}
         checkpoints[checkpoint_id] = {
-            'editor': editor,
             'editorText': '\n'.join(editor),
             'cursor': {'x': cursor.get('x'), 'y': cursor.get('y'),
                        'visible': cursor.get('visible'),
                        'editorRow': None if top is None or cursor.get('y') is None
                        else cursor.get('y') - top - 1},
-            'overlay': rows,
             'candidates': candidates,
             'selected': selected,
             'position': position,
