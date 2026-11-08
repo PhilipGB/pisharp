@@ -59,8 +59,10 @@ def base(scenario_id, task, actions, *, files=None, settings=None, bin_files=Non
 
 
 def action(action_id, send, *, editor=None, expect=None, absent=None, checkpoint=True,
-           static=False, quiet=250, exit=False, quiesce=False):
+           static=False, quiet=250, exit=False, quiesce=False, cursor_change=False):
     value = {'id': action_id, 'send': send}
+    if cursor_change:
+        value['expectCursorChange'] = True
     if exit:
         value['exit'] = True
     if quiesce:
@@ -148,7 +150,7 @@ def history():
         action('two-newline', '\nyak two', editor='yak one\nyak two'),
         action('submit-two', '\r', expect='FIXTURE_REPLY_2'),
         action('draft', 'draft only', editor='draft only'),
-        action('draft-home', '\u0001', editor='draft only', static=True),
+        action('draft-home', '\u0001', editor='draft only', cursor_change=True),
         action('up-newest', '\u001b[A', editor='yak one\nyak two'),
         action('up-older', '\u001b[A', editor='zebra prompt one'),
         action('down-newer', '\u001b[B', editor='yak one\nyak two'),
@@ -395,8 +397,8 @@ def journey():
     actions = [
         startup(),
         action('type-unicode', 'alpha \u4e16\u754c', editor='alpha \u4e16\u754c'),
-        action('move-word', '\u001b[1;3D', editor='alpha \u4e16\u754c', static=True),
-        action('move-end', '\u0005', editor='alpha \u4e16\u754c', static=True),
+        action('move-word', '\u001b[1;3D', editor='alpha \u4e16\u754c', cursor_change=True),
+        action('move-end', '\u0005', editor='alpha \u4e16\u754c', cursor_change=True),
         action('newline', '\nsecond', editor='alpha \u4e16\u754c\nsecond'),
         action('paste', '\u001b[200~pasted\nblock\u001b[201~',
                editor='alpha \u4e16\u754c\nsecondpasted\nblock'),
