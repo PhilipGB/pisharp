@@ -875,6 +875,133 @@ public sealed class AppControlPtyTests
         finally { Cleanup(process, root); }
     }
 
+    [Fact]
+    public async Task EscapeClosesTheAutomaticSlashOverlayWithoutClearingTheDraft()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = TemporaryDirectory("app-control-escape-overlay");
+        var settingsBefore = Path.Combine(root, "stty-before");
+        var settingsAfter = Path.Combine(root, "stty-after");
+        Process? process = null;
+        try
+        {
+            process = Start(root, settingsBefore, settingsAfter);
+            var screen = new PtyScreenCapture(process, 24, 80);
+            var stdout = screen.ReadCompletion;
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            await screen.InputReady.WaitAsync(timeout.Token);
+
+            async Task SendAsync(string input)
+            {
+                await process.StandardInput.WriteAsync(input);
+                await process.StandardInput.FlushAsync();
+            }
+
+            await screen.WaitForFrameAsync(frame => frame.Contains('❯') ||
+                frame.Split('\n').Count(line => line.TrimStart().StartsWith('─')) >= 2)
+                .WaitAsync(timeout.Token);
+
+            await SendAsync("/hot");
+            await screen.WaitForFrameAsync(frame =>
+                    frame.Contains("/hot", StringComparison.Ordinal) &&
+                    frame.Contains("Show configured keyboard shortcuts", StringComparison.Ordinal))
+                .WaitAsync(timeout.Token);
+
+            await SendAsync("\u001b");
+            await screen.WaitForFrameAsync(frame =>
+                    frame.Contains("/hot", StringComparison.Ordinal) &&
+                    !frame.Contains("Show configured keyboard shortcuts", StringComparison.Ordinal))
+                .WaitAsync(timeout.Token);
+
+            await SendAsync("k");
+            await screen.WaitForFrameAsync(frame =>
+                    frame.Contains("/hotk", StringComparison.Ordinal) &&
+                    frame.Contains("Show configured keyboard shortcuts", StringComparison.Ordinal))
+                .WaitAsync(timeout.Token);
+
+            await SendAsync("\u0015\u000b\u0003\u0003");
+            await process.WaitForExitAsync(timeout.Token);
+            var output = await stdout;
+
+            Assert.Equal(0, process.ExitCode);
+            Assert.Equal(await File.ReadAllTextAsync(settingsBefore), await File.ReadAllTextAsync(settingsAfter));
+            Assert.DoesNotContain("Agent error", output);
+            Assert.DoesNotContain("Exception:", await stderr);
+            RecordEvidence("pty-editor-escape-overlay", new
+            {
+                exitCode = process.ExitCode,
+                escapeClosedOverlay = true,
+                draftPreserved = true,
+                typingReopenedOverlay = true
+            });
+        }
+        finally { Cleanup(process, root); }
+    }
+
+    [Fact]
+    public async Task BracketedPasteOfSlashTextDoesNotOpenCommandCompletionUntilTyped()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = TemporaryDirectory("app-control-paste-slash");
+        var settingsBefore = Path.Combine(root, "stty-before");
+        var settingsAfter = Path.Combine(root, "stty-after");
+        Process? process = null;
+        try
+        {
+            process = Start(root, settingsBefore, settingsAfter);
+            var screen = new PtyScreenCapture(process, 24, 80);
+            var stdout = screen.ReadCompletion;
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            await screen.InputReady.WaitAsync(timeout.Token);
+
+            async Task SendAsync(string input)
+            {
+                await process.StandardInput.WriteAsync(input);
+                await process.StandardInput.FlushAsync();
+            }
+
+            await screen.WaitForFrameAsync(frame => frame.Contains('❯') ||
+                frame.Split('\n').Count(line => line.TrimStart().StartsWith('─')) >= 2)
+                .WaitAsync(timeout.Token);
+
+            await SendAsync("\u001b[200~/hot\u001b[201~");
+            await screen.WaitForFrameAsync(frame => frame.Contains("/hot", StringComparison.Ordinal))
+                .WaitAsync(timeout.Token);
+
+            // Pi cancels autocomplete when a bracketed paste arrives and does not
+            // trigger it again until a real key is typed. Observe the overlay text
+            // that diagnostic completion would paint if the paste leaked through.
+            var overlay = screen.WaitForFrameAsync(frame =>
+                frame.Contains("Show configured keyboard shortcuts", StringComparison.Ordinal));
+            var leaked = await Task.WhenAny(overlay, Task.Delay(750, timeout.Token)) == overlay;
+            Assert.False(leaked, "Bracketed paste of slash text opened slash-command completion.");
+
+            await SendAsync("k");
+            await screen.WaitForFrameAsync(frame =>
+                    frame.Contains("/hotk", StringComparison.Ordinal) &&
+                    frame.Contains("Show configured keyboard shortcuts", StringComparison.Ordinal))
+                .WaitAsync(timeout.Token);
+
+            await SendAsync("\u0015\u0003\u0003");
+            await process.WaitForExitAsync(timeout.Token);
+            var output = await stdout;
+
+            Assert.Equal(0, process.ExitCode);
+            Assert.Equal(await File.ReadAllTextAsync(settingsBefore), await File.ReadAllTextAsync(settingsAfter));
+            Assert.DoesNotContain("Agent error", output);
+            Assert.DoesNotContain("Exception:", await stderr);
+            RecordEvidence("pty-editor-paste-slash-suppression", new
+            {
+                exitCode = process.ExitCode,
+                pasteDidNotTriggerCompletion = true,
+                typingStillTriggersCompletion = true
+            });
+        }
+        finally { Cleanup(process, root); }
+    }
+
     private static Process Start(string root, string settingsBefore, string settingsAfter)
     {
         var agent = Path.Combine(root, "agent");

@@ -49,6 +49,7 @@ public sealed class TerminalEditor
     private Func<string>? _getDoubleEscapeAction;
     private Func<long> _clockMilliseconds = static () => Environment.TickCount64;
     private CompletionCycle? _completionCycle;
+    private bool _suppressAutoCompletion;
     private string? _pendingBashSubmission;
     public TerminalEditor(Func<IReadOnlyList<string>>? commands = null, string? agentDirectory = null,
         Func<string>? getWorkingDirectory = null, bool initiallyExpanded = false,
@@ -856,6 +857,8 @@ public sealed class TerminalEditor
             }
             if (InterceptExtensionInput(ref next)) continue;
             if (next.IsControl) continue;
+            if (!next.IsPaste && TerminalInput.TryGetText(next, out _))
+                WithEditorState(() => _suppressAutoCompletion = false);
             var isCompletionKey = next.Key is { } possibleCompletionKey &&
                 _keymap.Matches("tui.input.tab", possibleCompletionKey);
             var isInterruptKey = next.Key is { } possibleInterruptKey &&
@@ -965,6 +968,7 @@ public sealed class TerminalEditor
             if (next.Key is null && next.Text is null) continue;
             if (next.Key is { } tabKey && _keymap.Matches("tui.input.tab", tabKey))
             {
+                WithEditorState(() => _suppressAutoCompletion = false);
                 try
                 {
                     await CompleteInputAsync(tabKey, cancellationToken);
@@ -995,9 +999,14 @@ public sealed class TerminalEditor
                 {
                     text = input.ReadAvailableText(next, out following);
                 }
-                action = WithEditorState(() => _buffer.IsJumpModeActive && !next.IsPaste
-                    ? _buffer.HandleJumpText(text)
-                    : _buffer.InsertText(text));
+                action = WithEditorState(() =>
+                {
+                    var result = _buffer.IsJumpModeActive && !next.IsPaste
+                        ? _buffer.HandleJumpText(text)
+                        : _buffer.InsertText(text);
+                    if (next.IsPaste) _suppressAutoCompletion = true;
+                    return result;
+                });
                 if (!next.IsExtensionRewrite && following?.Key is { } bufferedSubmitKey &&
                     _keymap.Matches("tui.input.submit", bufferedSubmitKey))
                 {
@@ -1049,11 +1058,16 @@ public sealed class TerminalEditor
     {
         if (WithEditorState(() => _completionCycle is not null))
         {
-            WithEditorState(() => { _completionCycle = null; });
+            WithEditorState(() =>
+            {
+                _completionCycle = null;
+                _suppressAutoCompletion = true;
+            });
             CancelCompletionRequest();
             return true;
         }
         CancelCompletionRequest();
+        WithEditorState(() => _suppressAutoCompletion = true);
         var text = WithEditorState(() => _buffer.Text);
         if (text.TrimStart().StartsWith('!'))
         {
@@ -1407,7 +1421,7 @@ public sealed class TerminalEditor
                     ? _transcriptSearch.CaptureEditorSnapshotForDisplay()
                     : _buffer.CaptureSnapshot();
                 IReadOnlyList<EditorCompletionSuggestion> currentSuggestions =
-                    searchingTranscript ? [] : _completion.GetSlashCommandSuggestions(_buffer);
+                    searchingTranscript || _suppressAutoCompletion ? [] : _completion.GetSlashCommandSuggestions(_buffer);
                 if (_completionCycle is { } completionCycle && completionCycle.Matches(current))
                     currentSuggestions = completionCycle.Candidates.Select((candidate, index) =>
                         new EditorCompletionSuggestion(
