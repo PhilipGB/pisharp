@@ -1151,11 +1151,13 @@ public sealed class NativeExtensionUiTests
 
         await editor.HandleActiveInputAsync(tab, (_, _, _) => Task.FromResult(true), () => [], () => { });
         Assert.Equal("rare-extension-query-48391", query);
-        Assert.Equal("prefix first-replacement", editor.Draft);
+        Assert.Equal("prefix rare-extension-query-48391", editor.Draft);
         Assert.Contains("Human label", output.ToString());
         Assert.DoesNotContain("Duplicate label", output.ToString());
         Assert.Contains("provider failed", error.ToString(), StringComparison.OrdinalIgnoreCase);
 
+        var down = new TerminalInputEvent(new ConsoleKeyInfo('\0', ConsoleKey.DownArrow, false, false, false), null);
+        await editor.HandleActiveInputAsync(down, (_, _, _) => Task.FromResult(true), () => [], () => { });
         await editor.HandleActiveInputAsync(tab, (_, _, _) => Task.FromResult(true), () => [], () => { });
         Assert.Equal("prefix second-replacement", editor.Draft);
 
@@ -1227,7 +1229,8 @@ public sealed class NativeExtensionUiTests
 
         editor.Prefill("/thi");
         await editor.HandleActiveInputAsync(tab, (_, _, _) => Task.FromResult(true), () => [], () => { });
-        Assert.Equal("/thinking", editor.Draft);
+        await editor.HandleActiveInputAsync(tab, (_, _, _) => Task.FromResult(true), () => [], () => { });
+        Assert.Equal("/thinking ", editor.Draft);
     }
 
     [Fact]

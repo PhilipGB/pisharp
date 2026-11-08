@@ -14,7 +14,8 @@ public sealed class TerminalEditor
     ];
 
     private sealed record CompletionCandidate(string DisplayText, string ReplacementText, bool Native,
-        string? Description = null);
+        string? Description = null, bool IsDirectory = false, EditorCompletionItem? Item = null,
+        EditorCompletionKind Kind = EditorCompletionKind.Slash, string Prefix = "");
     private sealed record CompletionCycle(IReadOnlyList<CompletionCandidate> Candidates, int SelectedIndex,
         string BufferText, int Cursor)
     {
@@ -23,7 +24,7 @@ public sealed class TerminalEditor
 
     private readonly EditorBuffer _buffer;
     private TerminalInput? _input;
-    private readonly EditorCompletion _completion;
+    private readonly EditorAutocomplete _autocomplete;
     private readonly EditorKeymap _keymap;
     private readonly Func<IReadOnlyList<ExtensionShortcutInfo>>? _getExtensionShortcuts;
     private readonly TerminalDialogs _dialogs;
@@ -54,11 +55,12 @@ public sealed class TerminalEditor
     public TerminalEditor(Func<IReadOnlyList<string>>? commands = null, string? agentDirectory = null,
         Func<string>? getWorkingDirectory = null, bool initiallyExpanded = false,
         Func<string, string?>? describeCommand = null,
-        Func<IReadOnlyList<ExtensionShortcutInfo>>? getExtensionShortcuts = null)
+        Func<IReadOnlyList<ExtensionShortcutInfo>>? getExtensionShortcuts = null,
+        Func<IReadOnlyList<EditorModelOption>>? getModels = null)
     {
-        _completion = getWorkingDirectory is null
-            ? new EditorCompletion(Environment.CurrentDirectory, commands, describeCommand)
-            : new EditorCompletion(getWorkingDirectory, commands, describeCommand);
+        _autocomplete = getWorkingDirectory is null
+            ? new EditorAutocomplete(() => Environment.CurrentDirectory, commands, describeCommand, getModels)
+            : new EditorAutocomplete(getWorkingDirectory, commands, describeCommand, getModels);
         _keymap = new(agentDirectory);
         _getExtensionShortcuts = getExtensionShortcuts;
         RefreshExtensionShortcuts();
@@ -625,6 +627,47 @@ public sealed class TerminalEditor
             _keymap.Matches("tui.input.tab", possibleCompletionKey);
         var isInterruptKey = next.Key is { } possibleInterruptKey &&
             _keymap.Matches("app.interrupt", possibleInterruptKey);
+        if (next.Key is { } activeAutocompleteKey &&
+            WithEditorState(() => _completionCycle is { } cycle && cycle.Matches(_buffer.CaptureSnapshot())))
+        {
+            if (_keymap.Matches("tui.select.up", activeAutocompleteKey))
+            {
+                MoveCompletionSelection(-1);
+                Render();
+                return true;
+            }
+            if (_keymap.Matches("tui.select.down", activeAutocompleteKey))
+            {
+                MoveCompletionSelection(1);
+                Render();
+                return true;
+            }
+            if (_keymap.Matches("tui.select.pageUp", activeAutocompleteKey))
+            {
+                MoveCompletionSelection(-5);
+                Render();
+                return true;
+            }
+            if (_keymap.Matches("tui.select.pageDown", activeAutocompleteKey))
+            {
+                MoveCompletionSelection(5);
+                Render();
+                return true;
+            }
+            if (_keymap.Matches("tui.select.confirm", activeAutocompleteKey))
+            {
+                var kind = WithEditorState(() =>
+                {
+                    if (_completionCycle is not { } current) return (EditorCompletionKind?)null;
+                    var selected = current.Candidates[current.SelectedIndex];
+                    var selectedKind = selected.Kind;
+                    ApplyCompletionCycleUnsafe(current);
+                    return selectedKind;
+                });
+                Render();
+                if (kind is EditorCompletionKind.Path or EditorCompletionKind.Argument) return true;
+            }
+        }
         if (!isCompletionKey && !isInterruptKey)
         {
             WithEditorState(() => { _completionCycle = null; });
@@ -818,6 +861,7 @@ public sealed class TerminalEditor
             {
                 if (_buffer.IsJumpModeActive && !next.IsPaste) _buffer.HandleJumpText(next.Text);
                 else _buffer.InsertText(next.Text);
+                if (!next.IsPaste) RefreshAutocomplete();
             }
             else _buffer.Handle(next.Key!.Value);
         });
@@ -863,6 +907,52 @@ public sealed class TerminalEditor
                 _keymap.Matches("tui.input.tab", possibleCompletionKey);
             var isInterruptKey = next.Key is { } possibleInterruptKey &&
                 _keymap.Matches("app.interrupt", possibleInterruptKey);
+            var hadAutocomplete = WithEditorState(() => _completionCycle is not null);
+            var autocompleteKey = next.Key;
+            var autocompleteActive = autocompleteKey is { } candidateKey &&
+                WithEditorState(() => _completionCycle is { } cycle && cycle.Matches(_buffer.CaptureSnapshot())) &&
+                (_keymap.Matches("tui.select.up", candidateKey) ||
+                 _keymap.Matches("tui.select.down", candidateKey) ||
+                 _keymap.Matches("tui.select.pageUp", candidateKey) ||
+                 _keymap.Matches("tui.select.pageDown", candidateKey) ||
+                 _keymap.Matches("tui.select.confirm", candidateKey));
+            if (autocompleteActive)
+            {
+                if (autocompleteKey is { } selectionKey && _keymap.Matches("tui.select.up", selectionKey))
+                {
+                    MoveCompletionSelection(-1);
+                    Render();
+                    continue;
+                }
+                if (autocompleteKey is { } downKey && _keymap.Matches("tui.select.down", downKey))
+                {
+                    MoveCompletionSelection(1);
+                    Render();
+                    continue;
+                }
+                if (autocompleteKey is { } pageUpKey && _keymap.Matches("tui.select.pageUp", pageUpKey))
+                {
+                    MoveCompletionSelection(-5);
+                    Render();
+                    continue;
+                }
+                if (autocompleteKey is { } pageDownKey && _keymap.Matches("tui.select.pageDown", pageDownKey))
+                {
+                    MoveCompletionSelection(5);
+                    Render();
+                    continue;
+                }
+                var completionKind = WithEditorState(() =>
+                {
+                    if (_completionCycle is not { } cycle) return (EditorCompletionKind?)null;
+                    var selected = cycle.Candidates[cycle.SelectedIndex];
+                    var kind = selected.Kind;
+                    ApplyCompletionCycleUnsafe(cycle);
+                    return kind;
+                });
+                Render();
+                if (completionKind is EditorCompletionKind.Path or EditorCompletionKind.Argument) continue;
+            }
             if (!isCompletionKey && !isInterruptKey)
             {
                 WithEditorState(() => { _completionCycle = null; });
@@ -1016,11 +1106,25 @@ public sealed class TerminalEditor
                 else
                 {
                     if (!next.IsExtensionRewrite && following is not null) input.PushBack(following);
-                    if (action == EditorAction.Render) Render();
+                    if (action == EditorAction.Render)
+                    {
+                        if (!next.IsPaste) RefreshAutocomplete();
+                        Render();
+                    }
                     continue;
                 }
             }
-            else action = WithEditorState(() => _buffer.Handle(next.Key!.Value));
+            else
+            {
+                action = WithEditorState(() => _buffer.Handle(next.Key!.Value));
+                if (hadAutocomplete && action == EditorAction.Render &&
+                    next.Key is { } editKey &&
+                    (_keymap.Matches("tui.editor.deleteCharBackward", editKey) ||
+                     _keymap.Matches("tui.editor.deleteCharForward", editKey) ||
+                     _keymap.Matches("tui.editor.deleteWordBackward", editKey) ||
+                     _keymap.Matches("tui.editor.deleteWordForward", editKey)))
+                    RefreshAutocomplete();
+            }
             switch (action)
             {
                 case EditorAction.Exit:
@@ -1234,39 +1338,29 @@ public sealed class TerminalEditor
 
     private async Task CompleteInputAsync(ConsoleKeyInfo key, CancellationToken cancellationToken)
     {
-        var previousCycleApplied = WithEditorState(() =>
+        var appliedExisting = WithEditorState(() =>
         {
             var snapshot = _buffer.CaptureSnapshot();
-            if (_completionCycle is not { } previous || !previous.Matches(snapshot))
-            {
-                _completionCycle = null;
-                return false;
-            }
-
-            var direction = key.Modifiers.HasFlag(ConsoleModifiers.Shift) ? -1 : 1;
-            var selectedIndex = (previous.SelectedIndex + direction + previous.Candidates.Count) %
-                previous.Candidates.Count;
-            ApplyCompletionCycleUnsafe(previous with { SelectedIndex = selectedIndex });
+            if (_completionCycle is not { } previous || !previous.Matches(snapshot)) return false;
+            ApplyCompletionCycleUnsafe(previous);
             return true;
         });
-        if (previousCycleApplied) return;
+        if (appliedExisting) return;
 
         CancelCompletionRequest();
         var request = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var requestToken = request.Token;
         try
         {
-            var (snapshot, candidates, extensionProvider) = WithEditorState(() =>
+            var (snapshot, native, extensionProvider, force) = WithEditorState(() =>
             {
                 _completionRequest = request;
                 var current = _buffer.CaptureSnapshot();
-                var descriptions = _completion.GetSlashCommandSuggestions(_buffer)
-                    .ToDictionary(suggestion => suggestion.Command, suggestion => suggestion.Description,
-                        StringComparer.OrdinalIgnoreCase);
-                var nativeCandidates = _completion.GetCompletions(_buffer)
-                    .Select(value => new CompletionCandidate(value, value, Native: true,
-                        descriptions.GetValueOrDefault(value))).ToList();
-                return (current, nativeCandidates, _extensionAutocompleteProvider);
+                var before = TextBeforeCursor(current.Text, current.Cursor);
+                var slashContext = IsSlashCommandContext(before);
+                var forceFile = !slashContext;
+                var result = _autocomplete.GetSuggestions(current.Text, current.Cursor, forceFile);
+                return (current, result, _extensionAutocompleteProvider, forceFile);
             });
 
             IReadOnlyList<NativeExtensions.PiSharpExtensionAutocompleteSuggestion> extensions = [];
@@ -1284,6 +1378,7 @@ public sealed class TerminalEditor
                     return;
                 }
 
+                var candidates = NativeCandidates(native);
                 var seen = new HashSet<string>(candidates.Select(candidate => candidate.ReplacementText),
                     StringComparer.Ordinal);
                 foreach (var suggestion in extensions)
@@ -1301,8 +1396,13 @@ public sealed class TerminalEditor
                     return;
                 }
 
-                var selectedIndex = key.Modifiers.HasFlag(ConsoleModifiers.Shift) ? candidates.Count - 1 : 0;
-                ApplyCompletionCycleUnsafe(new(candidates, selectedIndex, snapshot.Text, snapshot.Cursor));
+                if (force && candidates.Count == 1)
+                {
+                    ApplyCompletionCycleUnsafe(new(candidates, 0, current.Text, current.Cursor));
+                    return;
+                }
+
+                _completionCycle = new(candidates, 0, current.Text, current.Cursor);
             });
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
@@ -1316,12 +1416,19 @@ public sealed class TerminalEditor
         }
     }
 
+    private static List<CompletionCandidate> NativeCandidates(EditorCompletionResult? result)
+    {
+        if (result is null) return [];
+        return result.Items.Select(item => new CompletionCandidate(item.Label, item.Value, Native: true,
+            item.Description, item.IsDirectory, item, result.Kind, result.Prefix)).ToList();
+    }
+
     private void ApplyCompletionCycleUnsafe(CompletionCycle cycle)
     {
         var selected = cycle.Candidates[cycle.SelectedIndex];
-        if (selected.Native)
+        if (selected.Native && selected.Item is { } item)
         {
-            _completion.ApplySelected(_buffer, selected.ReplacementText);
+            _autocomplete.Apply(_buffer, new EditorCompletionResult(selected.Kind, selected.Prefix, [item]), item);
         }
         else
         {
@@ -1330,8 +1437,52 @@ public sealed class TerminalEditor
             while (start > 0 && !char.IsWhiteSpace(snapshot.Text[start - 1])) start--;
             _buffer.Replace(start, snapshot.Cursor - start, selected.ReplacementText);
         }
-        var applied = _buffer.CaptureSnapshot();
-        _completionCycle = cycle with { BufferText = applied.Text, Cursor = applied.Cursor };
+        _completionCycle = null;
+    }
+
+    private void MoveCompletionSelection(int direction)
+    {
+        WithEditorState(() =>
+        {
+            if (_completionCycle is not { } cycle) return;
+            var index = (cycle.SelectedIndex + direction + cycle.Candidates.Count) % cycle.Candidates.Count;
+            _completionCycle = cycle with { SelectedIndex = index };
+        });
+    }
+
+    private void RefreshAutocomplete()
+    {
+        WithEditorState(() =>
+        {
+            if (_suppressAutoCompletion)
+            {
+                _completionCycle = null;
+                return;
+            }
+            var snapshot = _buffer.CaptureSnapshot();
+            var result = _autocomplete.GetSuggestions(snapshot.Text, snapshot.Cursor, force: false);
+            if (result is null || result.Kind == EditorCompletionKind.Path &&
+                !result.Prefix.Contains('@'))
+            {
+                _completionCycle = null;
+                return;
+            }
+            var candidates = NativeCandidates(result);
+            _completionCycle = candidates.Count == 0 ? null : new(candidates, 0, snapshot.Text, snapshot.Cursor);
+        });
+    }
+
+    private static string TextBeforeCursor(string text, int cursor)
+    {
+        cursor = Math.Clamp(cursor, 0, text.Length);
+        var lineStart = text.LastIndexOf('\n', Math.Max(0, cursor - 1)) + 1;
+        return text[lineStart..cursor];
+    }
+
+    private static bool IsSlashCommandContext(string before)
+    {
+        var trimmed = before.TrimStart();
+        return trimmed.StartsWith('/') && !trimmed.Contains(' ');
     }
 
     private void CancelCompletionRequest()
@@ -1420,13 +1571,22 @@ public sealed class TerminalEditor
                 var current = searchingTranscript
                     ? _transcriptSearch.CaptureEditorSnapshotForDisplay()
                     : _buffer.CaptureSnapshot();
-                IReadOnlyList<EditorCompletionSuggestion> currentSuggestions =
-                    searchingTranscript || _suppressAutoCompletion ? [] : _completion.GetSlashCommandSuggestions(_buffer);
-                if (_completionCycle is { } completionCycle && completionCycle.Matches(current))
-                    currentSuggestions = completionCycle.Candidates.Select((candidate, index) =>
-                        new EditorCompletionSuggestion(
-                            $"{(index == completionCycle.SelectedIndex ? "❯ " : "  ")}{candidate.DisplayText}",
-                            candidate.Description)).ToArray();
+                IReadOnlyList<EditorCompletionSuggestion> currentSuggestions = [];
+                if (!searchingTranscript && _completionCycle is { } completionCycle &&
+                    completionCycle.Matches(current))
+                {
+                    var maximum = Math.Max(1, _screen?.AutocompleteMaxVisible ?? 5);
+                    var start = Math.Max(0, Math.Min(completionCycle.SelectedIndex - maximum + 1,
+                        completionCycle.Candidates.Count - maximum));
+                    var rendered = completionCycle.Candidates.Skip(start).Take(maximum)
+                        .Select((candidate, index) => new EditorCompletionSuggestion(candidate.DisplayText,
+                            candidate.Description, start + index == completionCycle.SelectedIndex)).ToList();
+                    if (completionCycle.Candidates.Count > maximum)
+                        rendered.Add(new EditorCompletionSuggestion(
+                            $"({completionCycle.SelectedIndex + 1}/{completionCycle.Candidates.Count})", null,
+                            Position: true));
+                    currentSuggestions = rendered;
+                }
                 return (current, currentSuggestions);
             });
             if (suggestions.Count > 0 && snapshot.Text.StartsWith("/", StringComparison.Ordinal) &&

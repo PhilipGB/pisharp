@@ -108,7 +108,9 @@ internal sealed class TerminalScreenCompositor
         var footerHeight = baseFooterHeight + extensionStatusHeight + extensionFooterRows.Length;
         var extensionHeaderHeight = Math.Min(headerRows.Count, Math.Max(0, height - footerHeight - 3));
         var borderHeight = height - footerHeight >= 4 ? 2 : 0;
-        var suggestionHeight = Math.Min(Math.Min(editorSuggestions?.Count ?? 0, Math.Max(0, autocompleteMaxVisible)),
+        var positionRows = editorSuggestions?.Any(suggestion => suggestion.Position) == true ? 1 : 0;
+        var suggestionHeight = Math.Min(Math.Min(editorSuggestions?.Count ?? 0,
+                Math.Max(0, autocompleteMaxVisible) + positionRows),
             Math.Max(0, height - footerHeight - extensionHeaderHeight - borderHeight - 2));
         var editorLineLimit = Math.Max(1,
             Math.Min((int)(height * 0.3), height - footerHeight - extensionHeaderHeight - borderHeight - suggestionHeight - 1));
@@ -239,7 +241,8 @@ internal sealed class TerminalScreenCompositor
         for (var index = 0; index < suggestionHeight; index++)
         {
             var suggestion = editorSuggestions![index];
-            var selected = index == 0;
+            var selected = suggestion.Selected ||
+                (editorSuggestions.All(candidate => !candidate.Selected) && index == 0);
             var marker = selected ? "→ " : "  ";
             var name = suggestion.Command.StartsWith('/') ? suggestion.Command[1..] : suggestion.Command;
             if (TerminalTextLayout.Width(name) > 30) name = name[..Math.Min(name.Length, 30)];

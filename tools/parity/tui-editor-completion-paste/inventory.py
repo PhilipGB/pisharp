@@ -30,31 +30,4 @@ NORMALIZATIONS = [
     },
 ]
 
-KNOWN_DIFFERENCES = [
-    {
-        'id': 'slash-completion-catalogue-and-application',
-        'tasks': ['slash-completion'],
-        'scenarios': ['slash-completion'],
-        'fields': ['editorText', 'cursor', 'candidates', 'selected', 'activeScreen'],
-        'classification': 'unresolved',
-        'summary': 'Pi completes with fuzzyFilter over its builtin command list; PiSharp uses the shared '
-                   'ordered catalogue with prefix matching and registers additional implemented commands. '
-                   'Pi also appends a trailing space and closes the picker when an explicit Tab resolves a '
-                   'single candidate, and exposes argument completion for /model. PiSharp applies without '
-                   'the trailing space and has no argument completion.',
-        'closure': 'Port fuzzyFilter, align the completion-visible command catalogue and implement argument '
-                   'completion; none of these is a bounded editor correction.',
-    },
-    {
-        'id': 'path-completion-auto-trigger-and-application',
-        'tasks': ['path-completion', 'journey'],
-        'scenarios': ['path-completion', 'journey'],
-        'fields': ['editorText', 'cursor', 'candidates', 'selected', 'activeScreen'],
-        'classification': 'unresolved',
-        'summary': 'Pi auto-triggers @ completion through an fd fuzzy walk, scores and orders entries, and '
-                   'applies a file with a trailing space after the closing quote. PiSharp only computes '
-                   'path candidates on Tab using readdir prefix matching, so the automatic overlay is '
-                   'absent and application places the cursor before the closing quote.',
-        'closure': 'Implement the fd-based fuzzy path provider and its application/cursor rules.',
-    },
-]
+KNOWN_DIFFERENCES = []

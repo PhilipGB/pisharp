@@ -248,7 +248,7 @@ public sealed class AppControlPtyTests
             await Task.Delay(400);
             await SendAsync("\u001b");
             await Task.Delay(500);
-            await SendAsync("after bash cancel");
+            await SendAsync(" after bash cancel");
             await WaitForAsync(frame => frame.Contains("after bash cancel", StringComparison.Ordinal),
                 "prompt accepts input after Bash cancellation");
             await Task.Delay(4500);
@@ -454,8 +454,8 @@ public sealed class AppControlPtyTests
             await WaitForAsync(frame => frame.Contains("STREAM_ONE", StringComparison.Ordinal) &&
                 frame.Contains("Working", StringComparison.Ordinal), "streaming started");
             await SendAsync("/mod\t");
-            await WaitForAsync(frame => frame.Contains("/model", StringComparison.Ordinal) &&
-                frame.Contains("Working", StringComparison.Ordinal), "completion applied during stream");
+            await WaitForAsync(frame => frame.Contains("/mod", StringComparison.Ordinal) &&
+                frame.Contains("Working", StringComparison.Ordinal), "completion opened during stream");
             await SendAsync("\u001b[27u");
             await Task.Delay(250);
             await WaitForAsync(frame => frame.Contains("Working", StringComparison.Ordinal) &&

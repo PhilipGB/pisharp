@@ -401,6 +401,8 @@ public sealed class TerminalScreen : IDisposable
         }
     }
 
+    internal int AutocompleteMaxVisible => _autocompleteMaxVisible;
+
     internal int EditorLayoutWidth
     {
         get

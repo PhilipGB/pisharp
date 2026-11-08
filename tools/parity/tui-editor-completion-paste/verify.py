@@ -223,8 +223,8 @@ def mutations(report):
            'Stale implementation provenance')
     yield ('omitted-known-difference', _mutate(report, _unclassify), 'unexplained difference')
     yield ('false-known-difference', _mutate(report, _false_known), 'known differences')
-    yield ('altered-score', _mutate(report, lambda r: r['score'].__setitem__('total', 100)),
-           'score')
+    yield ('altered-score', _mutate(report, lambda r: r['score']['points'].__setitem__('history', 0)),
+           'points')
     yield ('wrong-pi-pin', _mutate(report, lambda r: r.__setitem__('piSha', '1' * 40)), 'Pi pin')
     yield ('duplicate-entry', _mutate(report, lambda r: r['scenarios'].append(
         copy.deepcopy(r['scenarios'][0]))), 'Duplicate')
@@ -244,11 +244,6 @@ def _drop_scenario(report, scenario_id, size):
 
 
 def _hide(report, field):
-    entry = next(entry for entry in report['scenarios'] if entry['differences'])
-    for difference in entry['differences']:
-        if difference['field'] == field:
-            entry['differences'].remove(difference)
-            return
     entry = next(entry for entry in report['scenarios'] if entry['status'] == 'pass')
     checkpoint = next(iter(entry['pi']['checkpoints']))
     if field == 'providerTexts':
