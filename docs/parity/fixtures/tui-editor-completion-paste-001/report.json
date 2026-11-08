@@ -2,7 +2,7 @@
   "schema": 1,
   "capability": "tui-editor-completion-paste",
   "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-  "pisharpSha": "c42f99d2ee6d0f85d282dbabe01f6449666615a2",
+  "pisharpSha": "3fef9f6c971504a1f3b8f24bf42b22950bd00188",
   "branch": "milestone/tui-editor-completion-paste-parity",
   "treeClean": true,
   "trackedChanges": [],
@@ -46,48 +46,7 @@
       "reason": "Temporary directory names and file modes are product internals. Both products create a 0700 directory; Pi writes the prompt with mode 0644 and PiSharp with 0600. The captured prompt text, editor result, provider text and terminal restoration are compared exactly."
     }
   ],
-  "knownDifferences": [
-    {
-      "id": "slash-completion-catalogue-and-application",
-      "tasks": [
-        "slash-completion"
-      ],
-      "scenarios": [
-        "slash-completion"
-      ],
-      "fields": [
-        "editorText",
-        "cursor",
-        "candidates",
-        "selected",
-        "activeScreen"
-      ],
-      "classification": "unresolved",
-      "summary": "Pi completes with fuzzyFilter over its builtin command list; PiSharp uses the shared ordered catalogue with prefix matching and registers additional implemented commands. Pi also appends a trailing space and closes the picker when an explicit Tab resolves a single candidate, and exposes argument completion for /model. PiSharp applies without the trailing space and has no argument completion.",
-      "closure": "Port fuzzyFilter, align the completion-visible command catalogue and implement argument completion; none of these is a bounded editor correction."
-    },
-    {
-      "id": "path-completion-auto-trigger-and-application",
-      "tasks": [
-        "path-completion",
-        "journey"
-      ],
-      "scenarios": [
-        "path-completion",
-        "journey"
-      ],
-      "fields": [
-        "editorText",
-        "cursor",
-        "candidates",
-        "selected",
-        "activeScreen"
-      ],
-      "classification": "unresolved",
-      "summary": "Pi auto-triggers @ completion through an fd fuzzy walk, scores and orders entries, and applies a file with a trailing space after the closing quote. PiSharp only computes path candidates on Tab using readdir prefix matching, so the automatic overlay is absent and application places the cursor before the closing quote.",
-      "closure": "Implement the fd-based fuzzy path provider and its application/cursor rules."
-    }
-  ],
+  "knownDifferences": [],
   "scenarios": [
     {
       "id": "cursor-unicode",
@@ -4145,7 +4104,7 @@
       "calibration": {
         "match": true,
         "differences": [],
-        "checkpoints": 19
+        "checkpoints": 20
       },
       "pi": {
         "checkpoints": {
@@ -4429,18 +4388,38 @@
               "2004"
             ]
           },
+          "argument-cancel": {
+            "editorText": "/model",
+            "cursor": {
+              "x": 7,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
           "clear-argument": {
             "editorText": "",
             "cursor": {
               "x": 0,
-              "y": 19,
+              "y": 20,
               "visible": false,
               "editorRow": 0
             },
-            "candidates": [
-              "fixture-model"
-            ],
-            "selected": "fixture-model",
+            "candidates": [],
+            "selected": null,
             "position": null,
             "activeScreen": "alternate",
             "modes": [
@@ -4609,19 +4588,19 @@
             "editorText": "/",
             "cursor": {
               "x": 1,
-              "y": 15,
+              "y": 14,
               "visible": false,
               "editorRow": 0
             },
             "candidates": [
+              "settings",
+              "model",
               "tree",
-              "branch",
-              "fork",
-              "clone",
-              "new"
+              "thinking",
+              "scoped-models"
             ],
-            "selected": "tree",
-            "position": null,
+            "selected": "settings",
+            "position": "(1/22)",
             "activeScreen": "alternate",
             "modes": [
               "1000",
@@ -4637,19 +4616,19 @@
             "editorText": "/s",
             "cursor": {
               "x": 2,
-              "y": 15,
+              "y": 14,
               "visible": false,
               "editorRow": 0
             },
             "candidates": [
-              "sessions",
-              "scoped-models",
               "settings",
+              "scoped-models",
               "share",
-              "session"
+              "session",
+              "resume"
             ],
-            "selected": "sessions",
-            "position": null,
+            "selected": "settings",
+            "position": "(1/7)",
             "activeScreen": "alternate",
             "modes": [
               "1000",
@@ -4732,15 +4711,13 @@
           "unique-tab": {
             "editorText": "  /hotkeys",
             "cursor": {
-              "x": 10,
-              "y": 19,
+              "x": 11,
+              "y": 20,
               "visible": false,
               "editorRow": 0
             },
-            "candidates": [
-              "❯ /hotkeys"
-            ],
-            "selected": "❯ /hotkeys",
+            "candidates": [],
+            "selected": null,
             "position": null,
             "activeScreen": "alternate",
             "modes": [
@@ -4756,7 +4733,7 @@
           "unique-escape": {
             "editorText": "  /hotkeys",
             "cursor": {
-              "x": 10,
+              "x": 11,
               "y": 20,
               "visible": false,
               "editorRow": 0
@@ -4867,6 +4844,30 @@
             "editorText": "/model",
             "cursor": {
               "x": 7,
+              "y": 19,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [
+              "fixture-model"
+            ],
+            "selected": "fixture-model",
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "argument-cancel": {
+            "editorText": "/model",
+            "cursor": {
+              "x": 7,
               "y": 20,
               "visible": false,
               "editorRow": 0
@@ -4911,19 +4912,19 @@
             "editorText": "/s",
             "cursor": {
               "x": 2,
-              "y": 15,
+              "y": 14,
               "visible": false,
               "editorRow": 0
             },
             "candidates": [
-              "sessions",
-              "scoped-models",
               "settings",
+              "scoped-models",
               "share",
-              "session"
+              "session",
+              "resume"
             ],
-            "selected": "sessions",
-            "position": null,
+            "selected": "settings",
+            "position": "(1/7)",
             "activeScreen": "alternate",
             "modes": [
               "1000",
@@ -4939,19 +4940,19 @@
             "editorText": "/s",
             "cursor": {
               "x": 2,
-              "y": 15,
+              "y": 14,
               "visible": false,
               "editorRow": 0
             },
             "candidates": [
-              "sessions",
-              "scoped-models",
               "settings",
+              "scoped-models",
               "share",
-              "session"
+              "session",
+              "resume"
             ],
-            "selected": "sessions",
-            "position": null,
+            "selected": "scoped-models",
+            "position": "(2/7)",
             "activeScreen": "alternate",
             "modes": [
               "1000",
@@ -4966,14 +4967,20 @@
           "picker-up": {
             "editorText": "/s",
             "cursor": {
-              "x": 0,
-              "y": 20,
+              "x": 2,
+              "y": 14,
               "visible": false,
               "editorRow": 0
             },
-            "candidates": [],
-            "selected": null,
-            "position": null,
+            "candidates": [
+              "settings",
+              "scoped-models",
+              "share",
+              "session",
+              "resume"
+            ],
+            "selected": "settings",
+            "position": "(1/7)",
             "activeScreen": "alternate",
             "modes": [
               "1000",
@@ -4988,7 +4995,7 @@
           "picker-cancel": {
             "editorText": "/s",
             "cursor": {
-              "x": 0,
+              "x": 2,
               "y": 20,
               "visible": false,
               "editorRow": 0
@@ -5051,354 +5058,9 @@
         "capturedWorkspaceFiles": {},
         "scenarioError": null
       },
-      "differences": [
-        {
-          "checkpoint": "argument",
-          "field": "cursor",
-          "pi": {
-            "x": 7,
-            "y": 19,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 7,
-            "y": 20,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "argument",
-          "field": "candidates",
-          "pi": [
-            "fixture-model"
-          ],
-          "pisharp": [],
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "argument",
-          "field": "selected",
-          "pi": "fixture-model",
-          "pisharp": null,
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "clear-argument",
-          "field": "cursor",
-          "pi": {
-            "x": 0,
-            "y": 19,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 0,
-            "y": 20,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "clear-argument",
-          "field": "candidates",
-          "pi": [
-            "fixture-model"
-          ],
-          "pisharp": [],
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "clear-argument",
-          "field": "selected",
-          "pi": "fixture-model",
-          "pisharp": null,
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "picker",
-          "field": "cursor",
-          "pi": {
-            "x": 2,
-            "y": 14,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 2,
-            "y": 15,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "picker",
-          "field": "candidates",
-          "pi": [
-            "settings",
-            "scoped-models",
-            "share",
-            "session",
-            "resume"
-          ],
-          "pisharp": [
-            "sessions",
-            "scoped-models",
-            "settings",
-            "share",
-            "session"
-          ],
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "picker",
-          "field": "selected",
-          "pi": "settings",
-          "pisharp": "sessions",
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "picker-cancel",
-          "field": "cursor",
-          "pi": {
-            "x": 2,
-            "y": 20,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 0,
-            "y": 20,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "picker-down",
-          "field": "cursor",
-          "pi": {
-            "x": 2,
-            "y": 14,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 2,
-            "y": 15,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "picker-down",
-          "field": "candidates",
-          "pi": [
-            "settings",
-            "scoped-models",
-            "share",
-            "session",
-            "resume"
-          ],
-          "pisharp": [
-            "sessions",
-            "scoped-models",
-            "settings",
-            "share",
-            "session"
-          ],
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "picker-down",
-          "field": "selected",
-          "pi": "scoped-models",
-          "pisharp": "sessions",
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "picker-up",
-          "field": "cursor",
-          "pi": {
-            "x": 2,
-            "y": 14,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 0,
-            "y": 20,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "picker-up",
-          "field": "candidates",
-          "pi": [
-            "settings",
-            "scoped-models",
-            "share",
-            "session",
-            "resume"
-          ],
-          "pisharp": [],
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "picker-up",
-          "field": "selected",
-          "pi": "settings",
-          "pisharp": null,
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "slash-ambiguous",
-          "field": "cursor",
-          "pi": {
-            "x": 2,
-            "y": 14,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 2,
-            "y": 15,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "slash-ambiguous",
-          "field": "candidates",
-          "pi": [
-            "settings",
-            "scoped-models",
-            "share",
-            "session",
-            "resume"
-          ],
-          "pisharp": [
-            "sessions",
-            "scoped-models",
-            "settings",
-            "share",
-            "session"
-          ],
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "slash-ambiguous",
-          "field": "selected",
-          "pi": "settings",
-          "pisharp": "sessions",
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "slash-empty",
-          "field": "cursor",
-          "pi": {
-            "x": 1,
-            "y": 14,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 1,
-            "y": 15,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "slash-empty",
-          "field": "candidates",
-          "pi": [
-            "settings",
-            "model",
-            "tree",
-            "thinking",
-            "scoped-models"
-          ],
-          "pisharp": [
-            "tree",
-            "branch",
-            "fork",
-            "clone",
-            "new"
-          ],
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "slash-empty",
-          "field": "selected",
-          "pi": "settings",
-          "pisharp": "tree",
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "unique-escape",
-          "field": "cursor",
-          "pi": {
-            "x": 11,
-            "y": 20,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 10,
-            "y": 20,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "unique-tab",
-          "field": "cursor",
-          "pi": {
-            "x": 11,
-            "y": 20,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 10,
-            "y": 19,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "unique-tab",
-          "field": "candidates",
-          "pi": [],
-          "pisharp": [
-            "❯ /hotkeys"
-          ],
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "unique-tab",
-          "field": "selected",
-          "pi": null,
-          "pisharp": "❯ /hotkeys",
-          "classification": "slash-completion-catalogue-and-application"
-        }
-      ],
-      "status": "fail",
-      "blockedBy": [
-        "slash-completion-catalogue-and-application"
-      ],
+      "differences": [],
+      "status": "pass",
+      "blockedBy": [],
       "exit": {
         "pi": {
           "exitCode": 0,
@@ -5428,7 +5090,7 @@
       "calibration": {
         "match": true,
         "differences": [],
-        "checkpoints": 19
+        "checkpoints": 20
       },
       "pi": {
         "checkpoints": {
@@ -5712,18 +5374,38 @@
               "2004"
             ]
           },
+          "argument-cancel": {
+            "editorText": "/model",
+            "cursor": {
+              "x": 7,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
           "clear-argument": {
             "editorText": "",
             "cursor": {
               "x": 0,
-              "y": 35,
+              "y": 36,
               "visible": false,
               "editorRow": 0
             },
-            "candidates": [
-              "fixture-model"
-            ],
-            "selected": "fixture-model",
+            "candidates": [],
+            "selected": null,
             "position": null,
             "activeScreen": "alternate",
             "modes": [
@@ -5892,19 +5574,19 @@
             "editorText": "/",
             "cursor": {
               "x": 1,
-              "y": 31,
+              "y": 30,
               "visible": false,
               "editorRow": 0
             },
             "candidates": [
+              "settings",
+              "model",
               "tree",
-              "branch",
-              "fork",
-              "clone",
-              "new"
+              "thinking",
+              "scoped-models"
             ],
-            "selected": "tree",
-            "position": null,
+            "selected": "settings",
+            "position": "(1/22)",
             "activeScreen": "alternate",
             "modes": [
               "1000",
@@ -5920,19 +5602,19 @@
             "editorText": "/s",
             "cursor": {
               "x": 2,
-              "y": 31,
+              "y": 30,
               "visible": false,
               "editorRow": 0
             },
             "candidates": [
-              "sessions",
-              "scoped-models",
               "settings",
+              "scoped-models",
               "share",
-              "session"
+              "session",
+              "resume"
             ],
-            "selected": "sessions",
-            "position": null,
+            "selected": "settings",
+            "position": "(1/7)",
             "activeScreen": "alternate",
             "modes": [
               "1000",
@@ -6015,15 +5697,13 @@
           "unique-tab": {
             "editorText": "  /hotkeys",
             "cursor": {
-              "x": 10,
-              "y": 35,
+              "x": 11,
+              "y": 36,
               "visible": false,
               "editorRow": 0
             },
-            "candidates": [
-              "❯ /hotkeys"
-            ],
-            "selected": "❯ /hotkeys",
+            "candidates": [],
+            "selected": null,
             "position": null,
             "activeScreen": "alternate",
             "modes": [
@@ -6039,7 +5719,7 @@
           "unique-escape": {
             "editorText": "  /hotkeys",
             "cursor": {
-              "x": 10,
+              "x": 11,
               "y": 36,
               "visible": false,
               "editorRow": 0
@@ -6150,6 +5830,30 @@
             "editorText": "/model",
             "cursor": {
               "x": 7,
+              "y": 35,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [
+              "fixture-model"
+            ],
+            "selected": "fixture-model",
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "argument-cancel": {
+            "editorText": "/model",
+            "cursor": {
+              "x": 7,
               "y": 36,
               "visible": false,
               "editorRow": 0
@@ -6194,19 +5898,19 @@
             "editorText": "/s",
             "cursor": {
               "x": 2,
-              "y": 31,
+              "y": 30,
               "visible": false,
               "editorRow": 0
             },
             "candidates": [
-              "sessions",
-              "scoped-models",
               "settings",
+              "scoped-models",
               "share",
-              "session"
+              "session",
+              "resume"
             ],
-            "selected": "sessions",
-            "position": null,
+            "selected": "settings",
+            "position": "(1/7)",
             "activeScreen": "alternate",
             "modes": [
               "1000",
@@ -6222,19 +5926,19 @@
             "editorText": "/s",
             "cursor": {
               "x": 2,
-              "y": 31,
+              "y": 30,
               "visible": false,
               "editorRow": 0
             },
             "candidates": [
-              "sessions",
-              "scoped-models",
               "settings",
+              "scoped-models",
               "share",
-              "session"
+              "session",
+              "resume"
             ],
-            "selected": "sessions",
-            "position": null,
+            "selected": "scoped-models",
+            "position": "(2/7)",
             "activeScreen": "alternate",
             "modes": [
               "1000",
@@ -6249,14 +5953,20 @@
           "picker-up": {
             "editorText": "/s",
             "cursor": {
-              "x": 0,
-              "y": 36,
+              "x": 2,
+              "y": 30,
               "visible": false,
               "editorRow": 0
             },
-            "candidates": [],
-            "selected": null,
-            "position": null,
+            "candidates": [
+              "settings",
+              "scoped-models",
+              "share",
+              "session",
+              "resume"
+            ],
+            "selected": "settings",
+            "position": "(1/7)",
             "activeScreen": "alternate",
             "modes": [
               "1000",
@@ -6271,7 +5981,7 @@
           "picker-cancel": {
             "editorText": "/s",
             "cursor": {
-              "x": 0,
+              "x": 2,
               "y": 36,
               "visible": false,
               "editorRow": 0
@@ -6334,354 +6044,9 @@
         "capturedWorkspaceFiles": {},
         "scenarioError": null
       },
-      "differences": [
-        {
-          "checkpoint": "argument",
-          "field": "cursor",
-          "pi": {
-            "x": 7,
-            "y": 35,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 7,
-            "y": 36,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "argument",
-          "field": "candidates",
-          "pi": [
-            "fixture-model"
-          ],
-          "pisharp": [],
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "argument",
-          "field": "selected",
-          "pi": "fixture-model",
-          "pisharp": null,
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "clear-argument",
-          "field": "cursor",
-          "pi": {
-            "x": 0,
-            "y": 35,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 0,
-            "y": 36,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "clear-argument",
-          "field": "candidates",
-          "pi": [
-            "fixture-model"
-          ],
-          "pisharp": [],
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "clear-argument",
-          "field": "selected",
-          "pi": "fixture-model",
-          "pisharp": null,
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "picker",
-          "field": "cursor",
-          "pi": {
-            "x": 2,
-            "y": 30,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 2,
-            "y": 31,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "picker",
-          "field": "candidates",
-          "pi": [
-            "settings",
-            "scoped-models",
-            "share",
-            "session",
-            "resume"
-          ],
-          "pisharp": [
-            "sessions",
-            "scoped-models",
-            "settings",
-            "share",
-            "session"
-          ],
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "picker",
-          "field": "selected",
-          "pi": "settings",
-          "pisharp": "sessions",
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "picker-cancel",
-          "field": "cursor",
-          "pi": {
-            "x": 2,
-            "y": 36,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 0,
-            "y": 36,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "picker-down",
-          "field": "cursor",
-          "pi": {
-            "x": 2,
-            "y": 30,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 2,
-            "y": 31,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "picker-down",
-          "field": "candidates",
-          "pi": [
-            "settings",
-            "scoped-models",
-            "share",
-            "session",
-            "resume"
-          ],
-          "pisharp": [
-            "sessions",
-            "scoped-models",
-            "settings",
-            "share",
-            "session"
-          ],
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "picker-down",
-          "field": "selected",
-          "pi": "scoped-models",
-          "pisharp": "sessions",
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "picker-up",
-          "field": "cursor",
-          "pi": {
-            "x": 2,
-            "y": 30,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 0,
-            "y": 36,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "picker-up",
-          "field": "candidates",
-          "pi": [
-            "settings",
-            "scoped-models",
-            "share",
-            "session",
-            "resume"
-          ],
-          "pisharp": [],
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "picker-up",
-          "field": "selected",
-          "pi": "settings",
-          "pisharp": null,
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "slash-ambiguous",
-          "field": "cursor",
-          "pi": {
-            "x": 2,
-            "y": 30,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 2,
-            "y": 31,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "slash-ambiguous",
-          "field": "candidates",
-          "pi": [
-            "settings",
-            "scoped-models",
-            "share",
-            "session",
-            "resume"
-          ],
-          "pisharp": [
-            "sessions",
-            "scoped-models",
-            "settings",
-            "share",
-            "session"
-          ],
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "slash-ambiguous",
-          "field": "selected",
-          "pi": "settings",
-          "pisharp": "sessions",
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "slash-empty",
-          "field": "cursor",
-          "pi": {
-            "x": 1,
-            "y": 30,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 1,
-            "y": 31,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "slash-empty",
-          "field": "candidates",
-          "pi": [
-            "settings",
-            "model",
-            "tree",
-            "thinking",
-            "scoped-models"
-          ],
-          "pisharp": [
-            "tree",
-            "branch",
-            "fork",
-            "clone",
-            "new"
-          ],
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "slash-empty",
-          "field": "selected",
-          "pi": "settings",
-          "pisharp": "tree",
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "unique-escape",
-          "field": "cursor",
-          "pi": {
-            "x": 11,
-            "y": 36,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 10,
-            "y": 36,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "unique-tab",
-          "field": "cursor",
-          "pi": {
-            "x": 11,
-            "y": 36,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 10,
-            "y": 35,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "unique-tab",
-          "field": "candidates",
-          "pi": [],
-          "pisharp": [
-            "❯ /hotkeys"
-          ],
-          "classification": "slash-completion-catalogue-and-application"
-        },
-        {
-          "checkpoint": "unique-tab",
-          "field": "selected",
-          "pi": null,
-          "pisharp": "❯ /hotkeys",
-          "classification": "slash-completion-catalogue-and-application"
-        }
-      ],
-      "status": "fail",
-      "blockedBy": [
-        "slash-completion-catalogue-and-application"
-      ],
+      "differences": [],
+      "status": "pass",
+      "blockedBy": [],
       "exit": {
         "pi": {
           "exitCode": 0,
@@ -6711,7 +6076,7 @@
       "calibration": {
         "match": true,
         "differences": [],
-        "checkpoints": 20
+        "checkpoints": 24
       },
       "pi": {
         "checkpoints": {
@@ -6796,19 +6161,38 @@
               "2004"
             ]
           },
+          "path-cancel-a": {
+            "editorText": "@ambiguous-",
+            "cursor": {
+              "x": 11,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
           "clear-a": {
             "editorText": "",
             "cursor": {
               "x": 0,
-              "y": 18,
+              "y": 20,
               "visible": false,
               "editorRow": 0
             },
-            "candidates": [
-              "ambiguous-beta.txt",
-              "ambiguous-alpha.txt"
-            ],
-            "selected": "ambiguous-beta.txt",
+            "candidates": [],
+            "selected": null,
             "position": null,
             "activeScreen": "alternate",
             "modes": [
@@ -6872,19 +6256,38 @@
               "2004"
             ]
           },
+          "path-cancel-src": {
+            "editorText": "@src/m",
+            "cursor": {
+              "x": 6,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
           "clear-src": {
             "editorText": "",
             "cursor": {
               "x": 0,
-              "y": 18,
+              "y": 20,
               "visible": false,
               "editorRow": 0
             },
-            "candidates": [
-              "module/",
-              "main.cs"
-            ],
-            "selected": "module/",
+            "candidates": [],
+            "selected": null,
             "position": null,
             "activeScreen": "alternate",
             "modes": [
@@ -6925,23 +6328,39 @@
               "2004"
             ]
           },
+          "path-cancel-hidden": {
+            "editorText": "@.",
+            "cursor": {
+              "x": 2,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
           "clear-hidden": {
             "editorText": "",
             "cursor": {
               "x": 0,
-              "y": 14,
+              "y": 20,
               "visible": false,
               "editorRow": 0
             },
-            "candidates": [
-              ".hidden-dir/",
-              ".hidden.txt",
-              ".pisharp-terminal-harness",
-              "🙂.md",
-              "世界.txt"
-            ],
-            "selected": ".hidden-dir/",
-            "position": "(1/15)",
+            "candidates": [],
+            "selected": null,
+            "position": null,
             "activeScreen": "alternate",
             "modes": [
               "1000",
@@ -7089,18 +6508,38 @@
               "2004"
             ]
           },
+          "path-cancel-unicode": {
+            "editorText": "@世",
+            "cursor": {
+              "x": 3,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
           "clear-unicode": {
             "editorText": "",
             "cursor": {
               "x": 0,
-              "y": 19,
+              "y": 20,
               "visible": false,
               "editorRow": 0
             },
-            "candidates": [
-              "世界.txt"
-            ],
-            "selected": "世界.txt",
+            "candidates": [],
+            "selected": null,
             "position": null,
             "activeScreen": "alternate",
             "modes": [
@@ -7209,13 +6648,19 @@
             "editorText": "@",
             "cursor": {
               "x": 1,
-              "y": 20,
+              "y": 14,
               "visible": false,
               "editorRow": 0
             },
-            "candidates": [],
-            "selected": null,
-            "position": null,
+            "candidates": [
+              "src/",
+              "🙂.md",
+              "docs/",
+              "世界.txt",
+              "café.txt"
+            ],
+            "selected": "src/",
+            "position": "(1/18)",
             "activeScreen": "alternate",
             "modes": [
               "1000",
@@ -7231,13 +6676,19 @@
             "editorText": "@a",
             "cursor": {
               "x": 2,
-              "y": 20,
+              "y": 14,
               "visible": false,
               "editorRow": 0
             },
-            "candidates": [],
-            "selected": null,
-            "position": null,
+            "candidates": [
+              "alpha.txt",
+              "alpine.md",
+              "ambiguous-beta.txt",
+              "ambiguous-alpha.txt",
+              "café.txt"
+            ],
+            "selected": "alpha.txt",
+            "position": "(1/8)",
             "activeScreen": "alternate",
             "modes": [
               "1000",
@@ -7250,6 +6701,31 @@
             ]
           },
           "at-ambiguous": {
+            "editorText": "@ambiguous-",
+            "cursor": {
+              "x": 11,
+              "y": 18,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [
+              "ambiguous-beta.txt",
+              "ambiguous-alpha.txt"
+            ],
+            "selected": "ambiguous-beta.txt",
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "path-cancel-a": {
             "editorText": "@ambiguous-",
             "cursor": {
               "x": 11,
@@ -7297,12 +6773,16 @@
             "editorText": "@src/",
             "cursor": {
               "x": 5,
-              "y": 20,
+              "y": 17,
               "visible": false,
               "editorRow": 0
             },
-            "candidates": [],
-            "selected": null,
+            "candidates": [
+              "main.cs",
+              "module/",
+              "deep.cs"
+            ],
+            "selected": "main.cs",
             "position": null,
             "activeScreen": "alternate",
             "modes": [
@@ -7316,6 +6796,31 @@
             ]
           },
           "at-src-continue": {
+            "editorText": "@src/m",
+            "cursor": {
+              "x": 6,
+              "y": 18,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [
+              "module/",
+              "main.cs"
+            ],
+            "selected": "module/",
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "path-cancel-src": {
             "editorText": "@src/m",
             "cursor": {
               "x": 6,
@@ -7360,6 +6865,34 @@
             ]
           },
           "at-hidden": {
+            "editorText": "@.",
+            "cursor": {
+              "x": 2,
+              "y": 14,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [
+              ".hidden-dir/",
+              ".hidden.txt",
+              ".pisharp-terminal-harness",
+              "🙂.md",
+              "世界.txt"
+            ],
+            "selected": ".hidden-dir/",
+            "position": "(1/15)",
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "path-cancel-hidden": {
             "editorText": "@.",
             "cursor": {
               "x": 2,
@@ -7451,12 +6984,14 @@
             "editorText": "@sp",
             "cursor": {
               "x": 3,
-              "y": 20,
+              "y": 19,
               "visible": false,
               "editorRow": 0
             },
-            "candidates": [],
-            "selected": null,
+            "candidates": [
+              "space name.txt"
+            ],
+            "selected": "space name.txt",
             "position": null,
             "activeScreen": "alternate",
             "modes": [
@@ -7472,15 +7007,13 @@
           "apply-space": {
             "editorText": "@\"space name.txt\"",
             "cursor": {
-              "x": 16,
-              "y": 19,
+              "x": 18,
+              "y": 20,
               "visible": false,
               "editorRow": 0
             },
-            "candidates": [
-              "❯ @\"space name.txt\""
-            ],
-            "selected": "❯ @\"space name.txt\"",
+            "candidates": [],
+            "selected": null,
             "position": null,
             "activeScreen": "alternate",
             "modes": [
@@ -7516,6 +7049,30 @@
             ]
           },
           "at-unicode": {
+            "editorText": "@世",
+            "cursor": {
+              "x": 3,
+              "y": 19,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [
+              "世界.txt"
+            ],
+            "selected": "世界.txt",
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "path-cancel-unicode": {
             "editorText": "@世",
             "cursor": {
               "x": 3,
@@ -7563,12 +7120,14 @@
             "editorText": "@\"sp",
             "cursor": {
               "x": 4,
-              "y": 20,
+              "y": 19,
               "visible": false,
               "editorRow": 0
             },
-            "candidates": [],
-            "selected": null,
+            "candidates": [
+              "space name.txt"
+            ],
+            "selected": "space name.txt",
             "position": null,
             "activeScreen": "alternate",
             "modes": [
@@ -7647,496 +7206,9 @@
         "capturedWorkspaceFiles": {},
         "scenarioError": null
       },
-      "differences": [
-        {
-          "checkpoint": "apply-space",
-          "field": "cursor",
-          "pi": {
-            "x": 18,
-            "y": 20,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 16,
-            "y": 19,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "apply-space",
-          "field": "candidates",
-          "pi": [],
-          "pisharp": [
-            "❯ @\"space name.txt\""
-          ],
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "apply-space",
-          "field": "selected",
-          "pi": null,
-          "pisharp": "❯ @\"space name.txt\"",
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-a",
-          "field": "cursor",
-          "pi": {
-            "x": 2,
-            "y": 14,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 2,
-            "y": 20,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-a",
-          "field": "candidates",
-          "pi": [
-            "alpha.txt",
-            "alpine.md",
-            "ambiguous-beta.txt",
-            "ambiguous-alpha.txt",
-            "café.txt"
-          ],
-          "pisharp": [],
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-a",
-          "field": "selected",
-          "pi": "alpha.txt",
-          "pisharp": null,
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-ambiguous",
-          "field": "cursor",
-          "pi": {
-            "x": 11,
-            "y": 18,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 11,
-            "y": 20,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-ambiguous",
-          "field": "candidates",
-          "pi": [
-            "ambiguous-beta.txt",
-            "ambiguous-alpha.txt"
-          ],
-          "pisharp": [],
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-ambiguous",
-          "field": "selected",
-          "pi": "ambiguous-beta.txt",
-          "pisharp": null,
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-empty",
-          "field": "cursor",
-          "pi": {
-            "x": 1,
-            "y": 14,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 1,
-            "y": 20,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-empty",
-          "field": "candidates",
-          "pi": [
-            "src/",
-            "🙂.md",
-            "docs/",
-            "世界.txt",
-            "café.txt"
-          ],
-          "pisharp": [],
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-empty",
-          "field": "selected",
-          "pi": "src/",
-          "pisharp": null,
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-hidden",
-          "field": "cursor",
-          "pi": {
-            "x": 2,
-            "y": 14,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 2,
-            "y": 20,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-hidden",
-          "field": "candidates",
-          "pi": [
-            ".hidden-dir/",
-            ".hidden.txt",
-            ".pisharp-terminal-harness",
-            "🙂.md",
-            "世界.txt"
-          ],
-          "pisharp": [],
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-hidden",
-          "field": "selected",
-          "pi": ".hidden-dir/",
-          "pisharp": null,
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-quoted",
-          "field": "cursor",
-          "pi": {
-            "x": 4,
-            "y": 19,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 4,
-            "y": 20,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-quoted",
-          "field": "candidates",
-          "pi": [
-            "space name.txt"
-          ],
-          "pisharp": [],
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-quoted",
-          "field": "selected",
-          "pi": "space name.txt",
-          "pisharp": null,
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-space",
-          "field": "cursor",
-          "pi": {
-            "x": 3,
-            "y": 19,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 3,
-            "y": 20,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-space",
-          "field": "candidates",
-          "pi": [
-            "space name.txt"
-          ],
-          "pisharp": [],
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-space",
-          "field": "selected",
-          "pi": "space name.txt",
-          "pisharp": null,
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-src-continue",
-          "field": "cursor",
-          "pi": {
-            "x": 6,
-            "y": 18,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 6,
-            "y": 20,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-src-continue",
-          "field": "candidates",
-          "pi": [
-            "module/",
-            "main.cs"
-          ],
-          "pisharp": [],
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-src-continue",
-          "field": "selected",
-          "pi": "module/",
-          "pisharp": null,
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-src-dir",
-          "field": "cursor",
-          "pi": {
-            "x": 5,
-            "y": 17,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 5,
-            "y": 20,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-src-dir",
-          "field": "candidates",
-          "pi": [
-            "main.cs",
-            "module/",
-            "deep.cs"
-          ],
-          "pisharp": [],
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-src-dir",
-          "field": "selected",
-          "pi": "main.cs",
-          "pisharp": null,
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-unicode",
-          "field": "cursor",
-          "pi": {
-            "x": 3,
-            "y": 19,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 3,
-            "y": 20,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-unicode",
-          "field": "candidates",
-          "pi": [
-            "世界.txt"
-          ],
-          "pisharp": [],
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-unicode",
-          "field": "selected",
-          "pi": "世界.txt",
-          "pisharp": null,
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "clear-a",
-          "field": "cursor",
-          "pi": {
-            "x": 0,
-            "y": 18,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 0,
-            "y": 20,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "clear-a",
-          "field": "candidates",
-          "pi": [
-            "ambiguous-beta.txt",
-            "ambiguous-alpha.txt"
-          ],
-          "pisharp": [],
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "clear-a",
-          "field": "selected",
-          "pi": "ambiguous-beta.txt",
-          "pisharp": null,
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "clear-hidden",
-          "field": "cursor",
-          "pi": {
-            "x": 0,
-            "y": 14,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 0,
-            "y": 20,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "clear-hidden",
-          "field": "candidates",
-          "pi": [
-            ".hidden-dir/",
-            ".hidden.txt",
-            ".pisharp-terminal-harness",
-            "🙂.md",
-            "世界.txt"
-          ],
-          "pisharp": [],
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "clear-hidden",
-          "field": "selected",
-          "pi": ".hidden-dir/",
-          "pisharp": null,
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "clear-src",
-          "field": "cursor",
-          "pi": {
-            "x": 0,
-            "y": 18,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 0,
-            "y": 20,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "clear-src",
-          "field": "candidates",
-          "pi": [
-            "module/",
-            "main.cs"
-          ],
-          "pisharp": [],
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "clear-src",
-          "field": "selected",
-          "pi": "module/",
-          "pisharp": null,
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "clear-unicode",
-          "field": "cursor",
-          "pi": {
-            "x": 0,
-            "y": 19,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 0,
-            "y": 20,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "clear-unicode",
-          "field": "candidates",
-          "pi": [
-            "世界.txt"
-          ],
-          "pisharp": [],
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "clear-unicode",
-          "field": "selected",
-          "pi": "世界.txt",
-          "pisharp": null,
-          "classification": "path-completion-auto-trigger-and-application"
-        }
-      ],
-      "status": "fail",
-      "blockedBy": [
-        "path-completion-auto-trigger-and-application"
-      ],
+      "differences": [],
+      "status": "pass",
+      "blockedBy": [],
       "exit": {
         "pi": {
           "exitCode": 0,
@@ -8166,7 +7238,7 @@
       "calibration": {
         "match": true,
         "differences": [],
-        "checkpoints": 20
+        "checkpoints": 24
       },
       "pi": {
         "checkpoints": {
@@ -8251,19 +7323,38 @@
               "2004"
             ]
           },
+          "path-cancel-a": {
+            "editorText": "@ambiguous-",
+            "cursor": {
+              "x": 11,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
           "clear-a": {
             "editorText": "",
             "cursor": {
               "x": 0,
-              "y": 34,
+              "y": 36,
               "visible": false,
               "editorRow": 0
             },
-            "candidates": [
-              "ambiguous-beta.txt",
-              "ambiguous-alpha.txt"
-            ],
-            "selected": "ambiguous-beta.txt",
+            "candidates": [],
+            "selected": null,
             "position": null,
             "activeScreen": "alternate",
             "modes": [
@@ -8327,19 +7418,38 @@
               "2004"
             ]
           },
+          "path-cancel-src": {
+            "editorText": "@src/m",
+            "cursor": {
+              "x": 6,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
           "clear-src": {
             "editorText": "",
             "cursor": {
               "x": 0,
-              "y": 34,
+              "y": 36,
               "visible": false,
               "editorRow": 0
             },
-            "candidates": [
-              "module/",
-              "main.cs"
-            ],
-            "selected": "module/",
+            "candidates": [],
+            "selected": null,
             "position": null,
             "activeScreen": "alternate",
             "modes": [
@@ -8380,23 +7490,39 @@
               "2004"
             ]
           },
+          "path-cancel-hidden": {
+            "editorText": "@.",
+            "cursor": {
+              "x": 2,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
           "clear-hidden": {
             "editorText": "",
             "cursor": {
               "x": 0,
-              "y": 30,
+              "y": 36,
               "visible": false,
               "editorRow": 0
             },
-            "candidates": [
-              ".hidden-dir/",
-              ".hidden.txt",
-              ".pisharp-terminal-harness",
-              "🙂.md",
-              "世界.txt"
-            ],
-            "selected": ".hidden-dir/",
-            "position": "(1/15)",
+            "candidates": [],
+            "selected": null,
+            "position": null,
             "activeScreen": "alternate",
             "modes": [
               "1000",
@@ -8544,18 +7670,38 @@
               "2004"
             ]
           },
+          "path-cancel-unicode": {
+            "editorText": "@世",
+            "cursor": {
+              "x": 3,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
           "clear-unicode": {
             "editorText": "",
             "cursor": {
               "x": 0,
-              "y": 35,
+              "y": 36,
               "visible": false,
               "editorRow": 0
             },
-            "candidates": [
-              "世界.txt"
-            ],
-            "selected": "世界.txt",
+            "candidates": [],
+            "selected": null,
             "position": null,
             "activeScreen": "alternate",
             "modes": [
@@ -8664,13 +7810,19 @@
             "editorText": "@",
             "cursor": {
               "x": 1,
-              "y": 36,
+              "y": 30,
               "visible": false,
               "editorRow": 0
             },
-            "candidates": [],
-            "selected": null,
-            "position": null,
+            "candidates": [
+              "src/",
+              "🙂.md",
+              "docs/",
+              "世界.txt",
+              "café.txt"
+            ],
+            "selected": "src/",
+            "position": "(1/18)",
             "activeScreen": "alternate",
             "modes": [
               "1000",
@@ -8686,13 +7838,19 @@
             "editorText": "@a",
             "cursor": {
               "x": 2,
-              "y": 36,
+              "y": 30,
               "visible": false,
               "editorRow": 0
             },
-            "candidates": [],
-            "selected": null,
-            "position": null,
+            "candidates": [
+              "alpha.txt",
+              "alpine.md",
+              "ambiguous-beta.txt",
+              "ambiguous-alpha.txt",
+              "café.txt"
+            ],
+            "selected": "alpha.txt",
+            "position": "(1/8)",
             "activeScreen": "alternate",
             "modes": [
               "1000",
@@ -8705,6 +7863,31 @@
             ]
           },
           "at-ambiguous": {
+            "editorText": "@ambiguous-",
+            "cursor": {
+              "x": 11,
+              "y": 34,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [
+              "ambiguous-beta.txt",
+              "ambiguous-alpha.txt"
+            ],
+            "selected": "ambiguous-beta.txt",
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "path-cancel-a": {
             "editorText": "@ambiguous-",
             "cursor": {
               "x": 11,
@@ -8752,12 +7935,16 @@
             "editorText": "@src/",
             "cursor": {
               "x": 5,
-              "y": 36,
+              "y": 33,
               "visible": false,
               "editorRow": 0
             },
-            "candidates": [],
-            "selected": null,
+            "candidates": [
+              "main.cs",
+              "module/",
+              "deep.cs"
+            ],
+            "selected": "main.cs",
             "position": null,
             "activeScreen": "alternate",
             "modes": [
@@ -8771,6 +7958,31 @@
             ]
           },
           "at-src-continue": {
+            "editorText": "@src/m",
+            "cursor": {
+              "x": 6,
+              "y": 34,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [
+              "module/",
+              "main.cs"
+            ],
+            "selected": "module/",
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "path-cancel-src": {
             "editorText": "@src/m",
             "cursor": {
               "x": 6,
@@ -8815,6 +8027,34 @@
             ]
           },
           "at-hidden": {
+            "editorText": "@.",
+            "cursor": {
+              "x": 2,
+              "y": 30,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [
+              ".hidden-dir/",
+              ".hidden.txt",
+              ".pisharp-terminal-harness",
+              "🙂.md",
+              "世界.txt"
+            ],
+            "selected": ".hidden-dir/",
+            "position": "(1/15)",
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "path-cancel-hidden": {
             "editorText": "@.",
             "cursor": {
               "x": 2,
@@ -8906,12 +8146,14 @@
             "editorText": "@sp",
             "cursor": {
               "x": 3,
-              "y": 36,
+              "y": 35,
               "visible": false,
               "editorRow": 0
             },
-            "candidates": [],
-            "selected": null,
+            "candidates": [
+              "space name.txt"
+            ],
+            "selected": "space name.txt",
             "position": null,
             "activeScreen": "alternate",
             "modes": [
@@ -8927,15 +8169,13 @@
           "apply-space": {
             "editorText": "@\"space name.txt\"",
             "cursor": {
-              "x": 16,
-              "y": 35,
+              "x": 18,
+              "y": 36,
               "visible": false,
               "editorRow": 0
             },
-            "candidates": [
-              "❯ @\"space name.txt\""
-            ],
-            "selected": "❯ @\"space name.txt\"",
+            "candidates": [],
+            "selected": null,
             "position": null,
             "activeScreen": "alternate",
             "modes": [
@@ -8971,6 +8211,30 @@
             ]
           },
           "at-unicode": {
+            "editorText": "@世",
+            "cursor": {
+              "x": 3,
+              "y": 35,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [
+              "世界.txt"
+            ],
+            "selected": "世界.txt",
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "path-cancel-unicode": {
             "editorText": "@世",
             "cursor": {
               "x": 3,
@@ -9018,12 +8282,14 @@
             "editorText": "@\"sp",
             "cursor": {
               "x": 4,
-              "y": 36,
+              "y": 35,
               "visible": false,
               "editorRow": 0
             },
-            "candidates": [],
-            "selected": null,
+            "candidates": [
+              "space name.txt"
+            ],
+            "selected": "space name.txt",
             "position": null,
             "activeScreen": "alternate",
             "modes": [
@@ -9102,496 +8368,9 @@
         "capturedWorkspaceFiles": {},
         "scenarioError": null
       },
-      "differences": [
-        {
-          "checkpoint": "apply-space",
-          "field": "cursor",
-          "pi": {
-            "x": 18,
-            "y": 36,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 16,
-            "y": 35,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "apply-space",
-          "field": "candidates",
-          "pi": [],
-          "pisharp": [
-            "❯ @\"space name.txt\""
-          ],
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "apply-space",
-          "field": "selected",
-          "pi": null,
-          "pisharp": "❯ @\"space name.txt\"",
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-a",
-          "field": "cursor",
-          "pi": {
-            "x": 2,
-            "y": 30,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 2,
-            "y": 36,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-a",
-          "field": "candidates",
-          "pi": [
-            "alpha.txt",
-            "alpine.md",
-            "ambiguous-beta.txt",
-            "ambiguous-alpha.txt",
-            "café.txt"
-          ],
-          "pisharp": [],
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-a",
-          "field": "selected",
-          "pi": "alpha.txt",
-          "pisharp": null,
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-ambiguous",
-          "field": "cursor",
-          "pi": {
-            "x": 11,
-            "y": 34,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 11,
-            "y": 36,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-ambiguous",
-          "field": "candidates",
-          "pi": [
-            "ambiguous-beta.txt",
-            "ambiguous-alpha.txt"
-          ],
-          "pisharp": [],
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-ambiguous",
-          "field": "selected",
-          "pi": "ambiguous-beta.txt",
-          "pisharp": null,
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-empty",
-          "field": "cursor",
-          "pi": {
-            "x": 1,
-            "y": 30,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 1,
-            "y": 36,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-empty",
-          "field": "candidates",
-          "pi": [
-            "src/",
-            "🙂.md",
-            "docs/",
-            "世界.txt",
-            "café.txt"
-          ],
-          "pisharp": [],
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-empty",
-          "field": "selected",
-          "pi": "src/",
-          "pisharp": null,
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-hidden",
-          "field": "cursor",
-          "pi": {
-            "x": 2,
-            "y": 30,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 2,
-            "y": 36,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-hidden",
-          "field": "candidates",
-          "pi": [
-            ".hidden-dir/",
-            ".hidden.txt",
-            ".pisharp-terminal-harness",
-            "🙂.md",
-            "世界.txt"
-          ],
-          "pisharp": [],
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-hidden",
-          "field": "selected",
-          "pi": ".hidden-dir/",
-          "pisharp": null,
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-quoted",
-          "field": "cursor",
-          "pi": {
-            "x": 4,
-            "y": 35,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 4,
-            "y": 36,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-quoted",
-          "field": "candidates",
-          "pi": [
-            "space name.txt"
-          ],
-          "pisharp": [],
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-quoted",
-          "field": "selected",
-          "pi": "space name.txt",
-          "pisharp": null,
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-space",
-          "field": "cursor",
-          "pi": {
-            "x": 3,
-            "y": 35,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 3,
-            "y": 36,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-space",
-          "field": "candidates",
-          "pi": [
-            "space name.txt"
-          ],
-          "pisharp": [],
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-space",
-          "field": "selected",
-          "pi": "space name.txt",
-          "pisharp": null,
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-src-continue",
-          "field": "cursor",
-          "pi": {
-            "x": 6,
-            "y": 34,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 6,
-            "y": 36,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-src-continue",
-          "field": "candidates",
-          "pi": [
-            "module/",
-            "main.cs"
-          ],
-          "pisharp": [],
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-src-continue",
-          "field": "selected",
-          "pi": "module/",
-          "pisharp": null,
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-src-dir",
-          "field": "cursor",
-          "pi": {
-            "x": 5,
-            "y": 33,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 5,
-            "y": 36,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-src-dir",
-          "field": "candidates",
-          "pi": [
-            "main.cs",
-            "module/",
-            "deep.cs"
-          ],
-          "pisharp": [],
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-src-dir",
-          "field": "selected",
-          "pi": "main.cs",
-          "pisharp": null,
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-unicode",
-          "field": "cursor",
-          "pi": {
-            "x": 3,
-            "y": 35,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 3,
-            "y": 36,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-unicode",
-          "field": "candidates",
-          "pi": [
-            "世界.txt"
-          ],
-          "pisharp": [],
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "at-unicode",
-          "field": "selected",
-          "pi": "世界.txt",
-          "pisharp": null,
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "clear-a",
-          "field": "cursor",
-          "pi": {
-            "x": 0,
-            "y": 34,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 0,
-            "y": 36,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "clear-a",
-          "field": "candidates",
-          "pi": [
-            "ambiguous-beta.txt",
-            "ambiguous-alpha.txt"
-          ],
-          "pisharp": [],
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "clear-a",
-          "field": "selected",
-          "pi": "ambiguous-beta.txt",
-          "pisharp": null,
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "clear-hidden",
-          "field": "cursor",
-          "pi": {
-            "x": 0,
-            "y": 30,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 0,
-            "y": 36,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "clear-hidden",
-          "field": "candidates",
-          "pi": [
-            ".hidden-dir/",
-            ".hidden.txt",
-            ".pisharp-terminal-harness",
-            "🙂.md",
-            "世界.txt"
-          ],
-          "pisharp": [],
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "clear-hidden",
-          "field": "selected",
-          "pi": ".hidden-dir/",
-          "pisharp": null,
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "clear-src",
-          "field": "cursor",
-          "pi": {
-            "x": 0,
-            "y": 34,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 0,
-            "y": 36,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "clear-src",
-          "field": "candidates",
-          "pi": [
-            "module/",
-            "main.cs"
-          ],
-          "pisharp": [],
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "clear-src",
-          "field": "selected",
-          "pi": "module/",
-          "pisharp": null,
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "clear-unicode",
-          "field": "cursor",
-          "pi": {
-            "x": 0,
-            "y": 35,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 0,
-            "y": 36,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "clear-unicode",
-          "field": "candidates",
-          "pi": [
-            "世界.txt"
-          ],
-          "pisharp": [],
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "clear-unicode",
-          "field": "selected",
-          "pi": "世界.txt",
-          "pisharp": null,
-          "classification": "path-completion-auto-trigger-and-application"
-        }
-      ],
-      "status": "fail",
-      "blockedBy": [
-        "path-completion-auto-trigger-and-application"
-      ],
+      "differences": [],
+      "status": "pass",
+      "blockedBy": [],
       "exit": {
         "pi": {
           "exitCode": 0,
@@ -13383,7 +12162,7 @@
           "edited line one\nedited line two 🙂edited line one"
         ],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pi-editor-2U2cqU/prompt.md",
+          "external-capture.path": "/tmp/pi-editor-2Lfskr/prompt.md",
           "external-capture.input": "original draft",
           "external-capture.mode": "644\n",
           "external-capture.directory-mode": "700\n"
@@ -13546,7 +12325,7 @@
           "edited line one\nedited line two 🙂edited line one"
         ],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pisharp-editor-b7033905c40e48f7ac24a3ab63591f30/prompt.md",
+          "external-capture.path": "/tmp/pisharp-editor-0553f083abdb47f181f65e8b96fbdd6c/prompt.md",
           "external-capture.input": "original draft",
           "external-capture.mode": "600\n",
           "external-capture.directory-mode": "700\n"
@@ -13743,7 +12522,7 @@
           "edited line one\nedited line two 🙂edited line one"
         ],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pi-editor-tZyUFP/prompt.md",
+          "external-capture.path": "/tmp/pi-editor-HpNdEm/prompt.md",
           "external-capture.input": "original draft",
           "external-capture.mode": "644\n",
           "external-capture.directory-mode": "700\n"
@@ -13906,7 +12685,7 @@
           "edited line one\nedited line two 🙂edited line one"
         ],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pisharp-editor-ee38998c91f84e64bdc83253f122bff9/prompt.md",
+          "external-capture.path": "/tmp/pisharp-editor-b81d7cdd54df4f3bad8490a2645a1e2a/prompt.md",
           "external-capture.input": "original draft",
           "external-capture.mode": "600\n",
           "external-capture.directory-mode": "700\n"
@@ -14079,7 +12858,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pi-editor-o8XE5D/prompt.md",
+          "external-capture.path": "/tmp/pi-editor-UNDMVR/prompt.md",
           "external-capture.input": "preserved draft"
         },
         "scenarioError": null
@@ -14216,7 +12995,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pisharp-editor-9c0c6149a48d4d8182cc9b2e19ce34cd/prompt.md",
+          "external-capture.path": "/tmp/pisharp-editor-823e2a7069b443898883861cc1883868/prompt.md",
           "external-capture.input": "preserved draft"
         },
         "scenarioError": null
@@ -14387,7 +13166,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pi-editor-K7jpIO/prompt.md",
+          "external-capture.path": "/tmp/pi-editor-5SqddK/prompt.md",
           "external-capture.input": "preserved draft"
         },
         "scenarioError": null
@@ -14524,7 +13303,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pisharp-editor-20642b6f439646b898a9f4acbde3c7ec/prompt.md",
+          "external-capture.path": "/tmp/pisharp-editor-d4ad8edfb3b84f739eb9ee95db3b4b14/prompt.md",
           "external-capture.input": "preserved draft"
         },
         "scenarioError": null
@@ -14651,7 +13430,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pi-editor-2k4EmH/prompt.md",
+          "external-capture.path": "/tmp/pi-editor-bk2ndh/prompt.md",
           "external-capture.input": "visual draft"
         },
         "scenarioError": null
@@ -14744,7 +13523,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pisharp-editor-58cefdbfd53b41378a2a6bd53824ca64/prompt.md",
+          "external-capture.path": "/tmp/pisharp-editor-845ecef8b62f43278c11351b9596badb/prompt.md",
           "external-capture.input": "visual draft"
         },
         "scenarioError": null
@@ -14871,7 +13650,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pi-editor-WyrPYW/prompt.md",
+          "external-capture.path": "/tmp/pi-editor-D0czaz/prompt.md",
           "external-capture.input": "visual draft"
         },
         "scenarioError": null
@@ -14964,7 +13743,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pisharp-editor-9b15bff000e947ae9e5bd4f1c211c16a/prompt.md",
+          "external-capture.path": "/tmp/pisharp-editor-2347e7ddb6014b34989a5692c573d510/prompt.md",
           "external-capture.input": "visual draft"
         },
         "scenarioError": null
@@ -15091,7 +13870,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pi-editor-lkErUw/prompt.md",
+          "external-capture.path": "/tmp/pi-editor-lqf0Sv/prompt.md",
           "external-capture.input": "editor draft"
         },
         "scenarioError": null
@@ -15184,7 +13963,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pisharp-editor-42f631f9718b4cc191eeac5a57341670/prompt.md",
+          "external-capture.path": "/tmp/pisharp-editor-d7c3f78a12434be1a47e4bfaae6e9a25/prompt.md",
           "external-capture.input": "editor draft"
         },
         "scenarioError": null
@@ -15311,7 +14090,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pi-editor-BFwbWS/prompt.md",
+          "external-capture.path": "/tmp/pi-editor-kaYY5N/prompt.md",
           "external-capture.input": "editor draft"
         },
         "scenarioError": null
@@ -15404,7 +14183,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pisharp-editor-4e260869e9a34927ab22ba5cb74572de/prompt.md",
+          "external-capture.path": "/tmp/pisharp-editor-b1e97766bab2495dbc53a0056bf0a7a2/prompt.md",
           "external-capture.input": "editor draft"
         },
         "scenarioError": null
@@ -15956,7 +14735,7 @@
           "edited line one\nedited line two 🙂edited line one"
         ],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pi-editor-LcyDsB/prompt.md",
+          "external-capture.path": "/tmp/pi-editor-NXYhQI/prompt.md",
           "external-capture.input": "journey draft"
         },
         "scenarioError": null
@@ -16255,12 +15034,14 @@
             "editorText": "@alpha",
             "cursor": {
               "x": 6,
-              "y": 20,
+              "y": 19,
               "visible": false,
               "editorRow": 0
             },
-            "candidates": [],
-            "selected": null,
+            "candidates": [
+              "alpha.txt"
+            ],
+            "selected": "alpha.txt",
             "position": null,
             "activeScreen": "alternate",
             "modes": [
@@ -16472,50 +15253,14 @@
           "edited line one\nedited line two 🙂edited line one"
         ],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pisharp-editor-4943dce502bd4c52b47aa6cbe1ee6734/prompt.md",
+          "external-capture.path": "/tmp/pisharp-editor-55fb3105a88245649298b1a29869bb8d/prompt.md",
           "external-capture.input": "journey draft"
         },
         "scenarioError": null
       },
-      "differences": [
-        {
-          "checkpoint": "path",
-          "field": "cursor",
-          "pi": {
-            "x": 6,
-            "y": 19,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 6,
-            "y": 20,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "path",
-          "field": "candidates",
-          "pi": [
-            "alpha.txt"
-          ],
-          "pisharp": [],
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "path",
-          "field": "selected",
-          "pi": "alpha.txt",
-          "pisharp": null,
-          "classification": "path-completion-auto-trigger-and-application"
-        }
-      ],
-      "status": "fail",
-      "blockedBy": [
-        "path-completion-auto-trigger-and-application"
-      ],
+      "differences": [],
+      "status": "pass",
+      "blockedBy": [],
       "exit": {
         "pi": {
           "exitCode": 0,
@@ -17060,7 +15805,7 @@
           "edited line one\nedited line two 🙂edited line one"
         ],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pi-editor-8ABcTs/prompt.md",
+          "external-capture.path": "/tmp/pi-editor-xRsvYz/prompt.md",
           "external-capture.input": "journey draft"
         },
         "scenarioError": null
@@ -17359,12 +16104,14 @@
             "editorText": "@alpha",
             "cursor": {
               "x": 6,
-              "y": 36,
+              "y": 35,
               "visible": false,
               "editorRow": 0
             },
-            "candidates": [],
-            "selected": null,
+            "candidates": [
+              "alpha.txt"
+            ],
+            "selected": "alpha.txt",
             "position": null,
             "activeScreen": "alternate",
             "modes": [
@@ -17576,50 +16323,14 @@
           "edited line one\nedited line two 🙂edited line one"
         ],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pisharp-editor-5f8aa1409e0d405ba031a198cf8927aa/prompt.md",
+          "external-capture.path": "/tmp/pisharp-editor-91fdad6cc2aa49de80151c69012b4bb0/prompt.md",
           "external-capture.input": "journey draft"
         },
         "scenarioError": null
       },
-      "differences": [
-        {
-          "checkpoint": "path",
-          "field": "cursor",
-          "pi": {
-            "x": 6,
-            "y": 35,
-            "visible": false,
-            "editorRow": 0
-          },
-          "pisharp": {
-            "x": 6,
-            "y": 36,
-            "visible": false,
-            "editorRow": 0
-          },
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "path",
-          "field": "candidates",
-          "pi": [
-            "alpha.txt"
-          ],
-          "pisharp": [],
-          "classification": "path-completion-auto-trigger-and-application"
-        },
-        {
-          "checkpoint": "path",
-          "field": "selected",
-          "pi": "alpha.txt",
-          "pisharp": null,
-          "classification": "path-completion-auto-trigger-and-application"
-        }
-      ],
-      "status": "fail",
-      "blockedBy": [
-        "path-completion-auto-trigger-and-application"
-      ],
+      "differences": [],
+      "status": "pass",
+      "blockedBy": [],
       "exit": {
         "pi": {
           "exitCode": 0,
@@ -17647,14 +16358,14 @@
       "cursor-unicode": 15,
       "multiline": 10,
       "history": 10,
-      "slash-completion": 0,
-      "path-completion": 0,
+      "slash-completion": 15,
+      "path-completion": 15,
       "bracketed-paste": 10,
       "escape-ctrl-c": 10,
       "external-editor": 10,
-      "journey": 0
+      "journey": 5
     },
-    "total": 65,
+    "total": 100,
     "maximum": 100
   }
 }
