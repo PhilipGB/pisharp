@@ -15418,7 +15418,7 @@
     "status_after_merge": "merged"
   },
   "interactive_streaming_cancellation_parity_2026_11_07": {
-    "status": "draft_open_unmerged",
+    "status": "merged_into_main",
     "branch": "milestone/interactive-streaming-cancellation-parity",
     "base_main": "c615fc17232886d76c5092f8d5b6cd5b22f418fe",
     "pi_revision": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
@@ -15629,6 +15629,189 @@
     "verification_file": "docs/parity/fixtures/interactive-streaming-cancellation-001/verification.json",
     "fixture_manifest": "docs/parity/fixtures/interactive-streaming-cancellation-001/fixture-manifest.json",
     "historical_evidence_unchanged": true,
-    "suggested_next_single_deliverable": "Correct the S02 reasoning block layout P1, then re-run interactive-streaming-cancellation-001."
+    "suggested_next_single_deliverable": "Correct the S02 reasoning block layout P1, then re-run interactive-streaming-cancellation-001.",
+    "merged_main": "03bfa4e87ebcac597fe89f1ac7506abf02aa2385",
+    "visual_follow_up": "Completed in interactive_visual_parity_2026_11_07"
+  },
+  "interactive_visual_parity_2026_11_07": {
+    "status": "draft_open_unmerged",
+    "branch": "milestone/interactive-visual-parity",
+    "base_main": "03bfa4e87ebcac597fe89f1ac7506abf02aa2385",
+    "source_sha": "689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47",
+    "pi_revision": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "fixture": "interactive-streaming-cancellation-001",
+    "deterministic_ui": {
+      "total": 100,
+      "maximum": 100,
+      "category_totals": {
+        "functional": 40,
+        "temporal": 20,
+        "visual": 30,
+        "cleanup": 10
+      },
+      "scenarios": {
+        "S01": {
+          "subtotal": 18,
+          "maximum": 18,
+          "visual": 6,
+          "differences": "0 text / 0 style / 0 layout at each size"
+        },
+        "S02": {
+          "subtotal": 18,
+          "maximum": 18,
+          "visual": 6,
+          "differences": "0 text / 0 style / 0 layout at each size"
+        },
+        "S03": {
+          "subtotal": 18,
+          "maximum": 18,
+          "visual": 6,
+          "differences": "0 text / 0 style / 0 layout at each size"
+        },
+        "S04": {
+          "subtotal": 23,
+          "maximum": 23,
+          "visual": 6,
+          "differences": "0 text / 0 style / 0 layout at each size"
+        },
+        "S05": {
+          "subtotal": 23,
+          "maximum": 23,
+          "visual": 6,
+          "differences": "0 text / 0 style / 0 layout at each size"
+        }
+      },
+      "calibration": {
+        "normalized_match": true,
+        "sizes": [
+          "80x24",
+          "120x40"
+        ],
+        "note": "Same-Pi calibration is exact at both sizes after the existing Elapsed/Took and partial-usage masking. The final bundle contains clean reruns after an S04 second-prompt repaint race and an S05 calibration process-state/teardown race; no assertion, timeout or normalization was changed."
+      },
+      "findings": 0
+    },
+    "capture_provenance": {
+      "consistent": true,
+      "pi": {
+        "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+        "branch": "HEAD",
+        "dirty": false,
+        "tracked_changes": []
+      },
+      "pisharp": {
+        "sha": "689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47",
+        "branch": "milestone/interactive-visual-parity",
+        "dirty": false,
+        "tracked_changes": [],
+        "artifact": {
+          "built_from_sha": "689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47",
+          "file": "PiSharp.Cli.dll",
+          "sha256": "9cfb2a8bb0ade07ec218eb432a9fdfd6c098654e86efe7de34dfba743922b839",
+          "deps_sha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
+          "runtime_config_sha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a",
+          "source_dirty": false
+        }
+      }
+    },
+    "corrections": [
+      {
+        "id": "S02-reasoning-block-layout",
+        "severity": "P1",
+        "change": "Streamed reasoning chunks remain one live assistant block. Status rows appended during streaming stay after it, and committed assistant segments are inserted ahead of trailing status rows.",
+        "pi_contract": "One reasoning section, one hidden Thinking... placeholder, stable transcript rows and cursor.",
+        "tests": [
+          "ReasoningStreamingLayoutTests.StreamedReasoningRemainsOneBlockWithOneHiddenPlaceholder",
+          "ReasoningStreamingLayoutTests.HiddenReasoningKeepsOnePlaceholderAcrossResize"
+        ],
+        "evidence": "S02 zero text/style/layout differences at every checkpoint and at exit, both sizes."
+      },
+      {
+        "id": "S02-reasoning-italic-style",
+        "severity": "P2",
+        "change": "No production change: the streaming thinking style already emitted thinkingText plus italic. The measured difference came from the displaced baseline rows.",
+        "pi_contract": "Visible reasoning, wrapped continuations and the hidden placeholder are italic; the answer is not.",
+        "tests": [
+          "ReasoningStreamingLayoutTests.VisibleReasoningUsesPiItalicThinkingStyle"
+        ],
+        "evidence": "S02 zero style differences at every checkpoint, both sizes."
+      },
+      {
+        "id": "S02-reasoning-status-style",
+        "severity": "P2",
+        "change": "TerminalScreen resolves the active model thinking level and the compositor uses the matching thinking token for the editor border and Working indicator.",
+        "pi_contract": "Reasoning model at medium uses thinkingMedium rgb(6391244); off/non-reasoning keeps thinkingOff rgb(7108219).",
+        "tests": [
+          "TerminalScreenCompositorTests.WorkingRuleUsesPiThinkingLevelColor"
+        ],
+        "evidence": "S02 status rows and border rows match at both sizes."
+      },
+      {
+        "id": "S01-code-syntax-builtin-highlight",
+        "severity": "P2",
+        "change": "Added the highlight.js Python built_in set to the existing syntax token table ahead of generic keyword handling.",
+        "pi_contract": "print, len and str use syntaxType; user identifiers and strings keep their existing styles.",
+        "tests": [
+          "TerminalMarkdownTests.PythonBuiltinsUsePiSyntaxTypeColorWithoutCapturingUserNamesOrStrings"
+        ],
+        "evidence": "S01 zero style differences at every checkpoint, both sizes."
+      },
+      {
+        "id": "S05-tool-cancel-error-wording",
+        "severity": "P2",
+        "change": "A turn interrupted with an aborted builtin tool renders Pi's Error: This operation was aborted through the existing error transcript path; text-only cancellation keeps Operation aborted.",
+        "pi_contract": "Command aborted tool result followed by Error: This operation was aborted.",
+        "tests": [
+          "ToolCancellationPresentationTests.CancelledToolUsesPiErrorWordingAndErrorStyle",
+          "ToolCancellationPresentationTests.SuccessfulToolCancellationKeepsTextCancellationWording",
+          "ToolCancellationPresentationTests.OrdinaryToolFailureDoesNotBecomeAToolCancellationMessage",
+          "ToolCancellationPresentationTests.TextOnlyCancellationKeepsPiOperationAbortedWording"
+        ],
+        "evidence": "S05 zero text differences at every checkpoint, both sizes."
+      },
+      {
+        "id": "S05-tool-cancel-error-style",
+        "severity": "P2",
+        "change": "The corrected wording uses the same generic error transcript line, so the error style covers the Pi text span without a separate cancellation renderer.",
+        "pi_contract": "The full cancellation error row uses the error token.",
+        "tests": [
+          "ToolCancellationPresentationTests.CancelledToolUsesPiErrorWordingAndErrorStyle"
+        ],
+        "evidence": "S05 zero style differences at every checkpoint, both sizes."
+      }
+    ],
+    "cross_component_probe": {
+      "test": "CrossComponentVisualCompositionTests.ReasoningPythonBuiltinsAndToolCancellationComposeInOneTranscript",
+      "coverage": "Reasoning start/toggle, Python builtins, Bash cancellation and idle in one transcript at 80x24 and 120x40; ordering, single-instance markers and reasoning/syntax/error styles."
+    },
+    "verification": {
+      "report_verifier": "301 checks, 0 failed",
+      "capture_provenance": "Pi and PiSharp clean; every case bound to exact SHA, worktree state and published PiSharp artifact hash",
+      "contract_evaluation": "Pi and PiSharp pass the frozen functional/temporal/cleanup contract at both sizes",
+      "forbidden_stream_scan": "0 occurrences across post-cancellation render frames",
+      "finding_predicates": "0 findings; 0 unmatched differences",
+      "terminal_python": "66 passed",
+      "focused_dotnet": "221 passed, 0 failed (reasoning layout, bounded transcript trimming, cancellation presentation, cross-component composition, compositor, screen, transcript, markdown and theme tests)",
+      "full_dotnet": "Exact-head Linux CI (the local full run reached 3,990 passes and hit a pre-existing NativeExtensionUiTests.PackageInputListenersRunBeforeFocusedCustomComponents hang reproduced on base 03bfa4e8; the two parallel-run failures pass individually)",
+      "format": "clean",
+      "warnings_as_errors": "Exact-head Linux CI build step",
+      "docs": "174 documents, 794 references",
+      "evaluation_tests": "32 passed (evaluator, verifier and negative controls)"
+    },
+    "receipt": "docs/parity/fixtures/interactive-streaming-cancellation-001/README.md",
+    "report": "docs/parity/fixtures/interactive-streaming-cancellation-001/report.json",
+    "comparison": "docs/parity/fixtures/interactive-streaming-cancellation-001/comparison.json",
+    "ui_report": "docs/parity/fixtures/interactive-streaming-cancellation-001/ui-report.json",
+    "verification_file": "docs/parity/fixtures/interactive-streaming-cancellation-001/verification.json",
+    "fixture_manifest": "docs/parity/fixtures/interactive-streaming-cancellation-001/fixture-manifest.json",
+    "suggested_next_single_deliverable": "Select the next verified-capability gap from the execution ledger.",
+    "bounded_transcript": {
+      "change": "TrimTranscript now removes leading segments through RemoveLeadingSegment, which decrements the live assistant insertion index so bounded eviction cannot move reasoning behind trailing status rows.",
+      "tests": [
+        "TerminalTranscriptBufferTrimTests.CharacterTrimmingKeepsLiveAssistantBeforeTrailingStatus",
+        "TerminalTranscriptBufferTrimTests.SegmentTrimmingKeepsLiveAssistantBeforeTrailingStatus"
+      ],
+      "coverage": "Character-limit and segment-count trimming while reasoning and status are live, plus committed reasoning/answer/status ordering."
+    }
   }
 }

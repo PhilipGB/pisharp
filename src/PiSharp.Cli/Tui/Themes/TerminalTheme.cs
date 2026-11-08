@@ -93,6 +93,18 @@ internal sealed class TerminalTheme
     }
 
     public static TerminalTheme Default => s_default.Value;
+
+    /// <summary>Maps Pi's thinking level to the theme token Pi uses for the editor border and working indicator.</summary>
+    internal static string ThinkingToken(string? level) => level?.ToLowerInvariant() switch
+    {
+        "minimal" => "thinkingMinimal",
+        "low" => "thinkingLow",
+        "medium" => "thinkingMedium",
+        "high" => "thinkingHigh",
+        "xhigh" => "thinkingXhigh",
+        "max" => "thinkingMax",
+        _ => "thinkingOff"
+    };
     public string Name { get; }
     public string Appearance { get; }
     internal TerminalColorMode Mode { get; }

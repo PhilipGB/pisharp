@@ -8,11 +8,51 @@
 
 ## Current state — 2026-11-07
 
-Current status is based on `main` at `c615fc17232886d76c5092f8d5b6cd5b22f418fe`. The latest merged milestones are [Wrapped Bash command style parity](parity/fixtures/wrapped-bash-command-style-parity-2026-11-06/README.md) (PR #46, `c615fc17`), [Bash tool output collapse and expansion parity](parity/fixtures/collapsed-tool-output-parity-2026-11-06/README.md) (PR #45, `0984bfc9`) and [multi-step agent execution and recovery parity](parity/fixtures/objective-agent-parity-002-2026-11-06/README.md) (PR #44, `7748479c`). [Interactive streaming, reasoning, tool progress and cancellation parity evaluation](parity/fixtures/interactive-streaming-cancellation-001/README.md) is implemented on branch `milestone/interactive-streaming-cancellation-parity` and remains draft PR [#47](https://github.com/PhilipGB/pisharp/pull/47), open and unmerged. Global parity is `in_progress` at **21 verified, 142 in progress and 31 not started** across the 194 required capabilities, derived from the committed execution ledger. The next single deliverable is to correct the confirmed S02 reasoning-block layout P1 (one reasoning block, one hidden placeholder, stable transcript rows), then re-run this fixture before selecting the next capability. Open architecture risks are tracked in the [architecture document](architecture.md#open-architecture-risks).
+Current status is based on `main` at `03bfa4e87ebcac597fe89f1ac7506abf02aa2385`, the merge of PR #47. The latest merged milestones are [Interactive streaming, reasoning, tool progress and cancellation parity evaluation](parity/fixtures/interactive-streaming-cancellation-001/README.md) (PR #47, `03bfa4e8`), [Wrapped Bash command style parity](parity/fixtures/wrapped-bash-command-style-parity-2026-11-06/README.md) (PR #46, `c615fc17`), [Bash tool output collapse and expansion parity](parity/fixtures/collapsed-tool-output-parity-2026-11-06/README.md) (PR #45, `0984bfc9`) and [multi-step agent execution and recovery parity](parity/fixtures/objective-agent-parity-002-2026-11-06/README.md) (PR #44, `7748479c`). The [interactive visual parity](parity/fixtures/interactive-streaming-cancellation-001/README.md) repair milestone is implemented on branch `milestone/interactive-visual-parity` and remains a draft PR, open and unmerged. Global parity remains `in_progress` at **21 verified, 142 in progress and 31 not started** across the 194 required capabilities, derived from the committed execution ledger. The next single deliverable is to select the next verified-capability gap from the execution ledger. Open architecture risks are tracked in the [architecture document](architecture.md#open-architecture-risks).
 
 The milestone entries below retain their historical wording and are superseded by this section wherever they describe a milestone as active or a merged PR as open.
 
-## Milestone in review — Interactive Streaming, Reasoning, Tool Progress and Cancellation Evaluation — 2026-11-07
+## Milestone in review — Interactive Visual Parity — 2026-11-07
+
+This bounded follow-up corrects the six visual differences exposed by the merged
+`interactive-streaming-cancellation-001` evaluation and re-runs the same
+artifact-bound capture pipeline. Final evidence is on source
+`689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47` against the unchanged Pi pin
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The deterministic score is
+**100/100**: functional **40/40**, temporal **20/20**, visual **30/30** and
+cleanup **10/10**. All five scenarios are 6/6 visual at 80x24 and 120x40; every
+checkpoint has zero text, style and layout differences; same-Pi calibration is
+exact at both sizes after the existing normalization; and no finding predicate
+matches.
+
+The P1 reasoning defect is fixed by keeping streamed reasoning in one live
+assistant block and keeping status rows after that block while committing
+assistant segments ahead of them. The S01 Python builtin set now follows
+highlight.js `built_in` classification. The Working rule and editor border use
+the active thinking-level theme token. A cancelled builtin tool renders Pi's
+`Error: This operation was aborted` through the existing error line path, while
+text-only cancellation keeps `Operation aborted`. The reported S02 italic
+difference was an artifact of the displaced rows; a styled-cell regression now
+pins the already-correct thinking style. A cross-component regression composes
+reasoning, a toggle, Python builtins, Bash cancellation and idle in one
+transcript at both widths. Bounded-transcript regressions also verify that
+character-limit and segment-count eviction keep the live insertion point aligned,
+preserving reasoning, answer and status order while streaming and after commit.
+
+The fresh capture-owned publish binds DLL
+`9cfb2a8bb0ade07ec218eb432a9fdfd6c098654e86efe7de34dfba743922b839`, deps
+`15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af` and runtime
+config `f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a` to that
+source. The final bundle contains clean reruns after an S04 second-prompt
+repaint race and an S05 calibration process-state/teardown race; no assertion,
+timeout or normalization was changed. See the
+[receipt](parity/fixtures/interactive-streaming-cancellation-001/README.md),
+[report](parity/fixtures/interactive-streaming-cancellation-001/report.json),
+[comparison](parity/fixtures/interactive-streaming-cancellation-001/comparison.json),
+[UI report](parity/fixtures/interactive-streaming-cancellation-001/ui-report.json)
+and [verification](parity/fixtures/interactive-streaming-cancellation-001/verification.json).
+
+## Merged milestone — Interactive Streaming, Reasoning, Tool Progress and Cancellation Evaluation — 2026-11-07
 
 This evaluation adds fixture `interactive-streaming-cancellation-001` with five
 deterministic scenarios at 80x24 and 120x40 dark fullscreen: partial text
@@ -35,8 +75,8 @@ tokens are scanned across every render frame after the cancellation action, not
 only named checkpoints. Finding assignment uses explicit
 path/checkpoint/value predicates; unmatched differences fail validation.
 
-The deterministic score is **88/100**: functional **40/40**, temporal **20/20**,
-visual **18/30** and cleanup **10/10**. S03 and S04 match exactly at both sizes.
+The historical baseline score is **88/100**: functional **40/40**, temporal
+**20/20**, visual **18/30** and cleanup **10/10**. S03 and S04 match exactly at both sizes.
 One P1 is confirmed: S02 splits streamed reasoning around toggle status lines,
 renders two `Thinking...` placeholders and shifts the final transcript by three
 rows. Five P2s are confirmed: Python builtin `print` syntax colour (S01),
@@ -54,7 +94,8 @@ scans, and unmatched differences without an explicit predicate. See the
 [UI report](parity/fixtures/interactive-streaming-cancellation-001/ui-report.json)
 and [verification](parity/fixtures/interactive-streaming-cancellation-001/verification.json).
 Raw PTY evidence remains under the Git-ignored
-`artifacts/parity/interactive-streaming-cancellation-001/` directory.
+`artifacts/parity/interactive-streaming-cancellation-001/` directory. The six
+visual findings below were corrected by the follow-up milestone above.
 
 ## Completed milestone — Bash Tool Output Collapse and Expansion Parity — 2026-11-06
 

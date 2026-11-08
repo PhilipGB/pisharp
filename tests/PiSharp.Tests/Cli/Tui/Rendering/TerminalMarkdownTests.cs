@@ -82,6 +82,22 @@ public sealed class TerminalMarkdownTests
     }
 
     [Fact]
+    public void PythonBuiltinsUsePiSyntaxTypeColorWithoutCapturingUserNamesOrStrings()
+    {
+        var theme = TerminalThemeCatalog.LoadBuiltIn("dark", TerminalColorMode.TrueColor);
+        var code = "print(len(str(123)))\nuser_value = print\nlabel = \"print\"";
+        var highlighted = TerminalSyntaxHighlighter.Highlight(code, "python", theme);
+
+        Assert.Contains(theme.Fg("syntaxType") + "print", highlighted);
+        Assert.Contains(theme.Fg("syntaxType") + "len", highlighted);
+        Assert.Contains(theme.Fg("syntaxType") + "str", highlighted);
+        Assert.Contains(theme.Fg("syntaxNumber") + "123", highlighted);
+        Assert.Contains(theme.Fg("syntaxString") + "\"print\"", highlighted);
+        Assert.DoesNotContain(theme.Fg("syntaxType") + "user_value", highlighted);
+        Assert.DoesNotContain(theme.Fg("syntaxType") + "label", highlighted);
+    }
+
+    [Fact]
     public void InlineStylesRestoreEnclosingSgrStateAfterNestedSpans()
     {
         var theme = TerminalThemeCatalog.LoadBuiltIn("dark", TerminalColorMode.TrueColor);

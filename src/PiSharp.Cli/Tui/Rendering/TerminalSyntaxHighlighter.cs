@@ -38,6 +38,18 @@ internal static partial class TerminalSyntaxHighlighter
         "echo", "printf", "cd", "pwd", "read", "test", "source", "unset", "set", "shift", "trap"
     };
 
+    // highlight.js classifies these Python names as built_in, which Pi maps to syntaxType.
+    private static readonly HashSet<string> s_pythonBuiltIns = new(StringComparer.Ordinal)
+    {
+        "__import__", "abs", "all", "any", "ascii", "bin", "bool", "breakpoint", "bytearray", "bytes",
+        "callable", "chr", "classmethod", "compile", "complex", "delattr", "dict", "dir", "divmod",
+        "enumerate", "eval", "exec", "filter", "float", "format", "frozenset", "getattr", "globals",
+        "hasattr", "hash", "help", "hex", "id", "input", "int", "isinstance", "issubclass", "iter",
+        "len", "list", "locals", "map", "max", "memoryview", "min", "next", "object", "oct", "open",
+        "ord", "pow", "print", "property", "range", "repr", "reversed", "round", "set", "setattr",
+        "slice", "sorted", "staticmethod", "str", "sum", "super", "tuple", "type", "vars", "zip"
+    };
+
     private static readonly Regex s_tokenPattern = TokenPattern();
 
     public static bool Supports(string? language) => s_supportedLanguages.Contains(NormalizeLanguage(language));
@@ -99,6 +111,10 @@ internal static partial class TerminalSyntaxHighlighter
                 else if (normalized == "python" && (identifier is "True" or "False" or "None"))
                 {
                     tokenStyle = "syntaxNumber";
+                }
+                else if (normalized == "python" && s_pythonBuiltIns.Contains(identifier))
+                {
+                    tokenStyle = "syntaxType";
                 }
                 else if (normalized == "json")
                 {

@@ -67,7 +67,8 @@ internal sealed class TerminalPresentation : IDisposable
                 queryTerminalColors: !Console.IsInputRedirected && !Console.IsOutputRedirected,
                 followTerminalAppearance: ThemeFollowsTerminalAppearance(ActiveThemeSetting()), deferInitialRender: true,
                 minimumRenderInterval: TimeSpan.FromMilliseconds(16),
-                useAlternateScreen: _projectBinding.Settings.TuiMode != "regular");
+                useAlternateScreen: _projectBinding.Settings.TuiMode != "regular",
+                getThinkingLevel: () => _modelBinding.Thinking);
             if (terminalScreen is not null) terminalMode?.AttachScreen(terminalScreen);
         }
         catch

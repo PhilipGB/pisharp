@@ -3,8 +3,8 @@
   "fixture": "interactive-streaming-cancellation-001",
   "title": "Interactive streaming, reasoning, tool progress and cancellation parity",
   "piReference": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-  "baseMain": "c615fc17232886d76c5092f8d5b6cd5b22f418fe",
-  "branch": "milestone/interactive-streaming-cancellation-parity",
+  "baseMain": "03bfa4e87ebcac597fe89f1ac7506abf02aa2385",
+  "branch": "milestone/interactive-visual-parity",
   "captureSource": "branch working tree",
   "scenariosManifest": "tools/parity/interactive_streaming_cancellation/scenarios.json",
   "evaluate": "tools/parity/interactive_streaming_cancellation/evaluate.py",
@@ -103,7 +103,7 @@
       "id": "S05",
       "title": "Cancellation while Bash is running",
       "fixture": "s05-tool-cancellation.json",
-      "sha256": "d137dd905a1d6b2b4785d451fbb2f02029ec0a0af5c6dce40b8d458a148335ee",
+      "sha256": "c332f9cc8345de7f7d2dad0fabc50fbc4fc14c64d2e9f09288f3f969feb016ef",
       "checkpoints": [
         "s05-01-tool-announced",
         "s05-02-tool-process-starts",
@@ -138,19 +138,19 @@
     "pisharp": [
       {
         "artifact": {
-          "builtFromSha": "d1b844acb51e012a9494acbe75745bc87b54c531",
+          "builtFromSha": "689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47",
           "depsFile": "PiSharp.Cli.deps.json",
           "depsSha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
           "file": "PiSharp.Cli.dll",
           "runtimeConfigFile": "PiSharp.Cli.runtimeconfig.json",
           "runtimeConfigSha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a",
-          "sha256": "a15c51f1450a3a5dde7a0631e7473d1ae89ec5638c519333d2254a6741676e51",
-          "size": 3429888,
+          "sha256": "9cfb2a8bb0ade07ec218eb432a9fdfd6c098654e86efe7de34dfba743922b839",
+          "size": 3433472,
           "sourceDirty": false
         },
-        "branch": "milestone/interactive-streaming-cancellation-parity",
+        "branch": "milestone/interactive-visual-parity",
         "dirty": false,
-        "sha": "d1b844acb51e012a9494acbe75745bc87b54c531",
+        "sha": "689bd09b5c22ff151c4e7eb3b6c4f4c180f54d47",
         "trackedChanges": []
       }
     ]

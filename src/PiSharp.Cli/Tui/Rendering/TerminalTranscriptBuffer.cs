@@ -5,8 +5,8 @@ namespace PiSharp.Cli.Tui;
 /// <summary>Owns bounded active transcript state, tool previews, and post-screen scrollback capture.</summary>
 internal sealed class TerminalTranscriptBuffer
 {
-    private const int MaximumTranscriptCharacters = 1_000_000;
-    private const int MaximumTranscriptSegments = 10_000;
+    internal const int MaximumTranscriptCharacters = 1_000_000;
+    internal const int MaximumTranscriptSegments = 10_000;
     private const int MaximumCapturedCharacters = 4_000_000;
     private const int ToolPreviewContentRows = 10;
     private const int MaximumRememberedLiveTools = 1_024;
@@ -19,6 +19,7 @@ internal sealed class TerminalTranscriptBuffer
     private Func<TerminalTheme, string>? _latestStatusRenderer;
     private string? _latestCapturedStatus;
     private readonly Dictionary<string, (TranscriptSegment Segment, CapturedChunkBuilder? Capture)> _liveTools = new(StringComparer.Ordinal);
+    private int? _assistantInsertIndex;
 
     public bool IsExpanded { get; private set; }
     public bool HasContent => _segments.Count > 0;
@@ -29,6 +30,7 @@ internal sealed class TerminalTranscriptBuffer
         string? capturedText = null, string? collapsedPreviewText = null, bool isPromptStart = false)
     {
         if (text.Length == 0) return;
+        EndAssistantMessage();
         Capture(capturedText ?? text, isError);
         if (!isPromptStart && !isToolResult && _segments.Count > 0 && !_segments[^1].IsCollapsible &&
             _segments[^1].MarkdownSource is null && _segments[^1].ThemeRenderer is null)
@@ -47,7 +49,7 @@ internal sealed class TerminalTranscriptBuffer
     {
         if (rendered.Length == 0) return;
         Capture(rendered, isError);
-        _segments.Add(new(false, new StringBuilder(rendered), null,
+        AppendAssistantSegment(new(false, new StringBuilder(rendered), null,
             source.Length <= MaximumTranscriptCharacters ? source : null, isPromptStart: isPromptStart));
         _transcriptCharacters += rendered.Length;
         TrimTranscript();
@@ -70,7 +72,7 @@ internal sealed class TerminalTranscriptBuffer
         var selectedRenderer = hidden ? hiddenRenderer : visibleRenderer;
         var rendered = selectedRenderer(theme);
         var captured = CaptureThinking(hidden ? hiddenText : boundedSource);
-        _segments.Add(new(false, new StringBuilder(rendered), null,
+        AppendAssistantSegment(new(false, new StringBuilder(rendered), null,
             themeRenderer: selectedRenderer, isThinkingBlock: true, thinkingSource: boundedSource,
             hiddenThinkingText: hiddenText, visibleThinkingRenderer: visibleRenderer,
             hiddenThinkingRenderer: hiddenRenderer, thinkingHidden: hidden, capturedThinkingChunk: captured,
@@ -80,6 +82,26 @@ internal sealed class TerminalTranscriptBuffer
         Revision++;
     }
 
+    public void BeginAssistantMessage() => _assistantInsertIndex ??= _segments.Count;
+
+    public void EndAssistantMessage() => _assistantInsertIndex = null;
+
+    /// <summary>Keeps streamed assistant content ahead of status rows appended while it is live, as Pi keeps its streaming component ahead of showStatus output.</summary>
+    private void AppendAssistantSegment(TranscriptSegment segment)
+    {
+        var index = _segments.Count;
+        if (_assistantInsertIndex is { } start && start <= _segments.Count)
+        {
+            var onlyStatusRowsAfterStart = true;
+            for (var current = start; current < _segments.Count; current++)
+                if (!_segments[current].IsStatusMessage) { onlyStatusRowsAfterStart = false; break; }
+            if (onlyStatusRowsAfterStart) index = start;
+        }
+        if (index == _segments.Count) _segments.Add(segment);
+        else _segments.Insert(index, segment);
+        if (_assistantInsertIndex is not null) _assistantInsertIndex = index + 1;
+    }
+
     public void AppendThemed(string rendered, bool isError, bool isToolResult,
         Func<TerminalTheme, string> themeRenderer, string capturedText, string? collapsedPreviewText = null,
         Func<TerminalTheme, string>? collapsedRenderer = null, bool isCollapsible = false,
@@ -87,6 +109,7 @@ internal sealed class TerminalTranscriptBuffer
     {
         ArgumentNullException.ThrowIfNull(themeRenderer);
         if (rendered.Length == 0) return;
+        EndAssistantMessage();
         Capture(capturedText, isError);
         var collapsible = isToolResult || isCollapsible;
         _segments.Add(new(collapsible, new StringBuilder(rendered),
@@ -106,6 +129,7 @@ internal sealed class TerminalTranscriptBuffer
         ArgumentNullException.ThrowIfNull(expandedRenderer);
         ArgumentNullException.ThrowIfNull(collapsedRenderer);
         if (rendered.Length == 0) return;
+        EndAssistantMessage();
 
         var capture = CaptureReplaceable(captured, isError: true);
         var segment = new TranscriptSegment(true, new StringBuilder(rendered), collapsed,
@@ -148,6 +172,7 @@ internal sealed class TerminalTranscriptBuffer
         Func<TerminalTheme, string> expandedRenderer, Func<TerminalTheme, string> collapsedRenderer,
         string captured, bool isError, bool finished, Func<int, string>? collapsedPreviewBuilder = null)
     {
+        EndAssistantMessage();
         if (!_liveTools.TryGetValue(id, out var row) || !_segments.Contains(row.Segment))
         {
             var chunk = row.Capture;
@@ -234,13 +259,28 @@ internal sealed class TerminalTranscriptBuffer
         return GetText(width, _latestStatusRenderer is { } renderLatest ? () => renderLatest(theme) : null);
     }
 
-    private string GetText(int width, Func<string>? latestStatus, List<int>? promptOffsets = null)
+    /// <summary>Renders the retained transcript with live assistant content at its streaming position before trailing status rows.</summary>
+    public string GetTextWithLiveAssistant(int width, string liveAssistantText, out int insertionOffset) =>
+        GetText(width, latestStatus: null, promptOffsets: null, liveAssistantText, out insertionOffset);
+
+    private string GetText(int width, Func<string>? latestStatus, List<int>? promptOffsets = null) =>
+        GetText(width, latestStatus, promptOffsets, liveAssistantText: null, out _);
+
+    private string GetText(int width, Func<string>? latestStatus, List<int>? promptOffsets,
+        string? liveAssistantText, out int insertionOffset)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(width, 1);
         var output = new StringBuilder(_transcriptCharacters);
+        insertionOffset = -1;
         var previousToolResult = false;
-        foreach (var segment in _segments)
+        for (var index = 0; index < _segments.Count; index++)
         {
+            if (liveAssistantText is not null && insertionOffset < 0 && _assistantInsertIndex == index)
+            {
+                insertionOffset = output.Length;
+                output.Append(liveAssistantText);
+            }
+            var segment = _segments[index];
             // Pi starts every tool execution component with a spacer row; consecutive
             // bounded bash results therefore gain one blank row between them.
             if (previousToolResult && segment.CollapsedPreviewBuilder is not null) output.Append('\n');
@@ -258,6 +298,11 @@ internal sealed class TerminalTranscriptBuffer
                 promptOffsets.Add(output.Length + offset);
             }
             output.Append(text);
+        }
+        if (liveAssistantText is not null && insertionOffset < 0)
+        {
+            insertionOffset = output.Length;
+            output.Append(liveAssistantText);
         }
         return output.ToString();
     }
@@ -331,6 +376,7 @@ internal sealed class TerminalTranscriptBuffer
         _captureTruncated = false;
         _latestStatusRenderer = null;
         _latestCapturedStatus = null;
+        _assistantInsertIndex = null;
         _liveToolOrder.Clear();
         Revision++;
     }
@@ -353,7 +399,7 @@ internal sealed class TerminalTranscriptBuffer
             {
                 excess -= first.Text.Length;
                 _transcriptCharacters -= first.Text.Length;
-                _segments.RemoveAt(0);
+                RemoveLeadingSegment();
                 continue;
             }
 
@@ -383,8 +429,15 @@ internal sealed class TerminalTranscriptBuffer
         while (_segments.Count > MaximumTranscriptSegments)
         {
             _transcriptCharacters -= _segments[0].Text.Length;
-            _segments.RemoveAt(0);
+            RemoveLeadingSegment();
         }
+    }
+
+    /// <summary>Keeps the live assistant insertion point aligned when the bounded transcript evicts its oldest segment.</summary>
+    private void RemoveLeadingSegment()
+    {
+        _segments.RemoveAt(0);
+        if (_assistantInsertIndex is { } index) _assistantInsertIndex = Math.Max(0, index - 1);
     }
 
     private void Capture(string text, bool isError)

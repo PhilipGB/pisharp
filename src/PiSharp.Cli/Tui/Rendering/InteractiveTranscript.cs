@@ -21,6 +21,7 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
         workingDirectory ?? Environment.CurrentDirectory, () => screen?.ToolResultsExpanded ?? false, terminalEnvironment);
     private bool _hideThinkingBlock = hideThinking;
     private string? _lastFinishReason;
+    private bool _cancelledToolInTurn;
 
     public bool HasAssistantOutput { get; private set; }
     public int ExitCode { get; private set; }
@@ -129,7 +130,9 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
     public void Render(AgentLifecycleEvent update)
     {
         ArgumentNullException.ThrowIfNull(update);
-        if (update.Type is not ("model_text_delta" or "model_content_update") && !DeferAssistantCommit(update))
+        var deferReasoning = update.Type == "reasoning_delta" && _assistantThinking.Length > 0;
+        if (update.Type is not ("model_text_delta" or "model_content_update") && !deferReasoning &&
+            !DeferAssistantCommit(update))
         {
             CommitAssistantThinkingText();
             CommitAssistantText();
@@ -146,10 +149,10 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
                 if (update.PromptMessage is { } promptMessage &&
                     PiSharpCustomMessageProjection.TryRead(promptMessage, out var customMessage) &&
                     !customMessage.Display) break;
+                _cancelledToolInTurn = false;
                 screen.AppendUserMessage(Safe(update.Text ?? ""), update.Images);
                 break;
             case "model_text_delta" when !string.IsNullOrEmpty(update.Text):
-                CommitAssistantThinkingText();
                 var assistantText = Safe(update.Text);
                 if (screen is null) output.Write(assistantText);
                 else
@@ -220,7 +223,9 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
             case "turn_interrupted":
                 screen?.ClearToolTimers();
                 if (screen is null) status.WriteLine("Interrupted.");
-                else screen.AppendThemedTranscriptLine("Operation aborted", "error", isError: true);
+                else screen.AppendThemedTranscriptLine(_cancelledToolInTurn
+                    ? "Error: This operation was aborted"
+                    : "Operation aborted", "error", isError: true);
                 break;
         }
     }
@@ -318,6 +323,10 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
 
     private void FinishTool(AgentLifecycleEvent update)
     {
+        if (update.IsError == true && update.Error is { } toolError &&
+            (toolError == "Command aborted" ||
+             toolError.EndsWith("\n\nCommand aborted", StringComparison.Ordinal)))
+            _cancelledToolInTurn = true;
         if (update.Tool == "bash" && update.OperationId is { } id && screen is not null)
         {
             var output = update.Text is { Length: > 0 } completeOutput
