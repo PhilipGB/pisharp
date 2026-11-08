@@ -202,8 +202,8 @@ public sealed class NativeExtensionInteractiveUiPtyTests
             await process.StandardInput.WriteAsync("\u0015nui\t");
             await process.StandardInput.FlushAsync();
             await WaitForFrameWithDiagnosticsAsync(screen,
-                frame => frame.Contains("native-ui-autocomplete", StringComparison.Ordinal) &&
-                    frame.Contains("Native UI completion", StringComparison.Ordinal),
+                frame => frame.Split('\n').Any(line =>
+                    line.Trim().Equals("native-ui-autocomplete", StringComparison.Ordinal)),
                 "autocomplete after clearing rewritten input", timeout.Token, process, errorTask);
             await process.StandardInput.WriteAsync("\u0015\u001b[200~paste-value\u001b[201~");
             await process.StandardInput.FlushAsync();

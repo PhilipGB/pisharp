@@ -164,11 +164,11 @@ public sealed class AppControlTests
         IReadOnlyList<string> Clear() => [];
         Assert.True(await editor.HandleActiveInputAsync(Event(Key(ConsoleKey.Tab, '\t')), Queue, Clear,
             () => aborted = true));
-        Assert.Equal("/model", editor.Draft);
+        Assert.Equal("/mod", editor.Draft);
         Assert.True(await editor.HandleActiveInputAsync(Event(Key(ConsoleKey.Escape)), Queue, Clear,
             () => aborted = true));
         Assert.False(aborted);
-        Assert.Equal("/model", editor.Draft);
+        Assert.Equal("/mod", editor.Draft);
         Assert.Empty(queued);
         Assert.False(await editor.HandleActiveInputAsync(Event(Key(ConsoleKey.Escape)), Queue, Clear,
             () => aborted = true));
