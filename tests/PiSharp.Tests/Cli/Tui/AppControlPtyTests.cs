@@ -1043,6 +1043,102 @@ public sealed class AppControlPtyTests
     }
 
     [Fact]
+    public async Task StalledFdVersionProbeDoesNotBlockTheFirstPathCompletion()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = TemporaryDirectory("app-control-stalled-fd-probe");
+        var agent = Path.Combine(root, "agent");
+        Directory.CreateDirectory(agent);
+        File.WriteAllText(Path.Combine(agent, "settings.json"), "{\"quietStartup\":true}");
+        var bin = Path.Combine(root, "bin");
+        Directory.CreateDirectory(bin);
+        var pidFile = Path.Combine(root, "fd-version-pid");
+        var releaseFile = Path.Combine(root, "fd-version-release");
+        var fd = Path.Combine(bin, "fd");
+        await File.WriteAllTextAsync(fd,
+            "#!/bin/sh\n" +
+            "if [ \"$1\" = \"--version\" ]; then\n" +
+            $"  printf '%s\\n' \"$$\" >> '{pidFile}'\n" +
+            $"  while [ ! -f '{releaseFile}' ]; do sleep 0.05; done\n" +
+            "  printf 'fd 10.2.0\\n'; exit 0\n" +
+            "fi\n" +
+            "printf 'notes.txt\\n'\n");
+        File.SetUnixFileMode(fd, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        Process? process = null;
+        try
+        {
+            process = StartWithArguments(root, agent, "--local --offline --no-session --no-tools",
+                $"stty rows 24 cols 80; PATH={ShellQuote(bin)}:$PATH exec dotnet " +
+                $"{ShellQuote(typeof(CliArguments).Assembly.Location)} {{arguments}}");
+            var screen = new PtyScreenCapture(process, 24, 80);
+            var stdout = screen.ReadCompletion;
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+            await screen.InputReady.WaitAsync(timeout.Token);
+
+            async Task SendAsync(string input)
+            {
+                await process.StandardInput.WriteAsync(input);
+                await process.StandardInput.FlushAsync();
+            }
+
+            static bool Alive(int pid) => Directory.Exists($"/proc/{pid}");
+
+            await SendAsync("@n");
+            int probePid;
+            var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
+            while (true)
+            {
+                if (File.Exists(pidFile))
+                {
+                    var lines = (await File.ReadAllLinesAsync(pidFile, timeout.Token))
+                        .Select(line => int.TryParse(line, out var pid) ? pid : 0)
+                        .Where(pid => pid > 0).ToArray();
+                    if (lines.Length > 0)
+                    {
+                        probePid = lines[0];
+                        break;
+                    }
+                }
+                if (DateTime.UtcNow >= deadline) throw new InvalidOperationException("fd --version probe did not start.");
+                await Task.Delay(20, timeout.Token);
+            }
+            Assert.True(Alive(probePid), "fd --version probe was not running.");
+
+            await SendAsync("\u001b[27u");
+            deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
+            while (Alive(probePid) && DateTime.UtcNow < deadline) await Task.Delay(20, timeout.Token);
+            Assert.False(Alive(probePid), $"stalled fd --version probe {probePid} survived cancellation.");
+
+            await SendAsync("x");
+            await screen.WaitForFrameAsync(frame => frame.Split('\n')
+                    .Any(line => line.Trim().Equals("@nx", StringComparison.Ordinal)))
+                .WaitAsync(timeout.Token);
+
+            await File.WriteAllTextAsync(releaseFile, "release");
+            await Task.Delay(250, timeout.Token);
+            Assert.Contains("@nx", screen.LastFrame);
+            Assert.DoesNotContain("→ notes.txt", screen.LastFrame);
+
+            await SendAsync("\u0015\u0003\u0003");
+            await process.WaitForExitAsync(timeout.Token);
+            var output = await stdout;
+
+            Assert.Equal(0, process.ExitCode);
+            Assert.DoesNotContain("Agent error", output);
+            Assert.DoesNotContain("Exception:", await stderr);
+            RecordEvidence("pty-editor-stalled-fd-probe", new
+            {
+                exitCode = process.ExitCode,
+                probeCancelled = true,
+                editorRemainedResponsive = true,
+                staleResultIgnored = true
+            });
+        }
+        finally { Cleanup(process, root); }
+    }
+
+    [Fact]
     public async Task BracketedPasteOfSlashTextDoesNotOpenCommandCompletionUntilTyped()
     {
         if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;

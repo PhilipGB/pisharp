@@ -64,11 +64,13 @@ All corrections were reproduced against the real CLI before being fixed:
    continuation, and applies files with the trailing space after the closing
    quote. Readdir prefix completion remains for forced non-`@` paths.
 5. **Stalled path lookups no longer block the editor.** Automatic and Tab
-   completions run asynchronously; `fd` stdout/exit waits are cancellable and
-   the child tree is killed on cancellation. New input or Escape cancels and
-   supersedes the request, and a result is applied only when the buffer version
-   still matches. Regression:
-   `AppControlPtyTests.StalledPathCompletionKeepsTheEditorResponsiveAndKillsTheFdChildren`.
+   completions run asynchronously; executable discovery (`fd --version`) runs
+   off the input thread with a bounded, cancellable probe, and search
+   stdout/exit waits are cancellable with child-tree kill. New input or Escape
+   cancels and supersedes the request, and a result is applied only when the
+   buffer version still matches. Regressions:
+   `AppControlPtyTests.StalledPathCompletionKeepsTheEditorResponsiveAndKillsTheFdChildren`
+   and `AppControlPtyTests.StalledFdVersionProbeDoesNotBlockTheFirstPathCompletion`.
 6. **Large pastes match Pi's marker editor objects.** Eleven-line and
    1001-character pastes become `[paste #N …]` markers; markers are atomic for
    cursor/word movement and deletion, later markers renumber when an earlier

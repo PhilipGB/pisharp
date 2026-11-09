@@ -39,6 +39,7 @@ internal sealed class EditorAutocomplete
     private readonly Func<IReadOnlyList<string>>? _dynamicCommands;
     private readonly Func<string, string?>? _describeCommand;
     private readonly Func<IReadOnlyList<EditorModelOption>>? _getModels;
+    private readonly SemaphoreSlim _fdGate = new(1, 1);
     private string? _fdPath;
     private bool _fdResolved;
 
@@ -297,7 +298,10 @@ internal sealed class EditorAutocomplete
     private async Task<IReadOnlyList<EditorCompletionItem>> GetFuzzyFileSuggestionsAsync(string rawQuery,
         bool isQuotedPrefix, CancellationToken cancellationToken)
     {
-        var fdPath = ResolveFd();
+        // Executable discovery must never run on the editor input thread, even
+        // before the first await of the asynchronous search.
+        await Task.Yield();
+        var fdPath = await ResolveFdAsync(cancellationToken).ConfigureAwait(false);
         if (fdPath is null) return [];
         var basePath = Path.GetFullPath(_workingDirectory());
         var scoped = ResolveScopedFuzzyQuery(rawQuery, basePath);
@@ -440,27 +444,38 @@ internal sealed class EditorAutocomplete
         return score;
     }
 
-    private string? ResolveFd()
+    private async Task<string?> ResolveFdAsync(CancellationToken cancellationToken)
     {
         if (_fdResolved) return _fdPath;
-        _fdResolved = true;
-        var path = Environment.GetEnvironmentVariable("PATH") ?? "";
-        foreach (var directory in path.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+        await _fdGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
         {
-            foreach (var name in new[] { "fd", "fdfind" })
+            if (_fdResolved) return _fdPath;
+            var path = Environment.GetEnvironmentVariable("PATH") ?? "";
+            foreach (var directory in path.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
             {
-                var candidate = Path.Combine(directory, name);
-                if (!File.Exists(candidate)) continue;
-                if (!WorksAsFd(candidate)) continue;
-                _fdPath = candidate;
-                return _fdPath;
+                foreach (var name in new[] { "fd", "fdfind" })
+                {
+                    var candidate = Path.Combine(directory, name);
+                    if (!File.Exists(candidate)) continue;
+                    if (!await WorksAsFdAsync(candidate, cancellationToken).ConfigureAwait(false)) continue;
+                    _fdPath = candidate;
+                    _fdResolved = true;
+                    return _fdPath;
+                }
             }
+            _fdResolved = true;
+            return null;
         }
-        return null;
+        finally
+        {
+            _fdGate.Release();
+        }
     }
 
-    private static bool WorksAsFd(string candidate)
+    private static async Task<bool> WorksAsFdAsync(string candidate, CancellationToken cancellationToken)
     {
+        Process? process = null;
         try
         {
             var start = new ProcessStartInfo(candidate, "--version")
@@ -469,16 +484,42 @@ internal sealed class EditorAutocomplete
                 RedirectStandardError = true,
                 UseShellExecute = false
             };
-            using var process = Process.Start(start);
+            process = Process.Start(start);
             if (process is null) return false;
-            _ = process.StandardOutput.ReadToEnd();
-            _ = process.StandardError.ReadToEnd();
-            return process.WaitForExit(1500) && process.ExitCode == 0;
+            using var probe = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            probe.CancelAfter(TimeSpan.FromSeconds(2));
+            var stdout = process.StandardOutput.ReadToEndAsync(probe.Token);
+            var stderr = process.StandardError.ReadToEndAsync(probe.Token);
+            try
+            {
+                await process.WaitForExitAsync(probe.Token).ConfigureAwait(false);
+                await Task.WhenAll(stdout, stderr).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                TryKill(process);
+                return false;
+            }
+            catch (OperationCanceledException)
+            {
+                TryKill(process);
+                throw;
+            }
+            return process.ExitCode == 0;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or
             System.ComponentModel.Win32Exception or InvalidOperationException)
         {
             return false;
+        }
+        finally
+        {
+            if (process is { HasExited: false }) TryKill(process);
+            process?.Dispose();
         }
     }
 
