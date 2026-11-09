@@ -2,7 +2,7 @@
   "schema": 1,
   "capability": "tui-editor-completion-paste",
   "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-  "pisharpSha": "3fef9f6c971504a1f3b8f24bf42b22950bd00188",
+  "pisharpSha": "8a9405b11fcede9525149304d13a51c877a6e232",
   "branch": "milestone/tui-editor-completion-paste-parity",
   "treeClean": true,
   "trackedChanges": [],
@@ -10245,6 +10245,2294 @@
       }
     },
     {
+      "id": "large-paste-marker",
+      "task": "bracketed-paste",
+      "size": "80x24",
+      "case": "80x24-dark-fullscreen",
+      "calibration": {
+        "match": true,
+        "differences": [],
+        "checkpoints": 19
+      },
+      "pi": {
+        "checkpoints": {
+          "paste-eleven-lines": {
+            "editorText": "[paste #1 +11 lines]",
+            "cursor": {
+              "x": 20,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "marker-left": {
+            "editorText": "[paste #1 +11 lines]",
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "marker-right": {
+            "editorText": "[paste #1 +11 lines]",
+            "cursor": {
+              "x": 20,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "clear-eleven": {
+            "editorText": "",
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "paste-1001-chars": {
+            "editorText": "[paste #1 1001 chars]",
+            "cursor": {
+              "x": 21,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "clear-1001": {
+            "editorText": "",
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "paste-first": {
+            "editorText": "[paste #1 +11 lines]",
+            "cursor": {
+              "x": 20,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "paste-middle": {
+            "editorText": "[paste #1 +11 lines] middle",
+            "cursor": {
+              "x": 28,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "paste-second": {
+            "editorText": "[paste #1 +11 lines] middle [paste #2 +11 lines]",
+            "cursor": {
+              "x": 48,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "marker-home": {
+            "editorText": "[paste #1 +11 lines] middle [paste #2 +11 lines]",
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "marker-first-right": {
+            "editorText": "[paste #1 +11 lines] middle [paste #2 +11 lines]",
+            "cursor": {
+              "x": 20,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "delete-first-marker": {
+            "editorText": " middle [paste #1 +11 lines]",
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "undo-first-marker": {
+            "editorText": "[paste #1 +11 lines] middle [paste #2 +11 lines]",
+            "cursor": {
+              "x": 20,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "marker-end": {
+            "editorText": "[paste #1 +11 lines] middle [paste #2 +11 lines]",
+            "cursor": {
+              "x": 48,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "marker-second-left": {
+            "editorText": "[paste #1 +11 lines] middle [paste #2 +11 lines]",
+            "cursor": {
+              "x": 28,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "delete-second-marker": {
+            "editorText": "[paste #1 +11 lines] middle",
+            "cursor": {
+              "x": 28,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "undo-second-marker": {
+            "editorText": "[paste #1 +11 lines] middle [paste #2 +11 lines]",
+            "cursor": {
+              "x": 28,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "submit-two-markers": {
+            "editorText": "",
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "exit": {
+            "editorText": "",
+            "cursor": {
+              "x": 0,
+              "y": 23,
+              "visible": true,
+              "editorRow": 4
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "normal",
+            "modes": [
+              "25",
+              "7"
+            ]
+          }
+        },
+        "providerTexts": [
+          "line 01\nline 02\nline 03\nline 04\nline 05\nline 06\nline 07\nline 08\nline 09\nline 10\nline 11 middle line 01\nline 02\nline 03\nline 04\nline 05\nline 06\nline 07\nline 08\nline 09\nline 10\nline 11"
+        ],
+        "capturedWorkspaceFiles": {},
+        "scenarioError": null
+      },
+      "pisharp": {
+        "checkpoints": {
+          "paste-eleven-lines": {
+            "editorText": "[paste #1 +11 lines]",
+            "cursor": {
+              "x": 20,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "marker-left": {
+            "editorText": "[paste #1 +11 lines]",
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "marker-right": {
+            "editorText": "[paste #1 +11 lines]",
+            "cursor": {
+              "x": 20,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "clear-eleven": {
+            "editorText": "",
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "paste-1001-chars": {
+            "editorText": "[paste #1 1001 chars]",
+            "cursor": {
+              "x": 21,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "clear-1001": {
+            "editorText": "",
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "paste-first": {
+            "editorText": "[paste #1 +11 lines]",
+            "cursor": {
+              "x": 20,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "paste-middle": {
+            "editorText": "[paste #1 +11 lines] middle",
+            "cursor": {
+              "x": 28,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "paste-second": {
+            "editorText": "[paste #1 +11 lines] middle [paste #2 +11 lines]",
+            "cursor": {
+              "x": 48,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "marker-home": {
+            "editorText": "[paste #1 +11 lines] middle [paste #2 +11 lines]",
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "marker-first-right": {
+            "editorText": "[paste #1 +11 lines] middle [paste #2 +11 lines]",
+            "cursor": {
+              "x": 20,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "delete-first-marker": {
+            "editorText": " middle [paste #1 +11 lines]",
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "undo-first-marker": {
+            "editorText": "[paste #1 +11 lines] middle [paste #2 +11 lines]",
+            "cursor": {
+              "x": 20,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "marker-end": {
+            "editorText": "[paste #1 +11 lines] middle [paste #2 +11 lines]",
+            "cursor": {
+              "x": 48,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "marker-second-left": {
+            "editorText": "[paste #1 +11 lines] middle [paste #2 +11 lines]",
+            "cursor": {
+              "x": 28,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "delete-second-marker": {
+            "editorText": "[paste #1 +11 lines] middle",
+            "cursor": {
+              "x": 28,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "undo-second-marker": {
+            "editorText": "[paste #1 +11 lines] middle [paste #2 +11 lines]",
+            "cursor": {
+              "x": 28,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "submit-two-markers": {
+            "editorText": "",
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "exit": {
+            "editorText": "",
+            "cursor": {
+              "x": 0,
+              "y": 23,
+              "visible": true,
+              "editorRow": 4
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "normal",
+            "modes": [
+              "25",
+              "7"
+            ]
+          }
+        },
+        "providerTexts": [
+          "line 01\nline 02\nline 03\nline 04\nline 05\nline 06\nline 07\nline 08\nline 09\nline 10\nline 11 middle line 01\nline 02\nline 03\nline 04\nline 05\nline 06\nline 07\nline 08\nline 09\nline 10\nline 11"
+        ],
+        "capturedWorkspaceFiles": {},
+        "scenarioError": null
+      },
+      "differences": [],
+      "status": "pass",
+      "blockedBy": [],
+      "exit": {
+        "pi": {
+          "exitCode": 0,
+          "activeScreen": "normal",
+          "cursorVisible": true,
+          "privateModes": [
+            "25",
+            "7"
+          ]
+        },
+        "pisharp": {
+          "exitCode": 0,
+          "activeScreen": "normal",
+          "cursorVisible": true,
+          "privateModes": [
+            "25",
+            "7"
+          ]
+        }
+      }
+    },
+    {
+      "id": "large-paste-marker",
+      "task": "bracketed-paste",
+      "size": "120x40",
+      "case": "120x40-dark-fullscreen",
+      "calibration": {
+        "match": true,
+        "differences": [],
+        "checkpoints": 19
+      },
+      "pi": {
+        "checkpoints": {
+          "paste-eleven-lines": {
+            "editorText": "[paste #1 +11 lines]",
+            "cursor": {
+              "x": 20,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "marker-left": {
+            "editorText": "[paste #1 +11 lines]",
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "marker-right": {
+            "editorText": "[paste #1 +11 lines]",
+            "cursor": {
+              "x": 20,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "clear-eleven": {
+            "editorText": "",
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "paste-1001-chars": {
+            "editorText": "[paste #1 1001 chars]",
+            "cursor": {
+              "x": 21,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "clear-1001": {
+            "editorText": "",
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "paste-first": {
+            "editorText": "[paste #1 +11 lines]",
+            "cursor": {
+              "x": 20,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "paste-middle": {
+            "editorText": "[paste #1 +11 lines] middle",
+            "cursor": {
+              "x": 28,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "paste-second": {
+            "editorText": "[paste #1 +11 lines] middle [paste #2 +11 lines]",
+            "cursor": {
+              "x": 48,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "marker-home": {
+            "editorText": "[paste #1 +11 lines] middle [paste #2 +11 lines]",
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "marker-first-right": {
+            "editorText": "[paste #1 +11 lines] middle [paste #2 +11 lines]",
+            "cursor": {
+              "x": 20,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "delete-first-marker": {
+            "editorText": " middle [paste #1 +11 lines]",
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "undo-first-marker": {
+            "editorText": "[paste #1 +11 lines] middle [paste #2 +11 lines]",
+            "cursor": {
+              "x": 20,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "marker-end": {
+            "editorText": "[paste #1 +11 lines] middle [paste #2 +11 lines]",
+            "cursor": {
+              "x": 48,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "marker-second-left": {
+            "editorText": "[paste #1 +11 lines] middle [paste #2 +11 lines]",
+            "cursor": {
+              "x": 28,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "delete-second-marker": {
+            "editorText": "[paste #1 +11 lines] middle",
+            "cursor": {
+              "x": 28,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "undo-second-marker": {
+            "editorText": "[paste #1 +11 lines] middle [paste #2 +11 lines]",
+            "cursor": {
+              "x": 28,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "submit-two-markers": {
+            "editorText": "",
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "exit": {
+            "editorText": "",
+            "cursor": {
+              "x": 0,
+              "y": 32,
+              "visible": true,
+              "editorRow": 5
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "normal",
+            "modes": [
+              "25",
+              "7"
+            ]
+          }
+        },
+        "providerTexts": [
+          "line 01\nline 02\nline 03\nline 04\nline 05\nline 06\nline 07\nline 08\nline 09\nline 10\nline 11 middle line 01\nline 02\nline 03\nline 04\nline 05\nline 06\nline 07\nline 08\nline 09\nline 10\nline 11"
+        ],
+        "capturedWorkspaceFiles": {},
+        "scenarioError": null
+      },
+      "pisharp": {
+        "checkpoints": {
+          "paste-eleven-lines": {
+            "editorText": "[paste #1 +11 lines]",
+            "cursor": {
+              "x": 20,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "marker-left": {
+            "editorText": "[paste #1 +11 lines]",
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "marker-right": {
+            "editorText": "[paste #1 +11 lines]",
+            "cursor": {
+              "x": 20,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "clear-eleven": {
+            "editorText": "",
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "paste-1001-chars": {
+            "editorText": "[paste #1 1001 chars]",
+            "cursor": {
+              "x": 21,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "clear-1001": {
+            "editorText": "",
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "paste-first": {
+            "editorText": "[paste #1 +11 lines]",
+            "cursor": {
+              "x": 20,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "paste-middle": {
+            "editorText": "[paste #1 +11 lines] middle",
+            "cursor": {
+              "x": 28,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "paste-second": {
+            "editorText": "[paste #1 +11 lines] middle [paste #2 +11 lines]",
+            "cursor": {
+              "x": 48,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "marker-home": {
+            "editorText": "[paste #1 +11 lines] middle [paste #2 +11 lines]",
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "marker-first-right": {
+            "editorText": "[paste #1 +11 lines] middle [paste #2 +11 lines]",
+            "cursor": {
+              "x": 20,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "delete-first-marker": {
+            "editorText": " middle [paste #1 +11 lines]",
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "undo-first-marker": {
+            "editorText": "[paste #1 +11 lines] middle [paste #2 +11 lines]",
+            "cursor": {
+              "x": 20,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "marker-end": {
+            "editorText": "[paste #1 +11 lines] middle [paste #2 +11 lines]",
+            "cursor": {
+              "x": 48,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "marker-second-left": {
+            "editorText": "[paste #1 +11 lines] middle [paste #2 +11 lines]",
+            "cursor": {
+              "x": 28,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "delete-second-marker": {
+            "editorText": "[paste #1 +11 lines] middle",
+            "cursor": {
+              "x": 28,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "undo-second-marker": {
+            "editorText": "[paste #1 +11 lines] middle [paste #2 +11 lines]",
+            "cursor": {
+              "x": 28,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "submit-two-markers": {
+            "editorText": "",
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "exit": {
+            "editorText": "",
+            "cursor": {
+              "x": 0,
+              "y": 32,
+              "visible": true,
+              "editorRow": 5
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "normal",
+            "modes": [
+              "25",
+              "7"
+            ]
+          }
+        },
+        "providerTexts": [
+          "line 01\nline 02\nline 03\nline 04\nline 05\nline 06\nline 07\nline 08\nline 09\nline 10\nline 11 middle line 01\nline 02\nline 03\nline 04\nline 05\nline 06\nline 07\nline 08\nline 09\nline 10\nline 11"
+        ],
+        "capturedWorkspaceFiles": {},
+        "scenarioError": null
+      },
+      "differences": [],
+      "status": "pass",
+      "blockedBy": [],
+      "exit": {
+        "pi": {
+          "exitCode": 0,
+          "activeScreen": "normal",
+          "cursorVisible": true,
+          "privateModes": [
+            "25",
+            "7"
+          ]
+        },
+        "pisharp": {
+          "exitCode": 0,
+          "activeScreen": "normal",
+          "cursorVisible": true,
+          "privateModes": [
+            "25",
+            "7"
+          ]
+        }
+      }
+    },
+    {
+      "id": "large-paste-external-editor",
+      "task": "bracketed-paste",
+      "size": "80x24",
+      "case": "80x24-dark-fullscreen",
+      "calibration": {
+        "match": true,
+        "differences": [],
+        "checkpoints": 5
+      },
+      "pi": {
+        "checkpoints": {
+          "paste-eleven-lines": {
+            "editorText": "[paste #1 +11 lines]",
+            "cursor": {
+              "x": 20,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "open-editor": {
+            "editorText": "edited line one\nedited line two 🙂",
+            "cursor": {
+              "x": 18,
+              "y": 20,
+              "visible": false,
+              "editorRow": 1
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "edited": {
+            "editorText": "edited line one\nedited line two 🙂edited line one",
+            "cursor": {
+              "x": 33,
+              "y": 20,
+              "visible": false,
+              "editorRow": 1
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "submit": {
+            "editorText": "",
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "exit": {
+            "editorText": "",
+            "cursor": {
+              "x": 0,
+              "y": 23,
+              "visible": true,
+              "editorRow": 5
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "normal",
+            "modes": [
+              "25",
+              "7"
+            ]
+          }
+        },
+        "providerTexts": [
+          "edited line one\nedited line two 🙂edited line one"
+        ],
+        "capturedWorkspaceFiles": {
+          "external-capture.input": "line 01\nline 02\nline 03\nline 04\nline 05\nline 06\nline 07\nline 08\nline 09\nline 10\nline 11"
+        },
+        "scenarioError": null
+      },
+      "pisharp": {
+        "checkpoints": {
+          "paste-eleven-lines": {
+            "editorText": "[paste #1 +11 lines]",
+            "cursor": {
+              "x": 20,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "open-editor": {
+            "editorText": "edited line one\nedited line two 🙂",
+            "cursor": {
+              "x": 18,
+              "y": 20,
+              "visible": false,
+              "editorRow": 1
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "edited": {
+            "editorText": "edited line one\nedited line two 🙂edited line one",
+            "cursor": {
+              "x": 33,
+              "y": 20,
+              "visible": false,
+              "editorRow": 1
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "submit": {
+            "editorText": "",
+            "cursor": {
+              "x": 0,
+              "y": 20,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "exit": {
+            "editorText": "",
+            "cursor": {
+              "x": 0,
+              "y": 16,
+              "visible": true,
+              "editorRow": 5
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "normal",
+            "modes": [
+              "25",
+              "7"
+            ]
+          }
+        },
+        "providerTexts": [
+          "edited line one\nedited line two 🙂edited line one"
+        ],
+        "capturedWorkspaceFiles": {
+          "external-capture.input": "line 01\nline 02\nline 03\nline 04\nline 05\nline 06\nline 07\nline 08\nline 09\nline 10\nline 11"
+        },
+        "scenarioError": null
+      },
+      "differences": [],
+      "status": "pass",
+      "blockedBy": [],
+      "exit": {
+        "pi": {
+          "exitCode": 0,
+          "activeScreen": "normal",
+          "cursorVisible": true,
+          "privateModes": [
+            "25",
+            "7"
+          ]
+        },
+        "pisharp": {
+          "exitCode": 0,
+          "activeScreen": "normal",
+          "cursorVisible": true,
+          "privateModes": [
+            "25",
+            "7"
+          ]
+        }
+      }
+    },
+    {
+      "id": "large-paste-external-editor",
+      "task": "bracketed-paste",
+      "size": "120x40",
+      "case": "120x40-dark-fullscreen",
+      "calibration": {
+        "match": true,
+        "differences": [],
+        "checkpoints": 5
+      },
+      "pi": {
+        "checkpoints": {
+          "paste-eleven-lines": {
+            "editorText": "[paste #1 +11 lines]",
+            "cursor": {
+              "x": 20,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "open-editor": {
+            "editorText": "edited line one\nedited line two 🙂",
+            "cursor": {
+              "x": 18,
+              "y": 36,
+              "visible": false,
+              "editorRow": 1
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "edited": {
+            "editorText": "edited line one\nedited line two 🙂edited line one",
+            "cursor": {
+              "x": 33,
+              "y": 36,
+              "visible": false,
+              "editorRow": 1
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "submit": {
+            "editorText": "",
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "exit": {
+            "editorText": "",
+            "cursor": {
+              "x": 0,
+              "y": 23,
+              "visible": true,
+              "editorRow": 5
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "normal",
+            "modes": [
+              "25",
+              "7"
+            ]
+          }
+        },
+        "providerTexts": [
+          "edited line one\nedited line two 🙂edited line one"
+        ],
+        "capturedWorkspaceFiles": {
+          "external-capture.input": "line 01\nline 02\nline 03\nline 04\nline 05\nline 06\nline 07\nline 08\nline 09\nline 10\nline 11"
+        },
+        "scenarioError": null
+      },
+      "pisharp": {
+        "checkpoints": {
+          "paste-eleven-lines": {
+            "editorText": "[paste #1 +11 lines]",
+            "cursor": {
+              "x": 20,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "open-editor": {
+            "editorText": "edited line one\nedited line two 🙂",
+            "cursor": {
+              "x": 18,
+              "y": 36,
+              "visible": false,
+              "editorRow": 1
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "edited": {
+            "editorText": "edited line one\nedited line two 🙂edited line one",
+            "cursor": {
+              "x": 33,
+              "y": 36,
+              "visible": false,
+              "editorRow": 1
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "submit": {
+            "editorText": "",
+            "cursor": {
+              "x": 0,
+              "y": 36,
+              "visible": false,
+              "editorRow": 0
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "alternate",
+            "modes": [
+              "1000",
+              "1002",
+              "1003",
+              "1004",
+              "1006",
+              "1049",
+              "2004"
+            ]
+          },
+          "exit": {
+            "editorText": "",
+            "cursor": {
+              "x": 0,
+              "y": 15,
+              "visible": true,
+              "editorRow": 5
+            },
+            "candidates": [],
+            "selected": null,
+            "position": null,
+            "activeScreen": "normal",
+            "modes": [
+              "25",
+              "7"
+            ]
+          }
+        },
+        "providerTexts": [
+          "edited line one\nedited line two 🙂edited line one"
+        ],
+        "capturedWorkspaceFiles": {
+          "external-capture.input": "line 01\nline 02\nline 03\nline 04\nline 05\nline 06\nline 07\nline 08\nline 09\nline 10\nline 11"
+        },
+        "scenarioError": null
+      },
+      "differences": [],
+      "status": "pass",
+      "blockedBy": [],
+      "exit": {
+        "pi": {
+          "exitCode": 0,
+          "activeScreen": "normal",
+          "cursorVisible": true,
+          "privateModes": [
+            "25",
+            "7"
+          ]
+        },
+        "pisharp": {
+          "exitCode": 0,
+          "activeScreen": "normal",
+          "cursorVisible": true,
+          "privateModes": [
+            "25",
+            "7"
+          ]
+        }
+      }
+    },
+    {
       "id": "escape-ctrl-c",
       "task": "escape-ctrl-c",
       "size": "80x24",
@@ -12162,7 +14450,7 @@
           "edited line one\nedited line two 🙂edited line one"
         ],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pi-editor-2Lfskr/prompt.md",
+          "external-capture.path": "/tmp/pi-editor-DKxxWu/prompt.md",
           "external-capture.input": "original draft",
           "external-capture.mode": "644\n",
           "external-capture.directory-mode": "700\n"
@@ -12325,7 +14613,7 @@
           "edited line one\nedited line two 🙂edited line one"
         ],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pisharp-editor-0553f083abdb47f181f65e8b96fbdd6c/prompt.md",
+          "external-capture.path": "/tmp/pisharp-editor-c630b6bfc92d4d6b9498c801cd595217/prompt.md",
           "external-capture.input": "original draft",
           "external-capture.mode": "600\n",
           "external-capture.directory-mode": "700\n"
@@ -12522,7 +14810,7 @@
           "edited line one\nedited line two 🙂edited line one"
         ],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pi-editor-HpNdEm/prompt.md",
+          "external-capture.path": "/tmp/pi-editor-Jx9ABE/prompt.md",
           "external-capture.input": "original draft",
           "external-capture.mode": "644\n",
           "external-capture.directory-mode": "700\n"
@@ -12685,7 +14973,7 @@
           "edited line one\nedited line two 🙂edited line one"
         ],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pisharp-editor-b81d7cdd54df4f3bad8490a2645a1e2a/prompt.md",
+          "external-capture.path": "/tmp/pisharp-editor-6689daa52acb4d7a824c80bda6492e03/prompt.md",
           "external-capture.input": "original draft",
           "external-capture.mode": "600\n",
           "external-capture.directory-mode": "700\n"
@@ -12858,7 +15146,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pi-editor-UNDMVR/prompt.md",
+          "external-capture.path": "/tmp/pi-editor-l0DV07/prompt.md",
           "external-capture.input": "preserved draft"
         },
         "scenarioError": null
@@ -12995,7 +15283,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pisharp-editor-823e2a7069b443898883861cc1883868/prompt.md",
+          "external-capture.path": "/tmp/pisharp-editor-1918eb30c72c449ab14189f0054fc04b/prompt.md",
           "external-capture.input": "preserved draft"
         },
         "scenarioError": null
@@ -13166,7 +15454,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pi-editor-5SqddK/prompt.md",
+          "external-capture.path": "/tmp/pi-editor-U69HtI/prompt.md",
           "external-capture.input": "preserved draft"
         },
         "scenarioError": null
@@ -13303,7 +15591,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pisharp-editor-d4ad8edfb3b84f739eb9ee95db3b4b14/prompt.md",
+          "external-capture.path": "/tmp/pisharp-editor-6751fc94b03b49c28001d289c8fc795f/prompt.md",
           "external-capture.input": "preserved draft"
         },
         "scenarioError": null
@@ -13430,7 +15718,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pi-editor-bk2ndh/prompt.md",
+          "external-capture.path": "/tmp/pi-editor-7Z8zI7/prompt.md",
           "external-capture.input": "visual draft"
         },
         "scenarioError": null
@@ -13523,7 +15811,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pisharp-editor-845ecef8b62f43278c11351b9596badb/prompt.md",
+          "external-capture.path": "/tmp/pisharp-editor-061e03ffe86b4ecaa58ff2e3b7efa3fe/prompt.md",
           "external-capture.input": "visual draft"
         },
         "scenarioError": null
@@ -13650,7 +15938,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pi-editor-D0czaz/prompt.md",
+          "external-capture.path": "/tmp/pi-editor-5S5w7X/prompt.md",
           "external-capture.input": "visual draft"
         },
         "scenarioError": null
@@ -13743,7 +16031,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pisharp-editor-2347e7ddb6014b34989a5692c573d510/prompt.md",
+          "external-capture.path": "/tmp/pisharp-editor-624d60b3d9fa48f4ac9079cd0351ef61/prompt.md",
           "external-capture.input": "visual draft"
         },
         "scenarioError": null
@@ -13870,7 +16158,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pi-editor-lqf0Sv/prompt.md",
+          "external-capture.path": "/tmp/pi-editor-xBvUzA/prompt.md",
           "external-capture.input": "editor draft"
         },
         "scenarioError": null
@@ -13963,7 +16251,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pisharp-editor-d7c3f78a12434be1a47e4bfaae6e9a25/prompt.md",
+          "external-capture.path": "/tmp/pisharp-editor-3f64b139ef7c43979862f635c82c7cdf/prompt.md",
           "external-capture.input": "editor draft"
         },
         "scenarioError": null
@@ -14090,7 +16378,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pi-editor-kaYY5N/prompt.md",
+          "external-capture.path": "/tmp/pi-editor-cviLuU/prompt.md",
           "external-capture.input": "editor draft"
         },
         "scenarioError": null
@@ -14183,7 +16471,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pisharp-editor-b1e97766bab2495dbc53a0056bf0a7a2/prompt.md",
+          "external-capture.path": "/tmp/pisharp-editor-b8d94bf29d3e4708843784e99422ee40/prompt.md",
           "external-capture.input": "editor draft"
         },
         "scenarioError": null
@@ -14735,7 +17023,7 @@
           "edited line one\nedited line two 🙂edited line one"
         ],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pi-editor-NXYhQI/prompt.md",
+          "external-capture.path": "/tmp/pi-editor-rpIKHM/prompt.md",
           "external-capture.input": "journey draft"
         },
         "scenarioError": null
@@ -15253,7 +17541,7 @@
           "edited line one\nedited line two 🙂edited line one"
         ],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pisharp-editor-55fb3105a88245649298b1a29869bb8d/prompt.md",
+          "external-capture.path": "/tmp/pisharp-editor-aaec66e98e474502b48bc9f9193cb834/prompt.md",
           "external-capture.input": "journey draft"
         },
         "scenarioError": null
@@ -15805,7 +18093,7 @@
           "edited line one\nedited line two 🙂edited line one"
         ],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pi-editor-xRsvYz/prompt.md",
+          "external-capture.path": "/tmp/pi-editor-Dwbm7H/prompt.md",
           "external-capture.input": "journey draft"
         },
         "scenarioError": null
@@ -16323,7 +18611,7 @@
           "edited line one\nedited line two 🙂edited line one"
         ],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pisharp-editor-91fdad6cc2aa49de80151c69012b4bb0/prompt.md",
+          "external-capture.path": "/tmp/pisharp-editor-bea80ced9ba047b9b50d3bdf7aa4a064/prompt.md",
           "external-capture.input": "journey draft"
         },
         "scenarioError": null
