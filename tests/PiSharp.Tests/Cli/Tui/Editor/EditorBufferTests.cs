@@ -273,4 +273,73 @@ public sealed class EditorBufferTests
         Assert.Equal(EditorAction.None, editor.Handle(Key('-', ConsoleKey.OemMinus, ConsoleModifiers.Control)));
         Assert.Equal("", editor.Text);
     }
+
+    [Fact]
+    public void LargePastesBecomeAtomicMarkersAndExpandOnSubmit()
+    {
+        var editor = new EditorBuffer();
+        var elevenLines = string.Join("\n", Enumerable.Range(1, 11).Select(index => $"line {index}"));
+
+        editor.InsertPaste(elevenLines);
+
+        Assert.Equal("[paste #1 +11 lines]", editor.Text);
+        Assert.Equal(elevenLines, editor.ExpandedText);
+        Assert.Equal(editor.Text.Length, editor.Cursor);
+        editor.Handle(Key('\0', ConsoleKey.LeftArrow));
+        Assert.Equal(0, editor.Cursor);
+        editor.Handle(Key('\0', ConsoleKey.RightArrow));
+        Assert.Equal(editor.Text.Length, editor.Cursor);
+
+        var thousandAndOne = new string('x', 1001);
+        editor.InsertPaste(thousandAndOne);
+        Assert.Equal("[paste #1 +11 lines][paste #2 1001 chars]", editor.Text);
+        editor.Handle(Key('\0', ConsoleKey.Backspace));
+        Assert.Equal("[paste #1 +11 lines]", editor.Text);
+
+        Assert.True(editor.TrySubmit(out var submitted));
+        Assert.Equal(elevenLines, submitted);
+    }
+
+    [Fact]
+    public void DeletingAnEarlierMarkerRenumbersLaterMarkersAndUndoRestoresTheRegistry()
+    {
+        var editor = new EditorBuffer();
+        var elevenLines = string.Join("\n", Enumerable.Range(1, 11).Select(index => $"line {index}"));
+        editor.InsertPaste(elevenLines);
+        editor.InsertText("x");
+        editor.InsertPaste(elevenLines);
+        Assert.Equal("[paste #1 +11 lines]x[paste #2 +11 lines]", editor.Text);
+
+        editor.SetCursor("[paste #1 +11 lines]".Length);
+        editor.Handle(Key('\0', ConsoleKey.Backspace));
+        Assert.Equal("x[paste #1 +11 lines]", editor.Text);
+        Assert.Equal("x" + elevenLines, editor.ExpandedText);
+
+        editor.Handle(Key('-', ConsoleKey.OemMinus, ConsoleModifiers.Control));
+        Assert.Equal("[paste #1 +11 lines]x[paste #2 +11 lines]", editor.Text);
+        Assert.Equal(elevenLines + "x" + elevenLines, editor.ExpandedText);
+    }
+
+
+    [Fact]
+    public void SubmitAfterForwardDeleteAndUndoExpandsBothMarkers()
+    {
+        var editor = new EditorBuffer();
+        var elevenLines = string.Join("\n", Enumerable.Range(1, 11).Select(index => $"line {index}"));
+        editor.InsertPaste(elevenLines);
+        editor.InsertText(" middle ");
+        editor.InsertPaste(elevenLines);
+        editor.SetCursor(0);
+        editor.Handle(Key('\0', ConsoleKey.RightArrow));
+        editor.Handle(Key('\0', ConsoleKey.Backspace));
+        editor.Handle(Key('-', ConsoleKey.OemMinus, ConsoleModifiers.Control));
+        editor.Handle(Key('\0', ConsoleKey.End));
+        editor.Handle(Key('\0', ConsoleKey.LeftArrow));
+        editor.Handle(Key('\0', ConsoleKey.Delete));
+        editor.Handle(Key('-', ConsoleKey.OemMinus, ConsoleModifiers.Control));
+
+        Assert.True(editor.TrySubmit(out var submitted));
+        Assert.Equal(elevenLines + " middle " + elevenLines, submitted);
+    }
+
 }

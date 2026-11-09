@@ -5,10 +5,10 @@ namespace PiSharp.Tests;
 public sealed class EditorCompletionTests
 {
     [Fact]
-    public void PiFuzzySlashOrderingMatchesThePinnedCatalogue()
+    public async Task PiFuzzySlashOrderingMatchesThePinnedCatalogue()
     {
         var completion = new EditorAutocomplete(() => Path.GetTempPath());
-        var suggestions = completion.GetSuggestions("/s", 2, force: false);
+        var suggestions = await completion.GetSuggestionsAsync("/s", 2, force: false, CancellationToken.None);
 
         Assert.NotNull(suggestions);
         Assert.Equal(EditorCompletionKind.Slash, suggestions!.Kind);

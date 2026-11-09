@@ -63,6 +63,20 @@ All corrections were reproduced against the real CLI before being fixed:
    scoring/order, quotes paths that need it, preserves directory
    continuation, and applies files with the trailing space after the closing
    quote. Readdir prefix completion remains for forced non-`@` paths.
+5. **Stalled path lookups no longer block the editor.** Automatic and Tab
+   completions run asynchronously; `fd` stdout/exit waits are cancellable and
+   the child tree is killed on cancellation. New input or Escape cancels and
+   supersedes the request, and a result is applied only when the buffer version
+   still matches. Regression:
+   `AppControlPtyTests.StalledPathCompletionKeepsTheEditorResponsiveAndKillsTheFdChildren`.
+6. **Large pastes match Pi's marker editor objects.** Eleven-line and
+   1001-character pastes become `[paste #N …]` markers; markers are atomic for
+   cursor/word movement and deletion, later markers renumber when an earlier
+   marker is backspaced, undo restores the marker registry, submission expands
+   exactly, and the external editor receives expanded text. New differential
+   scenarios `large-paste-marker` and `large-paste-external-editor` cover the
+   thresholds, two markers, movement, Backspace/Delete, renumbering, undo,
+   submission and external editing.
 
 ## Results
 
@@ -73,7 +87,7 @@ All corrections were reproduced against the real CLI before being fixed:
 | Prompt history and draft restoration | `history` | pass, both sizes | 10 |
 | Slash-command completion | `slash-completion` | pass, both sizes | 15 |
 | `@` path completion | `path-completion` | pass, both sizes | 15 |
-| Bracketed paste | `bracketed-paste` | pass, both sizes | 10 |
+| Bracketed paste + markers | `bracketed-paste`, `large-paste-marker`, `large-paste-external-editor` | pass, both sizes | 10 |
 | Escape / Ctrl+C / exit semantics | `escape-ctrl-c`, `exit-empty-ctrl-d` | pass, both sizes | 10 |
 | External editor | four external-editor scenarios | pass, both sizes | 10 |
 | Cross-component journey | `journey` | pass, both sizes | 5 |
@@ -104,14 +118,10 @@ Applied identically to both products and declared in `inventory.py`:
 No editor text, cursor cell, candidate identity/order, selection, wrapping,
 submitted prompt or history order is normalised.
 
-## Remaining out-of-vector finding
+## Remaining in-scope differences
 
-Pi replaces pastes over 10 lines or 1000 characters with `[paste #N …]` markers
-and expands them on submit. The frozen paste vector is exactly ten lines, so
-inserted text, editing, cursor placement and submission match. Marker insertion
-and atomic marker movement/deletion are not implemented in PiSharp and are not
-claimed by this evidence; this is recorded as a separate finding rather than
-part of the accepted required matrix.
+None on the frozen matrix. The two review findings (synchronous `fd` blocking and
+large-paste markers) are fixed and covered by real-process differential cases.
 
 ## Reproduction
 

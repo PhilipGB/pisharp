@@ -940,6 +940,109 @@ public sealed class AppControlPtyTests
     }
 
     [Fact]
+    public async Task StalledPathCompletionKeepsTheEditorResponsiveAndKillsTheFdChildren()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = TemporaryDirectory("app-control-stalled-fd");
+        var agent = Path.Combine(root, "agent");
+        Directory.CreateDirectory(agent);
+        File.WriteAllText(Path.Combine(agent, "settings.json"), "{\"quietStartup\":true}");
+        var bin = Path.Combine(root, "bin");
+        Directory.CreateDirectory(bin);
+        var pidFile = Path.Combine(root, "fd-pids");
+        var releaseFile = Path.Combine(root, "fd-release");
+        var fd = Path.Combine(bin, "fd");
+        await File.WriteAllTextAsync(fd,
+            "#!/bin/sh\n" +
+            "if [ \"$1\" = \"--version\" ]; then printf 'fd 10.2.0\\n'; exit 0; fi\n" +
+            $"printf '%s\\n' \"$$\" >> '{pidFile}'\n" +
+            $"while [ ! -f '{releaseFile}' ]; do sleep 0.05; done\n" +
+            "printf 'released.txt\\n'\n");
+        File.SetUnixFileMode(fd, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        Process? process = null;
+        try
+        {
+            process = StartWithArguments(root, agent, "--local --offline --no-session --no-tools",
+                $"stty rows 24 cols 80; PATH={ShellQuote(bin)}:$PATH exec dotnet " +
+                $"{ShellQuote(typeof(CliArguments).Assembly.Location)} {{arguments}}");
+            var screen = new PtyScreenCapture(process, 24, 80);
+            var stdout = screen.ReadCompletion;
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+            await screen.InputReady.WaitAsync(timeout.Token);
+
+            async Task SendAsync(string input)
+            {
+                await process.StandardInput.WriteAsync(input);
+                await process.StandardInput.FlushAsync();
+            }
+
+            async Task<int[]> WaitForPids(int count)
+            {
+                var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
+                while (DateTime.UtcNow < deadline)
+                {
+                    if (File.Exists(pidFile))
+                    {
+                        var pids = (await File.ReadAllLinesAsync(pidFile, timeout.Token))
+                            .Select(line => int.TryParse(line, out var pid) ? pid : 0)
+                            .Where(pid => pid > 0).ToArray();
+                        if (pids.Length >= count) return pids;
+                    }
+                    await Task.Delay(20, timeout.Token);
+                }
+                throw new InvalidOperationException("The fake fd did not start.");
+            }
+
+            static bool Alive(int pid) => Directory.Exists($"/proc/{pid}");
+
+            await SendAsync("@a");
+            var first = await WaitForPids(2);
+            Assert.All(first, pid => Assert.True(Alive(pid), $"fd child {pid} was not running."));
+
+            // New input must supersede the stalled request and kill its children.
+            await SendAsync("b");
+            var all = await WaitForPids(4);
+            var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
+            while (first.Any(Alive) && DateTime.UtcNow < deadline) await Task.Delay(20, timeout.Token);
+            Assert.All(first, pid => Assert.False(Alive(pid), $"superseded fd child {pid} survived."));
+            var second = all.Except(first).ToArray();
+
+            await SendAsync("\u001b[27u");
+            deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
+            while (second.Any(Alive) && DateTime.UtcNow < deadline) await Task.Delay(20, timeout.Token);
+            Assert.All(second, pid => Assert.False(Alive(pid), $"cancelled fd child {pid} survived."));
+
+            await SendAsync("x");
+            await screen.WaitForFrameAsync(frame => frame.Split('\n')
+                    .Any(line => line.Trim().Equals("@abx", StringComparison.Ordinal)))
+                .WaitAsync(timeout.Token);
+
+            // Releasing the old lookups must not overwrite the newer editor draft.
+            await File.WriteAllTextAsync(releaseFile, "release");
+            await Task.Delay(300, timeout.Token);
+            Assert.Contains("@abx", screen.LastFrame);
+            Assert.DoesNotContain("released.txt", screen.LastFrame);
+
+            await SendAsync("\u0015\u0003\u0003");
+            await process.WaitForExitAsync(timeout.Token);
+            var output = await stdout;
+
+            Assert.Equal(0, process.ExitCode);
+            Assert.DoesNotContain("Agent error", output);
+            Assert.DoesNotContain("Exception:", await stderr);
+            RecordEvidence("pty-editor-stalled-fd", new
+            {
+                exitCode = process.ExitCode,
+                supersededLookupKilled = true,
+                cancelledLookupKilled = true,
+                staleResultIgnored = true
+            });
+        }
+        finally { Cleanup(process, root); }
+    }
+
+    [Fact]
     public async Task BracketedPasteOfSlashTextDoesNotOpenCommandCompletionUntilTyped()
     {
         if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;

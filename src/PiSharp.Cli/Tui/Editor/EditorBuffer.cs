@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace PiSharp.Cli.Tui;
 
@@ -9,11 +10,12 @@ internal readonly record struct EditorBufferSnapshot(string Text, int Cursor, in
 /// <summary>Testable editor state, independent of console rendering and model execution.</summary>
 public sealed class EditorBuffer
 {
-    private sealed record Snapshot(string Text, int Cursor, int? SelectionAnchor);
+    private sealed record Snapshot(string Text, int Cursor, int? SelectionAnchor,
+        Dictionary<int, string> Pastes, int PasteCounter);
     private sealed record ExtensionEditState(string Text, int Cursor, Snapshot[] Undo, string[] History,
         int HistoryIndex, string Draft, int DraftCursor, int? SelectionAnchor, int? PreferredColumn,
         int? SnappedFromCursorColumn, bool CoalesceTypedWord, LastEditAction LastEditAction,
-        string? LastYankedText, string[] KillRing);
+        string? LastYankedText, string[] KillRing, Dictionary<int, string> Pastes, int PasteCounter);
     private enum LastEditAction { None, Kill, Yank }
     private enum KillDirection { Backward, Forward }
     private enum JumpDirection { Forward, Backward }
@@ -23,6 +25,10 @@ public sealed class EditorBuffer
     private readonly List<Snapshot> _undo = [];
     private readonly EditorKeymap _keymap;
     private readonly EditorKillRing _killRing = new();
+    private readonly Dictionary<int, string> _pastes = [];
+    private int _pasteCounter;
+    private static readonly Regex s_pasteMarker = new(
+        @"\[paste #(?<id>\d+)(?: (?:\+\d+ lines|\d+ chars))?\]", RegexOptions.Compiled);
     private string _text = "";
     private int _historyIndex;
     private string _draft = "";
@@ -129,7 +135,8 @@ public sealed class EditorBuffer
         lock (_gate)
             return new ExtensionEditState(_text, Cursor, [.. _undo],
                 [.. _history], _historyIndex, _draft, _draftCursor, _selectionAnchor, _preferredVisualColumn,
-                _snappedFromCursorColumn, _coalesceTypedWord, _lastEditAction, _lastYankedText, _killRing.Capture());
+                _snappedFromCursorColumn, _coalesceTypedWord, _lastEditAction, _lastYankedText,
+                _killRing.Capture(), new Dictionary<int, string>(_pastes), _pasteCounter);
     }
 
     internal void BeginExtensionEdit(string? text)
@@ -138,6 +145,8 @@ public sealed class EditorBuffer
         {
             _version++;
             _text = NormalizeText(text ?? string.Empty);
+            _pastes.Clear();
+            _pasteCounter = 0;
             Cursor = _text.Length;
             _historyIndex = _history.Count;
             _draft = _text;
@@ -175,6 +184,9 @@ public sealed class EditorBuffer
             _lastEditAction = state.LastEditAction;
             _lastYankedText = state.LastYankedText;
             _killRing.Restore(state.KillRing);
+            _pastes.Clear();
+            foreach (var (id, content) in state.Pastes) _pastes[id] = content;
+            _pasteCounter = state.PasteCounter;
         }
     }
 
@@ -259,7 +271,13 @@ public sealed class EditorBuffer
                 return EditorAction.None;
             }
             else if (_keymap.Matches("tui.editor.deleteCharBackward", key))
-                DeleteRange(SelectionStart ?? PreviousBoundary(Cursor), SelectionEnd ?? Cursor);
+            {
+                var start = SelectionStart ?? PreviousBoundary(Cursor);
+                var end = SelectionEnd ?? Cursor;
+                var removedMarker = RangeContainsPasteMarker(start, end);
+                DeleteRange(start, end);
+                if (removedMarker) NormalizePasteRegistry();
+            }
             else if (_keymap.Matches("tui.editor.deleteCharForward", key))
                 DeleteRange(SelectionStart ?? Cursor, SelectionEnd ?? NextBoundary(Cursor));
             else if (_keymap.Matches("tui.editor.deleteWordBackward", key))
@@ -295,12 +313,43 @@ public sealed class EditorBuffer
         }
     }
 
+    public EditorAction InsertPaste(string text)
+    {
+        lock (_gate)
+        {
+            ArgumentNullException.ThrowIfNull(text);
+            var normalized = NormalizeText(text);
+            var safe = new string(normalized.Where(character => character is '\n' || !char.IsControl(character))
+                .ToArray());
+            if (safe.Length == 0) return EditorAction.None;
+            var lines = safe.Split('\n').Length;
+            var characters = safe.Length;
+            if (lines <= 10 && characters <= 1000) return InsertText(safe);
+
+            _version++;
+            _pasteCounter++;
+            var id = _pasteCounter;
+            var marker = lines > 10
+                ? $"[paste #{id} +{lines} lines]"
+                : $"[paste #{id} {characters} chars]";
+            InsertAtomic(marker);
+            _pastes[id] = safe;
+            BreakKillYankChain();
+            return EditorAction.Render;
+        }
+    }
+
+    public string ExpandedText
+    {
+        get { lock (_gate) return ExpandPasteMarkers(_text); }
+    }
+
     public bool TrySubmit(out string text)
     {
         lock (_gate)
         {
             _version++;
-            text = _text;
+            text = ExpandPasteMarkers(_text);
             if (string.IsNullOrWhiteSpace(text)) return false;
             AddHistory(text);
             _historyIndex = _history.Count;
@@ -325,6 +374,8 @@ public sealed class EditorBuffer
             _draft = "";
             _draftCursor = 0;
             _undo.Clear();
+            _pastes.Clear();
+            _pasteCounter = 0;
             _coalesceTypedWord = false;
             _preferredVisualColumn = null;
             _snappedFromCursorColumn = null;
@@ -366,6 +417,8 @@ public sealed class EditorBuffer
             if (!string.Equals(_text, text, StringComparison.Ordinal)) PushUndoSnapshot();
             _text = text;
             Cursor = nextCursor;
+            _pastes.Clear();
+            _pasteCounter = 0;
             ClearSelection();
             ExitHistoryBrowsing();
             RememberDraft();
@@ -641,6 +694,9 @@ public sealed class EditorBuffer
         _text = snapshot.Text;
         Cursor = snapshot.Cursor;
         _selectionAnchor = snapshot.SelectionAnchor;
+        _pastes.Clear();
+        foreach (var (id, content) in snapshot.Pastes) _pastes[id] = content;
+        _pasteCounter = snapshot.PasteCounter;
         _historyIndex = _history.Count;
         RememberDraft();
         _coalesceTypedWord = false;
@@ -823,7 +879,7 @@ public sealed class EditorBuffer
     {
         if (_undo.Count > 0 && _undo[^1].Text == _text && _undo[^1].Cursor == Cursor &&
             _undo[^1].SelectionAnchor == _selectionAnchor) return;
-        _undo.Add(new(_text, Cursor, _selectionAnchor));
+        _undo.Add(new(_text, Cursor, _selectionAnchor, new Dictionary<int, string>(_pastes), _pasteCounter));
     }
 
     private void ExitHistoryBrowsing() => _historyIndex = _history.Count;
@@ -883,14 +939,96 @@ public sealed class EditorBuffer
     private int PreviousBoundary(int index)
     {
         if (index == 0) return 0;
+        if (TryFindPasteMarker(index - 1, out var markerStart, out _)) return markerStart;
         var starts = StringInfo.ParseCombiningCharacters(_text);
         return starts.LastOrDefault(position => position < index);
     }
 
     private int NextBoundary(int index)
     {
+        if (TryFindPasteMarker(index, out _, out var markerEnd)) return markerEnd;
         var starts = StringInfo.ParseCombiningCharacters(_text);
         return starts.FirstOrDefault(position => position > index, _text.Length);
+    }
+
+    private bool RangeContainsPasteMarker(int start, int end)
+    {
+        if (_pastes.Count == 0) return false;
+        foreach (Match match in s_pasteMarker.Matches(_text))
+        {
+            var id = int.Parse(match.Groups["id"].Value, CultureInfo.InvariantCulture);
+            if (!_pastes.ContainsKey(id)) continue;
+            if (match.Index >= start && match.Index + match.Length <= end) return true;
+        }
+        return false;
+    }
+
+    private bool TryFindPasteMarker(int index, out int start, out int end)
+    {
+        start = end = 0;
+        if (index < 0 || index >= _text.Length || _pastes.Count == 0) return false;
+        foreach (Match match in s_pasteMarker.Matches(_text))
+        {
+            var id = int.Parse(match.Groups["id"].Value, CultureInfo.InvariantCulture);
+            if (!_pastes.ContainsKey(id)) continue;
+            if (index < match.Index || index >= match.Index + match.Length) continue;
+            start = match.Index;
+            end = match.Index + match.Length;
+            return true;
+        }
+        return false;
+    }
+
+    private string ExpandPasteMarkers(string text)
+    {
+        if (_pastes.Count == 0 || !text.Contains("[paste #", StringComparison.Ordinal)) return text;
+        return s_pasteMarker.Replace(text, match =>
+        {
+            var id = int.Parse(match.Groups["id"].Value, CultureInfo.InvariantCulture);
+            return _pastes.TryGetValue(id, out var content) ? content : match.Value;
+        });
+    }
+
+    private void NormalizePasteRegistry()
+    {
+        if (_pastes.Count == 0) return;
+        var present = new List<int>();
+        foreach (Match match in s_pasteMarker.Matches(_text))
+        {
+            var id = int.Parse(match.Groups["id"].Value, CultureInfo.InvariantCulture);
+            if (_pastes.ContainsKey(id) && !present.Contains(id)) present.Add(id);
+        }
+        foreach (var id in _pastes.Keys.Where(id => !present.Contains(id)).ToArray()) _pastes.Remove(id);
+        if (present.Count == 0)
+        {
+            _pasteCounter = 0;
+            return;
+        }
+        present.Sort();
+        var map = present.Select((id, index) => (id, next: index + 1)).ToDictionary(item => item.id, item => item.next);
+        if (map.All(item => item.Key == item.Value))
+        {
+            _pasteCounter = present.Count;
+            return;
+        }
+        var remapped = present.Select((oldId, index) => (Id: index + 1, Content: _pastes[oldId]))
+            .ToDictionary(item => item.Id, item => item.Content);
+        _pastes.Clear();
+        foreach (var (id, content) in remapped) _pastes[id] = content;
+        var cursor = Cursor;
+        _text = s_pasteMarker.Replace(_text, match =>
+        {
+            var id = int.Parse(match.Groups["id"].Value, CultureInfo.InvariantCulture);
+            if (!map.TryGetValue(id, out var next)) return match.Value;
+            var idStart = match.Groups["id"].Index - match.Index;
+            var idLength = match.Groups["id"].Length;
+            var replacement = match.Value[..idStart] + next.ToString(CultureInfo.InvariantCulture) +
+                match.Value[(idStart + idLength)..];
+            if (match.Index + match.Length <= cursor) cursor += replacement.Length - match.Length;
+            return replacement;
+        });
+        _pasteCounter = present.Count;
+        Cursor = Math.Clamp(cursor, 0, _text.Length);
     }
 
     private int SnapToBoundary(int index)

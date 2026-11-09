@@ -79,6 +79,7 @@ public sealed class TerminalEditor
     private int _normalEditorScrollOffset;
 
     public string Draft => WithEditorState(() => _buffer.CaptureSnapshot().Text);
+    public string ExpandedDraft => WithEditorState(() => _buffer.ExpandedText);
     internal EditorBufferSnapshot CaptureDraftState() => WithEditorState(_buffer.CaptureSnapshot);
     public string Hotkeys => _keymap.FormatHotkeys();
     internal string? GetDisplayKeys(string action) => _keymap.GetDisplayKeys(action);
@@ -736,6 +737,7 @@ public sealed class TerminalEditor
                 return true;
             }
             CancelCompletionRequest();
+            WithEditorState(() => { _completionCycle = null; });
             RestorePending(clearQueue());
             abort();
             return false;
@@ -860,6 +862,7 @@ public sealed class TerminalEditor
             if (next.Text is not null)
             {
                 if (_buffer.IsJumpModeActive && !next.IsPaste) _buffer.HandleJumpText(next.Text);
+                else if (next.IsPaste) _buffer.InsertPaste(next.Text);
                 else _buffer.InsertText(next.Text);
                 if (!next.IsPaste) RefreshAutocomplete();
             }
@@ -1093,7 +1096,7 @@ public sealed class TerminalEditor
                 {
                     var result = _buffer.IsJumpModeActive && !next.IsPaste
                         ? _buffer.HandleJumpText(text)
-                        : _buffer.InsertText(text);
+                        : next.IsPaste ? _buffer.InsertPaste(text) : _buffer.InsertText(text);
                     if (next.IsPaste) _suppressAutoCompletion = true;
                     return result;
                 });
@@ -1136,7 +1139,7 @@ public sealed class TerminalEditor
                 case EditorAction.Submit:
                     var submitted = WithEditorState(() =>
                     {
-                        var value = _buffer.Text;
+                        var value = _buffer.ExpandedText;
                         _buffer.Clear();
                         return value;
                     });
@@ -1350,19 +1353,32 @@ public sealed class TerminalEditor
         CancelCompletionRequest();
         var request = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var requestToken = request.Token;
+        var (snapshot, extensionProvider, force) = WithEditorState(() =>
+        {
+            _completionRequest = request;
+            var current = _buffer.CaptureSnapshot();
+            var before = TextBeforeCursor(current.Text, current.Cursor);
+            return (current, _extensionAutocompleteProvider, !IsSlashCommandContext(before));
+        });
+        var nativeTask = _autocomplete.GetSuggestionsAsync(snapshot.Text, snapshot.Cursor, force, requestToken);
+        if (!nativeTask.IsCompleted)
+        {
+            _ = FinishCompletionAsync(nativeTask, snapshot, request, requestToken, extensionProvider, force);
+            return;
+        }
+        await FinishCompletionAsync(nativeTask, snapshot, request, requestToken, extensionProvider, force)
+            .ConfigureAwait(false);
+    }
+
+    private async Task FinishCompletionAsync(Task<EditorCompletionResult?> nativeTask,
+        EditorBufferSnapshot snapshot, CancellationTokenSource request, CancellationToken requestToken,
+        Func<string, int, CancellationToken,
+            Task<IReadOnlyList<NativeExtensions.PiSharpExtensionAutocompleteSuggestion>>>? extensionProvider,
+        bool force)
+    {
         try
         {
-            var (snapshot, native, extensionProvider, force) = WithEditorState(() =>
-            {
-                _completionRequest = request;
-                var current = _buffer.CaptureSnapshot();
-                var before = TextBeforeCursor(current.Text, current.Cursor);
-                var slashContext = IsSlashCommandContext(before);
-                var forceFile = !slashContext;
-                var result = _autocomplete.GetSuggestions(current.Text, current.Cursor, forceFile);
-                return (current, result, _extensionAutocompleteProvider, forceFile);
-            });
-
+            var native = await nativeTask.ConfigureAwait(false);
             IReadOnlyList<NativeExtensions.PiSharpExtensionAutocompleteSuggestion> extensions = [];
             if (extensionProvider is not null)
                 extensions = await extensionProvider(snapshot.Text, snapshot.Cursor, requestToken)
@@ -1404,10 +1420,11 @@ public sealed class TerminalEditor
 
                 _completionCycle = new(candidates, 0, current.Text, current.Cursor);
             });
+            Render();
         }
-        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException)
         {
-            // An editor update or package removal cancels this request. The input owner is free to continue.
+            // Superseded or cancelled: a newer completion state owns the editor.
         }
         finally
         {
@@ -1452,24 +1469,48 @@ public sealed class TerminalEditor
 
     private void RefreshAutocomplete()
     {
-        WithEditorState(() =>
+        CancelCompletionRequest();
+        if (_suppressAutoCompletion)
         {
-            if (_suppressAutoCompletion)
+            WithEditorState(() => { _completionCycle = null; });
+            return;
+        }
+        var request = new CancellationTokenSource();
+        _completionRequest = request;
+        var snapshot = WithEditorState(_buffer.CaptureSnapshot);
+        _ = RefreshAutocompleteAsync(snapshot, request, request.Token);
+    }
+
+    private async Task RefreshAutocompleteAsync(EditorBufferSnapshot snapshot, CancellationTokenSource request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _autocomplete.GetSuggestionsAsync(snapshot.Text, snapshot.Cursor, force: false,
+                cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            WithEditorState(() =>
             {
-                _completionCycle = null;
-                return;
-            }
-            var snapshot = _buffer.CaptureSnapshot();
-            var result = _autocomplete.GetSuggestions(snapshot.Text, snapshot.Cursor, force: false);
-            if (result is null || result.Kind == EditorCompletionKind.Path &&
-                !result.Prefix.Contains('@'))
-            {
-                _completionCycle = null;
-                return;
-            }
-            var candidates = NativeCandidates(result);
-            _completionCycle = candidates.Count == 0 ? null : new(candidates, 0, snapshot.Text, snapshot.Cursor);
-        });
+                if (_suppressAutoCompletion) return;
+                var current = _buffer.CaptureSnapshot();
+                if (current.Version != snapshot.Version || current.Cursor != snapshot.Cursor) return;
+                if (result is null || result.Kind == EditorCompletionKind.Path &&
+                    !result.Prefix.Contains('@'))
+                {
+                    _completionCycle = null;
+                    return;
+                }
+                var candidates = NativeCandidates(result);
+                _completionCycle = candidates.Count == 0 ? null : new(candidates, 0, snapshot.Text, snapshot.Cursor);
+            });
+            Render();
+        }
+        catch (OperationCanceledException) { }
+        finally
+        {
+            Interlocked.CompareExchange(ref _completionRequest, null, request);
+            request.Dispose();
+        }
     }
 
     private static string TextBeforeCursor(string text, int cursor)

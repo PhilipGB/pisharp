@@ -20,7 +20,7 @@ REQUIRED = {
     'history': ['history'],
     'slash-completion': ['slash-completion'],
     'path-completion': ['path-completion'],
-    'bracketed-paste': ['bracketed-paste'],
+    'bracketed-paste': ['bracketed-paste', 'large-paste-marker', 'large-paste-external-editor'],
     'escape-ctrl-c': ['escape-ctrl-c', 'exit-empty-ctrl-d'],
     'external-editor': ['external-editor', 'external-editor-failure',
                         'external-editor-visual', 'external-editor-editor'],
@@ -75,6 +75,11 @@ def expected_differences(pi, pisharp):
                 differences.append((checkpoint, field))
     if pi['providerTexts'] != pisharp['providerTexts']:
         differences.append((None, 'providerTexts'))
+    def captured_inputs(value):
+        return {name: content for name, content in (value.get('capturedWorkspaceFiles') or {}).items()
+                if name.endswith('.input')}
+    if captured_inputs(pi) != captured_inputs(pisharp):
+        differences.append((None, 'capturedInputs'))
     return differences
 
 

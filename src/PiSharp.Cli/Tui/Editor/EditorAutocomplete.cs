@@ -52,8 +52,10 @@ internal sealed class EditorAutocomplete
         _getModels = getModels;
     }
 
-    public EditorCompletionResult? GetSuggestions(string text, int cursor, bool force)
+    public async Task<EditorCompletionResult?> GetSuggestionsAsync(string text, int cursor, bool force,
+        CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         cursor = Math.Clamp(cursor, 0, text.Length);
         var lineStart = text.LastIndexOf('\n', Math.Max(0, cursor - 1)) + 1;
         var lineEnd = text.IndexOf('\n', cursor);
@@ -63,7 +65,8 @@ internal sealed class EditorAutocomplete
         if (ExtractAtPrefix(before) is { } atPrefix)
         {
             var parsed = ParsePathPrefix(atPrefix);
-            var items = GetFuzzyFileSuggestions(parsed.RawPrefix, parsed.IsQuotedPrefix);
+            var items = await GetFuzzyFileSuggestionsAsync(parsed.RawPrefix, parsed.IsQuotedPrefix,
+                cancellationToken).ConfigureAwait(false);
             return items.Count == 0 ? null : new(EditorCompletionKind.Path, atPrefix, items);
         }
 
@@ -291,7 +294,8 @@ internal sealed class EditorAutocomplete
         return needsQuotes ? $"{marker}\"{path}\"" : marker + path;
     }
 
-    private IReadOnlyList<EditorCompletionItem> GetFuzzyFileSuggestions(string rawQuery, bool isQuotedPrefix)
+    private async Task<IReadOnlyList<EditorCompletionItem>> GetFuzzyFileSuggestionsAsync(string rawQuery,
+        bool isQuotedPrefix, CancellationToken cancellationToken)
     {
         var fdPath = ResolveFd();
         if (fdPath is null) return [];
@@ -299,8 +303,11 @@ internal sealed class EditorAutocomplete
         var scoped = ResolveScopedFuzzyQuery(rawQuery, basePath);
         var baseDir = scoped?.BaseDir ?? basePath;
         var fdQuery = scoped?.Query ?? rawQuery;
-        var baseEntries = WalkWithFd(fdPath, baseDir, fdQuery, maxDepth: 1);
-        var recursiveEntries = WalkWithFd(fdPath, baseDir, fdQuery, maxDepth: null);
+        var baseTask = WalkWithFdAsync(fdPath, baseDir, fdQuery, 1, cancellationToken);
+        var recursiveTask = WalkWithFdAsync(fdPath, baseDir, fdQuery, null, cancellationToken);
+        await Task.WhenAll(baseTask, recursiveTask).ConfigureAwait(false);
+        var baseEntries = baseTask.Result;
+        var recursiveEntries = recursiveTask.Result;
         var seen = new HashSet<string>(baseEntries.Select(entry => entry.Path), StringComparer.Ordinal);
         var entries = baseEntries.Concat(recursiveEntries.Where(entry => seen.Add(entry.Path))).ToArray();
         var scored = entries.Select(entry => (entry, ScoreEntry(entry.Path, fdQuery, entry.IsDirectory)))
@@ -339,8 +346,8 @@ internal sealed class EditorAutocomplete
         return Directory.Exists(baseDir) ? (baseDir, query, displayBase) : null;
     }
 
-    private IReadOnlyList<(string Path, bool IsDirectory)> WalkWithFd(string fdPath, string baseDir,
-        string query, int? maxDepth)
+    private async Task<IReadOnlyList<(string Path, bool IsDirectory)>> WalkWithFdAsync(string fdPath, string baseDir,
+        string query, int? maxDepth, CancellationToken cancellationToken)
     {
         try
         {
@@ -359,13 +366,19 @@ internal sealed class EditorAutocomplete
             if (maxDepth is { } depth) { start.ArgumentList.Add("--max-depth"); start.ArgumentList.Add(depth.ToString()); }
             if (query.Replace('\\', '/').Contains('/')) start.ArgumentList.Add("--full-path");
             if (!string.IsNullOrEmpty(query)) start.ArgumentList.Add(BuildFdPathQuery(query));
+            cancellationToken.ThrowIfCancellationRequested();
             using var process = Process.Start(start);
             if (process is null) return [];
-            var output = process.StandardOutput.ReadToEnd();
-            if (!process.WaitForExit(3000))
+            string output;
+            try
             {
-                try { process.Kill(entireProcessTree: true); } catch { }
-                return [];
+                output = await process.StandardOutput.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+                await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                TryKill(process);
+                throw;
             }
             if (process.ExitCode != 0 || string.IsNullOrWhiteSpace(output)) return [];
             var results = new List<(string, bool)>();
@@ -381,11 +394,25 @@ internal sealed class EditorAutocomplete
             }
             return results;
         }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or
             System.ComponentModel.Win32Exception or InvalidOperationException)
         {
             return [];
         }
+    }
+
+    private static void TryKill(Process process)
+    {
+        try
+        {
+            if (!process.HasExited) process.Kill(entireProcessTree: true);
+        }
+        catch (InvalidOperationException) { }
+        catch (System.ComponentModel.Win32Exception) { }
     }
 
     private static string BuildFdPathQuery(string query)

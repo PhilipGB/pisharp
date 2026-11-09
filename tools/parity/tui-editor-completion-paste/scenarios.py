@@ -273,6 +273,65 @@ def bracketed_paste():
     return base('bracketed-paste', 'bracketed-paste', actions)
 
 
+
+PASTE_ELEVEN = '\n'.join(f'line {index:02d}' for index in range(1, 12))
+PASTE_1001 = 'x' * 1001
+
+
+def large_paste_marker():
+    actions = [
+        startup(),
+        action('paste-eleven-lines', '\u001b[200~' + PASTE_ELEVEN + '\u001b[201~',
+               editor='[paste #1 +11 lines]'),
+        action('marker-left', '\u001b[D', editor='[paste #1 +11 lines]', cursor_change=True),
+        action('marker-right', '\u001b[C', editor='[paste #1 +11 lines]', cursor_change=True),
+        action('clear-eleven', '\u007f', editor=''),
+        action('paste-1001-chars', '\u001b[200~' + PASTE_1001 + '\u001b[201~',
+               editor='[paste #1 1001 chars]'),
+        action('clear-1001', '\u007f', editor=''),
+        action('paste-first', '\u001b[200~' + PASTE_ELEVEN + '\u001b[201~',
+               editor='[paste #1 +11 lines]'),
+        action('paste-middle', ' middle ', editor='[paste #1 +11 lines] middle'),
+        action('paste-second', '\u001b[200~' + PASTE_ELEVEN + '\u001b[201~',
+               editor='[paste #1 +11 lines] middle [paste #2 +11 lines]'),
+        action('marker-home', '\u0001', editor='[paste #1 +11 lines] middle [paste #2 +11 lines]',
+               cursor_change=True),
+        action('marker-first-right', '\u001b[C',
+               editor='[paste #1 +11 lines] middle [paste #2 +11 lines]', cursor_change=True),
+        action('delete-first-marker', '\u007f', editor=' middle [paste #1 +11 lines]'),
+        action('undo-first-marker', '\u001f',
+               editor='[paste #1 +11 lines] middle [paste #2 +11 lines]'),
+        action('marker-end', '\u0005',
+               editor='[paste #1 +11 lines] middle [paste #2 +11 lines]', cursor_change=True),
+        action('marker-second-left', '\u001b[D',
+               editor='[paste #1 +11 lines] middle [paste #2 +11 lines]', cursor_change=True),
+        action('delete-second-marker', '\u001b[3~', editor='[paste #1 +11 lines] middle'),
+        action('undo-second-marker', '\u001f',
+               editor='[paste #1 +11 lines] middle [paste #2 +11 lines]'),
+        action('submit-two-markers', '\r', expect='FIXTURE_REPLY_1'),
+        {'id': 'exit', 'send': '\u0004', 'exit': True, 'expect': 'fixture-model'},
+    ]
+    return base('large-paste-marker', 'bracketed-paste', actions)
+
+
+def large_paste_external_editor():
+    actions = [
+        startup(),
+        action('paste-eleven-lines', '\u001b[200~' + PASTE_ELEVEN + '\u001b[201~',
+               editor='[paste #1 +11 lines]'),
+        action('open-editor', '\u0007', expect='fixture-model', quiet=800),
+        action('edited', 'edited line one', editor='edited line one\nedited line two \U0001f642',
+               quiet=800),
+        action('submit', '\r', expect='FIXTURE_REPLY_1'),
+        {'id': 'exit', 'send': '\u0004', 'exit': True, 'expect': 'fixture-model'},
+    ]
+    return base(
+        'large-paste-external-editor', 'bracketed-paste', actions,
+        bin_files={'fake-editor.sh': FAKE_EDITOR_SCRIPT},
+        settings={'externalEditor': FAKE_EDITOR + ' ' + CAPTURE},
+        capture=['external-capture.input'],
+    )
+
 def escape_ctrl_c():
     actions = [
         startup(),
@@ -443,6 +502,8 @@ SCENARIOS = (
     slash_completion,
     path_completion,
     bracketed_paste,
+    large_paste_marker,
+    large_paste_external_editor,
     escape_ctrl_c,
     exit_empty_ctrl_d,
     external_editor,

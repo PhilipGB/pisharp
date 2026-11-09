@@ -122,6 +122,11 @@ def observe(evidence, product):
     }
 
 
+def captured_inputs(observation):
+    return {name: content for name, content in (observation.get('capturedWorkspaceFiles') or {}).items()
+            if name.endswith('.input')}
+
+
 def compare(pi, pisharp):
     differences = []
     pi_frames = pi['checkpoints']
@@ -142,6 +147,11 @@ def compare(pi, pisharp):
     if pi['providerTexts'] != pisharp['providerTexts']:
         differences.append({'checkpoint': None, 'field': 'providerTexts',
                             'pi': pi['providerTexts'], 'pisharp': pisharp['providerTexts']})
+    leftInputs = captured_inputs(pi)
+    rightInputs = captured_inputs(pisharp)
+    if leftInputs != rightInputs:
+        differences.append({'checkpoint': None, 'field': 'capturedInputs',
+                            'pi': leftInputs, 'pisharp': rightInputs})
     return differences
 
 
@@ -160,6 +170,8 @@ def calibration_differences(first, second):
                 differences.append({'checkpoint': checkpoint_id, 'field': field})
     if first['providerTexts'] != second['providerTexts']:
         differences.append({'checkpoint': None, 'field': 'providerTexts'})
+    if captured_inputs(first) != captured_inputs(second):
+        differences.append({'checkpoint': None, 'field': 'capturedInputs'})
     return differences
 
 
