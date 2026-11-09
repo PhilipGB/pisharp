@@ -113,11 +113,14 @@ no leakage to Anthropic.
 
 ## Verification
 
-- Focused OpenCode tests: recorded in `receipt.json`.
-- Full .NET suite: recorded in `receipt.json`.
-- `dotnet build PiSharp.slnx --warnaserror`: recorded in `receipt.json`.
-- `dotnet format PiSharp.slnx --verify-no-changes`: recorded in `receipt.json`.
-- Exact-head Linux CI: recorded in `receipt.json` once the draft PR exists.
+- Focused OpenCode tests: 22 passed.
+- Full .NET suite: **4545/4545 passed** in 9 m 19 s on exact head
+  `978e15efc55b9ada68b5f42a865a2de8f2571fc1`.
+- `dotnet build PiSharp.slnx --warnaserror`: pass, 0 warnings.
+- `dotnet format PiSharp.slnx --verify-no-changes`: pass.
+- Exact-head Linux CI: [run 42707954824](https://github.com/PhilipGB/pisharp/actions/runs/42707954824)
+  passed all jobs on `978e15ef`.
+- Draft PR: [#50](https://github.com/PhilipGB/pisharp/pull/50).
 
 ## Live smoke
 
