@@ -2,7 +2,8 @@ using System.Globalization;
 
 namespace PiSharp.Cli.Tui;
 
-public sealed record EditorCompletionSuggestion(string Command, string? Description);
+public sealed record EditorCompletionSuggestion(string Command, string? Description, bool Selected = false,
+    bool Position = false);
 
 /// <summary>Completes implemented slash commands and local paths; UI only, no agent state.</summary>
 public sealed class EditorCompletion

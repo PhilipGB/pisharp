@@ -419,6 +419,7 @@ def write_assertion_evidence(path, products, dimensions, theme, mode, frame_ids=
                               forbiddenStream=product.get('forbiddenStream'),
                               provenance=product.get('provenance'),
                               capturedAgentFiles=product.get('capturedAgentFiles', {}),
+                              capturedWorkspaceFiles=product.get('capturedWorkspaceFiles', {}),
                               capturedSessionFiles=product.get('capturedSessionFiles', []),
                               capturedSessionContents=product.get('capturedSessionContents', {}))
 
@@ -504,6 +505,13 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
     fd = bin_directory / 'fd'
     fd.write_text('#!/bin/sh\nprintf "fd 10.2.0\\n"\n')
     fd.chmod(0o700)
+    for name, content in scenario.get('binFiles', {}).items():
+        candidate = (bin_directory / name).resolve()
+        if not candidate.is_relative_to(bin_directory.resolve()):
+            raise ValueError(f'Fixture bin file leaves its owned directory: {name}')
+        candidate.parent.mkdir(parents=True, exist_ok=True)
+        candidate.write_text(content.replace('{workspace}', str(WORKSPACE)).replace('{agent}', str(agent)))
+        candidate.chmod(0o700)
     settings = dict(scenario.get('settings', {}), theme=theme)
     if label == 'pi' or mode != 'fullscreen':
         settings['tuiMode'] = mode
@@ -599,7 +607,16 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
                 value = action['send']
                 if isinstance(value, str):
                     value = value.replace('{router}', server.url).replace('{agent}', str(agent))
-                terminal.send(value)
+                if value:
+                    terminal.send(value)
+            if action.get('quiesce'):
+                frame = terminal.quiesce(timeout=action.get('timeout', 10),
+                                         quiet_ms=action.get('quietMs', 300))
+                record_frame(dict(id=action['id'], state=frame,
+                                  controls=terminal.trace.events[control_mark:],
+                                  controlPending=terminal.trace.pending.hex()))
+                http_by_frame.append(dict(id=action['id'], requests=server.requests[request_mark:]))
+                continue
             if 'resize' in action:
                 terminal.resize(**action['resize'])
             wait_gates_after = action.get('waitGatesAfter', [])
@@ -627,6 +644,12 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
                 absent = action.get('notExpect')
                 if isinstance(absent, dict):
                     absent = absent[label]
+                expect_editor = action.get('expectEditor')
+                if isinstance(expect_editor, dict):
+                    expect_editor = expect_editor[label]
+                absent_editor = action.get('notExpectEditor')
+                if isinstance(absent_editor, dict):
+                    absent_editor = absent_editor[label]
                 frame = terminal.settle(expect, timeout=action.get('timeout', 20),
                                         quiet_ms=action.get('quietMs', 200),
                                         absent=absent,
@@ -634,7 +657,8 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
                                         render_match=action.get('renderMatch', False),
                                         allow_static_frame=action.get('allowStaticFrame', False),
                                         cursor_before=cursor_before,
-                                        clipboard_texts=action.get('expectClipboardTexts'), clipboard_after=mark)
+                                        clipboard_texts=action.get('expectClipboardTexts'), clipboard_after=mark,
+                                        editor_contains=expect_editor, editor_absent=absent_editor)
             process_entries = {}
             if action.get('processFiles'):
                 process_entries.update(capture_process_checkpoint(action, WORKSPACE))
@@ -674,6 +698,13 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
                 raise ValueError(f'Captured fixture file leaves the agent directory: {relative}')
             if path.is_file():
                 captured_agent_files[relative] = path.read_text()
+        captured_workspace_files = {}
+        for relative in scenario.get('captureWorkspaceFiles', []):
+            path = (WORKSPACE / relative).resolve()
+            if not path.is_relative_to(WORKSPACE.resolve()):
+                raise ValueError(f'Captured fixture file leaves the workspace: {relative}')
+            if path.is_file():
+                captured_workspace_files[relative] = path.read_text()
         captured_session_files = []
         sessions_root = agent / 'sessions'
         if sessions_root.is_dir():
@@ -684,6 +715,7 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
                     renders=RenderFrameSequence(*prior_render_frames, terminal.render_frames),
                     httpByFrame=http_by_frame, clipboardByFrame=clipboard_by_frame,
                     raw=base64.b64encode(prior_raw).decode(), capturedAgentFiles=captured_agent_files,
+                    capturedWorkspaceFiles=captured_workspace_files,
                     capturedSessionFiles=captured_session_files,
                     capturedSessionContents=read_session_contents(agent),
                     http=server.requests[request_start:], command=command, scenarioError=None,
@@ -704,8 +736,8 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
                                                for path in (agent / 'sessions').rglob('*')
                                                if path.is_file() and not path.is_symlink())
                     if (agent / 'sessions').is_dir() else [],
-                    capturedSessionContents=read_session_contents(agent),
-                    http=server.requests[request_start:], command=command, scenarioError=str(error),
+                    capturedWorkspaceFiles={}, capturedSessionContents=read_session_contents(agent),
+                    http=server.requests[request_start:], command=command, scenarioError=f"{action['id']}: {error}",
                     processByFrame=process_by_frame, forbiddenStream=forbidden_stream)
     finally:
         kill_orphan_processes(process_by_frame)

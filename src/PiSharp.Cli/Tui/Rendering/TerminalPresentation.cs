@@ -29,6 +29,16 @@ internal sealed class TerminalPresentation : IDisposable
     public TerminalThemeCatalog Themes => _terminalThemeCatalog;
     public bool HideThinking => _hideThinkingBlock;
 
+    private IReadOnlyList<EditorModelOption> GetModelOptions()
+    {
+        var snapshot = _modelRuntime.GetAvailableModelSnapshot();
+        var models = !_modelRuntime.HasScope || _modelRuntime.Scope.Count == 0
+            ? snapshot
+            : ModelScopeResolver.Resolve(_modelRuntime.Scope, snapshot).Models
+                .Select(item => item.Model).ToArray();
+        return models.Select(model => new EditorModelOption(model.Provider ?? "", model.Id, model.Name)).ToArray();
+    }
+
     public TerminalPresentation(string agentDirectory, string invocationDirectory, bool print, CliTerminalIO terminalIO,
         ActiveProjectRuntime projectBinding, ActiveModelRuntime modelBinding, ActiveConversationRuntime conversationBinding,
         ExtensionLease extensionLease, ProviderModelRuntime modelRuntime)
@@ -44,7 +54,8 @@ internal sealed class TerminalPresentation : IDisposable
         _editor = !print && _projectBinding.Arguments.Mode is not ("json" or "rpc")
             ? new TerminalEditor(completion.Commands, _agentDirectory, () => _projectBinding.WorkingDirectory,
                 initiallyExpanded: _projectBinding.Arguments.Verbose, describeCommand: completion.Describe,
-                getExtensionShortcuts: () => _extensionLease.Current.Registration.ExtensionShortcuts) : null;
+                getExtensionShortcuts: () => _extensionLease.Current.Registration.ExtensionShortcuts,
+                getModels: GetModelOptions) : null;
         _cliThemeOverride = _editor is null ? null : _projectBinding.Arguments.UseTheme;
         _terminalThemeCatalog = CreateTerminalThemeCatalog();
         var initialTerminalTheme = ResolveConfiguredTheme(ActiveThemeSetting());

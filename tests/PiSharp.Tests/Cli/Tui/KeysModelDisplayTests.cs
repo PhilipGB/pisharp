@@ -229,7 +229,7 @@ public sealed class KeysModelDisplayTests
             }));
 
         Assert.Equal("app.thinking.cycle", action);
-        Assert.Equal("/model", editor.Draft);
+        Assert.Equal("/mod", editor.Draft);
     }
 
     [Fact]

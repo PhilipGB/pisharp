@@ -94,6 +94,20 @@ class RenderFrameSequence:
             store.write_compressed_to(output)
 
 
+def editor_region_text(frame):
+    """Return the editor region between the last two horizontal rules."""
+    lines = [''.join(cell.get('chars', '') if cell else '' for cell in line.get('cells', [])).rstrip()
+             for line in frame.get('viewport', [])]
+    separators = [index for index, line in enumerate(lines) if line.lstrip().startswith('\u2500')]
+    if len(separators) < 2:
+        return '\n'.join(lines)
+    bottom = separators[-1]
+    tops = [index for index in separators if index < bottom]
+    if not tops:
+        return '\n'.join(lines)
+    return '\n'.join(lines[max(tops) + 1:bottom])
+
+
 class TerminalProcess:
     def __init__(self, command, cwd, environment, options, spool_render_frames=False):
         if options.get('jobControl') and sys.platform != 'linux':
@@ -180,12 +194,38 @@ class TerminalProcess:
     def snapshot(self):
         return self.ask(dict(op='snapshot'))['frame']
 
+    def quiesce(self, timeout=10, quiet_ms=300):
+        """Drain output until the PTY has been quiet, then return a snapshot.
+
+        This is an action barrier, not a fixed sleep: it waits on the producer
+        becoming idle. It never inspects content and never decides pass/fail.
+        """
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            self.pump(timeout=0.02)
+            if time.monotonic() - self.last_output >= quiet_ms / 1000:
+                return self.snapshot()
+        return self.snapshot()
+
+    @staticmethod
+    def editor_text(frame):
+        return editor_region_text(frame)
+
     def settle(self, contains=None, absent=None, timeout=20, quiet_ms=200, after=0, render_match=False,
-               allow_static_frame=False, cursor_before=None, clipboard_texts=None, clipboard_after=0):
+               allow_static_frame=False, cursor_before=None, clipboard_texts=None, clipboard_after=0,
+               editor_contains=None, editor_absent=None):
         deadline = time.monotonic() + timeout
         expected = (contains,) if isinstance(contains, str) else tuple(contains or ())
+        editor_expected = (editor_contains,) if isinstance(editor_contains, str) else tuple(editor_contains or ())
         expected_matched = False
+        editor_matched = not editor_expected
         absent_matched = absent is None
+
+        def editor_matches(text):
+            if editor_expected == ("",):
+                return not text.strip()
+            return all(item in text for item in editor_expected) and (
+                editor_absent is None or editor_absent not in text)
         output_advanced = False
         cursor_matched = cursor_before is None
         static_pump_timeout = 0
@@ -214,9 +254,11 @@ class TerminalProcess:
                                  for line in frame['viewport'])
                 expected_matched = all(item in text for item in expected)
                 absent_matched = absent is None or absent not in text
+                editor = editor_region_text(frame)
+                editor_matched = editor_matches(editor)
                 modes = frame.get('modes', {})
                 synchronized_output = modes.get('synchronizedOutput', False) or modes.get('private', {}).get('2026', False)
-                if (expected_matched and absent_matched and cursor_changed(frame) and
+                if (expected_matched and absent_matched and editor_matched and cursor_changed(frame) and
                         not synchronized_output and clipboard_matched()):
                     return frame
                 static_pump_timeout = 0.01
@@ -224,7 +266,9 @@ class TerminalProcess:
                 for frame in new_render_frames:
                     text = '\n'.join(''.join(cell['chars'] for cell in line['cells'] if cell)
                                       for line in frame['viewport'])
-                    if (clipboard_texts is None and all(item in text for item in expected) and
+                    editor = editor_region_text(frame)
+                    editor_matched = editor_matches(editor)
+                    if (clipboard_texts is None and editor_matched and all(item in text for item in expected) and
                             (absent is None or absent not in text) and
                             cursor_changed(frame) and (len(self.raw) > after or self.closed)):
                         return frame
@@ -234,10 +278,12 @@ class TerminalProcess:
             text = '\n'.join(''.join(cell['chars'] for cell in line['cells'] if cell) for line in frame['viewport'])
             expected_matched = all(item in text for item in expected)
             absent_matched = absent is None or absent not in text
+            editor = editor_region_text(frame)
+            editor_matched = editor_matches(editor)
             output_advanced = len(self.raw) > after or self.closed
             modes = frame.get('modes', {})
             synchronized_output = modes.get('synchronizedOutput', False) or modes.get('private', {}).get('2026', False)
-            if (expected_matched and absent_matched and output_advanced and
+            if (expected_matched and absent_matched and editor_matched and output_advanced and
                     cursor_changed(frame) and (not render_match or not synchronized_output) and clipboard_matched()):
                 return frame
             if self.closed:

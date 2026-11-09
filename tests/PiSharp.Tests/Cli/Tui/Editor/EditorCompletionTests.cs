@@ -5,17 +5,47 @@ namespace PiSharp.Tests;
 public sealed class EditorCompletionTests
 {
     [Fact]
-    public async Task SlashCompletionCyclesCandidatesInTheEditorAndWrapsForward()
+    public async Task PiFuzzySlashOrderingMatchesThePinnedCatalogue()
+    {
+        var completion = new EditorAutocomplete(() => Path.GetTempPath());
+        var suggestions = await completion.GetSuggestionsAsync("/s", 2, force: false, CancellationToken.None);
+
+        Assert.NotNull(suggestions);
+        Assert.Equal(EditorCompletionKind.Slash, suggestions!.Kind);
+        Assert.Equal(["settings", "scoped-models", "share", "session", "resume"],
+            suggestions.Items.Take(5).Select(item => item.Value));
+    }
+
+    [Fact]
+    public async Task SlashTabAppliesPiTrailingSpaceAndClosesThePicker()
+    {
+        var editor = new TerminalEditor();
+        await editor.HandleActiveInputAsync(new(null, "/hot"),
+            (_, _, _) => Task.FromResult(true), () => [], () => { });
+
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
+
+        Assert.Equal("/hotkeys ", editor.Draft);
+    }
+
+    [Fact]
+    public async Task SlashCompletionPickerNavigatesAndAppliesSelectedCandidate()
     {
         var editor = new TerminalEditor();
         editor.Prefill("/mod");
 
         await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
-        Assert.Equal("/model", editor.Draft);
+        Assert.Equal("/mod", editor.Draft);
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.DownArrow, '\0'));
+        Assert.Equal("/mod", editor.Draft);
         await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
-        Assert.Equal("/models", editor.Draft);
+        Assert.Equal("/scoped-models ", editor.Draft);
+
+        editor.Prefill("/mod");
         await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
-        Assert.Equal("/model", editor.Draft);
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.UpArrow, '\0'));
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
+        Assert.Equal("/scoped-models ", editor.Draft);
     }
 
     [Fact]
@@ -25,7 +55,7 @@ public sealed class EditorCompletionTests
         editor.Prefill("/mod");
 
         await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
-        Assert.Equal("/model", editor.Draft);
+        Assert.Equal("/mod", editor.Draft);
 
         string? action = null;
         Assert.True(await editor.HandleApplicationShortcutAsync(
@@ -35,25 +65,27 @@ public sealed class EditorCompletionTests
                 return Task.CompletedTask;
             }));
         Assert.Equal("app.thinking.cycle", action);
-        Assert.Equal("/model", editor.Draft);
+        Assert.Equal("/mod", editor.Draft);
     }
 
     [Fact]
-    public async Task EditingResetsTheCompletionCycle()
+    public async Task EditingResetsTheCompletionPicker()
     {
         var editor = new TerminalEditor();
         editor.Prefill("/mod");
 
         await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
-        Assert.Equal("/model", editor.Draft);
+        Assert.Equal("/mod", editor.Draft);
         await SendEditorKeyAsync(editor, Key(ConsoleKey.Backspace, '\b'));
-        Assert.Equal("/mode", editor.Draft);
+        Assert.Equal("/mo", editor.Draft);
         await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
-        Assert.Equal("/model", editor.Draft);
+        Assert.Equal("/mo", editor.Draft);
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
+        Assert.Equal("/model ", editor.Draft);
     }
 
     [Fact]
-    public async Task UnrelatedCursorInputResetsTheCompletionCycle()
+    public async Task UnrelatedCursorInputResetsTheCompletionPicker()
     {
         var editor = new TerminalEditor();
         editor.Prefill("/mod");
@@ -62,8 +94,9 @@ public sealed class EditorCompletionTests
         await SendEditorKeyAsync(editor, Key(ConsoleKey.LeftArrow, '\0'));
         await SendEditorKeyAsync(editor, Key(ConsoleKey.RightArrow, '\0'));
         await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
-
-        Assert.Equal("/model", editor.Draft);
+        Assert.Equal("/mod", editor.Draft);
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
+        Assert.Equal("/model ", editor.Draft);
     }
 
     [Fact]
@@ -78,7 +111,7 @@ public sealed class EditorCompletionTests
             submissions.Add(text);
             return Task.FromResult(true);
         });
-        Assert.Equal("/thinking", editor.Draft);
+        Assert.Equal("/thi", editor.Draft);
         Assert.Empty(submissions);
 
         await SendEditorKeyAsync(editor, Key(ConsoleKey.Enter, '\r'), (text, _, _) =>
@@ -86,7 +119,7 @@ public sealed class EditorCompletionTests
             submissions.Add(text);
             return Task.FromResult(true);
         });
-        Assert.Equal(["/thinking"], submissions);
+        Assert.Equal(["/thinking "], submissions);
         Assert.Equal("", editor.Draft);
 
         editor.Prefill("/does-not-exist");

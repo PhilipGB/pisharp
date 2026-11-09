@@ -372,7 +372,11 @@ public sealed class LlamaRouterManagerTuiTests
             Assert.Equal("loaded", server.Statuses["target"]);
 
             mark = terminal.Mark;
-            await terminal.SendAsync("/model qwen\n");
+            await terminal.SendAsync("/model qwen");
+            await terminal.SendAsync("\n");
+            await terminal.WaitFrameAsync(frame =>
+                frame.Contains("/model llama.cpp/qwen", StringComparison.Ordinal), mark);
+            await terminal.SendAsync("\n");
             await terminal.WaitTextAsync("Model: qwen", mark);
             Assert.Equal("loaded", server.Statuses["qwen"]);
             await terminal.QuitAsync();

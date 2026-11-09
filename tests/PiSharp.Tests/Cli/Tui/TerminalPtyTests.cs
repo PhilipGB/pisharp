@@ -2868,7 +2868,7 @@ public sealed class TerminalPtyTests
             {
                 using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(25));
                 await screen.InputReady.WaitAsync(timeout.Token);
-                await process.StandardInput.WriteAsync("@n\t");
+                await process.StandardInput.WriteAsync("@notes\t");
                 await process.StandardInput.FlushAsync();
                 var selectedPath = await screen.WaitForFrameAsync(frame => EditorInputLine(frame) == "@notes.txt" &&
                     !frame.Contains("Complete input", StringComparison.Ordinal)).WaitAsync(timeout.Token);
@@ -2938,12 +2938,10 @@ public sealed class TerminalPtyTests
             await WaitForEditorAsync("/mod");
             await SendAsync("\t");
             await WaitForEditorAsync("/model");
-            await SendAsync("\t");
-            await WaitForEditorAsync("/models");
             // Pinned Pi binds only Tab to completion; Shift+Tab cycles thinking and must not
             // mutate the editor draft.
             await SendAsync("\u001b[Z");
-            await WaitForEditorAsync("/models");
+            await WaitForEditorAsync("/model");
 
             await SendAsync("\u0015");
             await WaitForEditorAsync("");

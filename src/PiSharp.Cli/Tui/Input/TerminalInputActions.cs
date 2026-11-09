@@ -33,7 +33,7 @@ internal sealed class TerminalInputActions(ActiveProjectRuntime projectBinding, 
     {
         var editorCommand = ExternalEditor.ResolveCommand(projectBinding.Settings.ExternalEditor, Environment.GetEnvironmentVariable);
         Console.WriteLine($"Launching external editor: {editorCommand}");
-        var result = await ExternalEditor.EditAsync(presentation.Editor?.Draft ?? "", editorCommand);
+        var result = await ExternalEditor.EditAsync(presentation.Editor?.ExpandedDraft ?? "", editorCommand);
         if (result.Success) presentation.Editor?.Prefill(result.Content);
         else Console.Error.WriteLine($"External editor exited with status {result.ExitCode}; the draft was preserved.");
     }
