@@ -2868,7 +2868,7 @@ public sealed class TerminalPtyTests
             {
                 using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(25));
                 await screen.InputReady.WaitAsync(timeout.Token);
-                await process.StandardInput.WriteAsync("@n\t");
+                await process.StandardInput.WriteAsync("@notes\t");
                 await process.StandardInput.FlushAsync();
                 var selectedPath = await screen.WaitForFrameAsync(frame => EditorInputLine(frame) == "@notes.txt" &&
                     !frame.Contains("Complete input", StringComparison.Ordinal)).WaitAsync(timeout.Token);
