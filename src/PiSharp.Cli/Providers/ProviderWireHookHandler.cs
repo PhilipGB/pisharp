@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using PiSharp.Runtime.Extensions;
+using PiSharp.Runtime.Providers;
 
 namespace PiSharp.Cli;
 
@@ -15,10 +16,11 @@ internal sealed class ProviderWireHookHandler : DelegatingHandler
     private readonly bool _observeResponse;
     private readonly bool _observeStreamEvents;
     private readonly bool _observeWireActivity;
+    private readonly SamplingParametersRequestContext? _requestContext;
 
     internal ProviderWireHookHandler(string providerId, string modelId, string protocol,
         HttpMessageHandler innerHandler, bool observeResponse = true, bool observeStreamEvents = true,
-        bool observeWireActivity = false) : base(innerHandler)
+        bool observeWireActivity = false, SamplingParametersRequestContext? requestContext = null) : base(innerHandler)
     {
         _providerId = providerId;
         _modelId = modelId;
@@ -26,10 +28,11 @@ internal sealed class ProviderWireHookHandler : DelegatingHandler
         _observeResponse = observeResponse;
         _observeStreamEvents = observeStreamEvents;
         _observeWireActivity = observeWireActivity;
+        _requestContext = requestContext;
     }
 
     private ProviderWireHookHandler(string providerId, string modelId, string protocol,
-        bool observeWireActivity) : base()
+        bool observeWireActivity, SamplingParametersRequestContext? requestContext = null) : base()
     {
         _providerId = providerId;
         _modelId = modelId;
@@ -37,16 +40,19 @@ internal sealed class ProviderWireHookHandler : DelegatingHandler
         _observeResponse = true;
         _observeStreamEvents = true;
         _observeWireActivity = observeWireActivity;
+        _requestContext = requestContext;
     }
 
     internal static DelegatingHandler CreateWithActivity(ModelSelection selection, string protocol,
-        HttpMessageHandler innerHandler, bool observeResponse = true, bool observeStreamEvents = true) =>
+        HttpMessageHandler innerHandler, bool observeResponse = true, bool observeStreamEvents = true,
+        SamplingParametersRequestContext? requestContext = null) =>
         new ProviderWireHookHandler(selection.Provider.Id, selection.Model.Id, protocol, innerHandler,
-            observeResponse, observeStreamEvents, observeWireActivity: true);
+            observeResponse, observeStreamEvents, observeWireActivity: true, requestContext);
 
-    internal static DelegatingHandler CreateAnthropic(ModelSelection selection) =>
+    internal static DelegatingHandler CreateAnthropic(ModelSelection selection,
+        SamplingParametersRequestContext? requestContext = null) =>
         new ProviderWireHookHandler(selection.Provider.Id, selection.Model.Id, "anthropic-messages",
-            observeWireActivity: true);
+            observeWireActivity: true, requestContext);
 
     private static readonly HashSet<string> s_transportManagedHeaders = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -56,6 +62,7 @@ internal sealed class ProviderWireHookHandler : DelegatingHandler
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
         CancellationToken cancellationToken)
     {
+        AddOpenCodeSessionHeader(request);
         var invocation = ProviderWireInvocation.Current;
         var activity = _observeWireActivity ? ProviderWireActivity.CurrentObserver : null;
         if (invocation is not null)
@@ -124,6 +131,15 @@ internal sealed class ProviderWireHookHandler : DelegatingHandler
             if (!request.Headers.TryAddWithoutValidation(name, value) && request.Content is { } targetContent)
                 targetContent.Headers.TryAddWithoutValidation(name, value);
         }
+    }
+
+    private void AddOpenCodeSessionHeader(HttpRequestMessage request)
+    {
+        // Pi adds this routing header only for OpenCode providers and never replaces a caller value.
+        if (_providerId is not ("opencode" or "opencode-go") ||
+            _requestContext?.SessionId is not { Length: > 0 } sessionId ||
+            request.Headers.Contains("x-opencode-session")) return;
+        request.Headers.TryAddWithoutValidation("x-opencode-session", sessionId);
     }
 
     private static Dictionary<string, string?> ReadHeaders(HttpRequestMessage request)

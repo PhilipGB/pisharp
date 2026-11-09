@@ -132,9 +132,15 @@ internal sealed class TerminalProviderLogin(ProviderModelRuntime runtime, Termin
             }
             else
             {
-                Console.Error.Write($"API key for {provider.Id}: ");
-                var secret = ReadSecret();
-                if (secret is null) return false;
+                var prompts = await editor.PromptSequenceAsync($"Login to {provider.Name}",
+                    [($"API key for {provider.Id}:", null)], maskedPrompts: [true]).ConfigureAwait(false);
+                if (prompts is null)
+                {
+                    editor.DismissEditorPanelAndAppendStatus("Login cancelled.",
+                        TerminalStatusNotificationKind.Warning);
+                    return false;
+                }
+                var secret = prompts[0];
                 if (string.IsNullOrWhiteSpace(secret)) throw new ArgumentException("Credential cannot be empty.");
                 await runtime.LoginApiKeyAsync(provider.Id, secret);
             }
@@ -147,8 +153,9 @@ internal sealed class TerminalProviderLogin(ProviderModelRuntime runtime, Termin
         var status = provider.Id == "llama.cpp"
             ? $"Saved API key for llama.cpp. Credentials saved to {Path.Combine(agentDirectory, "auth.json")}"
             : $"Authenticated {provider.Id} with {type}; credential value was not displayed.";
-        if (provider.Id == "llama.cpp") editor.DismissEditorPanelAndAppendStatus(status);
-        else Console.WriteLine(status);
+        // OAuth login remains on its existing presentation path; API-key entry is owned by the TUI prompt.
+        if (type == "oauth" && provider.Id != "llama.cpp") Console.WriteLine(status);
+        else editor.DismissEditorPanelAndAppendStatus(status);
         if (provider.Id.Equals(currentProvider(), StringComparison.OrdinalIgnoreCase))
             await synchronizeCurrentProvider();
         if (provider.Id == "radius" && type == "oauth")
@@ -173,24 +180,6 @@ internal sealed class TerminalProviderLogin(ProviderModelRuntime runtime, Termin
             return;
         }
         await reload();
-    }
-
-    private static string? ReadSecret()
-    {
-        if (Console.IsInputRedirected) return Console.ReadLine();
-        var value = new System.Text.StringBuilder();
-        while (true)
-        {
-            var key = Console.ReadKey(intercept: true);
-            if (key.Key == ConsoleKey.Enter) { Console.Error.WriteLine(); return value.ToString(); }
-            if (key.Key == ConsoleKey.Escape) { Console.Error.WriteLine(); return null; }
-            if (key.Key == ConsoleKey.Backspace)
-            {
-                if (value.Length > 0) value.Length--;
-                continue;
-            }
-            if (!char.IsControl(key.KeyChar)) value.Append(key.KeyChar);
-        }
     }
 
 }

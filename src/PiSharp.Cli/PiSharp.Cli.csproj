@@ -35,6 +35,8 @@
     <EmbeddedResource Include="Providers\Data\amazon-bedrock-models.json" LogicalName="PiSharp.Cli.Providers.Data.amazon-bedrock-models.json" />
     <EmbeddedResource Include="Providers\Data\radius-models.json" LogicalName="PiSharp.Cli.Providers.Data.radius-models.json" />
     <EmbeddedResource Include="Providers\Data\huggingface-models.json" LogicalName="PiSharp.Cli.Providers.Data.huggingface-models.json" />
+    <EmbeddedResource Include="Providers\Data\opencode-models.json" LogicalName="PiSharp.Cli.Providers.Data.opencode-models.json" />
+    <EmbeddedResource Include="Providers\Data\opencode-go-models.json" LogicalName="PiSharp.Cli.Providers.Data.opencode-go-models.json" />
   </ItemGroup>
 
   <ItemGroup>

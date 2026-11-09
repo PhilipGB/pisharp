@@ -1,0 +1,40 @@
+Fail-first evidence at PiSharp base d432ca40eed1bb68d8e3dc37c2cf22c08fad7799.
+Tests and the test-only ProviderWireTestSupport header hook were copied unchanged onto the base worktree; no production code was changed.
+
+== OpenCode provider and wire tests ==
+  Failed PiSharp.Tests.OpenCodeProviderTests.StoredOpenCodeCredentialIsScopedAndLogoutLeavesSiblingsIntact [145 ms]
+  Error Message:
+   System.ArgumentException : Unknown provider 'opencode-go'. Available providers: amazon-bedrock, anthropic, azure, azure-openai-responses, cloudflare-workers-ai, google, google-vertex, huggingface, llama.cpp, mistral, openai, openai-codex, opencode, openrouter, radius, typesafe, vercel-ai-gateway, xai.
+  Failed PiSharp.Tests.OpenCodeProviderTests.OpenCodeGoQualifiedSelectionUsesPinnedProtocolAndModelEndpoint [28 ms]
+  Error Message:
+   System.ArgumentException : Unknown provider 'opencode-go'. Available providers: amazon-bedrock, anthropic, azure, azure-openai-responses, cloudflare-workers-ai, google, google-vertex, huggingface, llama.cpp, mistral, openai, openai-codex, opencode, openrouter, radius, typesafe, vercel-ai-gateway, xai.
+  Failed PiSharp.Tests.OpenCodeProviderTests.BuiltInOpenCodeProfilesExposePinnedPiCatalogues [7 ms]
+  Error Message:
+  Failed PiSharp.Tests.OpenCodeGoWireTests.OpenCodeGoSendsOnlyTheCallerOrConversationSessionHeader(protocol: "openai-responses", modelId: "gpt-6-luna", basePath: "/inference/go/v1", expectedPath: "/inference/go/v1/responses") [313 ms]
+  Error Message:
+  Failed PiSharp.Tests.OpenCodeGoWireTests.OpenCodeGoSendsOnlyTheCallerOrConversationSessionHeader(protocol: "anthropic-messages", modelId: "claude-haiku-5-5", basePath: "/inference/go", expectedPath: "/inference/go/v1/messages") [276 ms]
+  Error Message:
+  Failed PiSharp.Tests.OpenCodeGoWireTests.OpenCodeGoSendsOnlyTheCallerOrConversationSessionHeader(protocol: "google-generative-ai", modelId: "gemini-4-argon", basePath: "/inference/go/v1", expectedPath: "/inference/go/v1/models/gemini-4-argon:streamGener"···) [< 1 ms]
+  Error Message:
+   System.NotSupportedException : Model 'opencode-go/gemini-4-argon' requires unsupported API 'google-generative-ai'.
+  Failed PiSharp.Tests.OpenCodeGoWireTests.OpenCodeGoSendsOnlyTheCallerOrConversationSessionHeader(protocol: "openai-completions", modelId: "kimi-k3", basePath: "/inference/go/v1", expectedPath: "/inference/go/v1/chat/completions") [215 ms]
+  Error Message:
+  Failed PiSharp.Tests.OpenCodeGoWireTests.OpenCodeGoPropagatesCancellationAndProviderErrors(protocol: "google-generative-ai", modelId: "gemini-4-argon", basePath: "/inference/go/v1") [< 1 ms]
+  Error Message:
+   System.NotSupportedException : Model 'opencode-go/gemini-4-argon' requires unsupported API 'google-generative-ai'.
+  Failed PiSharp.Tests.OpenCodeGoWireTests.OpenCodeGoParsesUsageAndSendsThinkingControls(protocol: "google-generative-ai", modelId: "gemini-4-argon", basePath: "/inference/go/v1", expectedPath: "/inference/go/v1/models/gemini-4-argon:streamGener"···) [< 1 ms]
+  Error Message:
+   System.NotSupportedException : Model 'opencode-go/gemini-4-argon' requires unsupported API 'google-generative-ai'.
+  Failed PiSharp.Tests.OpenCodeGoWireTests.OpenCodeGoRoutesEveryProtocolThroughItsNativeEndpoint(protocol: "google-generative-ai", modelId: "gemini-4-argon", basePath: "/inference/go/v1", expectedPath: "/inference/go/v1/models/gemini-4-argon:streamGener"···) [2 ms]
+  Error Message:
+   System.NotSupportedException : Model 'opencode-go/gemini-4-argon' requires unsupported API 'google-generative-ai'.
+Failed!  - Failed:    10, Passed:    10, Skipped:     0, Total:    20, Duration: 1 s - PiSharp.Tests.dll (net10.0)
+
+== Interactive API-key login PTY tests ==
+  Failed PiSharp.Tests.OpenCodeApiKeyLoginPtyTests.InteractiveApiKeyLoginIsMaskedEditableCancellableAndLeavesTheTuiUsable [25 s]
+  Error Message:
+   System.Threading.Tasks.TaskCanceledException : A task was canceled.
+  Failed PiSharp.Tests.OpenCodeApiKeyLoginPtyTests.OpenCodeGoLoginUsesTheTuiSelectsModelsLogsOutAndPersistsAcrossRestart [30 s]
+  Error Message:
+   System.Threading.Tasks.TaskCanceledException : A task was canceled.
+Failed!  - Failed:     2, Passed:     0, Skipped:     0, Total:     2, Duration: 55 s - PiSharp.Tests.dll (net10.0)

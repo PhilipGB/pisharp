@@ -6,11 +6,37 @@
 
 **Stop condition:** a full current-Pi audit finds no material in-scope gaps, required behavioral/differential evidence passes, exact-head CI is green, and major architecture bottlenecks are resolved.
 
-## Current state — 2026-11-07
+## Current state — 2026-11-08
 
-Current status is based on `main` at `03bfa4e87ebcac597fe89f1ac7506abf02aa2385`, the merge of PR #47. The latest merged milestones are [Interactive streaming, reasoning, tool progress and cancellation parity evaluation](parity/fixtures/interactive-streaming-cancellation-001/README.md) (PR #47, `03bfa4e8`), [Wrapped Bash command style parity](parity/fixtures/wrapped-bash-command-style-parity-2026-11-06/README.md) (PR #46, `c615fc17`), [Bash tool output collapse and expansion parity](parity/fixtures/collapsed-tool-output-parity-2026-11-06/README.md) (PR #45, `0984bfc9`) and [multi-step agent execution and recovery parity](parity/fixtures/objective-agent-parity-002-2026-11-06/README.md) (PR #44, `7748479c`). The [interactive visual parity](parity/fixtures/interactive-streaming-cancellation-001/README.md) repair milestone is implemented on branch `milestone/interactive-visual-parity` and remains a draft PR, open and unmerged. Global parity remains `in_progress` at **21 verified, 142 in progress and 31 not started** across the 194 required capabilities, derived from the committed execution ledger. The next single deliverable is to select the next verified-capability gap from the execution ledger. Open architecture risks are tracked in the [architecture document](architecture.md#open-architecture-risks).
+Current status is based on `main` at `d432ca40eed1bb68d8e3dc37c2cf22c08fad7799`, the merge of PR #49. The newest in-review milestone is [OpenCode Go provider and API-key login parity](parity/fixtures/opencode-go-provider-001/README.md), implemented on branch `milestone/opencode-go-provider-parity` as a draft PR, open and unmerged. Earlier merged milestones include [Interactive streaming, reasoning, tool progress and cancellation parity evaluation](parity/fixtures/interactive-streaming-cancellation-001/README.md) (PR #47, `03bfa4e8`), [Wrapped Bash command style parity](parity/fixtures/wrapped-bash-command-style-parity-2026-11-06/README.md) (PR #46, `c615fc17`), [Bash tool output collapse and expansion parity](parity/fixtures/collapsed-tool-output-parity-2026-11-06/README.md) (PR #45, `0984bfc9`) and [multi-step agent execution and recovery parity](parity/fixtures/objective-agent-parity-002-2026-11-06/README.md) (PR #44, `7748479c`). Global parity remains `in_progress` at **21 verified, 142 in progress and 31 not started** across the 194 required capabilities, derived from the committed execution ledger. The next deliverable after review is to select the next verified-capability gap from the execution ledger. Open architecture risks are tracked in the [architecture document](architecture.md#open-architecture-risks).
 
 The milestone entries below retain their historical wording and are superseded by this section wherever they describe a milestone as active or a merged PR as open.
+
+## Milestone in review — OpenCode Go Provider and API-Key Login Parity — 2026-11-08
+
+This bounded milestone adds the pinned Pi `opencode` (`OpenCode Zen`) and
+`opencode-go` (`OpenCode Go`) built-in provider identities and repairs shared
+interactive API-key login. Both providers use `OPENCODE_API_KEY`, separate
+storage keys, endpoints and pinned catalogues: 79 Zen chat models and 30 Go chat
+models across `anthropic-messages`, `google-generative-ai`,
+`openai-completions` and `openai-responses`. Model metadata retains per-model
+base URLs, context/output limits, reasoning inputs, compatibility and pricing
+from pinned Pi `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. OpenCode requests add
+`x-opencode-session` from the existing conversation session ID only when present
+and never replace a caller-supplied value.
+
+The login defect was shared infrastructure: the API-key branch bypassed the TUI
+editor and used `Console.ReadKey` directly. Every API-key provider now uses a
+masked TUI prompt with Enter/Backspace/Escape semantics, TUI status reporting and
+no secret echo; OAuth and the llama.cpp special flow are unchanged. New PTY
+regressions fail at base and pass at the implementation head, covering menu
+selection, masking, editing, cancellation without storage, OpenCode Go login,
+`/model` selection, logout isolation, direct `/login opencode-go api-key` and
+credential persistence across restart. Deterministic HTTP fixtures cover all four
+Go protocols, including tool calls/results, usage, thinking controls, session
+headers, cancellation and 401 propagation. No live `OPENCODE_API_KEY` was
+available, so the credential-gated live smoke remains outstanding. See the
+[receipt](parity/fixtures/opencode-go-provider-001/README.md).
 
 ## Milestone in review — Interactive Visual Parity — 2026-11-07
 

@@ -11,10 +11,12 @@ namespace PiSharp.Cli;
 
 internal static class GoogleGenAiChatClientFactory
 {
-    public static IChatClient Create(ModelSelection selection)
+    public static IChatClient Create(ModelSelection selection,
+        PiSharp.Runtime.Providers.SamplingParametersRequestContext? requestContext = null)
     {
         var handler = ProviderWireHookHandler.CreateWithActivity(selection, "google-generative-ai",
-            new HttpClientHandler { AllowAutoRedirect = false }, observeResponse: false);
+            new HttpClientHandler { AllowAutoRedirect = false }, observeResponse: false,
+            requestContext: requestContext);
         var http = new HttpClient(handler, disposeHandler: true) { Timeout = Timeout.InfiniteTimeSpan };
         return new GoogleGenAiChatClient(http, selection.Connection.Endpoint ?? selection.Provider.Endpoint,
             selection.ApiKey, selection.Model);

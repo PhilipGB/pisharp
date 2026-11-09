@@ -156,7 +156,7 @@ internal static class TerminalDialogPanels
     public static IReadOnlyList<string> RenderPromptPanel(TerminalScreen screen, string title,
         IReadOnlyList<(string Message, string? Placeholder)> prompts, IReadOnlyList<string> completed,
         int promptIndex, string value, int cursor, out int cursorRow, out int cursorColumn,
-        bool submittedPrompt = false)
+        bool submittedPrompt = false, IReadOnlyList<bool>? maskedPrompts = null)
     {
         var width = screen.TerminalWidth;
         var theme = screen.CurrentTheme;
@@ -171,14 +171,17 @@ internal static class TerminalDialogPanels
             if (!string.IsNullOrWhiteSpace(prompts[index].Placeholder))
                 lines.Add(PadPanelLine(" " + theme.Style("dim", "e.g., " + TerminalSafeText.Normalize(prompts[index].Placeholder!)), width));
             currentInputRow = lines.Count;
-            var inputValue = TerminalSafeText.Normalize(index == promptIndex ? value : completed[index]);
+            var rawValue = TerminalSafeText.Normalize(index == promptIndex ? value : completed[index]);
+            var inputCursor = Math.Clamp(cursor, 0, rawValue.Length);
+            var masked = maskedPrompts is not null && index < maskedPrompts.Count && maskedPrompts[index];
+            var inputValue = masked ? MaskSecret(rawValue) : rawValue;
+            var displayCursor = masked ? MaskSecret(rawValue[..inputCursor]).Length : inputCursor;
             var inputLine = "> " + inputValue;
             if (index == promptIndex && !submittedPrompt)
             {
-                var inputCursor = Math.Clamp(cursor, 0, inputValue.Length);
-                var cursorCharacter = inputCursor < inputValue.Length ? inputValue[inputCursor].ToString() : " ";
-                inputLine = "> " + inputValue[..inputCursor] + "\u001b[7m" + cursorCharacter + "\u001b[27m" +
-                    inputValue[(inputCursor + (inputCursor < inputValue.Length ? 1 : 0))..];
+                var cursorCharacter = displayCursor < inputValue.Length ? inputValue[displayCursor].ToString() : " ";
+                inputLine = "> " + inputValue[..displayCursor] + "\u001b[7m" + cursorCharacter + "\u001b[27m" +
+                    inputValue[(displayCursor + (displayCursor < inputValue.Length ? 1 : 0))..];
             }
             lines.Add(PadPanelLine(inputLine, width));
             lines.Add(PadPanelLine(" (" + theme.Style("dim", "escape/ctrl+c") +
@@ -188,9 +191,15 @@ internal static class TerminalDialogPanels
         lines.Add(border);
         cursorRow = currentInputRow;
         var normalizedValue = TerminalSafeText.Normalize(value);
-        cursorColumn = Math.Min(width, 3 + TerminalTextLayout.Width(normalizedValue[..Math.Clamp(cursor, 0, normalizedValue.Length)]));
+        var normalizedCursor = Math.Clamp(cursor, 0, normalizedValue.Length);
+        var cursorText = maskedPrompts is not null && promptIndex < maskedPrompts.Count && maskedPrompts[promptIndex]
+            ? MaskSecret(normalizedValue[..normalizedCursor]) : normalizedValue[..normalizedCursor];
+        cursorColumn = Math.Min(width, 3 + TerminalTextLayout.Width(cursorText));
         return lines;
     }
+
+    private static string MaskSecret(string value) =>
+        value.Length == 0 ? "" : string.Concat(value.EnumerateRunes().Select(_ => "\u2022"));
 
     public static string PanelBorder(TerminalTheme theme, int width) =>
         theme.Fg("accent") + new string('─', Math.Max(1, width)) + "\u001b[0m";

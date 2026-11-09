@@ -1,0 +1,115 @@
+{
+ "fixture": "opencode-go-provider-001",
+ "branch": "milestone/opencode-go-provider-parity",
+ "piSharpBase": "d432ca40eed1bb68d8e3dc37c2cf22c08fad7799",
+ "pinnedPi": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+ "implementationSha": "pending",
+ "providerMetadata": {
+  "oracleFiles": [
+   "packages/ai/src/providers/opencode-go.ts",
+   "packages/ai/src/providers/opencode-go.models.ts",
+   "packages/ai/src/providers/opencode.ts",
+   "packages/ai/src/providers/opencode.models.ts",
+   "packages/ai/src/providers/opencode-headers.ts",
+   "packages/ai/src/providers/data/opencode-go.json",
+   "packages/ai/src/providers/data/opencode.json"
+  ],
+  "comparedFields": [
+   "provider", "id", "name", "api", "baseUrl", "contextLength", "maxOutputTokens",
+   "reasoning", "input", "pricing", "thinkingLevelMap", "compatibility", "inputLimits"
+  ],
+  "catalogue": "catalogue.json"
+ },
+ "loginPtyCases": [
+  "menu: Sign in with an API key -> fixture provider",
+  "masked secret renders bullets and not the secret",
+  "Backspace edits the masked value",
+  "Escape cancels without storing a credential",
+  "TUI remains usable after cancellation",
+  "OpenCode Go appears in the API-key provider menu",
+  "OpenCode Go menu login succeeds",
+  "model picker lists OpenCode Go models and opencode-go/<model> selection works",
+  "/logout opencode-go removes only the OpenCode Go stored credential",
+  "direct /login opencode-go api-key succeeds",
+  "stored credential survives a new process via auth check --provider opencode-go",
+  "secret absent from PTY transcript and stderr"
+ ],
+ "modelCatalogueComparison": {
+  "opencode": {
+   "displayName": "OpenCode Zen",
+   "endpoint": "https://opencode.ai/inference",
+   "models": 79,
+   "protocols": {
+    "anthropic-messages": 17,
+    "google-generative-ai": 8,
+    "openai-completions": 24,
+    "openai-responses": 30
+   },
+   "defaultModel": "kimi-k2.6",
+   "sha256": "d2f019ba761c3fbfaaacd11ce39461b9ad6371ce393aec1cf385895f670756f9"
+  },
+  "opencode-go": {
+   "displayName": "OpenCode Go",
+   "endpoint": "https://opencode.ai/inference/go",
+   "models": 30,
+   "protocols": {
+    "anthropic-messages": 5,
+    "google-generative-ai": 1,
+    "openai-completions": 19,
+    "openai-responses": 5
+   },
+   "defaultModel": "kimi-k3",
+   "sha256": "ab4c670ab165b759a513ea6c5cc256a5cfb58f1eaa9590b56695383b3fb8f3ad"
+  }
+ },
+ "protocolRoutingCases": [
+  "anthropic-messages exact path, x-api-key, model, system/user, tools, tool call and result, usage, thinking control",
+  "google-generative-ai exact path/query, x-goog-api-key, model path, system/user, tools, tool call and result, usage, thinking control",
+  "openai-completions exact path, bearer auth, model, system/developer+user, tools, tool call and result, usage, reasoning effort",
+  "openai-responses exact path, bearer auth, model, instructions/user, tools, tool call and result, usage, reasoning effort",
+  "cancellation for all four protocols",
+  "401 propagation for all four protocols without the secret in the error"
+ ],
+ "sessionHeaderCases": [
+  "session present -> x-opencode-session sent",
+  "no session -> header absent",
+  "explicit caller header -> caller value preserved",
+  "second conversation -> second session value",
+  "no OpenCode session header on Anthropic"
+ ],
+ "credentialIsolationCases": [
+  "stored /login credential wins over OPENCODE_API_KEY",
+  "opencode and opencode-go have separate stored credentials",
+  "logout opencode-go leaves a stored opencode credential intact",
+  "only OPENCODE_API_KEY present does not authenticate an unrelated provider",
+  "no OpenCode credential observed on non-OpenCode fixtures"
+ ],
+ "liveSmoke": {
+  "status": "not_run",
+  "reason": "OPENCODE_API_KEY was not present in the implementation environment",
+  "credentialRecorded": false,
+  "requiredFollowUp": "Run the credential-gated text, tool round trip and second-turn smoke from README.md with a reviewer key."
+ },
+ "focusedTests": {
+  "command": "dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --filter FullyQualifiedName~OpenCode",
+  "passed": 22,
+  "failed": 0,
+  "skipped": 0
+ },
+ "build": {
+  "command": "dotnet build PiSharp.slnx --warnaserror",
+  "passed": true
+ },
+ "format": {
+  "command": "dotnet format PiSharp.slnx --verify-no-changes",
+  "passed": true
+ },
+ "fullSuite": {
+  "command": "dotnet test PiSharp.slnx",
+  "passed": null,
+  "failed": null,
+  "skipped": null,
+  "total": null
+ },
+ "ciRun": null
+}

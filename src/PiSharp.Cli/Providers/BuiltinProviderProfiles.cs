@@ -102,6 +102,10 @@ internal static class BuiltinProviderProfiles
                 Provider: "amazon-bedrock", Api: "bedrock-converse-stream"));
         var radiusGateway = RadiusProviderOptions.FromEnvironment(environment);
         var radiusModels = RadiusModelCatalog.LoadBuiltin(radiusGateway);
+        var openCodeModels = OpenCodeCatalog("opencode", "https://opencode.ai/inference",
+            environment("PISHARP_OPENCODE_MODEL") ?? "kimi-k2.6");
+        var openCodeGoModels = OpenCodeCatalog("opencode-go", "https://opencode.ai/inference/go",
+            environment("PISHARP_OPENCODE_GO_MODEL") ?? "kimi-k3");
         return new(StringComparer.OrdinalIgnoreCase)
         {
             ["openai"] = new("openai", "OpenAI", new Uri("https://api.openai.com/v1"), true, false,
@@ -142,8 +146,29 @@ internal static class BuiltinProviderProfiles
             ["llama.cpp"] = new("llama.cpp", "llama.cpp", new Uri(LlamaRouterClient.DefaultServerUrl + "/v1"),
                 true, false, "LLAMA_API_KEY", null, [], Api: "openai-completions"),
             ["xai"] = new("xai", "xAI", new Uri("https://api.x.ai/v1"), true, false,
-                "XAI_API_KEY", null, xaiModels)
+                "XAI_API_KEY", null, xaiModels),
+            ["opencode"] = new("opencode", "OpenCode Zen", new Uri("https://opencode.ai/inference"),
+                true, false, "OPENCODE_API_KEY", null, openCodeModels),
+            ["opencode-go"] = new("opencode-go", "OpenCode Go", new Uri("https://opencode.ai/inference/go"),
+                true, false, "OPENCODE_API_KEY", null, openCodeGoModels)
         };
+    }
+
+    private static IReadOnlyList<ModelDescriptor> OpenCodeCatalog(string provider, string endpoint, string configuredDefault)
+    {
+        var models = OpenCodeModelCatalog.Load(provider).ToList();
+        var defaultIndex = models.FindIndex(model => model.Id == configuredDefault);
+        if (defaultIndex > 0)
+        {
+            var chosen = models[defaultIndex];
+            models.RemoveAt(defaultIndex);
+            models.Insert(0, chosen);
+        }
+        else if (defaultIndex < 0)
+            models.Insert(0, new(configuredDefault, provider, null, "configured", true,
+                Provider: provider, Name: configuredDefault, MaxOutputTokens: 16384,
+                Input: ["text", "image"], Api: "openai-completions", BaseUrl: endpoint + "/v1"));
+        return models;
     }
 
     private static ModelDescriptor Anthropic(string id, string name, int context, int maxOutput,
