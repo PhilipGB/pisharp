@@ -124,17 +124,25 @@ no leakage to Anthropic.
 
 ## Live smoke
 
-No `OPENCODE_API_KEY` was available in the implementation environment, so no
-live OpenCode Go request was made and no live credential was read or stored.
-The credential-gated smoke remains an explicit acceptance step for a reviewer
-with a key:
+A stored OpenCode Go credential was available for final acceptance. The live
+smoke used the access-enabled free model `beam-free` (`openai-completions`):
 
-1. `/login opencode-go api-key` (or `OPENCODE_API_KEY`);
-2. select a currently advertised Go model from `/model`;
-3. send a minimal text prompt;
-4. run one tool round trip if the model supports tools;
-5. send a second turn in the same session and confirm the provider remains
-   selected.
+- minimal text prompt: success (`OK`);
+- bash tool round trip: success (`opencode-tool-ok`);
+- second turn in the same session: success (`opencode-tool-ok`);
+- provider stayed selected and the session header routed the requests.
+
+Paid models tried during model selection returned HTTP 403
+`permission_error: Model access is disabled` for that account; this is an
+account entitlement result, not a transport failure. No key value was printed,
+committed or written to evidence.
+
+The live run exposed one integration gap before the final fix: interactive
+`ConversationRun` only supplied its conversation ID as provider session
+metadata for `openai-codex-responses`, so OpenCode requests failed with
+`MissingSessionID`. `ConversationRun` now supplies the existing conversation ID
+for `opencode` and `opencode-go` too; a deterministic ConversationRun regression
+asserts the resulting `x-opencode-session` header.
 
 Record only provider, model, protocol, success/failure, HTTP status when
 useful, and redacted evidence. Never record the key.

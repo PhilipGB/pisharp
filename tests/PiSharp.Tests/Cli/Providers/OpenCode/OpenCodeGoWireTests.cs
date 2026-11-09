@@ -5,6 +5,7 @@ using Microsoft.Extensions.AI;
 using PiSharp.Cli;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Providers;
+using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Tests;
 
@@ -112,6 +113,54 @@ public sealed class OpenCodeGoWireTests
 
         await server.WaitAsync(deadline.Token);
         Assert.Equal(["conversation-1", null, "conversation-2", "caller-supplied"], sessions);
+    }
+
+    [Theory]
+    [InlineData("opencode-go", "openai-completions", "kimi-k3", "/inference/go/v1", "/inference/go/v1/chat/completions")]
+    [InlineData("opencode-go", "anthropic-messages", "claude-haiku-5-5", "/inference/go",
+        "/inference/go/v1/messages")]
+    [InlineData("opencode", "google-generative-ai", "gemini-3.5-flash", "/inference/v1",
+        "/inference/v1/models/gemini-3.5-flash:streamGenerateContent")]
+    public async Task ConversationRunSuppliesTheOpenCodeSessionIdToTheProviderRequest(string providerId,
+        string protocol, string modelId, string basePath, string expectedPath)
+    {
+        var (listener, port) = TestLoopbackListener.Start();
+        using var listenerOwner = listener;
+        string? session = null;
+        var server = Task.Run(async () =>
+        {
+            var request = await listener.GetContextAsync();
+            Assert.Equal(expectedPath, request.Request.Url?.AbsolutePath);
+            session = request.Request.Headers["x-opencode-session"];
+            await WriteSseAsync(request.Response, protocol, TextBody(protocol, "ok"));
+        });
+
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-opencode-conversation-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            var selection = Selection(protocol, port, basePath, modelId) with
+            {
+                Provider = new ProviderProfile(providerId, providerId,
+                    new Uri($"http://127.0.0.1:{port}/inference"), true, false, "OPENCODE_API_KEY", null,
+                    [Selection(protocol, port, basePath, modelId).Model])
+            };
+            using var client = ProviderChatClientFactory.Create(selection,
+                new ProviderRetrySettings { MaxRetries = 0 });
+            var conversation = new ConversationSession(root, modelId, null, providerId);
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(root), noTools: true),
+                conversation, deadline.Token, provider: providerId, providerApi: protocol,
+                autoCompactionEnabled: false);
+            var text = new StringBuilder();
+            await foreach (var update in run.RunStreamingAsync("hello", deadline.Token))
+                text.Append(update.Text);
+            await server.WaitAsync(deadline.Token);
+
+            Assert.Equal("ok", text.ToString());
+            Assert.Equal(conversation.Id, session);
+        }
+        finally { Directory.Delete(root, recursive: true); }
     }
 
     [Fact]

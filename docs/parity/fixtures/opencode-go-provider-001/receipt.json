@@ -96,10 +96,19 @@
   "no OpenCode credential observed on non-OpenCode fixtures"
  ],
  "liveSmoke": {
-  "status": "not_run",
-  "reason": "OPENCODE_API_KEY was not present in the implementation environment",
-  "credentialRecorded": false,
-  "requiredFollowUp": "Run the credential-gated text, tool round trip and second-turn smoke from README.md with a reviewer key."
+  "status": "passed",
+  "provider": "opencode-go",
+  "model": "beam-free",
+  "protocol": "openai-completions",
+  "checks": [
+   "minimal text response",
+   "bash tool round trip",
+   "second turn in the same session",
+   "provider remained selected"
+  ],
+  "result": "ok",
+  "paidModelProbe": "HTTP 403 permission_error: Model access is disabled for this account",
+  "credentialRecorded": false
  },
  "focusedTests": {
   "command": "dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --filter FullyQualifiedName~OpenCode",
@@ -133,5 +142,6 @@
   "conclusion": "success",
   "headSha": "978e15efc55b9ada68b5f42a865a2de8f2571fc1"
  },
- "ciNote": "The exact-head run passed all jobs. Earlier runs at 978983fb exposed unrelated pre-existing PTY flakes (EditorMutationPtyTests and KeysQueueSessionPtyTests); the OpenCode login PTY class was then serialized with the dedicated non-parallel PTY collection and the clean exact-head run passed 4545/4545."
+ "ciNote": "The exact-head run passed all jobs. Earlier runs at 978983fb exposed unrelated pre-existing PTY flakes (EditorMutationPtyTests and KeysQueueSessionPtyTests); the OpenCode login PTY class was then serialized with the dedicated non-parallel PTY collection and the clean exact-head run passed 4545/4545.",
+ "sessionHeaderBug": "ConversationRun only propagated the conversation ID for openai-codex-responses; opencode/opencode-go requests therefore lacked x-opencode-session in interactive runs. Fixed to propagate the existing conversation ID for those providers, with a ConversationRun regression."
 }

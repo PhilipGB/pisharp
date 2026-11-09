@@ -14,9 +14,10 @@ cancellation, errors, `x-opencode-session` presence/precedence/isolation and
 credential scoping/logout. Shared interactive API-key login now uses the masked
 TUI editor prompt; real PTY tests cover menu selection, Backspace, Enter, Escape,
 no storage on cancel, no secret echo, OpenCode Go login, `/model`, logout and
-restart persistence. The live OpenCode Go smoke was not run because no
-`OPENCODE_API_KEY` was available. See the
-[receipt](fixtures/opencode-go-provider-001/README.md).
+restart persistence. A live `opencode-go/beam-free` smoke passed text, a bash
+tool round trip and a second turn in the same session; it also exposed and fixed
+the interactive conversation-ID propagation needed for `x-opencode-session`.
+See the [receipt](fixtures/opencode-go-provider-001/README.md).
 
 ## Milestone in review — Interactive Streaming, Reasoning, Tool Progress and Cancellation Evaluation — 2026-11-07
 

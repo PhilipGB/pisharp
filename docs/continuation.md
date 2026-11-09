@@ -34,8 +34,12 @@ selection, masking, editing, cancellation without storage, OpenCode Go login,
 `/model` selection, logout isolation, direct `/login opencode-go api-key` and
 credential persistence across restart. Deterministic HTTP fixtures cover all four
 Go protocols, including tool calls/results, usage, thinking controls, session
-headers, cancellation and 401 propagation. No live `OPENCODE_API_KEY` was
-available, so the credential-gated live smoke remains outstanding. See the
+headers, cancellation and 401 propagation. A final live smoke against
+`opencode-go/beam-free` passed text, bash tool round trip and a second turn in
+the same session. The live run also exposed and fixed a missing conversation-ID
+propagation path: interactive `ConversationRun` now supplies the existing
+session ID for `opencode`/`opencode-go`, so `x-opencode-session` is present. Paid
+models returned account-level `Model access is disabled` responses. See the
 [receipt](parity/fixtures/opencode-go-provider-001/README.md).
 
 ## Milestone in review — Interactive Visual Parity — 2026-11-07
