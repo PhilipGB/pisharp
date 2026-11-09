@@ -130,7 +130,8 @@
   "failed": 0,
   "skipped": 0,
   "total": 4545,
-  "duration": "9 m 19 s"
+  "duration": "9 m 19 s",
+  "head": "978e15efc55b9ada68b5f42a865a2de8f2571fc1"
  },
  "ciRun": {
   "workflow": "Linux CI",
@@ -143,5 +144,11 @@
   "headSha": "978e15efc55b9ada68b5f42a865a2de8f2571fc1"
  },
  "ciNote": "The exact-head run passed all jobs. Earlier runs at 978983fb exposed unrelated pre-existing PTY flakes (EditorMutationPtyTests and KeysQueueSessionPtyTests); the OpenCode login PTY class was then serialized with the dedicated non-parallel PTY collection and the clean exact-head run passed 4545/4545.",
- "sessionHeaderBug": "ConversationRun only propagated the conversation ID for openai-codex-responses; opencode/opencode-go requests therefore lacked x-opencode-session in interactive runs. Fixed to propagate the existing conversation ID for those providers, with a ConversationRun regression."
+ "sessionHeaderBug": "ConversationRun only propagated the conversation ID for openai-codex-responses; opencode/opencode-go requests therefore lacked x-opencode-session in interactive runs. Fixed to propagate the existing conversation ID for those providers, with a ConversationRun regression.",
+ "corrections": [
+  {
+   "sha": "da5866157ebfe09bb814ab534b920e4e66de66af",
+   "description": "Live OpenCode Go exposed MissingSessionID because ConversationRun propagated its conversation ID only for openai-codex-responses. OpenCode providers now receive the existing session ID; deterministic ConversationRun regressions cover all three OpenCode protocol families."
+  }
+ ]
 }
