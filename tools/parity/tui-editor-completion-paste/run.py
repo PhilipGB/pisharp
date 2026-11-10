@@ -56,6 +56,7 @@ def overlay_region(lines, bottom):
 
 def parse_overlay(rows):
     candidates = []
+    descriptions = []
     selected = None
     position = None
     for row in rows:
@@ -67,12 +68,14 @@ def parse_overlay(rows):
         text = ARROW.sub('', row).strip()
         if not text:
             continue
-        label = re.split(r'\s{2,}', text, maxsplit=1)[0].strip()
+        columns = re.split(r'\s{2,}', text, maxsplit=1)
+        label = columns[0].strip()
         label = label[1:] if label.startswith('@') else label
         candidates.append(label)
+        descriptions.append(columns[1].strip() if len(columns) > 1 else '')
         if arrow and selected is None:
             selected = label
-    return candidates, selected, position
+    return candidates, descriptions, selected, position
 
 
 def user_text(request):
@@ -99,7 +102,7 @@ def observe(evidence, product):
         lines = viewport_lines(state)
         top, bottom, editor = editor_region(lines)
         rows = overlay_region(lines, bottom) if bottom is not None else []
-        candidates, selected, position = parse_overlay(rows)
+        candidates, descriptions, selected, position = parse_overlay(rows)
         cursor = state.get('cursor') or {}
         private = {key for key, value in (state.get('modes') or {}).get('private', {}).items() if value}
         checkpoints[checkpoint_id] = {
@@ -109,6 +112,7 @@ def observe(evidence, product):
                        'editorRow': None if top is None or cursor.get('y') is None
                        else cursor.get('y') - top - 1},
             'candidates': candidates,
+            'descriptions': descriptions,
             'selected': selected,
             'position': position,
             'activeScreen': state.get('activeScreen'),
@@ -127,10 +131,13 @@ def captured_inputs(observation):
             if name.endswith('.input')}
 
 
-def compare(pi, pisharp):
+def compare(pi, pisharp, compare_descriptions=False):
     differences = []
     pi_frames = pi['checkpoints']
     sharp_frames = pisharp['checkpoints']
+    fields = ['editorText', 'cursor', 'candidates', 'selected', 'activeScreen']
+    if compare_descriptions:
+        fields.insert(3, 'descriptions')
     for checkpoint_id in sorted(set(pi_frames) | set(sharp_frames)):
         if checkpoint_id == 'exit':
             continue
@@ -140,7 +147,7 @@ def compare(pi, pisharp):
             differences.append({'checkpoint': checkpoint_id, 'field': 'missing',
                                 'pi': left is not None, 'pisharp': right is not None})
             continue
-        for field in ('editorText', 'cursor', 'candidates', 'selected', 'activeScreen'):
+        for field in fields:
             if left[field] != right[field]:
                 differences.append({'checkpoint': checkpoint_id, 'field': field,
                                     'pi': left[field], 'pisharp': right[field]})
@@ -155,8 +162,11 @@ def compare(pi, pisharp):
     return differences
 
 
-def calibration_differences(first, second):
+def calibration_differences(first, second, compare_descriptions=False):
     differences = []
+    fields = ['editorText', 'cursor', 'candidates', 'selected']
+    if compare_descriptions:
+        fields.insert(3, 'descriptions')
     for checkpoint_id in sorted(set(first['checkpoints']) | set(second['checkpoints'])):
         if checkpoint_id == 'exit':
             continue
@@ -165,7 +175,7 @@ def calibration_differences(first, second):
         if left is None or right is None:
             differences.append({'checkpoint': checkpoint_id, 'field': 'missing'})
             continue
-        for field in ('editorText', 'cursor', 'candidates', 'selected'):
+        for field in fields:
             if left[field] != right[field]:
                 differences.append({'checkpoint': checkpoint_id, 'field': field})
     if first['providerTexts'] != second['providerTexts']:
@@ -272,14 +282,17 @@ def main():
                 case = f'{columns}x{rows}-dark-fullscreen'
                 entry = {'id': scenario['id'], 'task': scenario['task'], 'size': f'{columns}x{rows}',
                          'case': case, 'calibration': None, 'pi': None, 'pisharp': None,
-                         'differences': [], 'status': 'pass'}
+                         'differences': [], 'status': 'pass',
+                         'compareCandidateDescriptions':
+                             scenario.get('compareCandidateDescriptions') is True}
                 output = args.output / scenario['id'] / case
                 output.mkdir(parents=True, exist_ok=True)
                 if not args.skip_calibration:
                     calibrated = output / 'calibration'
                     _, evidence = run_terminal(scenario_path, calibrated, case, True, args.pisharp)
                     first, second = observe(evidence, 'pi'), observe(evidence, 'pisharp')
-                    differences = calibration_differences(first, second)
+                    differences = calibration_differences(
+                        first, second, scenario.get('compareCandidateDescriptions') is True)
                     entry['calibration'] = {'match': not differences, 'differences': differences,
                                             'checkpoints': len(first['checkpoints'])}
                     if differences:
@@ -288,7 +301,8 @@ def main():
                 pi, pisharp = observe(evidence, 'pi'), observe(evidence, 'pisharp')
                 entry['pi'] = pi
                 entry['pisharp'] = pisharp
-                entry['differences'] = compare(pi, pisharp)
+                entry['differences'] = compare(
+                    pi, pisharp, scenario.get('compareCandidateDescriptions') is True)
                 blocked = set()
                 for difference in entry['differences']:
                     for known in KNOWN_DIFFERENCES:

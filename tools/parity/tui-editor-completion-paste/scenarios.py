@@ -187,6 +187,62 @@ def slash_completion():
         action('picker-up', '\u001b[A', quiesce=True, quiet=400),
         action('picker-cancel', '\u001b', editor='/s', absent='\u2192'),
         action('clear-picker', CLEAR, editor=''),
+        # Fuzzy, non-prefix queries: "mdl" ranks model before scoped-models and
+        # "hks" selects hotkeys even though neither is a literal prefix.
+        action('fuzzy-mdl', '/mdl', editor='/mdl', quiet=700),
+        barrier('fuzzy-mdl-barrier'),
+        action('fuzzy-hks', CLEAR + '/hks', editor='/hks', quiet=700),
+        barrier('fuzzy-hks-barrier'),
+        action('no-match', CLEAR + '/zzzz', editor='/zzzz', absent='\u2192', quiet=700),
+        barrier('no-match-barrier'),
+        # Deterministic ordering with several candidates.
+        action('multi-order', CLEAR + '/s', editor='/s', quiet=700),
+        barrier('multi-order-barrier'),
+        action('navigate-down-one', '\u001b[B', editor='/s', quiesce=True, quiet=500),
+        barrier('navigate-down-one-barrier'),
+        action('navigate-down-two', '\u001b[B', editor='/s', quiesce=True, quiet=500),
+        barrier('navigate-down-two-barrier'),
+        action('navigate-down-tab', '\t', expect='fixture-model', quiet=600),
+        barrier('navigate-down-tab-barrier'),
+        action('navigate-wrap', CLEAR + '/s', editor='/s', quiet=700),
+        action('navigate-wrap-up', '\u001b[A', editor='/s', quiesce=True, quiet=500),
+        barrier('navigate-wrap-barrier'),
+        action('navigate-wrap-tab', '\t', expect='fixture-model', quiet=600),
+        barrier('navigate-wrap-tab-barrier'),
+        # Argument completion for the commands where pinned Pi exposes it.
+        action('argument-model-query', CLEAR + '/model fix', editor='/model fix', quiet=700),
+        barrier('argument-model-query-barrier'),
+        action('argument-model-apply', '\t', expect='fixture-model', quiet=700),
+        barrier('argument-model-apply-barrier'),
+        action('argument-thinking-query', CLEAR + '/thinking ', editor='/thinking', quiet=700),
+        barrier('argument-thinking-query-barrier'),
+        action('argument-thinking-apply', '\t', expect='fixture-model', quiet=700),
+        barrier('argument-thinking-apply-barrier'),
+        action('argument-thinking-fuzzy', CLEAR + '/thinking o', editor='/thinking o', quiet=700),
+        barrier('argument-thinking-fuzzy-barrier'),
+        action('argument-no-match', CLEAR + '/model zzz', editor='/model zzz', absent='\u2192', quiet=700),
+        barrier('argument-no-match-barrier'),
+        # Moving the cursor back into the command name re-queries the picker.
+        action('cursor-requery', CLEAR + '/model fix', editor='/model fix', quiet=700),
+        barrier('cursor-requery-typed'),
+        action('cursor-requery-left', '\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D',
+               editor='/model fix', quiesce=True, quiet=800),
+        barrier('cursor-requery-barrier'),
+        action('cursor-requery-escape', '\u001b', editor='/model fix', absent='\u2192'),
+        # Deleting after dismissal reopens the picker, like Pi's Backspace path.
+        action('escape-then-backspace', CLEAR + '/model', editor='/model', quiet=700),
+        action('escape-close', '\u001b', editor='/model', absent='\u2192', quiet=600),
+        barrier('escape-close-barrier'),
+        action('backspace-reopen', '\u007f', editor='/mode', quiet=700),
+        barrier('backspace-reopen-barrier'),
+        action('clear-reopen', CLEAR, quiesce=True, checkpoint=False),
+        # Completing a command must leave the editable draft intact for submission.
+        action('draft-after-command', CLEAR + '/thinking of', editor='/thinking of', quiet=700),
+        action('draft-after-command-tab', '\t', expect='fixture-model', quiet=700),
+        action('draft-after-command-clear', '\u0001\u000b', editor='', quiet=400),
+        action('draft-after-command-type', 'completion kept the draft', editor='completion kept the draft'),
+        action('draft-after-command-submit', '\r', expect='FIXTURE_REPLY_1'),
+        action('clear-final', CLEAR, editor=''),
         {'id': 'exit', 'send': '\u0004', 'exit': True, 'expect': 'fixture-model'},
     ]
     return base('slash-completion', 'slash-completion', actions)
@@ -201,6 +257,8 @@ PATH_FILES = {
     'src/module/deep.cs': 'class Deep {}\n',
     'docs/guide.md': 'guide\n',
     'space name.txt': 'space\n',
+    'Beta.txt': 'upper\n',
+    'beta2.txt': 'lower\n',
     '.hidden.txt': 'hidden\n',
     '.hidden-dir/secret.txt': 'secret\n',
     '.git/config': '[core]\n',
@@ -236,10 +294,119 @@ def path_completion():
         action('at-quoted', '@"sp', editor='@"sp', quiet=800),
         action('quoted-cancel', '\u001b', editor='@"sp', absent='\u2192'),
         action('clear-quoted', CLEAR, editor=''),
+        # Fuzzy multi-candidate ordering and nested/recursive discovery.
+        action('at-fuzzy', '\u0015@al', editor='@al', quiet=900),
+        barrier('at-fuzzy-barrier'),
+        action('at-nested', '\u0015@deep', editor='@deep', quiet=900),
+        barrier('at-nested-barrier'),
+        action('at-relative', '\u0015@./src', editor='@./src', quiet=900),
+        barrier('at-relative-barrier'),
+        action('at-case', '\u0015@BETA', editor='@BETA', quiet=900),
+        barrier('at-case-barrier'),
+        # Directory continuation keeps the completion open without a trailing space.
+        action('at-directory', '\u0015@src', editor='@src', quiet=900),
+        barrier('at-directory-barrier'),
+        action('at-directory-continue', '\t', editor='@src/', quiet=900),
+        barrier('at-directory-continue-barrier'),
+        action('at-directory-child', 'mai', editor='@src/mai', quiet=900),
+        barrier('at-directory-child-barrier'),
+        action('at-directory-child-tab', '\t', editor='@src/main.cs', quiet=900),
+        barrier('at-directory-child-tab-barrier'),
+        # No matches leave the draft untouched and do not open an overlay.
+        action('at-no-match', '\u0015@zzzz', editor='@zzzz', absent='\u2192', quiet=900),
+        barrier('at-no-match-barrier'),
+        action('at-no-match-tab', '\t', editor='@zzzz', absent='\u2192', quiet=900),
+        barrier('at-no-match-tab-barrier'),
+        # Selection and application, including Enter (which does not submit).
+        action('at-select', '\u0015@al', editor='@al', quiet=900),
+        action('at-select-down', '\u001b[B', editor='@al', quiesce=True, quiet=500),
+        action('at-select-down-tab', '\t', expect='fixture-model', quiet=700),
+        barrier('at-select-down-tab-barrier'),
+        action('at-enter', '\u0015@alpha\r', expect='fixture-model', quiet=900),
+        barrier('at-enter-barrier'),
+        # Embedded completion preserves surrounding prose and reaches the provider.
+        action('at-embedded', '\u0015look at @al', editor='look at @al', quiet=900),
+        barrier('at-embedded-barrier'),
+        action('at-embedded-tab', '\t', expect='fixture-model', quiet=900),
+        barrier('at-embedded-tab-barrier'),
+        action('at-embedded-submit', 'please\r', expect='FIXTURE_REPLY_1'),
+        # Paste does not activate completion; the next real key does.
+        action('at-paste', '\u0015\u001b[200~@alph\u001b[201~', editor='@alph', absent='\u2192', quiet=900),
+        barrier('at-paste-barrier'),
+        action('at-paste-type', 'a', editor='@alpha', quiet=900),
+        barrier('at-paste-type-barrier'),
+        action('at-paste-escape', '\u001b', editor='@alpha', absent='\u2192'),
+        action('clear-paste', CLEAR, quiesce=True),
+        # Dismissal followed by a deletion reopens the picker.
+        action('at-escape-backspace', '\u0015@alp', editor='@alp', quiet=900),
+        action('at-escape', '\u001b', editor='@alp', absent='\u2192', quiet=600),
+        barrier('at-escape-barrier'),
+        action('at-escape-backspace-key', '\u007f', editor='@al', quiet=900),
+        barrier('at-escape-backspace-barrier'),
+        action('clear-escape-backspace', CLEAR, quiesce=True, checkpoint=False),
         {'id': 'exit', 'send': '\u0004', 'exit': True, 'expect': 'fixture-model'},
     ]
     return base('path-completion', 'path-completion', actions, files=PATH_FILES,
-                bin_files={'fd': FD_SHIM})
+                bin_files={'fd': FD_SHIM}, extra={'compareCandidateDescriptions': True})
+
+
+def path_symlink():
+    files = {
+        'target/notes.txt': 'target\n',
+        'link.txt': {'$symlink': 'target/notes.txt'},
+        'linked-dir': {'$symlink': 'target'},
+        'ordinary.txt': 'ordinary\n',
+    }
+    actions = [
+        startup(),
+        action('symlink-file', '@link', editor='@link', quiet=900),
+        barrier('symlink-file-barrier'),
+        action('symlink-file-tab', '\t', expect='fixture-model', quiet=900),
+        barrier('symlink-file-tab-barrier'),
+        action('symlink-dir', '\u0015@linked', editor='@linked', quiet=900),
+        barrier('symlink-dir-barrier'),
+        action('symlink-dir-continue', '\t', editor='@linked-dir/', quiet=900),
+        barrier('symlink-dir-continue-barrier'),
+        action('symlink-dir-child', 'n', editor='@linked-dir/n', quiet=900),
+        barrier('symlink-dir-child-barrier'),
+        action('symlink-dir-child-tab', '\t', editor='@linked-dir/notes.txt', quiet=900),
+        barrier('symlink-dir-child-tab-barrier'),
+        action('clear-symlink', CLEAR, quiesce=True),
+        {'id': 'exit', 'send': '\u0004', 'exit': True, 'expect': 'fixture-model'},
+    ]
+    return base('path-symlink', 'path-completion', actions, files=files,
+                bin_files={'fd': FD_SHIM}, extra={'compareCandidateDescriptions': True})
+
+
+def file_tab_completion():
+    files = {
+        'readme.md': 'readme\n',
+        'package.json': '{}\n',
+        'Beta.txt': 'upper\n',
+        'beta2.txt': 'lower\n',
+        'src/index.ts': 'export {}\n',
+    }
+    actions = [
+        startup(),
+        action('tab-all', '\t', editor='', quiet=900),
+        barrier('tab-all-barrier'),
+        action('tab-narrow', 'B', editor='B', quiet=900),
+        barrier('tab-narrow-barrier'),
+        action('tab-apply', '\t', expect='fixture-model', quiet=900),
+        barrier('tab-apply-barrier'),
+        action('tab-clear', '\u0015', editor='', quiesce=True),
+        action('tab-dir', 'src', editor='src', quiet=200),
+        action('tab-dir-complete', '\t', editor='src/', quiet=900),
+        barrier('tab-dir-complete-barrier'),
+        action('tab-dir-child', 'i', editor='src/i', quiet=900),
+        barrier('tab-dir-child-barrier'),
+        action('tab-dir-child-apply', '\t', expect='fixture-model', quiet=900),
+        barrier('tab-dir-child-apply-barrier'),
+        action('tab-clear-final', '\u0015', editor='', quiesce=True),
+        {'id': 'exit', 'send': '\u0004', 'exit': True, 'expect': 'fixture-model'},
+    ]
+    return base('file-tab-completion', 'path-completion', actions, files=files,
+                extra={'compareCandidateDescriptions': True})
 
 
 PASTE_LARGE = '\n'.join('bounded line %02d' % index for index in range(1, 11))
@@ -501,6 +668,8 @@ SCENARIOS = (
     history,
     slash_completion,
     path_completion,
+    path_symlink,
+    file_tab_completion,
     bracketed_paste,
     large_paste_marker,
     large_paste_external_editor,

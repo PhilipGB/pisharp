@@ -13,6 +13,9 @@ sys.path.insert(0, str(HERE))
 from inventory import KNOWN_DIFFERENCES, NORMALIZATIONS  # noqa: E402
 
 PI_SHA = (ROOT / 'tools/parity/pi-reference.txt').read_text().split()[0].strip()
+FIXTURE = ROOT / 'docs/parity/fixtures/tui-editor-completion-paste-001'
+ACCEPTANCE = FIXTURE / 'acceptance.json'
+HEAD_FILE = FIXTURE / 'head.txt'
 SIZES = {'80x24', '120x40'}
 REQUIRED = {
     'cursor-unicode': ['cursor-unicode'],
@@ -29,9 +32,26 @@ REQUIRED = {
 RUBRIC = {'cursor-unicode': 15, 'multiline': 10, 'history': 10, 'slash-completion': 15,
           'path-completion': 15, 'bracketed-paste': 10, 'escape-ctrl-c': 10,
           'external-editor': 10, 'journey': 5}
-CHECKPOINT_FIELDS = ('editorText', 'cursor', 'candidates', 'selected', 'activeScreen')
+CHECKPOINT_FIELDS = ('editorText', 'cursor', 'candidates', 'selected', 'activeScreen', 'descriptions')
+# Frozen acceptance cases. Removing one from the manifest must fail verification.
+FROZEN_CASES = {
+    'slash-exact-prefix', 'slash-fuzzy-non-prefix', 'slash-fuzzy-ranking',
+    'slash-multiple-candidates-order', 'slash-keyboard-navigation', 'slash-selection-apply',
+    'slash-trailing-space', 'slash-no-argument-command', 'slash-argument-command',
+    'slash-argument-model-completion', 'slash-argument-thinking-completion',
+    'slash-no-matches', 'slash-argument-no-matches', 'slash-escape-preserves-draft',
+    'slash-editor-clear', 'slash-pasted-text-does-not-open',
+    'slash-typed-key-opens-after-paste', 'slash-submitted-prompt',
+    'file-simple-filename', 'file-nested-filename', 'file-fuzzy-filename',
+    'file-multiple-candidates-order', 'file-relative-path', 'file-path-with-spaces',
+    'file-directory-display', 'file-selection-apply', 'file-trailing-space',
+    'file-no-matches', 'file-escape-preserves-draft', 'file-pasted-vs-typed',
+    'file-embedded-completion', 'file-provider-visible-text', 'file-project-root-boundary',
+    'file-hidden-and-git', 'file-symlink', 'file-forced-tab-completion',
+}
 NORMALIZATION_IDS = {'post-exit-scroll-position', 'completion-label-display-prefix',
-                     'completion-position-row', 'external-editor-temporary-path'}
+                     'completion-position-row', 'external-editor-temporary-path',
+                     'slash-command-description-copy'}
 
 
 class VerificationError(RuntimeError):
@@ -60,17 +80,19 @@ def is_ancestor(sha):
     return completed.returncode == 0
 
 
-def expected_differences(pi, pisharp):
+def expected_differences(pi, pisharp, compare_descriptions=False):
     differences = []
     left = pi['checkpoints']
     right = pisharp['checkpoints']
+    fields = [field for field in CHECKPOINT_FIELDS
+              if field != 'descriptions' or compare_descriptions]
     for checkpoint in sorted(set(left) | set(right)):
         if checkpoint == 'exit':
             continue
         if checkpoint not in left or checkpoint not in right:
             differences.append((checkpoint, 'missing'))
             continue
-        for field in CHECKPOINT_FIELDS:
+        for field in fields:
             if left[checkpoint][field] != right[checkpoint][field]:
                 differences.append((checkpoint, field))
     if pi['providerTexts'] != pisharp['providerTexts']:
@@ -96,7 +118,65 @@ def known_for(task, scenario, checkpoint, field):
     return matches
 
 
-def verify(report, *, head=None, require_clean=False):
+def verify_acceptance(report, acceptance, expected_head):
+    require(acceptance.get('schema') == 1, 'Acceptance manifest schema must be 1.')
+    require(acceptance.get('piSha') == PI_SHA, 'Acceptance manifest pins the wrong Pi revision.')
+    cases = acceptance.get('cases') or []
+    ids = [case.get('id') for case in cases]
+    require(len(ids) == len(set(ids)), 'Acceptance manifest has duplicate case ids.')
+    require(set(ids) == FROZEN_CASES,
+            f'Acceptance cases differ from the frozen set. Missing={sorted(FROZEN_CASES - set(ids))} '
+            f'extra={sorted(set(ids) - FROZEN_CASES)}.')
+    deferred = acceptance.get('deferred') or []
+    deferred_ids = [entry.get('id') for entry in deferred]
+    require(len(deferred_ids) == len(set(deferred_ids)), 'Deferred entries have duplicate ids.')
+    require(not (set(deferred_ids) & set(ids)), 'A deferred behaviour is also listed as a case.')
+    for entry in deferred:
+        require(entry.get('reason') and entry.get('oracle'), 'Deferred entries need a reason and oracle.')
+    require(isinstance(expected_head, str) and len(expected_head) == 40,
+            'head.txt must pin the 40-character evidence head.')
+    require(report.get('pisharpSha') == expected_head,
+            f"Evidence head {report.get('pisharpSha')!r} does not match head.txt {expected_head!r}.")
+    entries = {(entry['id'], entry['size']): entry for entry in report['scenarios']}
+    for case in cases:
+        case_id = case['id']
+        require(case.get('mandatory') is True, f'{case_id} must be mandatory.')
+        require(case.get('status') == 'pass', f'{case_id} is not marked passed.')
+        scenario = case.get('scenario')
+        require(scenario in REQUIRED.get(case.get('area')),
+                f'{case_id} names scenario {scenario!r} outside its area.')
+        checkpoints = case.get('checkpoints') or []
+        require(checkpoints, f'{case_id} lists no checkpoints.')
+        expected = case.get('expect') or {}
+        require(expected, f'{case_id} lists no expected observation.')
+        require(set(expected) <= set(CHECKPOINT_FIELDS),
+                f'{case_id} expects unknown fields {sorted(set(expected) - set(CHECKPOINT_FIELDS))}.')
+        if 'providerTexts' in expected:
+            require(isinstance(expected['providerTexts'], list) and expected['providerTexts'],
+                    f'{case_id} must freeze provider-visible text.')
+        for size in SIZES:
+            entry = entries.get((scenario, size))
+            require(entry is not None, f'{case_id} has no {scenario}/{size} evidence.')
+            for product in ('pi', 'pisharp'):
+                observations = entry[product].get('checkpoints') or {}
+                for checkpoint in checkpoints:
+                    require(checkpoint in observations,
+                            f'{case_id} ({size}) is missing {product} evidence for {checkpoint}.')
+                    observation = observations[checkpoint]
+                    for field, value in expected.items():
+                        if field == 'providerTexts':
+                            continue
+                        require(observation.get(field) == value,
+                                f'{case_id} ({size}) {field} at {checkpoint} is '
+                                f'{observation.get(field)!r}, expected {value!r}.')
+            if 'providerTexts' in expected:
+                for product in ('pi', 'pisharp'):
+                    require(entry[product].get('providerTexts') == expected['providerTexts'],
+                            f'{case_id} ({size}) {product} provider-visible text is '
+                            f'{entry[product].get("providerTexts")!r}, expected {expected["providerTexts"]!r}.')
+
+
+def verify(report, *, head=None, require_clean=False, acceptance=None, expected_head=None):
     require(report.get('schema') == 1, 'Report schema must be 1.')
     require(report.get('capability') == 'tui-editor-completion-paste',
             'Report capability is wrong.')
@@ -164,7 +244,8 @@ def verify(report, *, head=None, require_clean=False):
                         f'{scenario}/{entry["size"]}/{checkpoint} has no selected candidate.')
         pi = entry['pi']
         pisharp = entry['pisharp']
-        expected = expected_differences(pi, pisharp)
+        expected = expected_differences(pi, pisharp,
+                                        entry.get('compareCandidateDescriptions') is True)
         recorded = {(difference.get('checkpoint'), difference.get('field'))
                     for difference in entry.get('differences') or []}
         require(recorded == set(expected),
@@ -198,41 +279,75 @@ def verify(report, *, head=None, require_clean=False):
             f'Report points {score.get("points")!r} do not match recomputed {points!r}.')
     require(score.get('total') == sum(points.values()) and score.get('maximum') == 100,
             'Report total score is incorrect.')
+    verify_acceptance(report, acceptance if acceptance is not None else load(ACCEPTANCE),
+                      expected_head if expected_head is not None
+                      else HEAD_FILE.read_text().strip())
     return {'total': sum(points.values()), 'points': points, 'differences': sum(
         len(entry.get('differences') or []) for entry in entries)}
 
 
-def mutations(report):
-    """Yield (name, mutated report, expected message fragment) negative controls."""
-    def scenario(report, scenario_id, size='80x24'):
-        return next(entry for entry in report['scenarios']
+def mutations(report, acceptance):
+    """Yield (name, report, manifest, expected message fragment) negative controls."""
+    def scenario(value, scenario_id, size='80x24'):
+        return next(entry for entry in value['scenarios']
                     if entry['id'] == scenario_id and entry['size'] == size)
 
-    def failing_entry(report):
-        return next(entry for entry in report['scenarios'] if entry['differences'])
+    def provider_case(value):
+        return next(case for case in value['cases'] if 'providerTexts' in case['expect'])
 
-    yield ('missing-scenario', _drop_scenario(report, 'history', '80x24'), 'inventory')
-    yield ('missing-size', _drop_scenario(report, 'cursor-unicode', '120x40'), 'inventory')
+    yield ('missing-scenario', _drop_scenario(report, 'history', '80x24'), acceptance, 'inventory')
+    yield ('missing-size', _drop_scenario(report, 'cursor-unicode', '120x40'), acceptance, 'inventory')
     yield ('missing-checkpoint', _mutate(report, lambda r: scenario(r, 'cursor-unicode')['pi']
-                                         ['checkpoints'].pop('typed')), 'recorded differences')
+                                         ['checkpoints'].pop('typed')), acceptance, 'recorded differences')
     yield ('unexpected-pi-failure', _mutate(report, lambda r: scenario(r, 'history')['pi']
-                                            .__setitem__('scenarioError', 'timeout')), 'reported')
-    yield ('hidden-candidate-mismatch', _mutate(report, lambda r: _hide(r, 'candidates')), 'recorded differences')
-    yield ('hidden-provider-mismatch', _mutate(report, lambda r: _hide(r, 'providerTexts')),
+                                            .__setitem__('scenarioError', 'timeout')), acceptance, 'reported')
+    yield ('hidden-candidate-mismatch', _mutate(report, lambda r: _hide(r, 'candidates')), acceptance,
            'recorded differences')
-    yield ('hidden-cursor-mismatch', _mutate(report, lambda r: _hide(r, 'cursor')),
+    yield ('hidden-provider-mismatch', _mutate(report, lambda r: _hide(r, 'providerTexts')), acceptance,
+           'recorded differences')
+    yield ('hidden-cursor-mismatch', _mutate(report, lambda r: _hide(r, 'cursor')), acceptance,
+           'recorded differences')
+    yield ('hidden-description-mismatch', _mutate(report, lambda r: _hide(r, 'descriptions')), acceptance,
            'recorded differences')
     yield ('calibration-failure', _mutate(report, lambda r: scenario(r, 'multiline')['calibration']
-                                          .__setitem__('match', False)), 'calibration')
+                                          .__setitem__('match', False)), acceptance, 'calibration')
     yield ('stale-provenance', _mutate(report, lambda r: r.__setitem__('pisharpSha', '0' * 40)),
-           'Stale implementation provenance')
-    yield ('omitted-known-difference', _mutate(report, _unclassify), 'unexplained difference')
-    yield ('false-known-difference', _mutate(report, _false_known), 'known differences')
+           acceptance, 'Stale implementation provenance')
+    yield ('omitted-known-difference', _mutate(report, _unclassify), acceptance, 'unexplained difference')
+    yield ('false-known-difference', _mutate(report, _false_known), acceptance, 'known differences')
     yield ('altered-score', _mutate(report, lambda r: r['score']['points'].__setitem__('history', 0)),
-           'points')
-    yield ('wrong-pi-pin', _mutate(report, lambda r: r.__setitem__('piSha', '1' * 40)), 'Pi pin')
+           acceptance, 'points')
+    yield ('wrong-pi-pin', _mutate(report, lambda r: r.__setitem__('piSha', '1' * 40)), acceptance, 'Pi pin')
     yield ('duplicate-entry', _mutate(report, lambda r: r['scenarios'].append(
-        copy.deepcopy(r['scenarios'][0]))), 'Duplicate')
+        copy.deepcopy(r['scenarios'][0]))), acceptance, 'Duplicate')
+    yield ('removed-mandatory-case', report,
+           _mutate(acceptance, lambda m: m['cases'].pop(0)), 'frozen set')
+    yield ('missing-case-evidence', _mutate(report, _drop_case_evidence), acceptance, 'missing')
+    yield ('missing-provider-evidence', _mutate(report, _drop_provider_evidence), acceptance, 'provider-visible')
+    yield ('altered-candidate-order', report,
+           _mutate(acceptance, lambda m: _reverse_candidates(m)), 'expected')
+    yield ('wrong-evidence-head', _mutate(report, lambda r: r.__setitem__('pisharpSha', '2' * 40)),
+           acceptance, 'head.txt')
+    yield ('wrong-source-inventory-sha', report,
+           _mutate(acceptance, lambda m: m.__setitem__('piSha', '3' * 40)), 'wrong Pi revision')
+
+
+def _drop_case_evidence(report):
+    entry = next(value for value in report['scenarios'] if value['id'] == 'slash-completion')
+    for product in ('pi', 'pisharp'):
+        entry[product]['checkpoints'].pop('slash-ambiguous')
+
+
+def _drop_provider_evidence(report):
+    entry = next(value for value in report['scenarios'] if value['id'] == 'path-completion'
+                 and value['size'] == '80x24')
+    entry['pi']['providerTexts'] = []
+
+
+def _reverse_candidates(acceptance):
+    case = next(case for case in acceptance['cases']
+                if len(case['expect'].get('candidates') or []) > 1)
+    case['expect']['candidates'] = list(reversed(case['expect']['candidates']))
 
 
 def _mutate(report, action):
@@ -257,6 +372,8 @@ def _hide(report, field):
         entry['pisharp']['checkpoints'][checkpoint]['candidates'] = ['invented']
     elif field == 'cursor':
         entry['pisharp']['checkpoints'][checkpoint]['cursor'] = {'x': -1, 'y': -1}
+    elif field == 'descriptions':
+        entry['pisharp']['checkpoints'][checkpoint]['descriptions'] = ['invented description']
 
 
 def _unclassify(report):
@@ -289,10 +406,13 @@ def main():
         result = verify(report, head=args.head, require_clean=args.require_clean)
         if args.self_test:
             controls = 0
-            for name, mutated, fragment in mutations(report):
+            acceptance = load(ACCEPTANCE)
+            expected_head = HEAD_FILE.read_text().strip()
+            for name, mutated, manifest, fragment in mutations(report, acceptance):
                 controls += 1
                 try:
-                    verify(mutated, head=git_head())
+                    verify(mutated, head=git_head(), acceptance=manifest,
+                           expected_head=expected_head)
                 except VerificationError as error:
                     if fragment not in str(error):
                         raise VerificationError(

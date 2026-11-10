@@ -22,6 +22,14 @@ NORMALIZATIONS = [
                   'separately and excluded from candidate identities.',
     },
     {
+        'id': 'slash-command-description-copy',
+        'scope': 'slash-command overlay descriptions',
+        'reason': 'Command descriptions in the slash overlay are owned by the interactive command '
+                  'catalogue and its help/RPC consumers, not by completion selection. Candidate '
+                  'identities, order, selection and insertion are compared exactly for slash commands; '
+                  'path and argument completion descriptions are compared.',
+    },
+    {
         'id': 'external-editor-temporary-path',
         'scope': 'external-editor captures',
         'reason': 'Temporary directory names and file modes are product internals. Both products create a '

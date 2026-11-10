@@ -42,6 +42,8 @@ def write_scenario_files(files, base, replacements=None):
         path.parent.mkdir(parents=True, exist_ok=True)
         if isinstance(content, dict) and set(content) == {'$base64'} and isinstance(content['$base64'], str):
             path.write_bytes(base64.b64decode(content['$base64'], validate=True))
+        elif isinstance(content, dict) and set(content) == {'$symlink'} and isinstance(content['$symlink'], str):
+            path.symlink_to(content['$symlink'])
         else:
             text = content if isinstance(content, str) else json.dumps(content)
             text = text.replace('{workspace}', str(WORKSPACE)).replace('{agent}', str(AGENT_DIRECTORY))

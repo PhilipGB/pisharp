@@ -69,7 +69,7 @@ public sealed class EditorCompletionTests
     }
 
     [Fact]
-    public async Task EditingResetsTheCompletionPicker()
+    public async Task BackspaceReopensAndNarrowsTheCompletionPickerLikePi()
     {
         var editor = new TerminalEditor();
         editor.Prefill("/mod");
@@ -79,13 +79,25 @@ public sealed class EditorCompletionTests
         await SendEditorKeyAsync(editor, Key(ConsoleKey.Backspace, '\b'));
         Assert.Equal("/mo", editor.Draft);
         await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
-        Assert.Equal("/mo", editor.Draft);
+        Assert.Equal("/model ", editor.Draft);
+    }
+
+    [Fact]
+    public async Task DismissedCompletionReopensOnBackspaceLikePi()
+    {
+        var editor = new TerminalEditor();
+        editor.Prefill("/model");
+
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Escape, '\u001b'));
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Backspace, '\b'));
+        Assert.Equal("/mode", editor.Draft);
         await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
         Assert.Equal("/model ", editor.Draft);
     }
 
     [Fact]
-    public async Task UnrelatedCursorInputResetsTheCompletionPicker()
+    public async Task CursorMovementRequeriesTheOpenCompletionPickerLikePi()
     {
         var editor = new TerminalEditor();
         editor.Prefill("/mod");
@@ -93,8 +105,6 @@ public sealed class EditorCompletionTests
         await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
         await SendEditorKeyAsync(editor, Key(ConsoleKey.LeftArrow, '\0'));
         await SendEditorKeyAsync(editor, Key(ConsoleKey.RightArrow, '\0'));
-        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
-        Assert.Equal("/mod", editor.Draft);
         await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
         Assert.Equal("/model ", editor.Draft);
     }
@@ -126,6 +136,134 @@ public sealed class EditorCompletionTests
         await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
         Assert.Equal("/does-not-exist", editor.Draft);
     }
+
+    [Fact]
+    public async Task ThinkingArgumentCompletionMatchesPinnedPiLevels()
+    {
+        var editor = new TerminalEditor(getThinkingLevels: () => ["off", "minimal", "low", "medium", "high"]);
+
+        await SendTextAsync(editor, "/thinking mi");
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
+
+        Assert.Equal("/thinking minimal", editor.Draft);
+    }
+
+    [Fact]
+    public async Task ModelArgumentCompletionPreservesTheCommandPrefix()
+    {
+        var editor = new TerminalEditor(
+            getModels: () => [new EditorModelOption("fixture", "fixture-model", "Fixture Model")]);
+
+        await SendTextAsync(editor, "/model fix");
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
+
+        Assert.Equal("/model fixture/fixture-model", editor.Draft);
+    }
+
+    [Fact]
+    public async Task LoginArgumentCompletionDeduplicatesProvidersAndRanksByName()
+    {
+        var completion = new EditorAutocomplete(() => Path.GetTempPath(),
+            getLoginProviders: () =>
+            [
+                new EditorLoginProvider("anthropic", "Anthropic", OAuthSupported: true, ApiKeySupported: false),
+                new EditorLoginProvider("anthropic", "Anthropic", OAuthSupported: false, ApiKeySupported: true),
+                new EditorLoginProvider("azure", "Azure", OAuthSupported: false, ApiKeySupported: true)
+            ]);
+
+        var all = await completion.GetSuggestionsAsync("/login ", 7, force: false, CancellationToken.None);
+        Assert.NotNull(all);
+        Assert.Equal(EditorCompletionKind.Argument, all!.Kind);
+        Assert.Equal(["anthropic", "azure"], all.Items.Select(item => item.Value));
+        Assert.Equal("Anthropic · subscription/API key", all.Items[0].Description);
+
+        var fuzzy = await completion.GetSuggestionsAsync("/login anth", 11, force: false, CancellationToken.None);
+        Assert.NotNull(fuzzy);
+        Assert.Equal(["anthropic"], fuzzy!.Items.Select(item => item.Value));
+    }
+
+    [Fact]
+    public void AtAttachmentCompletionAddsPiTrailingSpaceAndKeepsSurroundingProse()
+    {
+        var completion = new EditorAutocomplete(() => Path.GetTempPath());
+        var buffer = new EditorBuffer();
+        buffer.SetText("see @sp now");
+        buffer.SetCursor(7);
+        var item = new EditorCompletionItem("@\"space name.txt\"", "space name.txt", "space name.txt",
+            IsDirectory: false, IsSlash: false, IsArgument: false, IsAt: true);
+
+        completion.Apply(buffer, new EditorCompletionResult(EditorCompletionKind.Path, "@sp", [item]), item);
+
+        Assert.Equal("see @\"space name.txt\"  now", buffer.Text);
+        Assert.Equal("see @\"space name.txt\" ".Length, buffer.Cursor);
+    }
+
+    [Fact]
+    public void UnprefixedTabCompletionMatchesPiWithoutATrailingSpace()
+    {
+        var completion = new EditorAutocomplete(() => Path.GetTempPath());
+        var buffer = new EditorBuffer();
+        buffer.SetText("B");
+        buffer.SetCursor(1);
+        var item = new EditorCompletionItem("Beta.txt", "Beta.txt", "Beta.txt",
+            IsDirectory: false, IsSlash: false, IsArgument: false, IsAt: false);
+
+        completion.Apply(buffer, new EditorCompletionResult(EditorCompletionKind.Path, "B", [item]), item);
+
+        Assert.Equal("Beta.txt", buffer.Text);
+        Assert.Equal(8, buffer.Cursor);
+    }
+
+    [Fact]
+    public void DirectoryCompletionKeepsTheCursorBeforeItsClosingQuote()
+    {
+        var completion = new EditorAutocomplete(() => Path.GetTempPath());
+        var buffer = new EditorBuffer();
+        buffer.SetText("@\"my folder/\"");
+        buffer.SetCursor(buffer.Text.Length - 1);
+        var item = new EditorCompletionItem("@\"my folder/\"", "my folder/", null,
+            IsDirectory: true, IsSlash: false, IsArgument: false, IsAt: true);
+
+        completion.Apply(buffer, new EditorCompletionResult(EditorCompletionKind.Path, "@\"my folder/", [item]), item);
+
+        Assert.Equal("@\"my folder/\"", buffer.Text);
+        Assert.Equal(buffer.Text.Length - 1, buffer.Cursor);
+    }
+
+    [Fact]
+    public async Task ForcedTabCompletionStaysOpenWhileTypingLikePi()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-complete-force-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        File.WriteAllText(Path.Combine(root, "Beta.txt"), "upper");
+        File.WriteAllText(Path.Combine(root, "beta2.txt"), "lower");
+        try
+        {
+            var editor = new TerminalEditor(getWorkingDirectory: () => root);
+            await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
+            await SendTextAsync(editor, "B");
+            await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
+
+            Assert.Equal("Beta.txt", editor.Draft);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task SlashCompletionSurfaceComesFromTheLiveRegistration()
+    {
+        var completion = new EditorAutocomplete(() => Path.GetTempPath(),
+            dynamicCommands: () => ["/skill:demo", "/review"]);
+
+        var suggestions = await completion.GetSuggestionsAsync("/skill:d", 8, force: false, CancellationToken.None);
+
+        Assert.NotNull(suggestions);
+        Assert.Equal(["skill:demo"], suggestions!.Items.Select(item => item.Value));
+    }
+
+    private static Task<bool> SendTextAsync(TerminalEditor editor, string text) =>
+        editor.HandleActiveInputAsync(new(null, text), (_, _, _) => Task.FromResult(true),
+            () => [], () => { });
 
     private static Task<bool> SendEditorKeyAsync(TerminalEditor editor, ConsoleKeyInfo key,
         Func<string, bool, CancellationToken, Task<bool>>? queue = null) =>

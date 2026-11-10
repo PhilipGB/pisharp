@@ -13,6 +13,9 @@ internal sealed record EditorCompletionResult(EditorCompletionKind Kind, string 
 
 public sealed record EditorModelOption(string Provider, string Id, string? Name);
 
+/// <summary>Login completion surface Pi derives from its provider catalogue.</summary>
+public sealed record EditorLoginProvider(string Id, string Name, bool OAuthSupported, bool ApiKeySupported);
+
 /// <summary>Pi-compatible autocomplete provider: slash commands, arguments and local paths.</summary>
 internal sealed class EditorAutocomplete
 {
@@ -39,18 +42,24 @@ internal sealed class EditorAutocomplete
     private readonly Func<IReadOnlyList<string>>? _dynamicCommands;
     private readonly Func<string, string?>? _describeCommand;
     private readonly Func<IReadOnlyList<EditorModelOption>>? _getModels;
+    private readonly Func<IReadOnlyList<string>>? _getThinkingLevels;
+    private readonly Func<IReadOnlyList<EditorLoginProvider>>? _getLoginProviders;
     private readonly SemaphoreSlim _fdGate = new(1, 1);
     private string? _fdPath;
     private bool _fdResolved;
 
     public EditorAutocomplete(Func<string> workingDirectory, Func<IReadOnlyList<string>>? dynamicCommands = null,
         Func<string, string?>? describeCommand = null,
-        Func<IReadOnlyList<EditorModelOption>>? getModels = null)
+        Func<IReadOnlyList<EditorModelOption>>? getModels = null,
+        Func<IReadOnlyList<string>>? getThinkingLevels = null,
+        Func<IReadOnlyList<EditorLoginProvider>>? getLoginProviders = null)
     {
         _workingDirectory = workingDirectory;
         _dynamicCommands = dynamicCommands;
         _describeCommand = describeCommand;
         _getModels = getModels;
+        _getThinkingLevels = getThinkingLevels;
+        _getLoginProviders = getLoginProviders;
     }
 
     public async Task<EditorCompletionResult?> GetSuggestionsAsync(string text, int cursor, bool force,
@@ -124,7 +133,9 @@ internal sealed class EditorAutocomplete
         }
         else
         {
-            var suffix = item.IsDirectory ? "" : " ";
+            // Pi appends a trailing space only to @ attachments; Tab-completed
+            // unprefixed paths stay exactly as selected.
+            var suffix = item.IsDirectory || !result.Prefix.StartsWith('@') ? "" : " ";
             newLine = beforePrefix + item.Value + suffix + adjustedAfter;
             var offset = item.IsDirectory && hasTrailingQuoteInItem ? item.Value.Length - 1 : item.Value.Length;
             cursorColumn = beforePrefix.Length + offset + suffix.Length;
@@ -184,16 +195,65 @@ internal sealed class EditorAutocomplete
             .Select(command => (Name: command.Command.TrimStart('/'), Description: (string?)command.Description))
             .ToList();
 
-    private IReadOnlyList<EditorCompletionItem> GetArgumentSuggestions(string commandName, string prefix)
+    private IReadOnlyList<EditorCompletionItem> GetArgumentSuggestions(string commandName, string prefix) =>
+        commandName switch
+        {
+            "model" => GetModelArgumentSuggestions(prefix),
+            "thinking" => GetThinkingArgumentSuggestions(prefix),
+            "login" => GetLoginArgumentSuggestions(prefix),
+            _ => []
+        };
+
+    private IReadOnlyList<EditorCompletionItem> GetModelArgumentSuggestions(string prefix)
     {
-        if (!string.Equals(commandName, "model", StringComparison.Ordinal) || _getModels is null) return [];
-        var models = _getModels();
-        var filtered = PiFuzzy.Filter(models, prefix, item =>
+        if (_getModels is null) return [];
+        var filtered = PiFuzzy.Filter(_getModels(), prefix, item =>
             $"{item.Id} {item.Provider} {item.Provider}/{item.Id} {item.Provider} {item.Id}" +
             (string.IsNullOrEmpty(item.Name) ? "" : $" {item.Name}"));
-        return filtered.Select(model => new EditorCompletionItem($"{model.Provider}/{model.Id}", model.Id,
-            model.Provider, IsDirectory: false, IsSlash: false, IsArgument: true, IsAt: false)).ToArray();
+        return filtered.Select(model => ArgumentItem($"{model.Provider}/{model.Id}", model.Id, model.Provider))
+            .ToArray();
     }
+
+    private IReadOnlyList<EditorCompletionItem> GetThinkingArgumentSuggestions(string prefix)
+    {
+        if (_getThinkingLevels is null) return [];
+        return PiFuzzy.Filter(_getThinkingLevels(), prefix, level => level)
+            .Select(level => ArgumentItem(level, level, description: null)).ToArray();
+    }
+
+    private IReadOnlyList<EditorCompletionItem> GetLoginArgumentSuggestions(string prefix)
+    {
+        if (_getLoginProviders is null) return [];
+        // Pi deduplicates the oauth/api-key provider entries, keeps oauth first,
+        // and ranks the remaining providers by display name.
+        var providers = _getLoginProviders()
+            .GroupBy(provider => provider.Id, StringComparer.Ordinal)
+            .Select(group => new
+            {
+                group.First().Id,
+                Name = group.First().Name,
+                AuthTypes = group.Select(provider => provider.OAuthSupported
+                        ? "oauth"
+                        : provider.ApiKeySupported ? "api_key" : null)
+                    .Where(type => type is not null).Select(type => type!).Distinct(StringComparer.Ordinal)
+                    .OrderBy(type => type == "oauth" ? 0 : 1).ToArray()
+            })
+            .OrderBy(provider => provider.Name, StringComparer.CurrentCulture)
+            .ToArray();
+        var filtered = PiFuzzy.Filter(providers, prefix, provider =>
+            $"{provider.Id} {provider.Name} " + string.Join(' ', provider.AuthTypes.Select(type =>
+                $"{type} {(type == "api_key" ? "API key" : "subscription")}")));
+        return filtered.Select(provider => ArgumentItem(provider.Id, provider.Id,
+            provider.Name == provider.Id
+                ? FormatAuthTypes(provider.AuthTypes)
+                : $"{provider.Name} · {FormatAuthTypes(provider.AuthTypes)}")).ToArray();
+    }
+
+    private static string FormatAuthTypes(IReadOnlyList<string> types) =>
+        string.Join('/', types.Select(type => type == "api_key" ? "API key" : "subscription"));
+
+    private static EditorCompletionItem ArgumentItem(string value, string label, string? description) =>
+        new(value, label, description, IsDirectory: false, IsSlash: false, IsArgument: true, IsAt: false);
 
     private string? ExtractAtPrefix(string before)
     {
