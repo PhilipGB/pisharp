@@ -3,7 +3,7 @@
  "branch": "milestone/opencode-go-provider-parity",
  "piSharpBase": "d432ca40eed1bb68d8e3dc37c2cf22c08fad7799",
  "pinnedPi": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
- "implementationSha": "978e15efc55b9ada68b5f42a865a2de8f2571fc1",
+ "implementationSha": "e71b48dd216525d007c30ee1744a6bc6030ca22d",
  "providerMetadata": {
   "oracleFiles": [
    "packages/ai/src/providers/opencode-go.ts",
@@ -143,22 +143,22 @@
  },
  "fullSuite": {
   "command": "dotnet test PiSharp.slnx --no-build --no-restore",
-  "passed": 4545,
+  "passed": 4550,
   "failed": 0,
   "skipped": 0,
-  "total": 4545,
-  "duration": "9 m 19 s",
-  "head": "978e15efc55b9ada68b5f42a865a2de8f2571fc1"
+  "total": 4550,
+  "duration": "9 m 34 s",
+  "head": "e71b48dd216525d007c30ee1744a6bc6030ca22d"
  },
  "ciRun": {
   "workflow": "Linux CI",
   "event": "pull_request",
-  "runId": 42707954824,
-  "url": "https://github.com/PhilipGB/pisharp/actions/runs/42707954824",
+  "runId": 42733186774,
+  "url": "https://github.com/PhilipGB/pisharp/actions/runs/42733186774",
   "job": "managed-package-verifier",
-  "jobUrl": "https://github.com/PhilipGB/pisharp/actions/runs/42707954824/job/129469656548",
   "conclusion": "success",
-  "headSha": "978e15efc55b9ada68b5f42a865a2de8f2571fc1"
+  "headSha": "e71b48dd216525d007c30ee1744a6bc6030ca22d",
+  "note": "The first attempt hit the pre-existing KeysQueueSessionPtyTests flake at 4549/4550; the failed job rerun passed 4550/4550."
  },
  "ciNote": "The exact-head run passed all jobs. Earlier runs at 978983fb exposed unrelated pre-existing PTY flakes (EditorMutationPtyTests and KeysQueueSessionPtyTests); the OpenCode login PTY class was then serialized with the dedicated non-parallel PTY collection and the clean exact-head run passed 4545/4545.",
  "sessionHeaderBug": "ConversationRun only propagated the conversation ID for openai-codex-responses; opencode/opencode-go requests therefore lacked x-opencode-session in interactive runs. Fixed to propagate the existing conversation ID for those providers, with a ConversationRun regression.",
@@ -166,6 +166,10 @@
   {
    "sha": "da5866157ebfe09bb814ab534b920e4e66de66af",
    "description": "Live OpenCode Go exposed MissingSessionID because ConversationRun propagated its conversation ID only for openai-codex-responses. OpenCode providers now receive the existing session ID; deterministic ConversationRun regressions cover all three OpenCode protocol families."
+  },
+  {
+   "sha": "e71b48dd216525d007c30ee1744a6bc6030ca22d",
+   "description": "Google thought signatures now carry actual provider affinity (OpenCode vs Google) with fail-first both-direction regression; opencode/opencode-go are credential siblings in models.json validation; pinned generated catalogue sources and verifier are committed for reproducible provenance."
   }
  ],
  "googleSignatureAffinity": {
