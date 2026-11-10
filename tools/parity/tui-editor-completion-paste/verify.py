@@ -32,7 +32,8 @@ REQUIRED = {
 RUBRIC = {'cursor-unicode': 15, 'multiline': 10, 'history': 10, 'slash-completion': 15,
           'path-completion': 15, 'bracketed-paste': 10, 'escape-ctrl-c': 10,
           'external-editor': 10, 'journey': 5}
-CHECKPOINT_FIELDS = ('editorText', 'cursor', 'candidates', 'selected', 'activeScreen', 'descriptions')
+CHECKPOINT_FIELDS = ('editorText', 'cursor', 'cursorColumn', 'candidates', 'selected',
+                     'activeScreen', 'descriptions')
 # Frozen acceptance cases. Removing one from the manifest must fail verification.
 FROZEN_CASES = {
     'slash-exact-prefix', 'slash-fuzzy-non-prefix', 'slash-fuzzy-ranking',

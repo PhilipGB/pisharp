@@ -111,6 +111,9 @@ def observe(evidence, product):
                        'visible': cursor.get('visible'),
                        'editorRow': None if top is None or cursor.get('y') is None
                        else cursor.get('y') - top - 1},
+            # The editor text is right-trimmed for stable comparison; the cursor
+            # column still distinguishes an applied trailing space.
+            'cursorColumn': cursor.get('x'),
             'candidates': candidates,
             'descriptions': descriptions,
             'selected': selected,
