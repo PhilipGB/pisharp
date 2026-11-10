@@ -9,6 +9,7 @@ using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Tests;
 
+[Collection("Editor mutation PTY")]
 public sealed class KeysQueueSessionPtyTests
 {
     [Fact]
