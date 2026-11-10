@@ -25,7 +25,7 @@ public sealed class LlamaRouterLoginTuiTests
         {
             await terminal.WaitEditorAsync();
             var mark = terminal.Mark;
-            await terminal.SendAsync("/login llama.cpp\n");
+            await terminal.SendAsync("\u001b[200~/login llama.cpp\u001b[201~\n");
             await terminal.WaitTextAsync("llama.cpp server URL", mark);
             mark = terminal.Mark;
             await terminal.SendAsync(server.Origin + "/v1/\n");
@@ -56,7 +56,7 @@ public sealed class LlamaRouterLoginTuiTests
         {
             await terminal.WaitEditorAsync();
             var mark = terminal.Mark;
-            await terminal.SendAsync("/login llama.cpp\n");
+            await terminal.SendAsync("\u001b[200~/login llama.cpp\u001b[201~\n");
             await terminal.WaitTextAsync("llama.cpp server URL", mark);
             mark = terminal.Mark;
             await terminal.SendAsync("\n");
@@ -91,7 +91,7 @@ public sealed class LlamaRouterLoginTuiTests
         {
             await terminal.WaitEditorAsync();
             var mark = terminal.Mark;
-            await terminal.SendAsync("/login llama.cpp\n");
+            await terminal.SendAsync("\u001b[200~/login llama.cpp\u001b[201~\n");
             var prompt = await terminal.WaitTextAsync("e.g., http://127.0.0.1:8080", mark);
             Assert.Contains("llama.cpp server URL", prompt, StringComparison.Ordinal);
 

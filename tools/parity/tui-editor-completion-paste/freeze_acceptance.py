@@ -27,37 +27,42 @@ def main():
     cases = []
     for case in CASES:
         expectations = {}
+        provider_texts = None
         for size in SIZES:
             entry = entries.get((case['scenario'], size))
             if entry is None:
                 raise SystemExit(f"Missing evidence for {case['scenario']}/{size}.")
             if not (entry.get('calibration') or {}).get('match'):
                 raise SystemExit(f"Same-Pi calibration failed for {case['scenario']}/{size}.")
-            if entry.get('status') != 'pass':
+            if entry.get('status') != 'pass' or entry.get('differences'):
                 raise SystemExit(f"{case['scenario']}/{size} did not pass.")
-            if entry['pi'] != entry['pisharp']:
-                raise SystemExit(f"{case['scenario']}/{size} products differ.")
             observations = entry['pi']['checkpoints']
             for checkpoint in case['checkpoints']:
                 if checkpoint not in observations:
                     raise SystemExit(f"Missing checkpoint {checkpoint} in {case['scenario']}/{size}.")
+                frozen = expectations.setdefault(checkpoint, {})
                 for field in case['fields']:
                     value = observations[checkpoint][field]
-                    if field in expectations and expectations[field] != value:
-                        raise SystemExit(
-                            f'{case["id"]} {field} differs between sizes; freeze a narrower case.')
-                    if field not in expectations:
-                        expectations[field] = value
+                    if field in frozen and frozen[field] != value:
+                        raise SystemExit(f'{case["id"]} {checkpoint}/{field} differs between sizes.')
+                    frozen[field] = value
+                    if observations[checkpoint][field] != \
+                            entry['pisharp']['checkpoints'][checkpoint][field]:
+                        raise SystemExit(f"{case['scenario']}/{size} products differ at "
+                                         f'{checkpoint}/{field}.')
             if case.get('providerTexts'):
                 texts = entry['pi']['providerTexts']
                 if not texts:
                     raise SystemExit(f'{case["id"]} has no provider-visible text.')
-                if 'providerTexts' in expectations and expectations['providerTexts'] != texts:
+                if provider_texts is not None and provider_texts != texts:
                     raise SystemExit(f'{case["id"]} provider text differs between sizes.')
-                expectations['providerTexts'] = texts
+                provider_texts = texts
+        case_expect = dict(expect=expectations)
+        if provider_texts is not None:
+            case_expect['providerTexts'] = provider_texts
         cases.append(dict(id=case['id'], area=case['area'], mandatory=True, status='pass',
                           scenario=case['scenario'], checkpoints=case['checkpoints'],
-                          oracle=case['oracle'], expect=expectations))
+                          oracle=case['oracle'], **case_expect))
     manifest = dict(schema=1, capability='tui-editor-completion-paste', piSha=PI_SHA,
                     cases=cases, deferred=DEFERRED)
     args.output.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + '\n',

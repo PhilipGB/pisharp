@@ -186,7 +186,7 @@ public sealed class ProviderLoginTuiTests
                 throw new TimeoutException("The Codex provider TUI did not become ready.\n" + partial, error);
             }
 
-            await process.StandardInput.WriteAsync("/login openai-codex oauth\r");
+            await process.StandardInput.WriteAsync("\u001b[200~/login openai-codex oauth\u001b[201~\r");
             await process.StandardInput.FlushAsync();
             await methodsVisible.Task.WaitAsync(deadline.Token);
             await process.StandardInput.WriteAsync("\u001b");
@@ -316,7 +316,7 @@ public sealed class ProviderLoginTuiTests
                 throw new TimeoutException("The provider TUI did not become ready.\n" + partial, error);
             }
 
-            await process.StandardInput.WriteAsync("/login anthropic oauth\r");
+            await process.StandardInput.WriteAsync("\u001b[200~/login anthropic oauth\u001b[201~\r");
             await process.StandardInput.FlushAsync();
             await methodSelectorVisible.Task.WaitAsync(deadline.Token);
             await process.StandardInput.WriteAsync("\u001b[B\r");

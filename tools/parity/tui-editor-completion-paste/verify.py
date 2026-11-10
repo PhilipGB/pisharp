@@ -23,7 +23,7 @@ REQUIRED = {
     'multiline': ['multiline', 'soft-wrap'],
     'history': ['history'],
     'slash-completion': ['slash-completion'],
-    'path-completion': ['path-completion'],
+    'path-completion': ['path-completion', 'path-symlink', 'file-tab-completion'],
     'bracketed-paste': ['bracketed-paste', 'large-paste-marker', 'large-paste-external-editor'],
     'escape-ctrl-c': ['escape-ctrl-c', 'exit-empty-ctrl-d'],
     'external-editor': ['external-editor', 'external-editor-failure',
@@ -136,10 +136,15 @@ def verify_acceptance(report, acceptance, expected_head):
         require(checkpoints, f'{case_id} lists no checkpoints.')
         expected = case.get('expect') or {}
         require(expected, f'{case_id} lists no expected observation.')
-        require(set(expected) <= set(CHECKPOINT_FIELDS),
-                f'{case_id} expects unknown fields {sorted(set(expected) - set(CHECKPOINT_FIELDS))}.')
-        if 'providerTexts' in expected:
-            require(isinstance(expected['providerTexts'], list) and expected['providerTexts'],
+        require(set(expected) == set(checkpoints),
+                f'{case_id} expectations do not cover exactly its checkpoints: '
+                f'{sorted(expected)} vs {checkpoints}.')
+        for checkpoint, fields in expected.items():
+            require(fields, f'{case_id} has no expected fields for {checkpoint}.')
+            require(set(fields) <= set(CHECKPOINT_FIELDS),
+                    f'{case_id} expects unknown fields {sorted(set(fields) - set(CHECKPOINT_FIELDS))}.')
+        if 'providerTexts' in case:
+            require(isinstance(case['providerTexts'], list) and case['providerTexts'],
                     f'{case_id} must freeze provider-visible text.')
         for size in SIZES:
             entry = entries.get((scenario, size))
@@ -150,17 +155,15 @@ def verify_acceptance(report, acceptance, expected_head):
                     require(checkpoint in observations,
                             f'{case_id} ({size}) is missing {product} evidence for {checkpoint}.')
                     observation = observations[checkpoint]
-                    for field, value in expected.items():
-                        if field == 'providerTexts':
-                            continue
+                    for field, value in expected[checkpoint].items():
                         require(observation.get(field) == value,
                                 f'{case_id} ({size}) {field} at {checkpoint} is '
                                 f'{observation.get(field)!r}, expected {value!r}.')
-            if 'providerTexts' in expected:
+            if 'providerTexts' in case:
                 for product in ('pi', 'pisharp'):
-                    require(entry[product].get('providerTexts') == expected['providerTexts'],
+                    require(entry[product].get('providerTexts') == case['providerTexts'],
                             f'{case_id} ({size}) {product} provider-visible text is '
-                            f'{entry[product].get("providerTexts")!r}, expected {expected["providerTexts"]!r}.')
+                            f'{entry[product].get("providerTexts")!r}, expected {case["providerTexts"]!r}.')
             if case.get('area') == 'path-completion':
                 for product in ('pi', 'pisharp'):
                     observations = entry[product]['checkpoints']
@@ -320,10 +323,14 @@ def mutations(report, acceptance):
     yield ('missing-provider-evidence', _mutate(report, _drop_provider_evidence), acceptance, 'provider-visible')
     yield ('altered-candidate-order', report,
            _mutate(acceptance, lambda m: _reverse_candidates(m)), 'expected')
-    yield ('wrong-evidence-head', _mutate(report, lambda r: r.__setitem__('pisharpSha', '2' * 40)),
-           acceptance, 'head.txt')
+    yield ('wrong-evidence-head', _mutate(report, _wrong_head), acceptance, 'head.txt')
     yield ('wrong-source-inventory-sha', report,
            _mutate(acceptance, lambda m: m.__setitem__('piSha', '3' * 40)), 'wrong Pi revision')
+
+
+def _wrong_head(report):
+    parent = subprocess.check_output(['git', 'rev-parse', 'HEAD~1'], cwd=ROOT, text=True).strip()
+    report['pisharpSha'] = parent
 
 
 def _drop_case_evidence(report):
@@ -336,12 +343,16 @@ def _drop_provider_evidence(report):
     entry = next(value for value in report['scenarios'] if value['id'] == 'path-completion'
                  and value['size'] == '80x24')
     entry['pi']['providerTexts'] = []
+    entry['pisharp']['providerTexts'] = []
 
 
 def _reverse_candidates(acceptance):
-    case = next(case for case in acceptance['cases']
-                if len(case['expect'].get('candidates') or []) > 1)
-    case['expect']['candidates'] = list(reversed(case['expect']['candidates']))
+    for case in acceptance['cases']:
+        for checkpoint, fields in case['expect'].items():
+            if len(fields.get('candidates') or []) > 1:
+                fields['candidates'] = list(reversed(fields['candidates']))
+                return
+    raise RuntimeError('No frozen candidate order to reverse.')
 
 
 def _mutate(report, action):
@@ -358,7 +369,10 @@ def _drop_scenario(report, scenario_id, size):
 
 
 def _hide(report, field):
-    entry = next(entry for entry in report['scenarios'] if entry['status'] == 'pass')
+    entries = [entry for entry in report['scenarios'] if entry['status'] == 'pass']
+    entry = next((value for value in entries
+                  if field != 'descriptions' or value.get('compareCandidateDescriptions')),
+                 entries[0])
     checkpoint = next(iter(entry['pi']['checkpoints']))
     if field == 'providerTexts':
         entry['pisharp']['providerTexts'] = entry['pi']['providerTexts'] + ['hidden mismatch']
