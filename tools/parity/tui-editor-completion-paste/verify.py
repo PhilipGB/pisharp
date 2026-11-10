@@ -329,8 +329,9 @@ def mutations(report, acceptance):
 
 
 def _wrong_head(report):
-    parent = subprocess.check_output(['git', 'rev-parse', 'HEAD~1'], cwd=ROOT, text=True).strip()
-    report['pisharpSha'] = parent
+    expected = HEAD_FILE.read_text().strip()
+    hashes = subprocess.check_output(['git', 'rev-list', 'HEAD'], cwd=ROOT, text=True).split()
+    report['pisharpSha'] = next(value for value in hashes if value != expected)
 
 
 def _drop_case_evidence(report):
