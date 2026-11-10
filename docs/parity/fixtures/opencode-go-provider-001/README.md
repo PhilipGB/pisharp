@@ -155,13 +155,13 @@ no leakage to Anthropic.
 
 ## Verification
 
-- Focused OpenCode tests: **27 passed**.
-- Full .NET suite: **4550/4550 passed** in 9 m 34 s on exact head
-  `e71b48dd216525d007c30ee1744a6bc6030ca22d`.
+- Focused OpenCode tests: **28 passed**.
+- Full .NET suite: **4551/4551 passed** in 8 m 43 s on exact code head
+  `57e07f9766afc0b86acde7d8d13bdcdf84de1f8b`.
 - `dotnet build PiSharp.slnx --warnaserror`: pass, 0 warnings.
 - `dotnet format PiSharp.slnx --verify-no-changes`: pass.
-- Exact-head Linux CI: [run 42733186774](https://github.com/PhilipGB/pisharp/actions/runs/42733186774)
-  passed all jobs on `e71b48dd` after a rerun of the pre-existing
+- Exact-head Linux CI: [run 42812851509](https://github.com/PhilipGB/pisharp/actions/runs/42812851509)
+  passed all jobs on `57e07f97` after reruns of the pre-existing
   `KeysQueueSessionPtyTests` flake.
 - Draft PR: [#50](https://github.com/PhilipGB/pisharp/pull/50).
 
