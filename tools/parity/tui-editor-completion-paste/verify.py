@@ -10,6 +10,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
 sys.path.insert(0, str(HERE))
+from acceptance_cases import frozen_ids  # noqa: E402
 from inventory import KNOWN_DIFFERENCES, NORMALIZATIONS  # noqa: E402
 
 PI_SHA = (ROOT / 'tools/parity/pi-reference.txt').read_text().split()[0].strip()
@@ -34,22 +35,7 @@ RUBRIC = {'cursor-unicode': 15, 'multiline': 10, 'history': 10, 'slash-completio
           'external-editor': 10, 'journey': 5}
 CHECKPOINT_FIELDS = ('editorText', 'cursor', 'cursorColumn', 'candidates', 'selected',
                      'activeScreen', 'descriptions')
-# Frozen acceptance cases. Removing one from the manifest must fail verification.
-FROZEN_CASES = {
-    'slash-exact-prefix', 'slash-fuzzy-non-prefix', 'slash-fuzzy-ranking',
-    'slash-multiple-candidates-order', 'slash-keyboard-navigation', 'slash-selection-apply',
-    'slash-trailing-space', 'slash-no-argument-command', 'slash-argument-command',
-    'slash-argument-model-completion', 'slash-argument-thinking-completion',
-    'slash-no-matches', 'slash-argument-no-matches', 'slash-escape-preserves-draft',
-    'slash-editor-clear', 'slash-pasted-text-does-not-open',
-    'slash-typed-key-opens-after-paste', 'slash-submitted-prompt',
-    'file-simple-filename', 'file-nested-filename', 'file-fuzzy-filename',
-    'file-multiple-candidates-order', 'file-relative-path', 'file-path-with-spaces',
-    'file-directory-display', 'file-selection-apply', 'file-trailing-space',
-    'file-no-matches', 'file-escape-preserves-draft', 'file-pasted-vs-typed',
-    'file-embedded-completion', 'file-provider-visible-text', 'file-project-root-boundary',
-    'file-hidden-and-git', 'file-symlink', 'file-forced-tab-completion',
-}
+FROZEN_CASES = frozen_ids()
 NORMALIZATION_IDS = {'post-exit-scroll-position', 'completion-label-display-prefix',
                      'completion-position-row', 'external-editor-temporary-path',
                      'slash-command-description-copy'}
@@ -175,6 +161,13 @@ def verify_acceptance(report, acceptance, expected_head):
                     require(entry[product].get('providerTexts') == expected['providerTexts'],
                             f'{case_id} ({size}) {product} provider-visible text is '
                             f'{entry[product].get("providerTexts")!r}, expected {expected["providerTexts"]!r}.')
+            if case.get('area') == 'path-completion':
+                for product in ('pi', 'pisharp'):
+                    observations = entry[product]['checkpoints']
+                    for checkpoint in checkpoints:
+                        for candidate in observations[checkpoint].get('candidates') or []:
+                            require(not candidate.startswith('/') and '..' not in candidate,
+                                    f'{case_id} ({size}) {product} escaped the project root: {candidate!r}.')
 
 
 def verify(report, *, head=None, require_clean=False, acceptance=None, expected_head=None):
