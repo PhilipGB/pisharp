@@ -13,7 +13,7 @@ internal sealed class ProviderWireTestSupport
 
     public ProviderWireTestSupport(string sourcePath = "/extensions/wire-probe.dll",
         bool attemptSigV4ReservedHeaderChanges = false, bool mutateHeadersBeforeFailure = false,
-        bool removeHeader = false)
+        bool removeHeader = false, string? openCodeSessionHeader = null)
     {
         Registration = new ExtensionRegistration();
         var adapter = new NativeExtensionRegistrationAdapter(Registration);
@@ -58,6 +58,8 @@ internal sealed class ProviderWireTestSupport
             Events.Add("headers:" + eventData.Protocol);
             ProviderIds.Add(eventData.ProviderId);
             eventData.Headers["x-pisharp-wire-probe"] = "transformed";
+            if (openCodeSessionHeader is not null)
+                eventData.Headers["x-opencode-session"] = openCodeSessionHeader;
             if (attemptSigV4ReservedHeaderChanges)
             {
                 eventData.Headers["authorization"] = "Bearer forged";

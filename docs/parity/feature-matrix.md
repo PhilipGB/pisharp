@@ -1,6 +1,23 @@
-## Current state — 2026-11-07
+## Current state — 2026-11-08
 
 Current status and project goal are maintained in [the continuation](../continuation.md); open architecture risks are tracked in the [architecture document](../architecture.md#open-architecture-risks). The milestone summaries below are historical and may retain the wording used when they were written; later merges supersede their status claims.
+
+## Milestone in review — OpenCode Go Provider and API-Key Login Parity — 2026-11-08
+
+Built-in `opencode` (`OpenCode Zen`, 79 chat models) and `opencode-go`
+(`OpenCode Go`, 30 chat models) now expose the pinned Pi catalogues across
+`anthropic-messages`, `google-generative-ai`, `openai-completions` and
+`openai-responses`, with per-model endpoints and `OPENCODE_API_KEY`
+authentication. Deterministic HTTP fixtures cover exact paths, auth headers,
+tools and tool-result continuation, streamed usage and reasoning controls,
+cancellation, errors, `x-opencode-session` presence/precedence/isolation and
+credential scoping/logout. Shared interactive API-key login now uses the masked
+TUI editor prompt; real PTY tests cover menu selection, Backspace, Enter, Escape,
+no storage on cancel, no secret echo, OpenCode Go login, `/model`, logout and
+restart persistence. A live `opencode-go/beam-free` smoke passed text, a bash
+tool round trip and a second turn in the same session; it also exposed and fixed
+the interactive conversation-ID propagation needed for `x-opencode-session`.
+See the [receipt](fixtures/opencode-go-provider-001/README.md).
 
 ## Milestone in review — Interactive Streaming, Reasoning, Tool Progress and Cancellation Evaluation — 2026-11-07
 
@@ -666,8 +683,11 @@ differentials remain global backlog. Live-server TUI management is a
 non-blocking evidence gap for this deterministic acceptance.
 
 Broad Anthropic/Bedrock, Google/Vertex, Azure/Foundry, Mistral, Radius, Kimi,
-OpenCode, Together, Cloudflare, gateway and unrelated catalog parity is
-**intentionally deferred provider backlog**. Preserve its task IDs and statuses;
+Together, Cloudflare, gateway and unrelated catalog parity remains
+**intentionally deferred provider backlog**. OpenCode Zen and OpenCode Go chat
+provider parity is covered by the milestone above; OpenCode Console,
+subscription management and OpenCode Console MCP remain out of scope. Preserve
+the remaining task IDs and statuses;
 do not run queue 13's Anthropic slice or the former provider freeze during this
 goal unless a P0/P1 regression or shared Codex/llama contract requires work.
 See the active priority policy in [the continuation plan](../continuation.md)

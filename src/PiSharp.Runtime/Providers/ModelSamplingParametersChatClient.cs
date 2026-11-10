@@ -12,14 +12,19 @@ public sealed class SamplingParametersRequestContext
     public string? ThinkingLevel => _current.Value?.ThinkingLevel;
     public ModelDescriptor? Model => _current.Value?.Model;
 
-    public IDisposable Push(JsonElement? parameters, string thinkingLevel, ModelDescriptor model)
+    /// <summary>The provider-affinity session ID supplied by the application for this request.</summary>
+    public string? SessionId => _current.Value?.SessionId;
+
+    public IDisposable Push(JsonElement? parameters, string thinkingLevel, ModelDescriptor model,
+        string? sessionId = null)
     {
         var previous = _current.Value;
-        _current.Value = new(parameters, thinkingLevel, model);
+        _current.Value = new(parameters, thinkingLevel, model, sessionId);
         return new Scope(this, previous);
     }
 
-    private sealed record RequestState(JsonElement? SamplingParameters, string ThinkingLevel, ModelDescriptor Model);
+    private sealed record RequestState(JsonElement? SamplingParameters, string ThinkingLevel, ModelDescriptor Model,
+        string? SessionId);
 
     private sealed class Scope(SamplingParametersRequestContext owner, RequestState? previous) : IDisposable
     {
@@ -44,7 +49,8 @@ public sealed class ModelSamplingParametersChatClient(IChatClient inner, ModelDe
     {
         var (requestOptions, parameters) = Prepare(options);
         var thinkingLevel = GetString(options?.AdditionalProperties, ThinkingLevelProperty) ?? GetThinkingLevel(options?.Reasoning);
-        using var scope = requestContext.Push(parameters, thinkingLevel, model);
+        using var scope = requestContext.Push(parameters, thinkingLevel, model,
+            GetString(options?.AdditionalProperties, ProviderSessionMetadata.ConversationSessionIdProperty));
         return await base.GetResponseAsync(messages, requestOptions, cancellationToken).ConfigureAwait(false);
     }
 
@@ -54,7 +60,8 @@ public sealed class ModelSamplingParametersChatClient(IChatClient inner, ModelDe
     {
         var (requestOptions, parameters) = Prepare(options);
         var thinkingLevel = GetString(options?.AdditionalProperties, ThinkingLevelProperty) ?? GetThinkingLevel(options?.Reasoning);
-        using var scope = requestContext.Push(parameters, thinkingLevel, model);
+        using var scope = requestContext.Push(parameters, thinkingLevel, model,
+            GetString(options?.AdditionalProperties, ProviderSessionMetadata.ConversationSessionIdProperty));
         await foreach (var update in base.GetStreamingResponseAsync(messages, requestOptions, cancellationToken)
             .WithCancellation(cancellationToken).ConfigureAwait(false))
             yield return update;

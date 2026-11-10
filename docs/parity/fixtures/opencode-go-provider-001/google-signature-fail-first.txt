@@ -1,0 +1,18 @@
+Test run for /home/philip/Projects/pisharp/tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll (.NETCoreApp,Version=v10.0)
+VSTest version 18.0.2 (x64)
+
+Starting test execution, please wait...
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:01.10]     PiSharp.Tests.OpenCodeGoWireTests.GoogleThoughtSignaturesAreScopedToTheActualOpenCodeOrGoogleProvider [FAIL]
+  Failed PiSharp.Tests.OpenCodeGoWireTests.GoogleThoughtSignaturesAreScopedToTheActualOpenCodeOrGoogleProvider [29 ms]
+  Error Message:
+   Assert.Equal() Failure: Strings differ
+           ↓ (pos 0)
+Expected: "opencode-go"
+Actual:   "google"
+           ↑ (pos 0)
+  Stack Trace:
+     at PiSharp.Tests.OpenCodeGoWireTests.GoogleThoughtSignaturesAreScopedToTheActualOpenCodeOrGoogleProvider() in /home/philip/Projects/pisharp/tests/PiSharp.Tests/Cli/Providers/OpenCode/OpenCodeGoWireTests.cs:line 178
+--- End of stack trace from previous location ---
+
+Failed!  - Failed:     1, Passed:     0, Skipped:     0, Total:     1, Duration: 43 ms - PiSharp.Tests.dll (net10.0)

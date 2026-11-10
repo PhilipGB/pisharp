@@ -2230,14 +2230,16 @@ public sealed partial class ConversationRun
                 ? null
                 : (Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>)ProjectRequestContextAsync;
             _agent.SetTurnBoundaryPreparation(PrepareTurnAsync);
-            var codexSessionId = _providerApi == "openai-codex-responses" ? Conversation.Id : null;
+            // Codex uses this as its conversation affinity and OpenCode requires it for request routing.
+            var providerSessionId = _providerApi == "openai-codex-responses" ||
+                _currentProvider is "opencode" or "opencode-go" ? Conversation.Id : null;
             var updates = promptMessage is null
                 ? _agent.RunStreamingContinuationDurableAsync(_execution, cancellationToken, durable,
                     Observe, (first, token) => TakeSteeringForProviderAsync(first, retryContinuation, token), projectRequestContext,
-                    CreateBashSessionEnvironment(), codexSessionId, TakePendingProviderContextMessagesAsync, CreateBashSessionEnvironment)
+                    CreateBashSessionEnvironment(), providerSessionId, TakePendingProviderContextMessagesAsync, CreateBashSessionEnvironment)
                 : _agent.RunStreamingDurableAsync(promptMessage, _execution, cancellationToken, durable,
                     Observe, (first, token) => TakeSteeringForProviderAsync(first, retryContinuation, token), projectRequestContext,
-                    CreateBashSessionEnvironment(), codexSessionId, TakePendingProviderContextMessagesAsync, CreateBashSessionEnvironment);
+                    CreateBashSessionEnvironment(), providerSessionId, TakePendingProviderContextMessagesAsync, CreateBashSessionEnvironment);
             await foreach (var update in attemptStream.PumpAsync(updates, durable,
                 usage => Conversation.AppendUsage(attribution.Usage(usage)), cancellationToken))
                 yield return update;

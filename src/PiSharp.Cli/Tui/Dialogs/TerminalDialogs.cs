@@ -267,7 +267,7 @@ internal sealed class TerminalDialogs(EditorKeymap keymap, Func<TerminalInput> g
         IReadOnlyList<(string Message, string? Placeholder)> prompts, bool preservePanelAfterSubmit = false,
         bool preservePanelOnCancel = false, CancellationToken cancellationToken = default,
         bool extensionDialog = false, Func<string, Task>? dispatchApplicationAction = null,
-        IReadOnlyList<string>? initialValues = null)
+        IReadOnlyList<string>? initialValues = null, IReadOnlyList<bool>? maskedPrompts = null)
     {
         if (prompts.Count == 0) return [];
         if (getScreen() is not { IsActive: true } screen)
@@ -321,7 +321,7 @@ internal sealed class TerminalDialogs(EditorKeymap keymap, Func<TerminalInput> g
                             ? TerminalDialogPanels.RenderExtensionInputPanel(screen, title, promptBuffer.Text, promptBuffer.Cursor,
                                 out cursorRow, out cursorColumn)
                             : TerminalDialogPanels.RenderPromptPanel(screen, title, prompts, values, promptIndex, promptBuffer.Text,
-                                promptBuffer.Cursor, out cursorRow, out cursorColumn);
+                                promptBuffer.Cursor, out cursorRow, out cursorColumn, maskedPrompts: maskedPrompts);
                         if (extensionDialog)
                             screen.SetStartupPanel(panel, cursorRow, cursorColumn, cursorVisible: false);
                         else
@@ -416,7 +416,7 @@ internal sealed class TerminalDialogs(EditorKeymap keymap, Func<TerminalInput> g
                         values.Add(promptBuffer.Text);
                         var submittedPanel = TerminalDialogPanels.RenderPromptPanel(screen, title, prompts, values, promptIndex,
                             promptBuffer.Text, promptBuffer.Cursor, out var submittedCursorRow,
-                            out var submittedCursorColumn, submittedPrompt: true);
+                            out var submittedCursorColumn, submittedPrompt: true, maskedPrompts: maskedPrompts);
                         screen.SetEditorPanel(submittedPanel, submittedCursorRow, submittedCursorColumn,
                             cursorVisible: false, bottomMargin: 2, renderImmediately: true);
                         break;

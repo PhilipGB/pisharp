@@ -442,9 +442,9 @@ public sealed class TerminalEditor
         IReadOnlyList<(string Message, string? Placeholder)> prompts, bool preservePanelAfterSubmit = false,
         bool preservePanelOnCancel = false, CancellationToken cancellationToken = default,
         bool extensionDialog = false, Func<string, Task>? dispatchApplicationAction = null,
-        IReadOnlyList<string>? initialValues = null) =>
+        IReadOnlyList<string>? initialValues = null, IReadOnlyList<bool>? maskedPrompts = null) =>
         _dialogs.PromptSequenceAsync(title, prompts, preservePanelAfterSubmit, preservePanelOnCancel, cancellationToken,
-            extensionDialog, dispatchApplicationAction, initialValues);
+            extensionDialog, dispatchApplicationAction, initialValues, maskedPrompts);
 
     internal void DismissEditorPanel() => _screen?.SetEditorPanel(null);
 

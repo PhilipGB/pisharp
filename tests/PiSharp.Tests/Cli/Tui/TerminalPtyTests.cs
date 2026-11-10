@@ -10,6 +10,7 @@ using SkiaSharp;
 
 namespace PiSharp.Tests;
 
+[Collection("Editor mutation PTY")]
 public sealed class TerminalPtyTests
 {
     private sealed class PtyOutputCapture
