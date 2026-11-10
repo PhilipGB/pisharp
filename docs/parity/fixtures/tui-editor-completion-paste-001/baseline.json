@@ -1,0 +1,1381 @@
+{
+  "schema": 1,
+  "purpose": "Fail-first baseline for the completion milestone: pinned Pi versus post-PR-#50 PiSharp at the branch base, using the frozen scenarios before product changes.",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "pisharpSha": "40f562dbcd47c570300136b330178221019f5758",
+  "branch": "HEAD",
+  "sizes": [
+    "80x24",
+    "120x40"
+  ],
+  "scenarios": [
+    {
+      "id": "slash-completion",
+      "size": "80x24",
+      "status": "fail",
+      "calibration": {
+        "match": true,
+        "differences": [],
+        "checkpoints": 67
+      },
+      "differenceCount": 33,
+      "differences": [
+        {
+          "checkpoint": "argument-thinking-apply",
+          "field": "editorText",
+          "pi": "/thinking off",
+          "pisharp": "/thinking .pisharp-terminal-harness"
+        },
+        {
+          "checkpoint": "argument-thinking-apply",
+          "field": "cursor",
+          "pi": {
+            "x": 13,
+            "y": 20,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 36,
+            "y": 20,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "argument-thinking-apply-barrier",
+          "field": "editorText",
+          "pi": "/thinking off",
+          "pisharp": "/thinking .pisharp-terminal-harness"
+        },
+        {
+          "checkpoint": "argument-thinking-apply-barrier",
+          "field": "cursor",
+          "pi": {
+            "x": 13,
+            "y": 20,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 36,
+            "y": 20,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "argument-thinking-fuzzy",
+          "field": "cursor",
+          "pi": {
+            "x": 11,
+            "y": 19,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 11,
+            "y": 20,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "argument-thinking-fuzzy",
+          "field": "candidates",
+          "pi": [
+            "off"
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "argument-thinking-fuzzy",
+          "field": "selected",
+          "pi": "off",
+          "pisharp": null
+        },
+        {
+          "checkpoint": "argument-thinking-fuzzy-barrier",
+          "field": "cursor",
+          "pi": {
+            "x": 11,
+            "y": 19,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 11,
+            "y": 20,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "argument-thinking-fuzzy-barrier",
+          "field": "candidates",
+          "pi": [
+            "off"
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "argument-thinking-fuzzy-barrier",
+          "field": "selected",
+          "pi": "off",
+          "pisharp": null
+        },
+        {
+          "checkpoint": "argument-thinking-query",
+          "field": "cursor",
+          "pi": {
+            "x": 10,
+            "y": 19,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 10,
+            "y": 20,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "argument-thinking-query",
+          "field": "candidates",
+          "pi": [
+            "off"
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "argument-thinking-query",
+          "field": "selected",
+          "pi": "off",
+          "pisharp": null
+        },
+        {
+          "checkpoint": "argument-thinking-query-barrier",
+          "field": "cursor",
+          "pi": {
+            "x": 10,
+            "y": 19,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 10,
+            "y": 20,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "argument-thinking-query-barrier",
+          "field": "candidates",
+          "pi": [
+            "off"
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "argument-thinking-query-barrier",
+          "field": "selected",
+          "pi": "off",
+          "pisharp": null
+        },
+        {
+          "checkpoint": "backspace-reopen",
+          "field": "cursor",
+          "pi": {
+            "x": 5,
+            "y": 18,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 5,
+            "y": 20,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "backspace-reopen",
+          "field": "candidates",
+          "pi": [
+            "model",
+            "scoped-models"
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "backspace-reopen",
+          "field": "selected",
+          "pi": "model",
+          "pisharp": null
+        },
+        {
+          "checkpoint": "backspace-reopen-barrier",
+          "field": "cursor",
+          "pi": {
+            "x": 5,
+            "y": 18,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 5,
+            "y": 20,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "backspace-reopen-barrier",
+          "field": "candidates",
+          "pi": [
+            "model",
+            "scoped-models"
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "backspace-reopen-barrier",
+          "field": "selected",
+          "pi": "model",
+          "pisharp": null
+        },
+        {
+          "checkpoint": "cursor-requery-barrier",
+          "field": "cursor",
+          "pi": {
+            "x": 5,
+            "y": 18,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 5,
+            "y": 20,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "cursor-requery-barrier",
+          "field": "candidates",
+          "pi": [
+            "model",
+            "scoped-models"
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "cursor-requery-barrier",
+          "field": "selected",
+          "pi": "model",
+          "pisharp": null
+        },
+        {
+          "checkpoint": "cursor-requery-left",
+          "field": "cursor",
+          "pi": {
+            "x": 5,
+            "y": 18,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 5,
+            "y": 20,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "cursor-requery-left",
+          "field": "candidates",
+          "pi": [
+            "model",
+            "scoped-models"
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "cursor-requery-left",
+          "field": "selected",
+          "pi": "model",
+          "pisharp": null
+        },
+        {
+          "checkpoint": "draft-after-command",
+          "field": "cursor",
+          "pi": {
+            "x": 12,
+            "y": 19,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 12,
+            "y": 20,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "draft-after-command",
+          "field": "candidates",
+          "pi": [
+            "off"
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "draft-after-command",
+          "field": "selected",
+          "pi": "off",
+          "pisharp": null
+        },
+        {
+          "checkpoint": "draft-after-command-tab",
+          "field": "editorText",
+          "pi": "/thinking off",
+          "pisharp": "/thinking of"
+        },
+        {
+          "checkpoint": "draft-after-command-tab",
+          "field": "cursor",
+          "pi": {
+            "x": 13,
+            "y": 20,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 12,
+            "y": 20,
+            "visible": false,
+            "editorRow": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "slash-completion",
+      "size": "120x40",
+      "status": "fail",
+      "calibration": {
+        "match": true,
+        "differences": [],
+        "checkpoints": 67
+      },
+      "differenceCount": 33,
+      "differences": [
+        {
+          "checkpoint": "argument-thinking-apply",
+          "field": "editorText",
+          "pi": "/thinking off",
+          "pisharp": "/thinking .pisharp-terminal-harness"
+        },
+        {
+          "checkpoint": "argument-thinking-apply",
+          "field": "cursor",
+          "pi": {
+            "x": 13,
+            "y": 36,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 36,
+            "y": 36,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "argument-thinking-apply-barrier",
+          "field": "editorText",
+          "pi": "/thinking off",
+          "pisharp": "/thinking .pisharp-terminal-harness"
+        },
+        {
+          "checkpoint": "argument-thinking-apply-barrier",
+          "field": "cursor",
+          "pi": {
+            "x": 13,
+            "y": 36,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 36,
+            "y": 36,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "argument-thinking-fuzzy",
+          "field": "cursor",
+          "pi": {
+            "x": 11,
+            "y": 35,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 11,
+            "y": 36,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "argument-thinking-fuzzy",
+          "field": "candidates",
+          "pi": [
+            "off"
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "argument-thinking-fuzzy",
+          "field": "selected",
+          "pi": "off",
+          "pisharp": null
+        },
+        {
+          "checkpoint": "argument-thinking-fuzzy-barrier",
+          "field": "cursor",
+          "pi": {
+            "x": 11,
+            "y": 35,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 11,
+            "y": 36,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "argument-thinking-fuzzy-barrier",
+          "field": "candidates",
+          "pi": [
+            "off"
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "argument-thinking-fuzzy-barrier",
+          "field": "selected",
+          "pi": "off",
+          "pisharp": null
+        },
+        {
+          "checkpoint": "argument-thinking-query",
+          "field": "cursor",
+          "pi": {
+            "x": 10,
+            "y": 35,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 10,
+            "y": 36,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "argument-thinking-query",
+          "field": "candidates",
+          "pi": [
+            "off"
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "argument-thinking-query",
+          "field": "selected",
+          "pi": "off",
+          "pisharp": null
+        },
+        {
+          "checkpoint": "argument-thinking-query-barrier",
+          "field": "cursor",
+          "pi": {
+            "x": 10,
+            "y": 35,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 10,
+            "y": 36,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "argument-thinking-query-barrier",
+          "field": "candidates",
+          "pi": [
+            "off"
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "argument-thinking-query-barrier",
+          "field": "selected",
+          "pi": "off",
+          "pisharp": null
+        },
+        {
+          "checkpoint": "backspace-reopen",
+          "field": "cursor",
+          "pi": {
+            "x": 5,
+            "y": 34,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 5,
+            "y": 36,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "backspace-reopen",
+          "field": "candidates",
+          "pi": [
+            "model",
+            "scoped-models"
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "backspace-reopen",
+          "field": "selected",
+          "pi": "model",
+          "pisharp": null
+        },
+        {
+          "checkpoint": "backspace-reopen-barrier",
+          "field": "cursor",
+          "pi": {
+            "x": 5,
+            "y": 34,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 5,
+            "y": 36,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "backspace-reopen-barrier",
+          "field": "candidates",
+          "pi": [
+            "model",
+            "scoped-models"
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "backspace-reopen-barrier",
+          "field": "selected",
+          "pi": "model",
+          "pisharp": null
+        },
+        {
+          "checkpoint": "cursor-requery-barrier",
+          "field": "cursor",
+          "pi": {
+            "x": 5,
+            "y": 34,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 5,
+            "y": 36,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "cursor-requery-barrier",
+          "field": "candidates",
+          "pi": [
+            "model",
+            "scoped-models"
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "cursor-requery-barrier",
+          "field": "selected",
+          "pi": "model",
+          "pisharp": null
+        },
+        {
+          "checkpoint": "cursor-requery-left",
+          "field": "cursor",
+          "pi": {
+            "x": 5,
+            "y": 34,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 5,
+            "y": 36,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "cursor-requery-left",
+          "field": "candidates",
+          "pi": [
+            "model",
+            "scoped-models"
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "cursor-requery-left",
+          "field": "selected",
+          "pi": "model",
+          "pisharp": null
+        },
+        {
+          "checkpoint": "draft-after-command",
+          "field": "cursor",
+          "pi": {
+            "x": 12,
+            "y": 35,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 12,
+            "y": 36,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "draft-after-command",
+          "field": "candidates",
+          "pi": [
+            "off"
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "draft-after-command",
+          "field": "selected",
+          "pi": "off",
+          "pisharp": null
+        },
+        {
+          "checkpoint": "draft-after-command-tab",
+          "field": "editorText",
+          "pi": "/thinking off",
+          "pisharp": "/thinking of"
+        },
+        {
+          "checkpoint": "draft-after-command-tab",
+          "field": "cursor",
+          "pi": {
+            "x": 13,
+            "y": 36,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 12,
+            "y": 36,
+            "visible": false,
+            "editorRow": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "path-completion",
+      "size": "80x24",
+      "status": "fail",
+      "calibration": {
+        "match": true,
+        "differences": [],
+        "checkpoints": 66
+      },
+      "differenceCount": 8,
+      "differences": [
+        {
+          "checkpoint": "at-escape-backspace-barrier",
+          "field": "cursor",
+          "pi": {
+            "x": 3,
+            "y": 16,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 3,
+            "y": 20,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "at-escape-backspace-barrier",
+          "field": "candidates",
+          "pi": [
+            "alpha.txt",
+            "alpine.md",
+            "ambiguous-alpha.txt",
+            ".pisharp-terminal-harness"
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "at-escape-backspace-barrier",
+          "field": "descriptions",
+          "pi": [
+            "alpha.txt",
+            "alpine.md",
+            "ambiguous-alpha.txt",
+            ".pisharp-terminal-harness"
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "at-escape-backspace-barrier",
+          "field": "selected",
+          "pi": "alpha.txt",
+          "pisharp": null
+        },
+        {
+          "checkpoint": "at-escape-backspace-key",
+          "field": "cursor",
+          "pi": {
+            "x": 3,
+            "y": 16,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 3,
+            "y": 20,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "at-escape-backspace-key",
+          "field": "candidates",
+          "pi": [
+            "alpha.txt",
+            "alpine.md",
+            "ambiguous-alpha.txt",
+            ".pisharp-terminal-harness"
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "at-escape-backspace-key",
+          "field": "descriptions",
+          "pi": [
+            "alpha.txt",
+            "alpine.md",
+            "ambiguous-alpha.txt",
+            ".pisharp-terminal-harness"
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "at-escape-backspace-key",
+          "field": "selected",
+          "pi": "alpha.txt",
+          "pisharp": null
+        }
+      ]
+    },
+    {
+      "id": "path-completion",
+      "size": "120x40",
+      "status": "fail",
+      "calibration": {
+        "match": true,
+        "differences": [],
+        "checkpoints": 66
+      },
+      "differenceCount": 8,
+      "differences": [
+        {
+          "checkpoint": "at-escape-backspace-barrier",
+          "field": "cursor",
+          "pi": {
+            "x": 3,
+            "y": 32,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 3,
+            "y": 36,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "at-escape-backspace-barrier",
+          "field": "candidates",
+          "pi": [
+            "alpha.txt",
+            "alpine.md",
+            "ambiguous-alpha.txt",
+            ".pisharp-terminal-harness"
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "at-escape-backspace-barrier",
+          "field": "descriptions",
+          "pi": [
+            "alpha.txt",
+            "alpine.md",
+            "ambiguous-alpha.txt",
+            ".pisharp-terminal-harness"
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "at-escape-backspace-barrier",
+          "field": "selected",
+          "pi": "alpha.txt",
+          "pisharp": null
+        },
+        {
+          "checkpoint": "at-escape-backspace-key",
+          "field": "cursor",
+          "pi": {
+            "x": 3,
+            "y": 32,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 3,
+            "y": 36,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "at-escape-backspace-key",
+          "field": "candidates",
+          "pi": [
+            "alpha.txt",
+            "alpine.md",
+            "ambiguous-alpha.txt",
+            ".pisharp-terminal-harness"
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "at-escape-backspace-key",
+          "field": "descriptions",
+          "pi": [
+            "alpha.txt",
+            "alpine.md",
+            "ambiguous-alpha.txt",
+            ".pisharp-terminal-harness"
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "at-escape-backspace-key",
+          "field": "selected",
+          "pi": "alpha.txt",
+          "pisharp": null
+        }
+      ]
+    },
+    {
+      "id": "path-symlink",
+      "size": "80x24",
+      "status": "pass",
+      "calibration": {
+        "match": true,
+        "differences": [],
+        "checkpoints": 14
+      },
+      "differenceCount": 0,
+      "differences": []
+    },
+    {
+      "id": "path-symlink",
+      "size": "120x40",
+      "status": "pass",
+      "calibration": {
+        "match": true,
+        "differences": [],
+        "checkpoints": 14
+      },
+      "differenceCount": 0,
+      "differences": []
+    },
+    {
+      "id": "file-tab-completion",
+      "size": "80x24",
+      "status": "fail",
+      "calibration": {
+        "match": true,
+        "differences": [],
+        "checkpoints": 16
+      },
+      "differenceCount": 20,
+      "differences": [
+        {
+          "checkpoint": "tab-apply",
+          "field": "editorText",
+          "pi": "Beta.txt",
+          "pisharp": "B"
+        },
+        {
+          "checkpoint": "tab-apply",
+          "field": "cursor",
+          "pi": {
+            "x": 8,
+            "y": 20,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 1,
+            "y": 18,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "tab-apply",
+          "field": "candidates",
+          "pi": [],
+          "pisharp": [
+            "Beta.txt",
+            "beta2.txt"
+          ]
+        },
+        {
+          "checkpoint": "tab-apply",
+          "field": "descriptions",
+          "pi": [],
+          "pisharp": [
+            "",
+            ""
+          ]
+        },
+        {
+          "checkpoint": "tab-apply",
+          "field": "selected",
+          "pi": null,
+          "pisharp": "Beta.txt"
+        },
+        {
+          "checkpoint": "tab-apply-barrier",
+          "field": "editorText",
+          "pi": "Beta.txt",
+          "pisharp": "B"
+        },
+        {
+          "checkpoint": "tab-apply-barrier",
+          "field": "cursor",
+          "pi": {
+            "x": 8,
+            "y": 20,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 1,
+            "y": 18,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "tab-apply-barrier",
+          "field": "candidates",
+          "pi": [],
+          "pisharp": [
+            "Beta.txt",
+            "beta2.txt"
+          ]
+        },
+        {
+          "checkpoint": "tab-apply-barrier",
+          "field": "descriptions",
+          "pi": [],
+          "pisharp": [
+            "",
+            ""
+          ]
+        },
+        {
+          "checkpoint": "tab-apply-barrier",
+          "field": "selected",
+          "pi": null,
+          "pisharp": "Beta.txt"
+        },
+        {
+          "checkpoint": "tab-dir-child-apply",
+          "field": "cursor",
+          "pi": {
+            "x": 12,
+            "y": 20,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 13,
+            "y": 20,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "tab-dir-child-apply-barrier",
+          "field": "cursor",
+          "pi": {
+            "x": 12,
+            "y": 20,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 13,
+            "y": 20,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "tab-narrow",
+          "field": "cursor",
+          "pi": {
+            "x": 1,
+            "y": 18,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 1,
+            "y": 20,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "tab-narrow",
+          "field": "candidates",
+          "pi": [
+            "Beta.txt",
+            "beta2.txt"
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "tab-narrow",
+          "field": "descriptions",
+          "pi": [
+            "",
+            ""
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "tab-narrow",
+          "field": "selected",
+          "pi": "Beta.txt",
+          "pisharp": null
+        },
+        {
+          "checkpoint": "tab-narrow-barrier",
+          "field": "cursor",
+          "pi": {
+            "x": 1,
+            "y": 18,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 1,
+            "y": 20,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "tab-narrow-barrier",
+          "field": "candidates",
+          "pi": [
+            "Beta.txt",
+            "beta2.txt"
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "tab-narrow-barrier",
+          "field": "descriptions",
+          "pi": [
+            "",
+            ""
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "tab-narrow-barrier",
+          "field": "selected",
+          "pi": "Beta.txt",
+          "pisharp": null
+        }
+      ]
+    },
+    {
+      "id": "file-tab-completion",
+      "size": "120x40",
+      "status": "fail",
+      "calibration": {
+        "match": true,
+        "differences": [],
+        "checkpoints": 16
+      },
+      "differenceCount": 20,
+      "differences": [
+        {
+          "checkpoint": "tab-apply",
+          "field": "editorText",
+          "pi": "Beta.txt",
+          "pisharp": "B"
+        },
+        {
+          "checkpoint": "tab-apply",
+          "field": "cursor",
+          "pi": {
+            "x": 8,
+            "y": 36,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 1,
+            "y": 34,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "tab-apply",
+          "field": "candidates",
+          "pi": [],
+          "pisharp": [
+            "Beta.txt",
+            "beta2.txt"
+          ]
+        },
+        {
+          "checkpoint": "tab-apply",
+          "field": "descriptions",
+          "pi": [],
+          "pisharp": [
+            "",
+            ""
+          ]
+        },
+        {
+          "checkpoint": "tab-apply",
+          "field": "selected",
+          "pi": null,
+          "pisharp": "Beta.txt"
+        },
+        {
+          "checkpoint": "tab-apply-barrier",
+          "field": "editorText",
+          "pi": "Beta.txt",
+          "pisharp": "B"
+        },
+        {
+          "checkpoint": "tab-apply-barrier",
+          "field": "cursor",
+          "pi": {
+            "x": 8,
+            "y": 36,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 1,
+            "y": 34,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "tab-apply-barrier",
+          "field": "candidates",
+          "pi": [],
+          "pisharp": [
+            "Beta.txt",
+            "beta2.txt"
+          ]
+        },
+        {
+          "checkpoint": "tab-apply-barrier",
+          "field": "descriptions",
+          "pi": [],
+          "pisharp": [
+            "",
+            ""
+          ]
+        },
+        {
+          "checkpoint": "tab-apply-barrier",
+          "field": "selected",
+          "pi": null,
+          "pisharp": "Beta.txt"
+        },
+        {
+          "checkpoint": "tab-dir-child-apply",
+          "field": "cursor",
+          "pi": {
+            "x": 12,
+            "y": 36,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 13,
+            "y": 36,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "tab-dir-child-apply-barrier",
+          "field": "cursor",
+          "pi": {
+            "x": 12,
+            "y": 36,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 13,
+            "y": 36,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "tab-narrow",
+          "field": "cursor",
+          "pi": {
+            "x": 1,
+            "y": 34,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 1,
+            "y": 36,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "tab-narrow",
+          "field": "candidates",
+          "pi": [
+            "Beta.txt",
+            "beta2.txt"
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "tab-narrow",
+          "field": "descriptions",
+          "pi": [
+            "",
+            ""
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "tab-narrow",
+          "field": "selected",
+          "pi": "Beta.txt",
+          "pisharp": null
+        },
+        {
+          "checkpoint": "tab-narrow-barrier",
+          "field": "cursor",
+          "pi": {
+            "x": 1,
+            "y": 34,
+            "visible": false,
+            "editorRow": 0
+          },
+          "pisharp": {
+            "x": 1,
+            "y": 36,
+            "visible": false,
+            "editorRow": 0
+          }
+        },
+        {
+          "checkpoint": "tab-narrow-barrier",
+          "field": "candidates",
+          "pi": [
+            "Beta.txt",
+            "beta2.txt"
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "tab-narrow-barrier",
+          "field": "descriptions",
+          "pi": [
+            "",
+            ""
+          ],
+          "pisharp": []
+        },
+        {
+          "checkpoint": "tab-narrow-barrier",
+          "field": "selected",
+          "pi": "Beta.txt",
+          "pisharp": null
+        }
+      ]
+    }
+  ],
+  "baseSha": "40f562dbcd47c570300136b330178221019f5758",
+  "note": "Captured in a detached worktree at the branch base with the new harness/scenarios but pre-change product code."
+}
