@@ -296,6 +296,27 @@ qwen3.8-flash|Qwen3.8 Flash|anthropic-messages|https://opencode.ai/inference|100
 qwen3.8-max|Qwen3.8 Max|openai-completions|https://opencode.ai/inference/v1|262144|131072|text,image
 """;
 
+    [Fact]
+    public async Task ModelsJsonCanOverrideOpenCodeGoAsASiblingSharingTheCredential()
+    {
+        var root = NewRoot();
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "models.json"), """
+                {"providers":{"opencode-go":{"name":"OpenCode Go custom",
+                 "baseUrl":"https://opencode.ai/inference/go"}}}
+                """);
+            using var http = new HttpClient();
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false, EnvironmentWithKey, http, offline: true);
+            var provider = runtime.GetProvider("opencode-go");
+            Assert.Equal("OpenCode Go custom", provider.Name);
+            Assert.Equal("OPENCODE_API_KEY", provider.ApiKeyEnvironment);
+            Assert.Equal("https://opencode.ai/inference/go", provider.Endpoint.AbsoluteUri);
+            Assert.Equal(30, provider.Models.Count);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
     private static Func<string, string?> EnvironmentWithKey => name => name switch
     {
         "OPENCODE_API_KEY" => FixtureKey,

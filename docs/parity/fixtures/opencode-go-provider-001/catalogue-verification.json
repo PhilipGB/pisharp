@@ -1,0 +1,29 @@
+{
+ "providers": {
+  "opencode": {
+   "match": true,
+   "chatModels": 79,
+   "sourceSha256": "9970a3f11de64df743c5209391247759f3e526d1be60702242f3f8404e6f122a",
+   "catalogueSha256": "d2f019ba761c3fbfaaacd11ce39461b9ad6371ce393aec1cf385895f670756f9",
+   "protocols": {
+    "anthropic-messages": 17,
+    "google-generative-ai": 8,
+    "openai-completions": 24,
+    "openai-responses": 30
+   }
+  },
+  "opencode-go": {
+   "match": true,
+   "chatModels": 30,
+   "sourceSha256": "1cc101f9ce56b71d51e2dc062a9ad88389c0e123c757a5b2ef5a872980ebf522",
+   "catalogueSha256": "ab4c670ab165b759a513ea6c5cc256a5cfb58f1eaa9590b56695383b3fb8f3ad",
+   "protocols": {
+    "anthropic-messages": 5,
+    "google-generative-ai": 1,
+    "openai-completions": 19,
+    "openai-responses": 5
+   }
+  }
+ },
+ "ok": true
+}

@@ -52,10 +52,33 @@ Both identities are built in, require API-key authentication, read
 | `opencode` | `OpenCode Zen` | `https://opencode.ai/inference` | 79 (+ 2 System One classifiers already present) | anthropic-messages 17, google-generative-ai 8, openai-completions 24, openai-responses 30 |
 | `opencode-go` | `OpenCode Go` | `https://opencode.ai/inference/go` | 30 | anthropic-messages 5, google-generative-ai 1, openai-completions 19, openai-responses 5 |
 
-Catalogue files are copied from the pinned Pi JSON with `contextWindow` →
-`contextLength`, `maxTokens` → `maxOutputTokens`, `cost.cacheRead` →
-`pricing.cachedInput`, `cost.cacheWrite` → `pricing.cachedWrite`, `compat` →
-`compatibility`, and per-model `baseUrl` preserved:
+Catalogue provenance is the generated Pi model data, not files tracked by the
+pinned Git commit. At `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`,
+`packages/ai/src/providers/data/` is Git-ignored (`.gitignore:11`); the
+`opencode*.models.ts` files import JSON produced by:
+
+```sh
+npm run hydrate:model-data
+# packages/ai/scripts/generate-models.ts --strict --data-only
+# fetches https://models.dev/api.json and writes packages/ai/src/providers/data/
+```
+
+The exact generated source files used were captured on **2026-11-01 11:29:58
+UTC** and are committed under `source/` for reproducibility:
+
+- `source/pinned-pi-opencode.json` SHA-256
+  `9970a3f11de64df743c5209391247759f3e526d1be60702242f3f8404e6f122a`
+- `source/pinned-pi-opencode-go.json` SHA-256
+  `1cc101f9ce56b71d51e2dc062a9ad88389c0e123c757a5b2ef5a872980ebf522`
+
+`verify_catalogue.py` reproduces the PiSharp projection and compares every
+chat-model field against those pinned generated files; its output is
+`catalogue-verification.json` and matches exactly (79 and 30 chat models).
+
+The projection maps `contextWindow` → `contextLength`, `maxTokens` →
+`maxOutputTokens`, `cost.cacheRead` → `pricing.cachedInput`, `cost.cacheWrite`
+→ `pricing.cachedWrite`, `compat` → `compatibility`, and preserves per-model
+`baseUrl`. PiSharp catalogue hashes:
 
 - `opencode-models.json` SHA-256
   `d2f019ba761c3fbfaaacd11ce39461b9ad6371ce393aec1cf385895f670756f9`
@@ -87,6 +110,25 @@ model ID, system/user content, tool declarations, a two-request tool-call round
 trip with the tool result in the continuation, streamed usage, thinking
 controls, cancellation, 401 propagation and secret redaction. No fixture uses
 the live OpenCode service.
+
+## Google thought-signature affinity
+
+OpenCode Zen/Go Google-protocol models share model IDs with the official Google
+catalogue (for example `gemini-3.5-flash`). `GoogleGenAiChatClient` previously
+marked signatures with only the API family (`google` or `google-vertex`), so a
+signature issued by Google could be replayed to the OpenCode endpoint, or the
+reverse. The signature provider affinity now uses the actual provider ID.
+`GoogleThoughtSignaturesAreScopedToTheActualOpenCodeOrGoogleProvider` covers both
+directions and same-provider replay; `google-signature-fail-first.txt` records
+the pre-fix failure.
+
+## models.json overrides
+
+`opencode` and `opencode-go` intentionally share `OPENCODE_API_KEY`. The
+reserved-credential check now treats them as siblings, so a valid `models.json`
+override of the built-in `opencode-go` ID (same endpoint) is accepted instead of
+being rejected for borrowing the sibling's environment variable. A regression
+asserts the override, endpoint and retained 30-model catalogue.
 
 ## Session header
 

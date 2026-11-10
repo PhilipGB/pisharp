@@ -19,7 +19,7 @@ internal static class GoogleGenAiChatClientFactory
             requestContext: requestContext);
         var http = new HttpClient(handler, disposeHandler: true) { Timeout = Timeout.InfiniteTimeSpan };
         return new GoogleGenAiChatClient(http, selection.Connection.Endpoint ?? selection.Provider.Endpoint,
-            selection.ApiKey, selection.Model);
+            selection.ApiKey, selection.Model, signatureProvider: selection.Provider.Id);
     }
 }
 
@@ -54,7 +54,8 @@ internal static class GoogleVertexChatClientFactory
         var handler = ProviderWireHookHandler.CreateWithActivity(selection, "google-vertex",
             new HttpClientHandler { AllowAutoRedirect = false }, observeResponse: false);
         var http = new HttpClient(handler, disposeHandler: true) { Timeout = Timeout.InfiniteTimeSpan };
-        return new GoogleGenAiChatClient(http, endpoint, selection.ApiKey, selection.Model, requestOptions);
+        return new GoogleGenAiChatClient(http, endpoint, selection.ApiKey, selection.Model, requestOptions,
+            selection.Provider.Id);
     }
 
     internal static Uri RegionalEndpoint(string? location)
@@ -73,7 +74,7 @@ internal static class GoogleVertexChatClientFactory
 
 /// <summary>Maps MAF chat history to Google's generateContent SSE protocol.</summary>
 internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, string apiKey, ModelDescriptor model,
-    GoogleVertexRequestOptions? vertex = null)
+    GoogleVertexRequestOptions? vertex = null, string? signatureProvider = null)
     : IChatClient
 {
     private const string SignatureKey = "pisharp.google.thoughtSignature";
@@ -81,7 +82,8 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
     private const string SignatureModelKey = "pisharp.google.signatureModel";
     private static readonly JsonSerializerOptions s_jsonOptions = new(JsonSerializerDefaults.Web);
     private readonly string _modelId = model.Id;
-    private string SignatureProvider => vertex is null ? "google" : "google-vertex";
+    // Opaque Google thought signatures are valid only for the provider that issued them.
+    private string SignatureProvider => signatureProvider ?? (vertex is null ? "google" : "google-vertex");
     private string ServiceName => vertex is null ? "Google GenAI" : "Google Vertex";
 
     public async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,

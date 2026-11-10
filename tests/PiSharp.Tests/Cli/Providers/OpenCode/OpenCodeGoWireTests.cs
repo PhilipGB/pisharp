@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.Extensions.AI;
 using PiSharp.Cli;
 using PiSharp.Runtime;
@@ -161,6 +162,61 @@ public sealed class OpenCodeGoWireTests
             Assert.Equal(conversation.Id, session);
         }
         finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task GoogleThoughtSignaturesAreScopedToTheActualOpenCodeOrGoogleProvider()
+    {
+        const string signature = "QUJDRA==";
+        using var openCodeHttp = new HttpClient(new SignedGoogleHandler(signature));
+        using var googleHttp = new HttpClient(new SignedGoogleHandler(signature));
+        using var openCode = GoogleClient("opencode-go", openCodeHttp);
+        using var google = GoogleClient("google", googleHttp);
+
+        var openCodeCall = await ReadSignedCallAsync(openCode);
+        var googleCall = await ReadSignedCallAsync(google);
+        Assert.Equal("opencode-go", Assert.IsType<string>(
+            openCodeCall.AdditionalProperties!["pisharp.google.signatureProvider"]));
+        Assert.Equal("google", Assert.IsType<string>(
+            googleCall.AdditionalProperties!["pisharp.google.signatureProvider"]));
+
+        Assert.True(HasThoughtSignature(openCode, openCodeCall));
+        Assert.False(HasThoughtSignature(openCode, googleCall));
+        Assert.True(HasThoughtSignature(google, googleCall));
+        Assert.False(HasThoughtSignature(google, openCodeCall));
+    }
+
+    private static GoogleGenAiChatClient GoogleClient(string providerId, HttpClient http) =>
+        new(http, new Uri("https://generativelanguage.googleapis.com/v1beta"), FixtureKey,
+            new ModelDescriptor("gemini-3.5-flash", providerId, 1_048_576, "pinned", true,
+                Provider: providerId, Api: "google-generative-ai",
+                BaseUrl: "https://generativelanguage.googleapis.com/v1beta"), signatureProvider: providerId);
+
+    private static async Task<FunctionCallContent> ReadSignedCallAsync(GoogleGenAiChatClient client)
+    {
+        var updates = new List<ChatResponseUpdate>();
+        await foreach (var update in client.GetStreamingResponseAsync(
+            [new ChatMessage(ChatRole.User, "use echo")]))
+            updates.Add(update);
+        return Assert.Single(updates.SelectMany(update => update.Contents).OfType<FunctionCallContent>());
+    }
+
+    private static bool HasThoughtSignature(GoogleGenAiChatClient client, FunctionCallContent call)
+    {
+        var body = client.BuildRequest([new ChatMessage(ChatRole.Assistant, [call])], null);
+        var part = body["contents"]!.AsArray()[0]!.AsObject()["parts"]!.AsArray()[0]!.AsObject();
+        return part.ContainsKey("thoughtSignature");
+    }
+
+    private sealed class SignedGoogleHandler(string signature) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(
+                    $"data: {{\"responseId\":\"google-signed\",\"candidates\":[{{\"content\":{{\"role\":\"model\",\"parts\":[{{\"functionCall\":{{\"id\":\"call/1\",\"name\":\"echo\",\"args\":{{\"text\":\"ping\"}}}},\"thoughtSignature\":\"{signature}\"}}]}},\"finishReason\":\"STOP\"}}]}}\n\n",
+                    Encoding.UTF8, "text/event-stream")
+            });
     }
 
     [Fact]
