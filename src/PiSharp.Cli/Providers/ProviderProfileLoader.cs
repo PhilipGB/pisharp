@@ -153,7 +153,7 @@ internal static class ProviderProfileLoader
                 throw new InvalidDataException("The built-in azure provider must retain the Foundry Chat Completions protocol and credential environment.");
             foreach (var reserved in providers.Values.Where(profile => ClassifierCatalog.IsBuiltinProvider(profile.Id) || profile.Id is "openai" or "openrouter" or "mistral" or "xai" or "anthropic" or "azure" or "azure-openai-responses" or "openai-codex" or "google" or "google-vertex" or "radius"))
                 if (apiKeyEnvironment?.Equals(reserved.ApiKeyEnvironment, StringComparison.OrdinalIgnoreCase) == true &&
-                    !SharesOpenCodeCredential(item.Name, reserved.Id) &&
+                    !SharesOpenCodeCredential(canonicalId, reserved.Id) &&
                     (!item.Name.Equals(reserved.Id, StringComparison.OrdinalIgnoreCase) || !SameEndpoint(endpoint, reserved.Endpoint)))
                     throw new InvalidDataException($"Provider '{item.Name}' cannot borrow {reserved.ApiKeyEnvironment}; use its own credential environment variable.");
             var authHeader = Boolean(value, "authHeader") ?? true;
@@ -173,7 +173,10 @@ internal static class ProviderProfileLoader
 
     // OpenCode Zen and OpenCode Go intentionally share OPENCODE_API_KEY as distinct built-ins.
     private static bool SharesOpenCodeCredential(string itemId, string reservedId) =>
-        (itemId is "opencode" or "opencode-go") && (reservedId is "opencode" or "opencode-go");
+        (itemId.Equals("opencode", StringComparison.OrdinalIgnoreCase) ||
+         itemId.Equals("opencode-go", StringComparison.OrdinalIgnoreCase)) &&
+        (reservedId.Equals("opencode", StringComparison.OrdinalIgnoreCase) ||
+         reservedId.Equals("opencode-go", StringComparison.OrdinalIgnoreCase));
 
     private static bool SameEndpoint(Uri left, Uri right) =>
         string.Equals(left.GetLeftPart(UriPartial.Path).TrimEnd('/'), right.GetLeftPart(UriPartial.Path).TrimEnd('/'),

@@ -296,16 +296,18 @@ qwen3.8-flash|Qwen3.8 Flash|anthropic-messages|https://opencode.ai/inference|100
 qwen3.8-max|Qwen3.8 Max|openai-completions|https://opencode.ai/inference/v1|262144|131072|text,image
 """;
 
-    [Fact]
-    public async Task ModelsJsonCanOverrideOpenCodeGoAsASiblingSharingTheCredential()
+    [Theory]
+    [InlineData("opencode-go")]
+    [InlineData("OpenCode-Go")]
+    public async Task ModelsJsonCanOverrideOpenCodeGoAsASiblingSharingTheCredential(string providerKey)
     {
         var root = NewRoot();
         try
         {
             await File.WriteAllTextAsync(Path.Combine(root, "models.json"), """
-                {"providers":{"opencode-go":{"name":"OpenCode Go custom",
+                {"providers":{"__PROVIDER__":{"name":"OpenCode Go custom",
                  "baseUrl":"https://opencode.ai/inference/go"}}}
-                """);
+                """.Replace("__PROVIDER__", providerKey, StringComparison.Ordinal));
             using var http = new HttpClient();
             var runtime = await ProviderModelRuntime.CreateAsync(root, false, EnvironmentWithKey, http, offline: true);
             var provider = runtime.GetProvider("opencode-go");
