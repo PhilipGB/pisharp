@@ -2,7 +2,7 @@
   "schema": 1,
   "capability": "tui-editor-completion-paste",
   "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-  "pisharpSha": "0e524751de516a1772813b9a1e38898ca6059547",
+  "pisharpSha": "06bf6032b072f8c74cfc71ebb2e1c00b1ce1cbf6",
   "branch": "milestone/tui-command-file-completion-parity",
   "treeClean": true,
   "trackedChanges": [],
@@ -12013,7 +12013,7 @@
     },
     {
       "id": "login-completion",
-      "task": "login-completion",
+      "task": "slash-completion",
       "size": "80x24",
       "case": "80x24-dark-fullscreen",
       "calibration": {
@@ -12564,7 +12564,7 @@
     },
     {
       "id": "login-completion",
-      "task": "login-completion",
+      "task": "slash-completion",
       "size": "120x40",
       "case": "120x40-dark-fullscreen",
       "calibration": {
@@ -30253,7 +30253,7 @@
           "edited line one\nedited line two 🙂edited line one"
         ],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pi-editor-3bXSnB/prompt.md",
+          "external-capture.path": "/tmp/pi-editor-qXXDgy/prompt.md",
           "external-capture.input": "original draft",
           "external-capture.mode": "644\n",
           "external-capture.directory-mode": "700\n"
@@ -30430,7 +30430,7 @@
           "edited line one\nedited line two 🙂edited line one"
         ],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pisharp-editor-d28511d37ce3426795b165edf86865ba/prompt.md",
+          "external-capture.path": "/tmp/pisharp-editor-33e55ab08f5c464bb5ab1b30a1a50677/prompt.md",
           "external-capture.input": "original draft",
           "external-capture.mode": "600\n",
           "external-capture.directory-mode": "700\n"
@@ -30642,7 +30642,7 @@
           "edited line one\nedited line two 🙂edited line one"
         ],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pi-editor-MrgV55/prompt.md",
+          "external-capture.path": "/tmp/pi-editor-g4LGu8/prompt.md",
           "external-capture.input": "original draft",
           "external-capture.mode": "644\n",
           "external-capture.directory-mode": "700\n"
@@ -30819,7 +30819,7 @@
           "edited line one\nedited line two 🙂edited line one"
         ],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pisharp-editor-83b45d2b0428427bb44157b0124a7233/prompt.md",
+          "external-capture.path": "/tmp/pisharp-editor-3116ac96b6cd4abca4e9fc8036c3642b/prompt.md",
           "external-capture.input": "original draft",
           "external-capture.mode": "600\n",
           "external-capture.directory-mode": "700\n"
@@ -31005,7 +31005,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pi-editor-Lc3bqr/prompt.md",
+          "external-capture.path": "/tmp/pi-editor-mfHOAY/prompt.md",
           "external-capture.input": "preserved draft"
         },
         "scenarioError": null
@@ -31154,7 +31154,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pisharp-editor-8825be195ef54d8a80247845989c60e7/prompt.md",
+          "external-capture.path": "/tmp/pisharp-editor-5788d670971a430bbdb52d5759db9bc9/prompt.md",
           "external-capture.input": "preserved draft"
         },
         "scenarioError": null
@@ -31338,7 +31338,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pi-editor-C4OxUH/prompt.md",
+          "external-capture.path": "/tmp/pi-editor-SOIQ32/prompt.md",
           "external-capture.input": "preserved draft"
         },
         "scenarioError": null
@@ -31487,7 +31487,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pisharp-editor-8e99e9e7cab546e897517c60b3702b6a/prompt.md",
+          "external-capture.path": "/tmp/pisharp-editor-1f4636629777453285720e5c288e7c57/prompt.md",
           "external-capture.input": "preserved draft"
         },
         "scenarioError": null
@@ -31623,7 +31623,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pi-editor-qSdKet/prompt.md",
+          "external-capture.path": "/tmp/pi-editor-jSEtBo/prompt.md",
           "external-capture.input": "visual draft"
         },
         "scenarioError": null
@@ -31724,7 +31724,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pisharp-editor-736ab829ca1446b6a1dc15be82c59e29/prompt.md",
+          "external-capture.path": "/tmp/pisharp-editor-c471e8fa7f7b4cac99fcd8da2e666033/prompt.md",
           "external-capture.input": "visual draft"
         },
         "scenarioError": null
@@ -31860,7 +31860,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pi-editor-jmgNIF/prompt.md",
+          "external-capture.path": "/tmp/pi-editor-2DVIHu/prompt.md",
           "external-capture.input": "visual draft"
         },
         "scenarioError": null
@@ -31961,7 +31961,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pisharp-editor-ee0a8ba42c4b459ea064f280c5da07ad/prompt.md",
+          "external-capture.path": "/tmp/pisharp-editor-b90cc62b6e1c444c91bc7b0c737144ed/prompt.md",
           "external-capture.input": "visual draft"
         },
         "scenarioError": null
@@ -32097,7 +32097,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pi-editor-Dc1UOd/prompt.md",
+          "external-capture.path": "/tmp/pi-editor-l1saPU/prompt.md",
           "external-capture.input": "editor draft"
         },
         "scenarioError": null
@@ -32198,7 +32198,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pisharp-editor-b31e64b106094a5aad38e8f6a193bebf/prompt.md",
+          "external-capture.path": "/tmp/pisharp-editor-0d3859c703104a9e989e6fe2ac2514f3/prompt.md",
           "external-capture.input": "editor draft"
         },
         "scenarioError": null
@@ -32334,7 +32334,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pi-editor-6J1ehn/prompt.md",
+          "external-capture.path": "/tmp/pi-editor-w7fjcg/prompt.md",
           "external-capture.input": "editor draft"
         },
         "scenarioError": null
@@ -32435,7 +32435,7 @@
         },
         "providerTexts": [],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pisharp-editor-f03893a725f7434baae095f01a002330/prompt.md",
+          "external-capture.path": "/tmp/pisharp-editor-3adcb2aef9b9424cbb7aba0a4a10e9b6/prompt.md",
           "external-capture.input": "editor draft"
         },
         "scenarioError": null
@@ -33038,7 +33038,7 @@
           "edited line one\nedited line two 🙂edited line one"
         ],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pi-editor-K6PRor/prompt.md",
+          "external-capture.path": "/tmp/pi-editor-YyveBs/prompt.md",
           "external-capture.input": "journey draft"
         },
         "scenarioError": null
@@ -33606,7 +33606,7 @@
           "edited line one\nedited line two 🙂edited line one"
         ],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pisharp-editor-d94581d299ff4e36b3c86451294ae0d4/prompt.md",
+          "external-capture.path": "/tmp/pisharp-editor-c6f707c9fc2e4148bd09054d3801c573/prompt.md",
           "external-capture.input": "journey draft"
         },
         "scenarioError": null
@@ -34209,7 +34209,7 @@
           "edited line one\nedited line two 🙂edited line one"
         ],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pi-editor-XGydAU/prompt.md",
+          "external-capture.path": "/tmp/pi-editor-bc4eci/prompt.md",
           "external-capture.input": "journey draft"
         },
         "scenarioError": null
@@ -34777,7 +34777,7 @@
           "edited line one\nedited line two 🙂edited line one"
         ],
         "capturedWorkspaceFiles": {
-          "external-capture.path": "/tmp/pisharp-editor-94262c28bb65420d8df0ea98a5bbdde9/prompt.md",
+          "external-capture.path": "/tmp/pisharp-editor-3d1e23f7fdb243fea5147cc4cb0cd24d/prompt.md",
           "external-capture.input": "journey draft"
         },
         "scenarioError": null

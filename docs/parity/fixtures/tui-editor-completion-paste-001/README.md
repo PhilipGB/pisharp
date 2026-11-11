@@ -8,7 +8,7 @@ Completion milestone: slash-command and `@file` completion parity.
 - Branch: `milestone/tui-command-file-completion-parity`.
 - Pi reference: `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`
   (`/home/philip/Projects/pi-pinned`).
-- Implementation/evidence SHA: `0e524751de516a1772813b9a1e38898ca6059547`
+- Implementation/evidence SHA: `06bf6032b072f8c74cfc71ebb2e1c00b1ce1cbf6`
   (`head.txt`).
 - Terminal sizes: `80x24` and `120x40`, dark theme, fullscreen/alternate screen.
 
