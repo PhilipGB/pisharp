@@ -6,12 +6,15 @@ Deterministic real-process comparison for the
 - `scenarios.py` — frozen scenarios, actions and terminal sizes.
 - `run.py` — runs same-Pi calibration and the Pi/PiSharp pair through
   `tools/parity/terminal/run.py`, extracts checkpoints, embeds observations and
-  writes `report.json`. Exit code 0 only at 100/100.
+  writes `report.json`. Scenarios with `compareCandidateDescriptions` compare the
+  overlay description column (path presentation) in addition to candidate
+  identity and order. Exit code 0 only at 100/100.
 - `inventory.py` — frozen normalisations and unresolved differences.
-- `verify.py` — recomputes every comparison and validates the report; add
-  `--self-test` for the negative controls. Exit code 0 at 100/100, 2 for a
-  consistent report below 100, 1 for an invalid report.
+- `verify.py` — recomputes every comparison, validates the report and enforces
+  the acceptance manifest and evidence head; add `--self-test` for the negative
+  controls. Exit code 0 at 100/100, 2 for a consistent report below 100, 1 for an
+  invalid report.
 
 The harness additions used here (`expectEditor`/`notExpectEditor`, `quiesce`,
-fixture `binFiles`, `captureWorkspaceFiles`, and the action id in scenario
-errors) live in `tools/parity/terminal/`.
+fixture `binFiles`, `$symlink` fixture entries, `captureWorkspaceFiles`, and the
+action id in scenario errors) live in `tools/parity/terminal/`.

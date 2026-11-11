@@ -16,6 +16,9 @@ public sealed record ProviderProfile(string Id, string Name, Uri Endpoint, bool 
 {
     internal ExtensionProviderHandle? ExtensionProviderHandle { get; init; }
     internal string? ExtensionPath { get; init; }
+
+    /// <summary>Radius accounts are organisation accounts; built-in OAuth providers use subscriptions.</summary>
+    public bool OAuthIsSubscription => !string.Equals(Id, "radius", StringComparison.Ordinal);
 }
 
 public sealed record ModelSelection(ProviderProfile Provider, ModelDescriptor Model, string ApiKey,

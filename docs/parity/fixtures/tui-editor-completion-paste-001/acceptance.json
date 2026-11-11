@@ -1,0 +1,975 @@
+{
+  "schema": 1,
+  "capability": "tui-editor-completion-paste",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "cases": [
+    {
+      "id": "slash-exact-prefix",
+      "area": "slash-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "slash-completion",
+      "checkpoints": [
+        "slash-ambiguous"
+      ],
+      "oracle": "packages/tui/src/autocomplete.ts getSuggestions; fuzzy.ts fuzzyFilter",
+      "expect": {
+        "slash-ambiguous": {
+          "candidates": [
+            "settings",
+            "scoped-models",
+            "share",
+            "session",
+            "resume"
+          ],
+          "selected": "settings"
+        }
+      }
+    },
+    {
+      "id": "slash-fuzzy-non-prefix",
+      "area": "slash-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "slash-completion",
+      "checkpoints": [
+        "fuzzy-hks"
+      ],
+      "oracle": "packages/tui/src/fuzzy.ts fuzzyMatch; autocomplete.test.ts",
+      "expect": {
+        "fuzzy-hks": {
+          "candidates": [
+            "hotkeys"
+          ],
+          "selected": "hotkeys"
+        }
+      }
+    },
+    {
+      "id": "slash-fuzzy-ranking",
+      "area": "slash-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "slash-completion",
+      "checkpoints": [
+        "fuzzy-mdl"
+      ],
+      "oracle": "packages/tui/src/fuzzy.ts fuzzyFilter stable score order",
+      "expect": {
+        "fuzzy-mdl": {
+          "candidates": [
+            "model",
+            "scoped-models"
+          ]
+        }
+      }
+    },
+    {
+      "id": "slash-multiple-candidates-order",
+      "area": "slash-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "slash-completion",
+      "checkpoints": [
+        "multi-order"
+      ],
+      "oracle": "packages/coding-agent/src/core/slash-commands.ts BUILTIN_SLASH_COMMANDS order",
+      "expect": {
+        "multi-order": {
+          "candidates": [
+            "settings",
+            "scoped-models",
+            "share",
+            "session",
+            "resume"
+          ]
+        }
+      }
+    },
+    {
+      "id": "slash-keyboard-navigation",
+      "area": "slash-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "slash-completion",
+      "checkpoints": [
+        "navigate-down-one",
+        "navigate-down-two",
+        "navigate-wrap-up"
+      ],
+      "oracle": "packages/tui/src/components/select-list.ts handleInput wrap",
+      "expect": {
+        "navigate-down-one": {
+          "selected": "scoped-models"
+        },
+        "navigate-down-two": {
+          "selected": "share"
+        },
+        "navigate-wrap-up": {
+          "selected": "hotkeys"
+        }
+      }
+    },
+    {
+      "id": "slash-selection-apply",
+      "area": "slash-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "slash-completion",
+      "checkpoints": [
+        "navigate-down-tab",
+        "navigate-wrap-tab"
+      ],
+      "oracle": "packages/tui/src/autocomplete.ts applyCompletion",
+      "expect": {
+        "navigate-down-tab": {
+          "editorText": "/share"
+        },
+        "navigate-wrap-tab": {
+          "editorText": "/hotkeys"
+        }
+      }
+    },
+    {
+      "id": "slash-trailing-space",
+      "area": "slash-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "slash-completion",
+      "checkpoints": [
+        "navigate-down-tab",
+        "navigate-wrap-tab"
+      ],
+      "oracle": "packages/tui/src/autocomplete.ts applyCompletion slash branch",
+      "expect": {
+        "navigate-down-tab": {
+          "cursorColumn": 7
+        },
+        "navigate-wrap-tab": {
+          "cursorColumn": 9
+        }
+      }
+    },
+    {
+      "id": "slash-no-argument-command",
+      "area": "slash-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "slash-completion",
+      "checkpoints": [
+        "unique-tab",
+        "unique-escape"
+      ],
+      "oracle": "packages/tui/src/autocomplete.ts applyCompletion; slash-commands.ts",
+      "expect": {
+        "unique-tab": {
+          "editorText": "  /hotkeys",
+          "cursorColumn": 11
+        },
+        "unique-escape": {
+          "editorText": "  /hotkeys",
+          "cursorColumn": 11
+        }
+      }
+    },
+    {
+      "id": "slash-argument-command",
+      "area": "slash-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "slash-completion",
+      "checkpoints": [
+        "argument",
+        "argument-model-query"
+      ],
+      "oracle": "packages/tui/src/autocomplete.ts command-versus-argument branch",
+      "expect": {
+        "argument": {
+          "editorText": "/model",
+          "candidates": [
+            "fixture-model"
+          ]
+        },
+        "argument-model-query": {
+          "editorText": "/model fix",
+          "candidates": [
+            "fixture-model"
+          ]
+        }
+      }
+    },
+    {
+      "id": "slash-argument-model-completion",
+      "area": "slash-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "slash-completion",
+      "checkpoints": [
+        "argument-model-apply"
+      ],
+      "oracle": "interactive-mode.ts model getArgumentCompletions; model-search.ts",
+      "expect": {
+        "argument-model-apply": {
+          "editorText": "/model fixture/fixture-model"
+        }
+      }
+    },
+    {
+      "id": "slash-argument-thinking-completion",
+      "area": "slash-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "slash-completion",
+      "checkpoints": [
+        "argument-thinking-query",
+        "argument-thinking-apply",
+        "argument-thinking-fuzzy"
+      ],
+      "oracle": "interactive-mode.ts thinking getArgumentCompletions; ai/src/models.ts",
+      "expect": {
+        "argument-thinking-query": {
+          "editorText": "/thinking",
+          "candidates": [
+            "off"
+          ]
+        },
+        "argument-thinking-apply": {
+          "editorText": "/thinking off",
+          "candidates": []
+        },
+        "argument-thinking-fuzzy": {
+          "editorText": "/thinking o",
+          "candidates": [
+            "off"
+          ]
+        }
+      }
+    },
+    {
+      "id": "slash-argument-login-completion",
+      "area": "slash-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "login-completion",
+      "checkpoints": [
+        "login-anthropic",
+        "login-anthropic-apply",
+        "login-radius"
+      ],
+      "oracle": "interactive-mode.ts getLoginProviderOptions/getLoginProviderCompletionOptions; oauth-selector.ts formatAuthSelectorProviderType",
+      "expect": {
+        "login-anthropic": {
+          "candidates": [
+            "anthropic"
+          ],
+          "descriptions": [
+            "Anthropic · subscription/API key"
+          ],
+          "editorText": "/login anthropic",
+          "cursorColumn": 16
+        },
+        "login-anthropic-apply": {
+          "candidates": [],
+          "descriptions": [],
+          "editorText": "/login anthropic",
+          "cursorColumn": 16
+        },
+        "login-radius": {
+          "candidates": [
+            "radius"
+          ],
+          "descriptions": [
+            "Radius · account/API key"
+          ],
+          "editorText": "/login radius",
+          "cursorColumn": 13
+        }
+      }
+    },
+    {
+      "id": "slash-argument-login-no-matches",
+      "area": "slash-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "login-completion",
+      "checkpoints": [
+        "login-no-match"
+      ],
+      "oracle": "packages/tui/src/autocomplete.ts empty argument result closes the picker",
+      "expect": {
+        "login-no-match": {
+          "candidates": []
+        }
+      }
+    },
+    {
+      "id": "slash-no-matches",
+      "area": "slash-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "slash-completion",
+      "checkpoints": [
+        "no-match"
+      ],
+      "oracle": "packages/tui/src/autocomplete.ts null result closes the picker",
+      "expect": {
+        "no-match": {
+          "candidates": []
+        }
+      }
+    },
+    {
+      "id": "slash-argument-no-matches",
+      "area": "slash-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "slash-completion",
+      "checkpoints": [
+        "argument-no-match"
+      ],
+      "oracle": "packages/tui/src/autocomplete.ts argument branch empty result",
+      "expect": {
+        "argument-no-match": {
+          "candidates": []
+        }
+      }
+    },
+    {
+      "id": "slash-escape-preserves-draft",
+      "area": "slash-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "slash-completion",
+      "checkpoints": [
+        "cancel-ambiguous",
+        "picker-cancel",
+        "argument-cancel",
+        "cursor-requery-escape",
+        "escape-close"
+      ],
+      "oracle": "packages/tui/src/components/editor.ts cancelAutocomplete; custom-editor.ts",
+      "expect": {
+        "cancel-ambiguous": {
+          "editorText": "/s",
+          "candidates": []
+        },
+        "picker-cancel": {
+          "editorText": "/s",
+          "candidates": []
+        },
+        "argument-cancel": {
+          "editorText": "/model",
+          "candidates": []
+        },
+        "cursor-requery-escape": {
+          "editorText": "/model fix",
+          "candidates": []
+        },
+        "escape-close": {
+          "editorText": "/model",
+          "candidates": []
+        }
+      }
+    },
+    {
+      "id": "slash-editor-clear",
+      "area": "escape-ctrl-c",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "escape-ctrl-c",
+      "checkpoints": [
+        "ctrl-c-clears"
+      ],
+      "oracle": "packages/coding-agent/src/modes/interactive/interactive-mode.ts Ctrl+C clear",
+      "expect": {
+        "ctrl-c-clears": {
+          "editorText": ""
+        }
+      }
+    },
+    {
+      "id": "slash-pasted-text-does-not-open",
+      "area": "bracketed-paste",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "bracketed-paste",
+      "checkpoints": [
+        "paste-slash"
+      ],
+      "oracle": "packages/tui/src/components/editor.ts handlePaste cancelAutocomplete",
+      "expect": {
+        "paste-slash": {
+          "candidates": []
+        }
+      }
+    },
+    {
+      "id": "slash-typed-key-opens-after-paste",
+      "area": "bracketed-paste",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "bracketed-paste",
+      "checkpoints": [
+        "paste-slash-typed"
+      ],
+      "oracle": "packages/tui/src/components/editor.ts insertCharacter trigger rules",
+      "expect": {
+        "paste-slash-typed": {
+          "candidates": [
+            "hotkeys"
+          ]
+        }
+      }
+    },
+    {
+      "id": "slash-submitted-prompt",
+      "area": "slash-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "slash-completion",
+      "checkpoints": [
+        "draft-after-command-submit"
+      ],
+      "oracle": "editor.test.ts applyCompletion; command submission after an edit",
+      "expect": {
+        "draft-after-command-submit": {
+          "editorText": ""
+        }
+      },
+      "providerTexts": [
+        "completion kept the draft"
+      ]
+    },
+    {
+      "id": "file-simple-filename",
+      "area": "path-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "path-completion",
+      "checkpoints": [
+        "at-a"
+      ],
+      "oracle": "packages/tui/src/autocomplete.ts getFuzzyFileSuggestions; walkDirectoryWithFd",
+      "expect": {
+        "at-a": {
+          "candidates": [
+            "alpha.txt",
+            "alpine.md",
+            "ambiguous-beta.txt",
+            "ambiguous-alpha.txt",
+            "Beta.txt"
+          ],
+          "descriptions": [
+            "alpha.txt",
+            "alpine.md",
+            "ambiguous-beta.txt",
+            "ambiguous-alpha.txt",
+            "Beta.txt"
+          ]
+        }
+      }
+    },
+    {
+      "id": "file-nested-filename",
+      "area": "path-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "path-completion",
+      "checkpoints": [
+        "at-nested"
+      ],
+      "oracle": "autocomplete.test.ts returns nested file paths",
+      "expect": {
+        "at-nested": {
+          "candidates": [
+            "deep.cs"
+          ],
+          "descriptions": [
+            "src/module/deep.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "file-fuzzy-filename",
+      "area": "path-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "path-completion",
+      "checkpoints": [
+        "at-fuzzy"
+      ],
+      "oracle": "autocomplete.ts scoreEntry and fd pattern",
+      "expect": {
+        "at-fuzzy": {
+          "candidates": [
+            "alpha.txt",
+            "alpine.md",
+            "ambiguous-alpha.txt",
+            ".pisharp-terminal-harness"
+          ],
+          "descriptions": [
+            "alpha.txt",
+            "alpine.md",
+            "ambiguous-alpha.txt",
+            ".pisharp-terminal-harness"
+          ]
+        }
+      }
+    },
+    {
+      "id": "file-multiple-candidates-order",
+      "area": "path-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "path-completion",
+      "checkpoints": [
+        "at-empty",
+        "at-fuzzy"
+      ],
+      "oracle": "autocomplete.ts scoredEntries sort depth/length/localeCompare",
+      "expect": {
+        "at-empty": {
+          "candidates": [
+            "src/",
+            "🙂.md",
+            "docs/",
+            "世界.txt",
+            "Beta.txt"
+          ],
+          "descriptions": [
+            "src",
+            "🙂.md",
+            "docs",
+            "世界.txt",
+            "Beta.txt"
+          ]
+        },
+        "at-fuzzy": {
+          "candidates": [
+            "alpha.txt",
+            "alpine.md",
+            "ambiguous-alpha.txt",
+            ".pisharp-terminal-harness"
+          ],
+          "descriptions": [
+            "alpha.txt",
+            "alpine.md",
+            "ambiguous-alpha.txt",
+            ".pisharp-terminal-harness"
+          ]
+        }
+      }
+    },
+    {
+      "id": "file-relative-path",
+      "area": "path-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "path-completion",
+      "checkpoints": [
+        "at-relative"
+      ],
+      "oracle": "autocomplete.ts resolveScopedFuzzyQuery and scopedPathForDisplay",
+      "expect": {
+        "at-relative": {
+          "candidates": [
+            "src/"
+          ],
+          "descriptions": [
+            "./src"
+          ]
+        }
+      }
+    },
+    {
+      "id": "file-path-with-spaces",
+      "area": "path-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "path-completion",
+      "checkpoints": [
+        "at-space",
+        "apply-space"
+      ],
+      "oracle": "autocomplete.ts buildCompletionValue and applyCompletion quoting",
+      "expect": {
+        "at-space": {
+          "candidates": [
+            "space name.txt"
+          ],
+          "descriptions": [
+            "space name.txt"
+          ],
+          "editorText": "@sp",
+          "cursorColumn": 3
+        },
+        "apply-space": {
+          "candidates": [],
+          "descriptions": [],
+          "editorText": "@\"space name.txt\"",
+          "cursorColumn": 18
+        }
+      }
+    },
+    {
+      "id": "file-directory-display",
+      "area": "path-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "path-completion",
+      "checkpoints": [
+        "at-src-dir",
+        "at-directory",
+        "at-directory-continue"
+      ],
+      "oracle": "autocomplete.ts directory labels, descriptions and continuation",
+      "expect": {
+        "at-src-dir": {
+          "candidates": [
+            "main.cs",
+            "module/",
+            "deep.cs"
+          ],
+          "descriptions": [
+            "src/main.cs",
+            "src/module",
+            "src/module/deep.cs"
+          ],
+          "editorText": "@src/"
+        },
+        "at-directory": {
+          "candidates": [
+            "src/"
+          ],
+          "descriptions": [
+            "src"
+          ],
+          "editorText": "@src"
+        },
+        "at-directory-continue": {
+          "candidates": [],
+          "descriptions": [],
+          "editorText": "@src/"
+        }
+      }
+    },
+    {
+      "id": "file-selection-apply",
+      "area": "path-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "path-completion",
+      "checkpoints": [
+        "at-select-down-tab",
+        "at-enter"
+      ],
+      "oracle": "editor.ts autocomplete confirm applies without submitting",
+      "expect": {
+        "at-select-down-tab": {
+          "editorText": "@alpine.md"
+        },
+        "at-enter": {
+          "editorText": ""
+        }
+      }
+    },
+    {
+      "id": "file-trailing-space",
+      "area": "path-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "path-completion",
+      "checkpoints": [
+        "at-directory-child-tab"
+      ],
+      "oracle": "autocomplete.ts applyCompletion file suffix",
+      "expect": {
+        "at-directory-child-tab": {
+          "cursorColumn": 13
+        }
+      }
+    },
+    {
+      "id": "file-no-matches",
+      "area": "path-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "path-completion",
+      "checkpoints": [
+        "at-no-match",
+        "at-no-match-tab"
+      ],
+      "oracle": "editor.test.ts getSuggestions null closes the picker",
+      "expect": {
+        "at-no-match": {
+          "candidates": []
+        },
+        "at-no-match-tab": {
+          "candidates": []
+        }
+      }
+    },
+    {
+      "id": "file-escape-preserves-draft",
+      "area": "path-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "path-completion",
+      "checkpoints": [
+        "at-escape",
+        "at-escape-backspace-key",
+        "path-cancel-a"
+      ],
+      "oracle": "editor.ts cancelAutocomplete; handleBackspace re-trigger",
+      "expect": {
+        "at-escape": {
+          "editorText": "@alp",
+          "candidates": []
+        },
+        "at-escape-backspace-key": {
+          "editorText": "@al",
+          "candidates": [
+            "alpha.txt",
+            "alpine.md",
+            "ambiguous-alpha.txt",
+            ".pisharp-terminal-harness"
+          ]
+        },
+        "path-cancel-a": {
+          "editorText": "@ambiguous-",
+          "candidates": []
+        }
+      }
+    },
+    {
+      "id": "file-pasted-vs-typed",
+      "area": "path-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "path-completion",
+      "checkpoints": [
+        "at-paste",
+        "at-paste-type"
+      ],
+      "oracle": "editor.test.ts does not trigger autocomplete during paste",
+      "expect": {
+        "at-paste": {
+          "candidates": []
+        },
+        "at-paste-type": {
+          "candidates": [
+            "alpha.txt",
+            "ambiguous-alpha.txt"
+          ]
+        }
+      }
+    },
+    {
+      "id": "file-embedded-completion",
+      "area": "path-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "path-completion",
+      "checkpoints": [
+        "at-embedded",
+        "at-embedded-tab"
+      ],
+      "oracle": "autocomplete.ts extractAtPrefix and applyCompletion replacement range",
+      "expect": {
+        "at-embedded": {
+          "editorText": "look at @al",
+          "candidates": [
+            "alpha.txt",
+            "alpine.md",
+            "ambiguous-alpha.txt",
+            ".pisharp-terminal-harness"
+          ]
+        },
+        "at-embedded-tab": {
+          "editorText": "look at @alpha.txt",
+          "candidates": []
+        }
+      }
+    },
+    {
+      "id": "file-provider-visible-text",
+      "area": "path-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "path-completion",
+      "checkpoints": [
+        "at-embedded-submit"
+      ],
+      "oracle": "editor.ts getText after applyCompletion reaches the provider",
+      "expect": {
+        "at-embedded-submit": {
+          "editorText": ""
+        }
+      },
+      "providerTexts": [
+        "@alpha",
+        "look at @alpha.txt please"
+      ]
+    },
+    {
+      "id": "file-project-root-boundary",
+      "area": "path-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "path-completion",
+      "checkpoints": [
+        "at-empty"
+      ],
+      "oracle": "interactive-mode.ts CombinedAutocompleteProvider basePath=getCwd",
+      "expect": {
+        "at-empty": {
+          "candidates": [
+            "src/",
+            "🙂.md",
+            "docs/",
+            "世界.txt",
+            "Beta.txt"
+          ],
+          "descriptions": [
+            "src",
+            "🙂.md",
+            "docs",
+            "世界.txt",
+            "Beta.txt"
+          ]
+        }
+      }
+    },
+    {
+      "id": "file-hidden-and-git",
+      "area": "path-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "path-completion",
+      "checkpoints": [
+        "at-hidden",
+        "at-git"
+      ],
+      "oracle": "autocomplete.ts --hidden and .git exclusion",
+      "expect": {
+        "at-hidden": {
+          "candidates": [
+            ".hidden-dir/",
+            ".hidden.txt",
+            ".pisharp-terminal-harness",
+            "🙂.md",
+            "世界.txt"
+          ]
+        },
+        "at-git": {
+          "candidates": []
+        }
+      }
+    },
+    {
+      "id": "file-symlink",
+      "area": "path-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "path-symlink",
+      "checkpoints": [
+        "symlink-file",
+        "symlink-dir",
+        "symlink-dir-continue",
+        "symlink-dir-child-tab"
+      ],
+      "oracle": "autocomplete.ts fd --follow; autocomplete.test.ts symlink cases",
+      "expect": {
+        "symlink-file": {
+          "candidates": [
+            "linked-dir/",
+            "link.txt"
+          ],
+          "descriptions": [
+            "linked-dir",
+            "link.txt"
+          ],
+          "editorText": "@link"
+        },
+        "symlink-dir": {
+          "candidates": [
+            "linked-dir/"
+          ],
+          "descriptions": [
+            "linked-dir"
+          ],
+          "editorText": "@linked"
+        },
+        "symlink-dir-continue": {
+          "candidates": [],
+          "descriptions": [],
+          "editorText": "@linked-dir/"
+        },
+        "symlink-dir-child-tab": {
+          "candidates": [],
+          "descriptions": [],
+          "editorText": "@linked-dir/notes.txt"
+        }
+      }
+    },
+    {
+      "id": "file-forced-tab-completion",
+      "area": "path-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "file-tab-completion",
+      "checkpoints": [
+        "tab-all",
+        "tab-narrow",
+        "tab-apply",
+        "tab-dir-complete",
+        "tab-dir-child-apply"
+      ],
+      "oracle": "editor.test.ts force-mode completion stays open and applies without space",
+      "expect": {
+        "tab-all": {
+          "candidates": [
+            "src/",
+            ".pisharp-terminal-harness",
+            "Beta.txt",
+            "beta2.txt",
+            "package.json"
+          ],
+          "editorText": ""
+        },
+        "tab-narrow": {
+          "candidates": [
+            "Beta.txt",
+            "beta2.txt"
+          ],
+          "editorText": "B"
+        },
+        "tab-apply": {
+          "candidates": [],
+          "editorText": "Beta.txt"
+        },
+        "tab-dir-complete": {
+          "candidates": [],
+          "editorText": "src/"
+        },
+        "tab-dir-child-apply": {
+          "candidates": [],
+          "editorText": "src/index.ts"
+        }
+      }
+    }
+  ],
+  "deferred": [
+    {
+      "id": "login-provider-catalogue",
+      "reason": "Pi exposes a 43-entry provider/auth catalogue, including providers PiSharp does not register (for example OpenRouter OAuth). Frozen login cases use exact provider ids whose auth methods agree; the remaining catalogue breadth is provider work outside this milestone.",
+      "oracle": "interactive-mode.ts getLoginProviderOptions; oauth-selector.ts"
+    },
+    {
+      "id": "bug-and-changelog-commands",
+      "reason": "Pi registers /bug and /changelog built-ins that PiSharp does not implement. Slash completion derives from the live registry, so frozen cases use queries where the registered catalogues agree.",
+      "oracle": "packages/coding-agent/src/core/slash-commands.ts BUILTIN_SLASH_COMMANDS"
+    }
+  ]
+}

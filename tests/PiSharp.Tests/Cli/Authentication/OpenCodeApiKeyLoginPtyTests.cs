@@ -147,7 +147,7 @@ public sealed class OpenCodeApiKeyLoginPtyTests
             await Task.Delay(500, deadline.Token);
             Assert.Null(await new AuthStorage(Path.Combine(agent, "auth.json")).ReadAsync("opencode-go"));
 
-            await SendAsync(process, "/login opencode-go api-key\r");
+            await SendAsync(process, "\u001b[200~/login opencode-go api-key\u001b[201~\r");
             await capture.WaitForFrameAsync(frame => frame.Contains("API key for opencode-go:"))
                 .WaitAsync(deadline.Token);
             await SendAsync(process, secondSecret);

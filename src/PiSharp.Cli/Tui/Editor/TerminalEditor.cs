@@ -17,7 +17,7 @@ public sealed class TerminalEditor
         string? Description = null, bool IsDirectory = false, EditorCompletionItem? Item = null,
         EditorCompletionKind Kind = EditorCompletionKind.Slash, string Prefix = "");
     private sealed record CompletionCycle(IReadOnlyList<CompletionCandidate> Candidates, int SelectedIndex,
-        string BufferText, int Cursor)
+        bool Force, string BufferText, int Cursor)
     {
         public bool Matches(EditorBufferSnapshot snapshot) => BufferText == snapshot.Text && Cursor == snapshot.Cursor;
     }
@@ -56,11 +56,15 @@ public sealed class TerminalEditor
         Func<string>? getWorkingDirectory = null, bool initiallyExpanded = false,
         Func<string, string?>? describeCommand = null,
         Func<IReadOnlyList<ExtensionShortcutInfo>>? getExtensionShortcuts = null,
-        Func<IReadOnlyList<EditorModelOption>>? getModels = null)
+        Func<IReadOnlyList<EditorModelOption>>? getModels = null,
+        Func<IReadOnlyList<string>>? getThinkingLevels = null,
+        Func<IReadOnlyList<EditorLoginProvider>>? getLoginProviders = null)
     {
         _autocomplete = getWorkingDirectory is null
-            ? new EditorAutocomplete(() => Environment.CurrentDirectory, commands, describeCommand, getModels)
-            : new EditorAutocomplete(getWorkingDirectory, commands, describeCommand, getModels);
+            ? new EditorAutocomplete(() => Environment.CurrentDirectory, commands, describeCommand, getModels,
+                getThinkingLevels, getLoginProviders)
+            : new EditorAutocomplete(getWorkingDirectory, commands, describeCommand, getModels,
+                getThinkingLevels, getLoginProviders);
         _keymap = new(agentDirectory);
         _getExtensionShortcuts = getExtensionShortcuts;
         RefreshExtensionShortcuts();
@@ -628,6 +632,8 @@ public sealed class TerminalEditor
             _keymap.Matches("tui.input.tab", possibleCompletionKey);
         var isInterruptKey = next.Key is { } possibleInterruptKey &&
             _keymap.Matches("app.interrupt", possibleInterruptKey);
+        var hadAutocomplete = WithEditorState(() => _completionCycle is not null);
+        var completionForce = WithEditorState(() => _completionCycle is { Force: true });
         if (next.Key is { } activeAutocompleteKey &&
             WithEditorState(() => _completionCycle is { } cycle && cycle.Matches(_buffer.CaptureSnapshot())))
         {
@@ -857,17 +863,27 @@ public sealed class TerminalEditor
         }
         if (HandleExtensionEditorInput(next)) return true;
         if (next.Key is null && next.Text is null) return true;
-        WithEditorState(() =>
+        var activeAction = WithEditorState(() =>
         {
             if (next.Text is not null)
             {
-                if (_buffer.IsJumpModeActive && !next.IsPaste) _buffer.HandleJumpText(next.Text);
-                else if (next.IsPaste) _buffer.InsertPaste(next.Text);
-                else _buffer.InsertText(next.Text);
-                if (!next.IsPaste) RefreshAutocomplete();
+                if (_buffer.IsJumpModeActive && !next.IsPaste) return _buffer.HandleJumpText(next.Text);
+                if (next.IsPaste) return _buffer.InsertPaste(next.Text);
+                return _buffer.InsertText(next.Text);
             }
-            else _buffer.Handle(next.Key!.Value);
+            return _buffer.Handle(next.Key!.Value);
         });
+        if (next.Text is not null)
+        {
+            if (!next.IsPaste) RefreshAutocomplete(completionForce);
+        }
+        else if (next.Key is { } activeHandledKey &&
+                 (IsCompletionRefreshKey(activeHandledKey) ||
+                  hadAutocomplete && IsCursorMovementKey(activeHandledKey)))
+        {
+            WithEditorState(() => _suppressAutoCompletion = false);
+            if (activeAction == EditorAction.Render) RefreshAutocomplete(completionForce);
+        }
         return true;
     }
 
@@ -911,6 +927,7 @@ public sealed class TerminalEditor
             var isInterruptKey = next.Key is { } possibleInterruptKey &&
                 _keymap.Matches("app.interrupt", possibleInterruptKey);
             var hadAutocomplete = WithEditorState(() => _completionCycle is not null);
+            var completionForce = WithEditorState(() => _completionCycle is { Force: true });
             var autocompleteKey = next.Key;
             var autocompleteActive = autocompleteKey is { } candidateKey &&
                 WithEditorState(() => _completionCycle is { } cycle && cycle.Matches(_buffer.CaptureSnapshot())) &&
@@ -1111,7 +1128,7 @@ public sealed class TerminalEditor
                     if (!next.IsExtensionRewrite && following is not null) input.PushBack(following);
                     if (action == EditorAction.Render)
                     {
-                        if (!next.IsPaste) RefreshAutocomplete();
+                        if (!next.IsPaste) RefreshAutocomplete(completionForce);
                         Render();
                     }
                     continue;
@@ -1120,13 +1137,12 @@ public sealed class TerminalEditor
             else
             {
                 action = WithEditorState(() => _buffer.Handle(next.Key!.Value));
-                if (hadAutocomplete && action == EditorAction.Render &&
-                    next.Key is { } editKey &&
-                    (_keymap.Matches("tui.editor.deleteCharBackward", editKey) ||
-                     _keymap.Matches("tui.editor.deleteCharForward", editKey) ||
-                     _keymap.Matches("tui.editor.deleteWordBackward", editKey) ||
-                     _keymap.Matches("tui.editor.deleteWordForward", editKey)))
-                    RefreshAutocomplete();
+                var refreshesCompletion = next.Key is { } handledKey &&
+                    (IsCompletionRefreshKey(handledKey) ||
+                     hadAutocomplete && IsCursorMovementKey(handledKey));
+                if (refreshesCompletion) WithEditorState(() => _suppressAutoCompletion = false);
+                if (action == EditorAction.Render && refreshesCompletion)
+                    RefreshAutocomplete(completionForce);
             }
             switch (action)
             {
@@ -1414,11 +1430,12 @@ public sealed class TerminalEditor
 
                 if (force && candidates.Count == 1)
                 {
-                    ApplyCompletionCycleUnsafe(new(candidates, 0, current.Text, current.Cursor));
+                    ApplyCompletionCycleUnsafe(new(candidates, 0, force, current.Text, current.Cursor));
                     return;
                 }
 
-                _completionCycle = new(candidates, 0, current.Text, current.Cursor);
+                _completionCycle = new(candidates, SelectBestMatch(candidates, native?.Prefix), force,
+                    current.Text, current.Cursor);
             });
             Render();
         }
@@ -1467,7 +1484,7 @@ public sealed class TerminalEditor
         });
     }
 
-    private void RefreshAutocomplete()
+    private void RefreshAutocomplete(bool force = false)
     {
         CancelCompletionRequest();
         if (_suppressAutoCompletion)
@@ -1478,15 +1495,15 @@ public sealed class TerminalEditor
         var request = new CancellationTokenSource();
         _completionRequest = request;
         var snapshot = WithEditorState(_buffer.CaptureSnapshot);
-        _ = RefreshAutocompleteAsync(snapshot, request, request.Token);
+        _ = RefreshAutocompleteAsync(snapshot, request, request.Token, force);
     }
 
     private async Task RefreshAutocompleteAsync(EditorBufferSnapshot snapshot, CancellationTokenSource request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, bool force)
     {
         try
         {
-            var result = await _autocomplete.GetSuggestionsAsync(snapshot.Text, snapshot.Cursor, force: false,
+            var result = await _autocomplete.GetSuggestionsAsync(snapshot.Text, snapshot.Cursor, force,
                 cancellationToken).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
             WithEditorState(() =>
@@ -1494,14 +1511,15 @@ public sealed class TerminalEditor
                 if (_suppressAutoCompletion) return;
                 var current = _buffer.CaptureSnapshot();
                 if (current.Version != snapshot.Version || current.Cursor != snapshot.Cursor) return;
-                if (result is null || result.Kind == EditorCompletionKind.Path &&
+                if (result is null || !force && result.Kind == EditorCompletionKind.Path &&
                     !result.Prefix.Contains('@'))
                 {
                     _completionCycle = null;
                     return;
                 }
                 var candidates = NativeCandidates(result);
-                _completionCycle = candidates.Count == 0 ? null : new(candidates, 0, snapshot.Text, snapshot.Cursor);
+                _completionCycle = candidates.Count == 0 ? null : new(candidates,
+                    SelectBestMatch(candidates, result.Prefix), force, snapshot.Text, snapshot.Cursor);
             });
             Render();
         }
@@ -1511,6 +1529,20 @@ public sealed class TerminalEditor
             Interlocked.CompareExchange(ref _completionRequest, null, request);
             request.Dispose();
         }
+    }
+
+    /// <summary>Pi highlights an exact completion value, else the first value with the query as a prefix.</summary>
+    private static int SelectBestMatch(IReadOnlyList<CompletionCandidate> candidates, string? prefix)
+    {
+        if (string.IsNullOrEmpty(prefix)) return 0;
+        var firstPrefix = -1;
+        for (var index = 0; index < candidates.Count; index++)
+        {
+            var value = candidates[index].ReplacementText;
+            if (string.Equals(value, prefix, StringComparison.Ordinal)) return index;
+            if (firstPrefix < 0 && value.StartsWith(prefix, StringComparison.Ordinal)) firstPrefix = index;
+        }
+        return firstPrefix < 0 ? 0 : firstPrefix;
     }
 
     private static string TextBeforeCursor(string text, int cursor)
@@ -1525,6 +1557,23 @@ public sealed class TerminalEditor
         var trimmed = before.TrimStart();
         return trimmed.StartsWith('/') && !trimmed.Contains(' ');
     }
+
+    /// <summary>Deletions can open or narrow a picker again, matching Pi's handleBackspace/handleForwardDelete.</summary>
+    private bool IsCompletionRefreshKey(ConsoleKeyInfo key) =>
+        _keymap.Matches("tui.editor.deleteCharBackward", key) ||
+        _keymap.Matches("tui.editor.deleteCharForward", key) ||
+        _keymap.Matches("tui.editor.deleteWordBackward", key) ||
+        _keymap.Matches("tui.editor.deleteWordForward", key);
+
+    private bool IsCursorMovementKey(ConsoleKeyInfo key) =>
+        _keymap.Matches("tui.editor.cursorUp", key) ||
+        _keymap.Matches("tui.editor.cursorDown", key) ||
+        _keymap.Matches("tui.editor.cursorLeft", key) ||
+        _keymap.Matches("tui.editor.cursorRight", key) ||
+        _keymap.Matches("tui.editor.cursorWordLeft", key) ||
+        _keymap.Matches("tui.editor.cursorWordRight", key) ||
+        _keymap.Matches("tui.editor.cursorLineStart", key) ||
+        _keymap.Matches("tui.editor.cursorLineEnd", key);
 
     private void CancelCompletionRequest()
     {

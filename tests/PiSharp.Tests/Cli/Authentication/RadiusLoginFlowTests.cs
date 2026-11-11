@@ -135,7 +135,7 @@ public sealed class RadiusLoginFlowTests
         {
             await terminal.WaitEditorAsync();
             var opened = terminal.Mark;
-            await terminal.SendAsync("/login radius\n");
+            await terminal.SendAsync("\u001b[200~/login radius\u001b[201~\n");
             await terminal.WaitTextAsync("Select an OAuth login method:", opened);
         }
         else await terminal.OpenRadiusFromMenuAsync();

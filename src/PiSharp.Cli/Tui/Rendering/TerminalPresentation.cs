@@ -39,6 +39,16 @@ internal sealed class TerminalPresentation : IDisposable
         return models.Select(model => new EditorModelOption(model.Provider ?? "", model.Id, model.Name)).ToArray();
     }
 
+    private IReadOnlyList<string> GetThinkingLevels()
+    {
+        var model = _modelBinding.Selection.Model;
+        return ThinkingLevels.AvailableForModel(model.Reasoning, model.ThinkingLevelMap);
+    }
+
+    private IReadOnlyList<EditorLoginProvider> GetLoginProviders() =>
+        _modelRuntime.Providers.Select(provider => new EditorLoginProvider(provider.Id, provider.Name,
+            provider.OAuthSupported, provider.ApiKeySupported, provider.OAuthIsSubscription)).ToArray();
+
     public TerminalPresentation(string agentDirectory, string invocationDirectory, bool print, CliTerminalIO terminalIO,
         ActiveProjectRuntime projectBinding, ActiveModelRuntime modelBinding, ActiveConversationRuntime conversationBinding,
         ExtensionLease extensionLease, ProviderModelRuntime modelRuntime)
@@ -55,7 +65,8 @@ internal sealed class TerminalPresentation : IDisposable
             ? new TerminalEditor(completion.Commands, _agentDirectory, () => _projectBinding.WorkingDirectory,
                 initiallyExpanded: _projectBinding.Arguments.Verbose, describeCommand: completion.Describe,
                 getExtensionShortcuts: () => _extensionLease.Current.Registration.ExtensionShortcuts,
-                getModels: GetModelOptions) : null;
+                getModels: GetModelOptions, getThinkingLevels: GetThinkingLevels,
+                getLoginProviders: GetLoginProviders) : null;
         _cliThemeOverride = _editor is null ? null : _projectBinding.Arguments.UseTheme;
         _terminalThemeCatalog = CreateTerminalThemeCatalog();
         var initialTerminalTheme = ResolveConfiguredTheme(ActiveThemeSetting());

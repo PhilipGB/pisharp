@@ -37,8 +37,11 @@ internal sealed class TerminalScopedModelsSelector(ProviderModelRuntime modelRun
         finally
         {
             refreshCancellation.Cancel();
-            try { await refreshTask.ConfigureAwait(false); }
+            // A cancelled catalogue request may not observe its token promptly; never
+            // let that delay closing the selector or shutting down the prompt.
+            try { await refreshTask.WaitAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false); }
             catch (OperationCanceledException) { }
+            catch (TimeoutException) { }
             catch (Exception) { }
         }
 
