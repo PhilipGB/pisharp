@@ -282,7 +282,7 @@ def login_completion():
         action('clear-final', CLEAR, editor=''),
         {'id': 'exit', 'send': '\u0004', 'exit': True, 'expect': 'fixture-model'},
     ]
-    return base('login-completion', 'login-completion', actions,
+    return base('login-completion', 'slash-completion', actions,
                 extra={'compareCandidateDescriptions': True})
 
 
