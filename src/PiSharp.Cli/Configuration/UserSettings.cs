@@ -115,6 +115,7 @@ public sealed record BranchSummarySettings(int? ReserveTokens = null, bool? Skip
         return new(reserve, skipPrompt);
     }
 }
+
 /// <summary>Accepted `treeFilterMode` values in pinned Pi's settings order.</summary>
 internal static class TreeFilterModeSetting
 {
