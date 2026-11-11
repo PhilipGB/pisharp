@@ -98,6 +98,12 @@ Same-Pi calibration passed for every scenario at both sizes.
    now paste `/login <provider> …` commands. Typing them and bursting Enter in
    one write races Pi's own picker-confirm rule; pasting cancels autocomplete in
    both products and keeps those tests focused on the login flow.
+7. **Bounded modal shutdown and deterministic PTY exits (suite stability, not
+   completion behaviour).** The scoped-models selector no longer awaits a
+   cancelled catalogue refresh without a bound, and the affected PTY fixtures
+   dismiss any focused modal before exiting, falling back to stdin EOF. Before
+   this, load-dependent runs could leave a selector open at quit and stop a
+   testhost.
 
 ## Results
 
@@ -171,10 +177,10 @@ dotnet test PiSharp.slnx
 ```
 
 Results at the implementation head: verifier passes with 21 negative controls
-rejected; focused editor/completion tests 79/79; full suite 4560 tests with 4559
-passing. The single `BashShutdownProcessTests` failure is a pre-existing
-load-dependent flake that also fails on the untouched base (same test, same
-timeout) and passes when run alone.
+rejected; focused editor/completion tests 79/79; full suite 4560/4560 passed
+(`dotnet test PiSharp.slnx` with stdin redirected from `/dev/null` so a testhost
+in a background process group cannot be stopped by terminal signals). Build and
+format checks pass.
 
 Raw PTY artifacts stay under the ignored `artifacts/parity/` tree. Only the
 compact report, acceptance manifest, baseline, source inventory and receipt are
