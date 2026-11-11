@@ -446,6 +446,10 @@ def run_focused_tests(implementation):
         "FullyQualifiedName~TerminalPtyTests.ScopedModelsSelectorAppliesSessionEditsAndPersistsReorderedScopeThroughLinuxPty",
         "FullyQualifiedName~TerminalPtyTests.ScopedModelsSelectorAddsModelsDiscoveredWhileOpenThroughLinuxPty",
         "FullyQualifiedName~AppControlPtyTests.DoubleEscapeHonoursTheConfiguredActionAndReturnsToTheEditor",
+        "FullyQualifiedName~AppControlPtyTests.RegularModeDoubleEscapeAfterBashEntryOpensTheTreeSelectorThroughLinuxPty",
+        "FullyQualifiedName~TerminalPtyTests.SettingsListRendersFiltersChangesAndPersistsThroughLinuxPty",
+        "FullyQualifiedName~TerminalPtyTests.SettingsPickerSetsAndRemovesPerModelThinkingDefaultsThroughLinuxPty",
+        "FullyQualifiedName~TerminalPtyTests.SavedPerModelThinkingDefaultChangesTheNextProviderRequestThroughLinuxPty",
     ])
     run(["dotnet", "test", "tests/PiSharp.Tests/PiSharp.Tests.csproj", "--filter", filter_value,
          "--logger", "trx;LogFileName=tree-filter.trx", "--results-directory", directory,
