@@ -3476,8 +3476,8 @@ public sealed class TerminalPtyTests
             await screen.WaitForFrameAsync(frame => !frame.Contains("Scoped Models", StringComparison.Ordinal) &&
                 frame.Contains($"Scoped models: {saved.EnabledModels!.Count} model references",
                     StringComparison.Ordinal)).WaitAsync(timeout.Token);
-            // The selector's final render can still be settling; clear any editor text before quitting.
-            await process.StandardInput.WriteAsync("\u0003/quit\r");
+            // Closing stdin asks the selector or the prompt to exit; the bounded
+            // catalogue refresh in the selector keeps this independent of modal focus.
             process.StandardInput.Close();
             await process.WaitForExitAsync(timeout.Token);
             await stdout.WaitAsync(timeout.Token);

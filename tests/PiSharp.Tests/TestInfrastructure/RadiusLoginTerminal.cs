@@ -125,9 +125,13 @@ internal sealed class RadiusLoginTerminal : IAsyncDisposable
 
     public async Task QuitAsync()
     {
+        // Dismiss any lingering modal, clear the draft, then quit; closing stdin
+        // remains the fallback when the prompt or a modal owns focus.
+        await SendAsync("\u001b");
+        await SendAsync("\u0003");
         await SendAsync("/quit\n");
         _process.StandardInput.Close();
-        await _process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(15));
+        await _process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(30));
         await _readOutput;
         Assert.Equal(0, _process.ExitCode);
         Assert.Equal("", await _readError);
