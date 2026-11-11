@@ -1,0 +1,798 @@
+{
+  "schema": 1,
+  "capability": "settings-treefiltermode",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "values": [
+    "default",
+    "no-tools",
+    "user-only",
+    "labeled-only",
+    "all"
+  ],
+  "default": "default",
+  "label": "Tree filter mode",
+  "description": "Default filter when opening /tree",
+  "sources": [
+    {
+      "file": "packages/coding-agent/src/core/settings-defaults.ts",
+      "lines": "46",
+      "symbol": "SETTINGS_DEFAULTS.treeFilterMode",
+      "observation": "The shared runtime default is the string 'default'."
+    },
+    {
+      "file": "packages/coding-agent/src/core/settings-schema.ts",
+      "lines": "345-357",
+      "symbol": "treeFilterMode",
+      "observation": "Optional union of default, no-tools, user-only, labeled-only and all, described as 'Default filter when opening /tree', defaulted from SETTINGS_DEFAULTS."
+    },
+    {
+      "file": "packages/coding-agent/src/core/settings-manager.ts",
+      "lines": "1366-1375",
+      "symbol": "getTreeFilterMode/setTreeFilterMode",
+      "observation": "The getter reads the merged settings and returns the default unless the stored value is one of the five literals; the setter writes global settings and saves."
+    },
+    {
+      "file": "packages/coding-agent/src/core/settings-manager.ts",
+      "lines": "377-408",
+      "symbol": "loadFromStorage/tryLoadFromStorage",
+      "observation": "Settings files are JSON.parse'd and migrated only; values are never validated against the schema, so an unrecognized value loads and resolves to the default."
+    },
+    {
+      "file": "packages/coding-agent/src/modes/interactive/components/settings-selector.ts",
+      "lines": "596-601",
+      "symbol": "tree-filter-mode item",
+      "observation": "Label 'Tree filter mode', description 'Default filter when opening /tree', currentValue from config and values in pinned order."
+    },
+    {
+      "file": "packages/coding-agent/src/modes/interactive/components/settings-selector.ts",
+      "lines": "955-958",
+      "symbol": "onTreeFilterModeChange",
+      "observation": "A chosen value is forwarded to the interactive-mode callback."
+    },
+    {
+      "file": "packages/coding-agent/src/modes/interactive/interactive-mode.ts",
+      "lines": "5080-5082",
+      "symbol": "onTreeFilterModeChange",
+      "observation": "The callback persists the choice through settingsManager.setTreeFilterMode."
+    },
+    {
+      "file": "packages/coding-agent/src/modes/interactive/interactive-mode.ts",
+      "lines": "5575-5579",
+      "symbol": "showTreeSelector",
+      "observation": "Every /tree open reads getTreeFilterMode and passes initialFilterMode to the selector; /tree, app.session.tree, configured double-Escape and the summary-cancel reopen share it."
+    },
+    {
+      "file": "packages/coding-agent/src/modes/interactive/components/tree-selector.ts",
+      "lines": "129-142",
+      "symbol": "TreeList constructor",
+      "observation": "filterMode is seeded from initialFilterMode before applyFilter runs, so the first render is already filtered."
+    },
+    {
+      "file": "packages/coding-agent/src/modes/interactive/components/tree-selector.ts",
+      "lines": "331-420",
+      "symbol": "TreeList.applyFilter",
+      "observation": "default hides label/context_edit/custom/model_change/thinking_level_change/session_info; no-tools adds toolResult removal; user-only keeps user messages; labeled-only keeps labelled nodes; all keeps everything except usage entries and text-free assistant messages that are not the current leaf."
+    },
+    {
+      "file": "packages/coding-agent/src/modes/interactive/components/tree-selector.ts",
+      "lines": "648-664",
+      "symbol": "TreeList.getStatusLabels",
+      "observation": "Non-default filters append ' [no-tools]', ' [user]', ' [labeled]' or ' [all]'; default appends nothing."
+    },
+    {
+      "file": "packages/tui/src/components/settings-list.ts",
+      "lines": "284-288",
+      "symbol": "SettingsList value cycling",
+      "observation": "Enter/Space cycles a value item through its values array in order and reports the new value; there is no reset-to-unset entry."
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "TF01",
+      "requirement": "No treeFilterMode configured",
+      "expected": "Effective mode is default",
+      "oracle": [
+        "TF01"
+      ],
+      "fixture": "default"
+    },
+    {
+      "id": "TF02",
+      "requirement": "Explicit treeFilterMode default",
+      "expected": "/tree opens in default mode",
+      "oracle": [
+        "TF02"
+      ],
+      "fixture": "default"
+    },
+    {
+      "id": "TF03",
+      "requirement": "Explicit treeFilterMode no-tools",
+      "expected": "/tree opens in no-tools mode",
+      "oracle": [
+        "TF03"
+      ],
+      "fixture": "no-tools"
+    },
+    {
+      "id": "TF04",
+      "requirement": "Explicit treeFilterMode user-only",
+      "expected": "/tree opens in user-only mode",
+      "oracle": [
+        "TF04"
+      ],
+      "fixture": "user-only"
+    },
+    {
+      "id": "TF05",
+      "requirement": "Explicit treeFilterMode labeled-only",
+      "expected": "/tree opens in labeled-only mode",
+      "oracle": [
+        "TF05"
+      ],
+      "fixture": "labeled-only"
+    },
+    {
+      "id": "TF06",
+      "requirement": "Explicit treeFilterMode all",
+      "expected": "/tree opens in all mode",
+      "oracle": [
+        "TF06"
+      ],
+      "fixture": "all"
+    },
+    {
+      "id": "TF07",
+      "requirement": "Unrecognized configured value",
+      "expected": "Loads without error and behaves as default",
+      "oracle": [
+        "TF07"
+      ],
+      "fixture": "invalid"
+    },
+    {
+      "id": "TF08",
+      "requirement": "Settings picker presentation",
+      "expected": "Label, description, current value, option order and reset semantics match pinned Pi",
+      "oracle": [
+        "TF08"
+      ],
+      "fixture": "settings"
+    },
+    {
+      "id": "TF09",
+      "requirement": "Persistence",
+      "expected": "The chosen mode survives a restart",
+      "oracle": [
+        "TF09"
+      ],
+      "fixture": "default"
+    },
+    {
+      "id": "TF10",
+      "requirement": "Reset",
+      "expected": "Removing the configured value restores default",
+      "oracle": [
+        "TF10"
+      ],
+      "fixture": "default"
+    },
+    {
+      "id": "TF11",
+      "requirement": "Repeated opens",
+      "expected": "A temporary selector filter change does not persist",
+      "oracle": [
+        "TF11"
+      ],
+      "fixture": "default"
+    },
+    {
+      "id": "TF12",
+      "requirement": "Change applies to the next tree",
+      "expected": "The next /tree open uses the new value without a restart",
+      "oracle": [
+        "TF12"
+      ],
+      "fixture": "default"
+    },
+    {
+      "id": "TF13",
+      "requirement": "No unrelated settings mutation",
+      "expected": "Other settings survive the write",
+      "oracle": [
+        "TF13"
+      ],
+      "fixture": "default"
+    }
+  ],
+  "projections": {
+    "100x30-dark-fullscreen": {
+      "default": {
+        "rows": [
+          "u0000002",
+          "a0000003",
+          "c0000007",
+          "c0000008",
+          "r0000010",
+          "k0000011",
+          "y0000012",
+          "z0000013",
+          "b0000004",
+          "b0000005"
+        ],
+        "count": "8/10",
+        "tags": [],
+        "selected": "z0000013"
+      },
+      "unset": {
+        "rows": [
+          "u0000002",
+          "a0000003",
+          "c0000007",
+          "c0000008",
+          "r0000010",
+          "k0000011",
+          "y0000012",
+          "z0000013",
+          "b0000004",
+          "b0000005"
+        ],
+        "count": "8/10",
+        "tags": [],
+        "selected": "z0000013"
+      },
+      "no-tools": {
+        "rows": [
+          "u0000002",
+          "a0000003",
+          "c0000007",
+          "c0000008",
+          "k0000011",
+          "y0000012",
+          "z0000013",
+          "b0000004",
+          "b0000005"
+        ],
+        "count": "7/9",
+        "tags": [
+          "no-tools"
+        ],
+        "selected": "z0000013"
+      },
+      "user-only": {
+        "rows": [
+          "u0000002",
+          "c0000007",
+          "b0000004"
+        ],
+        "count": "2/3",
+        "tags": [
+          "user"
+        ],
+        "selected": "c0000007"
+      },
+      "labeled-only": {
+        "rows": [
+          "a0000003",
+          "c0000008"
+        ],
+        "count": "2/2",
+        "tags": [
+          "labeled"
+        ],
+        "selected": "c0000008"
+      },
+      "all": {
+        "rows": [
+          "u0000002",
+          "a0000003",
+          "c0000007",
+          "c0000008",
+          "r0000010",
+          "k0000011",
+          "y0000012",
+          "z0000013",
+          "t0000001",
+          "L0000016",
+          "s0000017",
+          "e0000018",
+          "b0000004",
+          "b0000005",
+          "L0000006"
+        ],
+        "count": "14/17",
+        "tags": [
+          "all"
+        ],
+        "selected": "e0000018"
+      },
+      "invalid": {
+        "rows": [
+          "u0000002",
+          "a0000003",
+          "c0000007",
+          "c0000008",
+          "r0000010",
+          "k0000011",
+          "y0000012",
+          "z0000013",
+          "b0000004",
+          "b0000005"
+        ],
+        "count": "8/10",
+        "tags": [],
+        "selected": "z0000013"
+      },
+      "reset": {
+        "rows": [
+          "u0000002",
+          "a0000003",
+          "c0000007",
+          "c0000008",
+          "r0000010",
+          "k0000011",
+          "y0000012",
+          "z0000013",
+          "b0000004",
+          "b0000005"
+        ],
+        "count": "8/10",
+        "tags": [],
+        "selected": "z0000013"
+      },
+      "temporary-cycle": {
+        "rows": [
+          "a0000003",
+          "c0000008"
+        ],
+        "count": "1/2",
+        "tags": [
+          "labeled"
+        ],
+        "selected": "a0000003"
+      }
+    },
+    "140x40-dark-fullscreen": {
+      "default": {
+        "rows": [
+          "u0000002",
+          "a0000003",
+          "c0000007",
+          "c0000008",
+          "r0000010",
+          "k0000011",
+          "y0000012",
+          "z0000013",
+          "b0000004",
+          "b0000005"
+        ],
+        "count": "8/10",
+        "tags": [],
+        "selected": "z0000013"
+      },
+      "unset": {
+        "rows": [
+          "u0000002",
+          "a0000003",
+          "c0000007",
+          "c0000008",
+          "r0000010",
+          "k0000011",
+          "y0000012",
+          "z0000013",
+          "b0000004",
+          "b0000005"
+        ],
+        "count": "8/10",
+        "tags": [],
+        "selected": "z0000013"
+      },
+      "no-tools": {
+        "rows": [
+          "u0000002",
+          "a0000003",
+          "c0000007",
+          "c0000008",
+          "k0000011",
+          "y0000012",
+          "z0000013",
+          "b0000004",
+          "b0000005"
+        ],
+        "count": "7/9",
+        "tags": [
+          "no-tools"
+        ],
+        "selected": "z0000013"
+      },
+      "user-only": {
+        "rows": [
+          "u0000002",
+          "c0000007",
+          "b0000004"
+        ],
+        "count": "2/3",
+        "tags": [
+          "user"
+        ],
+        "selected": "c0000007"
+      },
+      "labeled-only": {
+        "rows": [
+          "a0000003",
+          "c0000008"
+        ],
+        "count": "2/2",
+        "tags": [
+          "labeled"
+        ],
+        "selected": "c0000008"
+      },
+      "all": {
+        "rows": [
+          "m0000001",
+          "t0000001",
+          "u0000002",
+          "a0000003",
+          "c0000007",
+          "c0000008",
+          "r0000010",
+          "k0000011",
+          "y0000012",
+          "z0000013",
+          "t0000015",
+          "L0000016",
+          "s0000017",
+          "e0000018",
+          "b0000004",
+          "b0000005",
+          "L0000006"
+        ],
+        "count": "14/17",
+        "tags": [
+          "all"
+        ],
+        "selected": "e0000018"
+      },
+      "invalid": {
+        "rows": [
+          "u0000002",
+          "a0000003",
+          "c0000007",
+          "c0000008",
+          "r0000010",
+          "k0000011",
+          "y0000012",
+          "z0000013",
+          "b0000004",
+          "b0000005"
+        ],
+        "count": "8/10",
+        "tags": [],
+        "selected": "z0000013"
+      },
+      "reset": {
+        "rows": [
+          "u0000002",
+          "a0000003",
+          "c0000007",
+          "c0000008",
+          "r0000010",
+          "k0000011",
+          "y0000012",
+          "z0000013",
+          "b0000004",
+          "b0000005"
+        ],
+        "count": "8/10",
+        "tags": [],
+        "selected": "z0000013"
+      },
+      "temporary-cycle": {
+        "rows": [
+          "a0000003",
+          "c0000008"
+        ],
+        "count": "1/2",
+        "tags": [
+          "labeled"
+        ],
+        "selected": "a0000003"
+      }
+    },
+    "100x30-dark-regular": {
+      "default": {
+        "rows": [
+          "u0000002",
+          "a0000003",
+          "c0000007",
+          "c0000008",
+          "r0000010",
+          "k0000011",
+          "y0000012",
+          "z0000013",
+          "b0000004",
+          "b0000005"
+        ],
+        "count": "8/10",
+        "tags": [],
+        "selected": "z0000013"
+      },
+      "unset": {
+        "rows": [
+          "u0000002",
+          "a0000003",
+          "c0000007",
+          "c0000008",
+          "r0000010",
+          "k0000011",
+          "y0000012",
+          "z0000013",
+          "b0000004",
+          "b0000005"
+        ],
+        "count": "8/10",
+        "tags": [],
+        "selected": "z0000013"
+      },
+      "no-tools": {
+        "rows": [
+          "u0000002",
+          "a0000003",
+          "c0000007",
+          "c0000008",
+          "k0000011",
+          "y0000012",
+          "z0000013",
+          "b0000004",
+          "b0000005"
+        ],
+        "count": "7/9",
+        "tags": [
+          "no-tools"
+        ],
+        "selected": "z0000013"
+      },
+      "user-only": {
+        "rows": [
+          "u0000002",
+          "c0000007",
+          "b0000004"
+        ],
+        "count": "2/3",
+        "tags": [
+          "user"
+        ],
+        "selected": "c0000007"
+      },
+      "labeled-only": {
+        "rows": [
+          "a0000003",
+          "c0000008"
+        ],
+        "count": "2/2",
+        "tags": [
+          "labeled"
+        ],
+        "selected": "c0000008"
+      },
+      "all": {
+        "rows": [
+          "u0000002",
+          "a0000003",
+          "c0000007",
+          "c0000008",
+          "r0000010",
+          "k0000011",
+          "y0000012",
+          "z0000013",
+          "t0000001",
+          "L0000016",
+          "s0000017",
+          "e0000018",
+          "b0000004",
+          "b0000005",
+          "L0000006"
+        ],
+        "count": "14/17",
+        "tags": [
+          "all"
+        ],
+        "selected": "e0000018"
+      },
+      "invalid": {
+        "rows": [
+          "u0000002",
+          "a0000003",
+          "c0000007",
+          "c0000008",
+          "r0000010",
+          "k0000011",
+          "y0000012",
+          "z0000013",
+          "b0000004",
+          "b0000005"
+        ],
+        "count": "8/10",
+        "tags": [],
+        "selected": "z0000013"
+      },
+      "reset": {
+        "rows": [
+          "u0000002",
+          "a0000003",
+          "c0000007",
+          "c0000008",
+          "r0000010",
+          "k0000011",
+          "y0000012",
+          "z0000013",
+          "b0000004",
+          "b0000005"
+        ],
+        "count": "8/10",
+        "tags": [],
+        "selected": "z0000013"
+      },
+      "temporary-cycle": {
+        "rows": [
+          "a0000003",
+          "c0000008"
+        ],
+        "count": "1/2",
+        "tags": [
+          "labeled"
+        ],
+        "selected": "a0000003"
+      }
+    },
+    "140x40-dark-regular": {
+      "default": {
+        "rows": [
+          "u0000002",
+          "a0000003",
+          "c0000007",
+          "c0000008",
+          "r0000010",
+          "k0000011",
+          "y0000012",
+          "z0000013",
+          "b0000004",
+          "b0000005"
+        ],
+        "count": "8/10",
+        "tags": [],
+        "selected": "z0000013"
+      },
+      "unset": {
+        "rows": [
+          "u0000002",
+          "a0000003",
+          "c0000007",
+          "c0000008",
+          "r0000010",
+          "k0000011",
+          "y0000012",
+          "z0000013",
+          "b0000004",
+          "b0000005"
+        ],
+        "count": "8/10",
+        "tags": [],
+        "selected": "z0000013"
+      },
+      "no-tools": {
+        "rows": [
+          "u0000002",
+          "a0000003",
+          "c0000007",
+          "c0000008",
+          "k0000011",
+          "y0000012",
+          "z0000013",
+          "b0000004",
+          "b0000005"
+        ],
+        "count": "7/9",
+        "tags": [
+          "no-tools"
+        ],
+        "selected": "z0000013"
+      },
+      "user-only": {
+        "rows": [
+          "u0000002",
+          "c0000007",
+          "b0000004"
+        ],
+        "count": "2/3",
+        "tags": [
+          "user"
+        ],
+        "selected": "c0000007"
+      },
+      "labeled-only": {
+        "rows": [
+          "a0000003",
+          "c0000008"
+        ],
+        "count": "2/2",
+        "tags": [
+          "labeled"
+        ],
+        "selected": "c0000008"
+      },
+      "all": {
+        "rows": [
+          "m0000001",
+          "t0000001",
+          "u0000002",
+          "a0000003",
+          "c0000007",
+          "c0000008",
+          "r0000010",
+          "k0000011",
+          "y0000012",
+          "z0000013",
+          "t0000015",
+          "L0000016",
+          "s0000017",
+          "e0000018",
+          "b0000004",
+          "b0000005",
+          "L0000006"
+        ],
+        "count": "14/17",
+        "tags": [
+          "all"
+        ],
+        "selected": "e0000018"
+      },
+      "invalid": {
+        "rows": [
+          "u0000002",
+          "a0000003",
+          "c0000007",
+          "c0000008",
+          "r0000010",
+          "k0000011",
+          "y0000012",
+          "z0000013",
+          "b0000004",
+          "b0000005"
+        ],
+        "count": "8/10",
+        "tags": [],
+        "selected": "z0000013"
+      },
+      "reset": {
+        "rows": [
+          "u0000002",
+          "a0000003",
+          "c0000007",
+          "c0000008",
+          "r0000010",
+          "k0000011",
+          "y0000012",
+          "z0000013",
+          "b0000004",
+          "b0000005"
+        ],
+        "count": "8/10",
+        "tags": [],
+        "selected": "z0000013"
+      },
+      "temporary-cycle": {
+        "rows": [
+          "a0000003",
+          "c0000008"
+        ],
+        "count": "1/2",
+        "tags": [
+          "labeled"
+        ],
+        "selected": "a0000003"
+      }
+    }
+  }
+}

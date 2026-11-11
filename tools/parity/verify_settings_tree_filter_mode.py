@@ -90,20 +90,24 @@ def validate_oracle(oracle):
     scenarios = oracle.get("scenarios") or []
     require([scenario.get("id") for scenario in scenarios] == REQUIRED_CASES,
             f"Oracle scenarios must be {REQUIRED_CASES}.")
-    for mode in MODES:
-        projection = (oracle.get("projections") or {}).get(mode)
-        require(isinstance(projection, dict), f"Oracle has no {mode} projection.")
-        require(projection.get("rows"), f"Oracle {mode} projection has no rows.")
-        require(projection.get("count"), f"Oracle {mode} projection has no count.")
-        require(projection.get("tags") == STATUS_TAGS[mode],
-                f"Oracle {mode} projection status label differs.")
-        require(projection.get("selected"), f"Oracle {mode} projection has no selection.")
-    require((oracle.get("projections") or {}).get("default") ==
-            (oracle.get("projections") or {}).get("unset"),
-            "Unset must project exactly like the default filter.")
-    invalid = (oracle.get("projections") or {}).get("invalid")
-    require(invalid == oracle["projections"]["default"],
-            "An unrecognized stored value must project exactly like the default filter.")
+    projections = oracle.get("projections") or {}
+    require(set(projections) == set(CASE_IDS),
+            f"Oracle projections must cover {sorted(CASE_IDS)}, found {sorted(projections)}.")
+    for case_id, case in projections.items():
+        for mode in MODES + ["unset", "invalid", "reset", "temporary-cycle"]:
+            projection = case.get(mode)
+            require(isinstance(projection, dict), f"Oracle {case_id} has no {mode} projection.")
+            require(projection.get("rows"), f"Oracle {case_id} {mode} projection has no rows.")
+            require(projection.get("count"), f"Oracle {case_id} {mode} projection has no count.")
+            expect = STATUS_TAGS["labeled-only"] if mode == "temporary-cycle" else \
+                STATUS_TAGS.get(mode, STATUS_TAGS["default"])
+            require(projection.get("tags") == expect,
+                    f"Oracle {case_id} {mode} projection status label differs.")
+            require(projection.get("selected"), f"Oracle {case_id} {mode} projection has no selection.")
+        require(case["default"] == case["unset"],
+                f"{case_id}: unset must project exactly like the default filter.")
+        require(case["invalid"] == case["default"],
+                f"{case_id}: an unrecognized value must project exactly like the default filter.")
 
 
 def validate_manifest(manifest, implementation, oracle):
@@ -176,11 +180,17 @@ def validate_gates(gates, implementation):
             "Ledger gate must reference the parity evidence.")
 
 
-def checkpoint(document, case_id, name):
-    product = document["cases"][case_id]
-    found = product["pi"]["checkpoints"].get(name)
-    require(found is not None, f"{case_id} has no {name} checkpoint in the pinned-Pi evidence.")
+def checkpoint(document, case_id, name, product="pi"):
+    case = document["cases"][case_id]
+    found = case[product]["checkpoints"].get(name)
+    require(found is not None, f"{case_id} has no {name} checkpoint in the {product} evidence.")
     return found
+
+
+def require_case_projection(document, case_id, name, expected, context):
+    for product in ("pi", "pisharp"):
+        require_projection(checkpoint(document, case_id, name, product)["tree"], expected,
+                           f"{context} ({product})")
 
 
 def require_projection(actual, expected, context):
@@ -231,22 +241,21 @@ def validate_paired_document(document, oracle, case_ids, label):
             for name, checkpoint_state in case[product]["checkpoints"].items():
                 require(not checkpoint_state["errors"],
                         f"{case_id}/{product}/{name}: error text {checkpoint_state['errors']}")
-        projections = oracle["projections"]
-        require_projection(checkpoint(document, case_id, "unset-open")["tree"],
-                           projections["unset"], f"{case_id} unset")
+        projections = oracle["projections"][case_id]
+        require_case_projection(document, case_id, "unset-open", projections["unset"],
+                                f"{case_id} unset")
         for mode, name in MODE_CHECKPOINTS.items():
-            require_projection(checkpoint(document, case_id, name)["tree"],
-                               projections[mode], f"{case_id} {mode}")
-        require_projection(checkpoint(document, case_id, "invalid-open")["tree"],
-                           projections["invalid"], f"{case_id} invalid")
-        require_projection(checkpoint(document, case_id, "reset-open")["tree"],
-                           projections["reset"], f"{case_id} reset")
-        require_projection(checkpoint(document, case_id, "temporary-open")["tree"],
-                           projections["user-only"], f"{case_id} temporary")
-        require_projection(checkpoint(document, case_id, "temporary-cycle")["tree"],
-                           projections["labeled-only"], f"{case_id} temporary cycle")
-        require_projection(checkpoint(document, case_id, "temporary-reopen")["tree"],
-                           projections["user-only"], f"{case_id} reopen")
+            require_case_projection(document, case_id, name, projections[mode], f"{case_id} {mode}")
+        require_case_projection(document, case_id, "invalid-open", projections["invalid"],
+                                f"{case_id} invalid")
+        require_case_projection(document, case_id, "reset-open", projections["reset"],
+                                f"{case_id} reset")
+        require_case_projection(document, case_id, "temporary-open", projections["user-only"],
+                                f"{case_id} temporary")
+        require_case_projection(document, case_id, "temporary-cycle", projections["temporary-cycle"],
+                                f"{case_id} temporary cycle")
+        require_case_projection(document, case_id, "temporary-reopen", projections["user-only"],
+                                f"{case_id} reopen")
         require(case["pi"]["settings"] == case["pisharp"]["settings"],
                 f"{case_id}: persisted settings evidence differs.")
 
@@ -282,10 +291,12 @@ def validate_settings_document(document, oracle):
             f"settings-selector: unrelated settings changed: {persisted}")
     require(persisted["theme"] == "dark" and persisted["tuiMode"] == "fullscreen",
             f"settings-selector: harness settings changed: {persisted}")
-    require_projection(pi["checkpoints"]["tree-open"]["tree"], oracle["projections"]["all"],
-                       "settings-selector next tree")
-    require_projection(pi["checkpoints"]["tree-restart-open"]["tree"], oracle["projections"]["all"],
-                       "settings-selector restarted tree")
+    projection = oracle["projections"]["100x30-dark-fullscreen"]["all"]
+    for name, context in (("tree-open", "settings-selector next tree"),
+                          ("tree-restart-open", "settings-selector restarted tree")):
+        state = pi["checkpoints"].get(name)
+        require(state is not None, f"settings-selector: missing {name} checkpoint.")
+        require_projection(state["tree"], projection, context)
 
 
 def validate_checkpoints(documents, oracle, case_ids):

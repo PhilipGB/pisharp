@@ -356,35 +356,42 @@ ORACLE_SCENARIOS = [
 
 
 def projections(document):
-    case_id = report_cases_from_document(document)[0]
-    checkpoints = document["cases"][case_id]["pi"]["checkpoints"]
+    result = {}
+    for case_id, case in document["cases"].items():
+        checkpoints = case["pi"]["checkpoints"]
 
-    def project(name):
-        tree = checkpoints[name]["tree"]
-        return {"rows": tree["rows"], "count": tree["count"], "tags": tree["tags"],
-                "selected": tree["selected"]}
+        def project(name):
+            tree = checkpoints[name]["tree"]
+            return {"rows": tree["rows"], "count": tree["count"], "tags": tree["tags"],
+                    "selected": tree["selected"]}
 
-    return {
-        "default": project("default-open"),
-        "unset": project("unset-open"),
-        "no-tools": project("no-tools-open"),
-        "user-only": project("user-only-open"),
-        "labeled-only": project("labeled-only-open"),
-        "all": project("all-open"),
-        "invalid": project("invalid-open"),
-        "reset": project("reset-open"),
-    }
+        result[case_id] = {
+            "default": project("default-open"),
+            "unset": project("unset-open"),
+            "no-tools": project("no-tools-open"),
+            "user-only": project("user-only-open"),
+            "labeled-only": project("labeled-only-open"),
+            "all": project("all-open"),
+            "invalid": project("invalid-open"),
+            "reset": project("reset-open"),
+            "temporary-cycle": project("temporary-cycle"),
+        }
+    return result
 
 
 def report_cases_from_document(document):
     return list(document["cases"])
 
 
-def build_oracle(document):
+def build_oracle(*documents):
+    merged = {"cases": {}}
+    for document in documents:
+        merged["cases"].update(document["cases"])
+    document = merged
     return {
         "schema": 1,
         "capability": "settings-treefiltermode",
-        "piSha": document["piSha"],
+        "piSha": documents[0]["piSha"],
         "values": list(SETTING_VALUES),
         "default": "default",
         "label": "Tree filter mode",
@@ -406,6 +413,8 @@ def main():
                         help="Pinned-Pi settings-selector calibration output directory")
     parser.add_argument("--settings-output", type=Path)
     parser.add_argument("--pisharp-sha")
+    parser.add_argument("--oracle-extra-input", type=Path, action="append",
+                        help="Additional paired output directory merged into the oracle projections")
     parser.add_argument("--oracle-output", type=Path,
                         help="Write the pinned-Pi oracle with projections derived from this evidence")
     parser.add_argument("--case", action="append",
@@ -416,8 +425,12 @@ def main():
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(document, indent=2) + "\n")
     if args.oracle_output is not None:
+        oracle_documents = [document]
+        for directory in args.oracle_extra_input or []:
+            oracle_documents.append(extract_paired(directory, None, None, args.pisharp_sha))
         args.oracle_output.parent.mkdir(parents=True, exist_ok=True)
-        args.oracle_output.write_text(json.dumps(build_oracle(document), indent=2) + "\n")
+        args.oracle_output.write_text(
+            json.dumps(build_oracle(*oracle_documents), indent=2) + "\n")
         print(f"wrote {args.oracle_output}")
     differences = sum(case["paired"]["semanticDifferences"] for case in document["cases"].values())
     calibration = sum(case.get("calibration", {}).get("semanticDifferences", 0)

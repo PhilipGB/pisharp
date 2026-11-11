@@ -1,0 +1,386 @@
+{
+  "schema": 1,
+  "capability": "settings-treefiltermode",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "implementationSha": "dcd4ffee6e7faf8a0caa10a7eb057a137587102d",
+  "oracleFile": "docs/parity/fixtures/settings-treefiltermode-pi-oracle-2026-11-11.json",
+  "checkpointFiles": [
+    "docs/parity/fixtures/settings-treefiltermode-checkpoints-fullscreen-2026-11-11.json",
+    "docs/parity/fixtures/settings-treefiltermode-checkpoints-regular-2026-11-11.json",
+    "docs/parity/fixtures/settings-treefiltermode-checkpoints-settings-2026-11-11.json"
+  ],
+  "terminalFixtures": [
+    "tools/parity/terminal/fixtures/terminal-tree-filter-mode.json",
+    "tools/parity/terminal/fixtures/terminal-tree-filter-mode-regular.json",
+    "tools/parity/terminal/fixtures/terminal-tree-filter-mode-settings.json"
+  ],
+  "requiredTests": {
+    "facts": [
+      "PiSharp.Tests.TreeFilterModeSettingTests.UnsetResolvesTheDefaultFilterMode",
+      "PiSharp.Tests.TreeFilterModeSettingTests.EveryPinnedValueRoundTripsThroughLoad",
+      "PiSharp.Tests.TreeFilterModeSettingTests.UnrecognizedValuesResolveTheDefaultWithoutFailingToLoad",
+      "PiSharp.Tests.TreeFilterModeSettingTests.TrustedProjectValueOverridesTheUserValue",
+      "PiSharp.Tests.TreeFilterModeSettingTests.WriterPersistsValidValuesAndResetRemovesOnlyThatKey",
+      "PiSharp.Tests.TreeFilterModeSettingTests.WriterRejectsValuesOutsideThePinnedSet",
+      "PiSharp.Tests.TreeFilterModeInitialFilterTests.InitialFilterModeSelectsThePinnedVisibleProjection",
+      "PiSharp.Tests.TreeFilterModeInitialFilterTests.EveryPinnedSettingValueMapsToItsFilterModeAndBack",
+      "PiSharp.Tests.TreeFilterModeInitialFilterTests.FilteredLeafFallsBackToTheNearestVisibleAncestor",
+      "PiSharp.Tests.TreeFilterModeInitialFilterTests.EmptyInitialFilterRendersNoEntriesAndKeepsAStableFallbackSelection",
+      "PiSharp.Tests.TreeFilterModeInitialFilterTests.InteractiveFilterChangesDoNotAlterTheConfiguredSource",
+      "PiSharp.Tests.TerminalSettingsPickerTests.SettingsKeepPiSharedOrderAndAppendPiSharpOptions",
+      "PiSharp.Tests.TerminalSettingsPickerTests.TreeFilterModeRowMatchesThePinnedLabelDescriptionValueAndDefaults",
+      "PiSharp.Tests.TreeFilterModePtyTests.ConfiguredFilterOpensTheTreeAndSettingsChangesPersistThroughLinuxPty",
+      "PiSharp.Tests.TreeFilterModePtyTests.DoubleEscapeOpensTheTreeWithTheConfiguredFilterThroughLinuxPty",
+      "PiSharp.Tests.KeysTreeScopedPickerTests.TreeSelectionStartsAtCurrentLeafAndWraps",
+      "PiSharp.Tests.KeysTreeScopedPickerTests.TreeFoldsBranchAndUnfoldRestoresIt",
+      "PiSharp.Tests.KeysTreeScopedPickerTests.TreeHidesBookkeepingAlwaysAndToolCallOnlyAssistantUnlessCurrentLeaf",
+      "PiSharp.Tests.KeysTreeScopedPickerTests.TreeFilterCycleFollowsPinnedPiOrderInBothDirections",
+      "PiSharp.Tests.KeysTreeScopedPickerTests.TreeEscapeWithActiveSearchClearsSearchBeforeClosing",
+      "PiSharp.Tests.KeysTreeScopedPickerTests.TreeProjectsLatestLabelPerTargetAndCopyTextSkipsSettingsEntries",
+      "PiSharp.Tests.KeysTreeScopedPickerTests.TreeKeybindingsMatchPinnedPiDefaults",
+      "PiSharp.Tests.KeysTreeScopedPickerTests.TreeSelectionListClearSearchRestoresFullList",
+      "PiSharp.Tests.KeysTreeScopedPickerTests.TreeRendersSessionControlSequencesAsVisibleText",
+      "PiSharp.Tests.KeysTreeScopedPickerTests.TreePansDeepSelectedRowsOnNarrowTerminals",
+      "PiSharp.Tests.KeysTreeScopedPickerTests.TreeReadSummaryUsesPinnedPiLineRangeFormatting",
+      "PiSharp.Tests.TerminalPtyTests.ConversationTreeSearchSelectsAndPersistsABranchThroughLinuxPty",
+      "PiSharp.Tests.TerminalPtyTests.SessionTreeNeutralizesControlSequencesThroughLinuxPty",
+      "PiSharp.Tests.TerminalPtyTests.SessionTreeShortcutKeepsAnExistingEditorDraftThroughLinuxPty",
+      "PiSharp.Tests.TerminalPtyTests.BranchSummaryEscapeCancelsAndReopensTheTreeThroughLinuxPty",
+      "PiSharp.Tests.TerminalPtyTests.SessionTreeShortcutAbortsStreamingRestoresInputAndNavigatesThroughLinuxPty",
+      "PiSharp.Tests.TerminalPtyTests.ScopedModelsSelectorAppliesSessionEditsAndPersistsReorderedScopeThroughLinuxPty",
+      "PiSharp.Tests.TerminalPtyTests.ScopedModelsSelectorAddsModelsDiscoveredWhileOpenThroughLinuxPty",
+      "PiSharp.Tests.TerminalPtyTests.SettingsListRendersFiltersChangesAndPersistsThroughLinuxPty",
+      "PiSharp.Tests.TerminalPtyTests.SettingsPickerSetsAndRemovesPerModelThinkingDefaultsThroughLinuxPty",
+      "PiSharp.Tests.TerminalPtyTests.SavedPerModelThinkingDefaultChangesTheNextProviderRequestThroughLinuxPty",
+      "PiSharp.Tests.AppControlPtyTests.DoubleEscapeHonoursTheConfiguredActionAndReturnsToTheEditor",
+      "PiSharp.Tests.AppControlPtyTests.RegularModeDoubleEscapeAfterBashEntryOpensTheTreeSelectorThroughLinuxPty"
+    ],
+    "theories": [],
+    "ptyEvidence": [
+      "terminal-tree-filter-mode/100x30-dark-fullscreen",
+      "terminal-tree-filter-mode/140x40-dark-fullscreen",
+      "terminal-tree-filter-mode-regular/100x30-dark-regular",
+      "terminal-tree-filter-mode-regular/140x40-dark-regular",
+      "terminal-tree-filter-mode-settings/100x30-dark-fullscreen"
+    ]
+  },
+  "requiredComparisons": [
+    {
+      "id": "paired-pty",
+      "required": true,
+      "status": "match",
+      "evidence": "Four paired PTY cases (100x30/140x40 dark fullscreen and regular) report zero semantic differences for every checkpoint, with pinned-Pi identical projections for each configured mode."
+    },
+    {
+      "id": "same-pi-calibration",
+      "required": true,
+      "status": "match",
+      "evidence": "Two independent pinned-Pi runs per case report zero semantic differences for all four cases."
+    },
+    {
+      "id": "settings-selector-calibration",
+      "required": true,
+      "status": "match",
+      "evidence": "Two independent pinned-Pi settings-selector runs observe the same label, description, value order and persistence."
+    }
+  ],
+  "cases": [
+    {
+      "id": "TF01",
+      "required": true,
+      "status": "pass",
+      "oracle": [
+        "TF01"
+      ],
+      "requirement": "No treeFilterMode configured resolves to the default filter",
+      "tests": [
+        "PiSharp.Tests.TreeFilterModeSettingTests.UnsetResolvesTheDefaultFilterMode",
+        "PiSharp.Tests.TreeFilterModeInitialFilterTests.InitialFilterModeSelectsThePinnedVisibleProjection"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/unset-open",
+        "140x40-dark-fullscreen/unset-open",
+        "100x30-dark-regular/unset-open",
+        "140x40-dark-regular/unset-open"
+      ]
+    },
+    {
+      "id": "TF02",
+      "required": true,
+      "status": "pass",
+      "oracle": [
+        "TF02"
+      ],
+      "requirement": "An explicit default opens /tree in default mode",
+      "tests": [
+        "PiSharp.Tests.TreeFilterModeSettingTests.EveryPinnedValueRoundTripsThroughLoad",
+        "PiSharp.Tests.TreeFilterModeInitialFilterTests.InitialFilterModeSelectsThePinnedVisibleProjection"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/default-open",
+        "140x40-dark-fullscreen/default-open",
+        "100x30-dark-regular/default-open",
+        "140x40-dark-regular/default-open"
+      ]
+    },
+    {
+      "id": "TF03",
+      "required": true,
+      "status": "pass",
+      "oracle": [
+        "TF03"
+      ],
+      "requirement": "no-tools opens /tree in no-tools mode",
+      "tests": [
+        "PiSharp.Tests.TreeFilterModeSettingTests.EveryPinnedValueRoundTripsThroughLoad",
+        "PiSharp.Tests.TreeFilterModeInitialFilterTests.InitialFilterModeSelectsThePinnedVisibleProjection"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/no-tools-open",
+        "140x40-dark-fullscreen/no-tools-open",
+        "100x30-dark-regular/no-tools-open",
+        "140x40-dark-regular/no-tools-open"
+      ]
+    },
+    {
+      "id": "TF04",
+      "required": true,
+      "status": "pass",
+      "oracle": [
+        "TF04"
+      ],
+      "requirement": "user-only opens /tree in user-only mode",
+      "tests": [
+        "PiSharp.Tests.TreeFilterModeSettingTests.EveryPinnedValueRoundTripsThroughLoad",
+        "PiSharp.Tests.TreeFilterModeInitialFilterTests.FilteredLeafFallsBackToTheNearestVisibleAncestor"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/user-only-open",
+        "140x40-dark-fullscreen/user-only-open",
+        "100x30-dark-regular/user-only-open",
+        "140x40-dark-regular/user-only-open"
+      ]
+    },
+    {
+      "id": "TF05",
+      "required": true,
+      "status": "pass",
+      "oracle": [
+        "TF05"
+      ],
+      "requirement": "labeled-only opens /tree in labeled-only mode",
+      "tests": [
+        "PiSharp.Tests.TreeFilterModeSettingTests.EveryPinnedValueRoundTripsThroughLoad",
+        "PiSharp.Tests.TreeFilterModeInitialFilterTests.EmptyInitialFilterRendersNoEntriesAndKeepsAStableFallbackSelection"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/labeled-only-open",
+        "140x40-dark-fullscreen/labeled-only-open",
+        "100x30-dark-regular/labeled-only-open",
+        "140x40-dark-regular/labeled-only-open"
+      ]
+    },
+    {
+      "id": "TF06",
+      "required": true,
+      "status": "pass",
+      "oracle": [
+        "TF06"
+      ],
+      "requirement": "all opens /tree in all mode",
+      "tests": [
+        "PiSharp.Tests.TreeFilterModeSettingTests.EveryPinnedValueRoundTripsThroughLoad",
+        "PiSharp.Tests.TreeFilterModeInitialFilterTests.InitialFilterModeSelectsThePinnedVisibleProjection"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/all-open",
+        "140x40-dark-fullscreen/all-open",
+        "100x30-dark-regular/all-open",
+        "140x40-dark-regular/all-open"
+      ]
+    },
+    {
+      "id": "TF07",
+      "required": true,
+      "status": "pass",
+      "oracle": [
+        "TF07"
+      ],
+      "requirement": "An unrecognized stored value loads and behaves as default without an error",
+      "tests": [
+        "PiSharp.Tests.TreeFilterModeSettingTests.UnrecognizedValuesResolveTheDefaultWithoutFailingToLoad",
+        "PiSharp.Tests.TreeFilterModeSettingTests.WriterRejectsValuesOutsideThePinnedSet"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/invalid-open",
+        "140x40-dark-fullscreen/invalid-open",
+        "100x30-dark-regular/invalid-open",
+        "140x40-dark-regular/invalid-open"
+      ]
+    },
+    {
+      "id": "TF08",
+      "required": true,
+      "status": "pass",
+      "oracle": [
+        "TF08"
+      ],
+      "requirement": "/settings exposes the pinned label, description, current value, order and reset semantics",
+      "tests": [
+        "PiSharp.Tests.TerminalSettingsPickerTests.TreeFilterModeRowMatchesThePinnedLabelDescriptionValueAndDefaults",
+        "PiSharp.Tests.TerminalSettingsPickerTests.SettingsKeepPiSharedOrderAndAppendPiSharpOptions",
+        "PiSharp.Tests.TreeFilterModeInitialFilterTests.EveryPinnedSettingValueMapsToItsFilterModeAndBack",
+        "PiSharp.Tests.TreeFilterModePtyTests.ConfiguredFilterOpensTheTreeAndSettingsChangesPersistThroughLinuxPty"
+      ],
+      "ptyCheckpoints": [
+        "settings-default",
+        "settings-no-tools",
+        "settings-user-only",
+        "settings-labeled-only",
+        "settings-all",
+        "tree-open",
+        "tree-restart-open"
+      ]
+    },
+    {
+      "id": "TF09",
+      "required": true,
+      "status": "pass",
+      "oracle": [
+        "TF09"
+      ],
+      "requirement": "The configured value survives a restart",
+      "tests": [
+        "PiSharp.Tests.TreeFilterModeSettingTests.WriterPersistsValidValuesAndResetRemovesOnlyThatKey",
+        "PiSharp.Tests.TreeFilterModePtyTests.ConfiguredFilterOpensTheTreeAndSettingsChangesPersistThroughLinuxPty"
+      ],
+      "ptyCheckpoints": [
+        "tree-restart-open",
+        "100x30-dark-fullscreen/reset-open",
+        "100x30-dark-regular/reset-open"
+      ]
+    },
+    {
+      "id": "TF10",
+      "required": true,
+      "status": "pass",
+      "oracle": [
+        "TF10"
+      ],
+      "requirement": "Removing the configured value restores the default filter",
+      "tests": [
+        "PiSharp.Tests.TreeFilterModeSettingTests.WriterPersistsValidValuesAndResetRemovesOnlyThatKey"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/reset-open",
+        "140x40-dark-fullscreen/reset-open",
+        "100x30-dark-regular/reset-open",
+        "140x40-dark-regular/reset-open"
+      ]
+    },
+    {
+      "id": "TF11",
+      "required": true,
+      "status": "pass",
+      "oracle": [
+        "TF11"
+      ],
+      "requirement": "A temporary selector filter change does not persist across opens",
+      "tests": [
+        "PiSharp.Tests.TreeFilterModeInitialFilterTests.InteractiveFilterChangesDoNotAlterTheConfiguredSource"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/temporary-cycle",
+        "140x40-dark-fullscreen/temporary-cycle",
+        "100x30-dark-regular/temporary-cycle",
+        "140x40-dark-regular/temporary-cycle",
+        "100x30-dark-fullscreen/temporary-reopen",
+        "140x40-dark-fullscreen/temporary-reopen",
+        "100x30-dark-regular/temporary-reopen",
+        "140x40-dark-regular/temporary-reopen"
+      ]
+    },
+    {
+      "id": "TF12",
+      "required": true,
+      "status": "pass",
+      "oracle": [
+        "TF12"
+      ],
+      "requirement": "A settings change applies to the next /tree open without a restart",
+      "tests": [
+        "PiSharp.Tests.TreeFilterModePtyTests.ConfiguredFilterOpensTheTreeAndSettingsChangesPersistThroughLinuxPty",
+        "PiSharp.Tests.TreeFilterModeInitialFilterTests.InteractiveFilterChangesDoNotAlterTheConfiguredSource"
+      ],
+      "ptyCheckpoints": [
+        "tree-open"
+      ]
+    },
+    {
+      "id": "TF13",
+      "required": true,
+      "status": "pass",
+      "oracle": [
+        "TF13"
+      ],
+      "requirement": "Writing treeFilterMode preserves every other setting",
+      "tests": [
+        "PiSharp.Tests.TreeFilterModeSettingTests.WriterPersistsValidValuesAndResetRemovesOnlyThatKey",
+        "PiSharp.Tests.TreeFilterModePtyTests.ConfiguredFilterOpensTheTreeAndSettingsChangesPersistThroughLinuxPty"
+      ],
+      "ptyCheckpoints": [
+        "settings-all"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "required": false,
+      "status": "declared",
+      "note": "PiSharp renders the tree and settings overlays inside its own bordered panel with its own key-hint wording; panel content and settings semantics are compared instead of the surrounding chrome, as in keys-tree-scoped-picker."
+    },
+    {
+      "id": "F2",
+      "required": false,
+      "status": "declared",
+      "note": "PiSharp appends its standard inherit/reset row to enum settings and supports Delete-reset; pinned Pi only cycles values. Effective default/reset behaviour matches."
+    },
+    {
+      "id": "F3",
+      "required": false,
+      "status": "declared",
+      "note": "PiSharp-only bookkeeping entry types stay hidden in every filter; pinned Pi has no equivalent entries."
+    }
+  ],
+  "gates": {
+    "format": {
+      "status": "pass",
+      "evidence": "dotnet format PiSharp.slnx --verify-no-changes (clean)"
+    },
+    "build": {
+      "status": "pass",
+      "evidence": "dotnet build PiSharp.slnx --warnaserror (0 warnings, 0 errors)"
+    },
+    "fullSuite": {
+      "status": "pass",
+      "evidence": "dotnet test PiSharp.slnx (tests/PiSharp.Tests) at the implementation head: 4546 passed, 0 failed, 0 skipped. The NativeExtensionUiTests class is excluded from the local run because it hangs in this development environment; the same hang reproduces on base d9f7bf33 for NativeExtensionUiTests.PackageInputListenersRunBeforeFocusedCustomComponents, and CI runs the class unchanged.",
+      "total": 4546,
+      "failed": 0,
+      "skipped": 0,
+      "excluded": [
+        "NativeExtensionUiTests"
+      ]
+    },
+    "exactHeadCi": {
+      "status": "pass",
+      "evidence": "Linux CI run 43057240925 on 4e678760 (implementation head dcd4ffee) with all five jobs green",
+      "run": "43057240925",
+      "implementationSha": "dcd4ffee6e7faf8a0caa10a7eb057a137587102d"
+    },
+    "ledger": {
+      "status": "pass",
+      "evidence": "docs/parity/fixtures/settings-treefiltermode-2026-11-11.md and docs/parity/execution-ledger.json record settings-treefiltermode as verified"
+    }
+  }
+}
