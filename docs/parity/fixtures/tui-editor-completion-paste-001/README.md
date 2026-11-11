@@ -8,7 +8,7 @@ Completion milestone: slash-command and `@file` completion parity.
 - Branch: `milestone/tui-command-file-completion-parity`.
 - Pi reference: `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`
   (`/home/philip/Projects/pi-pinned`).
-- Implementation/evidence SHA: `aa7e193b2246af7ad64184aec262ec31a0c3fa6f`
+- Implementation/evidence SHA: `0e524751de516a1772813b9a1e38898ca6059547`
   (`head.txt`).
 - Terminal sizes: `80x24` and `120x40`, dark theme, fullscreen/alternate screen.
 
@@ -209,7 +209,7 @@ dotnet test PiSharp.slnx
 ```
 
 Results at the implementation head: verifier passes with 21 negative controls
-rejected; focused editor/completion tests 79/79; full suite 4560/4560 passed
+rejected; `EditorCompletionTests` 30/30; full suite 4561/4561 passed
 (`dotnet test PiSharp.slnx` with stdin redirected from `/dev/null` so a testhost
 in a background process group cannot be stopped by terminal signals). Build and
 format checks pass.

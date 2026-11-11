@@ -246,6 +246,63 @@
       }
     },
     {
+      "id": "slash-argument-login-completion",
+      "area": "slash-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "login-completion",
+      "checkpoints": [
+        "login-anthropic",
+        "login-anthropic-apply",
+        "login-radius"
+      ],
+      "oracle": "interactive-mode.ts getLoginProviderOptions/getLoginProviderCompletionOptions; oauth-selector.ts formatAuthSelectorProviderType",
+      "expect": {
+        "login-anthropic": {
+          "candidates": [
+            "anthropic"
+          ],
+          "descriptions": [
+            "Anthropic · subscription/API key"
+          ],
+          "editorText": "/login anthropic",
+          "cursorColumn": 16
+        },
+        "login-anthropic-apply": {
+          "candidates": [],
+          "descriptions": [],
+          "editorText": "/login anthropic",
+          "cursorColumn": 16
+        },
+        "login-radius": {
+          "candidates": [
+            "radius"
+          ],
+          "descriptions": [
+            "Radius · account/API key"
+          ],
+          "editorText": "/login radius",
+          "cursorColumn": 13
+        }
+      }
+    },
+    {
+      "id": "slash-argument-login-no-matches",
+      "area": "slash-completion",
+      "mandatory": true,
+      "status": "pass",
+      "scenario": "login-completion",
+      "checkpoints": [
+        "login-no-match"
+      ],
+      "oracle": "packages/tui/src/autocomplete.ts empty argument result closes the picker",
+      "expect": {
+        "login-no-match": {
+          "candidates": []
+        }
+      }
+    },
+    {
       "id": "slash-no-matches",
       "area": "slash-completion",
       "mandatory": true,
@@ -906,7 +963,7 @@
   "deferred": [
     {
       "id": "login-provider-catalogue",
-      "reason": "Pi completes /login over a 43-entry provider/auth catalogue with per-provider oauth subscription metadata. PiSharp implements the same dedupe, ordering and insertion over its narrower registered provider surface; full catalogue parity is provider-breadth work outside this milestone.",
+      "reason": "Pi exposes a 43-entry provider/auth catalogue, including providers PiSharp does not register (for example OpenRouter OAuth). Frozen login cases use exact provider ids whose auth methods agree; the remaining catalogue breadth is provider work outside this milestone.",
       "oracle": "interactive-mode.ts getLoginProviderOptions; oauth-selector.ts"
     },
     {
