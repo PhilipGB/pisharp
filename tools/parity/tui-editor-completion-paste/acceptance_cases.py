@@ -41,6 +41,14 @@ CASES = [
          checkpoints=['argument-thinking-query', 'argument-thinking-apply', 'argument-thinking-fuzzy'],
          fields=['editorText', 'candidates'],
          oracle='interactive-mode.ts thinking getArgumentCompletions; ai/src/models.ts'),
+    dict(id='slash-argument-login-completion', area='slash-completion', scenario='login-completion',
+         checkpoints=['login-anthropic', 'login-anthropic-apply', 'login-radius'],
+         fields=['candidates', 'descriptions', 'editorText', 'cursorColumn'],
+         oracle='interactive-mode.ts getLoginProviderOptions/getLoginProviderCompletionOptions; '
+                'oauth-selector.ts formatAuthSelectorProviderType'),
+    dict(id='slash-argument-login-no-matches', area='slash-completion', scenario='login-completion',
+         checkpoints=['login-no-match'], fields=['candidates'],
+         oracle='packages/tui/src/autocomplete.ts empty argument result closes the picker'),
     dict(id='slash-no-matches', area='slash-completion', scenario='slash-completion',
          checkpoints=['no-match'], fields=['candidates'],
          oracle='packages/tui/src/autocomplete.ts null result closes the picker'),
@@ -132,10 +140,10 @@ CASES = [
 
 DEFERRED = [
     dict(id='login-provider-catalogue',
-         reason='Pi completes /login over a 43-entry provider/auth catalogue with per-provider '
-                'oauth subscription metadata. PiSharp implements the same dedupe, ordering and '
-                'insertion over its narrower registered provider surface; full catalogue parity is '
-                'provider-breadth work outside this milestone.',
+         reason='Pi exposes a 43-entry provider/auth catalogue, including providers PiSharp does '
+                'not register (for example OpenRouter OAuth). Frozen login cases use exact provider '
+                'ids whose auth methods agree; the remaining catalogue breadth is provider work '
+                'outside this milestone.',
          oracle='interactive-mode.ts getLoginProviderOptions; oauth-selector.ts'),
     dict(id='bug-and-changelog-commands',
          reason='Pi registers /bug and /changelog built-ins that PiSharp does not implement. Slash '

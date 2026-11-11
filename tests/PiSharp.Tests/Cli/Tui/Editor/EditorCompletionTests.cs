@@ -183,6 +183,37 @@ public sealed class EditorCompletionTests
     }
 
     [Fact]
+    public async Task LoginArgumentCompletionKeepsEveryAuthMethodOfRuntimeProviders()
+    {
+        // TerminalPresentation supplies one record per runtime provider with both
+        // capability flags, not one record per supported auth method.
+        var completion = new EditorAutocomplete(() => Path.GetTempPath(),
+            getLoginProviders: () =>
+            [
+                new EditorLoginProvider("anthropic", "Anthropic", OAuthSupported: true, ApiKeySupported: true),
+                new EditorLoginProvider("radius", "Radius", OAuthSupported: true, ApiKeySupported: true,
+                    OAuthIsSubscription: false),
+                new EditorLoginProvider("virtual", "Virtual", OAuthSupported: false, ApiKeySupported: false)
+            ]);
+
+        var all = await completion.GetSuggestionsAsync("/login ", 7, force: false, CancellationToken.None);
+        Assert.NotNull(all);
+        Assert.Equal(["anthropic", "radius"], all!.Items.Select(item => item.Value));
+        Assert.Equal("Anthropic · subscription/API key", all.Items[0].Description);
+        Assert.Equal("Radius · account/API key", all.Items[1].Description);
+
+        // Auth-method text is searchable for every supported method.
+        var apiKey = await completion.GetSuggestionsAsync("/login key", 10, force: false, CancellationToken.None);
+        Assert.NotNull(apiKey);
+        Assert.Equal(["anthropic", "radius"],
+            apiKey!.Items.Select(item => item.Value).Order(StringComparer.Ordinal));
+
+        var account = await completion.GetSuggestionsAsync("/login account", 14, force: false, CancellationToken.None);
+        Assert.NotNull(account);
+        Assert.Equal(["radius"], account!.Items.Select(item => item.Value));
+    }
+
+    [Fact]
     public void AtAttachmentCompletionAddsPiTrailingSpaceAndKeepsSurroundingProse()
     {
         var completion = new EditorAutocomplete(() => Path.GetTempPath());

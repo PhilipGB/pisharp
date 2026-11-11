@@ -268,6 +268,24 @@ PATH_FILES = {
 }
 
 
+def login_completion():
+    actions = [
+        startup(),
+        action('login-anthropic', '/login anthropic', editor='/login anthropic', quiet=900),
+        barrier('login-anthropic-barrier'),
+        action('login-anthropic-apply', '\t', editor='/login anthropic', quiet=700),
+        barrier('login-anthropic-apply-barrier'),
+        action('login-radius', CLEAR + '/login radius', editor='/login radius', quiet=900),
+        barrier('login-radius-barrier'),
+        action('login-no-match', CLEAR + '/login zzzz', editor='/login zzzz', absent='\u2192', quiet=700),
+        barrier('login-no-match-barrier'),
+        action('clear-final', CLEAR, editor=''),
+        {'id': 'exit', 'send': '\u0004', 'exit': True, 'expect': 'fixture-model'},
+    ]
+    return base('login-completion', 'login-completion', actions,
+                extra={'compareCandidateDescriptions': True})
+
+
 def path_completion():
     actions = [
         startup(),
@@ -667,6 +685,7 @@ SCENARIOS = (
     soft_wrap,
     history,
     slash_completion,
+    login_completion,
     path_completion,
     path_symlink,
     file_tab_completion,

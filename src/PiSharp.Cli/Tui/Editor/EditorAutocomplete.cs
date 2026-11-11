@@ -14,7 +14,8 @@ internal sealed record EditorCompletionResult(EditorCompletionKind Kind, string 
 public sealed record EditorModelOption(string Provider, string Id, string? Name);
 
 /// <summary>Login completion surface Pi derives from its provider catalogue.</summary>
-public sealed record EditorLoginProvider(string Id, string Name, bool OAuthSupported, bool ApiKeySupported);
+public sealed record EditorLoginProvider(string Id, string Name, bool OAuthSupported, bool ApiKeySupported,
+    bool OAuthIsSubscription = true);
 
 /// <summary>Pi-compatible autocomplete provider: slash commands, arguments and local paths.</summary>
 internal sealed class EditorAutocomplete
@@ -224,33 +225,41 @@ internal sealed class EditorAutocomplete
     private IReadOnlyList<EditorCompletionItem> GetLoginArgumentSuggestions(string prefix)
     {
         if (_getLoginProviders is null) return [];
-        // Pi deduplicates the oauth/api-key provider entries, keeps oauth first,
-        // and ranks the remaining providers by display name.
-        var providers = _getLoginProviders()
-            .GroupBy(provider => provider.Id, StringComparer.Ordinal)
+        // Pi builds one option per supported auth method, merges options by provider id
+        // keeping oauth first, and ranks the remaining providers by display name.
+        var options = new List<(string Id, string Name, string Type, string Label)>();
+        foreach (var provider in _getLoginProviders())
+        {
+            if (provider.OAuthSupported)
+                options.Add((provider.Id, provider.Name, "oauth",
+                    provider.OAuthIsSubscription ? "subscription" : "account"));
+            if (provider.ApiKeySupported)
+                options.Add((provider.Id, provider.Name, "api_key", "API key"));
+        }
+        var providers = options
+            .GroupBy(option => option.Id, StringComparer.Ordinal)
             .Select(group => new
             {
-                group.First().Id,
+                Id = group.Key,
                 Name = group.First().Name,
-                AuthTypes = group.Select(provider => provider.OAuthSupported
-                        ? "oauth"
-                        : provider.ApiKeySupported ? "api_key" : null)
-                    .Where(type => type is not null).Select(type => type!).Distinct(StringComparer.Ordinal)
-                    .OrderBy(type => type == "oauth" ? 0 : 1).ToArray()
+                Auth = group.GroupBy(option => option.Type)
+                    .Select(auth => auth.First())
+                    .OrderBy(option => option.Type == "oauth" ? 0 : 1)
+                    .ToArray()
             })
             .OrderBy(provider => provider.Name, StringComparer.CurrentCulture)
             .ToArray();
         var filtered = PiFuzzy.Filter(providers, prefix, provider =>
-            $"{provider.Id} {provider.Name} " + string.Join(' ', provider.AuthTypes.Select(type =>
-                $"{type} {(type == "api_key" ? "API key" : "subscription")}")));
+            $"{provider.Id} {provider.Name} " +
+            string.Join(' ', provider.Auth.Select(auth => $"{auth.Type} {auth.Label}")));
         return filtered.Select(provider => ArgumentItem(provider.Id, provider.Id,
             provider.Name == provider.Id
-                ? FormatAuthTypes(provider.AuthTypes)
-                : $"{provider.Name} · {FormatAuthTypes(provider.AuthTypes)}")).ToArray();
+                ? FormatAuthTypes(provider.Auth)
+                : $"{provider.Name} · {FormatAuthTypes(provider.Auth)}")).ToArray();
     }
 
-    private static string FormatAuthTypes(IReadOnlyList<string> types) =>
-        string.Join('/', types.Select(type => type == "api_key" ? "API key" : "subscription"));
+    private static string FormatAuthTypes(IReadOnlyList<(string Id, string Name, string Type, string Label)> auth) =>
+        string.Join('/', auth.Select(option => option.Label));
 
     private static EditorCompletionItem ArgumentItem(string value, string label, string? description) =>
         new(value, label, description, IsDirectory: false, IsSlash: false, IsArgument: true, IsAt: false);

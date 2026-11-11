@@ -52,9 +52,12 @@ behaviour exercised by the fixture. Paths are relative to the Pi repository.
   prefix. Commands without the hook produce no argument overlay.
 - `/model` values are `provider/id` with the model id as label and provider as
   description. `/thinking` values are the model's supported levels. `/login`
-  deduplicates oauth/api-key provider entries, orders `oauth` before `api_key`,
-  sorts providers by display name, and matches over
-  `"<id> <name> <authType> <label> ..."`.
+  projects every provider into one option per supported auth method, merges
+  options by provider id with `oauth` before `api_key`, sorts providers by
+  display name, and matches over `"<id> <name> <authType> <label> ..."`.
+  `oauth` is labelled `subscription` unless the provider marks it as a
+  non-subscription account (Radius), and providers supporting neither auth
+  method are omitted.
 
 ## File discovery
 
@@ -110,6 +113,7 @@ behaviour exercised by the fixture. Paths are relative to the Pi repository.
   completion is derived from the live registry, so they are absent. Frozen cases
   use queries where the registered catalogues agree.
 - Pi exposes 43 `/login` candidate entries; PiSharp's provider catalogue is
-  narrower and lacks Pi's per-provider oauth subscription metadata. `/login`
-  completion uses PiSharp's live provider surface with Pi's dedupe, ordering and
-  insertion rules; full catalogue parity belongs to provider breadth.
+  narrower (for example, Pi exposes OpenRouter OAuth and PiSharp does not).
+  `/login` completion uses PiSharp's live provider surface with Pi's
+  per-auth-method projection, dedupe, ordering, labels and insertion rules; the
+  remaining catalogue breadth belongs to provider work.

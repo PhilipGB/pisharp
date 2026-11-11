@@ -47,7 +47,7 @@ internal sealed class TerminalPresentation : IDisposable
 
     private IReadOnlyList<EditorLoginProvider> GetLoginProviders() =>
         _modelRuntime.Providers.Select(provider => new EditorLoginProvider(provider.Id, provider.Name,
-            provider.OAuthSupported, provider.ApiKeySupported)).ToArray();
+            provider.OAuthSupported, provider.ApiKeySupported, provider.OAuthIsSubscription)).ToArray();
 
     public TerminalPresentation(string agentDirectory, string invocationDirectory, bool print, CliTerminalIO terminalIO,
         ActiveProjectRuntime projectBinding, ActiveModelRuntime modelBinding, ActiveConversationRuntime conversationBinding,

@@ -14,11 +14,11 @@ Completion milestone: slash-command and `@file` completion parity.
 
 ## Evidence
 
-- [report.json](report.json): **100/100** across 18 frozen scenarios and both
-  sizes (36 entries), with same-Pi calibration, editor-region checkpoints,
+- [report.json](report.json): **100/100** across 19 frozen scenarios and both
+  sizes (38 entries), with same-Pi calibration, editor-region checkpoints,
   completion overlays, cursor columns, provider-visible text and terminal exit
   state. Zero recorded differences.
-- [acceptance.json](acceptance.json): 36 mandatory machine-readable cases, each
+- [acceptance.json](acceptance.json): 38 mandatory machine-readable cases, each
   mapped to pinned-Pi source or an observed Pi process result, plus 2 declared
   deferrals.
 - [baseline.json](baseline.json): fail-first run of the same frozen scenarios
@@ -50,11 +50,13 @@ Support added or extended for this milestone:
   after files, none after directories or unprefixed Tab completions).
 - `$symlink` fixture entries so real `fd --follow` symlink behaviour is compared
   without touching the product.
-- New scenarios `path-symlink` and `file-tab-completion`; the existing
-  `slash-completion` and `path-completion` scenarios gained argument completion,
-  fuzzy ordering, navigation, no-match, paste-versus-typed, embedded completion,
-  provider-visible submission and traversal/display checkpoints. The original
-  PR #49 checkpoints are unchanged.
+- New scenarios `path-symlink`, `file-tab-completion` and `login-completion`;
+  the existing `slash-completion` and `path-completion` scenarios gained argument
+  completion, fuzzy ordering, navigation, no-match, paste-versus-typed, embedded
+  completion, provider-visible submission and traversal/display checkpoints.
+  `login-completion` compares `/login anthropic` and `/login radius` candidates,
+  auth-method descriptions, insertion and no-match, with descriptions compared
+  exactly. The original PR #49 checkpoints are unchanged.
 - `acceptance_cases.py` / `freeze_acceptance.py` freeze the mandatory cases from
   the Pi column; `verify.py` recomputes every comparison, enforces the manifest
   and evidence head, and runs 21 negative controls with `--self-test`.
@@ -70,8 +72,32 @@ At post-#50 `40f562db` with the frozen scenarios and pre-change product code
 | `path-completion` | 8 | 8 | Backspace after Escape did not reopen the `@` picker |
 | `path-symlink` | 0 | 0 | already matched; regression guard |
 | `file-tab-completion` | 20 | 20 | forced Tab picker closed when typing; unprefixed completion inserted a trailing space and cursor sat one column late |
+| `login-completion` | not in `baseline.json` | not in `baseline.json` | scenario added during review; the pre-feature baseline had no `/login` argument picker, and the evidence head lost second auth methods (see below) |
 
 Same-Pi calibration passed for every scenario at both sizes.
+
+## Review correction: `/login` auth methods
+
+Review of the first head found that `GetLoginArgumentSuggestions` read one auth
+type per provider record, so a runtime provider supporting both methods (the
+production shape supplied by `TerminalPresentation`) only contributed `oauth`.
+Anthropic lost `API key`, Radius lost `API key` and mislabelled OAuth as a
+subscription, and no-auth virtual providers could appear with an empty
+description.
+
+Pre-fix evidence at the recorded evidence head `aa7e193b`, same harness and
+80x24:
+
+```text
+login-anthropic descriptions  pi=['Anthropic · subscription/API key']  pisharp=['Anthropic · subscription']
+login-radius    descriptions  pi=['Radius · account/API key']           pisharp=['Radius · subscription']
+```
+
+The fix projects each runtime provider into one option per supported method
+before merging by id, keeps `oauth` first, labels non-subscription OAuth as
+`account`, omits providers with no auth method, and keeps auth labels in the
+search text. The frozen `login-completion` case now compares the exact
+candidates and descriptions for Anthropic and Radius.
 
 ## Corrections
 
@@ -79,8 +105,12 @@ Same-Pi calibration passed for every scenario at both sizes.
    `getArgumentCompletions` for `/model`, `/thinking` and `/login`.
    `EditorAutocomplete` now completes thinking levels from the selected model's
    supported set and login providers from the live provider catalogue with Pi's
-   dedupe, oauth-before-api-key order, display-name ordering, search text and
-   descriptions. `/model` behaviour is unchanged.
+   per-auth-method projection, dedupe, oauth-before-api-key order, display-name
+   ordering, search text and descriptions. A provider supporting both methods
+   therefore contributes one candidate with both auth types (for example
+   `Anthropic · subscription/API key`); Radius OAuth is labelled `account`
+   because it is not a subscription, and providers supporting neither method are
+   omitted. `/model` behaviour is unchanged.
 2. **Cursor movement re-queries an open picker.** Moving within a visible picker
    recomputes candidates for the new cursor position, matching Pi's `moveCursor`
    update, instead of leaving stale candidates or closing the overlay.
@@ -120,10 +150,11 @@ Same-Pi calibration passed for every scenario at both sizes.
 | Cross-component journey | `journey` | pass, both sizes | 5 |
 | **Total** | | | **100/100** |
 
-Acceptance cases split evenly: 18 slash-command cases and 18 `@file` cases. They
-cover exact/fuzzy/non-prefix matching, deterministic ordering, keyboard
-navigation and wrap, selection, application, trailing spaces, commands with and
-without arguments, argument completion, no matches, Escape draft preservation,
+Acceptance cases split 20 slash-command cases and 18 `@file` cases. They cover
+exact/fuzzy/non-prefix matching, deterministic ordering, keyboard navigation and
+wrap, selection, application, trailing spaces, commands with and without
+arguments, argument completion for `/model`, `/thinking` and `/login`, auth-method
+descriptions, no matches, Escape draft preservation,
 editor clear, paste versus typed activation, nested/relative/spaced/symlinked
 paths, hidden entries and `.git` exclusion, project-root containment, embedded
 completion in prose, and provider-visible submitted text.
@@ -150,11 +181,12 @@ or history order is normalised.
 
 ## Declared deferrals
 
-- **`/login` catalogue breadth.** Pi completes `/login` over a 43-entry
-  provider/auth catalogue with per-provider oauth subscription metadata. PiSharp
-  implements the same dedupe, ordering, search and insertion over its narrower
-  registered provider surface; full catalogue parity is provider-breadth work
-  outside this milestone.
+- **`/login` catalogue breadth.** Pi exposes a 43-entry provider/auth catalogue,
+  including providers PiSharp does not register (for example OpenRouter OAuth).
+  Frozen login cases use exact provider ids whose auth methods agree; PiSharp
+  implements the same per-auth-method projection, dedupe, ordering, labels,
+  search and insertion over its narrower registered provider surface. Remaining
+  catalogue breadth is provider work outside this milestone.
 - **`/bug` and `/changelog`.** Pi registers these built-ins; PiSharp does not
   implement them. Slash completion derives from the live registry, so they are
   absent. Frozen cases use queries where the registered catalogues agree.

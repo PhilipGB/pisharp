@@ -22,7 +22,7 @@ REQUIRED = {
     'cursor-unicode': ['cursor-unicode'],
     'multiline': ['multiline', 'soft-wrap'],
     'history': ['history'],
-    'slash-completion': ['slash-completion'],
+    'slash-completion': ['slash-completion', 'login-completion'],
     'path-completion': ['path-completion', 'path-symlink', 'file-tab-completion'],
     'bracketed-paste': ['bracketed-paste', 'large-paste-marker', 'large-paste-external-editor'],
     'escape-ctrl-c': ['escape-ctrl-c', 'exit-empty-ctrl-d'],
