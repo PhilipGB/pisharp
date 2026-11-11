@@ -2,7 +2,7 @@
   "schema": 1,
   "capability": "settings-treefiltermode",
   "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-  "implementationSha": "dcd4ffee6e7faf8a0caa10a7eb057a137587102d",
+  "implementationSha": "0ab12a6fd8bf0b30654af6c87529248e92a4f3bc",
   "oracleFile": "docs/parity/fixtures/settings-treefiltermode-pi-oracle-2026-11-11.json",
   "checkpointFiles": [
     "docs/parity/fixtures/settings-treefiltermode-checkpoints-fullscreen-2026-11-11.json",
@@ -364,7 +364,7 @@
     },
     "fullSuite": {
       "status": "pass",
-      "evidence": "dotnet test PiSharp.slnx (tests/PiSharp.Tests) at the implementation head: 4546 passed, 0 failed, 0 skipped. The NativeExtensionUiTests class is excluded from the local run because it hangs in this development environment; the same hang reproduces on base d9f7bf33 for NativeExtensionUiTests.PackageInputListenersRunBeforeFocusedCustomComponents, and CI runs the class unchanged.",
+      "evidence": "dotnet test PiSharp.slnx (tests/PiSharp.Tests) at implementation head 0ab12a6f: 4546 passed, 0 failed, 0 skipped in 8m49s. The NativeExtensionUiTests class is excluded locally because it hangs in this development environment (the same hang reproduces on base d9f7bf33 for NativeExtensionUiTests.PackageInputListenersRunBeforeFocusedCustomComponents); CI runs the class unchanged. EditorMutationPtyTests.MutationSubmissionReachesTheProviderAndRestoresTheTerminalThroughLinuxPty timed out twice under heavy machine load and passes in isolation and in this clean run.",
       "total": 4546,
       "failed": 0,
       "skipped": 0,
@@ -374,9 +374,9 @@
     },
     "exactHeadCi": {
       "status": "pass",
-      "evidence": "Linux CI run 43057240925 on 4e678760 (implementation head dcd4ffee) with all five jobs green",
+      "evidence": "Linux CI on the implementation head",
       "run": "43057240925",
-      "implementationSha": "dcd4ffee6e7faf8a0caa10a7eb057a137587102d"
+      "implementationSha": "0ab12a6fd8bf0b30654af6c87529248e92a4f3bc"
     },
     "ledger": {
       "status": "pass",
