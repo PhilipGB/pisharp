@@ -41,6 +41,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, ProviderMode
         new("markdown.mermaid", "Mermaid diagrams", "Render Mermaid code blocks as Unicode diagrams."),
         new("quietStartup", "Quiet startup", "Disable verbose printing at startup; header keeps only the startup header."),
         new("defaultProjectTrust", "Default project trust", "Fallback decision for protected project resources.", UserOnly: true),
+        new("treeFilterMode", "Tree filter mode", "Default filter when opening /tree"),
         new("modelThinkingLevels", "Default thinking per model", "Override the default thinking level for a specific model.", UserOnly: true),
         new("theme", "Theme", "Choose the system theme, a named theme, or a light/dark pair."),
         new("fullscreenWheelScrollLines", "Fullscreen wheel scrolling", "Lines per mouse-wheel event in fullscreen mode; auto accelerates fast wheel spins where the terminal does not."),
@@ -216,7 +217,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, ProviderMode
         return await save(model, selectedLevel.Option.Value).ConfigureAwait(false);
     }
 
-    private static TerminalSettingsListItem ToListItem(Setting setting, UserSettings settings,
+    internal static TerminalSettingsListItem ToListItem(Setting setting, UserSettings settings,
         UserSettings effectiveSettings, bool projectScope, string? activeThemeSetting)
     {
         var current = GetValue(settings, setting.Id);
@@ -311,6 +312,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, ProviderMode
         "markdown.codeBlockIndent" => settings.MarkdownCodeBlockIndent,
         "markdown.mermaid" => settings.MarkdownMermaid,
         "fullscreenWheelScrollLines" => settings.FullscreenWheelScrollLines?.ToSettingValue(),
+        "treeFilterMode" => settings.TreeFilterMode,
         _ => null
     };
 
@@ -356,6 +358,12 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, ProviderMode
             values.Add(("ask", "ask", "Ask", "Prompt when no explicit trust decision exists."));
             values.Add(("always", "always", "Always trust", "Trust protected resources by default."));
             values.Add(("never", "never", "Never trust", "Require an explicit one-run approval."));
+        }
+        else if (setting.Id == "treeFilterMode")
+        {
+            values.AddRange(TreeFilterModeSetting.Values
+                .Select(value => (value, (string?)value, value,
+                    $"Open /tree with the {value} filter.")));
         }
         else if (setting.Id == "defaultThinkingLevel")
         {

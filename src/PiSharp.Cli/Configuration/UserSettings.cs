@@ -115,6 +115,16 @@ public sealed record BranchSummarySettings(int? ReserveTokens = null, bool? Skip
         return new(reserve, skipPrompt);
     }
 }
+/// <summary>Accepted `treeFilterMode` values in pinned Pi's settings order.</summary>
+internal static class TreeFilterModeSetting
+{
+    public static readonly string[] Values = ["default", "no-tools", "user-only", "labeled-only", "all"];
+
+    public static string Effective(string? value) => value is not null && Values.Contains(value)
+        ? value
+        : UserSettings.DefaultTreeFilterMode;
+}
+
 public sealed record UserSettings(string? DefaultProvider = null, string? DefaultModel = null,
     string? DefaultThinkingLevel = null, IReadOnlyList<string>? DefaultTools = null, string? SessionDirectory = null,
     CompactionSettings? Compaction = null, bool? BlockImages = null, string? DefaultProjectTrust = null, bool? HideThinkingBlock = null, QuietStartupMode? QuietStartup = null, IReadOnlyList<string>? EnabledModels = null, string? ShellPath = null, string? ExternalEditor = null, string? Theme = null,
@@ -131,16 +141,20 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
     IReadOnlyList<NativeExtensionPackageSource>? NativeExtensions = null,
     FullscreenWheelScrollSetting? FullscreenWheelScrollLines = null, string? TuiMode = null,
     BranchSummarySettings? BranchSummary = null, string? DoubleEscapeAction = null,
-    bool? FullscreenCopyOnSelect = null)
+    bool? FullscreenCopyOnSelect = null, string? TreeFilterMode = null)
 {
     public const int DefaultHttpIdleTimeoutMs = 300_000;
     public const string DefaultMarkdownCodeBlockIndent = "  ";
     public const string DefaultMarkdownMermaid = "streaming";
     public const string DefaultDoubleEscapeAction = "tree";
+    public const string DefaultTreeFilterMode = "default";
 
     public string EffectiveDoubleEscapeAction => DoubleEscapeAction is "fork" or "tree" or "none"
         ? DoubleEscapeAction
         : DefaultDoubleEscapeAction;
+
+    // Pinned Pi resolves an unrecognized stored tree filter mode to its default instead of failing to load.
+    public string EffectiveTreeFilterMode => TreeFilterModeSetting.Effective(TreeFilterMode);
 
     public bool? TerminalTrueColorOverride => TerminalTrueColor switch
     {
@@ -191,6 +205,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         string? sessionShareDestination = null;
         string? tuiMode = null;
         string? doubleEscapeAction = null;
+        string? treeFilterMode = null;
         bool? fullscreenCopyOnSelect = null;
         FullscreenWheelScrollSetting? fullscreenWheelScrollLines = null;
         var seen = new HashSet<string>(StringComparer.Ordinal);
@@ -426,6 +441,12 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                 defaultTrust = candidate is "ask" or "always" or "never" ? candidate : null;
                 continue;
             }
+            if (property.Name == "treeFilterMode")
+            {
+                // Pinned Pi stores the raw value and only resolves it when the tree opens.
+                treeFilterMode = property.Value.ValueKind == JsonValueKind.String ? property.Value.GetString() : null;
+                continue;
+            }
             if (property.Value.ValueKind != JsonValueKind.String)
                 throw new InvalidDataException($"settings.json property '{property.Name}' must be a string.");
             var value = property.Value.GetString();
@@ -479,7 +500,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             enableSkillCommands, extensions, skills, prompts, themes, shellCommandPrefix, sessionShareDestination, packages,
             npmCommand, thinkingBudgets, autoResizeImages, showHardwareCursor, editorPaddingX, outputPad,
             autocompleteMaxVisible, clearOnShrink, showTerminalProgress, nativeExtensions, fullscreenWheelScrollLines,
-            tuiMode, branchSummary, doubleEscapeAction, fullscreenCopyOnSelect);
+            tuiMode, branchSummary, doubleEscapeAction, fullscreenCopyOnSelect, treeFilterMode);
     }
 
     public static string GetSettingsPath(string agentDirectory, Func<string, string?> environment) =>
@@ -537,7 +558,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             project.BranchSummary.ReserveTokens ?? BranchSummary?.ReserveTokens,
             project.BranchSummary.SkipPrompt ?? BranchSummary?.SkipPrompt),
         project.DoubleEscapeAction ?? DoubleEscapeAction,
-        project.FullscreenCopyOnSelect ?? FullscreenCopyOnSelect);
+        project.FullscreenCopyOnSelect ?? FullscreenCopyOnSelect,
+        project.TreeFilterMode ?? TreeFilterMode);
 
     public string? GetModelThinkingLevel(string provider, string modelId) =>
         ModelThinkingLevels?.GetValueOrDefault($"{provider}/{modelId}");

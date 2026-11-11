@@ -121,12 +121,15 @@ internal sealed class TerminalSessionNavigation(ActiveProjectRuntime projectBind
         string? reopenId = null;
         while (true)
         {
+            // Pinned Pi reads the configured filter on every open, so selector edits stay temporary.
+            var initialFilterMode = TerminalTreeFilterModes.Parse(projectBinding.Settings.EffectiveTreeFilterMode);
             var selected = await editor.ShowTreeSelectorAsync(
                 () => conversationBinding.Conversation.Tree.Entries,
                 SetEntryLabelAsync,
                 CopyTreeEntryAsync,
                 conversationBinding.Conversation.Tree.HeadId,
-                reopenId).ConfigureAwait(false);
+                reopenId,
+                initialFilterMode).ConfigureAwait(false);
             if (selected is null) return;
             if (selected.Id == conversationBinding.Conversation.Tree.HeadId)
             {

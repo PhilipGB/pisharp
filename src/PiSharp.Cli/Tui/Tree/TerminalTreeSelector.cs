@@ -11,10 +11,10 @@ internal sealed class TerminalTreeSelector(Func<IReadOnlyList<ConversationNode>>
 {
     /// <summary>Returns the selected entry, or null when the navigator was cancelled.</summary>
     public async Task<ConversationNode?> ShowAsync(TerminalScreen screen, TerminalInput input,
-        string? currentLeafId, string? initialSelectedId)
+        string? currentLeafId, string? initialSelectedId, TerminalTreeFilterMode initialFilterMode)
     {
         var theme = screen.CurrentTheme;
-        var state = new TerminalTreeState(freshEntries().ToArray(), currentLeafId);
+        var state = new TerminalTreeState(freshEntries().ToArray(), currentLeafId, initialFilterMode);
         if (initialSelectedId is not null) state.SelectById(initialSelectedId);
         var needsRender = true;
         var lastWidth = -1;

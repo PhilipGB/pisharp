@@ -316,6 +316,7 @@ internal static class UserSettingsWriter
             "terminal.trueColor" => value is null or "auto" or "true" or "false",
             "tuiMode" when userScope => value is null or "regular" or "fullscreen",
             "sessionShareDestination" => value is null or "auto" or "gist" or "radius",
+            "treeFilterMode" => value is null || TreeFilterModeSetting.Values.Contains(value),
             "markdown.codeBlockIndent" => true,
             "markdown.mermaid" => value is null or "off" or "final" or "streaming",
             "httpIdleTimeoutMs" => value is null || string.Equals(value, "disabled", StringComparison.OrdinalIgnoreCase) ||

@@ -429,12 +429,13 @@ public sealed class TerminalEditor
         Func<IReadOnlyList<ConversationNode>> freshEntries,
         Func<string, string?, Task<bool>> onSaveLabelAsync,
         Func<string?, Task> onCopyAsync,
-        string? currentLeafId, string? initialSelectedId)
+        string? currentLeafId, string? initialSelectedId, TerminalTreeFilterMode initialFilterMode)
     {
         if (_screen is not { IsActive: true } screen) return null;
         var input = EnsureInput();
         var selector = new TerminalTreeSelector(freshEntries, onSaveLabelAsync, onCopyAsync, _keymap);
-        return await selector.ShowAsync(screen, input, currentLeafId, initialSelectedId).ConfigureAwait(false);
+        return await selector.ShowAsync(screen, input, currentLeafId, initialSelectedId, initialFilterMode)
+            .ConfigureAwait(false);
     }
 
     internal void ShowInlineSelectionPanel<T>(string title, IReadOnlyList<TerminalSelectionOption<T>> options,

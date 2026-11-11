@@ -1486,7 +1486,7 @@ public sealed class TerminalPtyTests
             var initial = await screen.WaitForFrameAsync(frame =>
                 frame.Contains("Settings · User settings", StringComparison.Ordinal) &&
                 frame.Contains("Auto-compact", StringComparison.Ordinal) &&
-                frame.Contains("(1/29)", StringComparison.Ordinal)).WaitAsync(timeout.Token);
+                frame.Contains("(1/30)", StringComparison.Ordinal)).WaitAsync(timeout.Token);
             var sharedOrder = new[]
             {
                 "Auto-compact", "Auto-resize images", "Block images", "Skill commands",
@@ -3560,7 +3560,7 @@ public sealed class TerminalPtyTests
                     await SendAsync("/settings\r");
                     await screen.WaitForFrameAsync(frame => frame.Contains("Settings · User settings", StringComparison.Ordinal))
                         .WaitAsync(timeout.Token);
-                    await SendAsync(string.Concat(Enumerable.Repeat("\u001b[B", 18)));
+                    await SendAsync(string.Concat(Enumerable.Repeat("\u001b[B", 19)));
                     await screen.WaitForFrameAsync(frame => frame.Contains("Settings · User settings", StringComparison.Ordinal) &&
                         frame.Contains("Default thinking per model", StringComparison.Ordinal)).WaitAsync(timeout.Token);
                 }
@@ -3693,7 +3693,7 @@ public sealed class TerminalPtyTests
             await SendAsync("/settings\r");
             await screen.WaitForFrameAsync(frame => frame.Contains("Settings · User settings", StringComparison.Ordinal))
                 .WaitAsync(timeout.Token);
-            await SendAsync(string.Concat(Enumerable.Repeat("\u001b[B", 18)));
+            await SendAsync(string.Concat(Enumerable.Repeat("\u001b[B", 19)));
             await screen.WaitForFrameAsync(frame => frame.Contains("Settings · User settings", StringComparison.Ordinal) &&
                 frame.Contains("Default thinking per model", StringComparison.Ordinal)).WaitAsync(timeout.Token);
             await SendAsync("\r");

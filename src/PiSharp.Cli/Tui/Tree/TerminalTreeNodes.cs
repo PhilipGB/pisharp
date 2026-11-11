@@ -12,6 +12,16 @@ internal enum TerminalTreeFilterMode
     All
 }
 
+/// <summary>Maps `treeFilterMode` setting values onto the filter enum (same order).</summary>
+internal static class TerminalTreeFilterModes
+{
+    public static TerminalTreeFilterMode Parse(string? value)
+    {
+        var index = value is null ? -1 : Array.IndexOf(TreeFilterModeSetting.Values, value);
+        return index < 0 ? TerminalTreeFilterMode.Default : (TerminalTreeFilterMode)index;
+    }
+}
+
 internal readonly record struct TreeGutter(int Position, bool Show);
 
 /// <summary>One flattened program entry with its resolved label and tree position.</summary>

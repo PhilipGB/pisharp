@@ -1,3 +1,4 @@
+using PiSharp.Cli;
 using PiSharp.Cli.Tui;
 
 namespace PiSharp.Tests;
@@ -23,15 +24,15 @@ public sealed class TerminalSettingsPickerTests
         Assert.Equal(new[]
         {
             "steeringMode", "followUpMode", "sessionShareDestination", "httpIdleTimeoutMs",
-            "hideThinkingBlock", "markdown.mermaid", "quietStartup", "defaultProjectTrust", "modelThinkingLevels", "theme",
-            "fullscreenWheelScrollLines"
-        }, ids.Skip(10).Take(11));
+            "hideThinkingBlock", "markdown.mermaid", "quietStartup", "defaultProjectTrust", "treeFilterMode",
+            "modelThinkingLevels", "theme", "fullscreenWheelScrollLines"
+        }, ids.Skip(10).Take(12));
         Assert.Equal(new[]
         {
             "defaultThinkingLevel", "httpProxy", "terminal.trueColor", "externalEditor",
             "retry.provider.timeoutMs", "retry.provider.maxRetries",
             "retry.provider.maxRetryDelayMs", "markdown.codeBlockIndent"
-        }, ids.Skip(21));
+        }, ids.Skip(22));
         Assert.DoesNotContain(ids, id => id is "showCacheMissNotices" or "collapseChangelog");
     }
 
@@ -86,5 +87,31 @@ public sealed class TerminalSettingsPickerTests
             list.HandleInput(new(new ConsoleKeyInfo('\0', ConsoleKey.Delete, false, false, false), null)));
         Assert.Equal(TerminalSettingsListAction.Cancel,
             list.HandleInput(new(new ConsoleKeyInfo('\0', ConsoleKey.Escape, false, false, false), null)));
+    }
+
+    [Fact]
+    public void TreeFilterModeRowMatchesThePinnedLabelDescriptionValueAndDefaults()
+    {
+        var setting = TerminalSettingsPicker.Settings.Single(item => item.Id == "treeFilterMode");
+        Assert.Equal("Tree filter mode", setting.Label);
+        Assert.Equal("Default filter when opening /tree", setting.Description);
+        Assert.False(setting.UserOnly);
+
+        var unset = TerminalSettingsPicker.ToListItem(setting, new UserSettings(), new UserSettings(),
+            projectScope: false, activeThemeSetting: null);
+        Assert.Equal("inherit/default (default)", unset.Value);
+
+        var configured = TerminalSettingsPicker.ToListItem(setting,
+            new UserSettings(TreeFilterMode: "labeled-only"),
+            new UserSettings(TreeFilterMode: "labeled-only"), projectScope: false, activeThemeSetting: null);
+        Assert.Equal("labeled-only", configured.Value);
+
+        var inherited = TerminalSettingsPicker.ToListItem(setting, new UserSettings(),
+            new UserSettings(TreeFilterMode: "all"), projectScope: true, activeThemeSetting: null);
+        Assert.Equal("all (inherited)", inherited.Value);
+
+        // Pinned Pi's settings list cycles these values in source order.
+        Assert.Equal(["default", "no-tools", "user-only", "labeled-only", "all"],
+            TreeFilterModeSetting.Values);
     }
 }
