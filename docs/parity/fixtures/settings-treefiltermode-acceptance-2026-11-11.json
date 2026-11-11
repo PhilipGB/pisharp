@@ -374,8 +374,8 @@
     },
     "exactHeadCi": {
       "status": "pass",
-      "evidence": "Linux CI on the implementation head",
-      "run": "43057240925",
+      "evidence": "Linux CI run 43082423591 on head 7dc3538c (implementation 0ab12a6f): all five jobs green (macos-session-locks, macos-clipboard-contracts, windows-clipboard-contracts, mcp-conformance, managed-package-verifier). This manifest-only follow-up commit carries the same implementation and evidence tree.",
+      "run": "43082423591",
       "implementationSha": "0ab12a6fd8bf0b30654af6c87529248e92a4f3bc"
     },
     "ledger": {
