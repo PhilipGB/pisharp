@@ -4,7 +4,7 @@
   "title": "Setting: doubleEscapeAction",
   "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
   "baseSha": "0c383d547994f7e431f9fe9796bbec702d99a716",
-  "implementationSha": "444e6e01c39109fb1f22db750e8b813af49997be",
+  "implementationSha": "84ac4fc6d3fa495397b7437218995cedb2d0b6a1",
   "oracleFile": "docs/parity/fixtures/settings-doubleescapeaction-pi-oracle-2026-11-12.json",
   "checkpointFiles": [
     "docs/parity/fixtures/settings-doubleescapeaction-checkpoints-fullscreen-2026-11-12.json",
@@ -457,15 +457,15 @@
   "gates": {
     "format": {
       "status": "pass",
-      "evidence": "dotnet format PiSharp.slnx --verify-no-changes: clean at the implementation head."
+      "evidence": "dotnet format PiSharp.slnx --verify-no-changes: clean at implementation head 84ac4fc6."
     },
     "build": {
       "status": "pass",
-      "evidence": "dotnet build PiSharp.slnx --warnaserror: 0 warnings, 0 errors at the implementation head."
+      "evidence": "dotnet build PiSharp.slnx --warnaserror: 0 warnings, 0 errors at implementation head 84ac4fc6."
     },
     "fullSuite": {
       "status": "pass",
-      "evidence": "dotnet test PiSharp.slnx (tests/PiSharp.Tests) at implementation head 16053b1e: 4616 passed, 0 failed, 0 skipped in 9m02s. NativeExtensionUiTests is excluded locally because it hangs in this development environment (the same hang reproduces on the post-#52 base); CI runs the class unchanged.",
+      "evidence": "dotnet test PiSharp.slnx (tests/PiSharp.Tests) at implementation head 84ac4fc6: 4616 passed, 0 failed, 0 skipped in 9m44s. NativeExtensionUiTests is excluded locally because it hangs in this development environment (the same hang reproduces on the post-#52 base); CI runs the class unchanged.",
       "total": 4616,
       "failed": 0,
       "skipped": 0,
@@ -477,7 +477,7 @@
       "status": "pass",
       "evidence": "Linux CI run 43157909879 on head 415f5955 (implementation 16053b1e): all five jobs green. This manifest-only follow-up commit carries the same implementation and evidence tree.",
       "run": "43157909879",
-      "implementationSha": "444e6e01c39109fb1f22db750e8b813af49997be"
+      "implementationSha": "84ac4fc6d3fa495397b7437218995cedb2d0b6a1"
     },
     "ledger": {
       "status": "pass",
