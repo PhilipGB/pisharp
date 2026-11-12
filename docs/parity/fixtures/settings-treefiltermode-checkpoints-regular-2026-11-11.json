@@ -1,0 +1,4062 @@
+{
+  "schema": 1,
+  "capability": "settings-treefiltermode",
+  "label": "paired",
+  "cases": {
+    "100x30-dark-regular": {
+      "dimensions": {
+        "columns": 100,
+        "rows": 30
+      },
+      "theme": "dark",
+      "mode": "regular",
+      "pi": {
+        "checkpoints": {
+          "startup": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "unset-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "unset-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "unset-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "default-config": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "default-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "default-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "default-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "no-tools-config": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "no-tools-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "7/9",
+              "tags": [
+                "no-tools"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "no-tools-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "7/9",
+              "tags": [
+                "no-tools"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "no-tools-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "user-only-config": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "user-only-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "c0000007",
+                "b0000004"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "\u203a \u251c\u2500 \u2022 ",
+                "  \u2514\u2500 "
+              ],
+              "suffixes": [
+                "",
+                "",
+                ""
+              ],
+              "selected": "c0000007",
+              "count": "2/3",
+              "tags": [
+                "user"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "user-only-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "c0000007",
+                "b0000004"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "\u203a \u251c\u2500 \u2022 ",
+                "  \u2514\u2500 "
+              ],
+              "suffixes": [
+                "",
+                "",
+                ""
+              ],
+              "selected": "c0000007",
+              "count": "2/3",
+              "tags": [
+                "user"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "user-only-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "labeled-only-config": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "labeled-only-open": {
+            "tree": {
+              "rows": [
+                "a0000003",
+                "c0000008"
+              ],
+              "gutter": [
+                "  \u2022 [first label] ",
+                "\u203a \u2022 [second answer label] "
+              ],
+              "suffixes": [
+                "",
+                ""
+              ],
+              "selected": "c0000008",
+              "count": "2/2",
+              "tags": [
+                "labeled"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "labeled-only-state": {
+            "tree": {
+              "rows": [
+                "a0000003",
+                "c0000008"
+              ],
+              "gutter": [
+                "  \u2022 [first label] ",
+                "\u203a \u2022 [second answer label] "
+              ],
+              "suffixes": [
+                "",
+                ""
+              ],
+              "selected": "c0000008",
+              "count": "2/2",
+              "tags": [
+                "labeled"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "labeled-only-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "all-config": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "all-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "t0000001",
+                "L0000016",
+                "s0000017",
+                "e0000018",
+                "b0000004",
+                "b0000005",
+                "L0000006"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "e0000018",
+              "count": "14/17",
+              "tags": [
+                "all"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "all-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "t0000001",
+                "L0000016",
+                "s0000017",
+                "e0000018",
+                "b0000004",
+                "b0000005",
+                "L0000006"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "e0000018",
+              "count": "14/17",
+              "tags": [
+                "all"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "all-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "invalid-config": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "invalid-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "invalid-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "invalid-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "reset-config": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "reset-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "reset-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "reset-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "temporary-config": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "temporary-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "c0000007",
+                "b0000004"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "\u203a \u251c\u2500 \u2022 ",
+                "  \u2514\u2500 "
+              ],
+              "suffixes": [
+                "",
+                "",
+                ""
+              ],
+              "selected": "c0000007",
+              "count": "2/3",
+              "tags": [
+                "user"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "temporary-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "c0000007",
+                "b0000004"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "\u203a \u251c\u2500 \u2022 ",
+                "  \u2514\u2500 "
+              ],
+              "suffixes": [
+                "",
+                "",
+                ""
+              ],
+              "selected": "c0000007",
+              "count": "2/3",
+              "tags": [
+                "user"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "temporary-cycle": {
+            "tree": {
+              "rows": [
+                "a0000003",
+                "c0000008"
+              ],
+              "gutter": [
+                "\u203a \u2022 [first label] ",
+                "  \u2022 [second answer label] "
+              ],
+              "suffixes": [
+                "",
+                ""
+              ],
+              "selected": "a0000003",
+              "count": "1/2",
+              "tags": [
+                "labeled"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "temporary-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "temporary-reopen": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "c0000007",
+                "b0000004"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "\u203a \u251c\u2500 \u2022 ",
+                "  \u2514\u2500 "
+              ],
+              "suffixes": [
+                "",
+                "",
+                ""
+              ],
+              "selected": "c0000007",
+              "count": "2/3",
+              "tags": [
+                "user"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "temporary-reopen-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "c0000007",
+                "b0000004"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "\u203a \u251c\u2500 \u2022 ",
+                "  \u2514\u2500 "
+              ],
+              "suffixes": [
+                "",
+                "",
+                ""
+              ],
+              "selected": "c0000007",
+              "count": "2/3",
+              "tags": [
+                "user"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "temporary-reopen-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          }
+        },
+        "requests": [],
+        "settings": {
+          "treeFilterMode": "user-only",
+          "treeFilterModePresent": true,
+          "quietStartup": true,
+          "shellCommandPrefix": "preserved",
+          "theme": "dark",
+          "tuiMode": "regular"
+        },
+        "scenarioError": null
+      },
+      "pisharp": {
+        "checkpoints": {
+          "startup": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "unset-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "unset-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "unset-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "default-config": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "default-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "default-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "default-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "no-tools-config": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "no-tools-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "7/9",
+              "tags": [
+                "no-tools"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "no-tools-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "7/9",
+              "tags": [
+                "no-tools"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "no-tools-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "user-only-config": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "user-only-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "c0000007",
+                "b0000004"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "\u203a \u251c\u2500 \u2022 ",
+                "  \u2514\u2500 "
+              ],
+              "suffixes": [
+                "",
+                "",
+                ""
+              ],
+              "selected": "c0000007",
+              "count": "2/3",
+              "tags": [
+                "user"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "user-only-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "c0000007",
+                "b0000004"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "\u203a \u251c\u2500 \u2022 ",
+                "  \u2514\u2500 "
+              ],
+              "suffixes": [
+                "",
+                "",
+                ""
+              ],
+              "selected": "c0000007",
+              "count": "2/3",
+              "tags": [
+                "user"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "user-only-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "labeled-only-config": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "labeled-only-open": {
+            "tree": {
+              "rows": [
+                "a0000003",
+                "c0000008"
+              ],
+              "gutter": [
+                "  \u2022 [first label] ",
+                "\u203a \u2022 [second answer label] "
+              ],
+              "suffixes": [
+                "",
+                ""
+              ],
+              "selected": "c0000008",
+              "count": "2/2",
+              "tags": [
+                "labeled"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "labeled-only-state": {
+            "tree": {
+              "rows": [
+                "a0000003",
+                "c0000008"
+              ],
+              "gutter": [
+                "  \u2022 [first label] ",
+                "\u203a \u2022 [second answer label] "
+              ],
+              "suffixes": [
+                "",
+                ""
+              ],
+              "selected": "c0000008",
+              "count": "2/2",
+              "tags": [
+                "labeled"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "labeled-only-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "all-config": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "all-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "t0000001",
+                "L0000016",
+                "s0000017",
+                "e0000018",
+                "b0000004",
+                "b0000005",
+                "L0000006"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "e0000018",
+              "count": "14/17",
+              "tags": [
+                "all"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "all-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "t0000001",
+                "L0000016",
+                "s0000017",
+                "e0000018",
+                "b0000004",
+                "b0000005",
+                "L0000006"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "e0000018",
+              "count": "14/17",
+              "tags": [
+                "all"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "all-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "invalid-config": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "invalid-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "invalid-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "invalid-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "reset-config": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "reset-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "reset-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "reset-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "temporary-config": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "temporary-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "c0000007",
+                "b0000004"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "\u203a \u251c\u2500 \u2022 ",
+                "  \u2514\u2500 "
+              ],
+              "suffixes": [
+                "",
+                "",
+                ""
+              ],
+              "selected": "c0000007",
+              "count": "2/3",
+              "tags": [
+                "user"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "temporary-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "c0000007",
+                "b0000004"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "\u203a \u251c\u2500 \u2022 ",
+                "  \u2514\u2500 "
+              ],
+              "suffixes": [
+                "",
+                "",
+                ""
+              ],
+              "selected": "c0000007",
+              "count": "2/3",
+              "tags": [
+                "user"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "temporary-cycle": {
+            "tree": {
+              "rows": [
+                "a0000003",
+                "c0000008"
+              ],
+              "gutter": [
+                "\u203a \u2022 [first label] ",
+                "  \u2022 [second answer label] "
+              ],
+              "suffixes": [
+                "",
+                ""
+              ],
+              "selected": "a0000003",
+              "count": "1/2",
+              "tags": [
+                "labeled"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "temporary-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "temporary-reopen": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "c0000007",
+                "b0000004"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "\u203a \u251c\u2500 \u2022 ",
+                "  \u2514\u2500 "
+              ],
+              "suffixes": [
+                "",
+                "",
+                ""
+              ],
+              "selected": "c0000007",
+              "count": "2/3",
+              "tags": [
+                "user"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "temporary-reopen-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "c0000007",
+                "b0000004"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "\u203a \u251c\u2500 \u2022 ",
+                "  \u2514\u2500 "
+              ],
+              "suffixes": [
+                "",
+                "",
+                ""
+              ],
+              "selected": "c0000007",
+              "count": "2/3",
+              "tags": [
+                "user"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "temporary-reopen-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          }
+        },
+        "requests": [],
+        "settings": {
+          "treeFilterMode": "user-only",
+          "treeFilterModePresent": true,
+          "quietStartup": true,
+          "shellCommandPrefix": "preserved",
+          "theme": "dark",
+          "tuiMode": "regular"
+        },
+        "scenarioError": null
+      },
+      "paired": {
+        "semanticDifferences": 0,
+        "semanticFirstDifferences": [],
+        "scenarioErrors": {},
+        "runReport": {
+          "match": false,
+          "differences": 885545
+        }
+      },
+      "calibration": {
+        "semanticDifferences": 0,
+        "semanticFirstDifferences": [],
+        "scenarioErrors": {},
+        "runReport": {
+          "match": true,
+          "differences": 0
+        }
+      },
+      "calibrationEvidence": {
+        "dimensions": {
+          "columns": 100,
+          "rows": 30
+        },
+        "theme": "dark",
+        "mode": "regular"
+      }
+    },
+    "140x40-dark-regular": {
+      "dimensions": {
+        "columns": 140,
+        "rows": 40
+      },
+      "theme": "dark",
+      "mode": "regular",
+      "pi": {
+        "checkpoints": {
+          "startup": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "unset-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "unset-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "unset-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "default-config": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "default-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "default-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "default-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "no-tools-config": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "no-tools-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "7/9",
+              "tags": [
+                "no-tools"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "no-tools-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "7/9",
+              "tags": [
+                "no-tools"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "no-tools-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "user-only-config": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "user-only-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "c0000007",
+                "b0000004"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "\u203a \u251c\u2500 \u2022 ",
+                "  \u2514\u2500 "
+              ],
+              "suffixes": [
+                "",
+                "",
+                ""
+              ],
+              "selected": "c0000007",
+              "count": "2/3",
+              "tags": [
+                "user"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "user-only-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "c0000007",
+                "b0000004"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "\u203a \u251c\u2500 \u2022 ",
+                "  \u2514\u2500 "
+              ],
+              "suffixes": [
+                "",
+                "",
+                ""
+              ],
+              "selected": "c0000007",
+              "count": "2/3",
+              "tags": [
+                "user"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "user-only-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "labeled-only-config": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "labeled-only-open": {
+            "tree": {
+              "rows": [
+                "a0000003",
+                "c0000008"
+              ],
+              "gutter": [
+                "  \u2022 [first label] ",
+                "\u203a \u2022 [second answer label] "
+              ],
+              "suffixes": [
+                "",
+                ""
+              ],
+              "selected": "c0000008",
+              "count": "2/2",
+              "tags": [
+                "labeled"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "labeled-only-state": {
+            "tree": {
+              "rows": [
+                "a0000003",
+                "c0000008"
+              ],
+              "gutter": [
+                "  \u2022 [first label] ",
+                "\u203a \u2022 [second answer label] "
+              ],
+              "suffixes": [
+                "",
+                ""
+              ],
+              "selected": "c0000008",
+              "count": "2/2",
+              "tags": [
+                "labeled"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "labeled-only-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "all-config": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "all-open": {
+            "tree": {
+              "rows": [
+                "m0000001",
+                "t0000001",
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "t0000015",
+                "L0000016",
+                "s0000017",
+                "e0000018",
+                "b0000004",
+                "b0000005",
+                "L0000006"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 ",
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "e0000018",
+              "count": "14/17",
+              "tags": [
+                "all"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "all-state": {
+            "tree": {
+              "rows": [
+                "m0000001",
+                "t0000001",
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "t0000015",
+                "L0000016",
+                "s0000017",
+                "e0000018",
+                "b0000004",
+                "b0000005",
+                "L0000006"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 ",
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "e0000018",
+              "count": "14/17",
+              "tags": [
+                "all"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "all-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "invalid-config": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "invalid-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "invalid-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "invalid-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "reset-config": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "reset-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "reset-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "reset-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "temporary-config": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "temporary-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "c0000007",
+                "b0000004"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "\u203a \u251c\u2500 \u2022 ",
+                "  \u2514\u2500 "
+              ],
+              "suffixes": [
+                "",
+                "",
+                ""
+              ],
+              "selected": "c0000007",
+              "count": "2/3",
+              "tags": [
+                "user"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "temporary-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "c0000007",
+                "b0000004"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "\u203a \u251c\u2500 \u2022 ",
+                "  \u2514\u2500 "
+              ],
+              "suffixes": [
+                "",
+                "",
+                ""
+              ],
+              "selected": "c0000007",
+              "count": "2/3",
+              "tags": [
+                "user"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "temporary-cycle": {
+            "tree": {
+              "rows": [
+                "a0000003",
+                "c0000008"
+              ],
+              "gutter": [
+                "\u203a \u2022 [first label] ",
+                "  \u2022 [second answer label] "
+              ],
+              "suffixes": [
+                "",
+                ""
+              ],
+              "selected": "a0000003",
+              "count": "1/2",
+              "tags": [
+                "labeled"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "temporary-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "temporary-reopen": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "c0000007",
+                "b0000004"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "\u203a \u251c\u2500 \u2022 ",
+                "  \u2514\u2500 "
+              ],
+              "suffixes": [
+                "",
+                "",
+                ""
+              ],
+              "selected": "c0000007",
+              "count": "2/3",
+              "tags": [
+                "user"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "temporary-reopen-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "c0000007",
+                "b0000004"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "\u203a \u251c\u2500 \u2022 ",
+                "  \u2514\u2500 "
+              ],
+              "suffixes": [
+                "",
+                "",
+                ""
+              ],
+              "selected": "c0000007",
+              "count": "2/3",
+              "tags": [
+                "user"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "temporary-reopen-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          }
+        },
+        "requests": [],
+        "settings": {
+          "treeFilterMode": "user-only",
+          "treeFilterModePresent": true,
+          "quietStartup": true,
+          "shellCommandPrefix": "preserved",
+          "theme": "dark",
+          "tuiMode": "regular"
+        },
+        "scenarioError": null
+      },
+      "pisharp": {
+        "checkpoints": {
+          "startup": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "unset-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "unset-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "unset-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "default-config": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "default-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "default-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "default-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "no-tools-config": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "no-tools-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "7/9",
+              "tags": [
+                "no-tools"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "no-tools-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "7/9",
+              "tags": [
+                "no-tools"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "no-tools-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "user-only-config": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "user-only-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "c0000007",
+                "b0000004"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "\u203a \u251c\u2500 \u2022 ",
+                "  \u2514\u2500 "
+              ],
+              "suffixes": [
+                "",
+                "",
+                ""
+              ],
+              "selected": "c0000007",
+              "count": "2/3",
+              "tags": [
+                "user"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "user-only-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "c0000007",
+                "b0000004"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "\u203a \u251c\u2500 \u2022 ",
+                "  \u2514\u2500 "
+              ],
+              "suffixes": [
+                "",
+                "",
+                ""
+              ],
+              "selected": "c0000007",
+              "count": "2/3",
+              "tags": [
+                "user"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "user-only-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "labeled-only-config": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "labeled-only-open": {
+            "tree": {
+              "rows": [
+                "a0000003",
+                "c0000008"
+              ],
+              "gutter": [
+                "  \u2022 [first label] ",
+                "\u203a \u2022 [second answer label] "
+              ],
+              "suffixes": [
+                "",
+                ""
+              ],
+              "selected": "c0000008",
+              "count": "2/2",
+              "tags": [
+                "labeled"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "labeled-only-state": {
+            "tree": {
+              "rows": [
+                "a0000003",
+                "c0000008"
+              ],
+              "gutter": [
+                "  \u2022 [first label] ",
+                "\u203a \u2022 [second answer label] "
+              ],
+              "suffixes": [
+                "",
+                ""
+              ],
+              "selected": "c0000008",
+              "count": "2/2",
+              "tags": [
+                "labeled"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "labeled-only-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "all-config": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "all-open": {
+            "tree": {
+              "rows": [
+                "m0000001",
+                "t0000001",
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "t0000015",
+                "L0000016",
+                "s0000017",
+                "e0000018",
+                "b0000004",
+                "b0000005",
+                "L0000006"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 ",
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "e0000018",
+              "count": "14/17",
+              "tags": [
+                "all"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "all-state": {
+            "tree": {
+              "rows": [
+                "m0000001",
+                "t0000001",
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "t0000015",
+                "L0000016",
+                "s0000017",
+                "e0000018",
+                "b0000004",
+                "b0000005",
+                "L0000006"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 ",
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "e0000018",
+              "count": "14/17",
+              "tags": [
+                "all"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "all-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "invalid-config": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "invalid-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "invalid-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "invalid-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "reset-config": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "reset-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "reset-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "  \u2022 [first label] ",
+                "  \u251c\u229f \u2022 ",
+                "  \u2502     \u2022 [second answer label] ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "  \u2502     \u2022 ",
+                "\u203a \u2502     \u2022 ",
+                "  \u2514\u229f ",
+                "        "
+              ],
+              "suffixes": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "reset-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "temporary-config": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "temporary-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "c0000007",
+                "b0000004"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "\u203a \u251c\u2500 \u2022 ",
+                "  \u2514\u2500 "
+              ],
+              "suffixes": [
+                "",
+                "",
+                ""
+              ],
+              "selected": "c0000007",
+              "count": "2/3",
+              "tags": [
+                "user"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "temporary-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "c0000007",
+                "b0000004"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "\u203a \u251c\u2500 \u2022 ",
+                "  \u2514\u2500 "
+              ],
+              "suffixes": [
+                "",
+                "",
+                ""
+              ],
+              "selected": "c0000007",
+              "count": "2/3",
+              "tags": [
+                "user"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "temporary-cycle": {
+            "tree": {
+              "rows": [
+                "a0000003",
+                "c0000008"
+              ],
+              "gutter": [
+                "\u203a \u2022 [first label] ",
+                "  \u2022 [second answer label] "
+              ],
+              "suffixes": [
+                "",
+                ""
+              ],
+              "selected": "a0000003",
+              "count": "1/2",
+              "tags": [
+                "labeled"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "temporary-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "temporary-reopen": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "c0000007",
+                "b0000004"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "\u203a \u251c\u2500 \u2022 ",
+                "  \u2514\u2500 "
+              ],
+              "suffixes": [
+                "",
+                "",
+                ""
+              ],
+              "selected": "c0000007",
+              "count": "2/3",
+              "tags": [
+                "user"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "temporary-reopen-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "c0000007",
+                "b0000004"
+              ],
+              "gutter": [
+                "  \u2022 ",
+                "\u203a \u251c\u2500 \u2022 ",
+                "  \u2514\u2500 "
+              ],
+              "suffixes": [
+                "",
+                "",
+                ""
+              ],
+              "selected": "c0000007",
+              "count": "2/3",
+              "tags": [
+                "user"
+              ],
+              "search": "",
+              "empty": false
+            },
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          },
+          "temporary-reopen-close": {
+            "tree": null,
+            "settings": null,
+            "activeScreen": "normal",
+            "errors": []
+          }
+        },
+        "requests": [],
+        "settings": {
+          "treeFilterMode": "user-only",
+          "treeFilterModePresent": true,
+          "quietStartup": true,
+          "shellCommandPrefix": "preserved",
+          "theme": "dark",
+          "tuiMode": "regular"
+        },
+        "scenarioError": null
+      },
+      "paired": {
+        "semanticDifferences": 0,
+        "semanticFirstDifferences": [],
+        "scenarioErrors": {},
+        "runReport": {
+          "match": false,
+          "differences": 1356445
+        }
+      },
+      "calibration": {
+        "semanticDifferences": 0,
+        "semanticFirstDifferences": [],
+        "scenarioErrors": {},
+        "runReport": {
+          "match": true,
+          "differences": 0
+        }
+      },
+      "calibrationEvidence": {
+        "dimensions": {
+          "columns": 140,
+          "rows": 40
+        },
+        "theme": "dark",
+        "mode": "regular"
+      }
+    }
+  },
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "pisharpSha": "8e3fcc2055d7ea7e69f5d60b9c402ab0eaabd94d",
+  "artifact": {
+    "file": "PiSharp.Cli.dll",
+    "size": 3598848,
+    "sha256": "82a247c9e519b3eb8011d235ae5d5ed73d2e7754e3ab45694bb42bb7f0be424c",
+    "depsFile": "PiSharp.Cli.deps.json",
+    "depsSha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
+    "runtimeConfigFile": "PiSharp.Cli.runtimeconfig.json",
+    "runtimeConfigSha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a"
+  }
+}
