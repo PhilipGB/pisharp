@@ -20,7 +20,7 @@ try
         object? error = null;
         object? skipPrompt = null;
         object? parent = null;
-        int? reserve = null;
+        double? reserve = null;
         bool? prompts = null;
         try
         {

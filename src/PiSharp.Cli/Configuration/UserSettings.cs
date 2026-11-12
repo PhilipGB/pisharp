@@ -106,10 +106,10 @@ public readonly record struct BranchSummarySkipPromptSetting(JsonValueKind Kind,
 
 /// <summary>Controls optional branch-summary prompting and the model-context reserve.</summary>
 public sealed record BranchSummarySettings(int? ReserveTokens = null,
-    BranchSummarySkipPromptSetting? SkipPrompt = null)
+    BranchSummarySkipPromptSetting? SkipPrompt = null, BranchSummaryReserveTokensSetting? RawReserveTokens = null)
 {
     public const int DefaultReserveTokens = AutoCompactionPolicy.DefaultReserveTokens;
-    public int EffectiveReserveTokens => ReserveTokens ?? DefaultReserveTokens;
+    public double EffectiveReserveTokens => RawReserveTokens?.Resolve() ?? ReserveTokens ?? DefaultReserveTokens;
 
     /// <summary>Pinned Pi asks the question only when `branchSummary?.skipPrompt ?? false` is falsey.</summary>
     public bool SkipsSummaryPrompt => SkipPrompt?.SkipsPrompt == true;
@@ -118,32 +118,22 @@ public sealed record BranchSummarySettings(int? ReserveTokens = null,
     {
         if (value.ValueKind != JsonValueKind.Object)
             throw new InvalidDataException("settings.json branchSummary must be an object.");
-        int? reserve = null;
+        BranchSummaryReserveTokensSetting? reserve = null;
         BranchSummarySkipPromptSetting? skipPrompt = null;
-        var reserveSeen = false;
         foreach (var property in value.EnumerateObject())
         {
             switch (property.Name)
             {
-                case "reserveTokens" when property.Value.ValueKind == JsonValueKind.Number &&
-                    property.Value.TryGetInt32(out var tokens) && tokens >= 0:
-                    // reserveTokens stays validated and out of scope for this milestone.
-                    if (reserveSeen)
-                        throw new InvalidDataException(
-                            "settings.json branchSummary contains duplicate property 'reserveTokens'.");
-                    reserveSeen = true;
-                    reserve = tokens;
-                    break;
                 case "reserveTokens":
-                    throw new InvalidDataException(
-                        "settings.json branchSummary.reserveTokens is invalid or unsupported.");
+                    reserve = BranchSummaryReserveTokensSetting.From(property.Value);
+                    break;
                 case "skipPrompt":
                     // Pinned Pi resolves duplicate keys with the later value; unknown siblings are ignored.
                     skipPrompt = BranchSummarySkipPromptSetting.From(property.Value);
                     break;
             }
         }
-        return new(reserve, skipPrompt);
+        return new(SkipPrompt: skipPrompt, RawReserveTokens: reserve);
     }
 }
 
@@ -155,7 +145,7 @@ public sealed record BranchSummarySettings(int? ReserveTokens = null,
 public readonly record struct BranchSummarySettingValue(BranchSummarySettings? Settings)
 {
     public bool SkipsSummaryPrompt => Settings?.SkipsSummaryPrompt == true;
-    public int EffectiveReserveTokens => Settings?.EffectiveReserveTokens ?? BranchSummarySettings.DefaultReserveTokens;
+    public double EffectiveReserveTokens => Settings?.EffectiveReserveTokens ?? BranchSummarySettings.DefaultReserveTokens;
 }
 
 /// <summary>Accepted `doubleEscapeAction` values in pinned Pi's settings order.</summary>
@@ -701,7 +691,10 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         if (lower?.Settings is not { } lowerSettings || upper.Value.Settings is not { } upperSettings) return upper;
         return new BranchSummarySettingValue(new BranchSummarySettings(
             upperSettings.ReserveTokens ?? lowerSettings.ReserveTokens,
-            upperSettings.SkipPrompt ?? lowerSettings.SkipPrompt));
+            upperSettings.SkipPrompt ?? lowerSettings.SkipPrompt,
+            upperSettings.RawReserveTokens is { } upperReserve
+                ? lowerSettings.RawReserveTokens?.Overlay(upperReserve) ?? upperReserve
+                : upperSettings.ReserveTokens is not null ? null : lowerSettings.RawReserveTokens));
     }
 
     private static IReadOnlyDictionary<string, CompactionSettings>? MergeOverrides(

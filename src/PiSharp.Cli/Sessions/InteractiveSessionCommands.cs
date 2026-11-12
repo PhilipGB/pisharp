@@ -57,7 +57,7 @@ internal sealed class InteractiveSessionCommands(ConversationStore store, string
                     throw new ArgumentException("Specify a unique entry id prefix from /tree, optionally after --summarize.");
                 var navigation = await conversationRun.NavigateTreeAsync(matches[0].Id,
                     new ConversationTreeSelectionOptions(Summarize: summarizeBranch,
-                        ReserveTokens: branchSummarySettings?.EffectiveReserveTokens ?? BranchSummarySettings.DefaultReserveTokens));
+                        ConfiguredReserveTokens: branchSummarySettings?.EffectiveReserveTokens ?? BranchSummarySettings.DefaultReserveTokens));
                 loadTranscript();
                 if (navigation.EditorText is { } draft) prefillPrompt?.Invoke(draft);
                 output.WriteLine($"Selected {Short(matches[0].Id)}{(summarizeBranch ? " with a branch summary" : "")}");
