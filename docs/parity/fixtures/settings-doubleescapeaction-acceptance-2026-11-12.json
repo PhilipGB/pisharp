@@ -475,8 +475,8 @@
     },
     "exactHeadCi": {
       "status": "pass",
-      "evidence": "Linux CI run 43157909879 on head 415f5955 (implementation 16053b1e): all five jobs green. This manifest-only follow-up commit carries the same implementation and evidence tree.",
-      "run": "43157909879",
+      "evidence": "Linux CI run 43205204817 on head b9ea7596 (implementation 84ac4fc6): all five jobs green. This manifest-only follow-up commit carries the same implementation and evidence tree.",
+      "run": "43205204817",
       "implementationSha": "84ac4fc6d3fa495397b7437218995cedb2d0b6a1"
     },
     "ledger": {
