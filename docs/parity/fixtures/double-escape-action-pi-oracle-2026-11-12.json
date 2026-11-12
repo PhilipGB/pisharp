@@ -1,0 +1,448 @@
+{
+  "schema": 1,
+  "capability": "settings-doubleescapeaction",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "values": [
+    "tree",
+    "fork",
+    "none"
+  ],
+  "default": "tree",
+  "windowMilliseconds": 500,
+  "windowComparison": "<",
+  "label": "Double-escape action",
+  "description": "Action when pressing Escape twice with empty editor",
+  "sources": [
+    {
+      "file": "packages/coding-agent/src/core/settings-defaults.ts",
+      "lines": "45",
+      "symbol": "SETTINGS_DEFAULTS.doubleEscapeAction",
+      "observation": "The shared runtime default is the string 'tree'."
+    },
+    {
+      "file": "packages/coding-agent/src/core/settings-schema.ts",
+      "lines": "339-344",
+      "symbol": "doubleEscapeAction",
+      "observation": "Optional union of fork, tree and none, described as 'Action for double-escape with an empty editor', defaulted from SETTINGS_DEFAULTS."
+    },
+    {
+      "file": "packages/coding-agent/src/core/settings-manager.ts",
+      "lines": "1356-1364",
+      "symbol": "getDoubleEscapeAction/setDoubleEscapeAction",
+      "observation": "The getter returns the merged value unless it is nullish; it does not validate against the union. The setter writes global settings and saves."
+    },
+    {
+      "file": "packages/coding-agent/src/core/settings-manager.ts",
+      "lines": "65-82",
+      "symbol": "deepMergeObjects",
+      "observation": "Scopes merge by property presence; a null override is not skipped, so it replaces lower scopes."
+    },
+    {
+      "file": "packages/coding-agent/src/core/settings-manager.ts",
+      "lines": "377-408",
+      "symbol": "loadFromStorage/tryLoadFromStorage",
+      "observation": "Settings files are JSON.parse'd and migrated only; values are never validated against the schema."
+    },
+    {
+      "file": "packages/coding-agent/src/modes/interactive/components/settings-selector.ts",
+      "lines": "586-593",
+      "symbol": "double-escape-action item",
+      "observation": "Label 'Double-escape action', description 'Action when pressing Escape twice with empty editor', currentValue from config, values tree, fork, none."
+    },
+    {
+      "file": "packages/coding-agent/src/modes/interactive/components/settings-selector.ts",
+      "lines": "951-953",
+      "symbol": "onDoubleEscapeActionChange",
+      "observation": "A chosen value is forwarded to the interactive-mode callback."
+    },
+    {
+      "file": "packages/coding-agent/src/modes/interactive/interactive-mode.ts",
+      "lines": "5077-5079",
+      "symbol": "onDoubleEscapeActionChange",
+      "observation": "The callback persists the choice through settingsManager.setDoubleEscapeAction."
+    },
+    {
+      "file": "packages/coding-agent/src/modes/interactive/interactive-mode.ts",
+      "lines": "3070-3096",
+      "symbol": "defaultEditor.onEscape",
+      "observation": "Escape aborts streaming, aborts bash, clears bash-entry mode, and only for a trim-empty editor applies the double-escape action. Action 'none' skips the timer entirely; otherwise a second press strictly less than 500 ms after the first fires and resets the timer to 0, and every non-first press records its own time."
+    },
+    {
+      "file": "packages/coding-agent/src/modes/interactive/interactive-mode.ts",
+      "lines": "492",
+      "symbol": "lastEscapeTime",
+      "observation": "The double-press timer starts at 0, so the first press can never satisfy the window."
+    },
+    {
+      "file": "packages/coding-agent/src/modes/interactive/components/custom-editor.ts",
+      "lines": "100-114",
+      "symbol": "handleInput Escape",
+      "observation": "With autocomplete active, Escape is forwarded to the editor for cancellation and onEscape is not invoked, so the double-press timer is untouched."
+    },
+    {
+      "file": "packages/coding-agent/src/modes/interactive/interactive-mode.ts",
+      "lines": "5516-5552",
+      "symbol": "showUserMessageSelector",
+      "observation": "The fork path opens the user-message selector, closing over the same selector host as /fork."
+    }
+  ],
+  "scenarios": {
+    "de01-unset-default": {
+      "operation": "idle-escape",
+      "text": "",
+      "setting": null,
+      "escapeAt": [
+        1000,
+        1499
+      ],
+      "expected": {
+        "text": "",
+        "actions": [
+          "app.session.tree"
+        ]
+      },
+      "source": [
+        "interactive-mode.ts:3081-3093",
+        "settings-defaults.ts:45"
+      ],
+      "requirement": "No configured value behaves like the shared default, tree."
+    },
+    "de02-tree": {
+      "operation": "idle-escape",
+      "text": "",
+      "setting": "tree",
+      "escapeAt": [
+        1000,
+        1499
+      ],
+      "expected": {
+        "text": "",
+        "actions": [
+          "app.session.tree"
+        ]
+      },
+      "source": [
+        "interactive-mode.ts:3086-3087"
+      ],
+      "requirement": "Explicit tree opens the session tree."
+    },
+    "de03-fork": {
+      "operation": "idle-escape",
+      "text": "",
+      "setting": "fork",
+      "escapeAt": [
+        1000,
+        1499
+      ],
+      "expected": {
+        "text": "",
+        "actions": [
+          "app.session.fork"
+        ]
+      },
+      "source": [
+        "interactive-mode.ts:3086-3089"
+      ],
+      "requirement": "Explicit fork opens the fork selector."
+    },
+    "de04-none": {
+      "operation": "idle-escape",
+      "text": "",
+      "setting": "none",
+      "escapeAt": [
+        1000,
+        1100,
+        1200
+      ],
+      "expected": {
+        "text": "",
+        "actions": []
+      },
+      "source": [
+        "interactive-mode.ts:3083"
+      ],
+      "requirement": "Explicit none performs no action."
+    },
+    "de05-inside-window": {
+      "operation": "idle-escape",
+      "text": "",
+      "setting": "tree",
+      "escapeAt": [
+        1000,
+        1499
+      ],
+      "expected": {
+        "text": "",
+        "actions": [
+          "app.session.tree"
+        ]
+      },
+      "source": [
+        "interactive-mode.ts:3084"
+      ],
+      "requirement": "A second press strictly inside the window fires once."
+    },
+    "de06-boundary-500": {
+      "operation": "idle-escape",
+      "text": "",
+      "setting": "tree",
+      "escapeAt": [
+        1000,
+        1500,
+        1800
+      ],
+      "expected": {
+        "text": "",
+        "actions": [
+          "app.session.tree"
+        ]
+      },
+      "source": [
+        "interactive-mode.ts:3084"
+      ],
+      "requirement": "Exactly 500 ms does not fire; that press re-arms and the next press inside the window fires."
+    },
+    "de07-outside-window": {
+      "operation": "idle-escape",
+      "text": "",
+      "setting": "tree",
+      "escapeAt": [
+        1000,
+        1501,
+        1800
+      ],
+      "expected": {
+        "text": "",
+        "actions": [
+          "app.session.tree"
+        ]
+      },
+      "source": [
+        "interactive-mode.ts:3084-3092"
+      ],
+      "requirement": "A press outside the window does not fire and becomes the first press of the next pair."
+    },
+    "de08-exactly-once": {
+      "operation": "idle-escape",
+      "text": "",
+      "setting": "tree",
+      "escapeAt": [
+        1000,
+        1200,
+        1400
+      ],
+      "expected": {
+        "text": "",
+        "actions": [
+          "app.session.tree"
+        ]
+      },
+      "source": [
+        "interactive-mode.ts:3090"
+      ],
+      "requirement": "A qualifying pair resets the timer, so a third immediate press starts a new pair."
+    },
+    "de09-non-empty-editor": {
+      "operation": "idle-escape",
+      "text": "draft",
+      "setting": "tree",
+      "escapeAt": [
+        1000,
+        1100,
+        1200
+      ],
+      "expected": {
+        "text": "draft",
+        "actions": []
+      },
+      "source": [
+        "interactive-mode.ts:3079"
+      ],
+      "requirement": "A non-empty editor never dispatches and keeps its text."
+    },
+    "de10-whitespace-editor": {
+      "operation": "idle-escape",
+      "text": "   ",
+      "setting": "tree",
+      "escapeAt": [
+        1000,
+        1100
+      ],
+      "expected": {
+        "text": "   ",
+        "actions": [
+          "app.session.tree"
+        ]
+      },
+      "source": [
+        "interactive-mode.ts:3079"
+      ],
+      "requirement": "A whitespace-only editor counts as empty because the check trims."
+    },
+    "de11-none-does-not-arm-the-timer": {
+      "operation": "idle-escape",
+      "text": "",
+      "setting": "none",
+      "escapeAt": [
+        1000,
+        1200
+      ],
+      "presses": [
+        {
+          "at": 1000,
+          "setting": "none"
+        },
+        {
+          "at": 1200,
+          "setting": "none"
+        },
+        {
+          "at": 1300,
+          "setting": "tree"
+        },
+        {
+          "at": 1400,
+          "setting": "tree"
+        }
+      ],
+      "expected": {
+        "text": "",
+        "actions": [
+          "app.session.tree"
+        ]
+      },
+      "source": [
+        "interactive-mode.ts:3081-3094"
+      ],
+      "requirement": "Presses while the action is none neither arm nor reset the timer, so the following pair still fires."
+    },
+    "de12-setting-change-between-presses": {
+      "operation": "idle-escape",
+      "text": "",
+      "setting": "tree",
+      "presses": [
+        {
+          "at": 1000,
+          "setting": "tree"
+        },
+        {
+          "at": 1200,
+          "setting": "none"
+        },
+        {
+          "at": 1300,
+          "setting": "tree"
+        }
+      ],
+      "expected": {
+        "text": "",
+        "actions": [
+          "app.session.tree"
+        ]
+      },
+      "source": [
+        "interactive-mode.ts:3081-3092"
+      ],
+      "requirement": "The action is read on every press; a none press leaves the earlier first press armed."
+    },
+    "de13-malformed-string": {
+      "operation": "idle-escape",
+      "text": "",
+      "setting": "bogus",
+      "escapeAt": [
+        1000,
+        1100
+      ],
+      "expected": {
+        "text": "",
+        "actions": [
+          "app.session.fork"
+        ]
+      },
+      "source": [
+        "settings-manager.ts:1356-1358",
+        "interactive-mode.ts:3086-3089"
+      ],
+      "requirement": "An unrecognized stored string is returned unchanged and takes the fork path."
+    },
+    "de14-malformed-number": {
+      "operation": "idle-escape",
+      "text": "",
+      "setting": 42,
+      "escapeAt": [
+        1000,
+        1100
+      ],
+      "expected": {
+        "text": "",
+        "actions": [
+          "app.session.fork"
+        ]
+      },
+      "source": [
+        "settings-manager.ts:1356-1358",
+        "interactive-mode.ts:3086-3089"
+      ],
+      "requirement": "A stored number is returned unchanged and takes the fork path."
+    },
+    "de15-malformed-null": {
+      "operation": "idle-escape",
+      "text": "",
+      "setting": null,
+      "stored": "null",
+      "escapeAt": [
+        1000,
+        1100
+      ],
+      "expected": {
+        "text": "",
+        "actions": [
+          "app.session.tree"
+        ]
+      },
+      "source": [
+        "settings-manager.ts:1357"
+      ],
+      "requirement": "A stored JSON null is nullish, so the getter returns the default and the tree opens."
+    },
+    "de16-malformed-object": {
+      "operation": "idle-escape",
+      "text": "",
+      "setting": {},
+      "escapeAt": [
+        1000,
+        1100
+      ],
+      "expected": {
+        "text": "",
+        "actions": [
+          "app.session.fork"
+        ]
+      },
+      "source": [
+        "settings-manager.ts:1356-1358",
+        "interactive-mode.ts:3086-3089"
+      ],
+      "requirement": "A stored object is returned unchanged and takes the fork path."
+    },
+    "de17-malformed-empty-string": {
+      "operation": "idle-escape",
+      "text": "",
+      "setting": "",
+      "escapeAt": [
+        1000,
+        1100
+      ],
+      "expected": {
+        "text": "",
+        "actions": [
+          "app.session.fork"
+        ]
+      },
+      "source": [
+        "settings-manager.ts:1356-1358"
+      ],
+      "requirement": "An empty stored string is not nullish, so it reaches the handler and forks."
+    }
+  }
+}

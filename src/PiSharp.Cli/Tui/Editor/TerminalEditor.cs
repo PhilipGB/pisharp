@@ -1200,7 +1200,9 @@ public sealed class TerminalEditor
         }
         if (!string.IsNullOrWhiteSpace(text)) return true;
         var action = _getDoubleEscapeAction?.Invoke() ?? UserSettings.DefaultDoubleEscapeAction;
-        if (action is not ("tree" or "fork")) return true;
+        // Pinned Pi only special-cases the exact strings "none" and "tree"; any other stored value
+        // takes the fork path.
+        if (action == "none") return true;
         var now = _clockMilliseconds();
         if (_lastEscapeAtMilliseconds is { } previous && now - previous < TerminalEditor.DoublePressWindowMilliseconds)
         {

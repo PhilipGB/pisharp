@@ -408,18 +408,22 @@ public sealed class AppControlTests
     }
 
     [Fact]
-    public async Task DoubleEscapeSettingDefaultsAndRejectsInvalidValues()
+    public async Task DoubleEscapeSettingKeepsAnUnrecognizedStoredValueForTheRuntime()
     {
         Assert.Equal("tree", new UserSettings().EffectiveDoubleEscapeAction);
-        Assert.Equal("fork", new UserSettings(DoubleEscapeAction: "fork").EffectiveDoubleEscapeAction);
+        Assert.Equal("fork",
+            new UserSettings(DoubleEscapeAction: new("fork")).EffectiveDoubleEscapeAction);
 
         var directory = Path.Combine(Path.GetTempPath(), "pisharp-app-control-invalid-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(directory);
         try
         {
+            // Pinned Pi does not validate the stored value; the runtime getter only falls back
+            // when it is nullish, so an unknown string survives the load unchanged.
             await File.WriteAllTextAsync(Path.Combine(directory, "settings.json"),
                 "{\"doubleEscapeAction\":\"history\"}");
-            await Assert.ThrowsAsync<InvalidDataException>(() => UserSettings.LoadAsync(directory, _ => null));
+            var settings = await UserSettings.LoadAsync(directory, _ => null);
+            Assert.Equal("history", settings.EffectiveDoubleEscapeAction);
         }
         finally { Directory.Delete(directory, recursive: true); }
     }
@@ -427,8 +431,8 @@ public sealed class AppControlTests
     [Fact]
     public void TrustedProjectDoubleEscapeActionOverridesTheUserValue()
     {
-        var user = new UserSettings(DoubleEscapeAction: "tree");
-        var project = new UserSettings(DoubleEscapeAction: "none");
+        var user = new UserSettings(DoubleEscapeAction: new("tree"));
+        var project = new UserSettings(DoubleEscapeAction: new("none"));
         Assert.Equal("none", user.Overlay(project).EffectiveDoubleEscapeAction);
         Assert.Equal("tree", user.Overlay(new UserSettings()).EffectiveDoubleEscapeAction);
     }

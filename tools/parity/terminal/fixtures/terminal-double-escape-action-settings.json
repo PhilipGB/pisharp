@@ -1,0 +1,230 @@
+{
+  "id": "terminal-double-escape-action-settings",
+  "settings": {
+    "quietStartup": true,
+    "shellCommandPrefix": "preserved",
+    "theme": "dark",
+    "tuiMode": "regular",
+    "defaultProjectTrust": "always"
+  },
+  "dimensions": [
+    {
+      "columns": 100,
+      "rows": 30
+    }
+  ],
+  "themes": [
+    "dark"
+  ],
+  "modes": [
+    "regular"
+  ],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  },
+  "files": {
+    "pi": {
+      "fixtures/tree.jsonl": "{\"type\":\"session\",\"version\":3,\"id\":\"22222222-2222-4222-8222-222222222222\",\"timestamp\":\"2026-01-01T12:00:00.000Z\",\"cwd\":\"{workspace}\"}\n{\"type\":\"model_change\",\"id\":\"m0000001\",\"parentId\":null,\"timestamp\":\"2026-01-01T12:00:01.000Z\",\"provider\":\"fixture\",\"modelId\":\"beta\"}\n{\"type\":\"thinking_level_change\",\"id\":\"t0000001\",\"parentId\":\"m0000001\",\"timestamp\":\"2026-01-01T12:00:02.000Z\",\"thinkingLevel\":\"off\"}\n{\"type\":\"message\",\"id\":\"u0000002\",\"parentId\":\"t0000001\",\"timestamp\":\"2026-01-01T12:00:03.000Z\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"first prompt\"}],\"timestamp\":3000}}\n{\"type\":\"message\",\"id\":\"a0000003\",\"parentId\":\"u0000002\",\"timestamp\":\"2026-01-01T12:00:03.000Z\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"first answer\"}],\"api\":\"openai-completions\",\"provider\":\"fixture\",\"model\":\"beta\",\"usage\":{\"input\":10,\"output\":12,\"cacheRead\":0,\"cacheWrite\":0,\"totalTokens\":22,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"stop\",\"timestamp\":3000}}\n{\"type\":\"message\",\"id\":\"b0000004\",\"parentId\":\"a0000003\",\"timestamp\":\"2026-01-01T12:00:04.000Z\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"branch question\"}],\"timestamp\":4000}}\n{\"type\":\"message\",\"id\":\"b0000005\",\"parentId\":\"b0000004\",\"timestamp\":\"2026-01-01T12:00:05.000Z\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"branch answer\"}],\"api\":\"openai-completions\",\"provider\":\"fixture\",\"model\":\"beta\",\"usage\":{\"input\":10,\"output\":12,\"cacheRead\":0,\"cacheWrite\":0,\"totalTokens\":22,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"stop\",\"timestamp\":5000}}\n{\"type\":\"label\",\"id\":\"L0000006\",\"parentId\":\"b0000005\",\"timestamp\":\"2026-01-01T12:00:06.000Z\",\"targetId\":\"a0000003\",\"label\":\"first label\"}\n{\"type\":\"message\",\"id\":\"c0000007\",\"parentId\":\"a0000003\",\"timestamp\":\"2026-01-01T12:00:07.000Z\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"second prompt\"}],\"timestamp\":7000}}\n{\"type\":\"message\",\"id\":\"c0000008\",\"parentId\":\"c0000007\",\"timestamp\":\"2026-01-01T12:00:08.000Z\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"second answer\"}],\"api\":\"openai-completions\",\"provider\":\"fixture\",\"model\":\"beta\",\"usage\":{\"input\":10,\"output\":12,\"cacheRead\":0,\"cacheWrite\":0,\"totalTokens\":22,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"stop\",\"timestamp\":8000}}\n{\"type\":\"message\",\"id\":\"t0000009\",\"parentId\":\"c0000008\",\"timestamp\":\"2026-01-01T12:00:09.000Z\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"call-read-1\",\"name\":\"read\",\"arguments\":{\"path\":\"README.md\",\"offset\":10,\"limit\":20}}],\"api\":\"openai-completions\",\"provider\":\"fixture\",\"model\":\"beta\",\"usage\":{\"input\":10,\"output\":12,\"cacheRead\":0,\"cacheWrite\":0,\"totalTokens\":22,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"toolUse\",\"timestamp\":9000}}\n{\"type\":\"message\",\"id\":\"r0000010\",\"parentId\":\"t0000009\",\"timestamp\":\"2026-01-01T12:00:10.000Z\",\"message\":{\"role\":\"toolResult\",\"toolCallId\":\"call-read-1\",\"toolName\":\"read\",\"content\":[{\"type\":\"text\",\"text\":\"read result\"}],\"isError\":false,\"timestamp\":10000}}\n{\"type\":\"compaction\",\"id\":\"k0000011\",\"parentId\":\"r0000010\",\"timestamp\":\"2026-01-01T12:00:11.000Z\",\"summary\":\"compacted summary\",\"firstKeptEntryId\":\"u0000002\",\"tokensBefore\":12345}\n{\"type\":\"custom_message\",\"id\":\"y0000012\",\"parentId\":\"k0000011\",\"timestamp\":\"2026-01-01T12:00:12.000Z\",\"customType\":\"note\",\"content\":\"custom note text\",\"display\":true}\n{\"type\":\"message\",\"id\":\"z0000013\",\"parentId\":\"y0000012\",\"timestamp\":\"2026-01-01T12:00:13.000Z\",\"message\":{\"role\":\"bashExecution\",\"command\":\"echo fixture-output\",\"output\":\"fixture-output\",\"exitCode\":0,\"cancelled\":false,\"truncated\":false,\"fullOutputPath\":null,\"excludeFromContext\":false,\"timestamp\":13000}}\n{\"type\":\"thinking_level_change\",\"id\":\"t0000015\",\"parentId\":\"z0000013\",\"timestamp\":\"2026-01-01T12:00:15.000Z\",\"thinkingLevel\":\"off\"}\n{\"type\":\"label\",\"id\":\"L0000016\",\"parentId\":\"t0000015\",\"timestamp\":\"2026-01-01T12:00:16.000Z\",\"targetId\":\"c0000008\",\"label\":\"second answer label\"}\n",
+      "models.json": {
+        "providers": {
+          "fixture": {
+            "baseUrl": "{router}/v1",
+            "apiKey": "fixture-key",
+            "api": "openai-completions",
+            "models": [
+              {
+                "id": "fixture-model",
+                "name": "Fixture Model",
+                "api": "openai-completions"
+              },
+              {
+                "id": "alpha",
+                "name": "Alpha Model",
+                "api": "openai-completions"
+              },
+              {
+                "id": "beta",
+                "name": "Beta Model",
+                "api": "openai-completions"
+              },
+              {
+                "id": "gamma",
+                "name": "Gamma Model",
+                "api": "openai-completions"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "pisharp": {
+      "fixtures/tree.jsonl": "{\"type\":\"session\",\"version\":3,\"id\":\"22222222-2222-4222-8222-222222222222\",\"timestamp\":\"2026-01-01T12:00:00.000Z\",\"cwd\":\"{workspace}\"}\n{\"type\":\"model_change\",\"id\":\"m0000001\",\"parentId\":null,\"timestamp\":\"2026-01-01T12:00:01.000Z\",\"provider\":\"fixture\",\"modelId\":\"beta\"}\n{\"type\":\"thinking_level_change\",\"id\":\"t0000001\",\"parentId\":\"m0000001\",\"timestamp\":\"2026-01-01T12:00:02.000Z\",\"thinkingLevel\":\"off\"}\n{\"type\":\"message\",\"id\":\"u0000002\",\"parentId\":\"t0000001\",\"timestamp\":\"2026-01-01T12:00:03.000Z\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"first prompt\"}],\"timestamp\":3000}}\n{\"type\":\"message\",\"id\":\"a0000003\",\"parentId\":\"u0000002\",\"timestamp\":\"2026-01-01T12:00:03.000Z\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"first answer\"}],\"api\":\"openai-completions\",\"provider\":\"fixture\",\"model\":\"beta\",\"usage\":{\"input\":10,\"output\":12,\"cacheRead\":0,\"cacheWrite\":0,\"totalTokens\":22,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"stop\",\"timestamp\":3000}}\n{\"type\":\"message\",\"id\":\"b0000004\",\"parentId\":\"a0000003\",\"timestamp\":\"2026-01-01T12:00:04.000Z\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"branch question\"}],\"timestamp\":4000}}\n{\"type\":\"message\",\"id\":\"b0000005\",\"parentId\":\"b0000004\",\"timestamp\":\"2026-01-01T12:00:05.000Z\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"branch answer\"}],\"api\":\"openai-completions\",\"provider\":\"fixture\",\"model\":\"beta\",\"usage\":{\"input\":10,\"output\":12,\"cacheRead\":0,\"cacheWrite\":0,\"totalTokens\":22,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"stop\",\"timestamp\":5000}}\n{\"type\":\"label\",\"id\":\"L0000006\",\"parentId\":\"b0000005\",\"timestamp\":\"2026-01-01T12:00:06.000Z\",\"targetId\":\"a0000003\",\"label\":\"first label\"}\n{\"type\":\"message\",\"id\":\"c0000007\",\"parentId\":\"a0000003\",\"timestamp\":\"2026-01-01T12:00:07.000Z\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"second prompt\"}],\"timestamp\":7000}}\n{\"type\":\"message\",\"id\":\"c0000008\",\"parentId\":\"c0000007\",\"timestamp\":\"2026-01-01T12:00:08.000Z\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"second answer\"}],\"api\":\"openai-completions\",\"provider\":\"fixture\",\"model\":\"beta\",\"usage\":{\"input\":10,\"output\":12,\"cacheRead\":0,\"cacheWrite\":0,\"totalTokens\":22,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"stop\",\"timestamp\":8000}}\n{\"type\":\"message\",\"id\":\"t0000009\",\"parentId\":\"c0000008\",\"timestamp\":\"2026-01-01T12:00:09.000Z\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"call-read-1\",\"name\":\"read\",\"arguments\":{\"path\":\"README.md\",\"offset\":10,\"limit\":20}}],\"api\":\"openai-completions\",\"provider\":\"fixture\",\"model\":\"beta\",\"usage\":{\"input\":10,\"output\":12,\"cacheRead\":0,\"cacheWrite\":0,\"totalTokens\":22,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"toolUse\",\"timestamp\":9000}}\n{\"type\":\"message\",\"id\":\"r0000010\",\"parentId\":\"t0000009\",\"timestamp\":\"2026-01-01T12:00:10.000Z\",\"message\":{\"role\":\"toolResult\",\"toolCallId\":\"call-read-1\",\"toolName\":\"read\",\"content\":[{\"type\":\"text\",\"text\":\"read result\"}],\"isError\":false,\"timestamp\":10000}}\n{\"type\":\"compaction\",\"id\":\"k0000011\",\"parentId\":\"r0000010\",\"timestamp\":\"2026-01-01T12:00:11.000Z\",\"summary\":\"compacted summary\",\"firstKeptEntryId\":\"u0000002\",\"tokensBefore\":12345}\n{\"type\":\"custom_message\",\"id\":\"y0000012\",\"parentId\":\"k0000011\",\"timestamp\":\"2026-01-01T12:00:12.000Z\",\"customType\":\"note\",\"content\":\"custom note text\",\"display\":true}\n{\"type\":\"message\",\"id\":\"z0000013\",\"parentId\":\"y0000012\",\"timestamp\":\"2026-01-01T12:00:13.000Z\",\"message\":{\"role\":\"bashExecution\",\"command\":\"echo fixture-output\",\"output\":\"fixture-output\",\"exitCode\":0,\"cancelled\":false,\"truncated\":false,\"fullOutputPath\":null,\"excludeFromContext\":false,\"timestamp\":13000}}\n{\"type\":\"thinking_level_change\",\"id\":\"t0000015\",\"parentId\":\"z0000013\",\"timestamp\":\"2026-01-01T12:00:15.000Z\",\"thinkingLevel\":\"off\"}\n{\"type\":\"label\",\"id\":\"L0000016\",\"parentId\":\"t0000015\",\"timestamp\":\"2026-01-01T12:00:16.000Z\",\"targetId\":\"c0000008\",\"label\":\"second answer label\"}\n",
+      "models.json": {
+        "providers": {
+          "fixture": {
+            "baseUrl": "{router}/v1",
+            "apiKey": "fixture-key",
+            "api": "openai-completions",
+            "models": [
+              {
+                "id": "fixture-model",
+                "name": "Fixture Model",
+                "api": "openai-completions"
+              },
+              {
+                "id": "alpha",
+                "name": "Alpha Model",
+                "api": "openai-completions"
+              },
+              {
+                "id": "beta",
+                "name": "Beta Model",
+                "api": "openai-completions"
+              },
+              {
+                "id": "gamma",
+                "name": "Gamma Model",
+                "api": "openai-completions"
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "beta"
+    },
+    {
+      "id": "default-double-escape",
+      "send": "\u001b[27u\u001b[27u",
+      "expect": "Session Tree"
+    },
+    {
+      "id": "default-state",
+      "allowStaticFrame": true
+    },
+    {
+      "id": "default-close",
+      "send": "\u001b[27u",
+      "quiesce": true,
+      "quietMs": 400
+    },
+    {
+      "id": "settings-open",
+      "delayMs": 300,
+      "allowStaticFrame": true,
+      "send": "/settings\r",
+      "expect": "Auto-compact"
+    },
+    {
+      "id": "settings-filter",
+      "send": "double-escape",
+      "expect": "Double-escape action"
+    },
+    {
+      "id": "settings-state",
+      "allowStaticFrame": true
+    },
+    {
+      "id": "settings-fork",
+      "send": "\r",
+      "expect": "fork"
+    },
+    {
+      "id": "settings-fork-state",
+      "allowStaticFrame": true
+    },
+    {
+      "id": "settings-close",
+      "send": "\u001b",
+      "expect": "beta"
+    },
+    {
+      "id": "live-double-escape",
+      "send": "\u001b[27u\u001b[27u",
+      "expect": "Fork from"
+    },
+    {
+      "id": "live-state",
+      "allowStaticFrame": true
+    },
+    {
+      "id": "live-close",
+      "send": "\u001b[27u",
+      "expect": "beta"
+    },
+    {
+      "id": "restart",
+      "restart": true,
+      "expect": "beta"
+    },
+    {
+      "id": "restart-double-escape",
+      "send": "\u001b[27u\u001b[27u",
+      "expect": "Fork from"
+    },
+    {
+      "id": "restart-state",
+      "allowStaticFrame": true
+    },
+    {
+      "id": "restart-close",
+      "send": "\u001b[27u",
+      "expect": "beta"
+    },
+    {
+      "id": "quit",
+      "send": "\u0015/quit\r",
+      "exit": true
+    }
+  ],
+  "assertionFrames": [
+    "startup",
+    "default-double-escape",
+    "default-state",
+    "default-close",
+    "settings-open",
+    "settings-filter",
+    "settings-state",
+    "settings-fork",
+    "settings-fork-state",
+    "settings-close",
+    "live-double-escape",
+    "live-state",
+    "live-close",
+    "restart",
+    "restart-double-escape",
+    "restart-state",
+    "restart-close"
+  ],
+  "captureAgentFiles": [
+    "settings.json"
+  ],
+  "captureWorkspaceFiles": [],
+  "arguments": {
+    "pi": [
+      "--session",
+      "{agent}/fixtures/tree.jsonl",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-tools",
+      "--no-context-files"
+    ],
+    "pisharp": [
+      "--session",
+      "{agent}/fixtures/tree.jsonl",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-tools",
+      "--no-context-files",
+      "--no-approve"
+    ]
+  }
+}

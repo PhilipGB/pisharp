@@ -1,0 +1,232 @@
+{
+  "schema": 1,
+  "capability": "settings-doubleescapeaction",
+  "label": "paired",
+  "cases": {
+    "100x30-dark-fullscreen": {
+      "dimensions": {
+        "columns": 100,
+        "rows": 30
+      },
+      "theme": "dark",
+      "mode": "fullscreen",
+      "pi": {
+        "checkpoints": {
+          "startup": {
+            "overlay": "none",
+            "tree": null,
+            "fork": null,
+            "settings": null,
+            "editorReady": false,
+            "errors": []
+          },
+          "trusted-config": {
+            "overlay": "none",
+            "tree": null,
+            "fork": null,
+            "settings": null,
+            "editorReady": false,
+            "errors": []
+          },
+          "trusted-double-escape": {
+            "overlay": "fork",
+            "tree": null,
+            "fork": {
+              "total": 3,
+              "selectedIndex": 3,
+              "selectedPreview": "second prompt"
+            },
+            "settings": null,
+            "editorReady": false,
+            "errors": []
+          },
+          "trusted-state": {
+            "overlay": "fork",
+            "tree": null,
+            "fork": {
+              "total": 3,
+              "selectedIndex": 3,
+              "selectedPreview": "second prompt"
+            },
+            "settings": null,
+            "editorReady": false,
+            "errors": []
+          },
+          "trusted-close": {
+            "overlay": "none",
+            "tree": null,
+            "fork": null,
+            "settings": null,
+            "editorReady": false,
+            "errors": []
+          },
+          "untrusted-config": {
+            "overlay": "none",
+            "tree": null,
+            "fork": null,
+            "settings": null,
+            "editorReady": false,
+            "errors": []
+          },
+          "untrusted-double-escape": {
+            "overlay": "none",
+            "tree": null,
+            "fork": null,
+            "settings": null,
+            "editorReady": false,
+            "errors": []
+          },
+          "untrusted-state": {
+            "overlay": "none",
+            "tree": null,
+            "fork": null,
+            "settings": null,
+            "editorReady": false,
+            "errors": []
+          }
+        },
+        "requests": [],
+        "settings": {
+          "doubleEscapeAction": "none",
+          "doubleEscapeActionPresent": true,
+          "quietStartup": true,
+          "shellCommandPrefix": "preserved",
+          "theme": "dark",
+          "tuiMode": "fullscreen",
+          "treeFilterMode": null
+        },
+        "project": {
+          "doubleEscapeAction": "fork"
+        },
+        "scenarioError": null
+      },
+      "pisharp": {
+        "checkpoints": {
+          "startup": {
+            "overlay": "none",
+            "tree": null,
+            "fork": null,
+            "settings": null,
+            "editorReady": false,
+            "errors": []
+          },
+          "trusted-config": {
+            "overlay": "none",
+            "tree": null,
+            "fork": null,
+            "settings": null,
+            "editorReady": false,
+            "errors": []
+          },
+          "trusted-double-escape": {
+            "overlay": "fork",
+            "tree": null,
+            "fork": {
+              "total": 3,
+              "selectedIndex": 3,
+              "selectedPreview": "second prompt"
+            },
+            "settings": null,
+            "editorReady": false,
+            "errors": []
+          },
+          "trusted-state": {
+            "overlay": "fork",
+            "tree": null,
+            "fork": {
+              "total": 3,
+              "selectedIndex": 3,
+              "selectedPreview": "second prompt"
+            },
+            "settings": null,
+            "editorReady": false,
+            "errors": []
+          },
+          "trusted-close": {
+            "overlay": "none",
+            "tree": null,
+            "fork": null,
+            "settings": null,
+            "editorReady": false,
+            "errors": []
+          },
+          "untrusted-config": {
+            "overlay": "none",
+            "tree": null,
+            "fork": null,
+            "settings": null,
+            "editorReady": false,
+            "errors": []
+          },
+          "untrusted-double-escape": {
+            "overlay": "none",
+            "tree": null,
+            "fork": null,
+            "settings": null,
+            "editorReady": false,
+            "errors": []
+          },
+          "untrusted-state": {
+            "overlay": "none",
+            "tree": null,
+            "fork": null,
+            "settings": null,
+            "editorReady": false,
+            "errors": []
+          }
+        },
+        "requests": [],
+        "settings": {
+          "doubleEscapeAction": "none",
+          "doubleEscapeActionPresent": true,
+          "quietStartup": true,
+          "shellCommandPrefix": "preserved",
+          "theme": "dark",
+          "tuiMode": "fullscreen",
+          "treeFilterMode": null
+        },
+        "project": {
+          "doubleEscapeAction": "fork"
+        },
+        "scenarioError": null
+      },
+      "paired": {
+        "semanticDifferences": 0,
+        "semanticFirstDifferences": [],
+        "scenarioErrors": {},
+        "runReport": {
+          "match": false,
+          "differences": 163118
+        }
+      },
+      "calibration": {
+        "semanticDifferences": 0,
+        "semanticFirstDifferences": [],
+        "scenarioErrors": {},
+        "runReport": {
+          "match": true,
+          "differences": 0
+        }
+      },
+      "calibrationEvidence": {
+        "dimensions": {
+          "columns": 100,
+          "rows": 30
+        },
+        "theme": "dark",
+        "mode": "fullscreen"
+      }
+    }
+  },
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "pisharpSha": "0e29d5d40170bbe65f584aeeed0a17576ed4d90a",
+  "artifact": {
+    "file": "PiSharp.Cli.dll",
+    "size": 3600896,
+    "sha256": "bed71d6dac47e19bb8762718ee76a58cc0cc465d733ab2e6748f04acf2663b5e",
+    "depsFile": "PiSharp.Cli.deps.json",
+    "depsSha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
+    "runtimeConfigFile": "PiSharp.Cli.runtimeconfig.json",
+    "runtimeConfigSha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a"
+  }
+}

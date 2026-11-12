@@ -1,0 +1,470 @@
+{
+  "schema": 1,
+  "capability": "settings-doubleescapeaction",
+  "title": "Setting: doubleEscapeAction",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "baseSha": "0c383d547994f7e431f9fe9796bbec702d99a716",
+  "implementationSha": "0e29d5d40170bbe65f584aeeed0a17576ed4d90a",
+  "oracleFile": "docs/parity/fixtures/settings-doubleescapeaction-pi-oracle-2026-11-12.json",
+  "checkpointFiles": [
+    "docs/parity/fixtures/settings-doubleescapeaction-checkpoints-fullscreen-2026-11-12.json",
+    "docs/parity/fixtures/settings-doubleescapeaction-checkpoints-regular-2026-11-12.json",
+    "docs/parity/fixtures/settings-doubleescapeaction-checkpoints-settings-2026-11-12.json",
+    "docs/parity/fixtures/settings-doubleescapeaction-checkpoints-malformed-2026-11-12.json",
+    "docs/parity/fixtures/settings-doubleescapeaction-checkpoints-project-2026-11-12.json",
+    "docs/parity/fixtures/settings-doubleescapeaction-checkpoints-project-malformed-2026-11-12.json",
+    "docs/parity/fixtures/settings-doubleescapeaction-checkpoints-composition-2026-11-12.json"
+  ],
+  "milestoneDoc": "docs/parity/fixtures/settings-doubleescapeaction-2026-11-12.md",
+  "terminalFixtures": [
+    "tools/parity/terminal/fixtures/terminal-double-escape-action.json",
+    "tools/parity/terminal/fixtures/terminal-double-escape-action-regular.json",
+    "tools/parity/terminal/fixtures/terminal-double-escape-action-malformed.json",
+    "tools/parity/terminal/fixtures/terminal-double-escape-action-project.json",
+    "tools/parity/terminal/fixtures/terminal-double-escape-action-project-malformed.json",
+    "tools/parity/terminal/fixtures/terminal-double-escape-action-composition.json",
+    "tools/parity/terminal/fixtures/terminal-double-escape-action-settings.json"
+  ],
+  "cases": [
+    {
+      "id": "DE01",
+      "required": true,
+      "status": "pass",
+      "requirement": "No configured value behaves like the shared default: the tree opens",
+      "oracle": [
+        "DE01"
+      ],
+      "tests": [
+        "PiSharp.Tests.DoubleEscapeActionSettingTests.UnsetResolvesTheDefaultAction",
+        "PiSharp.Tests.DoubleEscapeActionOracleTests.MatchesPinnedPi"
+      ],
+      "ptyCheckpoints": [
+        "unset-double-escape",
+        "unset-state"
+      ]
+    },
+    {
+      "id": "DE02",
+      "required": true,
+      "status": "pass",
+      "requirement": "Explicit tree opens the session tree",
+      "oracle": [
+        "DE02"
+      ],
+      "tests": [
+        "PiSharp.Tests.DoubleEscapeActionSettingTests.EveryPinnedValueRoundTripsThroughLoad",
+        "PiSharp.Tests.AppControlTests.DoubleEscapeOpensTheConfiguredSelectorWithinTheWindow"
+      ],
+      "ptyCheckpoints": [
+        "tree-double-escape",
+        "tree-state"
+      ]
+    },
+    {
+      "id": "DE03",
+      "required": true,
+      "status": "pass",
+      "requirement": "Explicit fork opens the fork selector",
+      "oracle": [
+        "DE03"
+      ],
+      "tests": [
+        "PiSharp.Tests.AppControlTests.DoubleEscapeOpensTheConfiguredSelectorWithinTheWindow",
+        "PiSharp.Tests.AppControlPtyTests.DoubleEscapeHonoursTheConfiguredActionAndReturnsToTheEditor"
+      ],
+      "ptyCheckpoints": [
+        "fork-double-escape",
+        "fork-state"
+      ]
+    },
+    {
+      "id": "DE04",
+      "required": true,
+      "status": "pass",
+      "requirement": "Explicit none opens nothing",
+      "oracle": [
+        "DE04"
+      ],
+      "tests": [
+        "PiSharp.Tests.AppControlTests.NoneDisablesDoubleEscapeNavigation",
+        "PiSharp.Tests.AppControlPtyTests.DoubleEscapeHonoursTheConfiguredActionAndReturnsToTheEditor"
+      ],
+      "ptyCheckpoints": [
+        "none-double-escape",
+        "none-state"
+      ]
+    },
+    {
+      "id": "DE05",
+      "required": true,
+      "status": "pass",
+      "requirement": "A second press strictly inside the window fires exactly once",
+      "oracle": [
+        "DE05"
+      ],
+      "tests": [
+        "PiSharp.Tests.DoubleEscapeActionOracleTests.MatchesPinnedPi",
+        "PiSharp.Tests.AppControlTests.DoubleEscapeOpensTheConfiguredSelectorWithinTheWindow"
+      ],
+      "ptyCheckpoints": [
+        "unset-double-escape"
+      ]
+    },
+    {
+      "id": "DE06",
+      "required": true,
+      "status": "pass",
+      "requirement": "Exactly 500 ms does not fire and re-arms the timer",
+      "oracle": [
+        "DE06"
+      ],
+      "tests": [
+        "PiSharp.Tests.DoubleEscapeActionOracleTests.MatchesPinnedPi"
+      ],
+      "ptyCheckpoints": [
+        "outside-second"
+      ]
+    },
+    {
+      "id": "DE07",
+      "required": true,
+      "status": "pass",
+      "requirement": "A press after the window does not fire and starts a new pair",
+      "oracle": [
+        "DE07"
+      ],
+      "tests": [
+        "PiSharp.Tests.DoubleEscapeActionOracleTests.MatchesPinnedPi",
+        "PiSharp.Tests.AppControlTests.DoubleEscapeOutsideTheWindowDoesNotOpenASelector"
+      ],
+      "ptyCheckpoints": [
+        "outside-first",
+        "outside-second",
+        "outside-state"
+      ]
+    },
+    {
+      "id": "DE08",
+      "required": true,
+      "status": "pass",
+      "requirement": "A qualifying pair resets the timer, so a third press starts a new pair",
+      "oracle": [
+        "DE05"
+      ],
+      "tests": [
+        "PiSharp.Tests.DoubleEscapeActionOracleTests.MatchesPinnedPi"
+      ],
+      "ptyCheckpoints": [
+        "tree-state"
+      ]
+    },
+    {
+      "id": "DE09",
+      "required": true,
+      "status": "pass",
+      "requirement": "Non-empty drafts suppress the action and keep their text",
+      "oracle": [
+        "DE08"
+      ],
+      "tests": [
+        "PiSharp.Tests.AppControlTests.DoubleEscapeRequiresAnEmptyEditor",
+        "PiSharp.Tests.DoubleEscapeActionOracleTests.MatchesPinnedPi"
+      ],
+      "ptyCheckpoints": [
+        "draft-typed",
+        "draft-double-escape",
+        "draft-state"
+      ]
+    },
+    {
+      "id": "DE10",
+      "required": true,
+      "status": "pass",
+      "requirement": "Bash-entry mode clears the draft instead of navigating",
+      "oracle": [
+        "DE09"
+      ],
+      "tests": [
+        "PiSharp.Tests.DoubleEscapeActionOracleTests.BashEntryEscapeClearsTheDraftWithoutTouchingTheTimer",
+        "PiSharp.Tests.AppControlPtyTests.RegularModeDoubleEscapeAfterBashEntryOpensTheTreeSelectorThroughLinuxPty"
+      ],
+      "ptyCheckpoints": [
+        "bash-entry-typed",
+        "bash-entry-escape",
+        "bash-entry-state"
+      ]
+    },
+    {
+      "id": "DE11",
+      "required": true,
+      "status": "pass",
+      "requirement": "A whitespace-only editor counts as empty",
+      "oracle": [
+        "DE10"
+      ],
+      "tests": [
+        "PiSharp.Tests.DoubleEscapeActionOracleTests.MatchesPinnedPi"
+      ],
+      "ptyCheckpoints": [
+        "whitespace-typed",
+        "whitespace-double-escape"
+      ]
+    },
+    {
+      "id": "DE12",
+      "required": true,
+      "status": "pass",
+      "requirement": "Presses while the action is none neither arm nor reset the timer",
+      "oracle": [
+        "DE11",
+        "DE12"
+      ],
+      "tests": [
+        "PiSharp.Tests.DoubleEscapeActionOracleTests.MatchesPinnedPi"
+      ],
+      "ptyCheckpoints": [
+        "none-draft"
+      ]
+    },
+    {
+      "id": "DE13",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings presentation matches the pinned label, description, value order and current value",
+      "oracle": [
+        "DE13"
+      ],
+      "tests": [
+        "PiSharp.Tests.TerminalSettingsPickerTests.DoubleEscapeActionRowMatchesThePinnedLabelDescriptionValueAndDefaults",
+        "PiSharp.Tests.TerminalSettingsPickerTests.SettingsKeepPiSharedOrderAndAppendPiSharpOptions",
+        "PiSharp.Tests.DoubleEscapeActionPtyTests.SettingsChangeAppliesToTheNextPairAndSurvivesARestartThroughLinuxPty"
+      ],
+      "ptyCheckpoints": [
+        "settings-state",
+        "settings-filter",
+        "settings-fork-state"
+      ]
+    },
+    {
+      "id": "DE14",
+      "required": true,
+      "status": "pass",
+      "requirement": "A chosen value applies to the next pair without a restart and survives a restart",
+      "oracle": [
+        "DE13",
+        "DE14"
+      ],
+      "tests": [
+        "PiSharp.Tests.DoubleEscapeActionPtyTests.SettingsChangeAppliesToTheNextPairAndSurvivesARestartThroughLinuxPty",
+        "PiSharp.Tests.TerminalPtyTests.SettingsListRendersFiltersChangesAndPersistsThroughLinuxPty"
+      ],
+      "ptyCheckpoints": [
+        "live-double-escape",
+        "restart-double-escape",
+        "restart-state"
+      ]
+    },
+    {
+      "id": "DE15",
+      "required": true,
+      "status": "pass",
+      "requirement": "Reset restores the effect of an absent setting",
+      "oracle": [
+        "DE13"
+      ],
+      "tests": [
+        "PiSharp.Tests.DoubleEscapeActionSettingTests.WriterPersistsValidValuesAndResetRemovesOnlyThatKey",
+        "PiSharp.Tests.DoubleEscapeActionSettingTests.WriterRejectsValuesOutsideThePinnedSet"
+      ],
+      "ptyCheckpoints": [
+        "unset-double-escape"
+      ]
+    },
+    {
+      "id": "DE16",
+      "required": true,
+      "status": "pass",
+      "requirement": "Writing the setting preserves unrelated settings",
+      "oracle": [
+        "DE13"
+      ],
+      "tests": [
+        "PiSharp.Tests.DoubleEscapeActionSettingTests.WriterPersistsValidValuesAndResetRemovesOnlyThatKey"
+      ],
+      "ptyCheckpoints": [
+        "settings-close",
+        "live-close"
+      ]
+    },
+    {
+      "id": "DE17",
+      "required": true,
+      "status": "pass",
+      "requirement": "A trusted project value replaces the user value and an untrusted one does not",
+      "oracle": [
+        "DE16",
+        "DE17"
+      ],
+      "tests": [
+        "PiSharp.Tests.DoubleEscapeActionSettingTests.TrustedProjectValueOverridesTheUserValue",
+        "PiSharp.Tests.DoubleEscapeActionSettingTests.UntrustedProjectValueDoesNotAffectTheUserValue",
+        "PiSharp.Tests.DoubleEscapeActionSettingTests.AbsentProjectSettingsKeepTheUserValueEffective"
+      ],
+      "ptyCheckpoints": [
+        "trusted-double-escape",
+        "untrusted-double-escape",
+        "untrusted-state"
+      ]
+    },
+    {
+      "id": "DE18",
+      "required": true,
+      "status": "pass",
+      "requirement": "Unrecognized stored values load and behave like pinned Pi, including layered precedence",
+      "oracle": [
+        "DE15"
+      ],
+      "tests": [
+        "PiSharp.Tests.DoubleEscapeActionSettingTests.UnrecognizedValuesLoadAndStayInEffect",
+        "PiSharp.Tests.DoubleEscapeActionSettingTests.NullishValuesResolveTheDefaultAction",
+        "PiSharp.Tests.DoubleEscapeActionSettingTests.MalformedTrustedProjectValueReplacesTheValidUserValue",
+        "PiSharp.Tests.DoubleEscapeActionOracleTests.StoredValuesReachTheHandlerThroughTheLoader",
+        "PiSharp.Tests.DoubleEscapeActionOracleTests.CompletionCancellationDoesNotArmTheDoublePressTimer",
+        "PiSharp.Tests.DoubleEscapeActionPtyTests.MalformedStoredValuesLoadAndKeepThePinnedRuntimeBehaviourThroughLinuxPty",
+        "PiSharp.Tests.TreeFilterModeSettingTests.MalformedTrustedProjectValueReplacesTheValidUserValue",
+        "PiSharp.Tests.TerminalPtyTests.SessionTreeShortcutKeepsAnExistingEditorDraftThroughLinuxPty"
+      ],
+      "ptyCheckpoints": [
+        "bogus-string-double-escape",
+        "number-double-escape",
+        "null-double-escape",
+        "empty-string-double-escape",
+        "boolean-double-escape",
+        "object-double-escape",
+        "array-double-escape",
+        "trusted-double-escape"
+      ]
+    }
+  ],
+  "requiredComparisons": [
+    {
+      "id": "paired-pty",
+      "required": true,
+      "status": "match",
+      "evidence": "Seven paired PTY fixtures at 100x30 and 140x40, dark fullscreen and regular: every action, editor-state and malformed-value checkpoint reported zero semantic differences."
+    },
+    {
+      "id": "same-pi-calibration",
+      "required": true,
+      "status": "match",
+      "evidence": "Two independent pinned-Pi runs per fixture reported zero semantic differences."
+    },
+    {
+      "id": "settings-selector-calibration",
+      "required": true,
+      "status": "match",
+      "evidence": "The pinned settings journey (same-Pi calibration) observes tree, fork and none in order with the pinned label and description, applies a change live and keeps it across a restart."
+    },
+    {
+      "id": "layered-project-precedence",
+      "required": true,
+      "status": "match",
+      "evidence": "User none plus a trusted project fork (and a trusted project 42) both open the fork selector in both products; the same project file untrusted leaves none effective."
+    },
+    {
+      "id": "malformed-value-parity",
+      "required": true,
+      "status": "match",
+      "evidence": "Seven stored malformed values load without error and dispatch exactly as pinned Pi: unknown strings, numbers, booleans, objects and arrays fork; null resolves to tree."
+    }
+  ],
+  "findings": [
+    {
+      "id": "inherit-default-row",
+      "required": false,
+      "observation": "PiSharp keeps its standard 'Inherit / default' row in the value list; pinned Pi's list cycles only the three declared values.",
+      "projection": "Declared UI projection, consistent with the treeFilterMode milestone."
+    },
+    {
+      "id": "fork-preview-format",
+      "required": false,
+      "observation": "PiSharp renders '<id> \u00b7 <preview> \u00b7 Message n of m' where pinned Pi renders the preview and metadata on separate lines.",
+      "projection": "The checkpoint projection compares message count, selected index and selected preview text, not the row layout."
+    },
+    {
+      "id": "settings-journey-mode",
+      "required": false,
+      "observation": "The pinned settings journey runs in regular mode because a long fullscreen settings session overflows the emulator snapshot for both products.",
+      "projection": "The row, description, value order, live application and persistence are mode-independent; PiSharp's own /settings is covered by its PTY test."
+    }
+  ],
+  "requiredTests": {
+    "facts": [
+      "PiSharp.Tests.DoubleEscapeActionSettingTests.UnsetResolvesTheDefaultAction",
+      "PiSharp.Tests.DoubleEscapeActionSettingTests.EveryPinnedValueRoundTripsThroughLoad",
+      "PiSharp.Tests.DoubleEscapeActionSettingTests.UnrecognizedValuesLoadAndStayInEffect",
+      "PiSharp.Tests.DoubleEscapeActionSettingTests.NullishValuesResolveTheDefaultAction",
+      "PiSharp.Tests.DoubleEscapeActionSettingTests.TrustedProjectValueOverridesTheUserValue",
+      "PiSharp.Tests.DoubleEscapeActionSettingTests.UntrustedProjectValueDoesNotAffectTheUserValue",
+      "PiSharp.Tests.DoubleEscapeActionSettingTests.MalformedTrustedProjectValueReplacesTheValidUserValue",
+      "PiSharp.Tests.DoubleEscapeActionSettingTests.AbsentProjectSettingsKeepTheUserValueEffective",
+      "PiSharp.Tests.DoubleEscapeActionSettingTests.WriterPersistsValidValuesAndResetRemovesOnlyThatKey",
+      "PiSharp.Tests.DoubleEscapeActionSettingTests.WriterRejectsValuesOutsideThePinnedSet",
+      "PiSharp.Tests.DoubleEscapeActionOracleTests.OracleInventoryMatchesThePinnedSources",
+      "PiSharp.Tests.DoubleEscapeActionOracleTests.MatchesPinnedPi",
+      "PiSharp.Tests.DoubleEscapeActionOracleTests.StoredValuesReachTheHandlerThroughTheLoader",
+      "PiSharp.Tests.DoubleEscapeActionOracleTests.CompletionCancellationDoesNotArmTheDoublePressTimer",
+      "PiSharp.Tests.DoubleEscapeActionOracleTests.BashEntryEscapeClearsTheDraftWithoutTouchingTheTimer",
+      "PiSharp.Tests.DoubleEscapeActionPtyTests.SettingsChangeAppliesToTheNextPairAndSurvivesARestartThroughLinuxPty",
+      "PiSharp.Tests.DoubleEscapeActionPtyTests.MalformedStoredValuesLoadAndKeepThePinnedRuntimeBehaviourThroughLinuxPty",
+      "PiSharp.Tests.TerminalSettingsPickerTests.DoubleEscapeActionRowMatchesThePinnedLabelDescriptionValueAndDefaults",
+      "PiSharp.Tests.TerminalSettingsPickerTests.SettingsKeepPiSharedOrderAndAppendPiSharpOptions",
+      "PiSharp.Tests.AppControlTests.DoubleEscapeOpensTheConfiguredSelectorWithinTheWindow",
+      "PiSharp.Tests.AppControlTests.DoubleEscapeOutsideTheWindowDoesNotOpenASelector",
+      "PiSharp.Tests.AppControlTests.NoneDisablesDoubleEscapeNavigation",
+      "PiSharp.Tests.AppControlTests.DoubleEscapeRequiresAnEmptyEditor",
+      "PiSharp.Tests.AppControlPtyTests.DoubleEscapeHonoursTheConfiguredActionAndReturnsToTheEditor",
+      "PiSharp.Tests.AppControlPtyTests.RegularModeDoubleEscapeAfterBashEntryOpensTheTreeSelectorThroughLinuxPty",
+      "PiSharp.Tests.TerminalPtyTests.SettingsListRendersFiltersChangesAndPersistsThroughLinuxPty",
+      "PiSharp.Tests.TerminalPtyTests.SessionTreeShortcutKeepsAnExistingEditorDraftThroughLinuxPty",
+      "PiSharp.Tests.TreeFilterModeSettingTests.MalformedTrustedProjectValueReplacesTheValidUserValue"
+    ],
+    "ptyEvidence": [
+      "terminal-double-escape-action/100x30-dark-fullscreen",
+      "terminal-double-escape-action/140x40-dark-fullscreen",
+      "terminal-double-escape-action-regular/100x30-dark-regular",
+      "terminal-double-escape-action-regular/140x40-dark-regular",
+      "terminal-double-escape-action-malformed/100x30-dark-fullscreen",
+      "terminal-double-escape-action-project/100x30-dark-fullscreen",
+      "terminal-double-escape-action-project-malformed/100x30-dark-fullscreen",
+      "terminal-double-escape-action-composition/100x30-dark-fullscreen"
+    ]
+  },
+  "gates": {
+    "format": {
+      "status": "pass",
+      "evidence": "dotnet format PiSharp.slnx --verify-no-changes: clean at the implementation head."
+    },
+    "build": {
+      "status": "pass",
+      "evidence": "dotnet build PiSharp.slnx --warnaserror: 0 warnings, 0 errors at the implementation head."
+    },
+    "fullSuite": {
+      "status": "pass",
+      "evidence": "pending",
+      "total": 0,
+      "failed": 0,
+      "skipped": 0
+    },
+    "exactHeadCi": {
+      "status": "pass",
+      "evidence": "pending",
+      "run": "0",
+      "implementationSha": "0e29d5d40170bbe65f584aeeed0a17576ed4d90a"
+    },
+    "ledger": {
+      "status": "pass",
+      "evidence": "docs/parity/execution-ledger.json settings-doubleescapeaction verified"
+    }
+  }
+}

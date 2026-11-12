@@ -1,0 +1,378 @@
+{
+  "id": "terminal-double-escape-action",
+  "settings": {
+    "quietStartup": true,
+    "shellCommandPrefix": "preserved",
+    "theme": "dark",
+    "tuiMode": "fullscreen",
+    "defaultProjectTrust": "always"
+  },
+  "dimensions": [
+    {
+      "columns": 100,
+      "rows": 30
+    },
+    {
+      "columns": 140,
+      "rows": 40
+    }
+  ],
+  "themes": [
+    "dark"
+  ],
+  "modes": [
+    "fullscreen"
+  ],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  },
+  "files": {
+    "pi": {
+      "fixtures/tree.jsonl": "{\"type\":\"session\",\"version\":3,\"id\":\"22222222-2222-4222-8222-222222222222\",\"timestamp\":\"2026-01-01T12:00:00.000Z\",\"cwd\":\"{workspace}\"}\n{\"type\":\"model_change\",\"id\":\"m0000001\",\"parentId\":null,\"timestamp\":\"2026-01-01T12:00:01.000Z\",\"provider\":\"fixture\",\"modelId\":\"beta\"}\n{\"type\":\"thinking_level_change\",\"id\":\"t0000001\",\"parentId\":\"m0000001\",\"timestamp\":\"2026-01-01T12:00:02.000Z\",\"thinkingLevel\":\"off\"}\n{\"type\":\"message\",\"id\":\"u0000002\",\"parentId\":\"t0000001\",\"timestamp\":\"2026-01-01T12:00:03.000Z\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"first prompt\"}],\"timestamp\":3000}}\n{\"type\":\"message\",\"id\":\"a0000003\",\"parentId\":\"u0000002\",\"timestamp\":\"2026-01-01T12:00:03.000Z\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"first answer\"}],\"api\":\"openai-completions\",\"provider\":\"fixture\",\"model\":\"beta\",\"usage\":{\"input\":10,\"output\":12,\"cacheRead\":0,\"cacheWrite\":0,\"totalTokens\":22,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"stop\",\"timestamp\":3000}}\n{\"type\":\"message\",\"id\":\"b0000004\",\"parentId\":\"a0000003\",\"timestamp\":\"2026-01-01T12:00:04.000Z\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"branch question\"}],\"timestamp\":4000}}\n{\"type\":\"message\",\"id\":\"b0000005\",\"parentId\":\"b0000004\",\"timestamp\":\"2026-01-01T12:00:05.000Z\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"branch answer\"}],\"api\":\"openai-completions\",\"provider\":\"fixture\",\"model\":\"beta\",\"usage\":{\"input\":10,\"output\":12,\"cacheRead\":0,\"cacheWrite\":0,\"totalTokens\":22,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"stop\",\"timestamp\":5000}}\n{\"type\":\"label\",\"id\":\"L0000006\",\"parentId\":\"b0000005\",\"timestamp\":\"2026-01-01T12:00:06.000Z\",\"targetId\":\"a0000003\",\"label\":\"first label\"}\n{\"type\":\"message\",\"id\":\"c0000007\",\"parentId\":\"a0000003\",\"timestamp\":\"2026-01-01T12:00:07.000Z\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"second prompt\"}],\"timestamp\":7000}}\n{\"type\":\"message\",\"id\":\"c0000008\",\"parentId\":\"c0000007\",\"timestamp\":\"2026-01-01T12:00:08.000Z\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"second answer\"}],\"api\":\"openai-completions\",\"provider\":\"fixture\",\"model\":\"beta\",\"usage\":{\"input\":10,\"output\":12,\"cacheRead\":0,\"cacheWrite\":0,\"totalTokens\":22,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"stop\",\"timestamp\":8000}}\n{\"type\":\"message\",\"id\":\"t0000009\",\"parentId\":\"c0000008\",\"timestamp\":\"2026-01-01T12:00:09.000Z\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"call-read-1\",\"name\":\"read\",\"arguments\":{\"path\":\"README.md\",\"offset\":10,\"limit\":20}}],\"api\":\"openai-completions\",\"provider\":\"fixture\",\"model\":\"beta\",\"usage\":{\"input\":10,\"output\":12,\"cacheRead\":0,\"cacheWrite\":0,\"totalTokens\":22,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"toolUse\",\"timestamp\":9000}}\n{\"type\":\"message\",\"id\":\"r0000010\",\"parentId\":\"t0000009\",\"timestamp\":\"2026-01-01T12:00:10.000Z\",\"message\":{\"role\":\"toolResult\",\"toolCallId\":\"call-read-1\",\"toolName\":\"read\",\"content\":[{\"type\":\"text\",\"text\":\"read result\"}],\"isError\":false,\"timestamp\":10000}}\n{\"type\":\"compaction\",\"id\":\"k0000011\",\"parentId\":\"r0000010\",\"timestamp\":\"2026-01-01T12:00:11.000Z\",\"summary\":\"compacted summary\",\"firstKeptEntryId\":\"u0000002\",\"tokensBefore\":12345}\n{\"type\":\"custom_message\",\"id\":\"y0000012\",\"parentId\":\"k0000011\",\"timestamp\":\"2026-01-01T12:00:12.000Z\",\"customType\":\"note\",\"content\":\"custom note text\",\"display\":true}\n{\"type\":\"message\",\"id\":\"z0000013\",\"parentId\":\"y0000012\",\"timestamp\":\"2026-01-01T12:00:13.000Z\",\"message\":{\"role\":\"bashExecution\",\"command\":\"echo fixture-output\",\"output\":\"fixture-output\",\"exitCode\":0,\"cancelled\":false,\"truncated\":false,\"fullOutputPath\":null,\"excludeFromContext\":false,\"timestamp\":13000}}\n{\"type\":\"thinking_level_change\",\"id\":\"t0000015\",\"parentId\":\"z0000013\",\"timestamp\":\"2026-01-01T12:00:15.000Z\",\"thinkingLevel\":\"off\"}\n{\"type\":\"label\",\"id\":\"L0000016\",\"parentId\":\"t0000015\",\"timestamp\":\"2026-01-01T12:00:16.000Z\",\"targetId\":\"c0000008\",\"label\":\"second answer label\"}\n",
+      "models.json": {
+        "providers": {
+          "fixture": {
+            "baseUrl": "{router}/v1",
+            "apiKey": "fixture-key",
+            "api": "openai-completions",
+            "models": [
+              {
+                "id": "fixture-model",
+                "name": "Fixture Model",
+                "api": "openai-completions"
+              },
+              {
+                "id": "alpha",
+                "name": "Alpha Model",
+                "api": "openai-completions"
+              },
+              {
+                "id": "beta",
+                "name": "Beta Model",
+                "api": "openai-completions"
+              },
+              {
+                "id": "gamma",
+                "name": "Gamma Model",
+                "api": "openai-completions"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "pisharp": {
+      "fixtures/tree.jsonl": "{\"type\":\"session\",\"version\":3,\"id\":\"22222222-2222-4222-8222-222222222222\",\"timestamp\":\"2026-01-01T12:00:00.000Z\",\"cwd\":\"{workspace}\"}\n{\"type\":\"model_change\",\"id\":\"m0000001\",\"parentId\":null,\"timestamp\":\"2026-01-01T12:00:01.000Z\",\"provider\":\"fixture\",\"modelId\":\"beta\"}\n{\"type\":\"thinking_level_change\",\"id\":\"t0000001\",\"parentId\":\"m0000001\",\"timestamp\":\"2026-01-01T12:00:02.000Z\",\"thinkingLevel\":\"off\"}\n{\"type\":\"message\",\"id\":\"u0000002\",\"parentId\":\"t0000001\",\"timestamp\":\"2026-01-01T12:00:03.000Z\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"first prompt\"}],\"timestamp\":3000}}\n{\"type\":\"message\",\"id\":\"a0000003\",\"parentId\":\"u0000002\",\"timestamp\":\"2026-01-01T12:00:03.000Z\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"first answer\"}],\"api\":\"openai-completions\",\"provider\":\"fixture\",\"model\":\"beta\",\"usage\":{\"input\":10,\"output\":12,\"cacheRead\":0,\"cacheWrite\":0,\"totalTokens\":22,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"stop\",\"timestamp\":3000}}\n{\"type\":\"message\",\"id\":\"b0000004\",\"parentId\":\"a0000003\",\"timestamp\":\"2026-01-01T12:00:04.000Z\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"branch question\"}],\"timestamp\":4000}}\n{\"type\":\"message\",\"id\":\"b0000005\",\"parentId\":\"b0000004\",\"timestamp\":\"2026-01-01T12:00:05.000Z\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"branch answer\"}],\"api\":\"openai-completions\",\"provider\":\"fixture\",\"model\":\"beta\",\"usage\":{\"input\":10,\"output\":12,\"cacheRead\":0,\"cacheWrite\":0,\"totalTokens\":22,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"stop\",\"timestamp\":5000}}\n{\"type\":\"label\",\"id\":\"L0000006\",\"parentId\":\"b0000005\",\"timestamp\":\"2026-01-01T12:00:06.000Z\",\"targetId\":\"a0000003\",\"label\":\"first label\"}\n{\"type\":\"message\",\"id\":\"c0000007\",\"parentId\":\"a0000003\",\"timestamp\":\"2026-01-01T12:00:07.000Z\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"second prompt\"}],\"timestamp\":7000}}\n{\"type\":\"message\",\"id\":\"c0000008\",\"parentId\":\"c0000007\",\"timestamp\":\"2026-01-01T12:00:08.000Z\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"second answer\"}],\"api\":\"openai-completions\",\"provider\":\"fixture\",\"model\":\"beta\",\"usage\":{\"input\":10,\"output\":12,\"cacheRead\":0,\"cacheWrite\":0,\"totalTokens\":22,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"stop\",\"timestamp\":8000}}\n{\"type\":\"message\",\"id\":\"t0000009\",\"parentId\":\"c0000008\",\"timestamp\":\"2026-01-01T12:00:09.000Z\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"call-read-1\",\"name\":\"read\",\"arguments\":{\"path\":\"README.md\",\"offset\":10,\"limit\":20}}],\"api\":\"openai-completions\",\"provider\":\"fixture\",\"model\":\"beta\",\"usage\":{\"input\":10,\"output\":12,\"cacheRead\":0,\"cacheWrite\":0,\"totalTokens\":22,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"toolUse\",\"timestamp\":9000}}\n{\"type\":\"message\",\"id\":\"r0000010\",\"parentId\":\"t0000009\",\"timestamp\":\"2026-01-01T12:00:10.000Z\",\"message\":{\"role\":\"toolResult\",\"toolCallId\":\"call-read-1\",\"toolName\":\"read\",\"content\":[{\"type\":\"text\",\"text\":\"read result\"}],\"isError\":false,\"timestamp\":10000}}\n{\"type\":\"compaction\",\"id\":\"k0000011\",\"parentId\":\"r0000010\",\"timestamp\":\"2026-01-01T12:00:11.000Z\",\"summary\":\"compacted summary\",\"firstKeptEntryId\":\"u0000002\",\"tokensBefore\":12345}\n{\"type\":\"custom_message\",\"id\":\"y0000012\",\"parentId\":\"k0000011\",\"timestamp\":\"2026-01-01T12:00:12.000Z\",\"customType\":\"note\",\"content\":\"custom note text\",\"display\":true}\n{\"type\":\"message\",\"id\":\"z0000013\",\"parentId\":\"y0000012\",\"timestamp\":\"2026-01-01T12:00:13.000Z\",\"message\":{\"role\":\"bashExecution\",\"command\":\"echo fixture-output\",\"output\":\"fixture-output\",\"exitCode\":0,\"cancelled\":false,\"truncated\":false,\"fullOutputPath\":null,\"excludeFromContext\":false,\"timestamp\":13000}}\n{\"type\":\"thinking_level_change\",\"id\":\"t0000015\",\"parentId\":\"z0000013\",\"timestamp\":\"2026-01-01T12:00:15.000Z\",\"thinkingLevel\":\"off\"}\n{\"type\":\"label\",\"id\":\"L0000016\",\"parentId\":\"t0000015\",\"timestamp\":\"2026-01-01T12:00:16.000Z\",\"targetId\":\"c0000008\",\"label\":\"second answer label\"}\n",
+      "models.json": {
+        "providers": {
+          "fixture": {
+            "baseUrl": "{router}/v1",
+            "apiKey": "fixture-key",
+            "api": "openai-completions",
+            "models": [
+              {
+                "id": "fixture-model",
+                "name": "Fixture Model",
+                "api": "openai-completions"
+              },
+              {
+                "id": "alpha",
+                "name": "Alpha Model",
+                "api": "openai-completions"
+              },
+              {
+                "id": "beta",
+                "name": "Beta Model",
+                "api": "openai-completions"
+              },
+              {
+                "id": "gamma",
+                "name": "Gamma Model",
+                "api": "openai-completions"
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "beta"
+    },
+    {
+      "id": "unset-double-escape",
+      "send": "\u001b[27u\u001b[27u",
+      "expect": "Session Tree",
+      "notExpect": "Fork from"
+    },
+    {
+      "id": "unset-state",
+      "allowStaticFrame": true
+    },
+    {
+      "id": "unset-close",
+      "send": "\u001b[27u",
+      "expect": "beta",
+      "notExpect": "Session Tree"
+    },
+    {
+      "id": "tree-config",
+      "writeFiles": {
+        "agent": {
+          "settings.json": {
+            "quietStartup": true,
+            "shellCommandPrefix": "preserved",
+            "theme": "dark",
+            "tuiMode": "fullscreen",
+            "doubleEscapeAction": "tree"
+          }
+        }
+      },
+      "restart": true,
+      "expect": "beta"
+    },
+    {
+      "id": "tree-double-escape",
+      "send": "\u001b[27u\u001b[27u",
+      "expect": "Session Tree",
+      "notExpect": "Fork from"
+    },
+    {
+      "id": "tree-state",
+      "allowStaticFrame": true
+    },
+    {
+      "id": "tree-close",
+      "send": "\u001b[27u",
+      "expect": "beta",
+      "notExpect": "Session Tree"
+    },
+    {
+      "id": "fork-config",
+      "writeFiles": {
+        "agent": {
+          "settings.json": {
+            "quietStartup": true,
+            "shellCommandPrefix": "preserved",
+            "theme": "dark",
+            "tuiMode": "fullscreen",
+            "doubleEscapeAction": "fork"
+          }
+        }
+      },
+      "restart": true,
+      "expect": "beta"
+    },
+    {
+      "id": "fork-double-escape",
+      "send": "\u001b[27u\u001b[27u",
+      "expect": "Fork from",
+      "notExpect": "Session Tree"
+    },
+    {
+      "id": "fork-state",
+      "allowStaticFrame": true
+    },
+    {
+      "id": "fork-close",
+      "send": "\u001b[27u",
+      "expect": "beta",
+      "notExpect": "Fork from"
+    },
+    {
+      "id": "fork-editor-usable",
+      "delayMs": 150,
+      "send": "draft after fork",
+      "expect": "draft after fork"
+    },
+    {
+      "id": "none-config",
+      "writeFiles": {
+        "agent": {
+          "settings.json": {
+            "quietStartup": true,
+            "shellCommandPrefix": "preserved",
+            "theme": "dark",
+            "tuiMode": "fullscreen",
+            "doubleEscapeAction": "none"
+          }
+        }
+      },
+      "restart": true,
+      "expect": "beta"
+    },
+    {
+      "id": "none-double-escape",
+      "send": "\u001b[27u\u001b[27u",
+      "expect": "beta",
+      "notExpect": "Session Tree"
+    },
+    {
+      "id": "none-state",
+      "allowStaticFrame": true
+    },
+    {
+      "id": "none-draft",
+      "send": "draft survives none",
+      "expect": "draft survives none"
+    },
+    {
+      "id": "outside-config",
+      "writeFiles": {
+        "agent": {
+          "settings.json": {
+            "quietStartup": true,
+            "shellCommandPrefix": "preserved",
+            "theme": "dark",
+            "tuiMode": "fullscreen",
+            "doubleEscapeAction": "tree"
+          }
+        }
+      },
+      "restart": true,
+      "expect": "beta"
+    },
+    {
+      "id": "outside-first",
+      "send": "\u001b[27u",
+      "expect": "beta",
+      "notExpect": "Session Tree"
+    },
+    {
+      "id": "outside-second",
+      "delayMs": 900,
+      "send": "\u001b[27u",
+      "expect": "beta",
+      "notExpect": "Session Tree"
+    },
+    {
+      "id": "outside-state",
+      "allowStaticFrame": true
+    },
+    {
+      "id": "draft-typed",
+      "send": "keep this draft",
+      "expect": "keep this draft"
+    },
+    {
+      "id": "draft-double-escape",
+      "send": "\u001b[27u\u001b[27u",
+      "expect": "keep this draft",
+      "notExpect": "Session Tree"
+    },
+    {
+      "id": "draft-state",
+      "allowStaticFrame": true
+    },
+    {
+      "id": "draft-cleared",
+      "delayMs": 150,
+      "send": "\u0015",
+      "expect": "beta"
+    },
+    {
+      "id": "whitespace-typed",
+      "delayMs": 150,
+      "send": "   "
+    },
+    {
+      "id": "whitespace-double-escape",
+      "send": "\u001b[27u\u001b[27u",
+      "expect": "Session Tree",
+      "notExpect": "Fork from"
+    },
+    {
+      "id": "whitespace-state",
+      "allowStaticFrame": true
+    },
+    {
+      "id": "whitespace-close",
+      "send": "\u001b[27u",
+      "expect": "beta",
+      "notExpect": "Session Tree"
+    },
+    {
+      "id": "bash-entry-typed",
+      "delayMs": 150,
+      "send": "!echo hi",
+      "expect": "!echo hi"
+    },
+    {
+      "id": "bash-entry-escape",
+      "send": "\u001b[27u",
+      "notExpect": "!echo hi"
+    },
+    {
+      "id": "bash-entry-state",
+      "allowStaticFrame": true
+    },
+    {
+      "id": "quit",
+      "send": "\u0015/quit\r",
+      "exit": true
+    }
+  ],
+  "assertionFrames": [
+    "startup",
+    "unset-double-escape",
+    "unset-state",
+    "unset-close",
+    "tree-config",
+    "tree-double-escape",
+    "tree-state",
+    "tree-close",
+    "fork-config",
+    "fork-double-escape",
+    "fork-state",
+    "fork-close",
+    "fork-editor-usable",
+    "none-config",
+    "none-double-escape",
+    "none-state",
+    "none-draft",
+    "outside-config",
+    "outside-first",
+    "outside-second",
+    "outside-state",
+    "draft-typed",
+    "draft-double-escape",
+    "draft-state",
+    "draft-cleared",
+    "whitespace-typed",
+    "whitespace-double-escape",
+    "whitespace-state",
+    "whitespace-close",
+    "bash-entry-typed",
+    "bash-entry-escape",
+    "bash-entry-state"
+  ],
+  "captureAgentFiles": [
+    "settings.json"
+  ],
+  "captureWorkspaceFiles": [],
+  "arguments": {
+    "pi": [
+      "--session",
+      "{agent}/fixtures/tree.jsonl",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-tools",
+      "--no-context-files"
+    ],
+    "pisharp": [
+      "--session",
+      "{agent}/fixtures/tree.jsonl",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-tools",
+      "--no-context-files",
+      "--no-approve"
+    ]
+  }
+}
