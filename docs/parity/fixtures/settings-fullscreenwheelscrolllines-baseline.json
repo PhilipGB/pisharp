@@ -1,0 +1,5638 @@
+{
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "pisharpSha": "36774988c9e7088f0af2e4560d52cbbce80f9c47",
+  "corpus": {
+    "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "baseSha": "36774988c9e7088f0af2e4560d52cbbce80f9c47",
+    "settings": [
+      {
+        "id": "absent",
+        "userRaw": "{}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      },
+      {
+        "id": "stored-\"auto\"",
+        "userRaw": "{\"fullscreenWheelScrollLines\":\"auto\"}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      },
+      {
+        "id": "stored-1",
+        "userRaw": "{\"fullscreenWheelScrollLines\":1}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      },
+      {
+        "id": "stored-2",
+        "userRaw": "{\"fullscreenWheelScrollLines\":2}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      },
+      {
+        "id": "stored-3",
+        "userRaw": "{\"fullscreenWheelScrollLines\":3}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      },
+      {
+        "id": "stored-4",
+        "userRaw": "{\"fullscreenWheelScrollLines\":4}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      },
+      {
+        "id": "stored-5",
+        "userRaw": "{\"fullscreenWheelScrollLines\":5}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      },
+      {
+        "id": "stored-7",
+        "userRaw": "{\"fullscreenWheelScrollLines\":7}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      },
+      {
+        "id": "stored-10",
+        "userRaw": "{\"fullscreenWheelScrollLines\":10}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      },
+      {
+        "id": "stored-100",
+        "userRaw": "{\"fullscreenWheelScrollLines\":100}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      },
+      {
+        "id": "stored-0",
+        "userRaw": "{\"fullscreenWheelScrollLines\":0}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      },
+      {
+        "id": "stored--1",
+        "userRaw": "{\"fullscreenWheelScrollLines\":-1}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      },
+      {
+        "id": "stored--100",
+        "userRaw": "{\"fullscreenWheelScrollLines\":-100}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      },
+      {
+        "id": "stored-1.1",
+        "userRaw": "{\"fullscreenWheelScrollLines\":1.1}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      },
+      {
+        "id": "stored-1.9",
+        "userRaw": "{\"fullscreenWheelScrollLines\":1.9}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      },
+      {
+        "id": "stored-3.9",
+        "userRaw": "{\"fullscreenWheelScrollLines\":3.9}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      },
+      {
+        "id": "stored-7.9",
+        "userRaw": "{\"fullscreenWheelScrollLines\":7.9}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      },
+      {
+        "id": "stored-99.9",
+        "userRaw": "{\"fullscreenWheelScrollLines\":99.9}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      },
+      {
+        "id": "stored-100.1",
+        "userRaw": "{\"fullscreenWheelScrollLines\":100.1}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      },
+      {
+        "id": "stored-100.9",
+        "userRaw": "{\"fullscreenWheelScrollLines\":100.9}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      },
+      {
+        "id": "stored-101",
+        "userRaw": "{\"fullscreenWheelScrollLines\":101}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      },
+      {
+        "id": "stored-1000",
+        "userRaw": "{\"fullscreenWheelScrollLines\":1000}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      },
+      {
+        "id": "stored-null",
+        "userRaw": "{\"fullscreenWheelScrollLines\":null}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      },
+      {
+        "id": "stored-\"3\"",
+        "userRaw": "{\"fullscreenWheelScrollLines\":\"3\"}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      },
+      {
+        "id": "stored-\"bogus\"",
+        "userRaw": "{\"fullscreenWheelScrollLines\":\"bogus\"}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      },
+      {
+        "id": "stored-true",
+        "userRaw": "{\"fullscreenWheelScrollLines\":true}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      },
+      {
+        "id": "stored-false",
+        "userRaw": "{\"fullscreenWheelScrollLines\":false}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      },
+      {
+        "id": "stored-{}",
+        "userRaw": "{\"fullscreenWheelScrollLines\":{}}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      },
+      {
+        "id": "stored-[]",
+        "userRaw": "{\"fullscreenWheelScrollLines\":[]}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      },
+      {
+        "id": "stored-1e400",
+        "userRaw": "{\"fullscreenWheelScrollLines\":1e400}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      },
+      {
+        "id": "project-absent",
+        "userRaw": "{\"fullscreenWheelScrollLines\":7}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      },
+      {
+        "id": "project-fixed",
+        "userRaw": "{\"fullscreenWheelScrollLines\":7}",
+        "projectRaw": "{\"fullscreenWheelScrollLines\":3}",
+        "projectTrusted": true
+      },
+      {
+        "id": "project-auto",
+        "userRaw": "{\"fullscreenWheelScrollLines\":7}",
+        "projectRaw": "{\"fullscreenWheelScrollLines\":\"auto\"}",
+        "projectTrusted": true
+      },
+      {
+        "id": "project-null",
+        "userRaw": "{\"fullscreenWheelScrollLines\":7}",
+        "projectRaw": "{\"fullscreenWheelScrollLines\":null}",
+        "projectTrusted": true
+      },
+      {
+        "id": "project-bogus",
+        "userRaw": "{\"fullscreenWheelScrollLines\":7}",
+        "projectRaw": "{\"fullscreenWheelScrollLines\":\"bogus\"}",
+        "projectTrusted": true
+      },
+      {
+        "id": "project-untrusted",
+        "userRaw": "{\"fullscreenWheelScrollLines\":7}",
+        "projectRaw": "{\"fullscreenWheelScrollLines\":3}",
+        "projectTrusted": false
+      },
+      {
+        "id": "project-clamp",
+        "userRaw": "{\"fullscreenWheelScrollLines\":7}",
+        "projectRaw": "{\"fullscreenWheelScrollLines\":1000}",
+        "projectTrusted": true
+      },
+      {
+        "id": "project-fraction",
+        "userRaw": "{\"fullscreenWheelScrollLines\":7}",
+        "projectRaw": "{\"fullscreenWheelScrollLines\":3.9}",
+        "projectTrusted": true
+      },
+      {
+        "id": "project-object",
+        "userRaw": "{\"fullscreenWheelScrollLines\":7}",
+        "projectRaw": "{\"fullscreenWheelScrollLines\":{}}",
+        "projectTrusted": true
+      },
+      {
+        "id": "project-array",
+        "userRaw": "{\"fullscreenWheelScrollLines\":7}",
+        "projectRaw": "{\"fullscreenWheelScrollLines\":[]}",
+        "projectTrusted": true
+      },
+      {
+        "id": "duplicate-3-7",
+        "userRaw": "{\"fullscreenWheelScrollLines\":3,\"fullscreenWheelScrollLines\":7}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      },
+      {
+        "id": "duplicate-7-3",
+        "userRaw": "{\"fullscreenWheelScrollLines\":7,\"fullscreenWheelScrollLines\":3}",
+        "projectRaw": "{}",
+        "projectTrusted": true
+      }
+    ],
+    "sequences": [
+      {
+        "id": "fixed-1",
+        "setting": 1,
+        "accelerate": true,
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 20,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 40,
+            "direction": -1,
+            "alt": true
+          }
+        ]
+      },
+      {
+        "id": "fixed-2",
+        "setting": 2,
+        "accelerate": true,
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 20,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 40,
+            "direction": -1,
+            "alt": true
+          }
+        ]
+      },
+      {
+        "id": "fixed-3",
+        "setting": 3,
+        "accelerate": true,
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 20,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 40,
+            "direction": -1,
+            "alt": true
+          }
+        ]
+      },
+      {
+        "id": "fixed-5",
+        "setting": 5,
+        "accelerate": true,
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 20,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 40,
+            "direction": -1,
+            "alt": true
+          }
+        ]
+      },
+      {
+        "id": "fixed-7",
+        "setting": 7,
+        "accelerate": true,
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 20,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 40,
+            "direction": -1,
+            "alt": true
+          }
+        ]
+      },
+      {
+        "id": "fixed-100",
+        "setting": 100,
+        "accelerate": true,
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 20,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 40,
+            "direction": -1,
+            "alt": true
+          }
+        ]
+      },
+      {
+        "id": "gap-4",
+        "setting": "auto",
+        "accelerate": true,
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 4,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 8,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 12,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 16,
+            "direction": -1,
+            "alt": false
+          }
+        ]
+      },
+      {
+        "id": "gap-5",
+        "setting": "auto",
+        "accelerate": true,
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 5,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 10,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 15,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 20,
+            "direction": -1,
+            "alt": false
+          }
+        ]
+      },
+      {
+        "id": "gap-20",
+        "setting": "auto",
+        "accelerate": true,
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 20,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 40,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 60,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 80,
+            "direction": -1,
+            "alt": false
+          }
+        ]
+      },
+      {
+        "id": "gap-30",
+        "setting": "auto",
+        "accelerate": true,
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 30,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 60,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 90,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 120,
+            "direction": -1,
+            "alt": false
+          }
+        ]
+      },
+      {
+        "id": "gap-50",
+        "setting": "auto",
+        "accelerate": true,
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 50,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 100,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 150,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 200,
+            "direction": -1,
+            "alt": false
+          }
+        ]
+      },
+      {
+        "id": "gap-60",
+        "setting": "auto",
+        "accelerate": true,
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 60,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 120,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 180,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 240,
+            "direction": -1,
+            "alt": false
+          }
+        ]
+      },
+      {
+        "id": "gap-100",
+        "setting": "auto",
+        "accelerate": true,
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 100,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 200,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 300,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 400,
+            "direction": -1,
+            "alt": false
+          }
+        ]
+      },
+      {
+        "id": "gap-200",
+        "setting": "auto",
+        "accelerate": true,
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 200,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 400,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 600,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 800,
+            "direction": -1,
+            "alt": false
+          }
+        ]
+      },
+      {
+        "id": "gap-201",
+        "setting": "auto",
+        "accelerate": true,
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 201,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 402,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 603,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 804,
+            "direction": -1,
+            "alt": false
+          }
+        ]
+      },
+      {
+        "id": "direction",
+        "setting": "auto",
+        "accelerate": true,
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 20,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 21,
+            "direction": 1,
+            "alt": false
+          },
+          {
+            "t": 41,
+            "direction": 1,
+            "alt": false
+          }
+        ]
+      },
+      {
+        "id": "gesture-200",
+        "setting": "auto",
+        "accelerate": true,
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 20,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 220,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 240,
+            "direction": -1,
+            "alt": false
+          }
+        ]
+      },
+      {
+        "id": "gesture-201",
+        "setting": "auto",
+        "accelerate": true,
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 20,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 221,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 241,
+            "direction": -1,
+            "alt": false
+          }
+        ]
+      },
+      {
+        "id": "auto-alt",
+        "setting": "auto",
+        "accelerate": true,
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 20,
+            "direction": -1,
+            "alt": true
+          },
+          {
+            "t": 40,
+            "direction": -1,
+            "alt": false
+          }
+        ]
+      },
+      {
+        "id": "auto-fixed-auto",
+        "setting": "auto",
+        "accelerate": true,
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 20,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 40,
+            "direction": -1,
+            "alt": false,
+            "set": 5
+          },
+          {
+            "t": 60,
+            "direction": -1,
+            "alt": false,
+            "set": "auto"
+          }
+        ]
+      },
+      {
+        "id": "auto-auto",
+        "setting": "auto",
+        "accelerate": true,
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 20,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 40,
+            "direction": -1,
+            "alt": false,
+            "set": "auto"
+          },
+          {
+            "t": 60,
+            "direction": -1,
+            "alt": false
+          }
+        ]
+      },
+      {
+        "id": "fixed-fixed-auto",
+        "setting": 5,
+        "accelerate": true,
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 20,
+            "direction": -1,
+            "alt": false,
+            "set": 5
+          },
+          {
+            "t": 40,
+            "direction": -1,
+            "alt": false,
+            "set": "auto"
+          },
+          {
+            "t": 60,
+            "direction": -1,
+            "alt": false
+          }
+        ]
+      },
+      {
+        "id": "platform-darwin-local",
+        "setting": "auto",
+        "accelerate": false,
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 20,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 40,
+            "direction": -1,
+            "alt": false
+          }
+        ],
+        "platform": "darwin",
+        "ssh": null
+      },
+      {
+        "id": "platform-darwin-SSH_CONNECTION",
+        "setting": "auto",
+        "accelerate": true,
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 20,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 40,
+            "direction": -1,
+            "alt": false
+          }
+        ],
+        "platform": "darwin",
+        "ssh": "SSH_CONNECTION"
+      },
+      {
+        "id": "platform-darwin-SSH_CLIENT",
+        "setting": "auto",
+        "accelerate": true,
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 20,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 40,
+            "direction": -1,
+            "alt": false
+          }
+        ],
+        "platform": "darwin",
+        "ssh": "SSH_CLIENT"
+      },
+      {
+        "id": "platform-darwin-SSH_TTY",
+        "setting": "auto",
+        "accelerate": true,
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 20,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 40,
+            "direction": -1,
+            "alt": false
+          }
+        ],
+        "platform": "darwin",
+        "ssh": "SSH_TTY"
+      },
+      {
+        "id": "platform-linux-local",
+        "setting": "auto",
+        "accelerate": true,
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 20,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 40,
+            "direction": -1,
+            "alt": false
+          }
+        ],
+        "platform": "linux",
+        "ssh": null
+      }
+    ],
+    "viewports": [
+      {
+        "id": "viewport-1",
+        "setting": 1,
+        "mode": "fullscreen",
+        "start": "bottom",
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 20,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 40,
+            "direction": -1,
+            "alt": true
+          }
+        ]
+      },
+      {
+        "id": "viewport-2",
+        "setting": 2,
+        "mode": "fullscreen",
+        "start": "bottom",
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 20,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 40,
+            "direction": -1,
+            "alt": true
+          }
+        ]
+      },
+      {
+        "id": "viewport-3",
+        "setting": 3,
+        "mode": "fullscreen",
+        "start": "bottom",
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 20,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 40,
+            "direction": -1,
+            "alt": true
+          }
+        ]
+      },
+      {
+        "id": "viewport-5",
+        "setting": 5,
+        "mode": "fullscreen",
+        "start": "bottom",
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 20,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 40,
+            "direction": -1,
+            "alt": true
+          }
+        ]
+      },
+      {
+        "id": "viewport-7",
+        "setting": 7,
+        "mode": "fullscreen",
+        "start": "bottom",
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 20,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 40,
+            "direction": -1,
+            "alt": true
+          }
+        ]
+      },
+      {
+        "id": "viewport-100",
+        "setting": 100,
+        "mode": "fullscreen",
+        "start": "bottom",
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 20,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 40,
+            "direction": -1,
+            "alt": true
+          }
+        ]
+      },
+      {
+        "id": "viewport-auto",
+        "setting": "auto",
+        "mode": "fullscreen",
+        "start": "bottom",
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 20,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 40,
+            "direction": -1,
+            "alt": true
+          }
+        ]
+      },
+      {
+        "id": "boundary-top",
+        "setting": 7,
+        "mode": "fullscreen",
+        "start": "top",
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          }
+        ]
+      },
+      {
+        "id": "near-top",
+        "setting": 7,
+        "mode": "fullscreen",
+        "start": "near-top",
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          }
+        ]
+      },
+      {
+        "id": "boundary-bottom",
+        "setting": 7,
+        "mode": "fullscreen",
+        "start": "bottom",
+        "events": [
+          {
+            "t": 0,
+            "direction": 1,
+            "alt": false
+          }
+        ]
+      },
+      {
+        "id": "near-bottom",
+        "setting": 7,
+        "mode": "fullscreen",
+        "start": "near-bottom",
+        "events": [
+          {
+            "t": 0,
+            "direction": 1,
+            "alt": false
+          }
+        ]
+      },
+      {
+        "id": "regular-100",
+        "setting": 100,
+        "mode": "regular",
+        "start": "bottom",
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          }
+        ]
+      },
+      {
+        "id": "live-1-5-auto",
+        "setting": 1,
+        "mode": "fullscreen",
+        "start": "bottom",
+        "events": [
+          {
+            "t": 0,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 20,
+            "direction": -1,
+            "alt": false,
+            "set": 5
+          },
+          {
+            "t": 40,
+            "direction": -1,
+            "alt": false,
+            "set": "auto"
+          },
+          {
+            "t": 60,
+            "direction": -1,
+            "alt": false
+          },
+          {
+            "t": 80,
+            "direction": -1,
+            "alt": false,
+            "set": "auto"
+          }
+        ]
+      }
+    ],
+    "setters": [
+      "auto",
+      1,
+      7,
+      0,
+      1.9,
+      101
+    ],
+    "overlays": [
+      {
+        "id": "overlay-1",
+        "setting": 1,
+        "alt": false
+      },
+      {
+        "id": "overlay-7",
+        "setting": 7,
+        "alt": false
+      },
+      {
+        "id": "overlay-7-alt",
+        "setting": 7,
+        "alt": true
+      },
+      {
+        "id": "overlay-auto",
+        "setting": "auto",
+        "alt": false
+      }
+    ]
+  },
+  "pi": {
+    "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "settings": [
+      {
+        "id": "absent",
+        "loaded": true,
+        "mergedRaw": "<absent>",
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-\"auto\"",
+        "loaded": true,
+        "mergedRaw": "\"auto\"",
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-1",
+        "loaded": true,
+        "mergedRaw": "1",
+        "effective": 1,
+        "current": "1",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-2",
+        "loaded": true,
+        "mergedRaw": "2",
+        "effective": 2,
+        "current": "2",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-3",
+        "loaded": true,
+        "mergedRaw": "3",
+        "effective": 3,
+        "current": "3",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-4",
+        "loaded": true,
+        "mergedRaw": "4",
+        "effective": 4,
+        "current": "4",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-5",
+        "loaded": true,
+        "mergedRaw": "5",
+        "effective": 5,
+        "current": "5",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-7",
+        "loaded": true,
+        "mergedRaw": "7",
+        "effective": 7,
+        "current": "7",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "7",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-10",
+        "loaded": true,
+        "mergedRaw": "10",
+        "effective": 10,
+        "current": "10",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-100",
+        "loaded": true,
+        "mergedRaw": "100",
+        "effective": 100,
+        "current": "100",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10",
+          "100"
+        ]
+      },
+      {
+        "id": "stored-0",
+        "loaded": true,
+        "mergedRaw": "0",
+        "effective": 1,
+        "current": "1",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored--1",
+        "loaded": true,
+        "mergedRaw": "-1",
+        "effective": 1,
+        "current": "1",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored--100",
+        "loaded": true,
+        "mergedRaw": "-100",
+        "effective": 1,
+        "current": "1",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-1.1",
+        "loaded": true,
+        "mergedRaw": "1.1",
+        "effective": 1,
+        "current": "1",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-1.9",
+        "loaded": true,
+        "mergedRaw": "1.9",
+        "effective": 1,
+        "current": "1",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-3.9",
+        "loaded": true,
+        "mergedRaw": "3.9",
+        "effective": 3,
+        "current": "3",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-7.9",
+        "loaded": true,
+        "mergedRaw": "7.9",
+        "effective": 7,
+        "current": "7",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "7",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-99.9",
+        "loaded": true,
+        "mergedRaw": "99.9",
+        "effective": 99,
+        "current": "99",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10",
+          "99"
+        ]
+      },
+      {
+        "id": "stored-100.1",
+        "loaded": true,
+        "mergedRaw": "100.1",
+        "effective": 100,
+        "current": "100",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10",
+          "100"
+        ]
+      },
+      {
+        "id": "stored-100.9",
+        "loaded": true,
+        "mergedRaw": "100.9",
+        "effective": 100,
+        "current": "100",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10",
+          "100"
+        ]
+      },
+      {
+        "id": "stored-101",
+        "loaded": true,
+        "mergedRaw": "101",
+        "effective": 100,
+        "current": "100",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10",
+          "100"
+        ]
+      },
+      {
+        "id": "stored-1000",
+        "loaded": true,
+        "mergedRaw": "1000",
+        "effective": 100,
+        "current": "100",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10",
+          "100"
+        ]
+      },
+      {
+        "id": "stored-null",
+        "loaded": true,
+        "mergedRaw": "null",
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-\"3\"",
+        "loaded": true,
+        "mergedRaw": "\"3\"",
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-\"bogus\"",
+        "loaded": true,
+        "mergedRaw": "\"bogus\"",
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-true",
+        "loaded": true,
+        "mergedRaw": "true",
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-false",
+        "loaded": true,
+        "mergedRaw": "false",
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-{}",
+        "loaded": true,
+        "mergedRaw": "{}",
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-[]",
+        "loaded": true,
+        "mergedRaw": "[]",
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-1e400",
+        "loaded": true,
+        "mergedRaw": "null",
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "project-absent",
+        "loaded": true,
+        "mergedRaw": "7",
+        "effective": 7,
+        "current": "7",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "7",
+          "10"
+        ]
+      },
+      {
+        "id": "project-fixed",
+        "loaded": true,
+        "mergedRaw": "3",
+        "effective": 3,
+        "current": "3",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "project-auto",
+        "loaded": true,
+        "mergedRaw": "\"auto\"",
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "project-null",
+        "loaded": true,
+        "mergedRaw": "null",
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "project-bogus",
+        "loaded": true,
+        "mergedRaw": "\"bogus\"",
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "project-untrusted",
+        "loaded": true,
+        "mergedRaw": "7",
+        "effective": 7,
+        "current": "7",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "7",
+          "10"
+        ]
+      },
+      {
+        "id": "project-clamp",
+        "loaded": true,
+        "mergedRaw": "1000",
+        "effective": 100,
+        "current": "100",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10",
+          "100"
+        ]
+      },
+      {
+        "id": "project-fraction",
+        "loaded": true,
+        "mergedRaw": "3.9",
+        "effective": 3,
+        "current": "3",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "project-object",
+        "loaded": true,
+        "mergedRaw": "{}",
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "project-array",
+        "loaded": true,
+        "mergedRaw": "[]",
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "duplicate-3-7",
+        "loaded": true,
+        "mergedRaw": "7",
+        "effective": 7,
+        "current": "7",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "7",
+          "10"
+        ]
+      },
+      {
+        "id": "duplicate-7-3",
+        "loaded": true,
+        "mergedRaw": "3",
+        "effective": 3,
+        "current": "3",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      }
+    ],
+    "sequences": [
+      {
+        "id": "fixed-1",
+        "accelerate": true,
+        "lines": [
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "id": "fixed-2",
+        "accelerate": true,
+        "lines": [
+          2,
+          2,
+          2
+        ]
+      },
+      {
+        "id": "fixed-3",
+        "accelerate": true,
+        "lines": [
+          3,
+          3,
+          3
+        ]
+      },
+      {
+        "id": "fixed-5",
+        "accelerate": true,
+        "lines": [
+          5,
+          5,
+          5
+        ]
+      },
+      {
+        "id": "fixed-7",
+        "accelerate": true,
+        "lines": [
+          7,
+          7,
+          7
+        ]
+      },
+      {
+        "id": "fixed-100",
+        "accelerate": true,
+        "lines": [
+          100,
+          100,
+          100
+        ]
+      },
+      {
+        "id": "gap-4",
+        "accelerate": true,
+        "lines": [
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "id": "gap-5",
+        "accelerate": true,
+        "lines": [
+          1,
+          6,
+          6,
+          6,
+          6
+        ]
+      },
+      {
+        "id": "gap-20",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          5,
+          5,
+          5
+        ]
+      },
+      {
+        "id": "gap-30",
+        "accelerate": true,
+        "lines": [
+          1,
+          3,
+          3,
+          4,
+          3
+        ]
+      },
+      {
+        "id": "gap-50",
+        "accelerate": true,
+        "lines": [
+          1,
+          2,
+          2,
+          2,
+          2
+        ]
+      },
+      {
+        "id": "gap-60",
+        "accelerate": true,
+        "lines": [
+          1,
+          1,
+          2,
+          2,
+          1
+        ]
+      },
+      {
+        "id": "gap-100",
+        "accelerate": true,
+        "lines": [
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "id": "gap-200",
+        "accelerate": true,
+        "lines": [
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "id": "gap-201",
+        "accelerate": true,
+        "lines": [
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "id": "direction",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          1,
+          5
+        ]
+      },
+      {
+        "id": "gesture-200",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          1,
+          1
+        ]
+      },
+      {
+        "id": "gesture-201",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          1,
+          5
+        ]
+      },
+      {
+        "id": "auto-alt",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          5
+        ]
+      },
+      {
+        "id": "auto-fixed-auto",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          5,
+          1
+        ]
+      },
+      {
+        "id": "auto-auto",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          1,
+          5
+        ]
+      },
+      {
+        "id": "fixed-fixed-auto",
+        "accelerate": true,
+        "lines": [
+          5,
+          5,
+          1,
+          5
+        ]
+      },
+      {
+        "id": "platform-darwin-local",
+        "accelerate": false,
+        "lines": [
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "id": "platform-darwin-SSH_CONNECTION",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          5
+        ]
+      },
+      {
+        "id": "platform-darwin-SSH_CLIENT",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          5
+        ]
+      },
+      {
+        "id": "platform-darwin-SSH_TTY",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          5
+        ]
+      },
+      {
+        "id": "platform-linux-local",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          5
+        ]
+      }
+    ],
+    "viewports": [
+      {
+        "id": "viewport-1",
+        "initial": 0,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 0,
+            "lines": 1,
+            "multiplier": 1,
+            "after": 1,
+            "movement": 1
+          },
+          {
+            "before": 1,
+            "lines": 1,
+            "multiplier": 1,
+            "after": 2,
+            "movement": 1
+          },
+          {
+            "before": 2,
+            "lines": 1,
+            "multiplier": 5,
+            "after": 7,
+            "movement": 5
+          }
+        ]
+      },
+      {
+        "id": "viewport-2",
+        "initial": 0,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 0,
+            "lines": 2,
+            "multiplier": 1,
+            "after": 2,
+            "movement": 2
+          },
+          {
+            "before": 2,
+            "lines": 2,
+            "multiplier": 1,
+            "after": 4,
+            "movement": 2
+          },
+          {
+            "before": 4,
+            "lines": 2,
+            "multiplier": 5,
+            "after": 14,
+            "movement": 10
+          }
+        ]
+      },
+      {
+        "id": "viewport-3",
+        "initial": 0,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 0,
+            "lines": 3,
+            "multiplier": 1,
+            "after": 3,
+            "movement": 3
+          },
+          {
+            "before": 3,
+            "lines": 3,
+            "multiplier": 1,
+            "after": 6,
+            "movement": 3
+          },
+          {
+            "before": 6,
+            "lines": 3,
+            "multiplier": 5,
+            "after": 21,
+            "movement": 15
+          }
+        ]
+      },
+      {
+        "id": "viewport-5",
+        "initial": 0,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 0,
+            "lines": 5,
+            "multiplier": 1,
+            "after": 5,
+            "movement": 5
+          },
+          {
+            "before": 5,
+            "lines": 5,
+            "multiplier": 1,
+            "after": 10,
+            "movement": 5
+          },
+          {
+            "before": 10,
+            "lines": 5,
+            "multiplier": 5,
+            "after": 35,
+            "movement": 25
+          }
+        ]
+      },
+      {
+        "id": "viewport-7",
+        "initial": 0,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 0,
+            "lines": 7,
+            "multiplier": 1,
+            "after": 7,
+            "movement": 7
+          },
+          {
+            "before": 7,
+            "lines": 7,
+            "multiplier": 1,
+            "after": 14,
+            "movement": 7
+          },
+          {
+            "before": 14,
+            "lines": 7,
+            "multiplier": 5,
+            "after": 49,
+            "movement": 35
+          }
+        ]
+      },
+      {
+        "id": "viewport-100",
+        "initial": 0,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 0,
+            "lines": 100,
+            "multiplier": 1,
+            "after": 100,
+            "movement": 100
+          },
+          {
+            "before": 100,
+            "lines": 100,
+            "multiplier": 1,
+            "after": 200,
+            "movement": 100
+          },
+          {
+            "before": 200,
+            "lines": 100,
+            "multiplier": 5,
+            "after": 282,
+            "movement": 82
+          }
+        ]
+      },
+      {
+        "id": "viewport-auto",
+        "initial": 0,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 0,
+            "lines": 1,
+            "multiplier": 1,
+            "after": 1,
+            "movement": 1
+          },
+          {
+            "before": 1,
+            "lines": 5,
+            "multiplier": 1,
+            "after": 6,
+            "movement": 5
+          },
+          {
+            "before": 6,
+            "lines": 5,
+            "multiplier": 5,
+            "after": 31,
+            "movement": 25
+          }
+        ]
+      },
+      {
+        "id": "boundary-top",
+        "initial": 282,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 282,
+            "lines": 7,
+            "multiplier": 1,
+            "after": 282,
+            "movement": 0
+          }
+        ]
+      },
+      {
+        "id": "near-top",
+        "initial": 280,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 280,
+            "lines": 7,
+            "multiplier": 1,
+            "after": 282,
+            "movement": 2
+          }
+        ]
+      },
+      {
+        "id": "boundary-bottom",
+        "initial": 0,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 0,
+            "lines": 7,
+            "multiplier": 1,
+            "after": 0,
+            "movement": 0
+          }
+        ]
+      },
+      {
+        "id": "near-bottom",
+        "initial": 2,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 2,
+            "lines": 7,
+            "multiplier": 1,
+            "after": 0,
+            "movement": -2
+          }
+        ]
+      },
+      {
+        "id": "regular-100",
+        "initial": 0,
+        "maximum": 0,
+        "events": [
+          {
+            "before": 0,
+            "lines": 0,
+            "multiplier": 1,
+            "after": 0,
+            "movement": 0
+          }
+        ]
+      },
+      {
+        "id": "live-1-5-auto",
+        "initial": 0,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 0,
+            "lines": 1,
+            "multiplier": 1,
+            "after": 1,
+            "movement": 1
+          },
+          {
+            "before": 1,
+            "lines": 5,
+            "multiplier": 1,
+            "after": 6,
+            "movement": 5
+          },
+          {
+            "before": 6,
+            "lines": 1,
+            "multiplier": 1,
+            "after": 7,
+            "movement": 1
+          },
+          {
+            "before": 7,
+            "lines": 5,
+            "multiplier": 1,
+            "after": 12,
+            "movement": 5
+          },
+          {
+            "before": 12,
+            "lines": 1,
+            "multiplier": 1,
+            "after": 13,
+            "movement": 1
+          }
+        ]
+      }
+    ],
+    "overlays": [
+      {
+        "id": "overlay-1",
+        "selected": 18,
+        "deltas": [
+          -1,
+          -1
+        ],
+        "transcriptMovement": 0,
+        "nextTranscriptMovement": 1
+      },
+      {
+        "id": "overlay-7",
+        "selected": 18,
+        "deltas": [
+          -7,
+          -7
+        ],
+        "transcriptMovement": 0,
+        "nextTranscriptMovement": 7
+      },
+      {
+        "id": "overlay-7-alt",
+        "selected": 18,
+        "deltas": [
+          -35,
+          -35
+        ],
+        "transcriptMovement": 0,
+        "nextTranscriptMovement": 7
+      },
+      {
+        "id": "overlay-auto",
+        "selected": 18,
+        "deltas": [
+          -1,
+          -5
+        ],
+        "transcriptMovement": 0,
+        "nextTranscriptMovement": 5
+      }
+    ],
+    "setters": [
+      {
+        "input": "auto",
+        "stored": "auto",
+        "effective": "auto"
+      },
+      {
+        "input": 1,
+        "stored": 1,
+        "effective": 1
+      },
+      {
+        "input": 7,
+        "stored": 7,
+        "effective": 7
+      },
+      {
+        "input": 0,
+        "stored": 1,
+        "effective": 1
+      },
+      {
+        "input": 1.9,
+        "stored": 1,
+        "effective": 1
+      },
+      {
+        "input": 101,
+        "stored": 100,
+        "effective": 100
+      }
+    ]
+  },
+  "calibration": {
+    "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "settings": [
+      {
+        "id": "absent",
+        "loaded": true,
+        "mergedRaw": "<absent>",
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-\"auto\"",
+        "loaded": true,
+        "mergedRaw": "\"auto\"",
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-1",
+        "loaded": true,
+        "mergedRaw": "1",
+        "effective": 1,
+        "current": "1",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-2",
+        "loaded": true,
+        "mergedRaw": "2",
+        "effective": 2,
+        "current": "2",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-3",
+        "loaded": true,
+        "mergedRaw": "3",
+        "effective": 3,
+        "current": "3",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-4",
+        "loaded": true,
+        "mergedRaw": "4",
+        "effective": 4,
+        "current": "4",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-5",
+        "loaded": true,
+        "mergedRaw": "5",
+        "effective": 5,
+        "current": "5",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-7",
+        "loaded": true,
+        "mergedRaw": "7",
+        "effective": 7,
+        "current": "7",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "7",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-10",
+        "loaded": true,
+        "mergedRaw": "10",
+        "effective": 10,
+        "current": "10",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-100",
+        "loaded": true,
+        "mergedRaw": "100",
+        "effective": 100,
+        "current": "100",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10",
+          "100"
+        ]
+      },
+      {
+        "id": "stored-0",
+        "loaded": true,
+        "mergedRaw": "0",
+        "effective": 1,
+        "current": "1",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored--1",
+        "loaded": true,
+        "mergedRaw": "-1",
+        "effective": 1,
+        "current": "1",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored--100",
+        "loaded": true,
+        "mergedRaw": "-100",
+        "effective": 1,
+        "current": "1",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-1.1",
+        "loaded": true,
+        "mergedRaw": "1.1",
+        "effective": 1,
+        "current": "1",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-1.9",
+        "loaded": true,
+        "mergedRaw": "1.9",
+        "effective": 1,
+        "current": "1",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-3.9",
+        "loaded": true,
+        "mergedRaw": "3.9",
+        "effective": 3,
+        "current": "3",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-7.9",
+        "loaded": true,
+        "mergedRaw": "7.9",
+        "effective": 7,
+        "current": "7",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "7",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-99.9",
+        "loaded": true,
+        "mergedRaw": "99.9",
+        "effective": 99,
+        "current": "99",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10",
+          "99"
+        ]
+      },
+      {
+        "id": "stored-100.1",
+        "loaded": true,
+        "mergedRaw": "100.1",
+        "effective": 100,
+        "current": "100",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10",
+          "100"
+        ]
+      },
+      {
+        "id": "stored-100.9",
+        "loaded": true,
+        "mergedRaw": "100.9",
+        "effective": 100,
+        "current": "100",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10",
+          "100"
+        ]
+      },
+      {
+        "id": "stored-101",
+        "loaded": true,
+        "mergedRaw": "101",
+        "effective": 100,
+        "current": "100",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10",
+          "100"
+        ]
+      },
+      {
+        "id": "stored-1000",
+        "loaded": true,
+        "mergedRaw": "1000",
+        "effective": 100,
+        "current": "100",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10",
+          "100"
+        ]
+      },
+      {
+        "id": "stored-null",
+        "loaded": true,
+        "mergedRaw": "null",
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-\"3\"",
+        "loaded": true,
+        "mergedRaw": "\"3\"",
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-\"bogus\"",
+        "loaded": true,
+        "mergedRaw": "\"bogus\"",
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-true",
+        "loaded": true,
+        "mergedRaw": "true",
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-false",
+        "loaded": true,
+        "mergedRaw": "false",
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-{}",
+        "loaded": true,
+        "mergedRaw": "{}",
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-[]",
+        "loaded": true,
+        "mergedRaw": "[]",
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-1e400",
+        "loaded": true,
+        "mergedRaw": "null",
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "project-absent",
+        "loaded": true,
+        "mergedRaw": "7",
+        "effective": 7,
+        "current": "7",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "7",
+          "10"
+        ]
+      },
+      {
+        "id": "project-fixed",
+        "loaded": true,
+        "mergedRaw": "3",
+        "effective": 3,
+        "current": "3",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "project-auto",
+        "loaded": true,
+        "mergedRaw": "\"auto\"",
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "project-null",
+        "loaded": true,
+        "mergedRaw": "null",
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "project-bogus",
+        "loaded": true,
+        "mergedRaw": "\"bogus\"",
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "project-untrusted",
+        "loaded": true,
+        "mergedRaw": "7",
+        "effective": 7,
+        "current": "7",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "7",
+          "10"
+        ]
+      },
+      {
+        "id": "project-clamp",
+        "loaded": true,
+        "mergedRaw": "1000",
+        "effective": 100,
+        "current": "100",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10",
+          "100"
+        ]
+      },
+      {
+        "id": "project-fraction",
+        "loaded": true,
+        "mergedRaw": "3.9",
+        "effective": 3,
+        "current": "3",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "project-object",
+        "loaded": true,
+        "mergedRaw": "{}",
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "project-array",
+        "loaded": true,
+        "mergedRaw": "[]",
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "duplicate-3-7",
+        "loaded": true,
+        "mergedRaw": "7",
+        "effective": 7,
+        "current": "7",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "7",
+          "10"
+        ]
+      },
+      {
+        "id": "duplicate-7-3",
+        "loaded": true,
+        "mergedRaw": "3",
+        "effective": 3,
+        "current": "3",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      }
+    ],
+    "sequences": [
+      {
+        "id": "fixed-1",
+        "accelerate": true,
+        "lines": [
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "id": "fixed-2",
+        "accelerate": true,
+        "lines": [
+          2,
+          2,
+          2
+        ]
+      },
+      {
+        "id": "fixed-3",
+        "accelerate": true,
+        "lines": [
+          3,
+          3,
+          3
+        ]
+      },
+      {
+        "id": "fixed-5",
+        "accelerate": true,
+        "lines": [
+          5,
+          5,
+          5
+        ]
+      },
+      {
+        "id": "fixed-7",
+        "accelerate": true,
+        "lines": [
+          7,
+          7,
+          7
+        ]
+      },
+      {
+        "id": "fixed-100",
+        "accelerate": true,
+        "lines": [
+          100,
+          100,
+          100
+        ]
+      },
+      {
+        "id": "gap-4",
+        "accelerate": true,
+        "lines": [
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "id": "gap-5",
+        "accelerate": true,
+        "lines": [
+          1,
+          6,
+          6,
+          6,
+          6
+        ]
+      },
+      {
+        "id": "gap-20",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          5,
+          5,
+          5
+        ]
+      },
+      {
+        "id": "gap-30",
+        "accelerate": true,
+        "lines": [
+          1,
+          3,
+          3,
+          4,
+          3
+        ]
+      },
+      {
+        "id": "gap-50",
+        "accelerate": true,
+        "lines": [
+          1,
+          2,
+          2,
+          2,
+          2
+        ]
+      },
+      {
+        "id": "gap-60",
+        "accelerate": true,
+        "lines": [
+          1,
+          1,
+          2,
+          2,
+          1
+        ]
+      },
+      {
+        "id": "gap-100",
+        "accelerate": true,
+        "lines": [
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "id": "gap-200",
+        "accelerate": true,
+        "lines": [
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "id": "gap-201",
+        "accelerate": true,
+        "lines": [
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "id": "direction",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          1,
+          5
+        ]
+      },
+      {
+        "id": "gesture-200",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          1,
+          1
+        ]
+      },
+      {
+        "id": "gesture-201",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          1,
+          5
+        ]
+      },
+      {
+        "id": "auto-alt",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          5
+        ]
+      },
+      {
+        "id": "auto-fixed-auto",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          5,
+          1
+        ]
+      },
+      {
+        "id": "auto-auto",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          1,
+          5
+        ]
+      },
+      {
+        "id": "fixed-fixed-auto",
+        "accelerate": true,
+        "lines": [
+          5,
+          5,
+          1,
+          5
+        ]
+      },
+      {
+        "id": "platform-darwin-local",
+        "accelerate": false,
+        "lines": [
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "id": "platform-darwin-SSH_CONNECTION",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          5
+        ]
+      },
+      {
+        "id": "platform-darwin-SSH_CLIENT",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          5
+        ]
+      },
+      {
+        "id": "platform-darwin-SSH_TTY",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          5
+        ]
+      },
+      {
+        "id": "platform-linux-local",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          5
+        ]
+      }
+    ],
+    "viewports": [
+      {
+        "id": "viewport-1",
+        "initial": 0,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 0,
+            "lines": 1,
+            "multiplier": 1,
+            "after": 1,
+            "movement": 1
+          },
+          {
+            "before": 1,
+            "lines": 1,
+            "multiplier": 1,
+            "after": 2,
+            "movement": 1
+          },
+          {
+            "before": 2,
+            "lines": 1,
+            "multiplier": 5,
+            "after": 7,
+            "movement": 5
+          }
+        ]
+      },
+      {
+        "id": "viewport-2",
+        "initial": 0,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 0,
+            "lines": 2,
+            "multiplier": 1,
+            "after": 2,
+            "movement": 2
+          },
+          {
+            "before": 2,
+            "lines": 2,
+            "multiplier": 1,
+            "after": 4,
+            "movement": 2
+          },
+          {
+            "before": 4,
+            "lines": 2,
+            "multiplier": 5,
+            "after": 14,
+            "movement": 10
+          }
+        ]
+      },
+      {
+        "id": "viewport-3",
+        "initial": 0,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 0,
+            "lines": 3,
+            "multiplier": 1,
+            "after": 3,
+            "movement": 3
+          },
+          {
+            "before": 3,
+            "lines": 3,
+            "multiplier": 1,
+            "after": 6,
+            "movement": 3
+          },
+          {
+            "before": 6,
+            "lines": 3,
+            "multiplier": 5,
+            "after": 21,
+            "movement": 15
+          }
+        ]
+      },
+      {
+        "id": "viewport-5",
+        "initial": 0,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 0,
+            "lines": 5,
+            "multiplier": 1,
+            "after": 5,
+            "movement": 5
+          },
+          {
+            "before": 5,
+            "lines": 5,
+            "multiplier": 1,
+            "after": 10,
+            "movement": 5
+          },
+          {
+            "before": 10,
+            "lines": 5,
+            "multiplier": 5,
+            "after": 35,
+            "movement": 25
+          }
+        ]
+      },
+      {
+        "id": "viewport-7",
+        "initial": 0,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 0,
+            "lines": 7,
+            "multiplier": 1,
+            "after": 7,
+            "movement": 7
+          },
+          {
+            "before": 7,
+            "lines": 7,
+            "multiplier": 1,
+            "after": 14,
+            "movement": 7
+          },
+          {
+            "before": 14,
+            "lines": 7,
+            "multiplier": 5,
+            "after": 49,
+            "movement": 35
+          }
+        ]
+      },
+      {
+        "id": "viewport-100",
+        "initial": 0,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 0,
+            "lines": 100,
+            "multiplier": 1,
+            "after": 100,
+            "movement": 100
+          },
+          {
+            "before": 100,
+            "lines": 100,
+            "multiplier": 1,
+            "after": 200,
+            "movement": 100
+          },
+          {
+            "before": 200,
+            "lines": 100,
+            "multiplier": 5,
+            "after": 282,
+            "movement": 82
+          }
+        ]
+      },
+      {
+        "id": "viewport-auto",
+        "initial": 0,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 0,
+            "lines": 1,
+            "multiplier": 1,
+            "after": 1,
+            "movement": 1
+          },
+          {
+            "before": 1,
+            "lines": 5,
+            "multiplier": 1,
+            "after": 6,
+            "movement": 5
+          },
+          {
+            "before": 6,
+            "lines": 5,
+            "multiplier": 5,
+            "after": 31,
+            "movement": 25
+          }
+        ]
+      },
+      {
+        "id": "boundary-top",
+        "initial": 282,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 282,
+            "lines": 7,
+            "multiplier": 1,
+            "after": 282,
+            "movement": 0
+          }
+        ]
+      },
+      {
+        "id": "near-top",
+        "initial": 280,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 280,
+            "lines": 7,
+            "multiplier": 1,
+            "after": 282,
+            "movement": 2
+          }
+        ]
+      },
+      {
+        "id": "boundary-bottom",
+        "initial": 0,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 0,
+            "lines": 7,
+            "multiplier": 1,
+            "after": 0,
+            "movement": 0
+          }
+        ]
+      },
+      {
+        "id": "near-bottom",
+        "initial": 2,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 2,
+            "lines": 7,
+            "multiplier": 1,
+            "after": 0,
+            "movement": -2
+          }
+        ]
+      },
+      {
+        "id": "regular-100",
+        "initial": 0,
+        "maximum": 0,
+        "events": [
+          {
+            "before": 0,
+            "lines": 0,
+            "multiplier": 1,
+            "after": 0,
+            "movement": 0
+          }
+        ]
+      },
+      {
+        "id": "live-1-5-auto",
+        "initial": 0,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 0,
+            "lines": 1,
+            "multiplier": 1,
+            "after": 1,
+            "movement": 1
+          },
+          {
+            "before": 1,
+            "lines": 5,
+            "multiplier": 1,
+            "after": 6,
+            "movement": 5
+          },
+          {
+            "before": 6,
+            "lines": 1,
+            "multiplier": 1,
+            "after": 7,
+            "movement": 1
+          },
+          {
+            "before": 7,
+            "lines": 5,
+            "multiplier": 1,
+            "after": 12,
+            "movement": 5
+          },
+          {
+            "before": 12,
+            "lines": 1,
+            "multiplier": 1,
+            "after": 13,
+            "movement": 1
+          }
+        ]
+      }
+    ],
+    "overlays": [
+      {
+        "id": "overlay-1",
+        "selected": 18,
+        "deltas": [
+          -1,
+          -1
+        ],
+        "transcriptMovement": 0,
+        "nextTranscriptMovement": 1
+      },
+      {
+        "id": "overlay-7",
+        "selected": 18,
+        "deltas": [
+          -7,
+          -7
+        ],
+        "transcriptMovement": 0,
+        "nextTranscriptMovement": 7
+      },
+      {
+        "id": "overlay-7-alt",
+        "selected": 18,
+        "deltas": [
+          -35,
+          -35
+        ],
+        "transcriptMovement": 0,
+        "nextTranscriptMovement": 7
+      },
+      {
+        "id": "overlay-auto",
+        "selected": 18,
+        "deltas": [
+          -1,
+          -5
+        ],
+        "transcriptMovement": 0,
+        "nextTranscriptMovement": 5
+      }
+    ],
+    "setters": [
+      {
+        "input": "auto",
+        "stored": "auto",
+        "effective": "auto"
+      },
+      {
+        "input": 1,
+        "stored": 1,
+        "effective": 1
+      },
+      {
+        "input": 7,
+        "stored": 7,
+        "effective": 7
+      },
+      {
+        "input": 0,
+        "stored": 1,
+        "effective": 1
+      },
+      {
+        "input": 1.9,
+        "stored": 1,
+        "effective": 1
+      },
+      {
+        "input": 101,
+        "stored": 100,
+        "effective": 100
+      }
+    ]
+  },
+  "pisharp": {
+    "settings": [
+      {
+        "id": "absent",
+        "loaded": true,
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; auto accelerates fast wheel spins where the terminal does not.",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-\"auto\"",
+        "loaded": true,
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; auto accelerates fast wheel spins where the terminal does not.",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-1",
+        "loaded": true,
+        "effective": 1,
+        "current": "1",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; auto accelerates fast wheel spins where the terminal does not.",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-2",
+        "loaded": true,
+        "effective": 2,
+        "current": "2",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; auto accelerates fast wheel spins where the terminal does not.",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-3",
+        "loaded": true,
+        "effective": 3,
+        "current": "3",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; auto accelerates fast wheel spins where the terminal does not.",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-4",
+        "loaded": true,
+        "effective": 4,
+        "current": "4",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; auto accelerates fast wheel spins where the terminal does not.",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-5",
+        "loaded": true,
+        "effective": 5,
+        "current": "5",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; auto accelerates fast wheel spins where the terminal does not.",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-7",
+        "loaded": true,
+        "effective": 7,
+        "current": "7",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; auto accelerates fast wheel spins where the terminal does not.",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "7",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-10",
+        "loaded": true,
+        "effective": 10,
+        "current": "10",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; auto accelerates fast wheel spins where the terminal does not.",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-100",
+        "loaded": true,
+        "effective": 100,
+        "current": "100",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; auto accelerates fast wheel spins where the terminal does not.",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10",
+          "100"
+        ]
+      },
+      {
+        "id": "stored-0",
+        "loaded": true,
+        "effective": 1,
+        "current": "1",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; auto accelerates fast wheel spins where the terminal does not.",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored--1",
+        "loaded": true,
+        "effective": 1,
+        "current": "1",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; auto accelerates fast wheel spins where the terminal does not.",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored--100",
+        "loaded": true,
+        "effective": 1,
+        "current": "1",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; auto accelerates fast wheel spins where the terminal does not.",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-1.1",
+        "loaded": true,
+        "effective": 1,
+        "current": "1",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; auto accelerates fast wheel spins where the terminal does not.",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-1.9",
+        "loaded": true,
+        "effective": 1,
+        "current": "1",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; auto accelerates fast wheel spins where the terminal does not.",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-3.9",
+        "loaded": true,
+        "effective": 3,
+        "current": "3",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; auto accelerates fast wheel spins where the terminal does not.",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-7.9",
+        "loaded": true,
+        "effective": 7,
+        "current": "7",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; auto accelerates fast wheel spins where the terminal does not.",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "7",
+          "10"
+        ]
+      },
+      {
+        "id": "stored-99.9",
+        "loaded": true,
+        "effective": 99,
+        "current": "99",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; auto accelerates fast wheel spins where the terminal does not.",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10",
+          "99"
+        ]
+      },
+      {
+        "id": "stored-100.1",
+        "loaded": true,
+        "effective": 100,
+        "current": "100",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; auto accelerates fast wheel spins where the terminal does not.",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10",
+          "100"
+        ]
+      },
+      {
+        "id": "stored-100.9",
+        "loaded": true,
+        "effective": 100,
+        "current": "100",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; auto accelerates fast wheel spins where the terminal does not.",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10",
+          "100"
+        ]
+      },
+      {
+        "id": "stored-101",
+        "loaded": true,
+        "effective": 100,
+        "current": "100",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; auto accelerates fast wheel spins where the terminal does not.",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10",
+          "100"
+        ]
+      },
+      {
+        "id": "stored-1000",
+        "loaded": true,
+        "effective": 100,
+        "current": "100",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; auto accelerates fast wheel spins where the terminal does not.",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10",
+          "100"
+        ]
+      },
+      {
+        "id": "stored-null",
+        "loaded": false,
+        "error": "settings.json fullscreenWheelScrollLines must be 'auto' or an integer from 1 to 100."
+      },
+      {
+        "id": "stored-\"3\"",
+        "loaded": false,
+        "error": "settings.json fullscreenWheelScrollLines must be 'auto' or an integer from 1 to 100."
+      },
+      {
+        "id": "stored-\"bogus\"",
+        "loaded": false,
+        "error": "settings.json fullscreenWheelScrollLines must be 'auto' or an integer from 1 to 100."
+      },
+      {
+        "id": "stored-true",
+        "loaded": false,
+        "error": "settings.json fullscreenWheelScrollLines must be 'auto' or an integer from 1 to 100."
+      },
+      {
+        "id": "stored-false",
+        "loaded": false,
+        "error": "settings.json fullscreenWheelScrollLines must be 'auto' or an integer from 1 to 100."
+      },
+      {
+        "id": "stored-{}",
+        "loaded": false,
+        "error": "settings.json fullscreenWheelScrollLines must be 'auto' or an integer from 1 to 100."
+      },
+      {
+        "id": "stored-[]",
+        "loaded": false,
+        "error": "settings.json fullscreenWheelScrollLines must be 'auto' or an integer from 1 to 100."
+      },
+      {
+        "id": "stored-1e400",
+        "loaded": false,
+        "error": "settings.json fullscreenWheelScrollLines must be 'auto' or an integer from 1 to 100."
+      },
+      {
+        "id": "project-absent",
+        "loaded": true,
+        "effective": 7,
+        "current": "7",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; auto accelerates fast wheel spins where the terminal does not.",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "7",
+          "10"
+        ]
+      },
+      {
+        "id": "project-fixed",
+        "loaded": true,
+        "effective": 3,
+        "current": "3",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; auto accelerates fast wheel spins where the terminal does not.",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "project-auto",
+        "loaded": true,
+        "effective": "auto",
+        "current": "auto",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; auto accelerates fast wheel spins where the terminal does not.",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "project-null",
+        "loaded": false,
+        "error": "settings.json fullscreenWheelScrollLines must be 'auto' or an integer from 1 to 100."
+      },
+      {
+        "id": "project-bogus",
+        "loaded": false,
+        "error": "settings.json fullscreenWheelScrollLines must be 'auto' or an integer from 1 to 100."
+      },
+      {
+        "id": "project-untrusted",
+        "loaded": true,
+        "effective": 7,
+        "current": "7",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; auto accelerates fast wheel spins where the terminal does not.",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "7",
+          "10"
+        ]
+      },
+      {
+        "id": "project-clamp",
+        "loaded": true,
+        "effective": 100,
+        "current": "100",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; auto accelerates fast wheel spins where the terminal does not.",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10",
+          "100"
+        ]
+      },
+      {
+        "id": "project-fraction",
+        "loaded": true,
+        "effective": 3,
+        "current": "3",
+        "label": "Fullscreen wheel scrolling",
+        "description": "Lines per mouse-wheel event in fullscreen mode; auto accelerates fast wheel spins where the terminal does not.",
+        "options": [
+          "auto",
+          "1",
+          "2",
+          "3",
+          "5",
+          "10"
+        ]
+      },
+      {
+        "id": "project-object",
+        "loaded": false,
+        "error": "settings.json fullscreenWheelScrollLines must be 'auto' or an integer from 1 to 100."
+      },
+      {
+        "id": "project-array",
+        "loaded": false,
+        "error": "settings.json fullscreenWheelScrollLines must be 'auto' or an integer from 1 to 100."
+      },
+      {
+        "id": "duplicate-3-7",
+        "loaded": false,
+        "error": "settings.json contains duplicate property 'fullscreenWheelScrollLines'."
+      },
+      {
+        "id": "duplicate-7-3",
+        "loaded": false,
+        "error": "settings.json contains duplicate property 'fullscreenWheelScrollLines'."
+      }
+    ],
+    "sequences": [
+      {
+        "id": "fixed-1",
+        "accelerate": true,
+        "lines": [
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "id": "fixed-2",
+        "accelerate": true,
+        "lines": [
+          2,
+          2,
+          2
+        ]
+      },
+      {
+        "id": "fixed-3",
+        "accelerate": true,
+        "lines": [
+          3,
+          3,
+          3
+        ]
+      },
+      {
+        "id": "fixed-5",
+        "accelerate": true,
+        "lines": [
+          5,
+          5,
+          5
+        ]
+      },
+      {
+        "id": "fixed-7",
+        "accelerate": true,
+        "lines": [
+          7,
+          7,
+          7
+        ]
+      },
+      {
+        "id": "fixed-100",
+        "accelerate": true,
+        "lines": [
+          100,
+          100,
+          100
+        ]
+      },
+      {
+        "id": "gap-4",
+        "accelerate": true,
+        "lines": [
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "id": "gap-5",
+        "accelerate": true,
+        "lines": [
+          1,
+          6,
+          6,
+          6,
+          6
+        ]
+      },
+      {
+        "id": "gap-20",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          5,
+          5,
+          5
+        ]
+      },
+      {
+        "id": "gap-30",
+        "accelerate": true,
+        "lines": [
+          1,
+          3,
+          3,
+          4,
+          3
+        ]
+      },
+      {
+        "id": "gap-50",
+        "accelerate": true,
+        "lines": [
+          1,
+          2,
+          2,
+          2,
+          2
+        ]
+      },
+      {
+        "id": "gap-60",
+        "accelerate": true,
+        "lines": [
+          1,
+          1,
+          2,
+          2,
+          1
+        ]
+      },
+      {
+        "id": "gap-100",
+        "accelerate": true,
+        "lines": [
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "id": "gap-200",
+        "accelerate": true,
+        "lines": [
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "id": "gap-201",
+        "accelerate": true,
+        "lines": [
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "id": "direction",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          1,
+          5
+        ]
+      },
+      {
+        "id": "gesture-200",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          1,
+          1
+        ]
+      },
+      {
+        "id": "gesture-201",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          1,
+          5
+        ]
+      },
+      {
+        "id": "auto-alt",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          5
+        ]
+      },
+      {
+        "id": "auto-fixed-auto",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          5,
+          1
+        ]
+      },
+      {
+        "id": "auto-auto",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          1,
+          5
+        ]
+      },
+      {
+        "id": "fixed-fixed-auto",
+        "accelerate": true,
+        "lines": [
+          5,
+          5,
+          1,
+          5
+        ]
+      },
+      {
+        "id": "platform-darwin-local",
+        "accelerate": false,
+        "lines": [
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "id": "platform-darwin-SSH_CONNECTION",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          5
+        ]
+      },
+      {
+        "id": "platform-darwin-SSH_CLIENT",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          5
+        ]
+      },
+      {
+        "id": "platform-darwin-SSH_TTY",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          5
+        ]
+      },
+      {
+        "id": "platform-linux-local",
+        "accelerate": true,
+        "lines": [
+          1,
+          5,
+          5
+        ]
+      }
+    ],
+    "viewports": [
+      {
+        "id": "viewport-1",
+        "initial": 0,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 0,
+            "lines": 1,
+            "multiplier": 1,
+            "after": 1,
+            "movement": 1
+          },
+          {
+            "before": 1,
+            "lines": 1,
+            "multiplier": 1,
+            "after": 2,
+            "movement": 1
+          },
+          {
+            "before": 2,
+            "lines": 1,
+            "multiplier": 5,
+            "after": 7,
+            "movement": 5
+          }
+        ]
+      },
+      {
+        "id": "viewport-2",
+        "initial": 0,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 0,
+            "lines": 2,
+            "multiplier": 1,
+            "after": 2,
+            "movement": 2
+          },
+          {
+            "before": 2,
+            "lines": 2,
+            "multiplier": 1,
+            "after": 4,
+            "movement": 2
+          },
+          {
+            "before": 4,
+            "lines": 2,
+            "multiplier": 5,
+            "after": 14,
+            "movement": 10
+          }
+        ]
+      },
+      {
+        "id": "viewport-3",
+        "initial": 0,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 0,
+            "lines": 3,
+            "multiplier": 1,
+            "after": 3,
+            "movement": 3
+          },
+          {
+            "before": 3,
+            "lines": 3,
+            "multiplier": 1,
+            "after": 6,
+            "movement": 3
+          },
+          {
+            "before": 6,
+            "lines": 3,
+            "multiplier": 5,
+            "after": 21,
+            "movement": 15
+          }
+        ]
+      },
+      {
+        "id": "viewport-5",
+        "initial": 0,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 0,
+            "lines": 5,
+            "multiplier": 1,
+            "after": 5,
+            "movement": 5
+          },
+          {
+            "before": 5,
+            "lines": 5,
+            "multiplier": 1,
+            "after": 10,
+            "movement": 5
+          },
+          {
+            "before": 10,
+            "lines": 5,
+            "multiplier": 5,
+            "after": 35,
+            "movement": 25
+          }
+        ]
+      },
+      {
+        "id": "viewport-7",
+        "initial": 0,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 0,
+            "lines": 7,
+            "multiplier": 1,
+            "after": 7,
+            "movement": 7
+          },
+          {
+            "before": 7,
+            "lines": 7,
+            "multiplier": 1,
+            "after": 14,
+            "movement": 7
+          },
+          {
+            "before": 14,
+            "lines": 7,
+            "multiplier": 5,
+            "after": 49,
+            "movement": 35
+          }
+        ]
+      },
+      {
+        "id": "viewport-100",
+        "initial": 0,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 0,
+            "lines": 100,
+            "multiplier": 1,
+            "after": 100,
+            "movement": 100
+          },
+          {
+            "before": 100,
+            "lines": 100,
+            "multiplier": 1,
+            "after": 200,
+            "movement": 100
+          },
+          {
+            "before": 200,
+            "lines": 100,
+            "multiplier": 5,
+            "after": 282,
+            "movement": 82
+          }
+        ]
+      },
+      {
+        "id": "viewport-auto",
+        "initial": 0,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 0,
+            "lines": 1,
+            "multiplier": 1,
+            "after": 1,
+            "movement": 1
+          },
+          {
+            "before": 1,
+            "lines": 5,
+            "multiplier": 1,
+            "after": 6,
+            "movement": 5
+          },
+          {
+            "before": 6,
+            "lines": 5,
+            "multiplier": 5,
+            "after": 31,
+            "movement": 25
+          }
+        ]
+      },
+      {
+        "id": "boundary-top",
+        "initial": 282,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 282,
+            "lines": 7,
+            "multiplier": 1,
+            "after": 282,
+            "movement": 0
+          }
+        ]
+      },
+      {
+        "id": "near-top",
+        "initial": 280,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 280,
+            "lines": 7,
+            "multiplier": 1,
+            "after": 282,
+            "movement": 2
+          }
+        ]
+      },
+      {
+        "id": "boundary-bottom",
+        "initial": 0,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 0,
+            "lines": 7,
+            "multiplier": 1,
+            "after": 0,
+            "movement": 0
+          }
+        ]
+      },
+      {
+        "id": "near-bottom",
+        "initial": 2,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 2,
+            "lines": 7,
+            "multiplier": 1,
+            "after": 0,
+            "movement": -2
+          }
+        ]
+      },
+      {
+        "id": "regular-100",
+        "initial": 0,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 0,
+            "lines": 0,
+            "multiplier": 1,
+            "after": 100,
+            "movement": 100
+          }
+        ]
+      },
+      {
+        "id": "live-1-5-auto",
+        "initial": 0,
+        "maximum": 282,
+        "events": [
+          {
+            "before": 0,
+            "lines": 1,
+            "multiplier": 1,
+            "after": 1,
+            "movement": 1
+          },
+          {
+            "before": 1,
+            "lines": 5,
+            "multiplier": 1,
+            "after": 6,
+            "movement": 5
+          },
+          {
+            "before": 6,
+            "lines": 1,
+            "multiplier": 1,
+            "after": 7,
+            "movement": 1
+          },
+          {
+            "before": 7,
+            "lines": 5,
+            "multiplier": 1,
+            "after": 12,
+            "movement": 5
+          },
+          {
+            "before": 12,
+            "lines": 1,
+            "multiplier": 1,
+            "after": 13,
+            "movement": 1
+          }
+        ]
+      }
+    ],
+    "overlays": [
+      {
+        "id": "overlay-1",
+        "selected": 18,
+        "deltas": [
+          null,
+          null
+        ],
+        "transcriptMovement": 0,
+        "nextTranscriptMovement": 1
+      },
+      {
+        "id": "overlay-7",
+        "selected": 18,
+        "deltas": [
+          null,
+          null
+        ],
+        "transcriptMovement": 0,
+        "nextTranscriptMovement": 7
+      },
+      {
+        "id": "overlay-7-alt",
+        "selected": 10,
+        "deltas": [
+          null,
+          null
+        ],
+        "transcriptMovement": 0,
+        "nextTranscriptMovement": 7
+      },
+      {
+        "id": "overlay-auto",
+        "selected": 18,
+        "deltas": [
+          null,
+          null
+        ],
+        "transcriptMovement": 0,
+        "nextTranscriptMovement": 1
+      }
+    ]
+  },
+  "differences": [
+    {
+      "group": "settings",
+      "id": "absent",
+      "fields": [
+        "description"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "stored-\"auto\"",
+      "fields": [
+        "description"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "stored-1",
+      "fields": [
+        "description"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "stored-2",
+      "fields": [
+        "description"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "stored-3",
+      "fields": [
+        "description"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "stored-4",
+      "fields": [
+        "description"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "stored-5",
+      "fields": [
+        "description"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "stored-7",
+      "fields": [
+        "description"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "stored-10",
+      "fields": [
+        "description"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "stored-100",
+      "fields": [
+        "description"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "stored-0",
+      "fields": [
+        "description"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "stored--1",
+      "fields": [
+        "description"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "stored--100",
+      "fields": [
+        "description"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "stored-1.1",
+      "fields": [
+        "description"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "stored-1.9",
+      "fields": [
+        "description"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "stored-3.9",
+      "fields": [
+        "description"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "stored-7.9",
+      "fields": [
+        "description"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "stored-99.9",
+      "fields": [
+        "description"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "stored-100.1",
+      "fields": [
+        "description"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "stored-100.9",
+      "fields": [
+        "description"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "stored-101",
+      "fields": [
+        "description"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "stored-1000",
+      "fields": [
+        "description"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "stored-null",
+      "fields": [
+        "loaded",
+        "effective",
+        "current",
+        "label",
+        "description",
+        "options"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "stored-\"3\"",
+      "fields": [
+        "loaded",
+        "effective",
+        "current",
+        "label",
+        "description",
+        "options"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "stored-\"bogus\"",
+      "fields": [
+        "loaded",
+        "effective",
+        "current",
+        "label",
+        "description",
+        "options"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "stored-true",
+      "fields": [
+        "loaded",
+        "effective",
+        "current",
+        "label",
+        "description",
+        "options"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "stored-false",
+      "fields": [
+        "loaded",
+        "effective",
+        "current",
+        "label",
+        "description",
+        "options"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "stored-{}",
+      "fields": [
+        "loaded",
+        "effective",
+        "current",
+        "label",
+        "description",
+        "options"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "stored-[]",
+      "fields": [
+        "loaded",
+        "effective",
+        "current",
+        "label",
+        "description",
+        "options"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "stored-1e400",
+      "fields": [
+        "loaded",
+        "effective",
+        "current",
+        "label",
+        "description",
+        "options"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "project-absent",
+      "fields": [
+        "description"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "project-fixed",
+      "fields": [
+        "description"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "project-auto",
+      "fields": [
+        "description"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "project-null",
+      "fields": [
+        "loaded",
+        "effective",
+        "current",
+        "label",
+        "description",
+        "options"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "project-bogus",
+      "fields": [
+        "loaded",
+        "effective",
+        "current",
+        "label",
+        "description",
+        "options"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "project-untrusted",
+      "fields": [
+        "description"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "project-clamp",
+      "fields": [
+        "description"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "project-fraction",
+      "fields": [
+        "description"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "project-object",
+      "fields": [
+        "loaded",
+        "effective",
+        "current",
+        "label",
+        "description",
+        "options"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "project-array",
+      "fields": [
+        "loaded",
+        "effective",
+        "current",
+        "label",
+        "description",
+        "options"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "duplicate-3-7",
+      "fields": [
+        "loaded",
+        "effective",
+        "current",
+        "label",
+        "description",
+        "options"
+      ]
+    },
+    {
+      "group": "settings",
+      "id": "duplicate-7-3",
+      "fields": [
+        "loaded",
+        "effective",
+        "current",
+        "label",
+        "description",
+        "options"
+      ]
+    },
+    {
+      "group": "viewports",
+      "id": "regular-100",
+      "fields": [
+        "events"
+      ]
+    },
+    {
+      "group": "overlays",
+      "id": "overlay-1",
+      "fields": [
+        "deltas"
+      ]
+    },
+    {
+      "group": "overlays",
+      "id": "overlay-7",
+      "fields": [
+        "deltas"
+      ]
+    },
+    {
+      "group": "overlays",
+      "id": "overlay-7-alt",
+      "fields": [
+        "selected",
+        "deltas"
+      ]
+    },
+    {
+      "group": "overlays",
+      "id": "overlay-auto",
+      "fields": [
+        "deltas",
+        "nextTranscriptMovement"
+      ]
+    }
+  ],
+  "provenance": {
+    "reviewedPrHead": "5133403d7943574da59cfb0c0fd2cc3e3a98b4e7",
+    "mergeMethod": "merge commit",
+    "mergeCommit": "36774988c9e7088f0af2e4560d52cbbce80f9c47",
+    "milestoneBase": "36774988c9e7088f0af2e4560d52cbbce80f9c47",
+    "branch": "milestone/fullscreen-wheel-scroll-lines-parity",
+    "cleanAtBranchCreation": true,
+    "exactHeadCi": [
+      {
+        "id": 43316701956,
+        "attempt": 1,
+        "jobs": 5,
+        "conclusion": "success"
+      },
+      {
+        "id": 43316713894,
+        "attempt": 2,
+        "jobs": 5,
+        "conclusion": "success"
+      }
+    ]
+  },
+  "resolutionMatches": 28
+}
