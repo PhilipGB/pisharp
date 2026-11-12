@@ -383,7 +383,26 @@ def report_cases_from_document(document):
     return list(document["cases"])
 
 
-def build_oracle(*documents):
+PROJECT_CHECKPOINTS = {
+    "trusted-malformed": "trusted-malformed-open",
+    "trusted-absent": "trusted-absent-open",
+    "untrusted": "untrusted-open",
+}
+
+
+def project_projections(document):
+    result = {}
+    for case_id, case in document["cases"].items():
+        checkpoints = case["pi"]["checkpoints"]
+        result[case_id] = {}
+        for label, name in PROJECT_CHECKPOINTS.items():
+            tree = checkpoints[name]["tree"]
+            result[case_id][label] = {"rows": tree["rows"], "count": tree["count"],
+                                      "tags": tree["tags"], "selected": tree["selected"]}
+    return result
+
+
+def build_oracle(*documents, project_documents=()):
     merged = {"cases": {}}
     for document in documents:
         merged["cases"].update(document["cases"])
@@ -401,6 +420,9 @@ def build_oracle(*documents):
                        "oracle": oracle, "fixture": fixture}
                       for case_id, requirement, expected, oracle, fixture in ORACLE_SCENARIOS],
         "projections": projections(document),
+        "projectProjections": project_projections({
+            "cases": {f"{case_id}": case for document in project_documents
+                      for case_id, case in document["cases"].items()}}),
     }
 
 
@@ -415,6 +437,8 @@ def main():
     parser.add_argument("--pisharp-sha")
     parser.add_argument("--oracle-extra-input", type=Path, action="append",
                         help="Additional paired output directory merged into the oracle projections")
+    parser.add_argument("--oracle-project-input", type=Path,
+                        help="Layered project-precedence paired directory for oracle project projections")
     parser.add_argument("--oracle-output", type=Path,
                         help="Write the pinned-Pi oracle with projections derived from this evidence")
     parser.add_argument("--case", action="append",
@@ -429,8 +453,13 @@ def main():
         for directory in args.oracle_extra_input or []:
             oracle_documents.append(extract_paired(directory, None, None, args.pisharp_sha))
         args.oracle_output.parent.mkdir(parents=True, exist_ok=True)
+        project_documents = []
+        if args.oracle_project_input is not None:
+            project_documents.append(
+                extract_paired(args.oracle_project_input, None, None, args.pisharp_sha))
         args.oracle_output.write_text(
-            json.dumps(build_oracle(*oracle_documents), indent=2) + "\n")
+            json.dumps(build_oracle(*oracle_documents, project_documents=project_documents),
+                       indent=2) + "\n")
         print(f"wrote {args.oracle_output}")
     differences = sum(case["paired"]["semanticDifferences"] for case in document["cases"].values())
     calibration = sum(case.get("calibration", {}).get("semanticDifferences", 0)

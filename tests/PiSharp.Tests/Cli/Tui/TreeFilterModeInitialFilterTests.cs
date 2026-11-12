@@ -23,7 +23,7 @@ public sealed class TreeFilterModeInitialFilterTests
         var tree = FixtureTree();
         var state = new TerminalTreeState(tree.Entries, tree.HeadId, TerminalTreeFilterModes.Parse(configured));
 
-        Assert.Equal(configured, new UserSettings(TreeFilterMode: configured).EffectiveTreeFilterMode);
+        Assert.Equal(configured, new UserSettings(TreeFilterMode: new(configured)).EffectiveTreeFilterMode);
         Assert.Equal(expected, state.VisibleNodes.Select(RowKind).ToArray());
     }
 
@@ -78,7 +78,7 @@ public sealed class TreeFilterModeInitialFilterTests
     public void InteractiveFilterChangesDoNotAlterTheConfiguredSource()
     {
         var tree = FixtureTree();
-        var configured = new UserSettings(TreeFilterMode: "user-only").EffectiveTreeFilterMode;
+        var configured = new UserSettings(TreeFilterMode: new("user-only")).EffectiveTreeFilterMode;
         var state = new TerminalTreeState(tree.Entries, tree.HeadId,
             TerminalTreeFilterModes.Parse(configured));
         Assert.Equal(TerminalTreeFilterMode.UserOnly, state.FilterMode);

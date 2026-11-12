@@ -29,6 +29,7 @@ FIXTURES = [
     "tools/parity/terminal/fixtures/terminal-tree-filter-mode.json",
     "tools/parity/terminal/fixtures/terminal-tree-filter-mode-regular.json",
     "tools/parity/terminal/fixtures/terminal-tree-filter-mode-settings.json",
+    "tools/parity/terminal/fixtures/terminal-tree-filter-mode-project.json",
 ]
 LABEL = "Tree filter mode"
 DESCRIPTION = "Default filter when opening /tree"
@@ -108,6 +109,20 @@ def validate_oracle(oracle):
                 f"{case_id}: unset must project exactly like the default filter.")
         require(case["invalid"] == case["default"],
                 f"{case_id}: an unrecognized value must project exactly like the default filter.")
+    project = oracle.get("projectProjections") or {}
+    require(project, "Oracle has no layered project projections.")
+    for case_id, layered in project.items():
+        for label in ("trusted-malformed", "trusted-absent", "untrusted"):
+            projection = layered.get(label)
+            require(isinstance(projection, dict), f"Oracle {case_id} {label} projection is missing.")
+            require(projection.get("rows") and projection.get("count") and projection.get("selected"),
+                    f"Oracle {case_id} {label} projection is incomplete.")
+    for layered in project.values():
+        expect = {"trusted-malformed": STATUS_TAGS["default"], "trusted-absent": STATUS_TAGS["user-only"],
+                  "untrusted": STATUS_TAGS["user-only"]}
+        for label, tags in expect.items():
+            require(layered[label]["tags"] == tags,
+                    f"Layered {label} status label is {layered[label]['tags']!r}, expected {tags}.")
 
 
 def validate_manifest(manifest, implementation, oracle):
@@ -123,7 +138,8 @@ def validate_manifest(manifest, implementation, oracle):
     require(manifest.get("terminalFixtures") == FIXTURES,
             f"Manifest terminal fixtures must be {FIXTURES}.")
     checkpoints = manifest.get("checkpointFiles") or []
-    require(len(checkpoints) == 3, "Manifest must name fullscreen, regular and settings checkpoint files.")
+    require(len(checkpoints) == 4,
+            "Manifest must name fullscreen, regular, settings and project checkpoint files.")
     cases = manifest.get("cases") or []
     ids = [case.get("id") for case in cases]
     require(ids == REQUIRED_CASES, f"Manifest cases must be {REQUIRED_CASES}, found {ids}.")
@@ -260,6 +276,36 @@ def validate_paired_document(document, oracle, case_ids, label):
                 f"{case_id}: persisted settings evidence differs.")
 
 
+LAYERED_CHECKPOINTS = {
+    "trusted-malformed": "trusted-malformed-open",
+    "trusted-absent": "trusted-absent-open",
+    "untrusted": "untrusted-open",
+}
+
+
+def validate_project_document(document, oracle):
+    require(document.get("capability") == CAPABILITY, "project: capability mismatch.")
+    require(document.get("piSha") == PI_SHA, "project: Pi SHA mismatch.")
+    project = oracle.get("projectProjections") or {}
+    require(project, "project: oracle has no layered projections.")
+    for case_id, case in document["cases"].items():
+        require(case_id in project, f"project: oracle has no projections for {case_id}.")
+        require(case["paired"]["semanticDifferences"] == 0,
+                f"{case_id}: {case['paired']['semanticDifferences']} unexplained paired differences: "
+                f"{case['paired']['semanticFirstDifferences'][:3]}")
+        require(not case["paired"]["scenarioErrors"], f"{case_id}: scenario errors")
+        calibration = case.get("calibration") or {}
+        require(calibration.get("semanticDifferences") == 0,
+                f"{case_id}: layer calibration reported differences.")
+        for product in ("pi", "pisharp"):
+            require(not case[product]["scenarioError"], f"{case_id}/{product}: scenario error")
+            for name, state in case[product]["checkpoints"].items():
+                require(not state["errors"], f"{case_id}/{product}/{name}: error text {state['errors']}")
+        for label, name in LAYERED_CHECKPOINTS.items():
+            require_case_projection(document, case_id, name, project[case_id][label],
+                                    f"{case_id} {label}")
+
+
 def validate_settings_document(document, oracle):
     require(document.get("capability") == CAPABILITY, "settings-selector: capability mismatch.")
     require(document.get("piSha") == PI_SHA, "settings-selector: Pi SHA mismatch.")
@@ -300,11 +346,12 @@ def validate_settings_document(document, oracle):
 
 
 def validate_checkpoints(documents, oracle, case_ids):
-    require(set(documents) == {"paired", "regular", "settings"},
-            "Checkpoint evidence must contain paired, regular and settings documents.")
+    require(set(documents) == {"paired", "regular", "settings", "project"},
+            "Checkpoint evidence must contain paired, regular, settings and project documents.")
     validate_paired_document(documents["paired"], oracle, case_ids[:2], "fullscreen")
     validate_paired_document(documents["regular"], oracle, case_ids[2:], "regular")
     validate_settings_document(documents["settings"], oracle)
+    validate_project_document(documents["project"], oracle)
 
 
 def fixture_restarts():
@@ -334,6 +381,11 @@ def validate_fixtures(restarts=None, actions=None):
         require("temporary-reopen" in ids, f"{name} has no reopen case.")
     require(restarts[FIXTURES[2]] == ["restart"],
             f"{FIXTURES[2]} must restart once to prove persistence.")
+    require(restarts[FIXTURES[3]] == ["trusted-malformed-config", "trusted-absent-config",
+                                      "untrusted-config"],
+            f"{FIXTURES[3]} must install every layered case through a restart: {restarts[FIXTURES[3]]}")
+    for name in LAYERED_CHECKPOINTS.values():
+        require(name in actions[FIXTURES[3]], f"{FIXTURES[3]} has no {name} checkpoint.")
 
 
 def resolve_checkpoint(reference, index):
@@ -352,6 +404,9 @@ def checkpoint_index(documents):
     for name in documents["settings"]["pi"]["checkpoints"]:
         index.add(name)
         index.add(f"settings/{name}")
+    for name in documents["project"]["cases"][next(iter(documents["project"]["cases"]))]["pi"]["checkpoints"]:
+        index.add(name)
+        index.add(f"project/{name}")
     return index
 
 
@@ -576,6 +631,17 @@ def self_test(manifest, oracle, documents, results, ledger):
     no_open[FIXTURES[1]].remove("labeled-only-open")
     rejects(lambda: validate_fixtures(restarts, no_open), "configured mode opening removed")
 
+    layered = copy.deepcopy(documents)
+    layered["project"]["cases"][next(iter(layered["project"]["cases"]))]["pi"]["checkpoints"]["trusted-malformed-open"]["tree"] = \
+        copy.deepcopy(layered["paired"]["cases"][case_ids[0]]["pi"]["checkpoints"]["user-only-open"]["tree"])
+    rejects(lambda: validate_checkpoints(layered, oracle, case_ids),
+            "trusted malformed project value did not override the user value")
+
+    untrusted = copy.deepcopy(documents)
+    untrusted["project"]["cases"][next(iter(untrusted["project"]["cases"]))]["pisharp"]["checkpoints"]["untrusted-open"]["tree"]["tags"] = []
+    rejects(lambda: validate_checkpoints(untrusted, oracle, case_ids),
+            "untrusted project value changed the effective filter")
+
     bad_pi = copy.deepcopy(manifest)
     bad_pi["piSha"] = "0" * 40
     rejects(lambda: validate_manifest(bad_pi, implementation, oracle), "wrong Pi SHA")
@@ -618,6 +684,7 @@ def load_documents(args):
         "paired": load_json(args.checkpoints),
         "regular": load_json(args.regular_checkpoints),
         "settings": load_json(args.settings_checkpoints),
+        "project": load_json(args.project_checkpoints),
     }
 
 
@@ -631,6 +698,8 @@ def main():
                         default=ROOT / "docs/parity/fixtures/settings-treefiltermode-checkpoints-fullscreen-2026-11-11.json")
     parser.add_argument("--regular-checkpoints", type=Path,
                         default=ROOT / "docs/parity/fixtures/settings-treefiltermode-checkpoints-regular-2026-11-11.json")
+    parser.add_argument("--project-checkpoints", type=Path,
+                        default=ROOT / "docs/parity/fixtures/settings-treefiltermode-checkpoints-project-2026-11-11.json")
     parser.add_argument("--settings-checkpoints", type=Path,
                         default=ROOT / "docs/parity/fixtures/settings-treefiltermode-checkpoints-settings-2026-11-11.json")
     parser.add_argument("--ledger", type=Path, default=ROOT / "docs/parity/execution-ledger.json")

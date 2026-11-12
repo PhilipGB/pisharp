@@ -312,7 +312,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, ProviderMode
         "markdown.codeBlockIndent" => settings.MarkdownCodeBlockIndent,
         "markdown.mermaid" => settings.MarkdownMermaid,
         "fullscreenWheelScrollLines" => settings.FullscreenWheelScrollLines?.ToSettingValue(),
-        "treeFilterMode" => settings.TreeFilterMode,
+        "treeFilterMode" => settings.TreeFilterMode?.Raw,
         _ => null
     };
 

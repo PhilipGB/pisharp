@@ -28,6 +28,7 @@ public sealed class TreeFilterModeSettingTests
             var settings = await LoadAsync(directory, "{\"quietStartup\":true}");
             Assert.Null(settings.TreeFilterMode);
             Assert.Equal("default", settings.EffectiveTreeFilterMode);
+            Assert.Equal("default", settings.EffectiveTreeFilterMode);
             Assert.Equal("default", new UserSettings().EffectiveTreeFilterMode);
         }
         finally { Directory.Delete(directory, recursive: true); }
@@ -46,7 +47,7 @@ public sealed class TreeFilterModeSettingTests
         {
             var settings = await LoadAsync(directory, JsonSerializer.Serialize(
                 new Dictionary<string, string> { ["treeFilterMode"] = configured }));
-            Assert.Equal(configured, settings.TreeFilterMode);
+            Assert.Equal(configured, settings.TreeFilterMode?.Raw);
             Assert.Equal(expected, settings.EffectiveTreeFilterMode);
         }
         finally { Directory.Delete(directory, recursive: true); }
@@ -73,13 +74,68 @@ public sealed class TreeFilterModeSettingTests
     [Fact]
     public void TrustedProjectValueOverridesTheUserValue()
     {
-        var user = new UserSettings(TreeFilterMode: "user-only");
-        var project = new UserSettings(TreeFilterMode: "all");
+        var user = new UserSettings(TreeFilterMode: new("user-only"));
+        var project = new UserSettings(TreeFilterMode: new("all"));
 
         Assert.Equal("all", user.Overlay(project).EffectiveTreeFilterMode);
-        Assert.Equal("user-only", new UserSettings(TreeFilterMode: "user-only")
+        Assert.Equal("user-only", new UserSettings(TreeFilterMode: new("user-only"))
             .Overlay(new UserSettings()).EffectiveTreeFilterMode);
         Assert.Equal("default", new UserSettings().Overlay(new UserSettings()).EffectiveTreeFilterMode);
+    }
+
+    [Theory]
+    [InlineData("42")]
+    [InlineData("null")]
+    [InlineData("true")]
+    [InlineData("[\"all\"]")]
+    [InlineData("{\"mode\":\"all\"}")]
+    [InlineData("\"bogus\"")]
+    [InlineData("\"\"")]
+    public async Task MalformedTrustedProjectValueReplacesTheValidUserValue(string storedValue)
+    {
+        // Pinned Pi merges scopes by presence and validates the merged value, so an unusable
+        // project entry must override the user setting and then resolve to the default.
+        var directory = NewAgentDirectory();
+        try
+        {
+            var projectDirectory = Path.Combine(directory, "project");
+            Directory.CreateDirectory(Path.Combine(projectDirectory, ".pi"));
+            await File.WriteAllTextAsync(Path.Combine(projectDirectory, ".pi", "settings.json"),
+                "{\"treeFilterMode\":" + storedValue + "}");
+            await File.WriteAllTextAsync(Path.Combine(directory, "settings.json"),
+                "{\"treeFilterMode\":\"user-only\"}");
+
+            var user = await UserSettings.LoadAsync(directory, _ => null);
+            var project = await UserSettings.LoadProjectAsync(projectDirectory);
+            Assert.NotNull(project.TreeFilterMode);
+            Assert.Equal("default", user.Overlay(project).EffectiveTreeFilterMode);
+        }
+        finally { Directory.Delete(directory, recursive: true); }
+    }
+
+    [Fact]
+    public async Task AbsentProjectSettingsKeepTheUserValueEffective()
+    {
+        // ProjectRuntimeContext.CreateAsync loads project settings only after trust succeeds
+        // (Sessions/ProjectRuntimeContext.cs), so an untrusted project contributes no entry at all.
+        var directory = NewAgentDirectory();
+        try
+        {
+            var projectDirectory = Path.Combine(directory, "project");
+            Directory.CreateDirectory(Path.Combine(projectDirectory, ".pi"));
+            await File.WriteAllTextAsync(Path.Combine(projectDirectory, ".pi", "settings.json"),
+                "{\"treeFilterMode\":42}");
+            await File.WriteAllTextAsync(Path.Combine(directory, "settings.json"),
+                "{\"treeFilterMode\":\"user-only\"}");
+
+            var user = await UserSettings.LoadAsync(directory, _ => null);
+            Assert.Equal("user-only", user.Overlay(new UserSettings()).EffectiveTreeFilterMode);
+
+            // The same file would win and resolve to the default once trust loads it.
+            var trusted = await UserSettings.LoadProjectAsync(projectDirectory);
+            Assert.Equal("default", user.Overlay(trusted).EffectiveTreeFilterMode);
+        }
+        finally { Directory.Delete(directory, recursive: true); }
     }
 
     [Fact]
@@ -94,7 +150,7 @@ public sealed class TreeFilterModeSettingTests
 
             await UserSettingsWriter.SetAsync(path, "treeFilterMode", "labeled-only", userScope: true);
             var persisted = await UserSettings.LoadAsync(directory, _ => null);
-            Assert.Equal("labeled-only", persisted.TreeFilterMode);
+            Assert.Equal("labeled-only", persisted.TreeFilterMode?.Raw);
             Assert.Equal("labeled-only", persisted.EffectiveTreeFilterMode);
 
             using (var document = JsonDocument.Parse(await File.ReadAllTextAsync(path)))

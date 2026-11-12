@@ -102,12 +102,12 @@ public sealed class TerminalSettingsPickerTests
         Assert.Equal("inherit/default (default)", unset.Value);
 
         var configured = TerminalSettingsPicker.ToListItem(setting,
-            new UserSettings(TreeFilterMode: "labeled-only"),
-            new UserSettings(TreeFilterMode: "labeled-only"), projectScope: false, activeThemeSetting: null);
+            new UserSettings(TreeFilterMode: new("labeled-only")),
+            new UserSettings(TreeFilterMode: new("labeled-only")), projectScope: false, activeThemeSetting: null);
         Assert.Equal("labeled-only", configured.Value);
 
         var inherited = TerminalSettingsPicker.ToListItem(setting, new UserSettings(),
-            new UserSettings(TreeFilterMode: "all"), projectScope: true, activeThemeSetting: null);
+            new UserSettings(TreeFilterMode: new("all")), projectScope: true, activeThemeSetting: null);
         Assert.Equal("all (inherited)", inherited.Value);
 
         // Pinned Pi's settings list cycles these values in source order.

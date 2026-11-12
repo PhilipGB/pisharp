@@ -190,6 +190,72 @@ public sealed class TreeFilterModePtyTests
         }
     }
 
+    [Theory]
+    [InlineData("never", "[user]", "(2/2) [user]")]
+    [InlineData("always", "Session Tree", "(4/4)")]
+    public async Task ProjectTrustDecidesWhetherAMalformedProjectFilterOverridesTheUserValueThroughLinuxPty(
+        string defaultTrust, string expected, string expectedCount)
+    {
+        // Pinned Pi merges by presence: a trusted malformed project entry replaces the user value and
+        // resolves to the default, while an untrusted project contributes nothing at all.
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-tree-filter-project-pty-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        Directory.CreateDirectory(agent);
+        Directory.CreateDirectory(Path.Combine(root, ".pi"));
+        var sessionPath = Path.Combine(root, "tree.jsonl");
+        Process? process = null;
+        try
+        {
+            await File.WriteAllTextAsync(sessionPath, SessionJsonl(root));
+            await File.WriteAllTextAsync(Path.Combine(root, ".pi", "settings.json"),
+                "{\"treeFilterMode\":42}");
+            await File.WriteAllTextAsync(Path.Combine(agent, "settings.json"), JsonSerializer.Serialize(
+                new Dictionary<string, object>
+                {
+                    ["quietStartup"] = true,
+                    ["defaultProjectTrust"] = defaultTrust,
+                    ["treeFilterMode"] = "user-only"
+                }));
+            await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), """
+                {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","apiKey":"fixture-key",
+                  "models":[{"id":"fixture-model","api":"openai-responses"}]}}}
+                """);
+
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+            process = Start(root, agent, sessionPath);
+            var screen = new PtyScreenCapture(process, rows: 24, columns: 100);
+            var stdout = screen.ReadCompletion;
+            var stderr = process.StandardError.ReadToEndAsync();
+            await screen.InputReady.WaitAsync(timeout.Token);
+            await screen.WaitForFrameAsync(frame => frame.Contains("ASSISTANT_2", StringComparison.Ordinal))
+                .WaitAsync(timeout.Token);
+
+            await process.StandardInput.WriteAsync("/tree\r");
+            await process.StandardInput.FlushAsync();
+            var opened = await screen.WaitForFrameAsync(frame =>
+                frame.Contains("Session Tree", StringComparison.Ordinal) &&
+                frame.Contains(expectedCount, StringComparison.Ordinal)).WaitAsync(timeout.Token);
+            Assert.Contains(expected, opened);
+            if (defaultTrust == "always")
+                Assert.DoesNotContain("[user]", opened);
+
+            await process.StandardInput.WriteAsync("\u001b\u0015/quit\r");
+            await process.StandardInput.FlushAsync();
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+            _ = await stdout;
+            Assert.Equal(0, process.ExitCode);
+            Assert.DoesNotContain("Agent error", await stderr);
+        }
+        finally
+        {
+            if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
+            process?.Dispose();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     private static Process Start(string root, string agent, string sessionPath)
     {
         var start = new ProcessStartInfo("/usr/bin/script")

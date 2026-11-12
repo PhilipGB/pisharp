@@ -126,6 +126,16 @@ internal static class TreeFilterModeSetting
         : UserSettings.DefaultTreeFilterMode;
 }
 
+/// <summary>
+/// A stored `treeFilterMode` entry. Presence matters: pinned Pi merges settings scopes by property
+/// presence, so an entry outside the accepted values still replaces lower scopes and then resolves
+/// to the default.
+/// </summary>
+public readonly record struct TreeFilterModeSettingValue(string? Raw)
+{
+    public string Effective => TreeFilterModeSetting.Effective(Raw);
+}
+
 public sealed record UserSettings(string? DefaultProvider = null, string? DefaultModel = null,
     string? DefaultThinkingLevel = null, IReadOnlyList<string>? DefaultTools = null, string? SessionDirectory = null,
     CompactionSettings? Compaction = null, bool? BlockImages = null, string? DefaultProjectTrust = null, bool? HideThinkingBlock = null, QuietStartupMode? QuietStartup = null, IReadOnlyList<string>? EnabledModels = null, string? ShellPath = null, string? ExternalEditor = null, string? Theme = null,
@@ -142,7 +152,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
     IReadOnlyList<NativeExtensionPackageSource>? NativeExtensions = null,
     FullscreenWheelScrollSetting? FullscreenWheelScrollLines = null, string? TuiMode = null,
     BranchSummarySettings? BranchSummary = null, string? DoubleEscapeAction = null,
-    bool? FullscreenCopyOnSelect = null, string? TreeFilterMode = null)
+    bool? FullscreenCopyOnSelect = null, TreeFilterModeSettingValue? TreeFilterMode = null)
 {
     public const int DefaultHttpIdleTimeoutMs = 300_000;
     public const string DefaultMarkdownCodeBlockIndent = "  ";
@@ -155,7 +165,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         : DefaultDoubleEscapeAction;
 
     // Pinned Pi resolves an unrecognized stored tree filter mode to its default instead of failing to load.
-    public string EffectiveTreeFilterMode => TreeFilterModeSetting.Effective(TreeFilterMode);
+    public string EffectiveTreeFilterMode =>
+        (TreeFilterMode ?? new TreeFilterModeSettingValue(null)).Effective;
 
     public bool? TerminalTrueColorOverride => TerminalTrueColor switch
     {
@@ -206,7 +217,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         string? sessionShareDestination = null;
         string? tuiMode = null;
         string? doubleEscapeAction = null;
-        string? treeFilterMode = null;
+        TreeFilterModeSettingValue? treeFilterMode = null;
         bool? fullscreenCopyOnSelect = null;
         FullscreenWheelScrollSetting? fullscreenWheelScrollLines = null;
         var seen = new HashSet<string>(StringComparer.Ordinal);
@@ -444,8 +455,10 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             }
             if (property.Name == "treeFilterMode")
             {
-                // Pinned Pi stores the raw value and only resolves it when the tree opens.
-                treeFilterMode = property.Value.ValueKind == JsonValueKind.String ? property.Value.GetString() : null;
+                // Pinned Pi stores the raw value and only resolves it when the tree opens; the entry is
+                // retained even when it is not a string so it still overrides lower settings scopes.
+                treeFilterMode = new TreeFilterModeSettingValue(
+                    property.Value.ValueKind == JsonValueKind.String ? property.Value.GetString() : null);
                 continue;
             }
             if (property.Value.ValueKind != JsonValueKind.String)
