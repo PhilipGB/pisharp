@@ -20,17 +20,17 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 PI_SHA = "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6"
 CAPABILITY = "settings-branchsummary-skipprompt"
 DATE = "2026-11-12"
-SETTINGS_CASES = [f"BS{index:02d}" for index in range(1, 32)]
+SETTINGS_CASES = [f"BS{index:02d}" for index in range(1, 41)]
 PROMPT_CHOICES = ["No summary", "Summarize", "Summarize with custom prompt"]
 LABELS = ["fullscreen", "regular", "malformed", "project", "project-null", "project-reserve",
-          "project-malformed", "project-malformed-truthy"]
+          "project-malformed", "project-malformed-truthy", "tolerant"]
 FIXTURES = [f"tools/parity/terminal/fixtures/terminal-branch-summary-skip-prompt{suffix}.json"
             for suffix in ["", "-regular", "-malformed", "-project", "-project-null",
                            "-project-reserve", "-project-malformed",
-                           "-project-malformed-truthy"]]
+                           "-project-malformed-truthy", "-tolerant"]]
 CHECKPOINT_FILES = [f"docs/parity/fixtures/settings-branchsummary-skipprompt-checkpoints-{label}-{DATE}.json"
                     for label in LABELS]
-RUNTIME_CASES = [f"RT{index:02d}" for index in range(1, 11)]
+RUNTIME_CASES = [f"RT{index:02d}" for index in range(1, 12)]
 TRUST_CASES = [f"TR{index:02d}" for index in range(1, 7)]
 MALFORMED_CASES = [f"ML{index:02d}" for index in range(1, 7)]
 REQUIRED_CASES = SETTINGS_CASES + RUNTIME_CASES + TRUST_CASES + MALFORMED_CASES
@@ -150,6 +150,22 @@ def validate_oracle(oracle):
             "Absent and null parents are not distinguished.")
     require(expect["BS07"]["skipPrompt"] == "null",
             "A project explicit null must replace the user value.")
+    require(expect["BS32"]["prompts"] is False and expect["BS32"]["skipPrompt"] == "true",
+            "A duplicated skipPrompt must keep the later value (false, true).")
+    require(expect["BS33"]["prompts"] is True and expect["BS33"]["skipPrompt"] == "false",
+            "A duplicated skipPrompt must keep the later value (true, false).")
+    require(expect["BS40"]["prompts"] is True,
+            "A duplicated false skipPrompt must stay falsey.")
+    require(expect["BS34"]["prompts"] is False and expect["BS35"]["prompts"] is True,
+            "An unknown sibling must not change the stored skipPrompt decision.")
+    require(expect["BS36"]["prompts"] is True,
+            "A trusted project false with an unknown sibling must still override user true.")
+    require(expect["BS37"]["prompts"] is False,
+            "A trusted project true with an unknown sibling must still override user false.")
+    require(expect["BS38"]["prompts"] is False,
+            "Object and array siblings must be ignored.")
+    require(expect["BS39"]["prompts"] is False and expect["BS39"]["skipPrompt"] == "true",
+            "A trusted project with only an unknown sibling must keep the inherited skipPrompt.")
     require(expect["BS04"]["reserve"] == 1234,
             "The project reserveTokens value must win while skipPrompt stays inherited.")
     facts = oracle.get("scenarioFacts") or []
@@ -201,6 +217,16 @@ def validate_oracle(oracle):
             "A stored \"false\" string must skip the prompt.")
     require(projections["malformed"]["empty-string-tree-selected"]["prompts"] is True,
             "A stored empty string must prompt.")
+    require(projections["tolerant"]["unknown-tree-selected"]["prompts"] is False,
+            "An unknown sibling must not block skipPrompt=true.")
+    require(projections["tolerant"]["duplicate-tree-selected"]["prompts"] is False,
+            "A duplicated skipPrompt must use the later true value.")
+    require(projections["tolerant"]["false-tree-selected"]["prompts"] is True,
+            "The tolerant fixture must still prompt for false.")
+    require(projections["tolerant"]["trusted-tree-selected"]["prompts"] is False,
+            "A trusted project with only an unknown sibling must keep the inherited value.")
+    require(projections["tolerant"]["untrusted-tree-selected"]["prompts"] is False,
+            "The untrusted tolerant case must stay on the user value.")
     safety = oracle.get("safetyProjections") or []
     for projection in safety:
         require(projection.get("id") and projection.get("pinned") and projection.get("pisharp"),
@@ -423,7 +449,18 @@ def validate_fixtures(restarts=None, actions=None, captures=None):
                 f"{malformed}: {prefix} must be installed through a restart.")
         require(f"{prefix}-tree-selected" in actions[malformed],
                 f"{malformed}: {prefix} has no selection checkpoint.")
-    for name in FIXTURES[3:]:
+    tolerant = FIXTURES[8]
+    for prefix in ("unknown", "duplicate", "false", "trusted", "untrusted"):
+        require(f"{prefix}-config" in restarts[tolerant],
+                f"{tolerant}: {prefix} must be installed through a restart.")
+        require(f"{prefix}-tree-selected" in actions[tolerant],
+                f"{tolerant}: no {prefix} selection checkpoint.")
+    duplicate = next(action for action in load_json(ROOT / tolerant)["actions"]
+                     if action["id"] == "duplicate-config")
+    require('"skipPrompt":false,"skipPrompt":true' in
+            duplicate["writeFiles"]["agent"]["settings.json"],
+            f"{tolerant}: the duplicate case must write the duplicated key verbatim.")
+    for name in FIXTURES[3:8]:
         for prefix in ("trusted", "trusted-restart", "untrusted"):
             require(f"{prefix}-tree-selected" in actions[name],
                     f"{name}: no {prefix} selection checkpoint.")
@@ -560,7 +597,7 @@ def run_quality():
         env=environment)
 
 
-def self_test(manifest, oracle, documents, results, ledger):
+def self_test(manifest, oracle, documents, results, ledger, settings_document):
     def rejects(call, label):
         try:
             call()
@@ -575,6 +612,7 @@ def self_test(manifest, oracle, documents, results, ledger):
     for label, document in documents.items():
         validate_paired_document(label, document, oracle)
     validate_fixtures()
+    validate_settings_document(settings_document, oracle)
     validate_trx(results, manifest)
     validate_case_references(manifest, oracle, documents, results)
 
@@ -649,6 +687,34 @@ def self_test(manifest, oracle, documents, results, ledger):
     falsey["checkpoints"]["empty-string-tree-selected"]["prompt"] = None
     rejects(lambda: validate_paired_document("malformed", malformed_falsey["malformed"], oracle),
             "malformed falsey treated as true")
+
+    unknown_sibling = copy.deepcopy(documents)
+    unknown_sibling["tolerant"]["cases"]["100x30-dark-fullscreen"]["pisharp"]["checkpoints"]["unknown-tree-selected"]["prompt"] = {
+        "title": "Summarize branch?", "choices": PROMPT_CHOICES}
+    rejects(lambda: validate_paired_document("tolerant", unknown_sibling["tolerant"], oracle),
+            "unknown sibling blocked skipPrompt")
+
+    duplicate_key = copy.deepcopy(documents)
+    duplicate_key["tolerant"]["cases"]["100x30-dark-fullscreen"]["pisharp"]["checkpoints"]["duplicate-tree-selected"]["prompt"] = {
+        "title": "Summarize branch?", "choices": PROMPT_CHOICES}
+    rejects(lambda: validate_paired_document("tolerant", duplicate_key["tolerant"], oracle),
+            "duplicate skipPrompt ignored the later value")
+
+    trusted_sibling = copy.deepcopy(documents)
+    trusted_sibling["tolerant"]["cases"]["100x30-dark-fullscreen"]["pisharp"]["checkpoints"]["trusted-tree-selected"]["prompt"] = {
+        "title": "Summarize branch?", "choices": PROMPT_CHOICES}
+    rejects(lambda: validate_paired_document("tolerant", trusted_sibling["tolerant"], oracle),
+            "trusted unknown sibling erased the inherited skipPrompt")
+
+    duplicate_evidence = copy.deepcopy(settings_document)
+    duplicate_evidence["cases"][31]["pisharp"]["prompts"] = True
+    rejects(lambda: validate_settings_document(duplicate_evidence, oracle),
+            "settings corpus accepted the first duplicate value")
+
+    inherited_evidence = copy.deepcopy(settings_document)
+    inherited_evidence["cases"][38]["pisharp"]["skipPrompt"] = "<absent>"
+    rejects(lambda: validate_settings_document(inherited_evidence, oracle),
+            "settings corpus lost the inherited skipPrompt through an unknown sibling")
 
     calibration = copy.deepcopy(documents)
     calibration["regular"]["cases"]["100x30-dark-regular"]["calibration"]["semanticDifferences"] = 1
@@ -773,7 +839,8 @@ def main():
         run_quality()
     if args.self_test:
         self_test(manifest, oracle, documents, results or
-                  [(name, "Passed") for name in manifest["requiredTests"]["facts"]], ledger)
+                  [(name, "Passed") for name in manifest["requiredTests"]["facts"]], ledger,
+                  load_settings_document(args))
     print(f"{CAPABILITY} verified at {implementation} against pinned Pi {PI_SHA}")
 
 

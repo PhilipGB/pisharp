@@ -375,6 +375,96 @@
         "parentPresent": true,
         "reserve": 16384
       }
+    },
+    {
+      "id": "BS32",
+      "expect": {
+        "loaded": true,
+        "prompts": false,
+        "skipPrompt": "true",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS33",
+      "expect": {
+        "loaded": true,
+        "prompts": true,
+        "skipPrompt": "false",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS34",
+      "expect": {
+        "loaded": true,
+        "prompts": false,
+        "skipPrompt": "true",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS35",
+      "expect": {
+        "loaded": true,
+        "prompts": true,
+        "skipPrompt": "false",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS36",
+      "expect": {
+        "loaded": true,
+        "prompts": true,
+        "skipPrompt": "false",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS37",
+      "expect": {
+        "loaded": true,
+        "prompts": false,
+        "skipPrompt": "true",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS38",
+      "expect": {
+        "loaded": true,
+        "prompts": false,
+        "skipPrompt": "true",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS39",
+      "expect": {
+        "loaded": true,
+        "prompts": false,
+        "skipPrompt": "true",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS40",
+      "expect": {
+        "loaded": true,
+        "prompts": true,
+        "skipPrompt": "false",
+        "parentPresent": true,
+        "reserve": 16384
+      }
     }
   ],
   "scenarioFacts": [
@@ -872,6 +962,45 @@
       "id": "project-malformed-truthy:untrusted-tree-after-state",
       "fixture": "project-malformed-truthy",
       "checkpoint": "untrusted-tree-after-state",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "tolerant:unknown-tree-selected",
+      "fixture": "tolerant",
+      "checkpoint": "unknown-tree-selected",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "tolerant:duplicate-tree-selected",
+      "fixture": "tolerant",
+      "checkpoint": "duplicate-tree-selected",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "tolerant:false-tree-selected",
+      "fixture": "tolerant",
+      "checkpoint": "false-tree-selected",
+      "prompts": true,
+      "choices": [
+        "No summary",
+        "Summarize",
+        "Summarize with custom prompt"
+      ]
+    },
+    {
+      "id": "tolerant:trusted-tree-selected",
+      "fixture": "tolerant",
+      "checkpoint": "trusted-tree-selected",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "tolerant:untrusted-tree-selected",
+      "fixture": "tolerant",
+      "checkpoint": "untrusted-tree-selected",
       "prompts": false,
       "choices": null
     }
@@ -1540,6 +1669,37 @@
           "summaryRows": []
         }
       }
+    },
+    "tolerant": {
+      "unknown-tree-selected": {
+        "prompts": false,
+        "choices": null,
+        "tree": null
+      },
+      "duplicate-tree-selected": {
+        "prompts": false,
+        "choices": null,
+        "tree": null
+      },
+      "false-tree-selected": {
+        "prompts": true,
+        "choices": [
+          "No summary",
+          "Summarize",
+          "Summarize with custom prompt"
+        ],
+        "tree": null
+      },
+      "trusted-tree-selected": {
+        "prompts": false,
+        "choices": null,
+        "tree": null
+      },
+      "untrusted-tree-selected": {
+        "prompts": false,
+        "choices": null,
+        "tree": null
+      }
     }
   },
   "navigationCheckpoints": [
@@ -1762,6 +1922,69 @@
       "loaded": true,
       "prompts": false,
       "skipPrompt": "{\"nested\":false}",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS32": {
+      "loaded": true,
+      "prompts": false,
+      "skipPrompt": "true",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS33": {
+      "loaded": true,
+      "prompts": true,
+      "skipPrompt": "false",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS34": {
+      "loaded": true,
+      "prompts": false,
+      "skipPrompt": "true",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS35": {
+      "loaded": true,
+      "prompts": true,
+      "skipPrompt": "false",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS36": {
+      "loaded": true,
+      "prompts": true,
+      "skipPrompt": "false",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS37": {
+      "loaded": true,
+      "prompts": false,
+      "skipPrompt": "true",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS38": {
+      "loaded": true,
+      "prompts": false,
+      "skipPrompt": "true",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS39": {
+      "loaded": true,
+      "prompts": false,
+      "skipPrompt": "true",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS40": {
+      "loaded": true,
+      "prompts": true,
+      "skipPrompt": "false",
       "parentPresent": true,
       "reserve": 16384
     }

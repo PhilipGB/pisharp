@@ -11,7 +11,7 @@ Provenance:
 | PR #53 merge commit | `0911db693078d0bb5e52ad7a44aa268902abf22b` |
 | Milestone base (`main`) | `0911db693078d0bb5e52ad7a44aa268902abf22b` |
 | Branch | `milestone/branch-summary-skip-prompt-parity` |
-| Implementation head | `2e3ca31a49603e5e9fc7282c4726ef378d2bdc41` |
+| Implementation heads | `2e3ca31a49603e5e9fc7282c4726ef378d2bdc41` (initial), `aef1209305e445176092556d79f775109f8386d1` (review correction) |
 | Pinned Pi | `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` |
 
 ## Contract
@@ -48,6 +48,13 @@ JavaScript truthiness is what decides. Verified executable results:
 A non-object `branchSummary` (`null`, `"bad"`, `42`, `[]`) replaces the lower scope by
 presence, after which `branchSummary?.skipPrompt` reads as absent and the prompt appears.
 
+The loaded object is never schema-validated, so the boundary also freezes:
+
+- an unrelated sibling (for example `futureSetting`) never affects `skipPrompt`, in user or
+  trusted-project scope;
+- a duplicated `skipPrompt` key resolves like `JSON.parse`: the later value wins
+  (`false, true` skips; `true, false` prompts).
+
 ## Implementation
 
 - `UserSettings.BranchSummary` is a `BranchSummarySettingValue?` carrying presence plus the
@@ -59,6 +66,9 @@ presence, after which `branchSummary?.skipPrompt` reads as absent and the prompt
 - `MergeBranchSummary` reproduces `deepMergeObjects` for this object: two stored objects merge
   property by property (presence, including a present `null`), and any other stored shape
   replaces the lower scope.
+- `BranchSummarySettings.Parse` reads only `reserveTokens` and `skipPrompt`: unrelated siblings
+  are ignored, a duplicated `skipPrompt` keeps the later value, and `reserveTokens` stays
+  validated (invalid or duplicated values still fail closed, out of scope).
 - `TerminalSessionNavigation.ResolveBranchSummaryChoiceAsync` returns
   `(Resume: false, Summarize: false, CustomInstructions: null)` when the gate is truthy. The
   active-run interruption and `ConversationTreeSelectionOptions` construction are untouched, so
@@ -85,28 +95,37 @@ The baseline run is preserved as `artifacts/parity/.../pisharp-fail-first.json` 
 development; the committed oracle and settings-boundary evidence freezes both sides after the
 change.
 
+A PR review then found one remaining boundary gap: unknown `branchSummary` siblings and a
+duplicated `skipPrompt` key were still rejected by `BranchSummarySettings.Parse`, so those
+files failed to load where pinned Pi ignored the sibling or kept the later value. The parser
+correction (implementation `aef12093`) closed it; BS32-BS40 and the `tolerant` PTY fixture
+freeze the behaviour, and the verifier rejects mutations of both.
+
 ## Evidence
 
 | Gate | Result |
 | --- | --- |
-| Settings boundary differential (31 cases, executable pinned Pi) | 0 differences in load result, merged token, key presence, prompt decision and reserve |
+| Settings boundary differential (40 cases, executable pinned Pi) | 0 differences in load result, merged token, key presence, prompt decision and reserve |
 | Fullscreen paired PTY, 100x30 and 140x40 | 0 semantic differences per case; exact same-Pi calibration |
 | Regular-mode paired PTY, 100x30 and 140x40 | 0 semantic differences per case; exact same-Pi calibration |
 | Malformed stored values and non-object parents | 0 semantic differences; all 11 cases prompt/skip exactly as pinned Pi |
+| Unknown siblings and duplicated keys | User sibling (`futureSetting`), duplicated `skipPrompt` (`false,true` and `true,false`), trusted-project sibling-only merge and untrusted exclusion: 0 semantic differences |
 | Layered project fixtures (false, null, reserve-only, malformed `0`, malformed `"false"`) | 0 semantic differences; trusted override, restart persistence and untrusted exclusion confirmed |
 | Skipped-prompt navigation | Same target and session entries as `No summary`; no provider request; no `branch_summary` entry |
-| `tools/parity/verify_settings_branch_summary_skip_prompt.py` with mutation controls | pass; 27 negative controls rejected |
-| Focused tests | 77 passed, 0 failed, 0 skipped (31 distinct test methods) |
+| `tools/parity/verify_settings_branch_summary_skip_prompt.py` with mutation controls | pass; 32 negative controls rejected |
+| Focused tests | 82 passed, 0 failed, 0 skipped (35 distinct test methods) |
 | `dotnet format` / `dotnet build --warnaserror` | pass |
-| Full .NET suite | 4651 passed, 0 failed, 0 skipped (9m56s); `NativeExtensionUiTests` excluded locally because it hangs on this host (same hang at base), CI runs it unchanged |
-| Exact-head CI | Linux CI run `43229761271` on implementation head `2e3ca31a`: all five jobs green |
+| Full .NET suite | 4656 passed, 0 failed, 0 skipped (11m22s); `NativeExtensionUiTests` excluded locally because it hangs on this host (same hang at base), CI runs it unchanged |
+| Exact-head CI | Linux CI pull_request run `43271103672` on implementation head `aef12093`: all five jobs green (the parallel push run `43271089322` hit an unrelated flaky builtin-tool workflow test) |
 
 ## Declared projections
 
-- `branchSummary.reserveTokens` validation is unchanged: PiSharp still rejects a negative or
-  non-integer reserve while pinned Pi would load it. This is out of scope; the ledger item
-  `settings-branchsummary-reservetokens` stays `not_started` and no required case exercises an
-  invalid reserve.
+- `branchSummary.reserveTokens` validation is unchanged: PiSharp still rejects a negative,
+  non-integer or duplicated reserve, and a duplicated top-level settings key still fails closed,
+  while pinned Pi's `JSON.parse` would keep the later value. Reserve handling is out of scope; the
+  ledger item `settings-branchsummary-reservetokens` stays `not_started` and no required case
+  exercises an invalid reserve. The milestone freezes `skipPrompt` and the enclosing object's
+  unknown siblings and duplicated `skipPrompt` key.
 - The PTY gate compares the semantic projection used by the earlier settings milestones rather
   than unrelated transcript/Markdown chrome.
 - No `/settings` row exists in pinned Pi, so PiSharp adds none.

@@ -35,6 +35,8 @@ PAIRED = [
      f"settings-branchsummary-skipprompt-checkpoints-project-malformed-{DATE}.json"),
     ("project-malformed-truthy", "terminal-branch-summary-skip-prompt-project-malformed-truthy-paired",
      f"settings-branchsummary-skipprompt-checkpoints-project-malformed-truthy-{DATE}.json"),
+    ("tolerant", "terminal-branch-summary-skip-prompt-tolerant-paired",
+     f"settings-branchsummary-skipprompt-checkpoints-tolerant-{DATE}.json"),
 ]
 
 # Runtime decision table frozen from pinned Pi's getter and `showTreeSelector` flow.
@@ -93,6 +95,13 @@ DECISIONS = {
         ("trusted-restart-tree-selected", False, None),
         ("untrusted-tree-selected", False, None),
     ],
+    "tolerant": [
+        ("unknown-tree-selected", False, None),
+        ("duplicate-tree-selected", False, None),
+        ("false-tree-selected", True, None),
+        ("trusted-tree-selected", False, None),
+        ("untrusted-tree-selected", False, None),
+    ],
 }
 
 PROMPT_CHOICES = ["No summary", "Summarize", "Summarize with custom prompt"]
@@ -110,6 +119,7 @@ EXTRA_CHECKPOINTS = {
     "project-reserve": ["untrusted-tree-after-state"],
     "project-malformed": ["untrusted-tree-after-state"],
     "project-malformed-truthy": ["untrusted-tree-after-state"],
+    "tolerant": [],
 }
 
 

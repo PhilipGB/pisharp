@@ -4,7 +4,7 @@
   "title": "Setting: branchSummary.skipPrompt",
   "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
   "baseSha": "0911db693078d0bb5e52ad7a44aa268902abf22b",
-  "implementationSha": "2e3ca31a49603e5e9fc7282c4726ef378d2bdc41",
+  "implementationSha": "aef1209305e445176092556d79f775109f8386d1",
   "oracleFile": "docs/parity/fixtures/settings-branchsummary-skipprompt-pi-oracle-2026-11-12.json",
   "settingsBoundaryFile": "docs/parity/fixtures/settings-branchsummary-skipprompt-settings-boundary-2026-11-12.json",
   "milestoneDoc": "docs/parity/fixtures/settings-branchsummary-skipprompt-2026-11-12.md",
@@ -16,7 +16,8 @@
     "tools/parity/terminal/fixtures/terminal-branch-summary-skip-prompt-project-null.json",
     "tools/parity/terminal/fixtures/terminal-branch-summary-skip-prompt-project-reserve.json",
     "tools/parity/terminal/fixtures/terminal-branch-summary-skip-prompt-project-malformed.json",
-    "tools/parity/terminal/fixtures/terminal-branch-summary-skip-prompt-project-malformed-truthy.json"
+    "tools/parity/terminal/fixtures/terminal-branch-summary-skip-prompt-project-malformed-truthy.json",
+    "tools/parity/terminal/fixtures/terminal-branch-summary-skip-prompt-tolerant.json"
   ],
   "checkpointFiles": [
     "docs/parity/fixtures/settings-branchsummary-skipprompt-checkpoints-fullscreen-2026-11-12.json",
@@ -26,7 +27,8 @@
     "docs/parity/fixtures/settings-branchsummary-skipprompt-checkpoints-project-null-2026-11-12.json",
     "docs/parity/fixtures/settings-branchsummary-skipprompt-checkpoints-project-reserve-2026-11-12.json",
     "docs/parity/fixtures/settings-branchsummary-skipprompt-checkpoints-project-malformed-2026-11-12.json",
-    "docs/parity/fixtures/settings-branchsummary-skipprompt-checkpoints-project-malformed-truthy-2026-11-12.json"
+    "docs/parity/fixtures/settings-branchsummary-skipprompt-checkpoints-project-malformed-truthy-2026-11-12.json",
+    "docs/parity/fixtures/settings-branchsummary-skipprompt-checkpoints-tolerant-2026-11-12.json"
   ],
   "cases": [
     {
@@ -497,6 +499,141 @@
       ]
     },
     {
+      "id": "BS32",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS32 matches pinned Pi",
+      "oracle": [
+        "BS32"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.DuplicateSkipPromptUsesTheLaterValue"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/duplicate-tree-selected"
+      ]
+    },
+    {
+      "id": "BS33",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS33 matches pinned Pi",
+      "oracle": [
+        "BS33"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.DuplicateSkipPromptUsesTheLaterValue"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/duplicate-tree-selected"
+      ]
+    },
+    {
+      "id": "BS34",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS34 matches pinned Pi",
+      "oracle": [
+        "BS34"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.UnknownSiblingsDoNotAffectThePromptDecision"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/unknown-tree-selected"
+      ]
+    },
+    {
+      "id": "BS35",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS35 matches pinned Pi",
+      "oracle": [
+        "BS35"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.UnknownSiblingsDoNotAffectThePromptDecision"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/false-tree-selected"
+      ]
+    },
+    {
+      "id": "BS36",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS36 matches pinned Pi",
+      "oracle": [
+        "BS36"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.TrustedProjectUnknownSiblingsDoNotBlockAnExplicitOverride"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/trusted-tree-selected"
+      ]
+    },
+    {
+      "id": "BS37",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS37 matches pinned Pi",
+      "oracle": [
+        "BS37"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.TrustedProjectUnknownSiblingsDoNotBlockAnExplicitOverride"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/trusted-tree-selected"
+      ]
+    },
+    {
+      "id": "BS38",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS38 matches pinned Pi",
+      "oracle": [
+        "BS38"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.UnknownSiblingsDoNotAffectThePromptDecision"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/unknown-tree-selected"
+      ]
+    },
+    {
+      "id": "BS39",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS39 matches pinned Pi",
+      "oracle": [
+        "BS39"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.TrustedProjectUnknownSiblingsKeepTheInheritedSkipPrompt"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/trusted-tree-selected"
+      ]
+    },
+    {
+      "id": "BS40",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS40 matches pinned Pi",
+      "oracle": [
+        "BS40"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.DuplicateSkipPromptUsesTheLaterValue"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/duplicate-tree-selected"
+      ]
+    },
+    {
       "id": "RT01",
       "required": true,
       "status": "pass",
@@ -688,6 +825,30 @@
       ],
       "ptyCheckpoints": [
         "100x30-dark-fullscreen/unset-tree-open"
+      ]
+    },
+    {
+      "id": "RT11",
+      "required": true,
+      "status": "pass",
+      "requirement": "Unknown branchSummary siblings and a duplicated skipPrompt key do not block the setting",
+      "oracle": [
+        "tolerant:unknown-tree-selected",
+        "tolerant:duplicate-tree-selected",
+        "tolerant:false-tree-selected",
+        "tolerant:trusted-tree-selected",
+        "tolerant:untrusted-tree-selected"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.UnknownSiblingsDoNotAffectThePromptDecision",
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.DuplicateSkipPromptUsesTheLaterValue",
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.TrustedProjectUnknownSiblingsKeepTheInheritedSkipPrompt",
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.TrustedProjectUnknownSiblingsDoNotBlockAnExplicitOverride"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/unknown-tree-selected",
+        "100x30-dark-fullscreen/duplicate-tree-selected",
+        "100x30-dark-fullscreen/trusted-tree-selected"
       ]
     },
     {
@@ -927,7 +1088,7 @@
       "id": "paired-pty",
       "required": true,
       "status": "match",
-      "evidence": "Eight paired PTY fixtures at 100x30 and 140x40 dark fullscreen and regular report zero semantic differences across prompt presence, tree rows/selection/count/tags, summary rows, scenario errors and the persisted settings/session."
+      "evidence": "Nine paired PTY fixtures at 100x30 and 140x40 dark fullscreen and regular report zero semantic differences across prompt presence, tree rows/selection/count/tags, summary rows, scenario errors and the persisted settings/session."
     },
     {
       "id": "same-pi-calibration",
@@ -945,7 +1106,7 @@
       "id": "malformed-value-parity",
       "required": true,
       "status": "match",
-      "evidence": "Stored \"false\", \"\", 1, 0, {}, [], {\"nested\":false} and null follow JavaScript truthiness in both products, and non-object branchSummary parents load and read as absent."
+      "evidence": "Stored \"false\", \"\", 1, 0, {}, [], {\"nested\":false} and null follow JavaScript truthiness in both products, non-object branchSummary parents load and read as absent, unrelated nested siblings are ignored and a duplicated skipPrompt resolves to the later value."
     },
     {
       "id": "no-summary-equivalence",
@@ -958,8 +1119,8 @@
     {
       "id": "reserve-token-validation",
       "required": false,
-      "observation": "Pinned Pi loads any branchSummary.reserveTokens value, while PiSharp continues to reject a negative or non-integer reserve.",
-      "projection": "Unchanged pre-existing validation, deliberately out of scope: settings-branchsummary-reservetokens stays not_started and no required case exercises an invalid reserve."
+      "observation": "Inside branchSummary, PiSharp still validates reserveTokens (negative, non-integer or duplicated values fail closed), and a duplicated top-level settings key still fails closed, while pinned Pi's JSON.parse keeps the later value. Pinned Pi also loads any reserveTokens value.",
+      "projection": "Unchanged pre-existing reserve/top-level validation, deliberately out of scope: settings-branchsummary-reservetokens stays not_started and no required case exercises an invalid or duplicated reserve or a duplicated top-level key. This milestone freezes skipPrompt and its enclosing object's unknown siblings and duplicated skipPrompt key."
     },
     {
       "id": "terminal-chrome",
@@ -976,6 +1137,7 @@
   ],
   "requiredTests": {
     "facts": [
+      "PiSharp.Tests.BranchSummarySkipPromptSettingTests.DuplicateSkipPromptUsesTheLaterValue",
       "PiSharp.Tests.BranchSummarySkipPromptSettingTests.ExplicitBooleanValuesMatchThePinnedPromptDecision",
       "PiSharp.Tests.BranchSummarySkipPromptSettingTests.MalformedTrustedProjectValueReplacesTheValidUserValue",
       "PiSharp.Tests.BranchSummarySkipPromptSettingTests.ProjectNonObjectReplacesTheUserObjectAndReadsAsAbsent",
@@ -985,6 +1147,9 @@
       "PiSharp.Tests.BranchSummarySkipPromptSettingTests.StoredMalformedValuesUseJavaScriptTruthiness",
       "PiSharp.Tests.BranchSummarySkipPromptSettingTests.TrustedProjectBooleanOverridesTheUserValue",
       "PiSharp.Tests.BranchSummarySkipPromptSettingTests.TrustedProjectExplicitNullReplacesTheUserValueAndResolvesToTheDefault",
+      "PiSharp.Tests.BranchSummarySkipPromptSettingTests.TrustedProjectUnknownSiblingsDoNotBlockAnExplicitOverride",
+      "PiSharp.Tests.BranchSummarySkipPromptSettingTests.TrustedProjectUnknownSiblingsKeepTheInheritedSkipPrompt",
+      "PiSharp.Tests.BranchSummarySkipPromptSettingTests.UnknownSiblingsDoNotAffectThePromptDecision",
       "PiSharp.Tests.BranchSummarySkipPromptSettingTests.UnsetResolvesToTheDefaultPromptPath",
       "PiSharp.Tests.BranchSummarySkipPromptSettingTests.UntrustedProjectContributesNothing",
       "PiSharp.Tests.BranchSummarySkipPromptSettingTests.UserNonObjectParentReadsAsAbsent",
@@ -1017,7 +1182,8 @@
       "project-null",
       "project-reserve",
       "project-malformed",
-      "project-malformed-truthy"
+      "project-malformed-truthy",
+      "tolerant"
     ]
   },
   "gates": {
@@ -1031,8 +1197,8 @@
     },
     "fullSuite": {
       "status": "pass",
-      "evidence": "dotnet test PiSharp.slnx at implementation head 2e3ca31a: 4651 passed, 0 failed, 0 skipped in 9m56s. NativeExtensionUiTests is excluded locally because it hangs in this development environment (the same hang reproduces on the base); CI runs the class unchanged.",
-      "total": 4651,
+      "evidence": "dotnet test PiSharp.slnx at implementation head aef12093: 4656 passed, 0 failed, 0 skipped in 11m22s. NativeExtensionUiTests is excluded locally because it hangs in this development environment (the same hang reproduces on the base); CI runs the class unchanged.",
+      "total": 4656,
       "failed": 0,
       "skipped": 0,
       "excluded": [
@@ -1041,9 +1207,9 @@
     },
     "exactHeadCi": {
       "status": "pass",
-      "evidence": "Linux CI run 43229761271 on implementation head 2e3ca31a: all five jobs green (windows-clipboard-contracts, managed-package-verifier, mcp-conformance, macos-session-locks, macos-clipboard-contracts).",
-      "run": "43229761271",
-      "implementationSha": "2e3ca31a49603e5e9fc7282c4726ef378d2bdc41"
+      "evidence": "Linux CI pull_request run 43271103672 on implementation head aef12093: all five jobs green (windows-clipboard-contracts, managed-package-verifier, mcp-conformance, macos-session-locks, macos-clipboard-contracts). The parallel push run 43271089322 hit the unrelated flaky BuiltinToolWorkflowTests.AllSevenToolsRetainPinnedOutcomesThroughMafAndCanonicalFileRestart on the same tree.",
+      "run": "43271103672",
+      "implementationSha": "aef1209305e445176092556d79f775109f8386d1"
     },
     "ledger": {
       "status": "pass",
