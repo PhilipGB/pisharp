@@ -6,6 +6,20 @@
 
 **Stop condition:** a full current-Pi audit finds no material in-scope gaps, required behavioral/differential evidence passes, exact-head CI is green, and major architecture bottlenecks are resolved.
 
+## Bounded follow-up — branchSummary.reserveTokens — 2026-11-12
+
+PR #54 merged at `bf893d5ab22a7d0503847127e10cb58e46a2f374` after its description
+was corrected and exact-head CI verified. Draft PR #55 branches from that exact
+main and completes the file-only reserve path at implementation
+`cab70fdd4dce42bcf5f88dd987a2000d43caf83a`: raw JSON, presence merge, numeric
+coercion, context subtraction and actual provider history. The 54-case differential
+and same-Pi calibration are exact; six real Summarize-choice PTY requests match.
+Focused tests pass 285/285 and the full suite 4770/4770 without exclusions/skips.
+An explicitly approved branch-only output-cap correction accompanies the reserve
+work; compaction is unchanged. See the
+[receipt](parity/fixtures/settings-branchsummary-reservetokens-receipt-2026-11-12.md)
+and PR #55's description for final evidence/head/CI metadata. skipPrompt remains verified.
+
 ## Current state — 2026-11-08
 
 Current status is based on `main` at `d432ca40eed1bb68d8e3dc37c2cf22c08fad7799`, the merge of PR #49. The newest in-review milestone is [OpenCode Go provider and API-key login parity](parity/fixtures/opencode-go-provider-001/README.md), implemented on branch `milestone/opencode-go-provider-parity` as a draft PR, open and unmerged. Earlier merged milestones include [Interactive streaming, reasoning, tool progress and cancellation parity evaluation](parity/fixtures/interactive-streaming-cancellation-001/README.md) (PR #47, `03bfa4e8`), [Wrapped Bash command style parity](parity/fixtures/wrapped-bash-command-style-parity-2026-11-06/README.md) (PR #46, `c615fc17`), [Bash tool output collapse and expansion parity](parity/fixtures/collapsed-tool-output-parity-2026-11-06/README.md) (PR #45, `0984bfc9`) and [multi-step agent execution and recovery parity](parity/fixtures/objective-agent-parity-002-2026-11-06/README.md) (PR #44, `7748479c`). Global parity remains `in_progress` at **21 verified, 142 in progress and 31 not started** across the 194 required capabilities, derived from the committed execution ledger. The next deliverable after review is to select the next verified-capability gap from the execution ledger. Open architecture risks are tracked in the [architecture document](architecture.md#open-architecture-risks).

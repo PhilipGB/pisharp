@@ -1533,9 +1533,7 @@ public sealed partial class ConversationRun
                 if (options.Summarize && summaryText is null)
                 {
                     var summaryEntries = oldPath.Skip(commonPathLength).ToArray();
-                    var tokenBudget = _autoCompaction is { } contextPolicy
-                        ? Math.Max(0, contextPolicy.ContextWindowTokens - options.ReserveTokens)
-                        : Math.Max(0, 128_000 - options.ReserveTokens);
+                    var tokenBudget = options.HistoryTokenBudget(_autoCompaction?.ContextWindowTokens ?? 128_000);
                     var preparation = BranchSummaryPreparation.Prepare(summaryEntries, tokenBudget);
                     if (preparation.Messages.Count > 0)
                     {
@@ -1551,6 +1549,15 @@ public sealed partial class ConversationRun
                             (summary.Usage is { } usage
                                 ? UsageRecord.Create(CurrentModel, "branch_summary", usage, _pricing)
                                 : null);
+                    }
+                    else if (summaryEntries.Length > 0)
+                    {
+                        summaryText = "No content to summarize";
+                        summaryDetails = JsonSerializer.SerializeToElement(new
+                        {
+                            readFiles = Array.Empty<string>(),
+                            modifiedFiles = Array.Empty<string>()
+                        });
                     }
                 }
                 entriesBeforeSelection = Conversation.Tree.Entries.Count;

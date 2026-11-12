@@ -1,3 +1,13 @@
+## Bounded milestone — branchSummary.reserveTokens — 2026-11-12
+
+Draft PR #55 completes the file-only reserve setting from raw settings and nested
+trust-aware merge through numeric coercion and actual summarizer history. Executable
+Pi/PiSharp and same-Pi results match 54/54; six physical Summarize-choice PTY cases,
+285 focused tests and the full 4770-test suite pass without exclusions or skips.
+skipPrompt remains verified; compaction settings are unchanged. See the
+[receipt](fixtures/settings-branchsummary-reservetokens-receipt-2026-11-12.md)
+and the PR description for exact final-head CI and evidence provenance.
+
 ## Current state — 2026-11-08
 
 Current status and project goal are maintained in [the continuation](../continuation.md); open architecture risks are tracked in the [architecture document](../architecture.md#open-architecture-risks). The milestone summaries below are historical and may retain the wording used when they were written; later merges supersede their status claims.

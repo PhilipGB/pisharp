@@ -1,0 +1,79 @@
+{
+  "schema": 1,
+  "capability": "settings-branchsummary-reservetokens",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "implementationSha": "cab70fdd4dce42bcf5f88dd987a2000d43caf83a",
+  "milestoneBase": "bf893d5ab22a7d0503847127e10cb58e46a2f374",
+  "pr54Merge": "bf893d5ab22a7d0503847127e10cb58e46a2f374",
+  "pr54ReviewedHead": "d8da7c4e9900cf5f013961f2f251d28fae4ae695",
+  "pr54CiRun": 43274890874,
+  "pr54MergeMethod": "merge commit",
+  "cleanAtBranchCreation": true,
+  "branch": "milestone/branch-summary-reserve-tokens-parity",
+  "quality": [
+    {
+      "command": [
+        "dotnet",
+        "build",
+        "PiSharp.slnx",
+        "--warnaserror",
+        "-m:1"
+      ],
+      "exitCode": 0,
+      "logSha256": "dc6ecdef2546e25e459791d20c482eae75436c7b52c5f303416cbd818e24e7e9"
+    },
+    {
+      "command": [
+        "dotnet",
+        "format",
+        "PiSharp.slnx",
+        "--verify-no-changes"
+      ],
+      "exitCode": 0,
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "focused": {
+    "passed": 285,
+    "failed": 0,
+    "skipped": 0,
+    "trxSha256": "76ce287552ab29b880e7ac0099cfb3c74409a4feeafdc59a57d0395ca54d1d76"
+  },
+  "full": {
+    "passed": 4770,
+    "failed": 0,
+    "skipped": 0,
+    "trxSha256": "83ad846ce097aec1863f66a5a26ba31083523126f2ddf1fe5f6b396daf0979ae",
+    "exclusions": []
+  },
+  "sourceHashes": {
+    "docs/parity/fixtures/settings-branchsummary-reservetokens-baseline-2026-11-12.json": "1a7544b2e61ecde56951b21a4171629a3c294a2606608c7072d9c58293cda3cd",
+    "docs/parity/fixtures/settings-branchsummary-reservetokens-differential-2026-11-12.json": "8d517c232d9d652c0899ecfb9650f8d5579e53183df6953cc7e63bd81e29d376",
+    "docs/parity/fixtures/settings-branchsummary-reservetokens-pty-requests-2026-11-12.json": "7d61ef0a880189dca219d19081f115bc0a1ba1d78639c9de52a89f503d275539",
+    "docs/parity/fixtures/settings-branchsummary-reservetokens-skip-regression-2026-11-12.json": "2842b3db8843d661ddf66c99d107c18e72dc57fd5c3725a5cf48da24ba79bb9c",
+    "src/PiSharp.Cli/Configuration/BranchSummaryReserveTokensSetting.cs": "0785a75bbfcfd87870417a6608a24acb5b3378e2c7b72986108101e2c2c6b159",
+    "src/PiSharp.Cli/Configuration/UserSettings.cs": "6d7ae8c19fe8a47853c45b16695ef290f96cd750cc1f5e17a8c50b3fe2dd6408",
+    "src/PiSharp.Cli/Sessions/InteractiveSessionCommands.cs": "f862da583dbd4a4b6ed086da2ca0f987377fcd5fb5f16b4d27cff5bba1c321e1",
+    "src/PiSharp.Cli/Sessions/TerminalSessionNavigation.cs": "c3ed38b2f9a5382dea2032c624268d2e4895a6136182903fa7643d342250f29b",
+    "src/PiSharp.Runtime/Agents/PiCompactionSummarizer.cs": "0763c6043bb57312c398b6409259a0eb75641548f88b3572ae012034293fdf1c",
+    "src/PiSharp.Runtime/Sessions/BranchSummaryPreparation.cs": "6939ce9e751aa8aa8e5852a198d5841acae1c89e16c5ee8953371da0596ac662",
+    "src/PiSharp.Runtime/Sessions/ConversationRun.cs": "4a0cf409ee8b45681c5598db2318d152fa82a25a40d1d77b08f4f14a5039f556",
+    "src/PiSharp.Runtime/Sessions/ConversationTreeSelectionOptions.cs": "70731d5d7ee27956594341c10159ebb88210b4d825822c005a72295f4076234c",
+    "tests/PiSharp.Tests/Cli/Configuration/BranchSummaryReserveTokensSettingTests.cs": "aac30024e5b7925899084d6fe9ac87deae99bfd017ff018c3f671a5d350bdd2a",
+    "tests/PiSharp.Tests/Cli/Configuration/BranchSummarySkipPromptSettingTests.cs": "f5d05d95ed899aa9b6a58b4dd9807cca15b40f2444b614890f325a081319ca1c",
+    "tests/PiSharp.Tests/Cli/Configuration/UserSettingsTests.cs": "28d3f0bc28e533d848759af7fc5909f88545e4e284ed4a38f6cef7a898a86d3d",
+    "tests/PiSharp.Tests/Cli/Tui/BranchSummaryReserveTokensPtyTests.cs": "3d8f6215e332fa67dac8f2ba913c1468069a3714f7b95aaba201e93a6de8cf93",
+    "tests/PiSharp.Tests/PiSharp.Tests.csproj": "e21c640234c09b02f7106efaa61b768eadf1dadf1964152e384390632c6da490",
+    "tools/parity/branch_summary_reserve_cases.json": "6bfd40a0a0227a4d6fd8c4da41e45523df297709c5062f4a69f6f4277fa3251f",
+    "tools/parity/branch_summary_reserve_cases.py": "ef005eab4e24066986966f3a4d8850802a6a5e70952ae916cf77f08242e2f1f6",
+    "tools/parity/branch_summary_reserve_differential.py": "93dfbd018f66626c869547aaa08fb84837a16ed7d6754a23c8455e9fc24d6b8b",
+    "tools/parity/branch_summary_reserve_evidence.py": "c7b5516ce269b10d70d62f1be0ce97a2a32fbda6d154ea52b1086c7f88e1720e",
+    "tools/parity/branch_summary_reserve_oracle.mjs": "26eef41774450efa08463ddcdf2bbca36671e43cf4a5a1a7b84aba3affd496d8",
+    "tools/parity/branch_summary_reserve_probe.cs": "e5d697b3eae9ef2a98af176b6bfcc23c741ff8459cf27a4d58872889fcc7d515",
+    "tools/parity/branch_summary_skip_prompt_probe.cs": "edc818675e960d992857849275e6c8b0b3bdd83c4ea723839b60e08e8b8dcccf",
+    "tools/parity/verify_settings_branch_summary_reserve_tokens.py": "c87405a8ab62db4f57399290b01a2f459378e45412bfe6ff6cd1a79b6c5bd09d"
+  },
+  "publication": "Evidence commit, final PR head and exact-final-head CI are recorded in the PR description without another metadata commit.",
+  "safetyProjections": [],
+  "normalization": "Stored tokens compared as parsed JSON; nonfinite doubles explicitly encoded. Raw provider transcripts retained; compare exact marker inclusion, order and multiplicity, not existing summary-wrapper newline differences."
+}

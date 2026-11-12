@@ -7,7 +7,7 @@ namespace PiSharp.Runtime.Sessions;
 /// <summary>Builds bounded branch-summary input from canonical entries without changing session state.</summary>
 internal static class BranchSummaryPreparation
 {
-    public static BranchSummaryPreparationResult Prepare(IReadOnlyList<ConversationNode> entries, int tokenBudget = 0)
+    public static BranchSummaryPreparationResult Prepare(IReadOnlyList<ConversationNode> entries, double tokenBudget = 0)
     {
         var readFiles = new HashSet<string>(StringComparer.Ordinal);
         var writtenFiles = new HashSet<string>(StringComparer.Ordinal);

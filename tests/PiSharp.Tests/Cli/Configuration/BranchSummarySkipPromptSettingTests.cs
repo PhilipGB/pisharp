@@ -288,13 +288,14 @@ public sealed class BranchSummarySkipPromptSettingTests
     }
 
     [Fact]
-    public async Task ReserveTokensStillFailsClosedForInvalidValues()
+    public async Task RawNegativeReserveDoesNotChangeThePromptGate()
     {
         var root = NewRoot();
         try
         {
-            await Assert.ThrowsAsync<InvalidDataException>(() =>
-                LoadAsync(root, "{\"branchSummary\":{\"reserveTokens\":-1}}"));
+            var settings = await LoadAsync(root, "{\"branchSummary\":{\"reserveTokens\":-1}}");
+            Assert.False(settings.EffectiveBranchSummary.SkipsSummaryPrompt);
+            Assert.Equal(-1, settings.EffectiveBranchSummary.EffectiveReserveTokens);
         }
         finally { Directory.Delete(root, recursive: true); }
     }

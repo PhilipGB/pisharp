@@ -151,7 +151,7 @@ internal sealed class TerminalSessionNavigation(ActiveProjectRuntime projectBind
             var branchSummarySettings = projectBinding.Settings.EffectiveBranchSummary;
             var options = new ConversationTreeSelectionOptions(Summarize: summarize,
                 CustomInstructions: customInstructions,
-                ReserveTokens: branchSummarySettings.EffectiveReserveTokens);
+                ConfiguredReserveTokens: branchSummarySettings.EffectiveReserveTokens);
             ConversationTreeNavigationResult navigation;
             if (summarize && presentation.Screen is { IsActive: true })
             {

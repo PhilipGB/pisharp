@@ -6460,14 +6460,27 @@
     {
       "id": "settings-branchsummary-reservetokens",
       "title": "Setting: branchSummary.reserveTokens",
-      "status": "not_started",
+      "status": "verified",
       "source": "docs/parity/detailed-inventory.md:62",
       "acceptance": [
         "Support branchSummary.reserveTokens with upstream type/default and user/trusted-project precedence",
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "Presence-carrying raw reserve preserves JSON file values and nested merge. Nullish values default to 16384; JSON Number coercion is isolated at the CLI settings boundary.",
+        "ConversationTreeSelectionOptions keeps the validated integer API and adds ConfiguredReserveTokens for file-loaded double arithmetic. ContextWindow - reserve feeds the existing preparation with the pinned positive-budget gate.",
+        "Positive budgets can select empty history and persist No content to summarize; zero, negative and NaN budgets leave history unlimited. No /settings row or interactive writer.",
+        "With explicit scope approval, the independently exposed branch-only output-cap mismatch is corrected to min(4096, positive model max); compaction policy is unchanged."
+      ],
+      "evidence": [
+        "docs/parity/fixtures/settings-branchsummary-reservetokens-baseline-2026-11-12.json",
+        "docs/parity/fixtures/settings-branchsummary-reservetokens-differential-2026-11-12.json",
+        "docs/parity/fixtures/settings-branchsummary-reservetokens-acceptance-2026-11-12.json",
+        "docs/parity/fixtures/settings-branchsummary-reservetokens-skip-regression-2026-11-12.json",
+        "docs/parity/fixtures/settings-branchsummary-reservetokens-pty-requests-2026-11-12.json",
+        "docs/parity/fixtures/settings-branchsummary-reservetokens-receipt-2026-11-12.md",
+        "tools/parity/verify_settings_branch_summary_reserve_tokens.py"
+      ],
       "dependencies": [],
       "handover_review": {
         "decision": "required-contract-incomplete-or-not-yet-proven",

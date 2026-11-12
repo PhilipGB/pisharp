@@ -1,0 +1,492 @@
+{
+  "schema": 1,
+  "cases": [
+    {
+      "id": "BR01-unset",
+      "userRaw": "{}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 100,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-zero",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":0}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 100,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-one",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":1}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 31,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-normal",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":4096}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 4116,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-default",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":16384}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 16404,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-negative",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":-1}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 29,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-fraction",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":2.5}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 32,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-fraction-boundary",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":2}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 32,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-equal",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":100}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 100,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-greater",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":101}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 100,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-large",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":1e100}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 100,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-null",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":null}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 16404,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-numeric-string",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":\"1000\"}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 1020,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-empty-string",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":\"\"}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 20,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-bad-string",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":\"bad\"}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 100,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-true",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":true}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 21,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-false",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":false}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 20,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-object",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":{}}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 100,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-array",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":[]}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 20,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-single-array",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":[1000]}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 1020,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-multi-array",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":[1,2]}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 100,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-nested-array",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":[[1000]]}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 1020,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-null-array",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":[null]}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 20,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-hex-string",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":\"0x10\"}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 36,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-binary-string",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":\"0b10000\"}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 36,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-octal-string",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":\"0o20\"}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 36,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-infinity-string",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":\"Infinity\"}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 100,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-negative-zero",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":-0}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 20,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-wide-number",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":2147483648}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 100,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-tiny-budget",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":99}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 100,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-threshold",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":90}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 100,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-below-threshold",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":90.5}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 100,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-second-context",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":180}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 200,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-context-fallback",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":127980}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 0,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-duplicate-100-20",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":100,\"reserveTokens\":20}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 40,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-duplicate-20-100",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":20,\"reserveTokens\":100}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 40,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-parent-null",
+      "userRaw": "{\"branchSummary\":null}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 16404,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-parent-string",
+      "userRaw": "{\"branchSummary\":\"bad\"}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 16404,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-parent-number",
+      "userRaw": "{\"branchSummary\":42}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 16404,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-parent-array",
+      "userRaw": "{\"branchSummary\":[]}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 16404,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR04-skip-only",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":4096}}",
+      "projectRaw": "{\"branchSummary\":{\"skipPrompt\":false}}",
+      "projectTrusted": true,
+      "contextWindow": 4116,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR05-override",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":4096}}",
+      "projectRaw": "{\"branchSummary\":{\"reserveTokens\":1024}}",
+      "projectTrusted": true,
+      "contextWindow": 4116,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR06-null",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":4096}}",
+      "projectRaw": "{\"branchSummary\":{\"reserveTokens\":null}}",
+      "projectTrusted": true,
+      "contextWindow": 4116,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR07-untrusted",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":4096}}",
+      "projectRaw": "{\"branchSummary\":{\"reserveTokens\":1024}}",
+      "projectTrusted": false,
+      "contextWindow": 4116,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR08-numeric",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":4096}}",
+      "projectRaw": "{\"branchSummary\":{\"reserveTokens\":\"1000\"}}",
+      "projectTrusted": true,
+      "contextWindow": 4116,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR08-bad",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":4096}}",
+      "projectRaw": "{\"branchSummary\":{\"reserveTokens\":\"bad\"}}",
+      "projectTrusted": true,
+      "contextWindow": 4116,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR08-zero",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":4096}}",
+      "projectRaw": "{\"branchSummary\":{\"reserveTokens\":0}}",
+      "projectTrusted": true,
+      "contextWindow": 4116,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR09-sibling",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":4096}}",
+      "projectRaw": "{\"branchSummary\":{\"futureSetting\":42}}",
+      "projectTrusted": true,
+      "contextWindow": 4116,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-unknown-sibling",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":4096,\"futureSetting\":42}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 4116,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-skip-true",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":\"bad\",\"skipPrompt\":true}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 100,
+      "maxTokens": 8192,
+      "history": "messages"
+    },
+    {
+      "id": "BR-custom",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":80}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 100,
+      "maxTokens": 8192,
+      "history": "messages",
+      "customInstructions": "CUSTOM BRANCH FOCUS"
+    },
+    {
+      "id": "BR-cutoff-summary",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":80}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 100,
+      "maxTokens": 8192,
+      "history": "summary"
+    },
+    {
+      "id": "BR-cutoff-compaction",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":80}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 100,
+      "maxTokens": 8192,
+      "history": "compaction"
+    },
+    {
+      "id": "BR-cutoff-files",
+      "userRaw": "{\"branchSummary\":{\"reserveTokens\":80}}",
+      "projectRaw": "{}",
+      "projectTrusted": true,
+      "contextWindow": 100,
+      "maxTokens": 8192,
+      "history": "files"
+    }
+  ]
+}

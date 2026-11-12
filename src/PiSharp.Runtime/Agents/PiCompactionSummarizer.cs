@@ -245,6 +245,7 @@ internal sealed class PiCompactionSummarizer
         var outputLimit = reserveTokens is { } reserve
             ? (int)Math.Floor((turnPrefix ? 0.5 : 0.8) * reserve)
             : desiredOutputTokens;
+        if (usageSource == "branch_summary") outputLimit = Math.Min(4096, desiredOutputTokens ?? 4096);
         if (reserveTokens is not null && desiredOutputTokens is > 0)
             outputLimit = Math.Min(outputLimit ?? desiredOutputTokens.Value, desiredOutputTokens.Value);
         if (outputLimit is { } maxOutputTokens)
