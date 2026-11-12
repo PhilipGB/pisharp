@@ -824,7 +824,6 @@ public sealed class UserSettingsTests
     [InlineData("{\"compaction\":{\"modelOverrides\":[]}}")]
     [InlineData("{\"branchSummary\":{\"reserveTokens\":-1}}")]
     [InlineData("{\"branchSummary\":{\"reserveTokens\":1,\"reserveTokens\":2}}")]
-    [InlineData("{\"branchSummary\":{\"unknown\":true}}")]
     [InlineData("{\"images\":{\"blockImages\":\"true\"}}")]
     [InlineData("{\"images\":{\"blockImages\":true,\"blockImages\":false}}")]
     [InlineData("{\"images\":{\"autoResize\":\"true\"}}")]

@@ -39,10 +39,20 @@ function describe(value) {
 	return value === undefined ? "<undefined>" : JSON.stringify(value);
 }
 
+/** Duplicate JSON keys only survive as raw text, so a case may supply userRaw/projectRaw. */
+function source(item, scope) {
+	const raw = item[`${scope}Raw`];
+	if (raw !== undefined) return raw;
+	const value = item[scope];
+	return value === null || value === undefined ? undefined : JSON.stringify(value);
+}
+
 function observe(item) {
 	const storage = new settingsModule.InMemorySettingsStorage();
-	if (item.user !== null) storage.withLock("global", () => JSON.stringify(item.user));
-	if (item.project !== null) storage.withLock("project", () => JSON.stringify(item.project));
+	const user = source(item, "user");
+	if (user !== undefined) storage.withLock("global", () => user);
+	const project = source(item, "project");
+	if (project !== undefined) storage.withLock("project", () => project);
 
 	const manager = settingsModule.SettingsManager.fromStorage(storage, {
 		projectTrusted: item.projectTrusted ?? true,

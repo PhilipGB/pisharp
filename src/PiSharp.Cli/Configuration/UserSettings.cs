@@ -120,22 +120,27 @@ public sealed record BranchSummarySettings(int? ReserveTokens = null,
             throw new InvalidDataException("settings.json branchSummary must be an object.");
         int? reserve = null;
         BranchSummarySkipPromptSetting? skipPrompt = null;
-        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var reserveSeen = false;
         foreach (var property in value.EnumerateObject())
         {
-            if (!seen.Add(property.Name))
-                throw new InvalidDataException($"settings.json branchSummary contains duplicate property '{property.Name}'.");
             switch (property.Name)
             {
                 case "reserveTokens" when property.Value.ValueKind == JsonValueKind.Number &&
                     property.Value.TryGetInt32(out var tokens) && tokens >= 0:
+                    // reserveTokens stays validated and out of scope for this milestone.
+                    if (reserveSeen)
+                        throw new InvalidDataException(
+                            "settings.json branchSummary contains duplicate property 'reserveTokens'.");
+                    reserveSeen = true;
                     reserve = tokens;
                     break;
+                case "reserveTokens":
+                    throw new InvalidDataException(
+                        "settings.json branchSummary.reserveTokens is invalid or unsupported.");
                 case "skipPrompt":
+                    // Pinned Pi resolves duplicate keys with the later value; unknown siblings are ignored.
                     skipPrompt = BranchSummarySkipPromptSetting.From(property.Value);
                     break;
-                default:
-                    throw new InvalidDataException($"settings.json branchSummary.{property.Name} is invalid or unsupported.");
             }
         }
         return new(reserve, skipPrompt);

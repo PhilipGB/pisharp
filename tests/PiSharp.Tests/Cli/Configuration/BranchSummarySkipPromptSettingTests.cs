@@ -211,6 +211,66 @@ public sealed class BranchSummarySkipPromptSettingTests
     }
 
     [Theory]
+    // Pinned Pi never validates the loaded object, so unrelated siblings are ignored.
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task UnknownSiblingsDoNotAffectThePromptDecision(bool stored, bool prompts)
+    {
+        var root = NewRoot();
+        try
+        {
+            var settings = await LoadAsync(root, "{\"branchSummary\":{\"skipPrompt\":" +
+                (stored ? "true" : "false") + ",\"futureSetting\":123}}");
+            Assert.Equal(prompts, !settings.EffectiveBranchSummary.SkipsSummaryPrompt);
+            Assert.Equal(stored ? "true" : "false", settings.EffectiveBranchSummary.SkipPrompt!.Value.Raw);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Theory]
+    // JSON.parse resolves a duplicated key with the later value.
+    [InlineData("false,\"skipPrompt\":true", false)]
+    [InlineData("true,\"skipPrompt\":false", true)]
+    public async Task DuplicateSkipPromptUsesTheLaterValue(string entries, bool prompts)
+    {
+        var root = NewRoot();
+        try
+        {
+            var settings = await LoadAsync(root, "{\"branchSummary\":{\"skipPrompt\":" + entries + "}}");
+            Assert.Equal(prompts, !settings.EffectiveBranchSummary.SkipsSummaryPrompt);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task TrustedProjectUnknownSiblingsKeepTheInheritedSkipPrompt()
+    {
+        var root = NewRoot();
+        try
+        {
+            var user = await LoadAsync(root,
+                "{\"branchSummary\":{\"skipPrompt\":true,\"futureSetting\":1}}");
+            var project = await LoadProjectAsync(root, "{\"branchSummary\":{\"futureSetting\":2}}");
+            Assert.True(user.Overlay(project).EffectiveBranchSummary.SkipsSummaryPrompt);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task TrustedProjectUnknownSiblingsDoNotBlockAnExplicitOverride()
+    {
+        var root = NewRoot();
+        try
+        {
+            var user = await LoadAsync(root, "{\"branchSummary\":{\"skipPrompt\":true}}");
+            var project = await LoadProjectAsync(root,
+                "{\"branchSummary\":{\"skipPrompt\":false,\"futureSetting\":123}}");
+            Assert.False(user.Overlay(project).EffectiveBranchSummary.SkipsSummaryPrompt);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Theory]
     [InlineData("{}", 16384)]
     [InlineData("{\"branchSummary\":{}}", 16384)]
     [InlineData("{\"branchSummary\":{\"reserveTokens\":1234}}", 1234)]

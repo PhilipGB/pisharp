@@ -67,6 +67,16 @@ def install(prefix, tui_mode, branch_summary=None, extra=None, parent=None):
     }
 
 
+def install_raw(prefix, settings_text):
+    """Install a settings document verbatim, so duplicate JSON keys survive into the product."""
+    return {
+        "id": f"{prefix}-config",
+        "writeFiles": {"agent": {"settings.json": settings_text, "fixtures/tree.jsonl": session_jsonl()}},
+        "restart": True,
+        "expect": "beta",
+    }
+
+
 def open_tree(prefix):
     return {"id": f"{prefix}-tree-open", "send": "/tree\r", "expect": "Session Tree"}
 
@@ -225,6 +235,45 @@ def project_scenario(identifier, project_summary, skips_when_trusted):
                     arguments=arguments)
 
 
+RAW_DUPLICATE_SKIP_PROMPT = (
+    '{"quietStartup":true,"shellCommandPrefix":"preserved","theme":"dark","tuiMode":"fullscreen",'
+    '"defaultProjectTrust":"never","branchSummary":{"skipPrompt":false,"skipPrompt":true}}')
+
+
+def tolerant_scenario():
+    """Unknown branchSummary siblings and duplicate keys must not block skipPrompt."""
+    steps = [
+        {"id": "startup", "expect": "beta"},
+        # An unrelated sibling is ignored, so skipPrompt stays effective.
+        install("unknown", "fullscreen", {"skipPrompt": True, "futureSetting": 123},
+                {"defaultProjectTrust": "never"}),
+        *skip_path("unknown"),
+        # JSON.parse resolves the duplicated key with the later value.
+        install_raw("duplicate", RAW_DUPLICATE_SKIP_PROMPT),
+        *skip_path("duplicate"),
+        # The same sibling with skipPrompt=false still asks.
+        install("false", "fullscreen", {"skipPrompt": False, "futureSetting": 123},
+                {"defaultProjectTrust": "never"}),
+        *prompt_path("false"),
+        # A trusted project carrying only an unrelated sibling keeps the inherited value.
+        install("trusted", "fullscreen", {"skipPrompt": True}, {"defaultProjectTrust": "always"}),
+        *skip_path("trusted"),
+        install("untrusted", "fullscreen", {"skipPrompt": True}, {"defaultProjectTrust": "never"}),
+        *skip_path("untrusted"),
+        {"id": "quit", "send": "\u0015/quit\r", "exit": True},
+    ]
+    arguments = {
+        "pi": list(ARGUMENTS["pi"]),
+        "pisharp": [argument for argument in ARGUMENTS["pisharp"] if argument != "--no-approve"],
+    }
+    return scenario("terminal-branch-summary-skip-prompt-tolerant", steps,
+                    [{"columns": 100, "rows": 30}],
+                    project_files={".pi/settings.json": json.dumps(
+                        {"branchSummary": {"futureSetting": 1}})},
+                    extra_settings={"defaultProjectTrust": "always"},
+                    arguments=arguments)
+
+
 # Fixture name -> (identifier, project branchSummary, whether the trusted value skips the prompt).
 PROJECT_FIXTURES = {
     "terminal-branch-summary-skip-prompt-project.json":
@@ -266,6 +315,7 @@ def main():
         "terminal-branch-summary-skip-prompt.json": main_scenario("fullscreen"),
         "terminal-branch-summary-skip-prompt-regular.json": main_scenario("regular"),
         "terminal-branch-summary-skip-prompt-malformed.json": malformed_scenario("fullscreen"),
+        "terminal-branch-summary-skip-prompt-tolerant.json": tolerant_scenario(),
     }
     for name, (identifier, project_summary, skips) in PROJECT_FIXTURES.items():
         fixtures[name] = project_scenario(identifier, project_summary, skips)

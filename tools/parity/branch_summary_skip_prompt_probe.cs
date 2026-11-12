@@ -24,15 +24,20 @@ try
         bool? prompts = null;
         try
         {
-            var user = item.GetProperty("user");
+            // Duplicate JSON keys only survive as raw text, so a case may supply userRaw/projectRaw.
+            static string? Raw(JsonElement item, string scope) =>
+                item.TryGetProperty(scope + "Raw", out var raw) && raw.ValueKind == JsonValueKind.String
+                    ? raw.GetString()
+                    : item.TryGetProperty(scope, out var value) && value.ValueKind != JsonValueKind.Null
+                        ? value.GetRawText()
+                        : null;
             await File.WriteAllTextAsync(Path.Combine(agent, "settings.json"),
-                user.ValueKind == JsonValueKind.Null ? "{}" : user.GetRawText());
+                Raw(item, "user") ?? "{}");
             var loaded = await UserSettings.LoadAsync(agent, _ => null);
             var projectSettings = new UserSettings();
-            var projectValue = item.GetProperty("project");
-            if (item.GetProperty("projectTrusted").GetBoolean() && projectValue.ValueKind != JsonValueKind.Null)
+            if (item.GetProperty("projectTrusted").GetBoolean() && Raw(item, "project") is { } projectJson)
             {
-                await File.WriteAllTextAsync(Path.Combine(project, ".pi", "settings.json"), projectValue.GetRawText());
+                await File.WriteAllTextAsync(Path.Combine(project, ".pi", "settings.json"), projectJson);
                 projectSettings = await UserSettings.LoadProjectAsync(project);
             }
             var effective = loaded.Overlay(projectSettings);
