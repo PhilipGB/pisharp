@@ -554,6 +554,109 @@
       }
     }
   },
+  "malformedSettings": {
+    "pi": {
+      "number": {
+        "settingsOpens": true,
+        "crashesOnOpen": false,
+        "rowValue": null,
+        "crashesOnRow": true,
+        "activatedValue": null,
+        "activationSubmenu": null
+      },
+      "boolean": {
+        "settingsOpens": true,
+        "crashesOnOpen": true,
+        "rowValue": null,
+        "crashesOnRow": true,
+        "activatedValue": null,
+        "activationSubmenu": null
+      },
+      "object": {
+        "settingsOpens": true,
+        "crashesOnOpen": true,
+        "rowValue": null,
+        "crashesOnRow": true,
+        "activatedValue": null,
+        "activationSubmenu": null
+      },
+      "array": {
+        "settingsOpens": true,
+        "crashesOnOpen": true,
+        "rowValue": "",
+        "crashesOnRow": true,
+        "activatedValue": null,
+        "activationSubmenu": null
+      },
+      "bogus-string": {
+        "settingsOpens": true,
+        "crashesOnOpen": false,
+        "rowValue": "bogus",
+        "crashesOnRow": false,
+        "activatedValue": "tree",
+        "activationSubmenu": false
+      },
+      "null": {
+        "settingsOpens": true,
+        "crashesOnOpen": false,
+        "rowValue": "tree",
+        "crashesOnRow": false,
+        "activatedValue": "fork",
+        "activationSubmenu": false
+      }
+    },
+    "safety": {
+      "number": {
+        "settingsOpens": true,
+        "crashesOnOpen": false,
+        "rowValue": "42",
+        "crashesOnRow": false,
+        "activatedValue": null,
+        "activationSubmenu": null
+      },
+      "boolean": {
+        "settingsOpens": true,
+        "crashesOnOpen": false,
+        "rowValue": "false",
+        "crashesOnRow": false,
+        "activatedValue": null,
+        "activationSubmenu": null
+      },
+      "object": {
+        "settingsOpens": true,
+        "crashesOnOpen": false,
+        "rowValue": "{}",
+        "crashesOnRow": false,
+        "activatedValue": null,
+        "activationSubmenu": null
+      },
+      "array": {
+        "settingsOpens": true,
+        "crashesOnOpen": false,
+        "rowValue": "[]",
+        "crashesOnRow": false,
+        "activatedValue": null,
+        "activationSubmenu": null
+      },
+      "bogus-string": {
+        "settingsOpens": true,
+        "crashesOnOpen": false,
+        "rowValue": "bogus",
+        "crashesOnRow": false,
+        "activatedValue": null,
+        "activationSubmenu": true
+      },
+      "null": {
+        "settingsOpens": true,
+        "crashesOnOpen": false,
+        "rowValue": "inherit/default (default)",
+        "crashesOnRow": false,
+        "activatedValue": null,
+        "activationSubmenu": true
+      },
+      "declaredDivergence": true
+    }
+  },
   "settingsProjection": {
     "row": {
       "row": true,

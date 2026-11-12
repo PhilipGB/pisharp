@@ -17,6 +17,10 @@
             "tree": null,
             "fork": null,
             "settings": null,
+            "settingsRow": null,
+            "crashed": false,
+            "submenu": false,
+            "settingsOpen": false,
             "editorReady": false,
             "errors": []
           },
@@ -25,6 +29,10 @@
             "tree": null,
             "fork": null,
             "settings": null,
+            "settingsRow": null,
+            "crashed": false,
+            "submenu": false,
+            "settingsOpen": false,
             "editorReady": false,
             "errors": []
           },
@@ -37,6 +45,10 @@
               "selectedPreview": "second prompt"
             },
             "settings": null,
+            "settingsRow": null,
+            "crashed": false,
+            "submenu": false,
+            "settingsOpen": false,
             "editorReady": false,
             "errors": []
           },
@@ -49,6 +61,10 @@
               "selectedPreview": "second prompt"
             },
             "settings": null,
+            "settingsRow": null,
+            "crashed": false,
+            "submenu": false,
+            "settingsOpen": false,
             "editorReady": false,
             "errors": []
           },
@@ -57,6 +73,10 @@
             "tree": null,
             "fork": null,
             "settings": null,
+            "settingsRow": null,
+            "crashed": false,
+            "submenu": false,
+            "settingsOpen": false,
             "editorReady": false,
             "errors": []
           },
@@ -65,6 +85,10 @@
             "tree": null,
             "fork": null,
             "settings": null,
+            "settingsRow": null,
+            "crashed": false,
+            "submenu": false,
+            "settingsOpen": false,
             "editorReady": false,
             "errors": []
           },
@@ -73,6 +97,10 @@
             "tree": null,
             "fork": null,
             "settings": null,
+            "settingsRow": null,
+            "crashed": false,
+            "submenu": false,
+            "settingsOpen": false,
             "editorReady": false,
             "errors": []
           },
@@ -81,6 +109,10 @@
             "tree": null,
             "fork": null,
             "settings": null,
+            "settingsRow": null,
+            "crashed": false,
+            "submenu": false,
+            "settingsOpen": false,
             "editorReady": false,
             "errors": []
           }
@@ -107,6 +139,10 @@
             "tree": null,
             "fork": null,
             "settings": null,
+            "settingsRow": null,
+            "crashed": false,
+            "submenu": false,
+            "settingsOpen": false,
             "editorReady": false,
             "errors": []
           },
@@ -115,6 +151,10 @@
             "tree": null,
             "fork": null,
             "settings": null,
+            "settingsRow": null,
+            "crashed": false,
+            "submenu": false,
+            "settingsOpen": false,
             "editorReady": false,
             "errors": []
           },
@@ -127,6 +167,10 @@
               "selectedPreview": "second prompt"
             },
             "settings": null,
+            "settingsRow": null,
+            "crashed": false,
+            "submenu": false,
+            "settingsOpen": false,
             "editorReady": false,
             "errors": []
           },
@@ -139,6 +183,10 @@
               "selectedPreview": "second prompt"
             },
             "settings": null,
+            "settingsRow": null,
+            "crashed": false,
+            "submenu": false,
+            "settingsOpen": false,
             "editorReady": false,
             "errors": []
           },
@@ -147,6 +195,10 @@
             "tree": null,
             "fork": null,
             "settings": null,
+            "settingsRow": null,
+            "crashed": false,
+            "submenu": false,
+            "settingsOpen": false,
             "editorReady": false,
             "errors": []
           },
@@ -155,6 +207,10 @@
             "tree": null,
             "fork": null,
             "settings": null,
+            "settingsRow": null,
+            "crashed": false,
+            "submenu": false,
+            "settingsOpen": false,
             "editorReady": false,
             "errors": []
           },
@@ -163,6 +219,10 @@
             "tree": null,
             "fork": null,
             "settings": null,
+            "settingsRow": null,
+            "crashed": false,
+            "submenu": false,
+            "settingsOpen": false,
             "editorReady": false,
             "errors": []
           },
@@ -171,6 +231,10 @@
             "tree": null,
             "fork": null,
             "settings": null,
+            "settingsRow": null,
+            "crashed": false,
+            "submenu": false,
+            "settingsOpen": false,
             "editorReady": false,
             "errors": []
           }
@@ -219,11 +283,11 @@
     }
   },
   "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-  "pisharpSha": "16053b1e686a2406688cff4c71589513a98600d2",
+  "pisharpSha": "444e6e01c39109fb1f22db750e8b813af49997be",
   "artifact": {
     "file": "PiSharp.Cli.dll",
     "size": 3600896,
-    "sha256": "bed71d6dac47e19bb8762718ee76a58cc0cc465d733ab2e6748f04acf2663b5e",
+    "sha256": "5e17697c31de6b2972c269bdc6f59e79a3c4855605c2300f15e36c3911863bae",
     "depsFile": "PiSharp.Cli.deps.json",
     "depsSha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
     "runtimeConfigFile": "PiSharp.Cli.runtimeconfig.json",

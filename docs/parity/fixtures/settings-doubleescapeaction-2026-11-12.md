@@ -39,6 +39,28 @@ entry replaces a user entry even when the value is one the schema would reject;
 `/settings` never writes these; only the read path accepts them. The writer
 therefore keeps the three interactive values and rejects everything else.
 
+### What `/settings` does with them (frozen from the executable pinned Pi)
+
+`getDoubleEscapeAction()` returns the merged JS value unchanged and the settings
+selector passes it in as `currentValue`. The list renderer then calls
+`truncateToWidth(item.currentValue, …)`, which assumes a string:
+
+| Stored | Pinned `/settings` | Activating the row |
+| --- | --- | --- |
+| `"bogus"` | renders `Double-escape action  bogus` | cycles to `tree` (index −1 → next value) |
+| `null` | renders `tree` (getter applied `?? "tree"`) | cycles to `fork` |
+| `42` | list opens; the row render crashes with `TypeError: text.slice is not a function` once visible | — |
+| `false`, `{}`, `[]` | the list itself crashes with the same `TypeError` | — |
+
+That is an upstream crash inside the renderer, not a settings error: the process
+prints `pi exiting due to uncaughtException` and the session dies.
+
+PiSharp renders the stored value exactly as stored (`42`, `false`, `{}`, `[]`,
+`bogus`, and `inherit/default` for `null`), keeps `/settings` usable, and offers
+its value list. This is a **declared safety projection**: PiSharp does not
+reproduce the upstream crash, and the verifier freezes both the pinned crash
+observations and the PiSharp render, rejecting any change to either side.
+
 ## Fail-first baseline at `0c383d54`
 
 Already matching pinned Pi: unset/tree/fork/none, the inside-window pair, the
@@ -78,6 +100,8 @@ which `/settings` rewrites on save.
 | Paired PTY, fullscreen (100x30, 140x40) | 0 semantic differences |
 | Paired PTY, regular (100x30, 140x40) | 0 semantic differences |
 | Paired PTY, malformed values | 0 semantic differences (7 stored shapes) |
+| Malformed `/settings` (pinned freeze + safety projection) | pinned crash and PiSharp render frozen; both sides verified |
+| Regression: unrelated settings preserved when storing a malformed value | `quietStartup`, `shellCommandPrefix`, `theme`, `tuiMode` kept |
 | Paired PTY, trusted/untrusted project | 0 semantic differences (`fork`, `42`) |
 | Paired PTY, treeFilterMode composition | 0 semantic differences (`[user]`) |
 | Same-Pi calibration, every fixture | 0 semantic differences |
@@ -95,6 +119,8 @@ nothing, `"   "` counts as empty, and a non-empty draft keeps its text.
 
 - PiSharp keeps its standard **Inherit / default** row in the value list; pinned
   Pi cycles only the three declared values.
+- PiSharp does not reproduce the pinned renderer crash for malformed non-string
+  values; the stored text is shown and `/settings` stays usable.
 - The fork panel is compared as message count, selected index and selected
   preview text, because the two products lay the rows out differently.
 - The pinned settings journey runs in **regular** mode: a long fullscreen
@@ -114,3 +140,4 @@ nothing, `"   "` counts as empty, and a non-empty draft keeps its text.
 - `docs/parity/fixtures/settings-doubleescapeaction-checkpoints-project-2026-11-12.json`
 - `docs/parity/fixtures/settings-doubleescapeaction-checkpoints-project-malformed-2026-11-12.json`
 - `docs/parity/fixtures/settings-doubleescapeaction-checkpoints-composition-2026-11-12.json`
+- `docs/parity/fixtures/settings-doubleescapeaction-checkpoints-malformed-settings-2026-11-12.json`

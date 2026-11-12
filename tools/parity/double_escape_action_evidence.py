@@ -141,6 +141,21 @@ def settings_state(lines):
     return {"row": row, "value": value, "description": description, "values": offered}
 
 
+def settings_row_value(lines):
+    """Value shown on the double-escape row, excluding the value-submenu title."""
+    for line in lines:
+        text = normalize(line).strip().strip("|").strip()
+        if text.startswith("\u2192") or text.startswith(">"):
+            text = text[1:].strip()
+        if not text.startswith(SETTINGS_ROW) or "\u00b7" in text:
+            continue
+        remainder = text[len(SETTINGS_ROW):].strip()
+        if not remainder:
+            return ""
+        return re.split(r"\s{2,}", remainder)[0].strip()
+    return None
+
+
 def checkpoint(frame):
     lines = viewport_lines(frame)
     text = "\n".join(lines)
@@ -149,6 +164,12 @@ def checkpoint(frame):
         "tree": tree_state(lines),
         "fork": fork_state(lines),
         "settings": settings_state(lines),
+        "settingsRow": None,
+        "settingsRow": settings_row_value(lines),
+        "crashed": "text.slice is not a function" in text or "uncaughtException" in text,
+        "submenu": "Inherit / default" in text,
+        "settingsOpen": "Type to search" in text or "Type to filter" in text or
+                        any(SETTINGS_ROW in line for line in lines),
         "editorReady": EDITOR_READY in text,
         "errors": sorted({match.group(0) for match in ERRORS.finditer(text)}),
     }
@@ -316,6 +337,54 @@ def extract_settings(directory):
     }
 
 
+MALFORMED_SETTINGS_LABELS = ("number", "boolean", "object", "array", "bogus-string", "null")
+
+
+def malformed_settings_product(assertion):
+    frames = {frame["id"]: checkpoint(frame) for frame in assertion.get("frames") or []}
+    observed = {}
+    for label in MALFORMED_SETTINGS_LABELS:
+        opened = frames.get(f"{label}-open-state") or {}
+        filtered = frames.get(f"{label}-filter-state") or {}
+        activated = frames.get(f"{label}-activate-state") or {}
+        observed[label] = {
+            "settingsOpens": opened.get("settingsOpen", False),
+            "crashesOnOpen": opened.get("crashed", False),
+            "rowValue": filtered.get("settingsRow"),
+            "crashesOnRow": filtered.get("crashed", False),
+            "activatedValue": activated.get("settingsRow") if activated else None,
+            "activationSubmenu": activated.get("submenu", False) if activated else None,
+        }
+    return {"values": observed, "scenarioError": assertion.get("scenarioError"),
+            "settings": persisted_settings(assertion)}
+
+
+def extract_malformed_settings(directory, pisharp_sha=None):
+    """DE19 settings half: `/settings` behaviour for values the schema rejects.
+
+    Pinned Pi passes the merged value straight into the settings list and crashes rendering numbers,
+    booleans and objects; PiSharp renders the stored text and stays usable. Both sides are frozen so
+    the divergence is explicit rather than an unexplained difference.
+    """
+    case_id = report_cases(directory)[0]
+    evidence, pi, pisharp = extract_case(directory, case_id)
+    report = json.loads((Path(directory) / "report.json").read_text())
+    document = {
+        "schema": 1,
+        "capability": "settings-doubleescapeaction",
+        "label": "malformed-settings",
+        "piSha": report.get("piSha"),
+        "pisharpSha": pisharp_sha or report.get("pisharpSha"),
+        "artifact": (report.get("provenance") or {}).get("pisharp", {}).get("artifact"),
+        "dimensions": evidence.get("dimensions"),
+        "theme": evidence.get("theme"),
+        "mode": evidence.get("mode"),
+        "pi": malformed_settings_product(evidence["pi"]),
+        "pisharp": malformed_settings_product(evidence["pisharp"]),
+    }
+    return document
+
+
 ORACLE_SOURCES = [
     {"file": "packages/coding-agent/src/core/settings-defaults.ts", "lines": "45",
      "symbol": "SETTINGS_DEFAULTS.doubleEscapeAction",
@@ -441,7 +510,7 @@ def layered_projections(documents):
 
 
 def build_oracle(*documents, regular_documents=(), malformed_documents=(), project_documents=(),
-                 settings_document=None):
+                 settings_document=None, malformed_settings_document=None):
     merged = {"cases": {}}
     for document in documents:
         merged["cases"].update(document["cases"])
@@ -466,12 +535,20 @@ def build_oracle(*documents, regular_documents=(), malformed_documents=(), proje
                                for case_id, value in projections(document).items()},
         "malformedProjections": malformed_projections(malformed_documents),
         "layeredProjections": layered_projections(project_documents),
+        "malformedSettings": malformed_settings_projection(malformed_settings_document),
         "settingsProjection": {
             "row": (settings_case.get("checkpoints") or {}).get("settings-state", {}).get("settings"),
             "fork": (settings_case.get("checkpoints") or {}).get("settings-fork-state", {}).get("settings"),
             "persisted": settings_case.get("settings"),
         },
     }
+
+
+def malformed_settings_projection(document):
+    if not document:
+        return {}
+    return {"pi": document["pi"]["values"],
+            "safety": dict(document["pisharp"]["values"], declaredDivergence=True)}
 
 
 def main():
@@ -486,6 +563,8 @@ def main():
     parser.add_argument("--oracle-regular-input", type=Path)
     parser.add_argument("--oracle-malformed-input", type=Path)
     parser.add_argument("--oracle-project-input", type=Path, action="append")
+    parser.add_argument("--oracle-malformed-settings-input", type=Path)
+    parser.add_argument("--malformed-settings-output", type=Path)
     parser.add_argument("--oracle-output", type=Path)
     parser.add_argument("--case", action="append",
                         help="Only extract the named case (repeatable); defaults to the report cases")
@@ -498,6 +577,14 @@ def main():
           f"{sum(case['paired']['semanticDifferences'] for case in document['cases'].values())} paired differences, "
           f"{sum(case.get('calibration', {}).get('semanticDifferences', 0) for case in document['cases'].values())} "
           "calibration differences")
+    malformed_settings_document = None
+    if args.oracle_malformed_settings_input is not None:
+        malformed_settings_document = extract_malformed_settings(
+            args.oracle_malformed_settings_input, args.pisharp_sha)
+        target = args.malformed_settings_output or args.output.with_name("malformed-settings.json")
+        target.write_text(json.dumps(malformed_settings_document, indent=2) + "\n")
+        print(f"wrote {target}: malformed-settings observations for "
+              f"{len(malformed_settings_document['pi']['values'])} stored values")
     settings_document = None
     if args.settings_input is not None:
         settings_document = extract_settings(args.settings_input)
@@ -515,7 +602,8 @@ def main():
         args.oracle_output.parent.mkdir(parents=True, exist_ok=True)
         args.oracle_output.write_text(json.dumps(
             build_oracle(document, regular_documents=regular, malformed_documents=malformed,
-                         project_documents=project_documents, settings_document=settings_document),
+                         project_documents=project_documents, settings_document=settings_document,
+                         malformed_settings_document=malformed_settings_document),
             indent=2) + "\n")
         print(f"wrote {args.oracle_output}")
 

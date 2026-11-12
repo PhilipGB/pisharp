@@ -16,6 +16,10 @@
         "tree": null,
         "fork": null,
         "settings": null,
+        "settingsRow": null,
+        "crashed": false,
+        "submenu": false,
+        "settingsOpen": false,
         "editorReady": false,
         "errors": []
       },
@@ -28,6 +32,10 @@
         },
         "fork": null,
         "settings": null,
+        "settingsRow": null,
+        "crashed": false,
+        "submenu": false,
+        "settingsOpen": true,
         "editorReady": false,
         "errors": []
       },
@@ -40,6 +48,10 @@
         },
         "fork": null,
         "settings": null,
+        "settingsRow": null,
+        "crashed": false,
+        "submenu": false,
+        "settingsOpen": true,
         "editorReady": false,
         "errors": []
       },
@@ -48,6 +60,10 @@
         "tree": null,
         "fork": null,
         "settings": null,
+        "settingsRow": null,
+        "crashed": false,
+        "submenu": false,
+        "settingsOpen": false,
         "editorReady": false,
         "errors": []
       },
@@ -56,6 +72,10 @@
         "tree": null,
         "fork": null,
         "settings": null,
+        "settingsRow": null,
+        "crashed": false,
+        "submenu": false,
+        "settingsOpen": true,
         "editorReady": false,
         "errors": []
       },
@@ -69,6 +89,10 @@
           "description": true,
           "values": []
         },
+        "settingsRow": "tree",
+        "crashed": false,
+        "submenu": false,
+        "settingsOpen": true,
         "editorReady": false,
         "errors": []
       },
@@ -82,6 +106,10 @@
           "description": true,
           "values": []
         },
+        "settingsRow": "tree",
+        "crashed": false,
+        "submenu": false,
+        "settingsOpen": true,
         "editorReady": false,
         "errors": []
       },
@@ -95,6 +123,10 @@
           "description": true,
           "values": []
         },
+        "settingsRow": "fork",
+        "crashed": false,
+        "submenu": false,
+        "settingsOpen": true,
         "editorReady": false,
         "errors": []
       },
@@ -108,6 +140,10 @@
           "description": true,
           "values": []
         },
+        "settingsRow": "fork",
+        "crashed": false,
+        "submenu": false,
+        "settingsOpen": true,
         "editorReady": false,
         "errors": []
       },
@@ -116,6 +152,10 @@
         "tree": null,
         "fork": null,
         "settings": null,
+        "settingsRow": null,
+        "crashed": false,
+        "submenu": false,
+        "settingsOpen": false,
         "editorReady": false,
         "errors": []
       },
@@ -128,6 +168,10 @@
           "selectedPreview": "second prompt"
         },
         "settings": null,
+        "settingsRow": null,
+        "crashed": false,
+        "submenu": false,
+        "settingsOpen": false,
         "editorReady": false,
         "errors": []
       },
@@ -140,6 +184,10 @@
           "selectedPreview": "second prompt"
         },
         "settings": null,
+        "settingsRow": null,
+        "crashed": false,
+        "submenu": false,
+        "settingsOpen": false,
         "editorReady": false,
         "errors": []
       },
@@ -148,6 +196,10 @@
         "tree": null,
         "fork": null,
         "settings": null,
+        "settingsRow": null,
+        "crashed": false,
+        "submenu": false,
+        "settingsOpen": false,
         "editorReady": false,
         "errors": []
       },
@@ -156,6 +208,10 @@
         "tree": null,
         "fork": null,
         "settings": null,
+        "settingsRow": null,
+        "crashed": false,
+        "submenu": false,
+        "settingsOpen": false,
         "editorReady": false,
         "errors": []
       },
@@ -168,6 +224,10 @@
           "selectedPreview": "second prompt"
         },
         "settings": null,
+        "settingsRow": null,
+        "crashed": false,
+        "submenu": false,
+        "settingsOpen": false,
         "editorReady": false,
         "errors": []
       },
@@ -180,6 +240,10 @@
           "selectedPreview": "second prompt"
         },
         "settings": null,
+        "settingsRow": null,
+        "crashed": false,
+        "submenu": false,
+        "settingsOpen": false,
         "editorReady": false,
         "errors": []
       },
@@ -188,6 +252,10 @@
         "tree": null,
         "fork": null,
         "settings": null,
+        "settingsRow": null,
+        "crashed": false,
+        "submenu": false,
+        "settingsOpen": false,
         "editorReady": false,
         "errors": []
       }

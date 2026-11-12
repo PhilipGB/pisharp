@@ -28,6 +28,7 @@ REQUIRED_CASES = [f"DE{index:02d}" for index in range(1, 19)]
 MAIN_CASE_IDS = ("100x30-dark-fullscreen", "140x40-dark-fullscreen")
 REGULAR_CASE_IDS = ("100x30-dark-regular", "140x40-dark-regular")
 SINGLE_CASE = "100x30-dark-fullscreen"
+MALFORMED_SETTINGS_LABELS = ("number", "boolean", "object", "array", "bogus-string", "null")
 FIXTURES = [
     "tools/parity/terminal/fixtures/terminal-double-escape-action.json",
     "tools/parity/terminal/fixtures/terminal-double-escape-action-regular.json",
@@ -36,6 +37,7 @@ FIXTURES = [
     "tools/parity/terminal/fixtures/terminal-double-escape-action-project-malformed.json",
     "tools/parity/terminal/fixtures/terminal-double-escape-action-composition.json",
     "tools/parity/terminal/fixtures/terminal-double-escape-action-settings.json",
+    "tools/parity/terminal/fixtures/terminal-double-escape-action-malformed-settings.json",
 ]
 MAIN_CHECKPOINTS = ("unset", "tree", "fork", "none", "outside", "draft", "whitespace", "bash-entry")
 FRAME_FOR = {"unset": "unset-double-escape", "tree": "tree-double-escape",
@@ -49,6 +51,23 @@ MALFORMED_LABELS = ("bogus-string", "empty-string", "number", "boolean", "null",
 MALFORMED_OVERLAY = {"bogus-string": "fork", "empty-string": "fork", "number": "fork",
                      "boolean": "fork", "null": "tree", "object": "fork", "array": "fork"}
 VALUE_SOURCE = "src/PiSharp.Cli/Configuration/UserSettings.cs"
+# Pinned Pi passes the merged value straight into the settings list. Strings render; numbers,
+# booleans and objects reach truncateToWidth(..., text.slice) and crash the process as soon as the
+# row is rendered. Frozen from two independent pinned-Pi runs.
+FROZEN_PINNED_SETTINGS = {
+    "number": {"settingsOpens": True, "crashesOnOpen": False, "rowValue": None,
+               "crashesOnRow": True, "activatedValue": None, "activationSubmenu": None},
+    "boolean": {"settingsOpens": True, "crashesOnOpen": True, "rowValue": None,
+                "crashesOnRow": True, "activatedValue": None, "activationSubmenu": None},
+    "object": {"settingsOpens": True, "crashesOnOpen": True, "rowValue": None,
+               "crashesOnRow": True, "activatedValue": None, "activationSubmenu": None},
+    "array": {"settingsOpens": True, "crashesOnOpen": True, "rowValue": "",
+              "crashesOnRow": True, "activatedValue": None, "activationSubmenu": None},
+    "bogus-string": {"settingsOpens": True, "crashesOnOpen": False, "rowValue": "bogus",
+                     "crashesOnRow": False, "activatedValue": "tree", "activationSubmenu": False},
+    "null": {"settingsOpens": True, "crashesOnOpen": False, "rowValue": "tree",
+             "crashesOnRow": False, "activatedValue": "fork", "activationSubmenu": False},
+}
 
 
 class VerificationError(RuntimeError):
@@ -148,6 +167,25 @@ def validate_oracle(oracle):
                 f"Oracle {case_id} trusted project overlay is {case['trusted']['overlay']!r}.")
         require(case["untrusted"]["overlay"] == "none",
                 f"Oracle {case_id} untrusted project overlay is {case['untrusted']['overlay']!r}.")
+    malformed_settings = oracle.get("malformedSettings") or {}
+    require(malformed_settings.get("pi") == FROZEN_PINNED_SETTINGS,
+            "Oracle malformedSettings.pi does not match the frozen pinned-Pi observations.")
+    safety = malformed_settings.get("safety") or {}
+    require(safety.get("declaredDivergence") is True,
+            "Oracle malformedSettings.safety must declare the divergence.")
+    for label in MALFORMED_SETTINGS_LABELS:
+        observation = safety.get(label)
+        require(isinstance(observation, dict),
+                f"Oracle malformedSettings.safety has no {label} observation.")
+        require(observation.get("crashesOnOpen") is False and observation.get("crashesOnRow") is False,
+                f"Oracle malformedSettings.safety {label} must record a crash-free PiSharp render.")
+        require(observation.get("settingsOpens") is True,
+                f"Oracle malformedSettings.safety {label} must keep /settings usable.")
+        require(observation.get("rowValue") is not None,
+                f"Oracle malformedSettings.safety {label} must record the displayed value.")
+        require(observation.get("rowValue") != FROZEN_PINNED_SETTINGS[label]["rowValue"] or
+                label in ("bogus-string",),
+                f"Oracle malformedSettings.safety {label} does not differ from pinned Pi where it must.")
     settings = oracle.get("settingsProjection") or {}
     for name, value in (("row", "tree"), ("fork", "fork")):
         state = settings.get(name)
@@ -172,7 +210,7 @@ def validate_manifest(manifest, implementation, oracle):
     require(manifest.get("terminalFixtures") == FIXTURES,
             f"Manifest terminal fixtures must be {FIXTURES}.")
     checkpoints = manifest.get("checkpointFiles") or []
-    require(len(checkpoints) == 7, "Manifest must name all seven checkpoint documents.")
+    require(len(checkpoints) == 8, "Manifest must name all eight checkpoint documents.")
     cases = manifest.get("cases") or []
     ids = [case.get("id") for case in cases]
     require(ids == REQUIRED_CASES, f"Manifest cases must be {REQUIRED_CASES}, found {ids}.")
@@ -187,7 +225,8 @@ def validate_manifest(manifest, implementation, oracle):
     comparisons = manifest.get("requiredComparisons") or []
     require({comparison.get("id") for comparison in comparisons} ==
             {"paired-pty", "same-pi-calibration", "settings-selector-calibration",
-             "layered-project-precedence", "malformed-value-parity"},
+             "layered-project-precedence", "malformed-value-parity",
+             "malformed-settings-safety-projection"},
             "Manifest must require every milestone comparison.")
     for comparison in comparisons:
         require(comparison.get("required") is True,
@@ -195,9 +234,18 @@ def validate_manifest(manifest, implementation, oracle):
         require(comparison.get("status") == "match",
                 f"Unresolved comparison {comparison.get('id')}: {comparison.get('status')!r}.")
         require(comparison.get("evidence"), f"Comparison {comparison.get('id')} has no evidence.")
-    for finding in manifest.get("findings") or []:
+    findings = manifest.get("findings") or []
+    for finding in findings:
         require(finding.get("required") is False,
                 f"Finding {finding.get('id')} expands the required contract.")
+    safety = next((finding for finding in findings
+                   if finding.get("id") == "malformed-settings-safety"), None)
+    require(safety is not None,
+            "Manifest must document the malformed-settings safety projection.")
+    require("text.slice" in (safety.get("observation") or ""),
+            "The malformed-settings safety projection must record the pinned-Pi crash.")
+    require("safety" in (safety.get("projection") or "").lower(),
+            "The malformed-settings finding must declare the divergence as a safety projection.")
     tests = manifest.get("requiredTests") or {}
     facts = tests.get("facts") or []
     require(len(facts) >= 20, "Manifest must list at least twenty required deterministic tests.")
@@ -408,9 +456,33 @@ def validate_settings_document(document, oracle):
             f"settings-selector: harness settings changed: {persisted}")
 
 
+def validate_malformed_settings_document(document, oracle):
+    require(document.get("capability") == CAPABILITY, "malformed-settings: capability mismatch.")
+    require(document.get("piSha") == PI_SHA, "malformed-settings: Pi SHA mismatch.")
+    require(not document["pi"].get("scenarioError"),
+            f"malformed-settings: pinned-Pi scenario error {document['pi'].get('scenarioError')}")
+    require(not document["pisharp"].get("scenarioError"),
+            f"malformed-settings: PiSharp scenario error {document['pisharp'].get('scenarioError')}")
+    frozen = oracle["malformedSettings"]
+    for label in MALFORMED_SETTINGS_LABELS:
+        observed = document["pi"]["values"].get(label)
+        require(observed == frozen["pi"][label],
+                f"malformed-settings: pinned Pi {label} is {observed}, expected {frozen['pi'][label]}.")
+        safe = document["pisharp"]["values"].get(label)
+        require(safe == dict(frozen["safety"][label]),
+                f"malformed-settings: PiSharp {label} is {safe}, expected {frozen['safety'][label]}.")
+        require(safe["crashesOnOpen"] is False and safe["crashesOnRow"] is False,
+                f"malformed-settings: PiSharp {label} crashed; the safety projection must hold.")
+    # The activation of a renderable malformed string is the row cycle pinned Pi performs from -1.
+    require(document["pi"]["values"]["bogus-string"]["activatedValue"] == "tree",
+            "malformed-settings: pinned Pi must cycle an unknown string to tree.")
+    require(document["pi"]["values"]["null"]["activatedValue"] == "fork",
+            "malformed-settings: pinned Pi must cycle a null value to fork.")
+
+
 def validate_checkpoints(documents, oracle):
     require(set(documents) == {"paired", "regular", "settings", "malformed", "project",
-                               "project-malformed", "composition"},
+                               "project-malformed", "composition", "malformed-settings"},
             "Checkpoint evidence must contain every fixture document.")
     validate_paired_document(documents["paired"], oracle, MAIN_CASE_IDS, "fullscreen")
     validate_paired_document(documents["regular"], oracle, REGULAR_CASE_IDS, "regular",
@@ -420,6 +492,7 @@ def validate_checkpoints(documents, oracle):
     validate_layered_document(documents["project"], oracle)
     validate_layered_document(documents["project-malformed"], oracle)
     validate_composition_document(documents["composition"], oracle)
+    validate_malformed_settings_document(documents["malformed-settings"], oracle)
 
 
 def fixture_state():
@@ -713,6 +786,32 @@ def self_test(manifest, oracle, documents, results, ledger):
     no_malformed[FIXTURES[2]].remove("null-config")
     rejects(lambda: validate_fixtures(no_malformed, actions), "malformed value removed")
 
+    rejects(lambda: validate_checkpoints(
+        mutate(["malformed-settings", "pi", "values", "number", "crashesOnRow"], False),
+        oracle), "pinned malformed /settings crash not recorded")
+    rejects(lambda: validate_checkpoints(
+        mutate(["malformed-settings", "pi", "values", "bogus-string", "activatedValue"], "fork"),
+        oracle), "pinned malformed string cycle differs")
+    rejects(lambda: validate_checkpoints(
+        mutate(["malformed-settings", "pisharp", "values", "number", "crashesOnRow"], True),
+        oracle), "PiSharp crashed where the safety projection claims it does not")
+    rejects(lambda: validate_checkpoints(
+        mutate(["malformed-settings", "pisharp", "values", "boolean", "rowValue"], "disabled"),
+        oracle), "PiSharp relabelled a malformed stored value")
+
+    no_finding = copy.deepcopy(manifest)
+    no_finding["findings"] = [finding for finding in no_finding["findings"]
+                              if finding["id"] != "malformed-settings-safety"]
+    rejects(lambda: validate_manifest(no_finding, implementation, oracle),
+            "malformed-settings safety projection undocumented")
+
+    vague_finding = copy.deepcopy(manifest)
+    for finding in vague_finding["findings"]:
+        if finding["id"] == "malformed-settings-safety":
+            finding["observation"] = "PiSharp renders malformed values safely."
+    rejects(lambda: validate_manifest(vague_finding, implementation, oracle),
+            "safety projection does not record the pinned crash")
+
     bad_pi = copy.deepcopy(manifest)
     bad_pi["piSha"] = "0" * 40
     rejects(lambda: validate_manifest(bad_pi, implementation, oracle), "wrong Pi SHA")
@@ -758,6 +857,7 @@ def load_documents(args):
         "project": load_json(args.project_checkpoints),
         "project-malformed": load_json(args.project_malformed_checkpoints),
         "composition": load_json(args.composition_checkpoints),
+        "malformed-settings": load_json(args.malformed_settings_checkpoints),
     }
 
 
@@ -781,6 +881,8 @@ def main():
                         default=ROOT / "docs/parity/fixtures/settings-doubleescapeaction-checkpoints-project-malformed-2026-11-12.json")
     parser.add_argument("--composition-checkpoints", type=Path,
                         default=ROOT / "docs/parity/fixtures/settings-doubleescapeaction-checkpoints-composition-2026-11-12.json")
+    parser.add_argument("--malformed-settings-checkpoints", type=Path,
+                        default=ROOT / "docs/parity/fixtures/settings-doubleescapeaction-checkpoints-malformed-settings-2026-11-12.json")
     parser.add_argument("--ledger", type=Path, default=ROOT / "docs/parity/execution-ledger.json")
     parser.add_argument("--implementation")
     parser.add_argument("--trx", type=Path)

@@ -4,7 +4,7 @@
   "title": "Setting: doubleEscapeAction",
   "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
   "baseSha": "0c383d547994f7e431f9fe9796bbec702d99a716",
-  "implementationSha": "16053b1e686a2406688cff4c71589513a98600d2",
+  "implementationSha": "444e6e01c39109fb1f22db750e8b813af49997be",
   "oracleFile": "docs/parity/fixtures/settings-doubleescapeaction-pi-oracle-2026-11-12.json",
   "checkpointFiles": [
     "docs/parity/fixtures/settings-doubleescapeaction-checkpoints-fullscreen-2026-11-12.json",
@@ -13,7 +13,8 @@
     "docs/parity/fixtures/settings-doubleescapeaction-checkpoints-malformed-2026-11-12.json",
     "docs/parity/fixtures/settings-doubleescapeaction-checkpoints-project-2026-11-12.json",
     "docs/parity/fixtures/settings-doubleescapeaction-checkpoints-project-malformed-2026-11-12.json",
-    "docs/parity/fixtures/settings-doubleescapeaction-checkpoints-composition-2026-11-12.json"
+    "docs/parity/fixtures/settings-doubleescapeaction-checkpoints-composition-2026-11-12.json",
+    "docs/parity/fixtures/settings-doubleescapeaction-checkpoints-malformed-settings-2026-11-12.json"
   ],
   "milestoneDoc": "docs/parity/fixtures/settings-doubleescapeaction-2026-11-12.md",
   "terminalFixtures": [
@@ -23,7 +24,8 @@
     "tools/parity/terminal/fixtures/terminal-double-escape-action-project.json",
     "tools/parity/terminal/fixtures/terminal-double-escape-action-project-malformed.json",
     "tools/parity/terminal/fixtures/terminal-double-escape-action-composition.json",
-    "tools/parity/terminal/fixtures/terminal-double-escape-action-settings.json"
+    "tools/parity/terminal/fixtures/terminal-double-escape-action-settings.json",
+    "tools/parity/terminal/fixtures/terminal-double-escape-action-malformed-settings.json"
   ],
   "cases": [
     {
@@ -376,6 +378,12 @@
       "required": true,
       "status": "match",
       "evidence": "Seven stored malformed values load without error and dispatch exactly as pinned Pi: unknown strings, numbers, booleans, objects and arrays fork; null resolves to tree."
+    },
+    {
+      "id": "malformed-settings-safety-projection",
+      "required": true,
+      "status": "match",
+      "evidence": "Pinned Pi renders a stored string on the settings row and cycles an unknown string to tree, but crashes with 'TypeError: text.slice is not a function' as soon as a number, boolean, object or array reaches the row renderer. PiSharp renders the stored text (42, false, {}, []), keeps /settings usable and opens its value list; the divergence is frozen in the oracle and declared as a safety projection."
     }
   ],
   "findings": [
@@ -396,6 +404,12 @@
       "required": false,
       "observation": "The pinned settings journey runs in regular mode because a long fullscreen settings session overflows the emulator snapshot for both products.",
       "projection": "The row, description, value order, live application and persistence are mode-independent; PiSharp's own /settings is covered by its PTY test."
+    },
+    {
+      "id": "malformed-settings-safety",
+      "required": false,
+      "observation": "Pinned Pi passes the merged value into SettingsList, and truncateToWidth() calls text.slice() so a stored number, boolean, object or array crashes /settings with 'TypeError: text.slice is not a function'. PiSharp renders the stored text instead and stays usable.",
+      "projection": "Intentional safety projection: PiSharp does not reproduce the upstream crash. The frozen observations live in malformedSettings.pi (pinned) and malformedSettings.safety (PiSharp, declaredDivergence) of the oracle, and the verifier rejects any change to either side."
     }
   ],
   "requiredTests": {
@@ -463,7 +477,7 @@
       "status": "pass",
       "evidence": "Linux CI run 43157909879 on head 415f5955 (implementation 16053b1e): all five jobs green. This manifest-only follow-up commit carries the same implementation and evidence tree.",
       "run": "43157909879",
-      "implementationSha": "16053b1e686a2406688cff4c71589513a98600d2"
+      "implementationSha": "444e6e01c39109fb1f22db750e8b813af49997be"
     },
     "ledger": {
       "status": "pass",

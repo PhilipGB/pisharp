@@ -276,6 +276,51 @@ def settings_scenario():
                     [{"columns": 100, "rows": 30}])
 
 
+MALFORMED_SETTINGS = (
+    ("number", 42),
+    ("boolean", False),
+    ("object", {}),
+    ("array", []),
+    ("bogus-string", "bogus"),
+    ("null", None),
+)
+
+
+def malformed_settings_scenario(tui_mode):
+    """DE19 settings half: what `/settings` does with a stored value the schema rejects.
+
+    Pinned Pi passes the merged value straight into the settings list. Strings render; numbers,
+    booleans and objects crash the renderer (`text.slice is not a function`) as soon as the row
+    becomes visible. Each crashing value therefore gets its own restart, and the activation of a
+    renderable malformed value is observed separately.
+    """
+    def install(prefix, value):
+        return {
+            "id": f"{prefix}-config",
+            "writeFiles": {"agent": {"settings.json": settings(tui_mode, value)}},
+            "restart": True,
+            "expect": "beta",
+        }
+
+    steps = [{"id": "startup", "expect": "beta"}]
+    for label, value in MALFORMED_SETTINGS:
+        steps.append(install(label, value))
+        steps.append({"id": f"{label}-open", "delayMs": 300, "allowStaticFrame": True,
+                      "send": "/settings\r", "quiesce": True, "quietMs": 400})
+        steps.append({"id": f"{label}-open-state", "allowStaticFrame": True})
+        steps.append({"id": f"{label}-filter", "send": "double-escape", "quiesce": True,
+                      "quietMs": 400})
+        steps.append({"id": f"{label}-filter-state", "allowStaticFrame": True})
+        if value is None or isinstance(value, str):
+            # Renderable malformed values can also be activated; Pi cycles from index -1.
+            steps.append({"id": f"{label}-activate", "send": "\r", "quiesce": True,
+                          "quietMs": 400})
+            steps.append({"id": f"{label}-activate-state", "allowStaticFrame": True})
+    # No quit action: the crashing values end the process, so the harness closes the terminal.
+    return scenario("terminal-double-escape-action-malformed-settings", tui_mode, steps,
+                    [{"columns": 100, "rows": 30}])
+
+
 def main():
     fixtures = {
         "terminal-double-escape-action.json": main_scenario("fullscreen"),
@@ -287,6 +332,7 @@ def main():
             "terminal-double-escape-action-project-malformed", 42, "fullscreen"),
         "terminal-double-escape-action-composition.json": composition_scenario("fullscreen"),
         "terminal-double-escape-action-settings.json": settings_scenario(),
+        "terminal-double-escape-action-malformed-settings.json": malformed_settings_scenario("regular"),
     }
     for name, content in fixtures.items():
         (OUTPUT / name).write_text(json.dumps(content, indent=2) + "\n")

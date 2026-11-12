@@ -6124,7 +6124,8 @@
       "implementation": [
         "UserSettings stores doubleEscapeAction as DoubleEscapeActionSettingValue (presence plus raw value) and resolves it exactly like pinned Pi's getDoubleEscapeAction: only an absent or JSON-null entry falls back to 'tree', and any other stored value (including values the settings schema rejects) is returned unchanged so the interactive handler can decide.",
         "TerminalEditor.HandleIdleEscapeAsync keeps the pinned precedence (streaming, running bash, bash-entry mode and non-empty drafts are handled elsewhere), reads the effective value through its existing provider on every press, treats only the exact string 'none' as a no-op, dispatches 'tree' to app.session.tree and every other value to app.session.fork, and owns the strict <500 ms window through the injectable clock.",
-        "TerminalSettingsPicker exposes 'Double-escape action' with the pinned description and the tree/fork/none order at Pi's shared position, and UserSettingsWriter accepts only those three interactive values, preserves unrelated JSON and removes the key on reset."
+        "TerminalSettingsPicker exposes 'Double-escape action' with the pinned description and the tree/fork/none order at Pi's shared position, and UserSettingsWriter accepts only those three interactive values, preserves unrelated JSON and removes the key on reset.",
+        "TerminalSettingsPicker shows a stored value the schema rejects exactly as stored (no boolean relabelling) instead of reproducing the pinned renderer crash."
       ],
       "evidence": [
         "docs/parity/fixtures/settings-doubleescapeaction-2026-11-12.md",
@@ -6136,11 +6137,13 @@
         "docs/parity/fixtures/settings-doubleescapeaction-checkpoints-malformed-2026-11-12.json",
         "docs/parity/fixtures/settings-doubleescapeaction-checkpoints-project-2026-11-12.json",
         "docs/parity/fixtures/settings-doubleescapeaction-checkpoints-project-malformed-2026-11-12.json",
+        "docs/parity/fixtures/settings-doubleescapeaction-checkpoints-malformed-settings-2026-11-12.json",
         "docs/parity/fixtures/settings-doubleescapeaction-checkpoints-composition-2026-11-12.json",
         "Malformed stored values, frozen from the executable pinned Pi process: 'bogus', '', 42, false, {} and [] load without error and take the fork path, while null resolves to tree. A trusted project entry replaces a valid user value the same way; an untrusted project contributes nothing.",
         "Deterministic timing contract: the oracle and DoubleEscapeActionOracleTests own 499/500/501 ms, exactly-once dispatch, timer reset after a pair, out-of-window re-arm, none leaving the timer untouched, non-empty and whitespace-only drafts, completion cancellation and Bash-entry Escape through the injectable double-press clock.",
         "PiSharp 0e29d5d4 against pinned Pi b06c1f2c: seven paired PTY fixtures at 100x30 and 140x40 dark fullscreen and regular report zero semantic differences for tree, fork, none, unset, out-of-window, non-empty draft, whitespace draft, bash-entry, seven malformed stored values, trusted/untrusted project precedence and the treeFilterMode composition; same-Pi calibration is exact for every fixture; tools/parity/verify_double_escape_action.py recomputes every gate and rejects each mutation control.",
-        "Fail-first at base 0c383d54: PiSharp exited with \"settings.json doubleEscapeAction must be 'fork', 'tree' or 'none'\" and \"settings.json property 'doubleEscapeAction' must be a string\" where pinned Pi loaded both, while unset/tree/fork/none, the inside/outside-window behaviour, the empty-editor guard, trust precedence and the treeFilterMode composition already matched."
+        "Fail-first at base 0c383d54: PiSharp exited with \"settings.json doubleEscapeAction must be 'fork', 'tree' or 'none'\" and \"settings.json property 'doubleEscapeAction' must be a string\" where pinned Pi loaded both, while unset/tree/fork/none, the inside/outside-window behaviour, the empty-editor guard, trust precedence and the treeFilterMode composition already matched.",
+        "Malformed-value /settings half, frozen from executable pinned Pi: a stored string renders on the row and activating it cycles to tree (unknown string) or fork (null), while a stored number, boolean, object or array crashes the pinned renderer with 'TypeError: text.slice is not a function'. PiSharp renders the stored text (42, false, {}, []), keeps /settings usable and opens its value list \u2014 an intentional, documented safety projection that the verifier freezes on both sides."
       ],
       "dependencies": [],
       "handover_review": {

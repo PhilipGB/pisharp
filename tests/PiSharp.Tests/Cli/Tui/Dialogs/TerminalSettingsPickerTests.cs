@@ -137,11 +137,19 @@ public sealed class TerminalSettingsPickerTests
             new UserSettings(DoubleEscapeAction: new("none")), projectScope: true, activeThemeSetting: null);
         Assert.Equal("none (inherited)", inherited.Value);
 
-        // A malformed stored value is shown as stored, and the runtime still receives it.
-        var malformed = TerminalSettingsPicker.ToListItem(setting,
-            new UserSettings(DoubleEscapeAction: new("42")),
-            new UserSettings(DoubleEscapeAction: new("42")), projectScope: false, activeThemeSetting: null);
-        Assert.Equal("42", malformed.Value);
+        // A malformed stored value is shown exactly as stored (no boolean relabelling), and the
+        // runtime still receives it.
+        foreach (var raw in new[] { "42", "false", "{}", "[]", "bogus" })
+        {
+            var malformed = TerminalSettingsPicker.ToListItem(setting,
+                new UserSettings(DoubleEscapeAction: new(raw)),
+                new UserSettings(DoubleEscapeAction: new(raw)), projectScope: false, activeThemeSetting: null);
+            Assert.Equal(raw, malformed.Value);
+        }
+        var nullStored = TerminalSettingsPicker.ToListItem(setting,
+            new UserSettings(DoubleEscapeAction: new(null)),
+            new UserSettings(DoubleEscapeAction: new(null)), projectScope: false, activeThemeSetting: null);
+        Assert.Equal("inherit/default (default)", nullStored.Value);
 
         // Pinned Pi's settings list cycles these values in source order.
         Assert.Equal(["tree", "fork", "none"], DoubleEscapeActionSetting.Values);

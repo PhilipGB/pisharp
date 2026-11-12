@@ -321,6 +321,9 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, ProviderMode
     private static string DisplayValue(string? value, string? settingId = null)
     {
         if (value is null) return "inherit/default";
+        // A stored value the schema rejects is shown exactly as stored; the boolean display rules
+        // below apply to settings that actually hold booleans.
+        if (settingId == "doubleEscapeAction") return value;
         if (settingId == "quietStartup") return value;
         if (settingId == "markdown.codeBlockIndent")
             return value.Length == 0 ? "no prefix" : value.All(character => character == ' ')
