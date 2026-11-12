@@ -46,7 +46,8 @@ internal static class C9Oracle
         var cancelled = await RunFailedNavigationAsync(workingDirectory, cancellation: true);
 
         var defaultSettings = new BranchSummarySettings();
-        var skipSettings = new BranchSummarySettings(SkipPrompt: true);
+        var skipSettings = new BranchSummarySettings(
+            SkipPrompt: new BranchSummarySkipPromptSetting(JsonValueKind.True, "true"));
         return new
         {
             cases = new Dictionary<string, object>
@@ -109,8 +110,8 @@ internal static class C9Oracle
                 ["C9.public-navigation-prompts-and-skips-as-pinned"] = new
                 {
                     defaultReserveTokens = defaultSettings.EffectiveReserveTokens,
-                    defaultPrompts = defaultSettings.SkipPrompt != true,
-                    skipPromptOverrideSuppressesPrompt = skipSettings.SkipPrompt == true,
+                    defaultPrompts = !defaultSettings.SkipsSummaryPrompt,
+                    skipPromptOverrideSuppressesPrompt = skipSettings.SkipsSummaryPrompt,
                     promptTitle = "Summarize branch?",
                     choices = new[] { "No summary", "Summarize", "Summarize with custom prompt" },
                     defaultChoice = "No summary",

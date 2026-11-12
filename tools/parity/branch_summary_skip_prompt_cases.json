@@ -1,0 +1,467 @@
+{
+  "cases": [
+    {
+      "id": "BS01",
+      "user": {},
+      "project": null,
+      "projectTrusted": true
+    },
+    {
+      "id": "BS02",
+      "user": {
+        "branchSummary": {
+          "skipPrompt": false
+        }
+      },
+      "project": null,
+      "projectTrusted": true
+    },
+    {
+      "id": "BS03",
+      "user": {
+        "branchSummary": {
+          "skipPrompt": true
+        }
+      },
+      "project": null,
+      "projectTrusted": true
+    },
+    {
+      "id": "BS04",
+      "user": {
+        "branchSummary": {
+          "skipPrompt": true,
+          "reserveTokens": 4096
+        }
+      },
+      "project": {
+        "branchSummary": {
+          "reserveTokens": 1234
+        }
+      },
+      "projectTrusted": true
+    },
+    {
+      "id": "BS05",
+      "user": {
+        "branchSummary": {
+          "skipPrompt": true
+        }
+      },
+      "project": {
+        "branchSummary": {
+          "skipPrompt": false
+        }
+      },
+      "projectTrusted": true
+    },
+    {
+      "id": "BS06",
+      "user": {
+        "branchSummary": {
+          "skipPrompt": false
+        }
+      },
+      "project": {
+        "branchSummary": {
+          "skipPrompt": true
+        }
+      },
+      "projectTrusted": true
+    },
+    {
+      "id": "BS07",
+      "user": {
+        "branchSummary": {
+          "skipPrompt": true
+        }
+      },
+      "project": {
+        "branchSummary": {
+          "skipPrompt": null
+        }
+      },
+      "projectTrusted": true
+    },
+    {
+      "id": "BS08",
+      "user": {
+        "branchSummary": {
+          "skipPrompt": true
+        }
+      },
+      "project": {
+        "branchSummary": {
+          "skipPrompt": false
+        }
+      },
+      "projectTrusted": false
+    },
+    {
+      "id": "BS09",
+      "user": {
+        "branchSummary": {
+          "skipPrompt": true
+        }
+      },
+      "project": {
+        "branchSummary": {
+          "skipPrompt": 0
+        }
+      },
+      "projectTrusted": true
+    },
+    {
+      "id": "BS10",
+      "user": {
+        "branchSummary": {
+          "skipPrompt": false
+        }
+      },
+      "project": {
+        "branchSummary": {
+          "skipPrompt": "false"
+        }
+      },
+      "projectTrusted": true
+    },
+    {
+      "id": "BS11",
+      "user": {
+        "branchSummary": {
+          "skipPrompt": true
+        }
+      },
+      "project": {
+        "branchSummary": {
+          "skipPrompt": ""
+        }
+      },
+      "projectTrusted": true
+    },
+    {
+      "id": "BS12",
+      "user": {
+        "branchSummary": {
+          "skipPrompt": false
+        }
+      },
+      "project": {
+        "branchSummary": {
+          "skipPrompt": {}
+        }
+      },
+      "projectTrusted": true
+    },
+    {
+      "id": "BS13",
+      "user": {
+        "branchSummary": {
+          "skipPrompt": false
+        }
+      },
+      "project": {
+        "branchSummary": {
+          "skipPrompt": []
+        }
+      },
+      "projectTrusted": true
+    },
+    {
+      "id": "BS14",
+      "user": {
+        "branchSummary": {
+          "skipPrompt": false
+        }
+      },
+      "project": {
+        "branchSummary": {
+          "skipPrompt": 1
+        }
+      },
+      "projectTrusted": true
+    },
+    {
+      "id": "BS15",
+      "user": {
+        "branchSummary": {
+          "skipPrompt": true
+        }
+      },
+      "project": {
+        "branchSummary": null
+      },
+      "projectTrusted": true
+    },
+    {
+      "id": "BS16",
+      "user": {
+        "branchSummary": {
+          "skipPrompt": true
+        }
+      },
+      "project": {
+        "branchSummary": "bad"
+      },
+      "projectTrusted": true
+    },
+    {
+      "id": "BS17",
+      "user": {
+        "branchSummary": {
+          "skipPrompt": true
+        }
+      },
+      "project": {
+        "branchSummary": 42
+      },
+      "projectTrusted": true
+    },
+    {
+      "id": "BS18",
+      "user": {
+        "branchSummary": {
+          "skipPrompt": true
+        }
+      },
+      "project": {
+        "branchSummary": []
+      },
+      "projectTrusted": true
+    },
+    {
+      "id": "BS19",
+      "user": {
+        "branchSummary": null
+      },
+      "project": null,
+      "projectTrusted": true
+    },
+    {
+      "id": "BS20",
+      "user": {
+        "branchSummary": "bad"
+      },
+      "project": null,
+      "projectTrusted": true
+    },
+    {
+      "id": "BS21",
+      "user": {
+        "branchSummary": 42
+      },
+      "project": null,
+      "projectTrusted": true
+    },
+    {
+      "id": "BS22",
+      "user": {
+        "branchSummary": []
+      },
+      "project": null,
+      "projectTrusted": true
+    },
+    {
+      "id": "BS23",
+      "user": {
+        "branchSummary": {
+          "skipPrompt": null
+        }
+      },
+      "project": null,
+      "projectTrusted": true
+    },
+    {
+      "id": "BS24",
+      "user": {
+        "branchSummary": {
+          "skipPrompt": "false"
+        }
+      },
+      "project": null,
+      "projectTrusted": true
+    },
+    {
+      "id": "BS25",
+      "user": {
+        "branchSummary": {
+          "skipPrompt": ""
+        }
+      },
+      "project": null,
+      "projectTrusted": true
+    },
+    {
+      "id": "BS26",
+      "user": {
+        "branchSummary": {
+          "skipPrompt": 1
+        }
+      },
+      "project": null,
+      "projectTrusted": true
+    },
+    {
+      "id": "BS27",
+      "user": {
+        "branchSummary": {
+          "skipPrompt": 0
+        }
+      },
+      "project": null,
+      "projectTrusted": true
+    },
+    {
+      "id": "BS28",
+      "user": {
+        "branchSummary": {
+          "skipPrompt": {}
+        }
+      },
+      "project": null,
+      "projectTrusted": true
+    },
+    {
+      "id": "BS29",
+      "user": {
+        "branchSummary": {
+          "skipPrompt": []
+        }
+      },
+      "project": null,
+      "projectTrusted": true
+    },
+    {
+      "id": "BS30",
+      "user": {
+        "branchSummary": {
+          "skipPrompt": true
+        }
+      },
+      "project": {
+        "branchSummary": {
+          "skipPrompt": 2.5
+        }
+      },
+      "projectTrusted": true
+    },
+    {
+      "id": "BS31",
+      "user": {
+        "branchSummary": {
+          "skipPrompt": false
+        }
+      },
+      "project": {
+        "branchSummary": {
+          "skipPrompt": {
+            "nested": false
+          }
+        }
+      },
+      "projectTrusted": true
+    },
+    {
+      "id": "BS32",
+      "userRaw": "{\"branchSummary\":{\"skipPrompt\":false,\"skipPrompt\":true}}",
+      "project": null,
+      "projectTrusted": true
+    },
+    {
+      "id": "BS33",
+      "userRaw": "{\"branchSummary\":{\"skipPrompt\":true,\"skipPrompt\":false}}",
+      "project": null,
+      "projectTrusted": true
+    },
+    {
+      "id": "BS34",
+      "user": {
+        "branchSummary": {
+          "skipPrompt": true,
+          "futureSetting": 123
+        }
+      },
+      "project": null,
+      "projectTrusted": true
+    },
+    {
+      "id": "BS35",
+      "user": {
+        "branchSummary": {
+          "skipPrompt": false,
+          "futureSetting": 123
+        }
+      },
+      "project": null,
+      "projectTrusted": true
+    },
+    {
+      "id": "BS36",
+      "user": {
+        "branchSummary": {
+          "skipPrompt": true,
+          "futureSetting": 123
+        }
+      },
+      "project": {
+        "branchSummary": {
+          "skipPrompt": false,
+          "futureSetting": 456
+        }
+      },
+      "projectTrusted": true
+    },
+    {
+      "id": "BS37",
+      "user": {
+        "branchSummary": {
+          "skipPrompt": false
+        }
+      },
+      "project": {
+        "branchSummary": {
+          "skipPrompt": true,
+          "futureSetting": 7
+        }
+      },
+      "projectTrusted": true
+    },
+    {
+      "id": "BS38",
+      "user": {
+        "branchSummary": {
+          "skipPrompt": true,
+          "futureSetting": {
+            "nested": 1
+          },
+          "anotherSetting": [
+            1,
+            2
+          ]
+        }
+      },
+      "project": null,
+      "projectTrusted": true
+    },
+    {
+      "id": "BS39",
+      "user": {
+        "branchSummary": {
+          "skipPrompt": true
+        }
+      },
+      "project": {
+        "branchSummary": {
+          "futureSetting": 1
+        }
+      },
+      "projectTrusted": true
+    },
+    {
+      "id": "BS40",
+      "userRaw": "{\"branchSummary\":{\"skipPrompt\":false,\"skipPrompt\":false}}",
+      "project": null,
+      "projectTrusted": true
+    }
+  ]
+}

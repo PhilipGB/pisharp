@@ -1,0 +1,1992 @@
+{
+  "schema": 1,
+  "capability": "settings-branchsummary-skipprompt",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "default": false,
+  "schemaContract": {
+    "description": "When true, skips the \"Summarize branch?\" prompt and defaults to no summary.",
+    "getter": "this.settings.branchSummary?.skipPrompt ?? SETTINGS_DEFAULTS.branchSummary.skipPrompt",
+    "promptGate": "if (!this.settingsManager.getBranchSummarySkipPrompt()) { show \"Summarize branch?\" }",
+    "navigation": "navigateTree(entryId, { summarize: false }) when the prompt is skipped"
+  },
+  "sources": [
+    {
+      "file": "packages/coding-agent/src/core/settings-defaults.ts",
+      "lines": "14-17",
+      "symbol": "SETTINGS_DEFAULTS.branchSummary",
+      "observation": "reserveTokens is 16384 and skipPrompt is false."
+    },
+    {
+      "file": "packages/coding-agent/src/core/settings-schema.ts",
+      "lines": "31-42",
+      "symbol": "BranchSummarySettingsSchema",
+      "observation": "skipPrompt is an optional boolean described as skipping the 'Summarize branch?' prompt and defaulting to no summary."
+    },
+    {
+      "file": "packages/coding-agent/src/core/settings-manager.ts",
+      "lines": "58-82",
+      "symbol": "isMergeableObject/deepMergeObjects",
+      "observation": "Scopes merge by property presence; only undefined is skipped, arrays and other non-objects are not mergeable and replace the lower value."
+    },
+    {
+      "file": "packages/coding-agent/src/core/settings-manager.ts",
+      "lines": "366-409",
+      "symbol": "loadFromStorage/tryLoadFromStorage",
+      "observation": "Settings files are JSON.parse'd and migrated only; stored values are never validated against the schema, so malformed shapes load."
+    },
+    {
+      "file": "packages/coding-agent/src/core/settings-manager.ts",
+      "lines": "425-450",
+      "symbol": "deepMergeSettings",
+      "observation": "The effective settings are the user settings deep-merged with the trusted project settings; an untrusted project contributes {}."
+    },
+    {
+      "file": "packages/coding-agent/src/core/settings-manager.ts",
+      "lines": "882-891",
+      "symbol": "getBranchSummarySettings/getBranchSummarySkipPrompt",
+      "observation": "Both getters return the merged value unless it is nullish, so a stored string, number, object or array is returned unchanged."
+    },
+    {
+      "file": "packages/coding-agent/src/modes/interactive/interactive-mode.ts",
+      "lines": "5602-5622",
+      "symbol": "showTreeSelector summarization gate",
+      "observation": "The summary selector is skipped when the getter is falsey; wantsSummary stays false and navigateTree receives summarize: false."
+    },
+    {
+      "file": "packages/coding-agent/src/modes/interactive/components/settings-selector.ts",
+      "lines": "485-700",
+      "symbol": "main settings items",
+      "observation": "No branchSummary.skipPrompt row exists: `grep -n skipPrompt` finds nothing in the settings selector, so the setting is file-only."
+    },
+    {
+      "file": "packages/coding-agent/src/core/settings-manager.ts",
+      "lines": "629-651",
+      "symbol": "save/persistScopedSettings",
+      "observation": "Writes only enqueue the global scope, so a file-authored skipPrompt entry is never rewritten by the tree or summarization flows."
+    }
+  ],
+  "settingsCases": [
+    {
+      "id": "BS01",
+      "expect": {
+        "loaded": true,
+        "prompts": true,
+        "skipPrompt": "<absent>",
+        "parentPresent": false,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS02",
+      "expect": {
+        "loaded": true,
+        "prompts": true,
+        "skipPrompt": "false",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS03",
+      "expect": {
+        "loaded": true,
+        "prompts": false,
+        "skipPrompt": "true",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS04",
+      "expect": {
+        "loaded": true,
+        "prompts": false,
+        "skipPrompt": "true",
+        "parentPresent": true,
+        "reserve": 1234
+      }
+    },
+    {
+      "id": "BS05",
+      "expect": {
+        "loaded": true,
+        "prompts": true,
+        "skipPrompt": "false",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS06",
+      "expect": {
+        "loaded": true,
+        "prompts": false,
+        "skipPrompt": "true",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS07",
+      "expect": {
+        "loaded": true,
+        "prompts": true,
+        "skipPrompt": "null",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS08",
+      "expect": {
+        "loaded": true,
+        "prompts": false,
+        "skipPrompt": "true",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS09",
+      "expect": {
+        "loaded": true,
+        "prompts": true,
+        "skipPrompt": "0",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS10",
+      "expect": {
+        "loaded": true,
+        "prompts": false,
+        "skipPrompt": "\"false\"",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS11",
+      "expect": {
+        "loaded": true,
+        "prompts": true,
+        "skipPrompt": "\"\"",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS12",
+      "expect": {
+        "loaded": true,
+        "prompts": false,
+        "skipPrompt": "{}",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS13",
+      "expect": {
+        "loaded": true,
+        "prompts": false,
+        "skipPrompt": "[]",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS14",
+      "expect": {
+        "loaded": true,
+        "prompts": false,
+        "skipPrompt": "1",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS15",
+      "expect": {
+        "loaded": true,
+        "prompts": true,
+        "skipPrompt": "<absent>",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS16",
+      "expect": {
+        "loaded": true,
+        "prompts": true,
+        "skipPrompt": "<absent>",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS17",
+      "expect": {
+        "loaded": true,
+        "prompts": true,
+        "skipPrompt": "<absent>",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS18",
+      "expect": {
+        "loaded": true,
+        "prompts": true,
+        "skipPrompt": "<absent>",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS19",
+      "expect": {
+        "loaded": true,
+        "prompts": true,
+        "skipPrompt": "<absent>",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS20",
+      "expect": {
+        "loaded": true,
+        "prompts": true,
+        "skipPrompt": "<absent>",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS21",
+      "expect": {
+        "loaded": true,
+        "prompts": true,
+        "skipPrompt": "<absent>",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS22",
+      "expect": {
+        "loaded": true,
+        "prompts": true,
+        "skipPrompt": "<absent>",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS23",
+      "expect": {
+        "loaded": true,
+        "prompts": true,
+        "skipPrompt": "null",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS24",
+      "expect": {
+        "loaded": true,
+        "prompts": false,
+        "skipPrompt": "\"false\"",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS25",
+      "expect": {
+        "loaded": true,
+        "prompts": true,
+        "skipPrompt": "\"\"",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS26",
+      "expect": {
+        "loaded": true,
+        "prompts": false,
+        "skipPrompt": "1",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS27",
+      "expect": {
+        "loaded": true,
+        "prompts": true,
+        "skipPrompt": "0",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS28",
+      "expect": {
+        "loaded": true,
+        "prompts": false,
+        "skipPrompt": "{}",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS29",
+      "expect": {
+        "loaded": true,
+        "prompts": false,
+        "skipPrompt": "[]",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS30",
+      "expect": {
+        "loaded": true,
+        "prompts": false,
+        "skipPrompt": "2.5",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS31",
+      "expect": {
+        "loaded": true,
+        "prompts": false,
+        "skipPrompt": "{\"nested\":false}",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS32",
+      "expect": {
+        "loaded": true,
+        "prompts": false,
+        "skipPrompt": "true",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS33",
+      "expect": {
+        "loaded": true,
+        "prompts": true,
+        "skipPrompt": "false",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS34",
+      "expect": {
+        "loaded": true,
+        "prompts": false,
+        "skipPrompt": "true",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS35",
+      "expect": {
+        "loaded": true,
+        "prompts": true,
+        "skipPrompt": "false",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS36",
+      "expect": {
+        "loaded": true,
+        "prompts": true,
+        "skipPrompt": "false",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS37",
+      "expect": {
+        "loaded": true,
+        "prompts": false,
+        "skipPrompt": "true",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS38",
+      "expect": {
+        "loaded": true,
+        "prompts": false,
+        "skipPrompt": "true",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS39",
+      "expect": {
+        "loaded": true,
+        "prompts": false,
+        "skipPrompt": "true",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    },
+    {
+      "id": "BS40",
+      "expect": {
+        "loaded": true,
+        "prompts": true,
+        "skipPrompt": "false",
+        "parentPresent": true,
+        "reserve": 16384
+      }
+    }
+  ],
+  "scenarioFacts": [
+    {
+      "id": "fullscreen:unset-tree-selected",
+      "fixture": "fullscreen",
+      "checkpoint": "unset-tree-selected",
+      "prompts": true,
+      "choices": [
+        "No summary",
+        "Summarize",
+        "Summarize with custom prompt"
+      ]
+    },
+    {
+      "id": "fullscreen:unset-prompt-cancel",
+      "fixture": "fullscreen",
+      "checkpoint": "unset-prompt-cancel",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "fullscreen:unset-reopen-tree-selected",
+      "fixture": "fullscreen",
+      "checkpoint": "unset-reopen-tree-selected",
+      "prompts": true,
+      "choices": [
+        "No summary",
+        "Summarize",
+        "Summarize with custom prompt"
+      ]
+    },
+    {
+      "id": "fullscreen:unset-reopen-navigate",
+      "fixture": "fullscreen",
+      "checkpoint": "unset-reopen-navigate",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "fullscreen:false-tree-selected",
+      "fixture": "fullscreen",
+      "checkpoint": "false-tree-selected",
+      "prompts": true,
+      "choices": [
+        "No summary",
+        "Summarize",
+        "Summarize with custom prompt"
+      ]
+    },
+    {
+      "id": "fullscreen:true-tree-selected",
+      "fixture": "fullscreen",
+      "checkpoint": "true-tree-selected",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "fullscreen:true-restart-tree-selected",
+      "fixture": "fullscreen",
+      "checkpoint": "true-restart-tree-selected",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "fullscreen:false-again-tree-selected",
+      "fixture": "fullscreen",
+      "checkpoint": "false-again-tree-selected",
+      "prompts": true,
+      "choices": [
+        "No summary",
+        "Summarize",
+        "Summarize with custom prompt"
+      ]
+    },
+    {
+      "id": "fullscreen:filtered-tree-open",
+      "fixture": "fullscreen",
+      "checkpoint": "filtered-tree-open",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "fullscreen:filtered-tree-selected",
+      "fixture": "fullscreen",
+      "checkpoint": "filtered-tree-selected",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "fullscreen:unset-tree-open",
+      "fixture": "fullscreen",
+      "checkpoint": "unset-tree-open",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "fullscreen:true-navigate",
+      "fixture": "fullscreen",
+      "checkpoint": "true-navigate",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "fullscreen:true-tree-after-state",
+      "fixture": "fullscreen",
+      "checkpoint": "true-tree-after-state",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "fullscreen:unset-reopen-tree-after-state",
+      "fixture": "fullscreen",
+      "checkpoint": "unset-reopen-tree-after-state",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "regular:unset-tree-selected",
+      "fixture": "regular",
+      "checkpoint": "unset-tree-selected",
+      "prompts": true,
+      "choices": [
+        "No summary",
+        "Summarize",
+        "Summarize with custom prompt"
+      ]
+    },
+    {
+      "id": "regular:unset-prompt-cancel",
+      "fixture": "regular",
+      "checkpoint": "unset-prompt-cancel",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "regular:unset-reopen-tree-selected",
+      "fixture": "regular",
+      "checkpoint": "unset-reopen-tree-selected",
+      "prompts": true,
+      "choices": [
+        "No summary",
+        "Summarize",
+        "Summarize with custom prompt"
+      ]
+    },
+    {
+      "id": "regular:unset-reopen-navigate",
+      "fixture": "regular",
+      "checkpoint": "unset-reopen-navigate",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "regular:false-tree-selected",
+      "fixture": "regular",
+      "checkpoint": "false-tree-selected",
+      "prompts": true,
+      "choices": [
+        "No summary",
+        "Summarize",
+        "Summarize with custom prompt"
+      ]
+    },
+    {
+      "id": "regular:true-tree-selected",
+      "fixture": "regular",
+      "checkpoint": "true-tree-selected",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "regular:true-restart-tree-selected",
+      "fixture": "regular",
+      "checkpoint": "true-restart-tree-selected",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "regular:false-again-tree-selected",
+      "fixture": "regular",
+      "checkpoint": "false-again-tree-selected",
+      "prompts": true,
+      "choices": [
+        "No summary",
+        "Summarize",
+        "Summarize with custom prompt"
+      ]
+    },
+    {
+      "id": "regular:filtered-tree-open",
+      "fixture": "regular",
+      "checkpoint": "filtered-tree-open",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "regular:filtered-tree-selected",
+      "fixture": "regular",
+      "checkpoint": "filtered-tree-selected",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "regular:unset-tree-open",
+      "fixture": "regular",
+      "checkpoint": "unset-tree-open",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "regular:true-navigate",
+      "fixture": "regular",
+      "checkpoint": "true-navigate",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "regular:true-tree-after-state",
+      "fixture": "regular",
+      "checkpoint": "true-tree-after-state",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "regular:unset-reopen-tree-after-state",
+      "fixture": "regular",
+      "checkpoint": "unset-reopen-tree-after-state",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "malformed:malformed-string-tree-selected",
+      "fixture": "malformed",
+      "checkpoint": "malformed-string-tree-selected",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "malformed:empty-string-tree-selected",
+      "fixture": "malformed",
+      "checkpoint": "empty-string-tree-selected",
+      "prompts": true,
+      "choices": [
+        "No summary",
+        "Summarize",
+        "Summarize with custom prompt"
+      ]
+    },
+    {
+      "id": "malformed:number-tree-selected",
+      "fixture": "malformed",
+      "checkpoint": "number-tree-selected",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "malformed:zero-tree-selected",
+      "fixture": "malformed",
+      "checkpoint": "zero-tree-selected",
+      "prompts": true,
+      "choices": [
+        "No summary",
+        "Summarize",
+        "Summarize with custom prompt"
+      ]
+    },
+    {
+      "id": "malformed:object-tree-selected",
+      "fixture": "malformed",
+      "checkpoint": "object-tree-selected",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "malformed:array-tree-selected",
+      "fixture": "malformed",
+      "checkpoint": "array-tree-selected",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "malformed:null-tree-selected",
+      "fixture": "malformed",
+      "checkpoint": "null-tree-selected",
+      "prompts": true,
+      "choices": [
+        "No summary",
+        "Summarize",
+        "Summarize with custom prompt"
+      ]
+    },
+    {
+      "id": "malformed:parent-null-tree-selected",
+      "fixture": "malformed",
+      "checkpoint": "parent-null-tree-selected",
+      "prompts": true,
+      "choices": [
+        "No summary",
+        "Summarize",
+        "Summarize with custom prompt"
+      ]
+    },
+    {
+      "id": "malformed:parent-string-tree-selected",
+      "fixture": "malformed",
+      "checkpoint": "parent-string-tree-selected",
+      "prompts": true,
+      "choices": [
+        "No summary",
+        "Summarize",
+        "Summarize with custom prompt"
+      ]
+    },
+    {
+      "id": "malformed:parent-number-tree-selected",
+      "fixture": "malformed",
+      "checkpoint": "parent-number-tree-selected",
+      "prompts": true,
+      "choices": [
+        "No summary",
+        "Summarize",
+        "Summarize with custom prompt"
+      ]
+    },
+    {
+      "id": "malformed:parent-array-tree-selected",
+      "fixture": "malformed",
+      "checkpoint": "parent-array-tree-selected",
+      "prompts": true,
+      "choices": [
+        "No summary",
+        "Summarize",
+        "Summarize with custom prompt"
+      ]
+    },
+    {
+      "id": "project:trusted-tree-selected",
+      "fixture": "project",
+      "checkpoint": "trusted-tree-selected",
+      "prompts": true,
+      "choices": [
+        "No summary",
+        "Summarize",
+        "Summarize with custom prompt"
+      ]
+    },
+    {
+      "id": "project:trusted-restart-tree-selected",
+      "fixture": "project",
+      "checkpoint": "trusted-restart-tree-selected",
+      "prompts": true,
+      "choices": [
+        "No summary",
+        "Summarize",
+        "Summarize with custom prompt"
+      ]
+    },
+    {
+      "id": "project:untrusted-tree-selected",
+      "fixture": "project",
+      "checkpoint": "untrusted-tree-selected",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "project:untrusted-tree-after-state",
+      "fixture": "project",
+      "checkpoint": "untrusted-tree-after-state",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "project-null:trusted-tree-selected",
+      "fixture": "project-null",
+      "checkpoint": "trusted-tree-selected",
+      "prompts": true,
+      "choices": [
+        "No summary",
+        "Summarize",
+        "Summarize with custom prompt"
+      ]
+    },
+    {
+      "id": "project-null:trusted-restart-tree-selected",
+      "fixture": "project-null",
+      "checkpoint": "trusted-restart-tree-selected",
+      "prompts": true,
+      "choices": [
+        "No summary",
+        "Summarize",
+        "Summarize with custom prompt"
+      ]
+    },
+    {
+      "id": "project-null:untrusted-tree-selected",
+      "fixture": "project-null",
+      "checkpoint": "untrusted-tree-selected",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "project-null:untrusted-tree-after-state",
+      "fixture": "project-null",
+      "checkpoint": "untrusted-tree-after-state",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "project-reserve:trusted-tree-selected",
+      "fixture": "project-reserve",
+      "checkpoint": "trusted-tree-selected",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "project-reserve:trusted-restart-tree-selected",
+      "fixture": "project-reserve",
+      "checkpoint": "trusted-restart-tree-selected",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "project-reserve:untrusted-tree-selected",
+      "fixture": "project-reserve",
+      "checkpoint": "untrusted-tree-selected",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "project-reserve:untrusted-tree-after-state",
+      "fixture": "project-reserve",
+      "checkpoint": "untrusted-tree-after-state",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "project-malformed:trusted-tree-selected",
+      "fixture": "project-malformed",
+      "checkpoint": "trusted-tree-selected",
+      "prompts": true,
+      "choices": [
+        "No summary",
+        "Summarize",
+        "Summarize with custom prompt"
+      ]
+    },
+    {
+      "id": "project-malformed:trusted-restart-tree-selected",
+      "fixture": "project-malformed",
+      "checkpoint": "trusted-restart-tree-selected",
+      "prompts": true,
+      "choices": [
+        "No summary",
+        "Summarize",
+        "Summarize with custom prompt"
+      ]
+    },
+    {
+      "id": "project-malformed:untrusted-tree-selected",
+      "fixture": "project-malformed",
+      "checkpoint": "untrusted-tree-selected",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "project-malformed:untrusted-tree-after-state",
+      "fixture": "project-malformed",
+      "checkpoint": "untrusted-tree-after-state",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "project-malformed-truthy:trusted-tree-selected",
+      "fixture": "project-malformed-truthy",
+      "checkpoint": "trusted-tree-selected",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "project-malformed-truthy:trusted-restart-tree-selected",
+      "fixture": "project-malformed-truthy",
+      "checkpoint": "trusted-restart-tree-selected",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "project-malformed-truthy:untrusted-tree-selected",
+      "fixture": "project-malformed-truthy",
+      "checkpoint": "untrusted-tree-selected",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "project-malformed-truthy:untrusted-tree-after-state",
+      "fixture": "project-malformed-truthy",
+      "checkpoint": "untrusted-tree-after-state",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "tolerant:unknown-tree-selected",
+      "fixture": "tolerant",
+      "checkpoint": "unknown-tree-selected",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "tolerant:duplicate-tree-selected",
+      "fixture": "tolerant",
+      "checkpoint": "duplicate-tree-selected",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "tolerant:false-tree-selected",
+      "fixture": "tolerant",
+      "checkpoint": "false-tree-selected",
+      "prompts": true,
+      "choices": [
+        "No summary",
+        "Summarize",
+        "Summarize with custom prompt"
+      ]
+    },
+    {
+      "id": "tolerant:trusted-tree-selected",
+      "fixture": "tolerant",
+      "checkpoint": "trusted-tree-selected",
+      "prompts": false,
+      "choices": null
+    },
+    {
+      "id": "tolerant:untrusted-tree-selected",
+      "fixture": "tolerant",
+      "checkpoint": "untrusted-tree-selected",
+      "prompts": false,
+      "choices": null
+    }
+  ],
+  "projections": {
+    "fullscreen": {
+      "unset-tree-selected": {
+        "prompts": true,
+        "choices": [
+          "No summary",
+          "Summarize",
+          "Summarize with custom prompt"
+        ],
+        "tree": null
+      },
+      "unset-prompt-cancel": {
+        "prompts": false,
+        "choices": null,
+        "tree": {
+          "rows": [
+            "u0000002",
+            "a0000003",
+            "c0000007",
+            "c0000008",
+            "r0000010",
+            "k0000011",
+            "y0000012",
+            "z0000013",
+            "b0000004",
+            "b0000005"
+          ],
+          "count": "2/10",
+          "tags": [],
+          "selected": "a0000003",
+          "summaryRows": []
+        }
+      },
+      "unset-reopen-tree-selected": {
+        "prompts": true,
+        "choices": [
+          "No summary",
+          "Summarize",
+          "Summarize with custom prompt"
+        ],
+        "tree": null
+      },
+      "unset-reopen-navigate": {
+        "prompts": false,
+        "choices": null,
+        "tree": null
+      },
+      "false-tree-selected": {
+        "prompts": true,
+        "choices": [
+          "No summary",
+          "Summarize",
+          "Summarize with custom prompt"
+        ],
+        "tree": null
+      },
+      "true-tree-selected": {
+        "prompts": false,
+        "choices": null,
+        "tree": null
+      },
+      "true-restart-tree-selected": {
+        "prompts": false,
+        "choices": null,
+        "tree": null
+      },
+      "false-again-tree-selected": {
+        "prompts": true,
+        "choices": [
+          "No summary",
+          "Summarize",
+          "Summarize with custom prompt"
+        ],
+        "tree": null
+      },
+      "filtered-tree-open": {
+        "prompts": false,
+        "choices": null,
+        "tree": {
+          "rows": [
+            "m0000001",
+            "t0000001",
+            "u0000002",
+            "a0000003",
+            "c0000007",
+            "c0000008",
+            "r0000010",
+            "k0000011",
+            "y0000012",
+            "z0000013",
+            "t0000015",
+            "L0000016",
+            "b0000004",
+            "b0000005",
+            "L0000006"
+          ],
+          "count": "12/15",
+          "tags": [
+            "all"
+          ],
+          "selected": "L0000016",
+          "summaryRows": []
+        }
+      },
+      "filtered-tree-selected": {
+        "prompts": false,
+        "choices": null,
+        "tree": null
+      },
+      "unset-tree-open": {
+        "prompts": false,
+        "choices": null,
+        "tree": {
+          "rows": [
+            "u0000002",
+            "a0000003",
+            "c0000007",
+            "c0000008",
+            "r0000010",
+            "k0000011",
+            "y0000012",
+            "z0000013",
+            "b0000004",
+            "b0000005"
+          ],
+          "count": "8/10",
+          "tags": [],
+          "selected": "z0000013",
+          "summaryRows": []
+        }
+      },
+      "true-navigate": {
+        "prompts": false,
+        "choices": null,
+        "tree": null
+      },
+      "true-tree-after-state": {
+        "prompts": false,
+        "choices": null,
+        "tree": {
+          "rows": [
+            "u0000002",
+            "a0000003",
+            "b0000004",
+            "b0000005",
+            "c0000007",
+            "c0000008",
+            "r0000010",
+            "k0000011",
+            "y0000012",
+            "z0000013"
+          ],
+          "count": "2/10",
+          "tags": [],
+          "selected": "a0000003",
+          "summaryRows": []
+        }
+      },
+      "unset-reopen-tree-after-state": {
+        "prompts": false,
+        "choices": null,
+        "tree": {
+          "rows": [
+            "u0000002",
+            "a0000003",
+            "b0000004",
+            "b0000005",
+            "c0000007",
+            "c0000008",
+            "r0000010",
+            "k0000011",
+            "y0000012",
+            "z0000013"
+          ],
+          "count": "2/10",
+          "tags": [],
+          "selected": "a0000003",
+          "summaryRows": []
+        }
+      }
+    },
+    "regular": {
+      "unset-tree-selected": {
+        "prompts": true,
+        "choices": [
+          "No summary",
+          "Summarize",
+          "Summarize with custom prompt"
+        ],
+        "tree": null
+      },
+      "unset-prompt-cancel": {
+        "prompts": false,
+        "choices": null,
+        "tree": {
+          "rows": [
+            "u0000002",
+            "a0000003",
+            "c0000007",
+            "c0000008",
+            "r0000010",
+            "k0000011",
+            "y0000012",
+            "z0000013",
+            "b0000004",
+            "b0000005"
+          ],
+          "count": "2/10",
+          "tags": [],
+          "selected": "a0000003",
+          "summaryRows": []
+        }
+      },
+      "unset-reopen-tree-selected": {
+        "prompts": true,
+        "choices": [
+          "No summary",
+          "Summarize",
+          "Summarize with custom prompt"
+        ],
+        "tree": null
+      },
+      "unset-reopen-navigate": {
+        "prompts": false,
+        "choices": null,
+        "tree": null
+      },
+      "false-tree-selected": {
+        "prompts": true,
+        "choices": [
+          "No summary",
+          "Summarize",
+          "Summarize with custom prompt"
+        ],
+        "tree": null
+      },
+      "true-tree-selected": {
+        "prompts": false,
+        "choices": null,
+        "tree": null
+      },
+      "true-restart-tree-selected": {
+        "prompts": false,
+        "choices": null,
+        "tree": null
+      },
+      "false-again-tree-selected": {
+        "prompts": true,
+        "choices": [
+          "No summary",
+          "Summarize",
+          "Summarize with custom prompt"
+        ],
+        "tree": null
+      },
+      "filtered-tree-open": {
+        "prompts": false,
+        "choices": null,
+        "tree": {
+          "rows": [
+            "m0000001",
+            "t0000001",
+            "u0000002",
+            "a0000003",
+            "c0000007",
+            "c0000008",
+            "r0000010",
+            "k0000011",
+            "y0000012",
+            "z0000013",
+            "t0000015",
+            "L0000016",
+            "b0000004",
+            "b0000005",
+            "L0000006"
+          ],
+          "count": "12/15",
+          "tags": [
+            "all"
+          ],
+          "selected": "L0000016",
+          "summaryRows": []
+        }
+      },
+      "filtered-tree-selected": {
+        "prompts": false,
+        "choices": null,
+        "tree": null
+      },
+      "unset-tree-open": {
+        "prompts": false,
+        "choices": null,
+        "tree": {
+          "rows": [
+            "u0000002",
+            "a0000003",
+            "c0000007",
+            "c0000008",
+            "r0000010",
+            "k0000011",
+            "y0000012",
+            "z0000013",
+            "b0000004",
+            "b0000005"
+          ],
+          "count": "8/10",
+          "tags": [],
+          "selected": "z0000013",
+          "summaryRows": []
+        }
+      },
+      "true-navigate": {
+        "prompts": false,
+        "choices": null,
+        "tree": null
+      },
+      "true-tree-after-state": {
+        "prompts": false,
+        "choices": null,
+        "tree": {
+          "rows": [
+            "u0000002",
+            "a0000003",
+            "b0000004",
+            "b0000005",
+            "c0000007",
+            "c0000008",
+            "r0000010",
+            "k0000011",
+            "y0000012",
+            "z0000013"
+          ],
+          "count": "2/10",
+          "tags": [],
+          "selected": "a0000003",
+          "summaryRows": []
+        }
+      },
+      "unset-reopen-tree-after-state": {
+        "prompts": false,
+        "choices": null,
+        "tree": {
+          "rows": [
+            "u0000002",
+            "a0000003",
+            "b0000004",
+            "b0000005",
+            "c0000007",
+            "c0000008",
+            "r0000010",
+            "k0000011",
+            "y0000012",
+            "z0000013"
+          ],
+          "count": "2/10",
+          "tags": [],
+          "selected": "a0000003",
+          "summaryRows": []
+        }
+      }
+    },
+    "malformed": {
+      "malformed-string-tree-selected": {
+        "prompts": false,
+        "choices": null,
+        "tree": null
+      },
+      "empty-string-tree-selected": {
+        "prompts": true,
+        "choices": [
+          "No summary",
+          "Summarize",
+          "Summarize with custom prompt"
+        ],
+        "tree": null
+      },
+      "number-tree-selected": {
+        "prompts": false,
+        "choices": null,
+        "tree": null
+      },
+      "zero-tree-selected": {
+        "prompts": true,
+        "choices": [
+          "No summary",
+          "Summarize",
+          "Summarize with custom prompt"
+        ],
+        "tree": null
+      },
+      "object-tree-selected": {
+        "prompts": false,
+        "choices": null,
+        "tree": null
+      },
+      "array-tree-selected": {
+        "prompts": false,
+        "choices": null,
+        "tree": null
+      },
+      "null-tree-selected": {
+        "prompts": true,
+        "choices": [
+          "No summary",
+          "Summarize",
+          "Summarize with custom prompt"
+        ],
+        "tree": null
+      },
+      "parent-null-tree-selected": {
+        "prompts": true,
+        "choices": [
+          "No summary",
+          "Summarize",
+          "Summarize with custom prompt"
+        ],
+        "tree": null
+      },
+      "parent-string-tree-selected": {
+        "prompts": true,
+        "choices": [
+          "No summary",
+          "Summarize",
+          "Summarize with custom prompt"
+        ],
+        "tree": null
+      },
+      "parent-number-tree-selected": {
+        "prompts": true,
+        "choices": [
+          "No summary",
+          "Summarize",
+          "Summarize with custom prompt"
+        ],
+        "tree": null
+      },
+      "parent-array-tree-selected": {
+        "prompts": true,
+        "choices": [
+          "No summary",
+          "Summarize",
+          "Summarize with custom prompt"
+        ],
+        "tree": null
+      }
+    },
+    "project": {
+      "trusted-tree-selected": {
+        "prompts": true,
+        "choices": [
+          "No summary",
+          "Summarize",
+          "Summarize with custom prompt"
+        ],
+        "tree": null
+      },
+      "trusted-restart-tree-selected": {
+        "prompts": true,
+        "choices": [
+          "No summary",
+          "Summarize",
+          "Summarize with custom prompt"
+        ],
+        "tree": null
+      },
+      "untrusted-tree-selected": {
+        "prompts": false,
+        "choices": null,
+        "tree": null
+      },
+      "untrusted-tree-after-state": {
+        "prompts": false,
+        "choices": null,
+        "tree": {
+          "rows": [
+            "u0000002",
+            "a0000003",
+            "b0000004",
+            "b0000005",
+            "c0000007",
+            "c0000008",
+            "r0000010",
+            "k0000011",
+            "y0000012",
+            "z0000013"
+          ],
+          "count": "2/10",
+          "tags": [],
+          "selected": "a0000003",
+          "summaryRows": []
+        }
+      }
+    },
+    "project-null": {
+      "trusted-tree-selected": {
+        "prompts": true,
+        "choices": [
+          "No summary",
+          "Summarize",
+          "Summarize with custom prompt"
+        ],
+        "tree": null
+      },
+      "trusted-restart-tree-selected": {
+        "prompts": true,
+        "choices": [
+          "No summary",
+          "Summarize",
+          "Summarize with custom prompt"
+        ],
+        "tree": null
+      },
+      "untrusted-tree-selected": {
+        "prompts": false,
+        "choices": null,
+        "tree": null
+      },
+      "untrusted-tree-after-state": {
+        "prompts": false,
+        "choices": null,
+        "tree": {
+          "rows": [
+            "u0000002",
+            "a0000003",
+            "b0000004",
+            "b0000005",
+            "c0000007",
+            "c0000008",
+            "r0000010",
+            "k0000011",
+            "y0000012",
+            "z0000013"
+          ],
+          "count": "2/10",
+          "tags": [],
+          "selected": "a0000003",
+          "summaryRows": []
+        }
+      }
+    },
+    "project-reserve": {
+      "trusted-tree-selected": {
+        "prompts": false,
+        "choices": null,
+        "tree": null
+      },
+      "trusted-restart-tree-selected": {
+        "prompts": false,
+        "choices": null,
+        "tree": null
+      },
+      "untrusted-tree-selected": {
+        "prompts": false,
+        "choices": null,
+        "tree": null
+      },
+      "untrusted-tree-after-state": {
+        "prompts": false,
+        "choices": null,
+        "tree": {
+          "rows": [
+            "u0000002",
+            "a0000003",
+            "b0000004",
+            "b0000005",
+            "c0000007",
+            "c0000008",
+            "r0000010",
+            "k0000011",
+            "y0000012",
+            "z0000013"
+          ],
+          "count": "2/10",
+          "tags": [],
+          "selected": "a0000003",
+          "summaryRows": []
+        }
+      }
+    },
+    "project-malformed": {
+      "trusted-tree-selected": {
+        "prompts": true,
+        "choices": [
+          "No summary",
+          "Summarize",
+          "Summarize with custom prompt"
+        ],
+        "tree": null
+      },
+      "trusted-restart-tree-selected": {
+        "prompts": true,
+        "choices": [
+          "No summary",
+          "Summarize",
+          "Summarize with custom prompt"
+        ],
+        "tree": null
+      },
+      "untrusted-tree-selected": {
+        "prompts": false,
+        "choices": null,
+        "tree": null
+      },
+      "untrusted-tree-after-state": {
+        "prompts": false,
+        "choices": null,
+        "tree": {
+          "rows": [
+            "u0000002",
+            "a0000003",
+            "b0000004",
+            "b0000005",
+            "c0000007",
+            "c0000008",
+            "r0000010",
+            "k0000011",
+            "y0000012",
+            "z0000013"
+          ],
+          "count": "2/10",
+          "tags": [],
+          "selected": "a0000003",
+          "summaryRows": []
+        }
+      }
+    },
+    "project-malformed-truthy": {
+      "trusted-tree-selected": {
+        "prompts": false,
+        "choices": null,
+        "tree": null
+      },
+      "trusted-restart-tree-selected": {
+        "prompts": false,
+        "choices": null,
+        "tree": null
+      },
+      "untrusted-tree-selected": {
+        "prompts": false,
+        "choices": null,
+        "tree": null
+      },
+      "untrusted-tree-after-state": {
+        "prompts": false,
+        "choices": null,
+        "tree": {
+          "rows": [
+            "u0000002",
+            "a0000003",
+            "b0000004",
+            "b0000005",
+            "c0000007",
+            "c0000008",
+            "r0000010",
+            "k0000011",
+            "y0000012",
+            "z0000013"
+          ],
+          "count": "2/10",
+          "tags": [],
+          "selected": "a0000003",
+          "summaryRows": []
+        }
+      }
+    },
+    "tolerant": {
+      "unknown-tree-selected": {
+        "prompts": false,
+        "choices": null,
+        "tree": null
+      },
+      "duplicate-tree-selected": {
+        "prompts": false,
+        "choices": null,
+        "tree": null
+      },
+      "false-tree-selected": {
+        "prompts": true,
+        "choices": [
+          "No summary",
+          "Summarize",
+          "Summarize with custom prompt"
+        ],
+        "tree": null
+      },
+      "trusted-tree-selected": {
+        "prompts": false,
+        "choices": null,
+        "tree": null
+      },
+      "untrusted-tree-selected": {
+        "prompts": false,
+        "choices": null,
+        "tree": null
+      }
+    }
+  },
+  "navigationCheckpoints": [
+    "true-tree-after-state",
+    "untrusted-tree-after-state"
+  ],
+  "safetyProjections": [],
+  "expectations": {
+    "BS01": {
+      "loaded": true,
+      "prompts": true,
+      "skipPrompt": "<absent>",
+      "parentPresent": false,
+      "reserve": 16384
+    },
+    "BS02": {
+      "loaded": true,
+      "prompts": true,
+      "skipPrompt": "false",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS03": {
+      "loaded": true,
+      "prompts": false,
+      "skipPrompt": "true",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS04": {
+      "loaded": true,
+      "prompts": false,
+      "skipPrompt": "true",
+      "parentPresent": true,
+      "reserve": 1234
+    },
+    "BS05": {
+      "loaded": true,
+      "prompts": true,
+      "skipPrompt": "false",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS06": {
+      "loaded": true,
+      "prompts": false,
+      "skipPrompt": "true",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS07": {
+      "loaded": true,
+      "prompts": true,
+      "skipPrompt": "null",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS08": {
+      "loaded": true,
+      "prompts": false,
+      "skipPrompt": "true",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS09": {
+      "loaded": true,
+      "prompts": true,
+      "skipPrompt": "0",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS10": {
+      "loaded": true,
+      "prompts": false,
+      "skipPrompt": "\"false\"",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS11": {
+      "loaded": true,
+      "prompts": true,
+      "skipPrompt": "\"\"",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS12": {
+      "loaded": true,
+      "prompts": false,
+      "skipPrompt": "{}",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS13": {
+      "loaded": true,
+      "prompts": false,
+      "skipPrompt": "[]",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS14": {
+      "loaded": true,
+      "prompts": false,
+      "skipPrompt": "1",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS15": {
+      "loaded": true,
+      "prompts": true,
+      "skipPrompt": "<absent>",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS16": {
+      "loaded": true,
+      "prompts": true,
+      "skipPrompt": "<absent>",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS17": {
+      "loaded": true,
+      "prompts": true,
+      "skipPrompt": "<absent>",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS18": {
+      "loaded": true,
+      "prompts": true,
+      "skipPrompt": "<absent>",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS19": {
+      "loaded": true,
+      "prompts": true,
+      "skipPrompt": "<absent>",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS20": {
+      "loaded": true,
+      "prompts": true,
+      "skipPrompt": "<absent>",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS21": {
+      "loaded": true,
+      "prompts": true,
+      "skipPrompt": "<absent>",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS22": {
+      "loaded": true,
+      "prompts": true,
+      "skipPrompt": "<absent>",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS23": {
+      "loaded": true,
+      "prompts": true,
+      "skipPrompt": "null",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS24": {
+      "loaded": true,
+      "prompts": false,
+      "skipPrompt": "\"false\"",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS25": {
+      "loaded": true,
+      "prompts": true,
+      "skipPrompt": "\"\"",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS26": {
+      "loaded": true,
+      "prompts": false,
+      "skipPrompt": "1",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS27": {
+      "loaded": true,
+      "prompts": true,
+      "skipPrompt": "0",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS28": {
+      "loaded": true,
+      "prompts": false,
+      "skipPrompt": "{}",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS29": {
+      "loaded": true,
+      "prompts": false,
+      "skipPrompt": "[]",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS30": {
+      "loaded": true,
+      "prompts": false,
+      "skipPrompt": "2.5",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS31": {
+      "loaded": true,
+      "prompts": false,
+      "skipPrompt": "{\"nested\":false}",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS32": {
+      "loaded": true,
+      "prompts": false,
+      "skipPrompt": "true",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS33": {
+      "loaded": true,
+      "prompts": true,
+      "skipPrompt": "false",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS34": {
+      "loaded": true,
+      "prompts": false,
+      "skipPrompt": "true",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS35": {
+      "loaded": true,
+      "prompts": true,
+      "skipPrompt": "false",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS36": {
+      "loaded": true,
+      "prompts": true,
+      "skipPrompt": "false",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS37": {
+      "loaded": true,
+      "prompts": false,
+      "skipPrompt": "true",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS38": {
+      "loaded": true,
+      "prompts": false,
+      "skipPrompt": "true",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS39": {
+      "loaded": true,
+      "prompts": false,
+      "skipPrompt": "true",
+      "parentPresent": true,
+      "reserve": 16384
+    },
+    "BS40": {
+      "loaded": true,
+      "prompts": true,
+      "skipPrompt": "false",
+      "parentPresent": true,
+      "reserve": 16384
+    }
+  }
+}

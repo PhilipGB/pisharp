@@ -287,7 +287,7 @@ internal static class InteractiveMode
                     }
                     var sessionCommands = new InteractiveSessionCommands(projectBinding.Store, projectBinding.WorkingDirectory, projectBinding.Arguments.NoSession,
                         Console.Out, () => editor.ReadLineAsync(HandleEditorApplicationAction, enableApplicationActions: false),
-                        presentation.LoadSessionTranscript, projectBinding.Settings.BranchSummary, editor.Prefill);
+                        presentation.LoadSessionTranscript, projectBinding.Settings.EffectiveBranchSummary, editor.Prefill);
                     if (!await sessionCommands.TryExecuteAsync(command, argument, conversationBinding.Conversation, conversationBinding.Run, conversationBinding.Path))
                     {
                         switch (command)

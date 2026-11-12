@@ -1,0 +1,1219 @@
+{
+  "schema": 1,
+  "capability": "settings-branchsummary-skipprompt",
+  "title": "Setting: branchSummary.skipPrompt",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "baseSha": "0911db693078d0bb5e52ad7a44aa268902abf22b",
+  "implementationSha": "aef1209305e445176092556d79f775109f8386d1",
+  "oracleFile": "docs/parity/fixtures/settings-branchsummary-skipprompt-pi-oracle-2026-11-12.json",
+  "settingsBoundaryFile": "docs/parity/fixtures/settings-branchsummary-skipprompt-settings-boundary-2026-11-12.json",
+  "milestoneDoc": "docs/parity/fixtures/settings-branchsummary-skipprompt-2026-11-12.md",
+  "terminalFixtures": [
+    "tools/parity/terminal/fixtures/terminal-branch-summary-skip-prompt.json",
+    "tools/parity/terminal/fixtures/terminal-branch-summary-skip-prompt-regular.json",
+    "tools/parity/terminal/fixtures/terminal-branch-summary-skip-prompt-malformed.json",
+    "tools/parity/terminal/fixtures/terminal-branch-summary-skip-prompt-project.json",
+    "tools/parity/terminal/fixtures/terminal-branch-summary-skip-prompt-project-null.json",
+    "tools/parity/terminal/fixtures/terminal-branch-summary-skip-prompt-project-reserve.json",
+    "tools/parity/terminal/fixtures/terminal-branch-summary-skip-prompt-project-malformed.json",
+    "tools/parity/terminal/fixtures/terminal-branch-summary-skip-prompt-project-malformed-truthy.json",
+    "tools/parity/terminal/fixtures/terminal-branch-summary-skip-prompt-tolerant.json"
+  ],
+  "checkpointFiles": [
+    "docs/parity/fixtures/settings-branchsummary-skipprompt-checkpoints-fullscreen-2026-11-12.json",
+    "docs/parity/fixtures/settings-branchsummary-skipprompt-checkpoints-regular-2026-11-12.json",
+    "docs/parity/fixtures/settings-branchsummary-skipprompt-checkpoints-malformed-2026-11-12.json",
+    "docs/parity/fixtures/settings-branchsummary-skipprompt-checkpoints-project-2026-11-12.json",
+    "docs/parity/fixtures/settings-branchsummary-skipprompt-checkpoints-project-null-2026-11-12.json",
+    "docs/parity/fixtures/settings-branchsummary-skipprompt-checkpoints-project-reserve-2026-11-12.json",
+    "docs/parity/fixtures/settings-branchsummary-skipprompt-checkpoints-project-malformed-2026-11-12.json",
+    "docs/parity/fixtures/settings-branchsummary-skipprompt-checkpoints-project-malformed-truthy-2026-11-12.json",
+    "docs/parity/fixtures/settings-branchsummary-skipprompt-checkpoints-tolerant-2026-11-12.json"
+  ],
+  "cases": [
+    {
+      "id": "BS01",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS01 matches pinned Pi",
+      "oracle": [
+        "BS01"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.UnsetResolvesToTheDefaultPromptPath"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/unset-tree-selected"
+      ]
+    },
+    {
+      "id": "BS02",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS02 matches pinned Pi",
+      "oracle": [
+        "BS02"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.ExplicitBooleanValuesMatchThePinnedPromptDecision"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/false-tree-selected"
+      ]
+    },
+    {
+      "id": "BS03",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS03 matches pinned Pi",
+      "oracle": [
+        "BS03"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.ExplicitBooleanValuesMatchThePinnedPromptDecision"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/true-tree-selected"
+      ]
+    },
+    {
+      "id": "BS04",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS04 matches pinned Pi",
+      "oracle": [
+        "BS04"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.ProjectReserveTokensDoesNotEraseTheInheritedSkipPrompt",
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.ReserveTokensKeepsItsExistingBehaviour",
+        "PiSharp.Tests.UserSettingsTests.BranchSummarySettingsValidateAndOverlayReserveAndPromptBehavior"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/trusted-tree-selected"
+      ]
+    },
+    {
+      "id": "BS05",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS05 matches pinned Pi",
+      "oracle": [
+        "BS05"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.TrustedProjectBooleanOverridesTheUserValue"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/trusted-tree-selected"
+      ]
+    },
+    {
+      "id": "BS06",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS06 matches pinned Pi",
+      "oracle": [
+        "BS06"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.TrustedProjectBooleanOverridesTheUserValue"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/true-tree-selected"
+      ]
+    },
+    {
+      "id": "BS07",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS07 matches pinned Pi",
+      "oracle": [
+        "BS07"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.TrustedProjectExplicitNullReplacesTheUserValueAndResolvesToTheDefault"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/trusted-tree-selected"
+      ]
+    },
+    {
+      "id": "BS08",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS08 matches pinned Pi",
+      "oracle": [
+        "BS08"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.UntrustedProjectContributesNothing"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/untrusted-tree-selected"
+      ]
+    },
+    {
+      "id": "BS09",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS09 matches pinned Pi",
+      "oracle": [
+        "BS09"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.MalformedTrustedProjectValueReplacesTheValidUserValue"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/trusted-tree-selected"
+      ]
+    },
+    {
+      "id": "BS10",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS10 matches pinned Pi",
+      "oracle": [
+        "BS10"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.MalformedTrustedProjectValueReplacesTheValidUserValue"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/trusted-tree-selected"
+      ]
+    },
+    {
+      "id": "BS11",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS11 matches pinned Pi",
+      "oracle": [
+        "BS11"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.MalformedTrustedProjectValueReplacesTheValidUserValue"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/startup"
+      ]
+    },
+    {
+      "id": "BS12",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS12 matches pinned Pi",
+      "oracle": [
+        "BS12"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.MalformedTrustedProjectValueReplacesTheValidUserValue"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/startup"
+      ]
+    },
+    {
+      "id": "BS13",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS13 matches pinned Pi",
+      "oracle": [
+        "BS13"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.MalformedTrustedProjectValueReplacesTheValidUserValue"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/startup"
+      ]
+    },
+    {
+      "id": "BS14",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS14 matches pinned Pi",
+      "oracle": [
+        "BS14"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.MalformedTrustedProjectValueReplacesTheValidUserValue"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/startup"
+      ]
+    },
+    {
+      "id": "BS15",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS15 matches pinned Pi",
+      "oracle": [
+        "BS15"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.ProjectNonObjectReplacesTheUserObjectAndReadsAsAbsent"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/startup"
+      ]
+    },
+    {
+      "id": "BS16",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS16 matches pinned Pi",
+      "oracle": [
+        "BS16"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.ProjectNonObjectReplacesTheUserObjectAndReadsAsAbsent"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/startup"
+      ]
+    },
+    {
+      "id": "BS17",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS17 matches pinned Pi",
+      "oracle": [
+        "BS17"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.ProjectNonObjectReplacesTheUserObjectAndReadsAsAbsent"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/startup"
+      ]
+    },
+    {
+      "id": "BS18",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS18 matches pinned Pi",
+      "oracle": [
+        "BS18"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.ProjectNonObjectReplacesTheUserObjectAndReadsAsAbsent"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/startup"
+      ]
+    },
+    {
+      "id": "BS19",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS19 matches pinned Pi",
+      "oracle": [
+        "BS19"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.UserNonObjectParentReadsAsAbsent"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/startup"
+      ]
+    },
+    {
+      "id": "BS20",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS20 matches pinned Pi",
+      "oracle": [
+        "BS20"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.UserNonObjectParentReadsAsAbsent"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/startup"
+      ]
+    },
+    {
+      "id": "BS21",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS21 matches pinned Pi",
+      "oracle": [
+        "BS21"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.UserNonObjectParentReadsAsAbsent"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/startup"
+      ]
+    },
+    {
+      "id": "BS22",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS22 matches pinned Pi",
+      "oracle": [
+        "BS22"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.UserNonObjectParentReadsAsAbsent"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/startup"
+      ]
+    },
+    {
+      "id": "BS23",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS23 matches pinned Pi",
+      "oracle": [
+        "BS23"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.StoredMalformedValuesUseJavaScriptTruthiness"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/startup"
+      ]
+    },
+    {
+      "id": "BS24",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS24 matches pinned Pi",
+      "oracle": [
+        "BS24"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.StoredMalformedValuesUseJavaScriptTruthiness"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/startup"
+      ]
+    },
+    {
+      "id": "BS25",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS25 matches pinned Pi",
+      "oracle": [
+        "BS25"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.StoredMalformedValuesUseJavaScriptTruthiness"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/startup"
+      ]
+    },
+    {
+      "id": "BS26",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS26 matches pinned Pi",
+      "oracle": [
+        "BS26"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.StoredMalformedValuesUseJavaScriptTruthiness"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/startup"
+      ]
+    },
+    {
+      "id": "BS27",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS27 matches pinned Pi",
+      "oracle": [
+        "BS27"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.StoredMalformedValuesUseJavaScriptTruthiness"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/startup"
+      ]
+    },
+    {
+      "id": "BS28",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS28 matches pinned Pi",
+      "oracle": [
+        "BS28"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.StoredMalformedValuesUseJavaScriptTruthiness"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/startup"
+      ]
+    },
+    {
+      "id": "BS29",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS29 matches pinned Pi",
+      "oracle": [
+        "BS29"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.StoredMalformedValuesUseJavaScriptTruthiness"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/startup"
+      ]
+    },
+    {
+      "id": "BS30",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS30 matches pinned Pi",
+      "oracle": [
+        "BS30"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.StoredMalformedValuesUseJavaScriptTruthiness"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/startup"
+      ]
+    },
+    {
+      "id": "BS31",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS31 matches pinned Pi",
+      "oracle": [
+        "BS31"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.StoredMalformedValuesUseJavaScriptTruthiness"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/startup"
+      ]
+    },
+    {
+      "id": "BS32",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS32 matches pinned Pi",
+      "oracle": [
+        "BS32"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.DuplicateSkipPromptUsesTheLaterValue"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/duplicate-tree-selected"
+      ]
+    },
+    {
+      "id": "BS33",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS33 matches pinned Pi",
+      "oracle": [
+        "BS33"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.DuplicateSkipPromptUsesTheLaterValue"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/duplicate-tree-selected"
+      ]
+    },
+    {
+      "id": "BS34",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS34 matches pinned Pi",
+      "oracle": [
+        "BS34"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.UnknownSiblingsDoNotAffectThePromptDecision"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/unknown-tree-selected"
+      ]
+    },
+    {
+      "id": "BS35",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS35 matches pinned Pi",
+      "oracle": [
+        "BS35"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.UnknownSiblingsDoNotAffectThePromptDecision"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/false-tree-selected"
+      ]
+    },
+    {
+      "id": "BS36",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS36 matches pinned Pi",
+      "oracle": [
+        "BS36"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.TrustedProjectUnknownSiblingsDoNotBlockAnExplicitOverride"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/trusted-tree-selected"
+      ]
+    },
+    {
+      "id": "BS37",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS37 matches pinned Pi",
+      "oracle": [
+        "BS37"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.TrustedProjectUnknownSiblingsDoNotBlockAnExplicitOverride"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/trusted-tree-selected"
+      ]
+    },
+    {
+      "id": "BS38",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS38 matches pinned Pi",
+      "oracle": [
+        "BS38"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.UnknownSiblingsDoNotAffectThePromptDecision"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/unknown-tree-selected"
+      ]
+    },
+    {
+      "id": "BS39",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS39 matches pinned Pi",
+      "oracle": [
+        "BS39"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.TrustedProjectUnknownSiblingsKeepTheInheritedSkipPrompt"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/trusted-tree-selected"
+      ]
+    },
+    {
+      "id": "BS40",
+      "required": true,
+      "status": "pass",
+      "requirement": "Settings boundary case BS40 matches pinned Pi",
+      "oracle": [
+        "BS40"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.DuplicateSkipPromptUsesTheLaterValue"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/duplicate-tree-selected"
+      ]
+    },
+    {
+      "id": "RT01",
+      "required": true,
+      "status": "pass",
+      "requirement": "Unset skipPrompt behaves as false and shows 'Summarize branch?'",
+      "oracle": [
+        "fullscreen:unset-tree-selected",
+        "regular:unset-tree-selected",
+        "regular:unset-tree-open"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.UnsetResolvesToTheDefaultPromptPath"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/unset-tree-selected",
+        "100x30-dark-regular/unset-tree-selected"
+      ]
+    },
+    {
+      "id": "RT02",
+      "required": true,
+      "status": "pass",
+      "requirement": "Explicit false keeps asking, before and after a restart changes another value",
+      "oracle": [
+        "fullscreen:false-tree-selected",
+        "fullscreen:false-again-tree-selected",
+        "regular:false-tree-selected",
+        "regular:false-again-tree-selected"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.ExplicitBooleanValuesMatchThePinnedPromptDecision"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/false-tree-selected",
+        "100x30-dark-fullscreen/false-again-tree-selected"
+      ]
+    },
+    {
+      "id": "RT03",
+      "required": true,
+      "status": "pass",
+      "requirement": "Explicit true skips the prompt in fullscreen and regular modes",
+      "oracle": [
+        "fullscreen:true-tree-selected",
+        "regular:true-tree-selected"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.ExplicitBooleanValuesMatchThePinnedPromptDecision",
+        "PiSharp.Tests.TerminalPtyTests.BranchSummarySkipPromptNavigatesLikeChoosingNoSummaryThroughLinuxPty"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/true-tree-selected",
+        "100x30-dark-regular/true-tree-selected"
+      ]
+    },
+    {
+      "id": "RT04",
+      "required": true,
+      "status": "pass",
+      "requirement": "Skipping navigates to the same target as choosing No summary",
+      "oracle": [
+        "fullscreen:true-tree-after-state",
+        "fullscreen:unset-reopen-navigate",
+        "regular:unset-reopen-navigate",
+        "regular:true-tree-after-state",
+        "fullscreen:unset-reopen-tree-after-state",
+        "regular:unset-reopen-tree-after-state"
+      ],
+      "tests": [
+        "PiSharp.Tests.TerminalPtyTests.BranchSummarySkipPromptNavigatesLikeChoosingNoSummaryThroughLinuxPty",
+        "PiSharp.Tests.NativeExtensionTreeEventTests.TreeNavigationToUserMessageSelectsItsParentAndReturnsDraftText"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/true-tree-after-state",
+        "100x30-dark-fullscreen/unset-reopen-navigate"
+      ]
+    },
+    {
+      "id": "RT05",
+      "required": true,
+      "status": "pass",
+      "requirement": "The skipped-prompt path makes no summarization request and writes no branch_summary entry",
+      "oracle": [
+        "fullscreen:true-navigate",
+        "regular:true-navigate"
+      ],
+      "tests": [
+        "PiSharp.Tests.TerminalPtyTests.BranchSummarySkipPromptNavigatesLikeChoosingNoSummaryThroughLinuxPty"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/true-navigate",
+        "100x30-dark-fullscreen/true-tree-after-state"
+      ]
+    },
+    {
+      "id": "RT06",
+      "required": true,
+      "status": "pass",
+      "requirement": "Escape from the prompt still reopens the tree at the same selection",
+      "oracle": [
+        "fullscreen:unset-prompt-cancel",
+        "regular:unset-prompt-cancel"
+      ],
+      "tests": [
+        "PiSharp.Tests.TerminalPtyTests.BranchSummaryEscapeCancelsAndReopensTheTreeThroughLinuxPty"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/unset-prompt-cancel",
+        "100x30-dark-fullscreen/unset-tree-reopened"
+      ]
+    },
+    {
+      "id": "RT07",
+      "required": true,
+      "status": "pass",
+      "requirement": "true persists across a restart and reverts when the file is set back to false",
+      "oracle": [
+        "fullscreen:true-restart-tree-selected",
+        "regular:true-restart-tree-selected"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.ExplicitBooleanValuesMatchThePinnedPromptDecision",
+        "PiSharp.Tests.TerminalPtyTests.BranchSummarySkipPromptNavigatesLikeChoosingNoSummaryThroughLinuxPty"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/true-restart-tree-selected"
+      ]
+    },
+    {
+      "id": "RT08",
+      "required": true,
+      "status": "pass",
+      "requirement": "A non-default treeFilterMode still composes with the skipped prompt",
+      "oracle": [
+        "fullscreen:filtered-tree-open",
+        "fullscreen:filtered-tree-selected",
+        "regular:filtered-tree-open",
+        "regular:filtered-tree-selected"
+      ],
+      "tests": [
+        "PiSharp.Tests.TerminalPtyTests.BranchSummarySkipPromptNavigatesLikeChoosingNoSummaryThroughLinuxPty"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/filtered-tree-open",
+        "100x30-dark-fullscreen/filtered-tree-selected"
+      ]
+    },
+    {
+      "id": "RT09",
+      "required": true,
+      "status": "pass",
+      "requirement": "Manual No summary, Summarize and custom-prompt paths remain unchanged",
+      "oracle": [
+        "fullscreen:unset-reopen-tree-selected",
+        "regular:unset-reopen-tree-selected"
+      ],
+      "tests": [
+        "PiSharp.Tests.TerminalPtyTests.ConversationTreeSearchSelectsAndPersistsABranchThroughLinuxPty",
+        "PiSharp.Tests.InteractiveSessionBranchSummaryTests.BranchCommandCanRequestAnExtensionSummary",
+        "PiSharp.Tests.NativeExtensionTreeEventTests.RequestedBranchSummaryFromExtensionIsAppliedPersistedAndExported",
+        "PiSharp.Tests.NativeExtensionTreeEventTests.RequestedBranchSummaryUsesMafAndPersistsItsUsage",
+        "PiSharp.Tests.NativeExtensionTreeEventTests.BranchSummaryFailureLeavesCanonicalSelectionAndPersistenceUnchanged",
+        "PiSharp.Tests.NativeExtensionTreeEventTests.BranchSummaryFileDetailsStopAtTheSelectedTokenBudget"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/unset-reopen-tree-selected",
+        "100x30-dark-fullscreen/unset-reopen-tree-after-state"
+      ]
+    },
+    {
+      "id": "RT10",
+      "required": true,
+      "status": "pass",
+      "requirement": "Streaming ordering, tree hooks, failure rollback and settings validation are unchanged",
+      "oracle": [
+        "fullscreen:unset-tree-selected",
+        "fullscreen:unset-tree-open"
+      ],
+      "tests": [
+        "PiSharp.Tests.TerminalPtyTests.SessionTreeShortcutAbortsStreamingRestoresInputAndNavigatesThroughLinuxPty",
+        "PiSharp.Tests.NativeExtensionTreeEventTests.SelectingCurrentHeadDoesNotDispatchTreeHooksOrSave",
+        "PiSharp.Tests.NativeExtensionTreeEventTests.TreeNavigationPublishesBeforeAndPersistedCompletionEvents",
+        "PiSharp.Tests.NativeExtensionTreeEventTests.TreeNavigationVetoLeavesSelectionAndPersistenceUnchanged",
+        "PiSharp.Tests.NativeExtensionTreeEventTests.FailedTreeSaveRollsBackAndDoesNotPublishCompletionThenCanRetry",
+        "PiSharp.Tests.NativeExtensionTreeEventTests.FailedTreeHistoryRestoreRollsBackAndDoesNotPublishCompletionThenCanRetry",
+        "PiSharp.Tests.NativeExtensionTreeEventTests.FailedTreeExecutionRestoreRollsBackAndLeavesThePreviousBranchUsable",
+        "PiSharp.Tests.NativeExtensionTreeEventTests.CommittedTreeNavigationNotifiesAfterCallerCancellationAndBoundsObserverLifetime",
+        "PiSharp.Tests.UserSettingsTests.InvalidSettingsFailClosed",
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.ReserveTokensStillFailsClosedForInvalidValues"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/unset-tree-open"
+      ]
+    },
+    {
+      "id": "RT11",
+      "required": true,
+      "status": "pass",
+      "requirement": "Unknown branchSummary siblings and a duplicated skipPrompt key do not block the setting",
+      "oracle": [
+        "tolerant:unknown-tree-selected",
+        "tolerant:duplicate-tree-selected",
+        "tolerant:false-tree-selected",
+        "tolerant:trusted-tree-selected",
+        "tolerant:untrusted-tree-selected"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.UnknownSiblingsDoNotAffectThePromptDecision",
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.DuplicateSkipPromptUsesTheLaterValue",
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.TrustedProjectUnknownSiblingsKeepTheInheritedSkipPrompt",
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.TrustedProjectUnknownSiblingsDoNotBlockAnExplicitOverride"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/unknown-tree-selected",
+        "100x30-dark-fullscreen/duplicate-tree-selected",
+        "100x30-dark-fullscreen/trusted-tree-selected"
+      ]
+    },
+    {
+      "id": "TR01",
+      "required": true,
+      "status": "pass",
+      "requirement": "A trusted project false overrides user true",
+      "oracle": [
+        "project:trusted-tree-selected",
+        "BS05"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.TrustedProjectBooleanOverridesTheUserValue"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/trusted-tree-selected"
+      ]
+    },
+    {
+      "id": "TR02",
+      "required": true,
+      "status": "pass",
+      "requirement": "A trusted project true overrides user false",
+      "oracle": [
+        "BS06"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.TrustedProjectBooleanOverridesTheUserValue"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/true-tree-selected"
+      ]
+    },
+    {
+      "id": "TR03",
+      "required": true,
+      "status": "pass",
+      "requirement": "A project reserveTokens entry does not erase the inherited skipPrompt",
+      "oracle": [
+        "project-reserve:trusted-tree-selected",
+        "project-reserve:trusted-restart-tree-selected",
+        "BS04"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.ProjectReserveTokensDoesNotEraseTheInheritedSkipPrompt",
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.ReserveTokensKeepsItsExistingBehaviour"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/trusted-tree-selected"
+      ]
+    },
+    {
+      "id": "TR04",
+      "required": true,
+      "status": "pass",
+      "requirement": "An untrusted project contributes nothing in every layered fixture",
+      "oracle": [
+        "project:untrusted-tree-selected",
+        "project-null:untrusted-tree-selected",
+        "project-reserve:untrusted-tree-selected",
+        "project-malformed:untrusted-tree-selected",
+        "project-malformed-truthy:untrusted-tree-selected",
+        "BS08",
+        "project:untrusted-tree-after-state",
+        "project-null:untrusted-tree-after-state",
+        "project-reserve:untrusted-tree-after-state",
+        "project-malformed:untrusted-tree-after-state",
+        "project-malformed-truthy:untrusted-tree-after-state"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.UntrustedProjectContributesNothing"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/untrusted-tree-selected"
+      ]
+    },
+    {
+      "id": "TR05",
+      "required": true,
+      "status": "pass",
+      "requirement": "A trusted project explicit null replaces the user value and resolves to the default",
+      "oracle": [
+        "project-null:trusted-tree-selected",
+        "BS07"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.TrustedProjectExplicitNullReplacesTheUserValueAndResolvesToTheDefault"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/trusted-tree-selected"
+      ]
+    },
+    {
+      "id": "TR06",
+      "required": true,
+      "status": "pass",
+      "requirement": "The trusted-project outcome survives a restart",
+      "oracle": [
+        "project:trusted-restart-tree-selected",
+        "project-null:trusted-restart-tree-selected",
+        "project-malformed:trusted-restart-tree-selected",
+        "project-malformed-truthy:trusted-restart-tree-selected"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.TrustedProjectBooleanOverridesTheUserValue"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/trusted-restart-tree-selected"
+      ]
+    },
+    {
+      "id": "ML01",
+      "required": true,
+      "status": "pass",
+      "requirement": "Stored truthy malformed values skip the prompt",
+      "oracle": [
+        "BS24",
+        "BS28",
+        "BS29",
+        "BS30",
+        "BS31",
+        "malformed:malformed-string-tree-selected",
+        "malformed:object-tree-selected",
+        "malformed:array-tree-selected",
+        "project-malformed-truthy:trusted-tree-selected"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.StoredMalformedValuesUseJavaScriptTruthiness",
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.MalformedTrustedProjectValueReplacesTheValidUserValue"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/malformed-string-tree-selected",
+        "100x30-dark-fullscreen/object-tree-selected"
+      ]
+    },
+    {
+      "id": "ML02",
+      "required": true,
+      "status": "pass",
+      "requirement": "Stored falsey malformed values still prompt",
+      "oracle": [
+        "BS25",
+        "malformed:empty-string-tree-selected"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.StoredMalformedValuesUseJavaScriptTruthiness"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/empty-string-tree-selected"
+      ]
+    },
+    {
+      "id": "ML03",
+      "required": true,
+      "status": "pass",
+      "requirement": "Stored numbers follow JavaScript truthiness (1 skips, 0 prompts)",
+      "oracle": [
+        "BS26",
+        "BS27",
+        "malformed:number-tree-selected",
+        "malformed:zero-tree-selected",
+        "project-malformed:trusted-tree-selected"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.StoredMalformedValuesUseJavaScriptTruthiness"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/number-tree-selected",
+        "100x30-dark-fullscreen/zero-tree-selected"
+      ]
+    },
+    {
+      "id": "ML04",
+      "required": true,
+      "status": "pass",
+      "requirement": "Stored null resolves to the default and prompts",
+      "oracle": [
+        "BS23",
+        "malformed:null-tree-selected"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.StoredMalformedValuesUseJavaScriptTruthiness"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/null-tree-selected"
+      ]
+    },
+    {
+      "id": "ML05",
+      "required": true,
+      "status": "pass",
+      "requirement": "A trusted project malformed falsey value replaces user true",
+      "oracle": [
+        "BS09",
+        "project-malformed:trusted-tree-selected"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.MalformedTrustedProjectValueReplacesTheValidUserValue"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/trusted-tree-selected"
+      ]
+    },
+    {
+      "id": "ML06",
+      "required": true,
+      "status": "pass",
+      "requirement": "Non-object branchSummary parents load, stay present and read as absent",
+      "oracle": [
+        "BS19",
+        "BS20",
+        "BS21",
+        "BS22",
+        "malformed:parent-null-tree-selected",
+        "malformed:parent-string-tree-selected",
+        "malformed:parent-number-tree-selected",
+        "malformed:parent-array-tree-selected"
+      ],
+      "tests": [
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.UserNonObjectParentReadsAsAbsent",
+        "PiSharp.Tests.BranchSummarySkipPromptSettingTests.ProjectNonObjectReplacesTheUserObjectAndReadsAsAbsent"
+      ],
+      "ptyCheckpoints": [
+        "100x30-dark-fullscreen/parent-null-tree-selected",
+        "100x30-dark-fullscreen/parent-array-tree-selected"
+      ]
+    }
+  ],
+  "requiredComparisons": [
+    {
+      "id": "settings-boundary-differential",
+      "required": true,
+      "status": "match",
+      "evidence": "31 frozen settings cases executed against pinned Pi's SettingsManager and PiSharp's UserSettings loader report identical load results, merged skipPrompt tokens, key presence, prompt decisions and reserves."
+    },
+    {
+      "id": "paired-pty",
+      "required": true,
+      "status": "match",
+      "evidence": "Nine paired PTY fixtures at 100x30 and 140x40 dark fullscreen and regular report zero semantic differences across prompt presence, tree rows/selection/count/tags, summary rows, scenario errors and the persisted settings/session."
+    },
+    {
+      "id": "same-pi-calibration",
+      "required": true,
+      "status": "match",
+      "evidence": "Two independent pinned-Pi runs per fixture report zero semantic differences."
+    },
+    {
+      "id": "layered-project-precedence",
+      "required": true,
+      "status": "match",
+      "evidence": "Trusted project false/null/0 override user true, a project reserveTokens-only entry keeps the inherited skipPrompt, project \"false\" overrides user false, and the same files untrusted change nothing."
+    },
+    {
+      "id": "malformed-value-parity",
+      "required": true,
+      "status": "match",
+      "evidence": "Stored \"false\", \"\", 1, 0, {}, [], {\"nested\":false} and null follow JavaScript truthiness in both products, non-object branchSummary parents load and read as absent, unrelated nested siblings are ignored and a duplicated skipPrompt resolves to the later value."
+    },
+    {
+      "id": "no-summary-equivalence",
+      "required": true,
+      "status": "match",
+      "evidence": "The skipped-prompt navigation reaches the same tree head and session entries as choosing No summary, with no provider request and no branch_summary entry."
+    }
+  ],
+  "findings": [
+    {
+      "id": "reserve-token-validation",
+      "required": false,
+      "observation": "Inside branchSummary, PiSharp still validates reserveTokens (negative, non-integer or duplicated values fail closed), and a duplicated top-level settings key still fails closed, while pinned Pi's JSON.parse keeps the later value. Pinned Pi also loads any reserveTokens value.",
+      "projection": "Unchanged pre-existing reserve/top-level validation, deliberately out of scope: settings-branchsummary-reservetokens stays not_started and no required case exercises an invalid or duplicated reserve or a duplicated top-level key. This milestone freezes skipPrompt and its enclosing object's unknown siblings and duplicated skipPrompt key."
+    },
+    {
+      "id": "terminal-chrome",
+      "required": false,
+      "observation": "Full terminal-state comparison still reports pre-existing transcript/Markdown chrome differences for the seeded session.",
+      "projection": "The gate compares the semantic projection used by earlier settings milestones, not unrelated chrome."
+    },
+    {
+      "id": "no-settings-row",
+      "required": false,
+      "observation": "Pinned Pi's interactive /settings list has no branchSummary.skipPrompt row.",
+      "projection": "PiSharp adds no settings row and no interactive writer for this setting; it is file-only."
+    }
+  ],
+  "requiredTests": {
+    "facts": [
+      "PiSharp.Tests.BranchSummarySkipPromptSettingTests.DuplicateSkipPromptUsesTheLaterValue",
+      "PiSharp.Tests.BranchSummarySkipPromptSettingTests.ExplicitBooleanValuesMatchThePinnedPromptDecision",
+      "PiSharp.Tests.BranchSummarySkipPromptSettingTests.MalformedTrustedProjectValueReplacesTheValidUserValue",
+      "PiSharp.Tests.BranchSummarySkipPromptSettingTests.ProjectNonObjectReplacesTheUserObjectAndReadsAsAbsent",
+      "PiSharp.Tests.BranchSummarySkipPromptSettingTests.ProjectReserveTokensDoesNotEraseTheInheritedSkipPrompt",
+      "PiSharp.Tests.BranchSummarySkipPromptSettingTests.ReserveTokensKeepsItsExistingBehaviour",
+      "PiSharp.Tests.BranchSummarySkipPromptSettingTests.ReserveTokensStillFailsClosedForInvalidValues",
+      "PiSharp.Tests.BranchSummarySkipPromptSettingTests.StoredMalformedValuesUseJavaScriptTruthiness",
+      "PiSharp.Tests.BranchSummarySkipPromptSettingTests.TrustedProjectBooleanOverridesTheUserValue",
+      "PiSharp.Tests.BranchSummarySkipPromptSettingTests.TrustedProjectExplicitNullReplacesTheUserValueAndResolvesToTheDefault",
+      "PiSharp.Tests.BranchSummarySkipPromptSettingTests.TrustedProjectUnknownSiblingsDoNotBlockAnExplicitOverride",
+      "PiSharp.Tests.BranchSummarySkipPromptSettingTests.TrustedProjectUnknownSiblingsKeepTheInheritedSkipPrompt",
+      "PiSharp.Tests.BranchSummarySkipPromptSettingTests.UnknownSiblingsDoNotAffectThePromptDecision",
+      "PiSharp.Tests.BranchSummarySkipPromptSettingTests.UnsetResolvesToTheDefaultPromptPath",
+      "PiSharp.Tests.BranchSummarySkipPromptSettingTests.UntrustedProjectContributesNothing",
+      "PiSharp.Tests.BranchSummarySkipPromptSettingTests.UserNonObjectParentReadsAsAbsent",
+      "PiSharp.Tests.InteractiveSessionBranchSummaryTests.BranchCommandCanRequestAnExtensionSummary",
+      "PiSharp.Tests.NativeExtensionTreeEventTests.BranchSummaryFailureLeavesCanonicalSelectionAndPersistenceUnchanged",
+      "PiSharp.Tests.NativeExtensionTreeEventTests.BranchSummaryFileDetailsStopAtTheSelectedTokenBudget",
+      "PiSharp.Tests.NativeExtensionTreeEventTests.CommittedTreeNavigationNotifiesAfterCallerCancellationAndBoundsObserverLifetime",
+      "PiSharp.Tests.NativeExtensionTreeEventTests.FailedTreeExecutionRestoreRollsBackAndLeavesThePreviousBranchUsable",
+      "PiSharp.Tests.NativeExtensionTreeEventTests.FailedTreeHistoryRestoreRollsBackAndDoesNotPublishCompletionThenCanRetry",
+      "PiSharp.Tests.NativeExtensionTreeEventTests.FailedTreeSaveRollsBackAndDoesNotPublishCompletionThenCanRetry",
+      "PiSharp.Tests.NativeExtensionTreeEventTests.RequestedBranchSummaryFromExtensionIsAppliedPersistedAndExported",
+      "PiSharp.Tests.NativeExtensionTreeEventTests.RequestedBranchSummaryUsesMafAndPersistsItsUsage",
+      "PiSharp.Tests.NativeExtensionTreeEventTests.SelectingCurrentHeadDoesNotDispatchTreeHooksOrSave",
+      "PiSharp.Tests.NativeExtensionTreeEventTests.TreeNavigationPublishesBeforeAndPersistedCompletionEvents",
+      "PiSharp.Tests.NativeExtensionTreeEventTests.TreeNavigationToUserMessageSelectsItsParentAndReturnsDraftText",
+      "PiSharp.Tests.NativeExtensionTreeEventTests.TreeNavigationVetoLeavesSelectionAndPersistenceUnchanged",
+      "PiSharp.Tests.TerminalPtyTests.BranchSummaryEscapeCancelsAndReopensTheTreeThroughLinuxPty",
+      "PiSharp.Tests.TerminalPtyTests.BranchSummarySkipPromptNavigatesLikeChoosingNoSummaryThroughLinuxPty",
+      "PiSharp.Tests.TerminalPtyTests.ConversationTreeSearchSelectsAndPersistsABranchThroughLinuxPty",
+      "PiSharp.Tests.TerminalPtyTests.SessionTreeShortcutAbortsStreamingRestoresInputAndNavigatesThroughLinuxPty",
+      "PiSharp.Tests.UserSettingsTests.BranchSummarySettingsValidateAndOverlayReserveAndPromptBehavior",
+      "PiSharp.Tests.UserSettingsTests.InvalidSettingsFailClosed"
+    ],
+    "ptyEvidence": [
+      "100x30-dark-fullscreen",
+      "140x40-dark-fullscreen",
+      "100x30-dark-regular",
+      "malformed",
+      "project",
+      "project-null",
+      "project-reserve",
+      "project-malformed",
+      "project-malformed-truthy",
+      "tolerant"
+    ]
+  },
+  "gates": {
+    "format": {
+      "status": "pass",
+      "evidence": "dotnet format PiSharp.slnx --verify-no-changes: clean at implementation head 2e3ca31a."
+    },
+    "build": {
+      "status": "pass",
+      "evidence": "dotnet build PiSharp.slnx --warnaserror: 0 warnings, 0 errors at implementation head 2e3ca31a."
+    },
+    "fullSuite": {
+      "status": "pass",
+      "evidence": "dotnet test PiSharp.slnx at implementation head aef12093: 4656 passed, 0 failed, 0 skipped in 11m22s. NativeExtensionUiTests is excluded locally because it hangs in this development environment (the same hang reproduces on the base); CI runs the class unchanged.",
+      "total": 4656,
+      "failed": 0,
+      "skipped": 0,
+      "excluded": [
+        "NativeExtensionUiTests"
+      ]
+    },
+    "exactHeadCi": {
+      "status": "pass",
+      "evidence": "Linux CI pull_request run 43271103672 on implementation head aef12093: all five jobs green (windows-clipboard-contracts, managed-package-verifier, mcp-conformance, macos-session-locks, macos-clipboard-contracts). The parallel push run 43271089322 hit the unrelated flaky BuiltinToolWorkflowTests.AllSevenToolsRetainPinnedOutcomesThroughMafAndCanonicalFileRestart on the same tree.",
+      "run": "43271103672",
+      "implementationSha": "aef1209305e445176092556d79f775109f8386d1"
+    },
+    "ledger": {
+      "status": "pass",
+      "evidence": "docs/parity/execution-ledger.json settings-branchsummary-skipprompt verified"
+    }
+  }
+}

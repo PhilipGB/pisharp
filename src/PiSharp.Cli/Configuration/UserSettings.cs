@@ -82,38 +82,80 @@ public sealed record CompactionSettings(bool? Enabled = null, int? ReserveTokens
     }
 }
 
+/// <summary>
+/// A stored `branchSummary.skipPrompt` entry. Pinned Pi loads settings without schema
+/// validation and the tree flow asks its question unless the merged value is falsey, so the
+/// stored value is kept exactly and evaluated with JavaScript truthiness.
+/// </summary>
+public readonly record struct BranchSummarySkipPromptSetting(JsonValueKind Kind, string Raw)
+{
+    public static BranchSummarySkipPromptSetting From(JsonElement value) =>
+        new(value.ValueKind, value.GetRawText());
+
+    /// <summary>JavaScript truthiness: `null`, `false`, `0` and `""` are falsey.</summary>
+    public bool SkipsPrompt => Kind switch
+    {
+        JsonValueKind.True or JsonValueKind.Object or JsonValueKind.Array => true,
+        // A JSON string token is non-empty exactly when it is longer than the two quote characters.
+        JsonValueKind.String => Raw.Length > 2,
+        JsonValueKind.Number => double.TryParse(Raw, System.Globalization.NumberStyles.Float,
+            System.Globalization.CultureInfo.InvariantCulture, out var number) && number != 0,
+        _ => false
+    };
+}
+
 /// <summary>Controls optional branch-summary prompting and the model-context reserve.</summary>
-public sealed record BranchSummarySettings(int? ReserveTokens = null, bool? SkipPrompt = null)
+public sealed record BranchSummarySettings(int? ReserveTokens = null,
+    BranchSummarySkipPromptSetting? SkipPrompt = null)
 {
     public const int DefaultReserveTokens = AutoCompactionPolicy.DefaultReserveTokens;
     public int EffectiveReserveTokens => ReserveTokens ?? DefaultReserveTokens;
+
+    /// <summary>Pinned Pi asks the question only when `branchSummary?.skipPrompt ?? false` is falsey.</summary>
+    public bool SkipsSummaryPrompt => SkipPrompt?.SkipsPrompt == true;
 
     public static BranchSummarySettings Parse(JsonElement value)
     {
         if (value.ValueKind != JsonValueKind.Object)
             throw new InvalidDataException("settings.json branchSummary must be an object.");
         int? reserve = null;
-        bool? skipPrompt = null;
-        var seen = new HashSet<string>(StringComparer.Ordinal);
+        BranchSummarySkipPromptSetting? skipPrompt = null;
+        var reserveSeen = false;
         foreach (var property in value.EnumerateObject())
         {
-            if (!seen.Add(property.Name))
-                throw new InvalidDataException($"settings.json branchSummary contains duplicate property '{property.Name}'.");
             switch (property.Name)
             {
                 case "reserveTokens" when property.Value.ValueKind == JsonValueKind.Number &&
                     property.Value.TryGetInt32(out var tokens) && tokens >= 0:
+                    // reserveTokens stays validated and out of scope for this milestone.
+                    if (reserveSeen)
+                        throw new InvalidDataException(
+                            "settings.json branchSummary contains duplicate property 'reserveTokens'.");
+                    reserveSeen = true;
                     reserve = tokens;
                     break;
-                case "skipPrompt" when property.Value.ValueKind is JsonValueKind.True or JsonValueKind.False:
-                    skipPrompt = property.Value.GetBoolean();
+                case "reserveTokens":
+                    throw new InvalidDataException(
+                        "settings.json branchSummary.reserveTokens is invalid or unsupported.");
+                case "skipPrompt":
+                    // Pinned Pi resolves duplicate keys with the later value; unknown siblings are ignored.
+                    skipPrompt = BranchSummarySkipPromptSetting.From(property.Value);
                     break;
-                default:
-                    throw new InvalidDataException($"settings.json branchSummary.{property.Name} is invalid or unsupported.");
             }
         }
         return new(reserve, skipPrompt);
     }
+}
+
+/// <summary>
+/// A stored `branchSummary` entry. Presence matters: pinned Pi merges scopes by property
+/// presence, so a non-object stored value replaces lower scopes, after which
+/// `branchSummary?.skipPrompt` reads as absent.
+/// </summary>
+public readonly record struct BranchSummarySettingValue(BranchSummarySettings? Settings)
+{
+    public bool SkipsSummaryPrompt => Settings?.SkipsSummaryPrompt == true;
+    public int EffectiveReserveTokens => Settings?.EffectiveReserveTokens ?? BranchSummarySettings.DefaultReserveTokens;
 }
 
 /// <summary>Accepted `doubleEscapeAction` values in pinned Pi's settings order.</summary>
@@ -174,7 +216,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
     int? AutocompleteMaxVisible = null, bool? ClearOnShrink = null, bool? ShowTerminalProgress = null,
     IReadOnlyList<NativeExtensionPackageSource>? NativeExtensions = null,
     FullscreenWheelScrollSetting? FullscreenWheelScrollLines = null, string? TuiMode = null,
-    BranchSummarySettings? BranchSummary = null, DoubleEscapeActionSettingValue? DoubleEscapeAction = null,
+    BranchSummarySettingValue? BranchSummary = null, DoubleEscapeActionSettingValue? DoubleEscapeAction = null,
     bool? FullscreenCopyOnSelect = null, TreeFilterModeSettingValue? TreeFilterMode = null)
 {
     public const int DefaultHttpIdleTimeoutMs = 300_000;
@@ -190,6 +232,9 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
     // Pinned Pi resolves an unrecognized stored tree filter mode to its default instead of failing to load.
     public string EffectiveTreeFilterMode =>
         (TreeFilterMode ?? new TreeFilterModeSettingValue(null)).Effective;
+
+    // A stored non-object branchSummary reads as absent to `branchSummary?.skipPrompt`.
+    public BranchSummarySettings EffectiveBranchSummary => BranchSummary?.Settings ?? new BranchSummarySettings();
 
     public bool? TerminalTrueColorOverride => TerminalTrueColor switch
     {
@@ -224,7 +269,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         IReadOnlyDictionary<string, string>? modelThinkingLevels = null;
         IReadOnlyDictionary<string, int>? thinkingBudgets = null;
         CompactionSettings? compaction = null;
-        BranchSummarySettings? branchSummary = null;
+        BranchSummarySettingValue? branchSummary = null;
         RetrySettings? retry = null;
         PromptDeliveryMode? steeringMode = null, followUpMode = null;
         bool? blockImages = null, autoResizeImages = null, hideThinkingBlock = null, enableSkillCommands = null,
@@ -382,7 +427,10 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             }
             if (property.Name == "branchSummary")
             {
-                branchSummary = BranchSummarySettings.Parse(property.Value);
+                // Pinned Pi merges by property presence, so a non-object entry still shadows lower scopes.
+                branchSummary = new BranchSummarySettingValue(property.Value.ValueKind == JsonValueKind.Object
+                    ? BranchSummarySettings.Parse(property.Value)
+                    : null);
                 continue;
             }
             if (property.Name == "retry")
@@ -598,9 +646,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         project.NativeExtensions ?? NativeExtensions,
         project.FullscreenWheelScrollLines ?? FullscreenWheelScrollLines,
         TuiMode,
-        project.BranchSummary is null ? BranchSummary : new BranchSummarySettings(
-            project.BranchSummary.ReserveTokens ?? BranchSummary?.ReserveTokens,
-            project.BranchSummary.SkipPrompt ?? BranchSummary?.SkipPrompt),
+        MergeBranchSummary(BranchSummary, project.BranchSummary),
         project.DoubleEscapeAction ?? DoubleEscapeAction,
         project.FullscreenCopyOnSelect ?? FullscreenCopyOnSelect,
         project.TreeFilterMode ?? TreeFilterMode);
@@ -646,6 +692,17 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
 
     private static IReadOnlyList<string>? MergeResourcePaths(IReadOnlyList<string>? user,
         IReadOnlyList<string>? project) => user is null ? project : project is null ? user : [.. user, .. project];
+
+    /// <summary>Pinned Pi deep-merges nested objects by property presence; any other stored shape replaces.</summary>
+    private static BranchSummarySettingValue? MergeBranchSummary(
+        BranchSummarySettingValue? lower, BranchSummarySettingValue? upper)
+    {
+        if (upper is null) return lower;
+        if (lower?.Settings is not { } lowerSettings || upper.Value.Settings is not { } upperSettings) return upper;
+        return new BranchSummarySettingValue(new BranchSummarySettings(
+            upperSettings.ReserveTokens ?? lowerSettings.ReserveTokens,
+            upperSettings.SkipPrompt ?? lowerSettings.SkipPrompt));
+    }
 
     private static IReadOnlyDictionary<string, CompactionSettings>? MergeOverrides(
         IReadOnlyDictionary<string, CompactionSettings>? global, IReadOnlyDictionary<string, CompactionSettings>? project)

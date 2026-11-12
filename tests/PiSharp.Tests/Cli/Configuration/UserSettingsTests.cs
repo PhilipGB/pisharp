@@ -632,8 +632,8 @@ public sealed class UserSettingsTests
             var user = await UserSettings.LoadAsync(root, _ => null);
             var effective = user.Overlay(await UserSettings.LoadProjectAsync(root));
 
-            Assert.Equal(1200, effective.BranchSummary!.EffectiveReserveTokens);
-            Assert.True(effective.BranchSummary.SkipPrompt);
+            Assert.Equal(1200, effective.EffectiveBranchSummary.EffectiveReserveTokens);
+            Assert.True(effective.EffectiveBranchSummary.SkipsSummaryPrompt);
             Assert.Equal(BranchSummarySettings.DefaultReserveTokens, new BranchSummarySettings().EffectiveReserveTokens);
         }
         finally { Directory.Delete(root, true); }
@@ -822,11 +822,8 @@ public sealed class UserSettingsTests
     [InlineData("{\"compaction\":{\"modelOverrides\":{\"p/m\":{\"enabled\":false}}}}")]
     [InlineData("{\"compaction\":{\"modelOverrides\":{\"p/m\":{\"reserveTokens\":1},\"p/m\":{\"reserveTokens\":2}}}}")]
     [InlineData("{\"compaction\":{\"modelOverrides\":[]}}")]
-    [InlineData("{\"branchSummary\":[]}")]
     [InlineData("{\"branchSummary\":{\"reserveTokens\":-1}}")]
-    [InlineData("{\"branchSummary\":{\"skipPrompt\":\"true\"}}")]
     [InlineData("{\"branchSummary\":{\"reserveTokens\":1,\"reserveTokens\":2}}")]
-    [InlineData("{\"branchSummary\":{\"unknown\":true}}")]
     [InlineData("{\"images\":{\"blockImages\":\"true\"}}")]
     [InlineData("{\"images\":{\"blockImages\":true,\"blockImages\":false}}")]
     [InlineData("{\"images\":{\"autoResize\":\"true\"}}")]

@@ -6488,14 +6488,40 @@
     {
       "id": "settings-branchsummary-skipprompt",
       "title": "Setting: branchSummary.skipPrompt",
-      "status": "not_started",
+      "status": "verified",
       "source": "docs/parity/detailed-inventory.md:62",
       "acceptance": [
         "Support branchSummary.skipPrompt with upstream type/default and user/trusted-project precedence",
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "UserSettings stores branchSummary as BranchSummarySettingValue (presence plus the parsed object, or null when the stored value is not an object) and skipPrompt as BranchSummarySkipPromptSetting (verbatim JSON token plus JsonValueKind), so a stored non-boolean value loads and decides the prompt exactly like pinned Pi's `branchSummary?.skipPrompt ?? false` gate.",
+        "MergeBranchSummary reproduces deepMergeObjects for this object: two stored objects merge property by property by presence (including a present null), while any other stored shape replaces the lower scope. An explicit project null therefore overrides the user value, a project reserveTokens-only entry keeps the inherited skipPrompt, and a non-object parent shadows lower scopes.",
+        "branchSummary parsing reads only reserveTokens and skipPrompt: unrelated siblings are ignored and a duplicated skipPrompt key keeps the later value, matching JSON.parse. reserveTokens and top-level duplicate handling stay validated and out of scope.",
+        "TerminalSessionNavigation.ResolveBranchSummaryChoiceAsync returns (Resume: false, Summarize: false, CustomInstructions: null) when the merged value is truthy, before the unchanged active-run interruption; EffectiveReserveTokens still flows into ConversationTreeSelectionOptions.",
+        "No /settings row, value entry or interactive writer was added for branchSummary.skipPrompt; the setting is file-only exactly as in pinned Pi."
+      ],
+      "evidence": [
+        "docs/parity/fixtures/settings-branchsummary-skipprompt-2026-11-12.md",
+        "docs/parity/fixtures/settings-branchsummary-skipprompt-pi-oracle-2026-11-12.json",
+        "docs/parity/fixtures/settings-branchsummary-skipprompt-acceptance-2026-11-12.json",
+        "Boundary tolerance frozen from executable pinned Pi: an unrelated branchSummary sibling never affects skipPrompt (user scope, trusted-project override and a trusted project carrying only the sibling), and a duplicated skipPrompt resolves to the later value (false,true skips; true,false prompts). BS32-BS40 and the tolerant paired PTY fixture cover these; the verifier rejects mutations of both.",
+        "docs/parity/fixtures/settings-branchsummary-skipprompt-settings-boundary-2026-11-12.json",
+        "docs/parity/fixtures/settings-branchsummary-skipprompt-checkpoints-fullscreen-2026-11-12.json",
+        "docs/parity/fixtures/settings-branchsummary-skipprompt-checkpoints-regular-2026-11-12.json",
+        "docs/parity/fixtures/settings-branchsummary-skipprompt-checkpoints-malformed-2026-11-12.json",
+        "docs/parity/fixtures/settings-branchsummary-skipprompt-checkpoints-project-2026-11-12.json",
+        "docs/parity/fixtures/settings-branchsummary-skipprompt-checkpoints-project-null-2026-11-12.json",
+        "docs/parity/fixtures/settings-branchsummary-skipprompt-checkpoints-project-reserve-2026-11-12.json",
+        "docs/parity/fixtures/settings-branchsummary-skipprompt-checkpoints-project-malformed-2026-11-12.json",
+        "docs/parity/fixtures/settings-branchsummary-skipprompt-checkpoints-project-malformed-truthy-2026-11-12.json",
+        "docs/parity/fixtures/settings-branchsummary-skipprompt-checkpoints-tolerant-2026-11-12.json",
+        "Settings boundary differential frozen from executable pinned Pi: tools/parity/branch_summary_skip_prompt_oracle.mjs loads 31 stored cases through the real SettingsManager, and tools/parity/branch_summary_skip_prompt_probe.cs loads the same JSON through UserSettings. Both report identical load results, merged skipPrompt tokens, branchSummary key presence, prompt decisions and reserves, including null, \"false\", \"\", 1, 0, {}, [], {\"nested\":false} and non-object parents.",
+        "Runtime contract: skipPrompt=false/default renders \"Summarize branch?\" with No summary, Summarize and Summarize with custom prompt; Escape reopens the tree at the same selection; skipPrompt=true skips the selector, commits the same target as choosing No summary, makes no summarization provider request and writes no branch_summary entry.",
+        "Paired PTY evidence at 100x30/140x40 dark fullscreen and regular plus malformed and five layered project fixtures reports zero semantic differences for prompt presence, tree rows/selection/count/tags, summary rows, scenario errors and the persisted settings/session; same-Pi calibration is exact for every fixture.",
+        "tools/parity/verify_settings_branch_summary_skip_prompt.py recomputes every gate from the oracle, evidence, TRX outcomes and ledger, and rejects 27 mutation controls including default/explicit-false/explicit-true inversions, summarization side effects, trusted/untrusted precedence, project null, malformed truthiness, calibration and full-suite failures.",
+        "Fail-first at base 0911db69: 24 of 31 settings cases diverged because BranchSummarySettings.Parse required a JSON boolean for skipPrompt and an object for branchSummary, while pinned Pi loaded them; the 7 normal boolean/default/merge/trust cases already matched."
+      ],
       "dependencies": [],
       "handover_review": {
         "decision": "required-contract-incomplete-or-not-yet-proven",
@@ -6505,7 +6531,6 @@
           "Test malformed settings, trust boundaries, reload and startup behaviour"
         ],
         "implemented_source": "implementation field on this task",
-        "existing_evidence": "evidence field on this task",
         "remaining_proof": "For branchSummary.skipPrompt, demonstrate the parsed effective value and its actual named runtime/render/input/provider consumer at startup and supported trusted-project reload; compare only supported values/default/scope and realistic invalid input. A schema field or parser without a working consumer is insufficient.",
         "queue_orders": [
           22
