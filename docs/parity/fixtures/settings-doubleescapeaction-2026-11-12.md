@@ -83,7 +83,8 @@ which `/settings` rewrites on save.
 | Same-Pi calibration, every fixture | 0 semantic differences |
 | Settings journey (pinned Pi) | row, description, order, live change and restart persistence match |
 | Focused tests | 157 passed, 0 failed, 0 skipped |
-| `verify_double_escape_action.py` with mutation controls | pass; every control rejected |
+| `verify_double_escape_action.py` with mutation controls | pass; 36 negative controls rejected |
+| Exact-head CI | Linux CI run `43157909879` on `415f5955` (implementation `16053b1e`): all five jobs green |
 
 The pinned observations behind the oracle: the default and `"tree"` open the
 session tree at `(8/10)`, `"fork"` opens **Fork from** with three user messages
