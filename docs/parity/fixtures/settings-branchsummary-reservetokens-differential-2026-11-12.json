@@ -1,0 +1,5453 @@
+{
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "pisharpSha": "cab70fdd4dce42bcf5f88dd987a2000d43caf83a",
+  "pi": [
+    {
+      "id": "BR01-unset",
+      "loaded": true,
+      "parentPresent": false,
+      "reservePresent": false,
+      "raw": "<absent>",
+      "effective": 16384,
+      "contextWindow": 100,
+      "budget": -16284,
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-zero",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 0,
+      "effective": 0,
+      "contextWindow": 100,
+      "budget": 100,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-one",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 1,
+      "effective": 1,
+      "contextWindow": 31,
+      "budget": 30,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-normal",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 4096,
+      "effective": 4096,
+      "contextWindow": 4116,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-default",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 16384,
+      "effective": 16384,
+      "contextWindow": 16404,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-negative",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": -1,
+      "effective": -1,
+      "contextWindow": 29,
+      "budget": 30,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-fraction",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 2.5,
+      "effective": 2.5,
+      "contextWindow": 32,
+      "budget": 29.5,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-fraction-boundary",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 2,
+      "effective": 2,
+      "contextWindow": 32,
+      "budget": 30,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-equal",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 100,
+      "effective": 100,
+      "contextWindow": 100,
+      "budget": 0,
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-greater",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 101,
+      "effective": 101,
+      "contextWindow": 100,
+      "budget": -1,
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-large",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 1e+100,
+      "effective": 1e+100,
+      "contextWindow": 100,
+      "budget": -1e+100,
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-null",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": null,
+      "effective": 16384,
+      "contextWindow": 16404,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-numeric-string",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": "1000",
+      "effective": 1000,
+      "contextWindow": 1020,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-empty-string",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": "",
+      "effective": 0,
+      "contextWindow": 20,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-bad-string",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": "bad",
+      "effective": "NaN",
+      "contextWindow": 100,
+      "budget": "NaN",
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-true",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": true,
+      "effective": 1,
+      "contextWindow": 21,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-false",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": false,
+      "effective": 0,
+      "contextWindow": 20,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-object",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": {},
+      "effective": "NaN",
+      "contextWindow": 100,
+      "budget": "NaN",
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-array",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": [],
+      "effective": 0,
+      "contextWindow": 20,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-single-array",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": [
+        1000
+      ],
+      "effective": 1000,
+      "contextWindow": 1020,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-multi-array",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": [
+        1,
+        2
+      ],
+      "effective": "NaN",
+      "contextWindow": 100,
+      "budget": "NaN",
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-nested-array",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": [
+        [
+          1000
+        ]
+      ],
+      "effective": 1000,
+      "contextWindow": 1020,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-null-array",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": [
+        null
+      ],
+      "effective": 0,
+      "contextWindow": 20,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-hex-string",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": "0x10",
+      "effective": 16,
+      "contextWindow": 36,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-binary-string",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": "0b10000",
+      "effective": 16,
+      "contextWindow": 36,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-octal-string",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": "0o20",
+      "effective": 16,
+      "contextWindow": 36,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-infinity-string",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": "Infinity",
+      "effective": "Infinity",
+      "contextWindow": 100,
+      "budget": "-Infinity",
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-negative-zero",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 0,
+      "effective": 0,
+      "contextWindow": 20,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-wide-number",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 2147483648,
+      "effective": 2147483648,
+      "contextWindow": 100,
+      "budget": -2147483548,
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-tiny-budget",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 99,
+      "effective": 99,
+      "contextWindow": 100,
+      "budget": 1,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [],
+      "preparedCount": 0,
+      "markers": [],
+      "providerCalls": 0,
+      "outputCaps": [],
+      "conversation": "",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": true,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-threshold",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 90,
+      "effective": 90,
+      "contextWindow": 100,
+      "budget": 10,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 1,
+      "markers": [
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-below-threshold",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 90.5,
+      "effective": 90.5,
+      "contextWindow": 100,
+      "budget": 9.5,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [],
+      "preparedCount": 0,
+      "markers": [],
+      "providerCalls": 0,
+      "outputCaps": [],
+      "conversation": "",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": true,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-second-context",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 180,
+      "effective": 180,
+      "contextWindow": 200,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-context-fallback",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 127980,
+      "effective": 127980,
+      "contextWindow": 128000,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-duplicate-100-20",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 20,
+      "effective": 20,
+      "contextWindow": 40,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-duplicate-20-100",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 100,
+      "effective": 100,
+      "contextWindow": 40,
+      "budget": -60,
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-parent-null",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": false,
+      "raw": "<absent>",
+      "effective": 16384,
+      "contextWindow": 16404,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-parent-string",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": false,
+      "raw": "<absent>",
+      "effective": 16384,
+      "contextWindow": 16404,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-parent-number",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": false,
+      "raw": "<absent>",
+      "effective": 16384,
+      "contextWindow": 16404,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-parent-array",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": false,
+      "raw": "<absent>",
+      "effective": 16384,
+      "contextWindow": 16404,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR04-skip-only",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 4096,
+      "effective": 4096,
+      "contextWindow": 4116,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR05-override",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 1024,
+      "effective": 1024,
+      "contextWindow": 4116,
+      "budget": 3092,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR06-null",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": null,
+      "effective": 16384,
+      "contextWindow": 4116,
+      "budget": -12268,
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR07-untrusted",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 4096,
+      "effective": 4096,
+      "contextWindow": 4116,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR08-numeric",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": "1000",
+      "effective": 1000,
+      "contextWindow": 4116,
+      "budget": 3116,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR08-bad",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": "bad",
+      "effective": "NaN",
+      "contextWindow": 4116,
+      "budget": "NaN",
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR08-zero",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 0,
+      "effective": 0,
+      "contextWindow": 4116,
+      "budget": 4116,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR09-sibling",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 4096,
+      "effective": 4096,
+      "contextWindow": 4116,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-unknown-sibling",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 4096,
+      "effective": 4096,
+      "contextWindow": 4116,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-skip-true",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": "bad",
+      "effective": "NaN",
+      "contextWindow": 100,
+      "budget": "NaN",
+      "limiting": false,
+      "skips": true,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [],
+      "providerCalls": 0,
+      "outputCaps": [],
+      "conversation": "",
+      "summaryCreated": false,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-custom",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 80,
+      "effective": 80,
+      "contextWindow": 100,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": true,
+      "error": null
+    },
+    {
+      "id": "BR-cutoff-summary",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 80,
+      "effective": 80,
+      "contextWindow": 100,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "RECENT-MARKER",
+        "SUMMARY-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "RECENT-MARKER",
+        "SUMMARY-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: The following is a summary of a branch that this conversation came back from:\n\n<summary>\nSUMMARY-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</summary>\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [
+        "nested.txt"
+      ],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-cutoff-compaction",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 80,
+      "effective": 80,
+      "contextWindow": 100,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "RECENT-MARKER",
+        "COMPACTION-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "RECENT-MARKER",
+        "COMPACTION-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: The conversation history before this point was compacted into the following summary:\n\n<summary>\nCOMPACTION-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n</summary>\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-cutoff-files",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 80,
+      "effective": 80,
+      "contextWindow": 100,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [
+        "old.txt"
+      ],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    }
+  ],
+  "calibration": [
+    {
+      "id": "BR01-unset",
+      "loaded": true,
+      "parentPresent": false,
+      "reservePresent": false,
+      "raw": "<absent>",
+      "effective": 16384,
+      "contextWindow": 100,
+      "budget": -16284,
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-zero",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 0,
+      "effective": 0,
+      "contextWindow": 100,
+      "budget": 100,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-one",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 1,
+      "effective": 1,
+      "contextWindow": 31,
+      "budget": 30,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-normal",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 4096,
+      "effective": 4096,
+      "contextWindow": 4116,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-default",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 16384,
+      "effective": 16384,
+      "contextWindow": 16404,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-negative",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": -1,
+      "effective": -1,
+      "contextWindow": 29,
+      "budget": 30,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-fraction",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 2.5,
+      "effective": 2.5,
+      "contextWindow": 32,
+      "budget": 29.5,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-fraction-boundary",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 2,
+      "effective": 2,
+      "contextWindow": 32,
+      "budget": 30,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-equal",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 100,
+      "effective": 100,
+      "contextWindow": 100,
+      "budget": 0,
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-greater",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 101,
+      "effective": 101,
+      "contextWindow": 100,
+      "budget": -1,
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-large",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 1e+100,
+      "effective": 1e+100,
+      "contextWindow": 100,
+      "budget": -1e+100,
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-null",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": null,
+      "effective": 16384,
+      "contextWindow": 16404,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-numeric-string",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": "1000",
+      "effective": 1000,
+      "contextWindow": 1020,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-empty-string",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": "",
+      "effective": 0,
+      "contextWindow": 20,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-bad-string",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": "bad",
+      "effective": "NaN",
+      "contextWindow": 100,
+      "budget": "NaN",
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-true",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": true,
+      "effective": 1,
+      "contextWindow": 21,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-false",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": false,
+      "effective": 0,
+      "contextWindow": 20,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-object",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": {},
+      "effective": "NaN",
+      "contextWindow": 100,
+      "budget": "NaN",
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-array",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": [],
+      "effective": 0,
+      "contextWindow": 20,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-single-array",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": [
+        1000
+      ],
+      "effective": 1000,
+      "contextWindow": 1020,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-multi-array",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": [
+        1,
+        2
+      ],
+      "effective": "NaN",
+      "contextWindow": 100,
+      "budget": "NaN",
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-nested-array",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": [
+        [
+          1000
+        ]
+      ],
+      "effective": 1000,
+      "contextWindow": 1020,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-null-array",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": [
+        null
+      ],
+      "effective": 0,
+      "contextWindow": 20,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-hex-string",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": "0x10",
+      "effective": 16,
+      "contextWindow": 36,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-binary-string",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": "0b10000",
+      "effective": 16,
+      "contextWindow": 36,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-octal-string",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": "0o20",
+      "effective": 16,
+      "contextWindow": 36,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-infinity-string",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": "Infinity",
+      "effective": "Infinity",
+      "contextWindow": 100,
+      "budget": "-Infinity",
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-negative-zero",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 0,
+      "effective": 0,
+      "contextWindow": 20,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-wide-number",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 2147483648,
+      "effective": 2147483648,
+      "contextWindow": 100,
+      "budget": -2147483548,
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-tiny-budget",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 99,
+      "effective": 99,
+      "contextWindow": 100,
+      "budget": 1,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [],
+      "preparedCount": 0,
+      "markers": [],
+      "providerCalls": 0,
+      "outputCaps": [],
+      "conversation": "",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": true,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-threshold",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 90,
+      "effective": 90,
+      "contextWindow": 100,
+      "budget": 10,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 1,
+      "markers": [
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-below-threshold",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 90.5,
+      "effective": 90.5,
+      "contextWindow": 100,
+      "budget": 9.5,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [],
+      "preparedCount": 0,
+      "markers": [],
+      "providerCalls": 0,
+      "outputCaps": [],
+      "conversation": "",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": true,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-second-context",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 180,
+      "effective": 180,
+      "contextWindow": 200,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-context-fallback",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 127980,
+      "effective": 127980,
+      "contextWindow": 128000,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-duplicate-100-20",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 20,
+      "effective": 20,
+      "contextWindow": 40,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-duplicate-20-100",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 100,
+      "effective": 100,
+      "contextWindow": 40,
+      "budget": -60,
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-parent-null",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": false,
+      "raw": "<absent>",
+      "effective": 16384,
+      "contextWindow": 16404,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-parent-string",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": false,
+      "raw": "<absent>",
+      "effective": 16384,
+      "contextWindow": 16404,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-parent-number",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": false,
+      "raw": "<absent>",
+      "effective": 16384,
+      "contextWindow": 16404,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-parent-array",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": false,
+      "raw": "<absent>",
+      "effective": 16384,
+      "contextWindow": 16404,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR04-skip-only",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 4096,
+      "effective": 4096,
+      "contextWindow": 4116,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR05-override",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 1024,
+      "effective": 1024,
+      "contextWindow": 4116,
+      "budget": 3092,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR06-null",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": null,
+      "effective": 16384,
+      "contextWindow": 4116,
+      "budget": -12268,
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR07-untrusted",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 4096,
+      "effective": 4096,
+      "contextWindow": 4116,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR08-numeric",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": "1000",
+      "effective": 1000,
+      "contextWindow": 4116,
+      "budget": 3116,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR08-bad",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": "bad",
+      "effective": "NaN",
+      "contextWindow": 4116,
+      "budget": "NaN",
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR08-zero",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 0,
+      "effective": 0,
+      "contextWindow": 4116,
+      "budget": 4116,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR09-sibling",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 4096,
+      "effective": 4096,
+      "contextWindow": 4116,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-unknown-sibling",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 4096,
+      "effective": 4096,
+      "contextWindow": 4116,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-skip-true",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": "bad",
+      "effective": "NaN",
+      "contextWindow": 100,
+      "budget": "NaN",
+      "limiting": false,
+      "skips": true,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [],
+      "providerCalls": 0,
+      "outputCaps": [],
+      "conversation": "",
+      "summaryCreated": false,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-custom",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 80,
+      "effective": 80,
+      "contextWindow": 100,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": true,
+      "error": null
+    },
+    {
+      "id": "BR-cutoff-summary",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 80,
+      "effective": 80,
+      "contextWindow": 100,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "RECENT-MARKER",
+        "SUMMARY-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "RECENT-MARKER",
+        "SUMMARY-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: The following is a summary of a branch that this conversation came back from:\n\n<summary>\nSUMMARY-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</summary>\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [
+        "nested.txt"
+      ],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-cutoff-compaction",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 80,
+      "effective": 80,
+      "contextWindow": 100,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "RECENT-MARKER",
+        "COMPACTION-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "RECENT-MARKER",
+        "COMPACTION-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: The conversation history before this point was compacted into the following summary:\n\n<summary>\nCOMPACTION-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n</summary>\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-cutoff-files",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 80,
+      "effective": 80,
+      "contextWindow": 100,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [
+        "old.txt"
+      ],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    }
+  ],
+  "pisharp": [
+    {
+      "id": "BR01-unset",
+      "loaded": true,
+      "parentPresent": false,
+      "reservePresent": false,
+      "raw": "<absent>",
+      "effective": 16384,
+      "contextWindow": 100,
+      "budget": -16284,
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-zero",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 0,
+      "effective": 0,
+      "contextWindow": 100,
+      "budget": 100,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-one",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 1,
+      "effective": 1,
+      "contextWindow": 31,
+      "budget": 30,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-normal",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 4096,
+      "effective": 4096,
+      "contextWindow": 4116,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-default",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 16384,
+      "effective": 16384,
+      "contextWindow": 16404,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-negative",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": -1,
+      "effective": -1,
+      "contextWindow": 29,
+      "budget": 30,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-fraction",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 2.5,
+      "effective": 2.5,
+      "contextWindow": 32,
+      "budget": 29.5,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-fraction-boundary",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 2,
+      "effective": 2,
+      "contextWindow": 32,
+      "budget": 30,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-equal",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 100,
+      "effective": 100,
+      "contextWindow": 100,
+      "budget": 0,
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-greater",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 101,
+      "effective": 101,
+      "contextWindow": 100,
+      "budget": -1,
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-large",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 1e+100,
+      "effective": 1e+100,
+      "contextWindow": 100,
+      "budget": -1e+100,
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-null",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": null,
+      "effective": 16384,
+      "contextWindow": 16404,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-numeric-string",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": "1000",
+      "effective": 1000,
+      "contextWindow": 1020,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-empty-string",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": "",
+      "effective": 0,
+      "contextWindow": 20,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-bad-string",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": "bad",
+      "effective": "NaN",
+      "contextWindow": 100,
+      "budget": "NaN",
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-true",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": true,
+      "effective": 1,
+      "contextWindow": 21,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-false",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": false,
+      "effective": 0,
+      "contextWindow": 20,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-object",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": {},
+      "effective": "NaN",
+      "contextWindow": 100,
+      "budget": "NaN",
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-array",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": [],
+      "effective": 0,
+      "contextWindow": 20,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-single-array",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": [
+        1000
+      ],
+      "effective": 1000,
+      "contextWindow": 1020,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-multi-array",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": [
+        1,
+        2
+      ],
+      "effective": "NaN",
+      "contextWindow": 100,
+      "budget": "NaN",
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-nested-array",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": [
+        [
+          1000
+        ]
+      ],
+      "effective": 1000,
+      "contextWindow": 1020,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-null-array",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": [
+        null
+      ],
+      "effective": 0,
+      "contextWindow": 20,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-hex-string",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": "0x10",
+      "effective": 16,
+      "contextWindow": 36,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-binary-string",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": "0b10000",
+      "effective": 16,
+      "contextWindow": 36,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-octal-string",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": "0o20",
+      "effective": 16,
+      "contextWindow": 36,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-infinity-string",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": "Infinity",
+      "effective": "Infinity",
+      "contextWindow": 100,
+      "budget": "-Infinity",
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-negative-zero",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 0,
+      "effective": 0,
+      "contextWindow": 20,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-wide-number",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 2147483648,
+      "effective": 2147483648,
+      "contextWindow": 100,
+      "budget": -2147483548,
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-tiny-budget",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 99,
+      "effective": 99,
+      "contextWindow": 100,
+      "budget": 1,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [],
+      "preparedCount": 0,
+      "markers": [],
+      "providerCalls": 0,
+      "outputCaps": [],
+      "conversation": "",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": true,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-threshold",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 90,
+      "effective": 90,
+      "contextWindow": 100,
+      "budget": 10,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 1,
+      "markers": [
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-below-threshold",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 90.5,
+      "effective": 90.5,
+      "contextWindow": 100,
+      "budget": 9.5,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [],
+      "preparedCount": 0,
+      "markers": [],
+      "providerCalls": 0,
+      "outputCaps": [],
+      "conversation": "",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": true,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-second-context",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 180,
+      "effective": 180,
+      "contextWindow": 200,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-context-fallback",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 127980,
+      "effective": 127980,
+      "contextWindow": 128000,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-duplicate-100-20",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 20,
+      "effective": 20,
+      "contextWindow": 40,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-duplicate-20-100",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 100,
+      "effective": 100,
+      "contextWindow": 40,
+      "budget": -60,
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-parent-null",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": false,
+      "raw": "<absent>",
+      "effective": 16384,
+      "contextWindow": 16404,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-parent-string",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": false,
+      "raw": "<absent>",
+      "effective": 16384,
+      "contextWindow": 16404,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-parent-number",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": false,
+      "raw": "<absent>",
+      "effective": 16384,
+      "contextWindow": 16404,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-parent-array",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": false,
+      "raw": "<absent>",
+      "effective": 16384,
+      "contextWindow": 16404,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR04-skip-only",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 4096,
+      "effective": 4096,
+      "contextWindow": 4116,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR05-override",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 1024,
+      "effective": 1024,
+      "contextWindow": 4116,
+      "budget": 3092,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR06-null",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": null,
+      "effective": 16384,
+      "contextWindow": 4116,
+      "budget": -12268,
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR07-untrusted",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 4096,
+      "effective": 4096,
+      "contextWindow": 4116,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR08-numeric",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": "1000",
+      "effective": 1000,
+      "contextWindow": 4116,
+      "budget": 3116,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR08-bad",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": "bad",
+      "effective": "NaN",
+      "contextWindow": 4116,
+      "budget": "NaN",
+      "limiting": false,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR08-zero",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 0,
+      "effective": 0,
+      "contextWindow": 4116,
+      "budget": 4116,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: OLDEST-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR09-sibling",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 4096,
+      "effective": 4096,
+      "contextWindow": 4116,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-unknown-sibling",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 4096,
+      "effective": 4096,
+      "contextWindow": 4116,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-skip-true",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": "bad",
+      "effective": "NaN",
+      "contextWindow": 100,
+      "budget": "NaN",
+      "limiting": false,
+      "skips": true,
+      "preparedMarkers": [
+        "OLDEST-MARKER",
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 3,
+      "markers": [],
+      "providerCalls": 0,
+      "outputCaps": [],
+      "conversation": "",
+      "summaryCreated": false,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-custom",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 80,
+      "effective": 80,
+      "contextWindow": 100,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": true,
+      "error": null
+    },
+    {
+      "id": "BR-cutoff-summary",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 80,
+      "effective": 80,
+      "contextWindow": 100,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "RECENT-MARKER",
+        "SUMMARY-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "RECENT-MARKER",
+        "SUMMARY-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: The following is a summary of a branch that this conversation came back from:\n\n<summary>\nSUMMARY-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n</summary>\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [
+        "nested.txt"
+      ],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-cutoff-compaction",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 80,
+      "effective": 80,
+      "contextWindow": 100,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "RECENT-MARKER",
+        "COMPACTION-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "RECENT-MARKER",
+        "COMPACTION-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[User]: The conversation history before this point was compacted into the following summary:\n\n<summary>\nCOMPACTION-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n</summary>\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    },
+    {
+      "id": "BR-cutoff-files",
+      "loaded": true,
+      "parentPresent": true,
+      "reservePresent": true,
+      "raw": 80,
+      "effective": 80,
+      "contextWindow": 100,
+      "budget": 20,
+      "limiting": true,
+      "skips": false,
+      "preparedMarkers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "preparedCount": 2,
+      "markers": [
+        "MIDDLE-MARKER",
+        "RECENT-MARKER"
+      ],
+      "providerCalls": 1,
+      "outputCaps": [
+        4096
+      ],
+      "conversation": "[Assistant]: MIDDLE-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[User]: RECENT-MARKERxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "summaryCreated": true,
+      "targetSelected": true,
+      "emptySummary": false,
+      "readFiles": [
+        "old.txt"
+      ],
+      "modifiedFiles": [],
+      "customPrompt": false,
+      "error": null
+    }
+  ],
+  "settingsMatches": 54,
+  "settingsDivergences": 0,
+  "runtimeMatches": 54,
+  "differences": []
+}

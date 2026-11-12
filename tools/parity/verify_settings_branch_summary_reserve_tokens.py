@@ -97,6 +97,17 @@ def encoded(value):
     return value if math.isfinite(value) else 'NaN' if math.isnan(value) else 'Infinity' if value > 0 else '-Infinity'
 
 
+def same_json(left, right):
+    # Python equates True with 1 and False with 0; raw JSON representations must not.
+    if isinstance(left, bool) or isinstance(right, bool):
+        return type(left) is type(right) and left == right
+    if isinstance(left, list) and isinstance(right, list):
+        return len(left) == len(right) and all(same_json(a, b) for a, b in zip(left, right))
+    if isinstance(left, dict) and isinstance(right, dict):
+        return left.keys() == right.keys() and all(same_json(left[k], right[k]) for k in left)
+    return left == right
+
+
 def expected(item):
     settings = merge(json.loads(item['userRaw']), json.loads(item['projectRaw']) if item['projectTrusted'] else {})
     parent = settings.get('branchSummary')
@@ -141,7 +152,7 @@ def validate_report(report, cases):
         for item, row in zip(cases, rows, strict=True):
             want, ordered = expected(item)
             for key, value in want.items():
-                require(row.get(key) == value, f'{product} {item["id"]}.{key}: {row.get(key)!r} != {value!r}')
+                require(same_json(row.get(key), value), f'{product} {item["id"]}.{key}: {row.get(key)!r} != {value!r}')
             text = row.get('conversation', '')
             actual_order = sorted([m for m in MARKERS if m in text], key=text.index)
             require(actual_order == (ordered if want['providerCalls'] else []), f'{product}: provider request projection differs')
@@ -264,6 +275,8 @@ def self_test(report, cases, manifest, focused, full, ledger, skip):
         ('fraction rejected', 'BR-fraction', 'loaded', False),
         ('fraction truncated', 'BR-fraction', 'markers', MARKERS[:3]),
         ('numeric string wrong', 'BR-numeric-string', 'effective', 16384),
+        ('raw true becomes one', 'BR-true', 'raw', 1),
+        ('raw false becomes zero', 'BR-false', 'raw', 0),
         ('bad defaults', 'BR-bad-string', 'effective', 16384),
         ('object defaults', 'BR-object', 'effective', 16384),
         ('array defaults', 'BR-array', 'effective', 16384),
