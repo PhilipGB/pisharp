@@ -38,6 +38,10 @@ FIXTURES = [
     "tools/parity/terminal/fixtures/terminal-double-escape-action-settings.json",
 ]
 MAIN_CHECKPOINTS = ("unset", "tree", "fork", "none", "outside", "draft", "whitespace", "bash-entry")
+FRAME_FOR = {"unset": "unset-double-escape", "tree": "tree-double-escape",
+             "fork": "fork-double-escape", "none": "none-double-escape",
+             "outside": "outside-second", "draft": "draft-double-escape",
+             "whitespace": "whitespace-double-escape", "bash-entry": "bash-entry-escape"}
 EXPECTED_OVERLAY = {"unset": "tree", "tree": "tree", "fork": "fork", "none": "none",
                     "outside": "none", "draft": "none", "whitespace": "tree",
                     "bash-entry": "none"}
@@ -280,7 +284,7 @@ def validate_paired_document(document, oracle, case_ids, label, projections_key=
                 require(not state["errors"],
                         f"{case_id}/{product}/{name}: error text {state['errors']}")
         for name in MAIN_CHECKPOINTS:
-            require_main_projection(document, case_id, name,
+            require_main_projection(document, case_id, FRAME_FOR[name],
                                     oracle[projections_key][case_id][name],
                                     f"{case_id} {name}")
         require(case["pi"]["settings"] == case["pisharp"]["settings"],
@@ -400,7 +404,7 @@ def validate_settings_document(document, oracle):
             f"settings-selector: persisted value {persisted['doubleEscapeAction']!r}")
     require(persisted["quietStartup"] is True and persisted["shellCommandPrefix"] == "preserved",
             f"settings-selector: unrelated settings changed: {persisted}")
-    require(persisted["theme"] == "dark" and persisted["tuiMode"] == "fullscreen",
+    require(persisted["theme"] == "dark" and persisted["tuiMode"] == "regular",
             f"settings-selector: harness settings changed: {persisted}")
 
 
