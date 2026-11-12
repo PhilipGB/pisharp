@@ -50,7 +50,7 @@ Observable consequences frozen by the evidence:
 | Existing `keys-tree-scoped-picker` regression set | green (included in the 75) |
 | `dotnet format` / `dotnet build --warnaserror` | pass |
 | Full .NET suite | 4556 passed, 0 failed, 0 skipped (9m36s) |
-| Exact-head CI | Linux CI run `43082423591` on `7dc3538c`: all five jobs green |
+| Exact-head CI | Linux CI run `43131965458` on `9ff7f024` (implementation `8e3fcc20`): all five jobs green |
 
 ### Fail-first baseline
 
