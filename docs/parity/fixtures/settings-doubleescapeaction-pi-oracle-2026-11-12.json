@@ -1,0 +1,683 @@
+{
+  "schema": 1,
+  "capability": "settings-doubleescapeaction",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "values": [
+    "tree",
+    "fork",
+    "none"
+  ],
+  "default": "tree",
+  "windowMilliseconds": 500,
+  "windowComparison": "<",
+  "label": "Double-escape action",
+  "description": "Action when pressing Escape twice with empty editor",
+  "sources": [
+    {
+      "file": "packages/coding-agent/src/core/settings-defaults.ts",
+      "lines": "45",
+      "symbol": "SETTINGS_DEFAULTS.doubleEscapeAction",
+      "observation": "The shared runtime default is the string 'tree'."
+    },
+    {
+      "file": "packages/coding-agent/src/core/settings-schema.ts",
+      "lines": "339-344",
+      "symbol": "doubleEscapeAction",
+      "observation": "Optional union of fork, tree and none, defaulted from SETTINGS_DEFAULTS."
+    },
+    {
+      "file": "packages/coding-agent/src/core/settings-manager.ts",
+      "lines": "1356-1364",
+      "symbol": "getDoubleEscapeAction/setDoubleEscapeAction",
+      "observation": "The getter returns the merged value unless it is nullish and never validates it against the union; the setter writes global settings and saves."
+    },
+    {
+      "file": "packages/coding-agent/src/core/settings-manager.ts",
+      "lines": "65-82",
+      "symbol": "deepMergeObjects",
+      "observation": "Scopes merge by property presence; a null override replaces lower scopes."
+    },
+    {
+      "file": "packages/coding-agent/src/core/settings-manager.ts",
+      "lines": "377-408",
+      "symbol": "loadFromStorage/tryLoadFromStorage",
+      "observation": "Settings files are parsed and migrated only; values are never validated."
+    },
+    {
+      "file": "packages/coding-agent/src/modes/interactive/components/settings-selector.ts",
+      "lines": "586-593",
+      "symbol": "double-escape-action item",
+      "observation": "Label 'Double-escape action', description 'Action when pressing Escape twice with empty editor', values tree, fork, none in that order."
+    },
+    {
+      "file": "packages/coding-agent/src/modes/interactive/interactive-mode.ts",
+      "lines": "5077-5079",
+      "symbol": "onDoubleEscapeActionChange",
+      "observation": "A chosen value is persisted through settingsManager.setDoubleEscapeAction."
+    },
+    {
+      "file": "packages/coding-agent/src/modes/interactive/interactive-mode.ts",
+      "lines": "3070-3096",
+      "symbol": "defaultEditor.onEscape",
+      "observation": "Streaming, running bash, bash-entry mode and a non-empty editor all take precedence; 'none' skips the timer; otherwise a second press strictly less than 500 ms after the first fires and resets the timer, and any other press records its own time."
+    },
+    {
+      "file": "packages/coding-agent/src/modes/interactive/components/custom-editor.ts",
+      "lines": "100-114",
+      "symbol": "handleInput Escape",
+      "observation": "With autocomplete active Escape cancels the menu without invoking onEscape, so the double-press timer is untouched."
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "DE01",
+      "requirement": "No configured value",
+      "expected": "Double Escape opens the session tree",
+      "oracle": [
+        "DE01"
+      ],
+      "fixture": "tree"
+    },
+    {
+      "id": "DE02",
+      "requirement": "Explicit tree",
+      "expected": "Double Escape opens the session tree",
+      "oracle": [
+        "DE02"
+      ],
+      "fixture": "tree"
+    },
+    {
+      "id": "DE03",
+      "requirement": "Explicit fork",
+      "expected": "Double Escape opens the fork selector",
+      "oracle": [
+        "DE03"
+      ],
+      "fixture": "fork"
+    },
+    {
+      "id": "DE04",
+      "requirement": "Explicit none",
+      "expected": "Double Escape opens nothing",
+      "oracle": [
+        "DE04"
+      ],
+      "fixture": "none"
+    },
+    {
+      "id": "DE05",
+      "requirement": "Timing inside the window",
+      "expected": "A second press under 500 ms fires exactly once",
+      "oracle": [
+        "DE05",
+        "DE08"
+      ],
+      "fixture": "tree"
+    },
+    {
+      "id": "DE06",
+      "requirement": "Timing at the boundary",
+      "expected": "Exactly 500 ms does not fire and re-arms",
+      "oracle": [
+        "DE06"
+      ],
+      "fixture": "tree"
+    },
+    {
+      "id": "DE07",
+      "requirement": "Timing outside the window",
+      "expected": "A later press does not fire and starts a new pair",
+      "oracle": [
+        "DE07"
+      ],
+      "fixture": "tree"
+    },
+    {
+      "id": "DE08",
+      "requirement": "Non-empty editor",
+      "expected": "A draft suppresses the action and keeps its text",
+      "oracle": [
+        "DE09"
+      ],
+      "fixture": "tree"
+    },
+    {
+      "id": "DE09",
+      "requirement": "Bash-entry mode",
+      "expected": "Escape clears the draft instead of navigating",
+      "oracle": [
+        "DE09"
+      ],
+      "fixture": "tree"
+    },
+    {
+      "id": "DE10",
+      "requirement": "Whitespace-only editor",
+      "expected": "A trim-empty editor counts as empty",
+      "oracle": [
+        "DE10"
+      ],
+      "fixture": "tree"
+    },
+    {
+      "id": "DE11",
+      "requirement": "none timer state",
+      "expected": "Presses while none neither arm nor reset the timer",
+      "oracle": [
+        "DE11"
+      ],
+      "fixture": "none"
+    },
+    {
+      "id": "DE12",
+      "requirement": "Live setting change",
+      "expected": "The action is read on every press",
+      "oracle": [
+        "DE12"
+      ],
+      "fixture": "tree"
+    },
+    {
+      "id": "DE13",
+      "requirement": "Settings presentation",
+      "expected": "Label, description, value order and current value match pinned Pi",
+      "oracle": [
+        "DE13"
+      ],
+      "fixture": "settings"
+    },
+    {
+      "id": "DE14",
+      "requirement": "Persistence",
+      "expected": "The chosen value survives a restart",
+      "oracle": [
+        "DE14"
+      ],
+      "fixture": "settings"
+    },
+    {
+      "id": "DE15",
+      "requirement": "Malformed stored values",
+      "expected": "Unrecognized values load unchanged and take the fork path; null resolves to tree",
+      "oracle": [
+        "DE15"
+      ],
+      "fixture": "fork"
+    },
+    {
+      "id": "DE16",
+      "requirement": "Trusted project precedence",
+      "expected": "A trusted project value replaces the user value",
+      "oracle": [
+        "DE16"
+      ],
+      "fixture": "fork"
+    },
+    {
+      "id": "DE17",
+      "requirement": "Untrusted project",
+      "expected": "An untrusted project value does not affect the user value",
+      "oracle": [
+        "DE17"
+      ],
+      "fixture": "none"
+    },
+    {
+      "id": "DE18",
+      "requirement": "Composition with treeFilterMode",
+      "expected": "A tree action opens with the configured initial filter",
+      "oracle": [
+        "DE18"
+      ],
+      "fixture": "user-only"
+    }
+  ],
+  "projections": {
+    "100x30-dark-fullscreen": {
+      "unset": {
+        "overlay": "tree",
+        "tree": {
+          "count": "8/10",
+          "tags": [],
+          "selected": "\u2502     \u2022 [bash]: echo fixture-output"
+        },
+        "fork": null
+      },
+      "tree": {
+        "overlay": "tree",
+        "tree": {
+          "count": "8/10",
+          "tags": [],
+          "selected": "\u2502     \u2022 [bash]: echo fixture-output"
+        },
+        "fork": null
+      },
+      "fork": {
+        "overlay": "fork",
+        "tree": null,
+        "fork": {
+          "total": 3,
+          "selectedIndex": 3,
+          "selectedPreview": "second prompt"
+        }
+      },
+      "none": {
+        "overlay": "none",
+        "tree": null,
+        "fork": null
+      },
+      "outside": {
+        "overlay": "none",
+        "tree": null,
+        "fork": null
+      },
+      "draft": {
+        "overlay": "none",
+        "tree": null,
+        "fork": null
+      },
+      "whitespace": {
+        "overlay": "tree",
+        "tree": {
+          "count": "8/10",
+          "tags": [],
+          "selected": "\u2502     \u2022 [bash]: echo fixture-output"
+        },
+        "fork": null
+      },
+      "bash-entry": {
+        "overlay": "none",
+        "tree": null,
+        "fork": null
+      }
+    },
+    "140x40-dark-fullscreen": {
+      "unset": {
+        "overlay": "tree",
+        "tree": {
+          "count": "8/10",
+          "tags": [],
+          "selected": "\u2502     \u2022 [bash]: echo fixture-output"
+        },
+        "fork": null
+      },
+      "tree": {
+        "overlay": "tree",
+        "tree": {
+          "count": "8/10",
+          "tags": [],
+          "selected": "\u2502     \u2022 [bash]: echo fixture-output"
+        },
+        "fork": null
+      },
+      "fork": {
+        "overlay": "fork",
+        "tree": null,
+        "fork": {
+          "total": 3,
+          "selectedIndex": 3,
+          "selectedPreview": "second prompt"
+        }
+      },
+      "none": {
+        "overlay": "none",
+        "tree": null,
+        "fork": null
+      },
+      "outside": {
+        "overlay": "none",
+        "tree": null,
+        "fork": null
+      },
+      "draft": {
+        "overlay": "none",
+        "tree": null,
+        "fork": null
+      },
+      "whitespace": {
+        "overlay": "tree",
+        "tree": {
+          "count": "8/10",
+          "tags": [],
+          "selected": "\u2502     \u2022 [bash]: echo fixture-output"
+        },
+        "fork": null
+      },
+      "bash-entry": {
+        "overlay": "none",
+        "tree": null,
+        "fork": null
+      }
+    }
+  },
+  "regularProjections": {
+    "100x30-dark-regular": {
+      "unset": {
+        "overlay": "tree",
+        "tree": {
+          "count": "8/10",
+          "tags": [],
+          "selected": "\u2502     \u2022 [bash]: echo fixture-output"
+        },
+        "fork": null
+      },
+      "tree": {
+        "overlay": "tree",
+        "tree": {
+          "count": "8/10",
+          "tags": [],
+          "selected": "\u2502     \u2022 [bash]: echo fixture-output"
+        },
+        "fork": null
+      },
+      "fork": {
+        "overlay": "fork",
+        "tree": null,
+        "fork": {
+          "total": 3,
+          "selectedIndex": 3,
+          "selectedPreview": "second prompt"
+        }
+      },
+      "none": {
+        "overlay": "none",
+        "tree": null,
+        "fork": null
+      },
+      "outside": {
+        "overlay": "none",
+        "tree": null,
+        "fork": null
+      },
+      "draft": {
+        "overlay": "none",
+        "tree": null,
+        "fork": null
+      },
+      "whitespace": {
+        "overlay": "tree",
+        "tree": {
+          "count": "8/10",
+          "tags": [],
+          "selected": "\u2502     \u2022 [bash]: echo fixture-output"
+        },
+        "fork": null
+      },
+      "bash-entry": {
+        "overlay": "none",
+        "tree": null,
+        "fork": null
+      }
+    },
+    "140x40-dark-regular": {
+      "unset": {
+        "overlay": "tree",
+        "tree": {
+          "count": "8/10",
+          "tags": [],
+          "selected": "\u2502     \u2022 [bash]: echo fixture-output"
+        },
+        "fork": null
+      },
+      "tree": {
+        "overlay": "tree",
+        "tree": {
+          "count": "8/10",
+          "tags": [],
+          "selected": "\u2502     \u2022 [bash]: echo fixture-output"
+        },
+        "fork": null
+      },
+      "fork": {
+        "overlay": "fork",
+        "tree": null,
+        "fork": {
+          "total": 3,
+          "selectedIndex": 3,
+          "selectedPreview": "second prompt"
+        }
+      },
+      "none": {
+        "overlay": "none",
+        "tree": null,
+        "fork": null
+      },
+      "outside": {
+        "overlay": "none",
+        "tree": null,
+        "fork": null
+      },
+      "draft": {
+        "overlay": "none",
+        "tree": null,
+        "fork": null
+      },
+      "whitespace": {
+        "overlay": "tree",
+        "tree": {
+          "count": "8/10",
+          "tags": [],
+          "selected": "\u2502     \u2022 [bash]: echo fixture-output"
+        },
+        "fork": null
+      },
+      "bash-entry": {
+        "overlay": "none",
+        "tree": null,
+        "fork": null
+      }
+    }
+  },
+  "malformedProjections": {
+    "100x30-dark-fullscreen": {
+      "bogus-string": {
+        "overlay": "fork",
+        "tree": null,
+        "fork": {
+          "total": 3,
+          "selectedIndex": 3,
+          "selectedPreview": "second prompt"
+        }
+      },
+      "empty-string": {
+        "overlay": "fork",
+        "tree": null,
+        "fork": {
+          "total": 3,
+          "selectedIndex": 3,
+          "selectedPreview": "second prompt"
+        }
+      },
+      "number": {
+        "overlay": "fork",
+        "tree": null,
+        "fork": {
+          "total": 3,
+          "selectedIndex": 3,
+          "selectedPreview": "second prompt"
+        }
+      },
+      "boolean": {
+        "overlay": "fork",
+        "tree": null,
+        "fork": {
+          "total": 3,
+          "selectedIndex": 3,
+          "selectedPreview": "second prompt"
+        }
+      },
+      "null": {
+        "overlay": "tree",
+        "tree": {
+          "count": "8/10",
+          "tags": [],
+          "selected": "\u2502     \u2022 [bash]: echo fixture-output"
+        },
+        "fork": null
+      },
+      "object": {
+        "overlay": "fork",
+        "tree": null,
+        "fork": {
+          "total": 3,
+          "selectedIndex": 3,
+          "selectedPreview": "second prompt"
+        }
+      },
+      "array": {
+        "overlay": "fork",
+        "tree": null,
+        "fork": {
+          "total": 3,
+          "selectedIndex": 3,
+          "selectedPreview": "second prompt"
+        }
+      }
+    }
+  },
+  "layeredProjections": {
+    "100x30-dark-fullscreen": {
+      "trusted": {
+        "overlay": "fork",
+        "tree": null,
+        "fork": {
+          "total": 3,
+          "selectedIndex": 3,
+          "selectedPreview": "second prompt"
+        }
+      },
+      "untrusted": {
+        "overlay": "none",
+        "tree": null,
+        "fork": null
+      }
+    }
+  },
+  "malformedSettings": {
+    "pi": {
+      "number": {
+        "settingsOpens": true,
+        "crashesOnOpen": false,
+        "rowValue": null,
+        "crashesOnRow": true,
+        "activatedValue": null,
+        "activationSubmenu": null
+      },
+      "boolean": {
+        "settingsOpens": true,
+        "crashesOnOpen": true,
+        "rowValue": null,
+        "crashesOnRow": true,
+        "activatedValue": null,
+        "activationSubmenu": null
+      },
+      "object": {
+        "settingsOpens": true,
+        "crashesOnOpen": true,
+        "rowValue": null,
+        "crashesOnRow": true,
+        "activatedValue": null,
+        "activationSubmenu": null
+      },
+      "array": {
+        "settingsOpens": true,
+        "crashesOnOpen": true,
+        "rowValue": "",
+        "crashesOnRow": true,
+        "activatedValue": null,
+        "activationSubmenu": null
+      },
+      "bogus-string": {
+        "settingsOpens": true,
+        "crashesOnOpen": false,
+        "rowValue": "bogus",
+        "crashesOnRow": false,
+        "activatedValue": "tree",
+        "activationSubmenu": false
+      },
+      "null": {
+        "settingsOpens": true,
+        "crashesOnOpen": false,
+        "rowValue": "tree",
+        "crashesOnRow": false,
+        "activatedValue": "fork",
+        "activationSubmenu": false
+      }
+    },
+    "safety": {
+      "number": {
+        "settingsOpens": true,
+        "crashesOnOpen": false,
+        "rowValue": "42",
+        "crashesOnRow": false,
+        "activatedValue": null,
+        "activationSubmenu": null
+      },
+      "boolean": {
+        "settingsOpens": true,
+        "crashesOnOpen": false,
+        "rowValue": "false",
+        "crashesOnRow": false,
+        "activatedValue": null,
+        "activationSubmenu": null
+      },
+      "object": {
+        "settingsOpens": true,
+        "crashesOnOpen": false,
+        "rowValue": "{}",
+        "crashesOnRow": false,
+        "activatedValue": null,
+        "activationSubmenu": null
+      },
+      "array": {
+        "settingsOpens": true,
+        "crashesOnOpen": false,
+        "rowValue": "[]",
+        "crashesOnRow": false,
+        "activatedValue": null,
+        "activationSubmenu": null
+      },
+      "bogus-string": {
+        "settingsOpens": true,
+        "crashesOnOpen": false,
+        "rowValue": "bogus",
+        "crashesOnRow": false,
+        "activatedValue": null,
+        "activationSubmenu": true
+      },
+      "null": {
+        "settingsOpens": true,
+        "crashesOnOpen": false,
+        "rowValue": "inherit/default (default)",
+        "crashesOnRow": false,
+        "activatedValue": null,
+        "activationSubmenu": true
+      },
+      "declaredDivergence": true
+    }
+  },
+  "settingsProjection": {
+    "row": {
+      "row": true,
+      "value": "tree",
+      "description": true,
+      "values": []
+    },
+    "fork": {
+      "row": true,
+      "value": "fork",
+      "description": true,
+      "values": []
+    },
+    "persisted": {
+      "doubleEscapeAction": "fork",
+      "doubleEscapeActionPresent": true,
+      "quietStartup": true,
+      "shellCommandPrefix": "preserved",
+      "theme": "dark",
+      "tuiMode": "regular",
+      "treeFilterMode": null
+    }
+  }
+}

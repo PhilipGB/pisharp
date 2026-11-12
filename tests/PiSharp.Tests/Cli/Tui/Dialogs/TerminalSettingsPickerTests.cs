@@ -24,15 +24,16 @@ public sealed class TerminalSettingsPickerTests
         Assert.Equal(new[]
         {
             "steeringMode", "followUpMode", "sessionShareDestination", "httpIdleTimeoutMs",
-            "hideThinkingBlock", "markdown.mermaid", "quietStartup", "defaultProjectTrust", "treeFilterMode",
+            "hideThinkingBlock", "markdown.mermaid", "quietStartup", "defaultProjectTrust",
+            "doubleEscapeAction", "treeFilterMode",
             "modelThinkingLevels", "theme", "fullscreenWheelScrollLines"
-        }, ids.Skip(10).Take(12));
+        }, ids.Skip(10).Take(13));
         Assert.Equal(new[]
         {
             "defaultThinkingLevel", "httpProxy", "terminal.trueColor", "externalEditor",
             "retry.provider.timeoutMs", "retry.provider.maxRetries",
             "retry.provider.maxRetryDelayMs", "markdown.codeBlockIndent"
-        }, ids.Skip(22));
+        }, ids.Skip(23));
         Assert.DoesNotContain(ids, id => id is "showCacheMissNotices" or "collapseChangelog");
     }
 
@@ -113,5 +114,44 @@ public sealed class TerminalSettingsPickerTests
         // Pinned Pi's settings list cycles these values in source order.
         Assert.Equal(["default", "no-tools", "user-only", "labeled-only", "all"],
             TreeFilterModeSetting.Values);
+    }
+
+    [Fact]
+    public void DoubleEscapeActionRowMatchesThePinnedLabelDescriptionValueAndDefaults()
+    {
+        var setting = TerminalSettingsPicker.Settings.Single(item => item.Id == "doubleEscapeAction");
+        Assert.Equal("Double-escape action", setting.Label);
+        Assert.Equal("Action when pressing Escape twice with empty editor", setting.Description);
+        Assert.False(setting.UserOnly);
+
+        var unset = TerminalSettingsPicker.ToListItem(setting, new UserSettings(), new UserSettings(),
+            projectScope: false, activeThemeSetting: null);
+        Assert.Equal("inherit/default (default)", unset.Value);
+
+        var configured = TerminalSettingsPicker.ToListItem(setting,
+            new UserSettings(DoubleEscapeAction: new("fork")),
+            new UserSettings(DoubleEscapeAction: new("fork")), projectScope: false, activeThemeSetting: null);
+        Assert.Equal("fork", configured.Value);
+
+        var inherited = TerminalSettingsPicker.ToListItem(setting, new UserSettings(),
+            new UserSettings(DoubleEscapeAction: new("none")), projectScope: true, activeThemeSetting: null);
+        Assert.Equal("none (inherited)", inherited.Value);
+
+        // A malformed stored value is shown exactly as stored (no boolean relabelling), and the
+        // runtime still receives it.
+        foreach (var raw in new[] { "42", "false", "{}", "[]", "bogus" })
+        {
+            var malformed = TerminalSettingsPicker.ToListItem(setting,
+                new UserSettings(DoubleEscapeAction: new(raw)),
+                new UserSettings(DoubleEscapeAction: new(raw)), projectScope: false, activeThemeSetting: null);
+            Assert.Equal(raw, malformed.Value);
+        }
+        var nullStored = TerminalSettingsPicker.ToListItem(setting,
+            new UserSettings(DoubleEscapeAction: new(null)),
+            new UserSettings(DoubleEscapeAction: new(null)), projectScope: false, activeThemeSetting: null);
+        Assert.Equal("inherit/default (default)", nullStored.Value);
+
+        // Pinned Pi's settings list cycles these values in source order.
+        Assert.Equal(["tree", "fork", "none"], DoubleEscapeActionSetting.Values);
     }
 }

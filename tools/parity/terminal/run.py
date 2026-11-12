@@ -605,6 +605,10 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
                 clipboard_by_frame.append(record_clipboard_checkpoint(action, terminal.raw[mark:]))
                 continue
             mark, control_mark = len(terminal.raw), len(terminal.trace.events)
+            # Wall-clock pause before this action's keystrokes, for fixtures that exercise
+            # time-based thresholds (for example a double-press window).
+            if action.get('delayMs'):
+                time.sleep(action['delayMs'] / 1000)
             if 'send' in action:
                 value = action['send']
                 if isinstance(value, str):

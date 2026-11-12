@@ -41,6 +41,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, ProviderMode
         new("markdown.mermaid", "Mermaid diagrams", "Render Mermaid code blocks as Unicode diagrams."),
         new("quietStartup", "Quiet startup", "Disable verbose printing at startup; header keeps only the startup header."),
         new("defaultProjectTrust", "Default project trust", "Fallback decision for protected project resources.", UserOnly: true),
+        new("doubleEscapeAction", "Double-escape action", "Action when pressing Escape twice with empty editor"),
         new("treeFilterMode", "Tree filter mode", "Default filter when opening /tree"),
         new("modelThinkingLevels", "Default thinking per model", "Override the default thinking level for a specific model.", UserOnly: true),
         new("theme", "Theme", "Choose the system theme, a named theme, or a light/dark pair."),
@@ -312,6 +313,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, ProviderMode
         "markdown.codeBlockIndent" => settings.MarkdownCodeBlockIndent,
         "markdown.mermaid" => settings.MarkdownMermaid,
         "fullscreenWheelScrollLines" => settings.FullscreenWheelScrollLines?.ToSettingValue(),
+        "doubleEscapeAction" => settings.DoubleEscapeAction?.Raw,
         "treeFilterMode" => settings.TreeFilterMode?.Raw,
         _ => null
     };
@@ -319,6 +321,9 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, ProviderMode
     private static string DisplayValue(string? value, string? settingId = null)
     {
         if (value is null) return "inherit/default";
+        // A stored value the schema rejects is shown exactly as stored; the boolean display rules
+        // below apply to settings that actually hold booleans.
+        if (settingId == "doubleEscapeAction") return value;
         if (settingId == "quietStartup") return value;
         if (settingId == "markdown.codeBlockIndent")
             return value.Length == 0 ? "no prefix" : value.All(character => character == ' ')
@@ -358,6 +363,16 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, ProviderMode
             values.Add(("ask", "ask", "Ask", "Prompt when no explicit trust decision exists."));
             values.Add(("always", "always", "Always trust", "Trust protected resources by default."));
             values.Add(("never", "never", "Never trust", "Require an explicit one-run approval."));
+        }
+        else if (setting.Id == "doubleEscapeAction")
+        {
+            values.AddRange(DoubleEscapeActionSetting.Values.Select(value => (value, (string?)value, value,
+                value switch
+                {
+                    "tree" => "Open the session tree on the second Escape.",
+                    "fork" => "Open the fork selector on the second Escape.",
+                    _ => "Ignore the second Escape."
+                })));
         }
         else if (setting.Id == "treeFilterMode")
         {

@@ -116,6 +116,29 @@ public sealed record BranchSummarySettings(int? ReserveTokens = null, bool? Skip
     }
 }
 
+/// <summary>Accepted `doubleEscapeAction` values in pinned Pi's settings order.</summary>
+internal static class DoubleEscapeActionSetting
+{
+    public static readonly string[] Values = ["tree", "fork", "none"];
+
+    /// <summary>
+    /// Pinned Pi's getter returns the merged value unless it is nullish, so only an absent or
+    /// JSON-null entry falls back to the default. Any other stored value is returned unchanged and
+    /// then takes the fork path, because the interactive handler only compares against the exact
+    /// strings "tree" and "none".
+    /// </summary>
+    public static string Action(string? raw) => raw ?? UserSettings.DefaultDoubleEscapeAction;
+}
+
+/// <summary>
+/// A stored `doubleEscapeAction` entry. Presence matters: pinned Pi merges settings scopes by
+/// property presence, so an entry the settings schema would reject still replaces lower scopes.
+/// </summary>
+public readonly record struct DoubleEscapeActionSettingValue(string? Raw)
+{
+    public string Action => DoubleEscapeActionSetting.Action(Raw);
+}
+
 /// <summary>Accepted `treeFilterMode` values in pinned Pi's settings order.</summary>
 internal static class TreeFilterModeSetting
 {
@@ -151,7 +174,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
     int? AutocompleteMaxVisible = null, bool? ClearOnShrink = null, bool? ShowTerminalProgress = null,
     IReadOnlyList<NativeExtensionPackageSource>? NativeExtensions = null,
     FullscreenWheelScrollSetting? FullscreenWheelScrollLines = null, string? TuiMode = null,
-    BranchSummarySettings? BranchSummary = null, string? DoubleEscapeAction = null,
+    BranchSummarySettings? BranchSummary = null, DoubleEscapeActionSettingValue? DoubleEscapeAction = null,
     bool? FullscreenCopyOnSelect = null, TreeFilterModeSettingValue? TreeFilterMode = null)
 {
     public const int DefaultHttpIdleTimeoutMs = 300_000;
@@ -160,9 +183,9 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
     public const string DefaultDoubleEscapeAction = "tree";
     public const string DefaultTreeFilterMode = "default";
 
-    public string EffectiveDoubleEscapeAction => DoubleEscapeAction is "fork" or "tree" or "none"
-        ? DoubleEscapeAction
-        : DefaultDoubleEscapeAction;
+    // Pinned Pi only falls back to the default when the merged entry is nullish.
+    public string EffectiveDoubleEscapeAction =>
+        (DoubleEscapeAction ?? new DoubleEscapeActionSettingValue(null)).Action;
 
     // Pinned Pi resolves an unrecognized stored tree filter mode to its default instead of failing to load.
     public string EffectiveTreeFilterMode =>
@@ -216,7 +239,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         string? shellCommandPrefix = null;
         string? sessionShareDestination = null;
         string? tuiMode = null;
-        string? doubleEscapeAction = null;
+        DoubleEscapeActionSettingValue? doubleEscapeAction = null;
         TreeFilterModeSettingValue? treeFilterMode = null;
         bool? fullscreenCopyOnSelect = null;
         FullscreenWheelScrollSetting? fullscreenWheelScrollLines = null;
@@ -453,6 +476,18 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                 defaultTrust = candidate is "ask" or "always" or "never" ? candidate : null;
                 continue;
             }
+            if (property.Name == "doubleEscapeAction")
+            {
+                // Pinned Pi keeps the merged value and only falls back when it is nullish; values the
+                // settings schema would reject still load and reach the interactive handler.
+                doubleEscapeAction = new DoubleEscapeActionSettingValue(property.Value.ValueKind switch
+                {
+                    JsonValueKind.String => property.Value.GetString(),
+                    JsonValueKind.Null => null,
+                    _ => property.Value.GetRawText()
+                });
+                continue;
+            }
             if (property.Name == "treeFilterMode")
             {
                 // Pinned Pi stores the raw value and only resolves it when the tree opens; the entry is
@@ -489,11 +524,6 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                     if (value is not ("regular" or "fullscreen"))
                         throw new InvalidDataException("settings.json tuiMode must be 'regular' or 'fullscreen'.");
                     tuiMode = value;
-                    break;
-                case "doubleEscapeAction":
-                    if (value is not ("fork" or "tree" or "none"))
-                        throw new InvalidDataException("settings.json doubleEscapeAction must be 'fork', 'tree' or 'none'.");
-                    doubleEscapeAction = value;
                     break;
                 case "steeringMode":
                     if (!PromptDeliveryModes.TryParseSettingValue(value, out var parsedSteeringMode))
