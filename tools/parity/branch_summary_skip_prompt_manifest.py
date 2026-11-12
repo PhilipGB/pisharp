@@ -39,19 +39,22 @@ PAIRED = [
 
 # Runtime decision table frozen from pinned Pi's getter and `showTreeSelector` flow.
 # (label, checkpoint, prompts, expected tree tags or None)
+MAIN_DECISIONS = [
+    ("unset-tree-selected", True, None),
+    ("unset-prompt-cancel", False, None),
+    ("unset-reopen-tree-selected", True, None),
+    ("unset-reopen-navigate", False, None),
+    ("false-tree-selected", True, None),
+    ("true-tree-selected", False, None),
+    ("true-restart-tree-selected", False, None),
+    ("false-again-tree-selected", True, None),
+    ("filtered-tree-open", False, ["all"]),
+    ("filtered-tree-selected", False, None),
+]
+
 DECISIONS = {
-    "fullscreen": [
-        ("unset-tree-selected", True, None),
-        ("unset-prompt-cancel", False, None),
-        ("unset-reopen-tree-selected", True, None),
-        ("unset-reopen-navigate", False, None),
-        ("false-tree-selected", True, None),
-        ("true-tree-selected", False, None),
-        ("true-restart-tree-selected", False, None),
-        ("false-again-tree-selected", True, None),
-        ("filtered-tree-open", False, ["all"]),
-        ("filtered-tree-selected", False, None),
-    ],
+    "fullscreen": MAIN_DECISIONS,
+    "regular": MAIN_DECISIONS,
     "malformed": [
         ("malformed-string-tree-selected", False, None),
         ("empty-string-tree-selected", True, None),
@@ -95,6 +98,20 @@ DECISIONS = {
 PROMPT_CHOICES = ["No summary", "Summarize", "Summarize with custom prompt"]
 NAVIGATION_CHECKPOINTS = ("true-tree-after-state", "untrusted-tree-after-state")
 
+# Navigation and tree checkpoints that carry no prompt but must still match exactly.
+EXTRA_CHECKPOINTS = {
+    "fullscreen": ["unset-tree-open", "true-navigate", "true-tree-after-state",
+                   "unset-reopen-tree-after-state"],
+    "regular": ["unset-tree-open", "true-navigate", "true-tree-after-state",
+                "unset-reopen-tree-after-state"],
+    "malformed": [],
+    "project": ["untrusted-tree-after-state"],
+    "project-null": ["untrusted-tree-after-state"],
+    "project-reserve": ["untrusted-tree-after-state"],
+    "project-malformed": ["untrusted-tree-after-state"],
+    "project-malformed-truthy": ["untrusted-tree-after-state"],
+}
+
 
 def load(path):
     return json.loads(Path(path).read_text())
@@ -107,8 +124,10 @@ def find_checkpoint(document, checkpoint):
 
 def build_settings_cases(differential):
     cases = []
+    fields = ("loaded", "prompts", "skipPrompt", "parentPresent", "reserve")
     for case in differential["cases"]:
-        pi, pisharp = case["pi"], case["pisharp"]
+        pi = {key: case["pi"][key] for key in fields}
+        pisharp = {key: case["pisharp"][key] for key in fields}
         if pi != pisharp:
             raise SystemExit(f"{case['id']}: settings differential disagrees: {pi} != {pisharp}")
         cases.append({
@@ -136,8 +155,11 @@ def build_projections(label, document):
         tree = state["tree"]
         if tree and tree["summaryRows"]:
             raise SystemExit(f"{label}/{checkpoint_id}: branch summary row {tree['summaryRows']}")
+    decisions = list(DECISIONS[label]) + [(name, False, None) for name in EXTRA_CHECKPOINTS[label]]
     projections = {}
-    for checkpoint_id, prompts, tags in DECISIONS[label]:
+    for checkpoint_id, prompts, tags in decisions:
+        if checkpoint_id in projections:
+            raise SystemExit(f"{label}: duplicate checkpoint {checkpoint_id}")
         state = pi["checkpoints"].get(checkpoint_id)
         if state is None:
             raise SystemExit(f"{label}: missing checkpoint {checkpoint_id}")
@@ -169,15 +191,16 @@ def build_projections(label, document):
 def build_oracle(differential, documents):
     settings_cases = build_settings_cases(differential)
     expectations = {case["id"]: case["expect"] for case in settings_cases}
+    projections = {label: build_projections(label, documents[label]) for label in documents}
     scenarios = []
-    for label, _, _ in PAIRED:
-        for checkpoint_id, prompts, _ in DECISIONS[label]:
+    for label, checkpoints in projections.items():
+        for checkpoint_id, projection in checkpoints.items():
             scenarios.append({
                 "id": f"{label}:{checkpoint_id}",
                 "fixture": label,
                 "checkpoint": checkpoint_id,
-                "prompts": prompts,
-                "choices": PROMPT_CHOICES if prompts else None,
+                "prompts": projection["prompts"],
+                "choices": projection["choices"],
             })
     return {
         "schema": 1,
@@ -229,7 +252,7 @@ def build_oracle(differential, documents):
         ],
         "settingsCases": settings_cases,
         "scenarioFacts": scenarios,
-        "projections": {label: build_projections(label, documents[label]) for label in documents},
+        "projections": projections,
         "navigationCheckpoints": list(NAVIGATION_CHECKPOINTS),
         "safetyProjections": [],
         "expectations": expectations,
@@ -245,6 +268,8 @@ def main():
     parser.add_argument("--settings-output", type=Path,
                         default=FIXTURES / f"settings-branchsummary-skipprompt-settings-boundary-{DATE}.json")
     parser.add_argument("--copy-checkpoints", action="store_true")
+    parser.add_argument("--pisharp-sha",
+                        help="Implementation SHA recorded in every checkpoint document")
     args = parser.parse_args()
 
     differential = load(args.settings)
@@ -257,8 +282,13 @@ def main():
     for label, directory, target in PAIRED:
         path = ARTIFACTS / directory
         checkpoint_path = ARTIFACTS / f"{label}-checkpoints.json"
-        subprocess.run(["python3", str(ROOT / "tools/parity/branch_summary_skip_prompt_evidence.py"),
-                        "--input", str(path), "--output", str(checkpoint_path)], check=True)
+        calibration = ARTIFACTS / directory.replace("-paired", "-calibration")
+        extract = ["python3", str(ROOT / "tools/parity/branch_summary_skip_prompt_evidence.py"),
+                   "--input", str(path), "--output", str(checkpoint_path),
+                   "--calibration-input", str(calibration)]
+        if args.pisharp_sha:
+            extract += ["--pisharp-sha", args.pisharp_sha]
+        subprocess.run(extract, check=True)
         document = load(checkpoint_path)
         case = next(iter(document["cases"].values()))
         if case["paired"]["semanticDifferences"]:

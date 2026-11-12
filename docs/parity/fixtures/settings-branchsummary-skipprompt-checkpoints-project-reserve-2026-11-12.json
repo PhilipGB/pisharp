@@ -1,0 +1,1024 @@
+{
+  "schema": 1,
+  "capability": "settings-branchsummary-skipprompt",
+  "label": "paired",
+  "cases": {
+    "100x30-dark-fullscreen": {
+      "dimensions": {
+        "columns": 100,
+        "rows": 30
+      },
+      "theme": "dark",
+      "mode": "fullscreen",
+      "pi": {
+        "checkpoints": {
+          "startup": {
+            "tree": null,
+            "prompt": null,
+            "errors": []
+          },
+          "trusted-config": {
+            "tree": null,
+            "prompt": null,
+            "errors": []
+          },
+          "trusted-tree-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "summaryRows": []
+            },
+            "prompt": null,
+            "errors": []
+          },
+          "trusted-tree-search": {
+            "tree": {
+              "rows": [
+                "a0000003"
+              ],
+              "selected": "a0000003",
+              "count": "1/1",
+              "tags": [],
+              "search": "first answer",
+              "summaryRows": []
+            },
+            "prompt": null,
+            "errors": []
+          },
+          "trusted-tree-selected": {
+            "tree": null,
+            "prompt": null,
+            "errors": []
+          },
+          "trusted-navigate": {
+            "tree": null,
+            "prompt": null,
+            "errors": []
+          },
+          "trusted-tree-after": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "b0000004",
+                "b0000005",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013"
+              ],
+              "selected": "a0000003",
+              "count": "2/10",
+              "tags": [],
+              "search": "",
+              "summaryRows": []
+            },
+            "prompt": null,
+            "errors": []
+          },
+          "trusted-tree-after-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "b0000004",
+                "b0000005",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013"
+              ],
+              "selected": "a0000003",
+              "count": "2/10",
+              "tags": [],
+              "search": "",
+              "summaryRows": []
+            },
+            "prompt": null,
+            "errors": []
+          },
+          "trusted-tree-after-close": {
+            "tree": null,
+            "prompt": null,
+            "errors": []
+          },
+          "trusted-restart-config": {
+            "tree": null,
+            "prompt": null,
+            "errors": []
+          },
+          "trusted-restart-tree-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "summaryRows": []
+            },
+            "prompt": null,
+            "errors": []
+          },
+          "trusted-restart-tree-search": {
+            "tree": {
+              "rows": [
+                "a0000003"
+              ],
+              "selected": "a0000003",
+              "count": "1/1",
+              "tags": [],
+              "search": "first answer",
+              "summaryRows": []
+            },
+            "prompt": null,
+            "errors": []
+          },
+          "trusted-restart-tree-selected": {
+            "tree": null,
+            "prompt": null,
+            "errors": []
+          },
+          "trusted-restart-navigate": {
+            "tree": null,
+            "prompt": null,
+            "errors": []
+          },
+          "trusted-restart-tree-after": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "b0000004",
+                "b0000005",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013"
+              ],
+              "selected": "a0000003",
+              "count": "2/10",
+              "tags": [],
+              "search": "",
+              "summaryRows": []
+            },
+            "prompt": null,
+            "errors": []
+          },
+          "trusted-restart-tree-after-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "b0000004",
+                "b0000005",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013"
+              ],
+              "selected": "a0000003",
+              "count": "2/10",
+              "tags": [],
+              "search": "",
+              "summaryRows": []
+            },
+            "prompt": null,
+            "errors": []
+          },
+          "trusted-restart-tree-after-close": {
+            "tree": null,
+            "prompt": null,
+            "errors": []
+          },
+          "untrusted-config": {
+            "tree": null,
+            "prompt": null,
+            "errors": []
+          },
+          "untrusted-tree-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "summaryRows": []
+            },
+            "prompt": null,
+            "errors": []
+          },
+          "untrusted-tree-search": {
+            "tree": {
+              "rows": [
+                "a0000003"
+              ],
+              "selected": "a0000003",
+              "count": "1/1",
+              "tags": [],
+              "search": "first answer",
+              "summaryRows": []
+            },
+            "prompt": null,
+            "errors": []
+          },
+          "untrusted-tree-selected": {
+            "tree": null,
+            "prompt": null,
+            "errors": []
+          },
+          "untrusted-navigate": {
+            "tree": null,
+            "prompt": null,
+            "errors": []
+          },
+          "untrusted-tree-after": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "b0000004",
+                "b0000005",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013"
+              ],
+              "selected": "a0000003",
+              "count": "2/10",
+              "tags": [],
+              "search": "",
+              "summaryRows": []
+            },
+            "prompt": null,
+            "errors": []
+          },
+          "untrusted-tree-after-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "b0000004",
+                "b0000005",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013"
+              ],
+              "selected": "a0000003",
+              "count": "2/10",
+              "tags": [],
+              "search": "",
+              "summaryRows": []
+            },
+            "prompt": null,
+            "errors": []
+          },
+          "untrusted-tree-after-close": {
+            "tree": null,
+            "prompt": null,
+            "errors": []
+          }
+        },
+        "requests": [],
+        "settings": {
+          "branchSummary": {
+            "skipPrompt": true
+          },
+          "branchSummaryPresent": true,
+          "treeFilterMode": null,
+          "quietStartup": true,
+          "shellCommandPrefix": "preserved",
+          "theme": "dark",
+          "tuiMode": "fullscreen"
+        },
+        "project": {
+          "branchSummary": {
+            "reserveTokens": 1234
+          }
+        },
+        "session": {
+          "types": [
+            "session",
+            "model_change",
+            "thinking_level_change",
+            "message",
+            "message",
+            "message",
+            "message",
+            "label",
+            "message",
+            "message",
+            "message",
+            "message",
+            "compaction",
+            "custom_message",
+            "message",
+            "thinking_level_change",
+            "label"
+          ],
+          "ids": [
+            "22222222-2222-4222-8222-222222222222",
+            "m0000001",
+            "t0000001",
+            "u0000002",
+            "a0000003",
+            "b0000004",
+            "b0000005",
+            "L0000006",
+            "c0000007",
+            "c0000008",
+            "t0000009",
+            "r0000010",
+            "k0000011",
+            "y0000012",
+            "z0000013",
+            "t0000015",
+            "L0000016"
+          ],
+          "lastEntryId": "L0000016",
+          "branchSummaryIds": [],
+          "messageTexts": [
+            {
+              "role": "user",
+              "text": "first prompt"
+            },
+            {
+              "role": "assistant",
+              "text": "first answer"
+            },
+            {
+              "role": "user",
+              "text": "branch question"
+            },
+            {
+              "role": "assistant",
+              "text": "branch answer"
+            },
+            {
+              "role": "user",
+              "text": "second prompt"
+            },
+            {
+              "role": "assistant",
+              "text": "second answer"
+            },
+            {
+              "role": "assistant",
+              "text": ""
+            },
+            {
+              "role": "toolResult",
+              "text": "read result"
+            },
+            {
+              "role": "bashExecution",
+              "text": ""
+            }
+          ],
+          "entries": [
+            {
+              "type": "session",
+              "id": "22222222-2222-4222-8222-222222222222"
+            },
+            {
+              "type": "model_change",
+              "id": "m0000001"
+            },
+            {
+              "type": "thinking_level_change",
+              "id": "t0000001"
+            },
+            {
+              "type": "message",
+              "id": "u0000002"
+            },
+            {
+              "type": "message",
+              "id": "a0000003"
+            },
+            {
+              "type": "message",
+              "id": "b0000004"
+            },
+            {
+              "type": "message",
+              "id": "b0000005"
+            },
+            {
+              "type": "label",
+              "id": "L0000006"
+            },
+            {
+              "type": "message",
+              "id": "c0000007"
+            },
+            {
+              "type": "message",
+              "id": "c0000008"
+            },
+            {
+              "type": "message",
+              "id": "t0000009"
+            },
+            {
+              "type": "message",
+              "id": "r0000010"
+            },
+            {
+              "type": "compaction",
+              "id": "k0000011"
+            },
+            {
+              "type": "custom_message",
+              "id": "y0000012"
+            },
+            {
+              "type": "message",
+              "id": "z0000013"
+            },
+            {
+              "type": "thinking_level_change",
+              "id": "t0000015"
+            },
+            {
+              "type": "label",
+              "id": "L0000016"
+            }
+          ]
+        },
+        "scenarioError": null
+      },
+      "pisharp": {
+        "checkpoints": {
+          "startup": {
+            "tree": null,
+            "prompt": null,
+            "errors": []
+          },
+          "trusted-config": {
+            "tree": null,
+            "prompt": null,
+            "errors": []
+          },
+          "trusted-tree-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "summaryRows": []
+            },
+            "prompt": null,
+            "errors": []
+          },
+          "trusted-tree-search": {
+            "tree": {
+              "rows": [
+                "a0000003"
+              ],
+              "selected": "a0000003",
+              "count": "1/1",
+              "tags": [],
+              "search": "first answer",
+              "summaryRows": []
+            },
+            "prompt": null,
+            "errors": []
+          },
+          "trusted-tree-selected": {
+            "tree": null,
+            "prompt": null,
+            "errors": []
+          },
+          "trusted-navigate": {
+            "tree": null,
+            "prompt": null,
+            "errors": []
+          },
+          "trusted-tree-after": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "b0000004",
+                "b0000005",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013"
+              ],
+              "selected": "a0000003",
+              "count": "2/10",
+              "tags": [],
+              "search": "",
+              "summaryRows": []
+            },
+            "prompt": null,
+            "errors": []
+          },
+          "trusted-tree-after-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "b0000004",
+                "b0000005",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013"
+              ],
+              "selected": "a0000003",
+              "count": "2/10",
+              "tags": [],
+              "search": "",
+              "summaryRows": []
+            },
+            "prompt": null,
+            "errors": []
+          },
+          "trusted-tree-after-close": {
+            "tree": null,
+            "prompt": null,
+            "errors": []
+          },
+          "trusted-restart-config": {
+            "tree": null,
+            "prompt": null,
+            "errors": []
+          },
+          "trusted-restart-tree-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "summaryRows": []
+            },
+            "prompt": null,
+            "errors": []
+          },
+          "trusted-restart-tree-search": {
+            "tree": {
+              "rows": [
+                "a0000003"
+              ],
+              "selected": "a0000003",
+              "count": "1/1",
+              "tags": [],
+              "search": "first answer",
+              "summaryRows": []
+            },
+            "prompt": null,
+            "errors": []
+          },
+          "trusted-restart-tree-selected": {
+            "tree": null,
+            "prompt": null,
+            "errors": []
+          },
+          "trusted-restart-navigate": {
+            "tree": null,
+            "prompt": null,
+            "errors": []
+          },
+          "trusted-restart-tree-after": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "b0000004",
+                "b0000005",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013"
+              ],
+              "selected": "a0000003",
+              "count": "2/10",
+              "tags": [],
+              "search": "",
+              "summaryRows": []
+            },
+            "prompt": null,
+            "errors": []
+          },
+          "trusted-restart-tree-after-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "b0000004",
+                "b0000005",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013"
+              ],
+              "selected": "a0000003",
+              "count": "2/10",
+              "tags": [],
+              "search": "",
+              "summaryRows": []
+            },
+            "prompt": null,
+            "errors": []
+          },
+          "trusted-restart-tree-after-close": {
+            "tree": null,
+            "prompt": null,
+            "errors": []
+          },
+          "untrusted-config": {
+            "tree": null,
+            "prompt": null,
+            "errors": []
+          },
+          "untrusted-tree-open": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013",
+                "b0000004",
+                "b0000005"
+              ],
+              "selected": "z0000013",
+              "count": "8/10",
+              "tags": [],
+              "search": "",
+              "summaryRows": []
+            },
+            "prompt": null,
+            "errors": []
+          },
+          "untrusted-tree-search": {
+            "tree": {
+              "rows": [
+                "a0000003"
+              ],
+              "selected": "a0000003",
+              "count": "1/1",
+              "tags": [],
+              "search": "first answer",
+              "summaryRows": []
+            },
+            "prompt": null,
+            "errors": []
+          },
+          "untrusted-tree-selected": {
+            "tree": null,
+            "prompt": null,
+            "errors": []
+          },
+          "untrusted-navigate": {
+            "tree": null,
+            "prompt": null,
+            "errors": []
+          },
+          "untrusted-tree-after": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "b0000004",
+                "b0000005",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013"
+              ],
+              "selected": "a0000003",
+              "count": "2/10",
+              "tags": [],
+              "search": "",
+              "summaryRows": []
+            },
+            "prompt": null,
+            "errors": []
+          },
+          "untrusted-tree-after-state": {
+            "tree": {
+              "rows": [
+                "u0000002",
+                "a0000003",
+                "b0000004",
+                "b0000005",
+                "c0000007",
+                "c0000008",
+                "r0000010",
+                "k0000011",
+                "y0000012",
+                "z0000013"
+              ],
+              "selected": "a0000003",
+              "count": "2/10",
+              "tags": [],
+              "search": "",
+              "summaryRows": []
+            },
+            "prompt": null,
+            "errors": []
+          },
+          "untrusted-tree-after-close": {
+            "tree": null,
+            "prompt": null,
+            "errors": []
+          }
+        },
+        "requests": [],
+        "settings": {
+          "branchSummary": {
+            "skipPrompt": true
+          },
+          "branchSummaryPresent": true,
+          "treeFilterMode": null,
+          "quietStartup": true,
+          "shellCommandPrefix": "preserved",
+          "theme": "dark",
+          "tuiMode": "fullscreen"
+        },
+        "project": {
+          "branchSummary": {
+            "reserveTokens": 1234
+          }
+        },
+        "session": {
+          "types": [
+            "session",
+            "model_change",
+            "thinking_level_change",
+            "message",
+            "message",
+            "message",
+            "message",
+            "label",
+            "message",
+            "message",
+            "message",
+            "message",
+            "compaction",
+            "custom_message",
+            "message",
+            "thinking_level_change",
+            "label"
+          ],
+          "ids": [
+            "22222222-2222-4222-8222-222222222222",
+            "m0000001",
+            "t0000001",
+            "u0000002",
+            "a0000003",
+            "b0000004",
+            "b0000005",
+            "L0000006",
+            "c0000007",
+            "c0000008",
+            "t0000009",
+            "r0000010",
+            "k0000011",
+            "y0000012",
+            "z0000013",
+            "t0000015",
+            "L0000016"
+          ],
+          "lastEntryId": "L0000016",
+          "branchSummaryIds": [],
+          "messageTexts": [
+            {
+              "role": "user",
+              "text": "first prompt"
+            },
+            {
+              "role": "assistant",
+              "text": "first answer"
+            },
+            {
+              "role": "user",
+              "text": "branch question"
+            },
+            {
+              "role": "assistant",
+              "text": "branch answer"
+            },
+            {
+              "role": "user",
+              "text": "second prompt"
+            },
+            {
+              "role": "assistant",
+              "text": "second answer"
+            },
+            {
+              "role": "assistant",
+              "text": ""
+            },
+            {
+              "role": "toolResult",
+              "text": "read result"
+            },
+            {
+              "role": "bashExecution",
+              "text": ""
+            }
+          ],
+          "entries": [
+            {
+              "type": "session",
+              "id": "22222222-2222-4222-8222-222222222222"
+            },
+            {
+              "type": "model_change",
+              "id": "m0000001"
+            },
+            {
+              "type": "thinking_level_change",
+              "id": "t0000001"
+            },
+            {
+              "type": "message",
+              "id": "u0000002"
+            },
+            {
+              "type": "message",
+              "id": "a0000003"
+            },
+            {
+              "type": "message",
+              "id": "b0000004"
+            },
+            {
+              "type": "message",
+              "id": "b0000005"
+            },
+            {
+              "type": "label",
+              "id": "L0000006"
+            },
+            {
+              "type": "message",
+              "id": "c0000007"
+            },
+            {
+              "type": "message",
+              "id": "c0000008"
+            },
+            {
+              "type": "message",
+              "id": "t0000009"
+            },
+            {
+              "type": "message",
+              "id": "r0000010"
+            },
+            {
+              "type": "compaction",
+              "id": "k0000011"
+            },
+            {
+              "type": "custom_message",
+              "id": "y0000012"
+            },
+            {
+              "type": "message",
+              "id": "z0000013"
+            },
+            {
+              "type": "thinking_level_change",
+              "id": "t0000015"
+            },
+            {
+              "type": "label",
+              "id": "L0000016"
+            }
+          ]
+        },
+        "scenarioError": null
+      },
+      "paired": {
+        "semanticDifferences": 0,
+        "semanticFirstDifferences": [],
+        "scenarioErrors": {},
+        "runReport": {
+          "match": false,
+          "differences": 379357
+        }
+      },
+      "calibration": {
+        "semanticDifferences": 0,
+        "semanticFirstDifferences": [],
+        "scenarioErrors": {},
+        "runReport": {
+          "match": true,
+          "differences": 0
+        }
+      },
+      "calibrationEvidence": {
+        "dimensions": {
+          "columns": 100,
+          "rows": 30
+        },
+        "theme": "dark",
+        "mode": "fullscreen"
+      }
+    }
+  },
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "pisharpSha": "2e3ca31a49603e5e9fc7282c4726ef378d2bdc41",
+  "artifact": {
+    "file": "PiSharp.Cli.dll",
+    "size": 3604480,
+    "sha256": "675d1dcf28f596f140e829846961f5beabda2d961b6a344841bd01ba51cf8d0c",
+    "depsFile": "PiSharp.Cli.deps.json",
+    "depsSha256": "15f802985500dc4441f3b417a50188f35bd3aba8c5463da3b506b4ebc914f8af",
+    "runtimeConfigFile": "PiSharp.Cli.runtimeconfig.json",
+    "runtimeConfigSha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a"
+  }
+}

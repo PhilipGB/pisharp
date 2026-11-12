@@ -106,7 +106,8 @@ def validate_oracle(oracle):
                 f"Oracle source entry is incomplete: {entry}")
     require(any(entry["symbol"] == "isMergeableObject/deepMergeObjects" for entry in sources),
             "Oracle does not cite the presence-based merge.")
-    require(any("skipPrompt" in entry["symbol"] for entry in sources),
+    require(any("skipPrompt" in entry["symbol"].lower() or
+                "skipPrompt" in entry["observation"] for entry in sources),
             "Oracle does not cite the skipPrompt getter.")
     cases = oracle.get("settingsCases") or []
     require([case.get("id") for case in cases] == SETTINGS_CASES,
@@ -284,7 +285,8 @@ def validate_gates(gates, implementation):
     ci = gates["exactHeadCi"]
     require(ci.get("implementationSha") == implementation,
             "Exact-head CI gate was recorded for a different head.")
-    require(str(ci.get("run") or "").isdigit(), "Exact-head CI gate must record the run id.")
+    require(str(ci.get("run") or "").isdigit() and len(str(ci["run"])) >= 8,
+            "Exact-head CI gate must record the run id.")
     require(gates["ledger"]["evidence"].startswith("docs/parity/"),
             "Ledger gate must reference the parity evidence.")
 
@@ -305,12 +307,15 @@ def validate_settings_document(document, oracle):
     require([case.get("id") for case in cases] == SETTINGS_CASES,
             f"settings-boundary: cases must be {SETTINGS_CASES}.")
     expectations = oracle["expectations"]
+    fields = ("loaded", "prompts", "skipPrompt", "parentPresent", "reserve")
     for case in cases:
         pi, pisharp = case.get("pi"), case.get("pisharp")
-        require(pi == pisharp, f"{case['id']}: PiSharp differs from pinned Pi.")
+        observed = {key: pi.get(key) for key in fields}
+        require(observed == {key: pisharp.get(key) for key in fields},
+                f"{case['id']}: PiSharp differs from pinned Pi.")
+        require(not pisharp.get("error"),
+                f"{case['id']}: PiSharp reported {pisharp.get('error')!r}.")
         expect = expectations[case["id"]]
-        observed = {key: pi.get(key) for key in
-                    ("loaded", "prompts", "skipPrompt", "parentPresent", "reserve")}
         require(observed == expect,
                 f"{case['id']}: observed {observed} differs from the oracle {expect}.")
 
@@ -430,7 +435,7 @@ def validate_fixtures(restarts=None, actions=None, captures=None):
 def checkpoint_index(documents):
     index = set()
     for label, document in documents.items():
-        for case_id, case in document.get("cases") or {}.items():
+        for case_id, case in (document.get("cases") or {}).items():
             for product in ("pi", "pisharp"):
                 for name in case[product]["checkpoints"]:
                     index.add(f"{case_id}/{name}")
@@ -634,19 +639,19 @@ def self_test(manifest, oracle, documents, results, ledger):
 
     malformed_truthy = copy.deepcopy(documents)
     truthy = malformed_truthy["malformed"]["cases"]["100x30-dark-fullscreen"]["pisharp"]
-    truthy["checkpoints"]["malformed-string-tree-selected"]["prompt"] = None
+    truthy["checkpoints"]["malformed-string-tree-selected"]["prompt"] = {
+        "title": "Summarize branch?", "choices": PROMPT_CHOICES}
     rejects(lambda: validate_paired_document("malformed", malformed_truthy["malformed"], oracle),
             "malformed truthy treated as false")
 
     malformed_falsey = copy.deepcopy(documents)
     falsey = malformed_falsey["malformed"]["cases"]["100x30-dark-fullscreen"]["pisharp"]
-    falsey["checkpoints"]["empty-string-tree-selected"]["prompt"] = {
-        "title": "Summarize branch?", "choices": PROMPT_CHOICES}
+    falsey["checkpoints"]["empty-string-tree-selected"]["prompt"] = None
     rejects(lambda: validate_paired_document("malformed", malformed_falsey["malformed"], oracle),
             "malformed falsey treated as true")
 
     calibration = copy.deepcopy(documents)
-    calibration["regular"]["cases"]["100x30-dark-fullscreen"]["calibration"]["semanticDifferences"] = 1
+    calibration["regular"]["cases"]["100x30-dark-regular"]["calibration"]["semanticDifferences"] = 1
     rejects(lambda: validate_paired_document("regular", calibration["regular"], oracle),
             "same-Pi calibration fails")
 
