@@ -2359,6 +2359,161 @@ public sealed class TerminalPtyTests
     }
 
     [Fact]
+    public async Task BranchSummarySkipPromptNavigatesLikeChoosingNoSummaryThroughLinuxPty()
+    {
+        // Pinned Pi skips the "Summarize branch?" selector when branchSummary.skipPrompt is
+        // truthy and then navigates with summarize=false: no summary request, no branch_summary
+        // entry, and the same target as choosing "No summary" at the prompt.
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-skip-prompt-pty-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(cwd, "agent");
+        Directory.CreateDirectory(agent);
+        using var listener = StartLoopbackListener(out var port);
+        using var serverStop = new CancellationTokenSource();
+        var requests = 0;
+        var requestBodies = new System.Collections.Concurrent.ConcurrentQueue<string>();
+        var server = Task.Run(async () =>
+        {
+            while (!serverStop.IsCancellationRequested)
+            {
+                HttpListenerContext request;
+                try { request = await listener.GetContextAsync().WaitAsync(serverStop.Token); }
+                catch (Exception error) when (error is OperationCanceledException or HttpListenerException or
+                    ObjectDisposedException)
+                {
+                    return;
+                }
+                Interlocked.Increment(ref requests);
+                using var reader = new StreamReader(request.Request.InputStream);
+                requestBodies.Enqueue(await reader.ReadToEndAsync(serverStop.Token));
+                request.Response.ContentType = "text/event-stream";
+                request.Response.KeepAlive = false;
+                await using var writer = new StreamWriter(request.Response.OutputStream);
+                await writer.WriteAsync("data: {\"type\":\"response.created\",\"response\":{\"id\":\"skip_prompt\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"in_progress\",\"output\":[]}}\n\n");
+                await writer.WriteAsync("data: {\"type\":\"response.output_text.delta\",\"item_id\":\"msg_skip\",\"output_index\":0,\"content_index\":0,\"delta\":\"UNEXPECTED BRANCH SUMMARY\"}\n\n");
+                await writer.WriteAsync("data: {\"type\":\"response.completed\",\"response\":{\"id\":\"skip_prompt\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"completed\",\"output\":[]}}\n\n");
+                await writer.FlushAsync();
+            }
+        });
+
+        try
+        {
+            var models = """
+                {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:PORT/v1","apiKey":"fixture-key",
+                  "models":[{"id":"fixture-model","api":"openai-responses"}]}}}
+                """.Replace("PORT", port.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    StringComparison.Ordinal);
+            await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), models);
+            var store = new PiSharp.Runtime.Sessions.ConversationStore(cwd, Path.Combine(cwd, "sessions"));
+            var conversation = new PiSharp.Runtime.Sessions.ConversationSession(cwd, "fixture-model",
+                $"http://127.0.0.1:{port}/v1", provider: "fixture");
+            conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "first prompt"));
+            conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.Assistant, "first answer"));
+            conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "second prompt"));
+            conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.Assistant, "second answer"));
+            var sessionPath = store.NewPath(conversation);
+            await store.SaveAsync(conversation, sessionPath);
+            var manualPath = sessionPath + ".manual";
+            File.Copy(sessionPath, manualPath);
+
+            async Task<(string Output, string Error)> RunAsync(string settings, bool chooseNoSummary, string path)
+            {
+                await File.WriteAllTextAsync(Path.Combine(agent, "settings.json"), settings);
+                var start = new ProcessStartInfo("/usr/bin/script")
+                {
+                    WorkingDirectory = cwd,
+                    RedirectStandardInput = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    ArgumentList =
+                    {
+                        "-q", "-e", "-c",
+                        $"stty rows 30 cols 100; exec dotnet '{typeof(CliArguments).Assembly.Location}' --offline --session '{path}' --session-dir '{store.DirectoryPath}' --no-tools",
+                        "/dev/null"
+                    }
+                };
+                start.Environment["PISHARP_AGENT_DIR"] = agent;
+                using var process = Process.Start(start);
+                Assert.NotNull(process);
+                var screen = new PtyScreenCapture(process, rows: 30, columns: 100);
+                var stdout = screen.ReadCompletion;
+                var stderr = process.StandardError.ReadToEndAsync();
+                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+                await screen.InputReady.WaitAsync(timeout.Token);
+
+                async Task SendAsync(string input)
+                {
+                    await process.StandardInput.WriteAsync(input);
+                    await process.StandardInput.FlushAsync();
+                }
+
+                async Task<string> WaitForAsync(Func<string, bool> predicate, string description)
+                {
+                    try { return await screen.WaitForFrameAsync(predicate).WaitAsync(timeout.Token); }
+                    catch (OperationCanceledException)
+                    {
+                        throw new InvalidOperationException($"Timed out waiting for {description}. Current frame:\n{screen.LastFrame}");
+                    }
+                }
+
+                await SendAsync("/tree\r");
+                await WaitForAsync(frame => frame.Contains("Session Tree", StringComparison.Ordinal), "tree selector");
+                await SendAsync("first answer");
+                await WaitForAsync(frame => frame.Contains("Type to search: first answer", StringComparison.Ordinal), "tree search");
+                await SendAsync("\r");
+                if (chooseNoSummary)
+                {
+                    await WaitForAsync(frame => frame.Contains("Summarize branch?", StringComparison.Ordinal), "summary prompt");
+                    await SendAsync("\r");
+                }
+                await WaitForAsync(frame =>
+                    !frame.Contains("Session Tree", StringComparison.Ordinal) &&
+                    frame.Contains("first answer", StringComparison.Ordinal), "tree navigation");
+                // Navigation may prefill the editor, so clear it before the quit command.
+                await SendAsync("\u0015/quit\r");
+                process.StandardInput.Close();
+                await process.WaitForExitAsync(timeout.Token);
+                return (await stdout, await stderr);
+            }
+
+            var skipped = await RunAsync(
+                "{\"branchSummary\":{\"skipPrompt\":true},\"tuiMode\":\"fullscreen\"}",
+                chooseNoSummary: false, sessionPath);
+            var manual = await RunAsync(
+                "{\"branchSummary\":{\"skipPrompt\":false},\"tuiMode\":\"fullscreen\"}",
+                chooseNoSummary: true, manualPath);
+            var skippedSession = await store.LoadAsync(sessionPath);
+            var manualSession = await store.LoadAsync(manualPath);
+
+            Assert.DoesNotContain("Summarize branch?", StripAnsi(skipped.Output));
+            Assert.Contains("Summarize branch?", StripAnsi(manual.Output));
+            Assert.DoesNotContain("Agent error", skipped.Error);
+            Assert.DoesNotContain("Agent error", manual.Error);
+            Assert.True(requests == 0, "provider requests: " + string.Join(" | ", requestBodies));
+            Assert.DoesNotContain("UNEXPECTED BRANCH SUMMARY", StripAnsi(skipped.Output));
+            Assert.Equal(["first prompt", "first answer"],
+                skippedSession.ActiveMessages().Select(message => message.Text));
+            Assert.DoesNotContain(skippedSession.Tree.Entries, entry => entry.Type == "branch_summary");
+            // Skipping the prompt navigates exactly like choosing "No summary" at the prompt.
+            Assert.Equal(manualSession.Tree.HeadId, skippedSession.Tree.HeadId);
+            Assert.Equal(manualSession.Tree.Entries.Select(entry => entry.Type),
+                skippedSession.Tree.Entries.Select(entry => entry.Type));
+            Assert.Equal(manualSession.ActiveMessages().Select(message => message.Text),
+                skippedSession.ActiveMessages().Select(message => message.Text));
+        }
+        finally
+        {
+            serverStop.Cancel();
+            listener.Close();
+            try { await server; }
+            catch (Exception error) when (error is OperationCanceledException or HttpListenerException or
+                ObjectDisposedException or IOException)
+            { }
+            Directory.Delete(cwd, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task SessionTreeShortcutAbortsStreamingRestoresInputAndNavigatesThroughLinuxPty()
     {
         // Pinned Pi supports app.session.tree while streaming: queued input returns to the

@@ -148,7 +148,7 @@ internal sealed class TerminalSessionNavigation(ActiveProjectRuntime projectBind
             // Pinned Pi stops an active response before committing a tree navigation.
             await InterruptActiveRunAsync(CancellationToken.None).ConfigureAwait(false);
 
-            var branchSummarySettings = projectBinding.Settings.BranchSummary ?? new BranchSummarySettings();
+            var branchSummarySettings = projectBinding.Settings.EffectiveBranchSummary;
             var options = new ConversationTreeSelectionOptions(Summarize: summarize,
                 CustomInstructions: customInstructions,
                 ReserveTokens: branchSummarySettings.EffectiveReserveTokens);
@@ -196,8 +196,7 @@ internal sealed class TerminalSessionNavigation(ActiveProjectRuntime projectBind
     /// <summary>Asks about branch summarization; escape resumes the tree navigator at the same selection.</summary>
     private async Task<(bool Resume, bool Summarize, string? CustomInstructions)> ResolveBranchSummaryChoiceAsync()
     {
-        var branchSummarySettings = projectBinding.Settings.BranchSummary ?? new BranchSummarySettings();
-        if (branchSummarySettings.SkipPrompt == true) return (false, false, null);
+        if (projectBinding.Settings.EffectiveBranchSummary.SkipsSummaryPrompt) return (false, false, null);
         var editor = presentation.Editor!;
         while (true)
         {
