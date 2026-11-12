@@ -3,7 +3,7 @@
 Verified capability `settings-treefiltermode` against pinned Pi
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Base was `main` at
 `d9f7bf338c06947e32d3b669cda8d66f2b532785` (the merge of PR #51); the
-implementation head is `dcd4ffee6e7faf8a0caa10a7eb057a137587102d` on
+implementation head is `8e3fcc2055d7ea7e69f5d60b9c402ab0eaabd94d` on
 `milestone/tree-filter-mode-parity`.
 
 ## Contract
@@ -26,12 +26,13 @@ Observable consequences frozen by the evidence:
 
 - The setting is user/global configuration; a trusted project file overrides it through the normal settings merge.
 - An unrecognized stored value (wrong case, unknown word, non-string) loads without an error and behaves as `default`.
+- Settings scopes are merged by property **presence** (`settings-manager.ts` `deepMergeSettings`), and only the merged value is validated. A trusted project entry therefore replaces a valid user entry even when it is not an accepted string, and then resolves to `default`; an untrusted project contributes no entry at all.
 - `/tree` reads the setting at each open. Selector filter keys, search, folding and label edits never write settings, so a temporary filter change is discarded when the selector reopens.
 - Pi has no settings-UI reset row; PiSharp keeps its existing settings-architecture inherit row and Delete-reset. Both routes end at the same effective default.
 
 ## Implementation
 
-- `UserSettings.TreeFilterMode` stores the raw setting and `EffectiveTreeFilterMode` resolves it through `TreeFilterModeSetting`, the single ordered value list at the settings boundary; the trusted-project overlay prefers the project value.
+- `UserSettings.TreeFilterMode` is a `TreeFilterModeSettingValue?` carrying presence plus the raw stored value (absent, accepted string, or present-but-unusable). `EffectiveTreeFilterMode` resolves it through `TreeFilterModeSetting`, the single ordered value list at the settings boundary; the overlay replaces by presence, so a malformed trusted-project entry wins and resolves to `default`.
 - `TerminalTreeFilterModes` maps those strings onto the existing `TerminalTreeFilterMode` enum.
 - `TerminalSessionNavigation.SelectTreePointAsync` reads `Settings.EffectiveTreeFilterMode` on every selector open, so `/tree`, `app.session.tree`, double-Escape configured as `tree`, and the branch-summary-cancel reopen all seed the same initial filter.
 - `TerminalTreeSelector` passes the configured mode into `TerminalTreeState` before the first render, so no default-mode frame appears.
@@ -44,11 +45,11 @@ Observable consequences frozen by the evidence:
 | Fullscreen paired PTY, 100x30 and 140x40 | 0 semantic differences; exact same-Pi calibration |
 | Regular-mode paired PTY, 100x30 and 140x40 | 0 semantic differences; exact same-Pi calibration |
 | Settings-selector Pi journey (same-Pi calibration) | 0 differences; observed order `default`, `no-tools`, `user-only`, `labeled-only`, `all`; change applies to the next `/tree` open and survives the restart with unrelated settings preserved |
-| `tools/parity/verify_settings_tree_filter_mode.py` with mutation controls | pass; 26 negative controls rejected |
-| Focused tests | 65 passed, 0 failed, 0 skipped |
-| Existing `keys-tree-scoped-picker` regression set | green (included in the 65) |
+| `tools/parity/verify_settings_tree_filter_mode.py` with mutation controls | pass; 28 negative controls rejected |
+| Focused tests | 75 passed, 0 failed, 0 skipped |
+| Existing `keys-tree-scoped-picker` regression set | green (included in the 75) |
 | `dotnet format` / `dotnet build --warnaserror` | pass |
-| Full .NET suite | 4546 passed, 0 failed, 0 skipped (8m49s) |
+| Full .NET suite | 4556 passed, 0 failed, 0 skipped (9m36s) |
 | Exact-head CI | Linux CI run `43082423591` on `7dc3538c`: all five jobs green |
 
 ### Fail-first baseline
@@ -75,6 +76,17 @@ was missing.
   this milestone. The milestone oracle compares tree-panel content, selection,
   counts, status suffixes, settings semantics and persisted state, exactly as
   the `keys-tree-scoped-picker` milestone did.
+
+## Review correction (P2)
+
+The first revision stored a non-string `treeFilterMode` as `null`, so a malformed
+trusted-project entry fell through to the valid user value instead of overriding
+it. The stored value is now a presence-carrying `TreeFilterModeSettingValue`, and
+the layered cases above pin the corrected behaviour: user `user-only` plus a
+trusted project `42` opens the default filter, while an untrusted project leaves
+`user-only` effective. Regressions cover `42`, `null`, `true`, arrays, objects,
+`"bogus"` and `""` project values, an absent project property, and the trust gate
+end to end through the CLI.
 
 ## Declared projections
 

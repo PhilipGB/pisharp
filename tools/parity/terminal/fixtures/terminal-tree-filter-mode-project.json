@@ -3,7 +3,11 @@
   "settings": {
     "quietStartup": true,
     "shellCommandPrefix": "preserved",
-    "theme": "dark"
+    "theme": "dark",
+    "defaultProjectTrust": "always"
+  },
+  "projectFiles": {
+    ".pi/settings.json": "{\"treeFilterMode\": 42}"
   },
   "dimensions": [
     {
@@ -107,11 +111,6 @@
             "defaultProjectTrust": "always",
             "treeFilterMode": "user-only"
           }
-        },
-        "workspace": {
-          ".pi/settings.json": {
-            "treeFilterMode": 42
-          }
         }
       },
       "restart": true,
@@ -132,40 +131,6 @@
       "expect": "beta"
     },
     {
-      "id": "trusted-absent-config",
-      "writeFiles": {
-        "agent": {
-          "settings.json": {
-            "quietStartup": true,
-            "shellCommandPrefix": "preserved",
-            "theme": "dark",
-            "tuiMode": "fullscreen",
-            "defaultProjectTrust": "always",
-            "treeFilterMode": "user-only"
-          }
-        },
-        "workspace": {
-          ".pi/settings.json": {}
-        }
-      },
-      "restart": true,
-      "expect": "beta"
-    },
-    {
-      "id": "trusted-absent-open",
-      "send": "/tree\r",
-      "expect": "[user]"
-    },
-    {
-      "id": "trusted-absent-state",
-      "allowStaticFrame": true
-    },
-    {
-      "id": "trusted-absent-close",
-      "send": "\u001b",
-      "expect": "beta"
-    },
-    {
       "id": "untrusted-config",
       "writeFiles": {
         "agent": {
@@ -176,11 +141,6 @@
             "tuiMode": "fullscreen",
             "defaultProjectTrust": "never",
             "treeFilterMode": "user-only"
-          }
-        },
-        "workspace": {
-          ".pi/settings.json": {
-            "treeFilterMode": 42
           }
         }
       },
@@ -213,10 +173,6 @@
     "trusted-malformed-open",
     "trusted-malformed-state",
     "trusted-malformed-close",
-    "trusted-absent-config",
-    "trusted-absent-open",
-    "trusted-absent-state",
-    "trusted-absent-close",
     "untrusted-config",
     "untrusted-open",
     "untrusted-state",

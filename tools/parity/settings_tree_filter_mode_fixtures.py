@@ -199,20 +199,21 @@ def settings_scenario():
 
 
 def project_scenario():
-    """Layered settings precedence: a trusted malformed project value must win, then resolve to default."""
+    """Layered settings precedence: a trusted malformed project value must win, then resolve to default.
+
+    The project file is fixture-level (`projectFiles`) because the harness re-prepares the
+    workspace on every restart; only the agent trust default and user value change per case.
+    """
     source = json.loads(SOURCE.read_text())
     files = source["files"]["pi"]
 
-    def agent_settings(trust, mode):
-        return dict(BASE_SETTINGS, tuiMode="fullscreen", defaultProjectTrust=trust, treeFilterMode=mode)
-
-    def install(prefix, trust, project_tree_filter):
-        project = {} if project_tree_filter is None else {"treeFilterMode": project_tree_filter}
+    def install(prefix, trust):
         return {
             "id": f"{prefix}-config",
             "writeFiles": {
-                "agent": {"settings.json": agent_settings(trust, "user-only")},
-                "workspace": {".pi/settings.json": project},
+                "agent": {"settings.json": dict(BASE_SETTINGS, tuiMode="fullscreen",
+                                                defaultProjectTrust=trust,
+                                                treeFilterMode="user-only")},
             },
             "restart": True,
             "expect": "beta",
@@ -221,17 +222,12 @@ def project_scenario():
     steps = [
         {"id": "startup", "expect": "beta"},
         # A trusted project entry replaces the valid user value and then resolves to the default.
-        install("trusted-malformed", "always", 42),
+        install("trusted-malformed", "always"),
         {"id": "trusted-malformed-open", "send": "/tree\r", "expect": "Session Tree"},
         {"id": "trusted-malformed-state", "allowStaticFrame": True},
         {"id": "trusted-malformed-close", "send": "\u001b", "expect": "beta"},
-        # A trusted project that does not set the key leaves the user value effective.
-        install("trusted-absent", "always", None),
-        {"id": "trusted-absent-open", "send": "/tree\r", "expect": "[user]"},
-        {"id": "trusted-absent-state", "allowStaticFrame": True},
-        {"id": "trusted-absent-close", "send": "\u001b", "expect": "beta"},
         # An untrusted project contributes nothing, so the malformed entry cannot win.
-        install("untrusted", "never", 42),
+        install("untrusted", "never"),
         {"id": "untrusted-open", "send": "/tree\r", "expect": "[user]"},
         {"id": "untrusted-state", "allowStaticFrame": True},
         {"id": "untrusted-close", "send": "\u001b", "expect": "beta"},
@@ -244,7 +240,9 @@ def project_scenario():
     }
     return {
         "id": "terminal-tree-filter-mode-project",
-        "settings": dict(BASE_SETTINGS),
+        # The fixture ships a project settings file, so the first launch must already be trusted.
+        "settings": dict(BASE_SETTINGS, defaultProjectTrust="always"),
+        "projectFiles": {".pi/settings.json": json.dumps({"treeFilterMode": 42})},
         "dimensions": [{"columns": 100, "rows": 30}],
         "themes": ["dark"],
         "modes": ["fullscreen"],

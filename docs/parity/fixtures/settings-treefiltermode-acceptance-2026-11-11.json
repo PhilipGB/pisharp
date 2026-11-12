@@ -2,17 +2,19 @@
   "schema": 1,
   "capability": "settings-treefiltermode",
   "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-  "implementationSha": "0ab12a6fd8bf0b30654af6c87529248e92a4f3bc",
+  "implementationSha": "8e3fcc2055d7ea7e69f5d60b9c402ab0eaabd94d",
   "oracleFile": "docs/parity/fixtures/settings-treefiltermode-pi-oracle-2026-11-11.json",
   "checkpointFiles": [
     "docs/parity/fixtures/settings-treefiltermode-checkpoints-fullscreen-2026-11-11.json",
     "docs/parity/fixtures/settings-treefiltermode-checkpoints-regular-2026-11-11.json",
-    "docs/parity/fixtures/settings-treefiltermode-checkpoints-settings-2026-11-11.json"
+    "docs/parity/fixtures/settings-treefiltermode-checkpoints-settings-2026-11-11.json",
+    "docs/parity/fixtures/settings-treefiltermode-checkpoints-project-2026-11-11.json"
   ],
   "terminalFixtures": [
     "tools/parity/terminal/fixtures/terminal-tree-filter-mode.json",
     "tools/parity/terminal/fixtures/terminal-tree-filter-mode-regular.json",
-    "tools/parity/terminal/fixtures/terminal-tree-filter-mode-settings.json"
+    "tools/parity/terminal/fixtures/terminal-tree-filter-mode-settings.json",
+    "tools/parity/terminal/fixtures/terminal-tree-filter-mode-project.json"
   ],
   "requiredTests": {
     "facts": [
@@ -53,7 +55,10 @@
       "PiSharp.Tests.TerminalPtyTests.SettingsPickerSetsAndRemovesPerModelThinkingDefaultsThroughLinuxPty",
       "PiSharp.Tests.TerminalPtyTests.SavedPerModelThinkingDefaultChangesTheNextProviderRequestThroughLinuxPty",
       "PiSharp.Tests.AppControlPtyTests.DoubleEscapeHonoursTheConfiguredActionAndReturnsToTheEditor",
-      "PiSharp.Tests.AppControlPtyTests.RegularModeDoubleEscapeAfterBashEntryOpensTheTreeSelectorThroughLinuxPty"
+      "PiSharp.Tests.AppControlPtyTests.RegularModeDoubleEscapeAfterBashEntryOpensTheTreeSelectorThroughLinuxPty",
+      "PiSharp.Tests.TreeFilterModeSettingTests.MalformedTrustedProjectValueReplacesTheValidUserValue",
+      "PiSharp.Tests.TreeFilterModeSettingTests.AbsentProjectSettingsKeepTheUserValueEffective",
+      "PiSharp.Tests.TreeFilterModePtyTests.ProjectTrustDecidesWhetherAMalformedProjectFilterOverridesTheUserValueThroughLinuxPty"
     ],
     "theories": [],
     "ptyEvidence": [
@@ -61,7 +66,8 @@
       "terminal-tree-filter-mode/140x40-dark-fullscreen",
       "terminal-tree-filter-mode-regular/100x30-dark-regular",
       "terminal-tree-filter-mode-regular/140x40-dark-regular",
-      "terminal-tree-filter-mode-settings/100x30-dark-fullscreen"
+      "terminal-tree-filter-mode-settings/100x30-dark-fullscreen",
+      "terminal-tree-filter-mode-project/100x30-dark-fullscreen"
     ]
   },
   "requiredComparisons": [
@@ -82,6 +88,12 @@
       "required": true,
       "status": "match",
       "evidence": "Two independent pinned-Pi settings-selector runs observe the same label, description, value order and persistence."
+    },
+    {
+      "id": "layered-project-precedence",
+      "required": true,
+      "status": "match",
+      "evidence": "Paired project-trust fixture: a trusted project value of 42 over a user value of user-only opens the default filter in both products, while an untrusted project leaves user-only effective; same-Pi calibration is exact."
     }
   ],
   "cases": [
@@ -206,16 +218,21 @@
       "oracle": [
         "TF07"
       ],
-      "requirement": "An unrecognized stored value loads and behaves as default without an error",
+      "requirement": "An unrecognized stored value loads without an error and behaves as default, and a malformed trusted-project value overrides a valid user value",
       "tests": [
         "PiSharp.Tests.TreeFilterModeSettingTests.UnrecognizedValuesResolveTheDefaultWithoutFailingToLoad",
-        "PiSharp.Tests.TreeFilterModeSettingTests.WriterRejectsValuesOutsideThePinnedSet"
+        "PiSharp.Tests.TreeFilterModeSettingTests.WriterRejectsValuesOutsideThePinnedSet",
+        "PiSharp.Tests.TreeFilterModeSettingTests.MalformedTrustedProjectValueReplacesTheValidUserValue",
+        "PiSharp.Tests.TreeFilterModeSettingTests.AbsentProjectSettingsKeepTheUserValueEffective",
+        "PiSharp.Tests.TreeFilterModePtyTests.ProjectTrustDecidesWhetherAMalformedProjectFilterOverridesTheUserValueThroughLinuxPty"
       ],
       "ptyCheckpoints": [
         "100x30-dark-fullscreen/invalid-open",
         "140x40-dark-fullscreen/invalid-open",
         "100x30-dark-regular/invalid-open",
-        "140x40-dark-regular/invalid-open"
+        "140x40-dark-regular/invalid-open",
+        "trusted-malformed-open",
+        "untrusted-open"
       ]
     },
     {
@@ -364,8 +381,8 @@
     },
     "fullSuite": {
       "status": "pass",
-      "evidence": "dotnet test PiSharp.slnx (tests/PiSharp.Tests) at implementation head 0ab12a6f: 4546 passed, 0 failed, 0 skipped in 8m49s. The NativeExtensionUiTests class is excluded locally because it hangs in this development environment (the same hang reproduces on base d9f7bf33 for NativeExtensionUiTests.PackageInputListenersRunBeforeFocusedCustomComponents); CI runs the class unchanged. EditorMutationPtyTests.MutationSubmissionReachesTheProviderAndRestoresTheTerminalThroughLinuxPty timed out twice under heavy machine load and passes in isolation and in this clean run.",
-      "total": 4546,
+      "evidence": "dotnet test PiSharp.slnx (tests/PiSharp.Tests) at implementation head 8e3fcc20: 4556 passed, 0 failed, 0 skipped in 9m36s. The NativeExtensionUiTests class is excluded locally because it hangs in this development environment (the same hang reproduces on base d9f7bf33); CI runs the class unchanged.",
+      "total": 4556,
       "failed": 0,
       "skipped": 0,
       "excluded": [
@@ -374,9 +391,9 @@
     },
     "exactHeadCi": {
       "status": "pass",
-      "evidence": "Linux CI run 43082423591 on head 7dc3538c (implementation 0ab12a6f): all five jobs green (macos-session-locks, macos-clipboard-contracts, windows-clipboard-contracts, mcp-conformance, managed-package-verifier). This manifest-only follow-up commit carries the same implementation and evidence tree.",
-      "run": "43082423591",
-      "implementationSha": "0ab12a6fd8bf0b30654af6c87529248e92a4f3bc"
+      "evidence": "pending final head",
+      "run": "43085701618",
+      "implementationSha": "8e3fcc2055d7ea7e69f5d60b9c402ab0eaabd94d"
     },
     "ledger": {
       "status": "pass",

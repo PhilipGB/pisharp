@@ -794,5 +794,38 @@
         "selected": "a0000003"
       }
     }
+  },
+  "projectProjections": {
+    "100x30-dark-fullscreen": {
+      "trusted-malformed": {
+        "rows": [
+          "u0000002",
+          "a0000003",
+          "c0000007",
+          "c0000008",
+          "r0000010",
+          "k0000011",
+          "y0000012",
+          "z0000013",
+          "b0000004",
+          "b0000005"
+        ],
+        "count": "8/10",
+        "tags": [],
+        "selected": "z0000013"
+      },
+      "untrusted": {
+        "rows": [
+          "u0000002",
+          "c0000007",
+          "b0000004"
+        ],
+        "count": "2/3",
+        "tags": [
+          "user"
+        ],
+        "selected": "c0000007"
+      }
+    }
   }
 }

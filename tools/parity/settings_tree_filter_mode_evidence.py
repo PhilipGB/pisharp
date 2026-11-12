@@ -385,7 +385,6 @@ def report_cases_from_document(document):
 
 PROJECT_CHECKPOINTS = {
     "trusted-malformed": "trusted-malformed-open",
-    "trusted-absent": "trusted-absent-open",
     "untrusted": "untrusted-open",
 }
 

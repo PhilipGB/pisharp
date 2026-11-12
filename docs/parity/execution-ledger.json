@@ -6150,7 +6150,7 @@
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
       "implementation": [
-        "UserSettings stores the raw treeFilterMode and TreeFilterModeSetting resolves it against the pinned value set (default, no-tools, user-only, labeled-only, all) with 'default' as the fallback; a trusted project value overrides the user value through the existing overlay.",
+        "UserSettings stores treeFilterMode as TreeFilterModeSettingValue (presence plus raw value, not a magic string) and resolves it against the pinned value set (default, no-tools, user-only, labeled-only, all) with 'default' as the fallback; pinned Pi merges scopes by presence, so a trusted project entry that is not an accepted string still replaces the user value and then resolves to the default.",
         "TerminalSessionNavigation reads the effective value on every tree open (same seam as pinned Pi showTreeSelector), so /tree, app.session.tree, configured double-Escape and the branch-summary-cancel reopen seed TerminalTreeState's initial filter; selector filter keys, search, folding and label edits never write settings.",
         "TerminalSettingsPicker exposes 'Tree filter mode' with the pinned description and value order, and UserSettingsWriter validates the five values and removes only that key on reset."
       ],
@@ -6161,7 +6161,9 @@
         "docs/parity/fixtures/settings-treefiltermode-checkpoints-fullscreen-2026-11-11.json",
         "docs/parity/fixtures/settings-treefiltermode-checkpoints-regular-2026-11-11.json",
         "docs/parity/fixtures/settings-treefiltermode-checkpoints-settings-2026-11-11.json",
-        "PiSharp dcd4ffee against pinned Pi b06c1f2c: four paired PTY cases (100x30/140x40 dark fullscreen and regular) report zero semantic differences for every configured mode, invalid value, reset and reopen checkpoint; same-Pi calibration is exact for all four cases; the pinned-Pi settings-selector journey observes default, no-tools, user-only, labeled-only, all in order, applies the change to the next /tree open and keeps it across a restart while preserving unrelated settings. tools/parity/verify_settings_tree_filter_mode.py recomputes every gate and rejects each mutation control.",
+        "docs/parity/fixtures/settings-treefiltermode-checkpoints-project-2026-11-11.json",
+        "Layered precedence evidence: with user treeFilterMode=user-only and a project file containing 42, a trusted project opens the default filter and an untrusted project keeps user-only, in both products (paired project-trust fixture, same-Pi calibration exact).",
+        "PiSharp 8e3fcc20 against pinned Pi b06c1f2c: four paired PTY cases (100x30/140x40 dark fullscreen and regular) report zero semantic differences for every configured mode, invalid value, reset and reopen checkpoint; same-Pi calibration is exact for all four cases; the pinned-Pi settings-selector journey observes default, no-tools, user-only, labeled-only, all in order, applies the change to the next /tree open and keeps it across a restart while preserving unrelated settings. tools/parity/verify_settings_tree_filter_mode.py recomputes every gate and rejects each mutation control.",
         "Fail-first at base d9f7bf33: PiSharp exited with 'settings.json contains unsupported property treeFilterMode' when a configured mode was installed, while its unset /tree projection already matched pinned Pi (8/10, selection [bash])."
       ],
       "dependencies": [],

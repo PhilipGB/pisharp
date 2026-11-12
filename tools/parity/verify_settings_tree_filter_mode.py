@@ -112,13 +112,13 @@ def validate_oracle(oracle):
     project = oracle.get("projectProjections") or {}
     require(project, "Oracle has no layered project projections.")
     for case_id, layered in project.items():
-        for label in ("trusted-malformed", "trusted-absent", "untrusted"):
+        for label in ("trusted-malformed", "untrusted"):
             projection = layered.get(label)
             require(isinstance(projection, dict), f"Oracle {case_id} {label} projection is missing.")
             require(projection.get("rows") and projection.get("count") and projection.get("selected"),
                     f"Oracle {case_id} {label} projection is incomplete.")
     for layered in project.values():
-        expect = {"trusted-malformed": STATUS_TAGS["default"], "trusted-absent": STATUS_TAGS["user-only"],
+        expect = {"trusted-malformed": STATUS_TAGS["default"],
                   "untrusted": STATUS_TAGS["user-only"]}
         for label, tags in expect.items():
             require(layered[label]["tags"] == tags,
@@ -153,8 +153,10 @@ def validate_manifest(manifest, implementation, oracle):
         require(case.get("ptyCheckpoints"), f"{case['id']} has no PTY checkpoint evidence.")
     comparisons = manifest.get("requiredComparisons") or []
     require({comparison.get("id") for comparison in comparisons} ==
-            {"paired-pty", "same-pi-calibration", "settings-selector-calibration"},
-            "Manifest must require paired PTY, same-Pi calibration and settings-selector calibration.")
+            {"paired-pty", "same-pi-calibration", "settings-selector-calibration",
+             "layered-project-precedence"},
+            "Manifest must require paired PTY, same-Pi calibration, settings-selector calibration "
+            "and layered project precedence.")
     for comparison in comparisons:
         require(comparison.get("required") is True,
                 f"Comparison {comparison.get('id')} must be required.")
@@ -278,7 +280,6 @@ def validate_paired_document(document, oracle, case_ids, label):
 
 LAYERED_CHECKPOINTS = {
     "trusted-malformed": "trusted-malformed-open",
-    "trusted-absent": "trusted-absent-open",
     "untrusted": "untrusted-open",
 }
 
@@ -381,8 +382,7 @@ def validate_fixtures(restarts=None, actions=None):
         require("temporary-reopen" in ids, f"{name} has no reopen case.")
     require(restarts[FIXTURES[2]] == ["restart"],
             f"{FIXTURES[2]} must restart once to prove persistence.")
-    require(restarts[FIXTURES[3]] == ["trusted-malformed-config", "trusted-absent-config",
-                                      "untrusted-config"],
+    require(restarts[FIXTURES[3]] == ["trusted-malformed-config", "untrusted-config"],
             f"{FIXTURES[3]} must install every layered case through a restart: {restarts[FIXTURES[3]]}")
     for name in LAYERED_CHECKPOINTS.values():
         require(name in actions[FIXTURES[3]], f"{FIXTURES[3]} has no {name} checkpoint.")
