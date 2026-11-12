@@ -60,6 +60,12 @@ public sealed class BranchSummaryReserveTokensSettingTests
         Assert.True(JsonNode.DeepEquals(JsonNode.Parse("{\"a\":1,\"b\":2}"), JsonNode.Parse(merged.RawReserveTokens!.Value.Raw)));
     }
 
+    [Theory]
+    [InlineData("\"0x_\"")]
+    [InlineData("\"0x`\"")]
+    public void NonNumericRadixDigitsResolveToNaN(string raw) =>
+        Assert.True(double.IsNaN(new BranchSummaryReserveTokensSetting(raw).Resolve()));
+
     [Fact]
     public async Task StronglyTypedNavigationStillRejectsNegativeReserve()
     {

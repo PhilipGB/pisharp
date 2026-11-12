@@ -75,8 +75,9 @@ public readonly record struct BranchSummaryReserveTokensSetting(string Raw)
             var number = BigInteger.Zero;
             foreach (var character in text.AsSpan(2))
             {
+                var lower = char.ToLowerInvariant(character);
                 var digit = character is >= '0' and <= '9' ? character - '0'
-                    : char.ToLowerInvariant(character) - 'a' + 10;
+                    : lower is >= 'a' and <= 'f' ? lower - 'a' + 10 : -1;
                 if (digit < 0 || digit >= radix) return double.NaN;
                 number = number * radix + digit;
             }

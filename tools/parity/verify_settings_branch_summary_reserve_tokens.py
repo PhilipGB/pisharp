@@ -26,6 +26,7 @@ REQUIRED_METHODS = [
     'BranchSummaryReserveTokensSettingTests.RawReserveObjectsDeepMergeByPresenceWithoutChangingSkipPrompt',
     'BranchSummaryReserveTokensSettingTests.StronglyTypedNavigationStillRejectsNegativeReserve',
     'BranchSummaryReserveTokensSettingTests.HistoryBudgetRetainsPinnedArithmetic',
+    'BranchSummaryReserveTokensSettingTests.NonNumericRadixDigitsResolveToNaN',
     'BranchSummaryReserveTokensPtyTests.TreeSummarizeChoiceUsesFileReserveInPhysicalProviderRequest',
     'NativeExtensionTreeEventTests.BranchSummaryFileDetailsStopAtTheSelectedTokenBudget',
     'TerminalPtyTests.BranchSummaryEscapeCancelsAndReopensTheTreeThroughLinuxPty',
