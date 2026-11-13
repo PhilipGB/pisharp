@@ -61,6 +61,7 @@ internal sealed class TerminalOverlayHost(TerminalInput input, EditorKeymap? key
                 }
                 else next = input.Read();
                 if (next.IsEndOfStream) return null;
+                next = screen.ResolveFullscreenWheelInput(next);
                 if (handleInput is not null)
                 {
                     var handledTask = handleInput(list, next);

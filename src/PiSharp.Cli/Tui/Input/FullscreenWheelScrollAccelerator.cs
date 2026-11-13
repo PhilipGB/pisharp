@@ -62,8 +62,10 @@ internal sealed class FullscreenWheelScrollAccelerator(TimeProvider timeProvider
 
     private static bool TerminalAcceleratesWheel()
     {
-        var environment = Environment.GetEnvironmentVariables();
-        return OperatingSystem.IsMacOS() && environment["SSH_CONNECTION"] is null &&
-            environment["SSH_CLIENT"] is null && environment["SSH_TTY"] is null;
+        return TerminalAcceleratesWheel(OperatingSystem.IsMacOS(), Environment.GetEnvironmentVariable);
     }
+
+    internal static bool TerminalAcceleratesWheel(bool isMacOS, Func<string, string?> environment) =>
+        isMacOS && environment("SSH_CONNECTION") is null && environment("SSH_CLIENT") is null &&
+        environment("SSH_TTY") is null;
 }

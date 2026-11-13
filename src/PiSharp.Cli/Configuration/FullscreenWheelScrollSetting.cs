@@ -16,10 +16,10 @@ public readonly record struct FullscreenWheelScrollSetting(bool Auto, int Lines)
 
     public static FullscreenWheelScrollSetting Parse(JsonElement value) => value.ValueKind switch
     {
-        JsonValueKind.String when value.GetString() == "auto" => Automatic,
         JsonValueKind.Number when value.TryGetDouble(out var lines) && double.IsFinite(lines) =>
             Fixed((int)Math.Clamp(Math.Floor(lines), 1, 100)),
-        _ => throw new InvalidDataException("settings.json fullscreenWheelScrollLines must be 'auto' or an integer from 1 to 100.")
+        // A present but unusable value overrides lower scopes with auto; only absence stays nullable.
+        _ => Automatic
     };
 
     public static FullscreenWheelScrollSetting ParseSettingValue(string value)

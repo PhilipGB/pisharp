@@ -26,7 +26,7 @@ public sealed class TerminalSettingsPickerTests
             "steeringMode", "followUpMode", "sessionShareDestination", "httpIdleTimeoutMs",
             "hideThinkingBlock", "markdown.mermaid", "quietStartup", "defaultProjectTrust",
             "doubleEscapeAction", "treeFilterMode",
-            "modelThinkingLevels", "theme", "fullscreenWheelScrollLines"
+            "modelThinkingLevels", "fullscreenWheelScrollLines", "theme"
         }, ids.Skip(10).Take(13));
         Assert.Equal(new[]
         {

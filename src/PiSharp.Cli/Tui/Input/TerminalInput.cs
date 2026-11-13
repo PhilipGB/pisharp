@@ -658,6 +658,8 @@ public sealed record TerminalInputEvent(ConsoleKeyInfo? Key, string? Text, Termi
 /// <summary>SGR mouse report coordinates are one-based terminal columns and rows.</summary>
 public readonly record struct TerminalMouseEvent(int Button, int Column, int Row, bool IsRelease)
 {
+    internal int? FullscreenWheelDelta { get; init; }
+
     public bool IsMotion => (Button & 32) != 0;
     public bool IsWheel => (Button & 64) != 0;
 

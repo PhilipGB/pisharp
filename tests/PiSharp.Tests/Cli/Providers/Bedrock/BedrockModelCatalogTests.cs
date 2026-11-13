@@ -1,3 +1,4 @@
+using Amazon;
 using Amazon.BedrockRuntime;
 using Amazon.Runtime;
 using Microsoft.Extensions.AI;
@@ -35,7 +36,7 @@ public sealed class BedrockModelCatalogTests
         var model = BedrockModelCatalog.Load().Single(item => item.Id == "global.anthropic.claude-sonnet-4-6");
         var profilePath = Path.Combine(Path.GetTempPath(), "pisharp-bedrock-profile-" + Guid.NewGuid().ToString("N"));
         await File.WriteAllTextAsync(profilePath,
-            "[work-sso]\naws_access_key_id=profile-access-key\naws_secret_access_key=profile-secret-key\n");
+            "[work-sso]\nregion=eu-central-1\naws_access_key_id=profile-access-key\naws_secret_access_key=profile-secret-key\n");
         try
         {
             var profiled = new BedrockProviderOptions(null, "work-sso", "AWS_PROFILE", ProfileLocation: profilePath);
@@ -43,7 +44,9 @@ public sealed class BedrockModelCatalogTests
             Assert.Equal("work-sso", profileConfig.Profile?.Name);
             Assert.NotNull(profileConfig.DefaultAWSCredentials);
             Assert.Null(profileConfig.ServiceURL);
-            Assert.Null(profileConfig.RegionEndpoint);
+            var sdkProfileConfig = new AmazonBedrockRuntimeConfig { Profile = new Profile("work-sso", profilePath) };
+            // RegionEndpoint resolves the SDK's ambient/profile chain even without an explicit override.
+            Assert.Equal(sdkProfileConfig.RegionEndpoint?.SystemName, profileConfig.RegionEndpoint?.SystemName);
             var credentials = await profileConfig.DefaultAWSCredentials.GetCredentialsAsync();
             Assert.Equal("profile-access-key", credentials.AccessKey);
         }
