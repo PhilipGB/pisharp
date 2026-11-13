@@ -102,4 +102,35 @@ public sealed class FullscreenWheelParityTests
         var actual = (await Observed.Value).GetProperty("setters");
         Assert.True(JsonElement.DeepEquals(expected, actual), actual.ToString());
     }
+
+    [Theory]
+    [InlineData("{}", 1, 5)]
+    [InlineData("{\"fullscreenWheelScrollLines\":\"auto\"}", 1, 5)]
+    [InlineData("{\"fullscreenWheelScrollLines\":null}", 1, 5)]
+    [InlineData("{\"fullscreenWheelScrollLines\":5}", 5, 5)]
+    public async Task LoadedSettingReachesTheActualPresentationConsumer(string raw, int first, int next)
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "pisharp-wheel-apply-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(directory, "settings.json"), raw);
+            var settings = await UserSettings.LoadAsync(directory, _ => null);
+            var clock = new ManualTimeProvider();
+            using var output = new StringWriter();
+            using var error = new StringWriter();
+            using var screen = FullscreenWheelProbe.Screen(output, error, clock, true);
+            screen.Output.Write(string.Join('\n', Enumerable.Range(1, 100).Select(i => $"line {i}")));
+            screen.SetFullscreenWheelScrollLines(FullscreenWheelScrollSetting.Fixed(100));
+            var presentation = (TerminalPresentation)RuntimeHelpers.GetUninitializedObject(typeof(TerminalPresentation));
+            typeof(TerminalPresentation).GetField("_terminalScreen", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(presentation, screen);
+            presentation.ApplyTuiSettings(settings);
+            screen.HandleMouse(new(64, 3, 2, false));
+            Assert.Equal(first, screen.TranscriptScrollOffset);
+            clock.Advance(TimeSpan.FromMilliseconds(20));
+            screen.HandleMouse(new(64, 3, 2, false));
+            Assert.Equal(first + next, screen.TranscriptScrollOffset);
+        }
+        finally { Directory.Delete(directory, true); }
+    }
 }

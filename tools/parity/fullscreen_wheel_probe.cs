@@ -172,7 +172,8 @@ internal static class FullscreenWheelProbe
 
     internal static TerminalScreen Screen(TextWriter output, TextWriter error, ManualTimeProvider clock, bool fullscreen) =>
         new(output, error, () => 80, () => 24, new TerminalImageRenderer(), TerminalTheme.Default,
-            queryTerminalColors: false, timeProvider: clock, minimumRenderInterval: TimeSpan.Zero, useAlternateScreen: fullscreen);
+            queryTerminalColors: false, timeProvider: clock, minimumRenderInterval: TimeSpan.Zero,
+            useAlternateScreen: fullscreen, accelerateWheel: true);
 
     private static FullscreenWheelScrollSetting Parse(JsonElement value) => FullscreenWheelScrollSetting.Parse(value);
     private static object Value(FullscreenWheelScrollSetting value) => value.Auto ? "auto" : value.Lines;

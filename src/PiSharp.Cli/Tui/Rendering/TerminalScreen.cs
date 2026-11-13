@@ -140,7 +140,7 @@ public sealed class TerminalScreen : IDisposable
         TimeSpan? minimumRenderInterval = null, TimeProvider? timeProvider = null, bool useAlternateScreen = true,
         Func<string, TerminalMermaidArt?>? mermaidSyncProvider = null,
         Func<string, CancellationToken, Task<TerminalMermaidArt?>>? mermaidAsyncProvider = null,
-        Func<string>? getThinkingLevel = null)
+        Func<string>? getThinkingLevel = null, bool? accelerateWheel = null)
     {
         ArgumentNullException.ThrowIfNull(originalOut);
         ArgumentNullException.ThrowIfNull(originalError);
@@ -182,7 +182,7 @@ public sealed class TerminalScreen : IDisposable
                     _render.Request();
                 }
             });
-        _wheelScroll = new(clock);
+        _wheelScroll = new(clock, accelerateWheel);
         _toolTimers = new(clock, RefreshToolTimers);
         _notifications = new(_transcript, () => _theme);
         _out = new(this, isError: false);
