@@ -32,8 +32,16 @@ internal static class FullscreenWheelProbe
                     .Invoke(picker, [setting, value.ToSettingValue()])!;
                 var options = choices.Cast<(string Key, string? Value, string Label, string Description)>()
                     .Where(x => x.Value is not null).Select(x => x.Value).ToArray();
-                settings.Add(new { id, loaded = true, effective = Value(value), current = row.Value.Split(" (")[0],
-                    label = row.Label, description = row.Description, options });
+                settings.Add(new
+                {
+                    id,
+                    loaded = true,
+                    effective = Value(value),
+                    current = row.Value.Split(" (")[0],
+                    label = row.Label,
+                    description = row.Description,
+                    options
+                });
             }
             catch (InvalidDataException e) { settings.Add(new { id, loaded = false, error = e.Message }); }
             finally { Directory.Delete(root, true); }
@@ -42,6 +50,12 @@ internal static class FullscreenWheelProbe
         {
             var clock = new ManualTimeProvider();
             var accelerate = item.GetProperty("accelerate").GetBoolean();
+            if (item.TryGetProperty("platform", out var platform))
+            {
+                var ssh = item.GetProperty("ssh").GetString();
+                accelerate = !FullscreenWheelScrollAccelerator.TerminalAcceleratesWheel(platform.GetString() == "darwin",
+                    key => key == ssh ? "" : null);
+            }
             var accelerator = new FullscreenWheelScrollAccelerator(clock, accelerate);
             accelerator.SetSetting(Parse(item.GetProperty("setting")));
             var lines = new List<int>();
@@ -55,7 +69,28 @@ internal static class FullscreenWheelProbe
         }).ToArray();
         var viewports = corpus.GetProperty("viewports").EnumerateArray().Select(Viewport).ToArray();
         var overlays = corpus.GetProperty("overlays").EnumerateArray().Select(Overlay).ToArray();
-        return new { settings, sequences, viewports, overlays };
+        var setters = new List<object>();
+        var directory = Path.Combine(Path.GetTempPath(), "pisharp-wheel-writer-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            foreach (var value in corpus.GetProperty("setters").EnumerateArray())
+            {
+                var normalized = Parse(value);
+                await UserSettingsWriter.SetAsync(Path.Combine(directory, "settings.json"), "fullscreenWheelScrollLines",
+                    normalized.ToSettingValue(), userScope: true);
+                using var saved = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(directory, "settings.json")));
+                var reloaded = await UserSettings.LoadAsync(directory, _ => null);
+                setters.Add(new
+                {
+                    input = value.Clone(),
+                    stored = saved.RootElement.GetProperty("fullscreenWheelScrollLines").Clone(),
+                    effective = Value(reloaded.FullscreenWheelScrollLines!.Value)
+                });
+            }
+        }
+        finally { Directory.Delete(directory, true); }
+        return new { settings, sequences, viewports, overlays, setters };
     }
 
     internal static object Viewport(JsonElement item)
@@ -125,8 +160,14 @@ internal static class FullscreenWheelProbe
         var movement = screen.TranscriptScrollOffset;
         Advance(clock, 40);
         screen.HandleMouse(new(64, 3, 2, false));
-        return new { id = item.GetProperty("id").GetString(), selected = selected?.Option.Value, deltas,
-            transcriptMovement = movement, nextTranscriptMovement = screen.TranscriptScrollOffset - movement };
+        return new
+        {
+            id = item.GetProperty("id").GetString(),
+            selected = selected?.Option.Value,
+            deltas,
+            transcriptMovement = movement,
+            nextTranscriptMovement = screen.TranscriptScrollOffset - movement
+        };
     }
 
     internal static TerminalScreen Screen(TextWriter output, TextWriter error, ManualTimeProvider clock, bool fullscreen) =>

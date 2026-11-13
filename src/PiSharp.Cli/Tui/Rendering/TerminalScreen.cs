@@ -1277,6 +1277,22 @@ public sealed class TerminalScreen : IDisposable
         return string.IsNullOrEmpty(content) ? "" : content + "\n";
     }
 
+    internal TerminalInputEvent ResolveFullscreenWheelInput(TerminalInputEvent input)
+    {
+        if (input.Mouse is not { IsWheel: true } mouse) return input;
+        lock (_gate) return input with { Mouse = ResolveFullscreenWheelLocked(mouse) };
+    }
+
+    private TerminalMouseEvent ResolveFullscreenWheelLocked(TerminalMouseEvent mouse)
+    {
+        if (!_useAlternateScreen || mouse.FullscreenWheelDelta is not null || mouse.WheelDirection == 0)
+            return mouse;
+        return mouse with
+        {
+            FullscreenWheelDelta = mouse.WheelDirection * _wheelScroll.Next(mouse.WheelDirection) * mouse.WheelScrollMultiplier
+        };
+    }
+
     internal TerminalMouseResult HandleMouse(TerminalMouseEvent mouse)
     {
         lock (_gate)
@@ -1284,9 +1300,8 @@ public sealed class TerminalScreen : IDisposable
             if (!_active || _suspended) return default;
             if (mouse.IsWheel)
             {
-                var direction = mouse.WheelDirection;
-                var delta = direction == 0 ? 0 : -direction *
-                    _wheelScroll.Next(direction) * mouse.WheelScrollMultiplier;
+                if (!_useAlternateScreen) return default;
+                var delta = -(ResolveFullscreenWheelLocked(mouse).FullscreenWheelDelta ?? 0);
                 if (delta != 0) SetScrollOffsetLocked(_scrollOffset + delta);
                 return new(delta != 0);
             }

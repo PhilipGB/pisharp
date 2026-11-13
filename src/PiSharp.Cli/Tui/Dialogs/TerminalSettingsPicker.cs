@@ -44,8 +44,8 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, ProviderMode
         new("doubleEscapeAction", "Double-escape action", "Action when pressing Escape twice with empty editor"),
         new("treeFilterMode", "Tree filter mode", "Default filter when opening /tree"),
         new("modelThinkingLevels", "Default thinking per model", "Override the default thinking level for a specific model.", UserOnly: true),
+        new("fullscreenWheelScrollLines", "Fullscreen wheel scrolling", "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not"),
         new("theme", "Theme", "Choose the system theme, a named theme, or a light/dark pair."),
-        new("fullscreenWheelScrollLines", "Fullscreen wheel scrolling", "Lines per mouse-wheel event in fullscreen mode; auto accelerates fast wheel spins where the terminal does not."),
         // PiSharp-only settings follow Pi's shared selector settings.
         new("defaultThinkingLevel", "Default thinking level", "Initial thinking level unless overridden by --thinking."),
         new("httpProxy", "HTTP proxy", "User-wide HTTP proxy for PiSharp-managed HTTP clients; takes effect on the next launch.", UserOnly: true),
@@ -114,6 +114,9 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, ProviderMode
             var currentValue = setting.Id == "theme" && scope
                 ? activeThemeSetting?.Invoke() ?? GetValue(currentSettings, setting.Id)
                 : GetValue(currentSettings, setting.Id);
+            var storedValue = currentValue;
+            if (setting.Id == "fullscreenWheelScrollLines")
+                currentValue ??= GetValue(effectiveSettings, setting.Id) ?? "auto";
             if (IsBoolean(setting.Id))
             {
                 var currentBoolean = GetBooleanValue(scope ? effectiveSettings : currentSettings, setting.Id);
@@ -157,7 +160,8 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, ProviderMode
                 continue;
             }
 
-            if (string.Equals(choice.Option.Value, currentValue, StringComparison.Ordinal))
+            if (string.Equals(choice.Option.Value,
+                setting.Id == "fullscreenWheelScrollLines" ? storedValue : currentValue, StringComparison.Ordinal))
             {
                 selectedKey = setting.Id;
                 continue;
@@ -457,7 +461,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, ProviderMode
         {
             var choices = new[] { "1", "2", "3", "5", "10" }.ToHashSet(StringComparer.Ordinal);
             if (currentValue is not null && currentValue != "auto") choices.Add(currentValue);
-            values.Add(("auto", "auto", "Auto", "Accelerate fast wheel spins where the terminal does not."));
+            values.Add(("auto", "auto", "auto", "Accelerate fast wheel spins where the terminal does not."));
             values.AddRange(choices.OrderBy(value => int.Parse(value, System.Globalization.CultureInfo.InvariantCulture))
                 .Select(value => (value, (string?)value, value, $"Move {value} lines per wheel event.")));
         }

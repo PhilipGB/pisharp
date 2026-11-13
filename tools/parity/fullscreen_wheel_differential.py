@@ -17,7 +17,7 @@ TOOLS = ROOT / 'tools/parity'
 
 def compare(pi, sharp):
     differences = []
-    for group in ['settings', 'sequences', 'viewports', 'overlays']:
+    for group in ['settings', 'sequences', 'viewports', 'overlays', 'setters']:
         for p, s in zip(pi[group], sharp[group], strict=True):
             if group == 'settings':
                 keys = ['loaded','effective','current','label','description','options']
@@ -31,7 +31,7 @@ def compare(pi, sharp):
                 keys = p.keys()
             fields = [k for k in keys if p.get(k) != s.get(k)]
             if fields:
-                differences.append(dict(group=group,id=p['id'],fields=fields))
+                differences.append(dict(group=group,id=p.get('id',str(p.get('input'))),fields=fields))
     return differences
 
 
@@ -64,7 +64,7 @@ def main():
     report=dict(piSha=PIN,pisharpSha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
                 corpus=corpus(),pi=pinned,calibration=calibration,pisharp=sharp,differences=differences)
     (out/'report.json').write_text(json.dumps(report,indent=2)+'\n')
-    for group in ['settings','sequences','viewports','overlays']:
+    for group in ['settings','sequences','viewports','overlays','setters']:
         count=len(pinned[group]); failures=sum(d['group']==group for d in differences)
         print(f'{group}: {count-failures} matches / {failures} divergences')
     print('Same-Pi exact:',pinned==calibration)

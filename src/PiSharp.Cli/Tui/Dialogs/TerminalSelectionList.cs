@@ -113,7 +113,8 @@ internal sealed class TerminalSelectionList<T>
         ArgumentNullException.ThrowIfNull(input);
         if (input.Mouse is { } mouse)
         {
-            var delta = mouse.WheelScrollDelta;
+            var delta = mouse.FullscreenWheelDelta is { } fullscreenDelta
+                ? -Math.Sign(fullscreenDelta) : mouse.WheelScrollDelta;
             if (delta != 0 && _filteredOptions.Count > 0)
             {
                 _selectedIndex = Math.Clamp(_selectedIndex - delta, 0, _filteredOptions.Count - 1);

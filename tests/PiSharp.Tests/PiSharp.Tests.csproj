@@ -16,6 +16,8 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <Compile Include="../../tools/parity/fullscreen_wheel_probe.cs" Link="TestInfrastructure/FullscreenWheelProbe.cs" />
+    <None Include="../../docs/parity/fixtures/settings-fullscreenwheelscrolllines-baseline.json" Link="wheel-oracle.json" CopyToOutputDirectory="PreserveNewest" />
     <Compile Include="../../tools/parity/branch_summary_reserve_probe.cs" Link="TestInfrastructure/BranchSummaryReserveProbe.cs" />
     <None Include="../../tools/parity/branch_summary_reserve_cases.json" Link="reserve-cases.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../../docs/parity/fixtures/settings-branchsummary-reservetokens-baseline-2026-11-12.json" Link="reserve-oracle.json" CopyToOutputDirectory="PreserveNewest" />
