@@ -344,7 +344,7 @@ public sealed class KeysQueueSessionPtyTests
             Assert.Contains("draft text", capture.Frame());
 
             releaseFirst.TrySetResult();
-            await capture.WaitFor("QUEUE_REPLY", timeout.Token);
+            await capture.WaitForIdleReplyAsync("QUEUE_REPLY", timeout.Token);
             Assert.Single(requests);
 
             await Write(process, "\r"); // submit the restored combined draft
@@ -353,8 +353,8 @@ public sealed class KeysQueueSessionPtyTests
             Assert.Equal(2, requests.Count);
             var restoredRequest = requests.ToArray()[1];
             Assert.Contains("steer one\\n\\nfollow one\\n\\ndraft text", restoredRequest, StringComparison.Ordinal);
-            await capture.WaitFor("RESTORED_REPLY", timeout.Token);
-            await Write(process, "/quit\r");
+            await capture.WaitForIdleReplyAsync("RESTORED_REPLY", timeout.Token);
+            await Write(process, "\u0015/quit\r");
             process.StandardInput.Close();
             await process.WaitForExitAsync(timeout.Token);
             await server.WaitAsync(timeout.Token);
@@ -472,6 +472,22 @@ public sealed class KeysQueueSessionPtyTests
 
         public async Task WaitFor(string value, CancellationToken cancellationToken) =>
             await WaitForAny([value], cancellationToken);
+
+        public async Task WaitForIdleReplyAsync(string value, CancellationToken cancellationToken)
+        {
+            while (true)
+            {
+                Task changed;
+                lock (_gate)
+                {
+                    var frames = TerminalOutputFrameReader.Read(_output.ToString(), rows: 30, columns: 100);
+                    if (frames.Count > 0 && frames[^1].Screen.Contains(value, StringComparison.Ordinal) &&
+                        !frames[^1].Screen.Contains("Working", StringComparison.Ordinal)) return;
+                    changed = _changed.Task;
+                }
+                await changed.WaitAsync(cancellationToken);
+            }
+        }
 
         public async Task WaitForAny(IReadOnlyList<string> values, CancellationToken cancellationToken)
         {

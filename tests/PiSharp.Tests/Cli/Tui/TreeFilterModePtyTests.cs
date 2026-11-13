@@ -77,8 +77,11 @@ public sealed class TreeFilterModePtyTests
             Assert.Contains("labeled-only", values);
             await SendAsync("\u001b[A");
             await SendAsync("\r");
-            await WaitForAsync(frame => frame.Contains("Saved user setting treeFilterMode = no-tools.",
-                StringComparison.Ordinal), "settings save");
+            await WaitForAsync(frame => frame.Contains("User settings", StringComparison.Ordinal) &&
+                frame.Split('\n').Any(line => line.Contains("Tree filter mode", StringComparison.Ordinal) &&
+                    line.Contains("no-tools", StringComparison.Ordinal)), "saved settings row");
+            using (var saved = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(agent, "settings.json"))))
+                Assert.Equal("no-tools", saved.RootElement.GetProperty("treeFilterMode").GetString());
             await SendAsync("\u001b\u001b");
             await WaitForAsync(frame => !frame.Contains("Tree filter mode", StringComparison.Ordinal) &&
                 frame.Contains("fixture-model", StringComparison.Ordinal), "settings closed");
